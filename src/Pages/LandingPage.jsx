@@ -1,9 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button"; // Cần cài đặt Shadcn UI Button
 import { Badge } from "@/components/ui/badge";   // Cần cài đặt Shadcn UI Badge
 import { PlayCircle } from 'lucide-react';       // Icon, thường đi kèm Shadcn
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     // Container chính cho cả trang, dùng font-sans mặc định
     <div className="min-h-screen bg-white font-sans">
@@ -30,7 +33,7 @@ const HeroSection = () => {
         {/* Phần bên phải: Các nút hành động (CTA) */}
         <div className="flex items-center gap-x-4">
           {/* Nút Log in - Ẩn trên mobile */}
-          <Button variant="ghost" className="hidden md:inline-flex font-medium">Log in</Button>
+          <Button variant="ghost" className="hidden md:inline-flex font-medium" onClick={() => navigate('/login')}>Log in</Button>
           
           {/* Nút Get started - Nút chính, màu tím */}
           <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
