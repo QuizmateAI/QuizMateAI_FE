@@ -25,3 +25,11 @@ dist-ssr
 
 # Github Copilot Instructions
 .github/copilot-instructions.md
+
+
+# Các file biến môi trường (Chứa API Key nhạy cảm)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

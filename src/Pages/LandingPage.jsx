@@ -101,6 +101,7 @@ const HeroSection = () => {
         </div>
       </main>
     </div>
+    
   );
 };
 
