@@ -81,7 +81,7 @@ const LoginPage = () => {
                   </div>
                   {/* Chuyển sang View Quên mật khẩu */}
                   <a 
-                    href="#"
+                    href="/forgot-password"
                     onClick={(e) => {
                       e.preventDefault();
                       setView('forgot-password');
@@ -97,7 +97,7 @@ const LoginPage = () => {
                 </Button>
 
                 <p className="text-center text-sm text-[#313131] font-medium">
-                  Don't have an account? <a href="#" className="text-[#FF8682] hover:underline">Sign up</a>
+                  Don't have an account? <a href="/register" className="text-[#FF8682] hover:underline">Sign up</a>
                 </p>
 
                 <div className="relative flex items-center py-4">
