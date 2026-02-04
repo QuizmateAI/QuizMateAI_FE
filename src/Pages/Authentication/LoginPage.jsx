@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox"; 
 import { EyeOff, X, ChevronLeft } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
+import LogoLight from "@/assets/LightMode_Logo.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -19,9 +20,9 @@ const LoginPage = () => {
       {/* Header: Logo & Cancel Button */}
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
-          {/* Logo - Sửa lại đường dẫn public chuẩn cho Vite */}
+          {/* Logo - Import từ assets */}
           <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src="./LightMode_Logo.png" alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+            <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
           </div>
         </div>
         
