@@ -1,9 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { MoreVertical, Plus } from "lucide-react";
 import workspaceData from "@/Pages/Users/Home/workspaceData";
 import { formatDate, formatUpdatedTime } from "@/Pages/Users/Home/workspaceData";
 
 function UserWorkspace({ viewMode }) {
+  const navigate = useNavigate();
   // Logic nghiệp vụ: chuyển đổi hiển thị giữa lưới và danh sách
   const isList = viewMode === "list";
   const workspaces = [...workspaceData].sort(
@@ -47,7 +49,10 @@ function UserWorkspace({ viewMode }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          <div className="rounded-xl border-2 border-dashed border-gray-300 h-56 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all overflow-hidden">
+          <div
+            className="rounded-xl border-2 border-dashed border-gray-300 h-56 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all overflow-hidden"
+            onClick={() => navigate("/workspace")}
+          >
             <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
               <Plus className="w-6 h-6 text-blue-600" />
             </div>
