@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox"; 
 import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
 import { ChevronLeft } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
-import { useLanguage } from '@/hooks/useLanguage';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [formData, setFormData] = useState({
     firstName: '',

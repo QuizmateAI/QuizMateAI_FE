@@ -1,13 +1,23 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Globe } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.png";
-import { useLanguage } from '@/hooks/useLanguage';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { t, toggleLanguage, language, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  
+  // Lấy ngôn ngữ hiện tại và tính toán font class
+  const currentLang = i18n.language;
+  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+
+  // Hàm chuyển đổi ngôn ngữ
+  const toggleLanguage = () => {
+    const newLang = currentLang === 'vi' ? 'en' : 'vi';
+    i18n.changeLanguage(newLang);
+  };
 
   return (
     // Thẻ nav bọc ngoài cùng: Luôn dính, có Z-index cao nhất, và có nền để không bị lẫn nội dung
@@ -32,7 +42,7 @@ const Navbar = () => {
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
           >
             <Globe className="w-4 h-4" />
-            <span>{language === 'vi' ? 'VI' : 'EN'}</span>
+            <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
           </button>
           <Button 
             variant="ghost" 
