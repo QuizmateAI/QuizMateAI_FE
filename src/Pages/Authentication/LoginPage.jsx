@@ -8,6 +8,7 @@ import { EyeOff, X, ChevronLeft } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import LogoLight from "@/assets/LightMode_Logo.png";
 
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Plus, Settings, MoreVertical, Grid3x3, List, ChevronRight, ChevronDown, Menu } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.png";
@@ -7,6 +8,7 @@ import UserWorkspace from "@/Pages/Users/Home/UserWorkspace";
 import UserGroup from "@/Pages/Users/Home/UserGroup";
 
 function HomePage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
 
@@ -25,13 +27,14 @@ function HomePage() {
 
   return (
     <div className="bg-white">
-      <div className="fixed top-0 left-20 right-20 bg-white">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white">
       {/* Header - giống NotebookLM */}
-      <header className="flex justify-between items-center px-6 border-b border-gray-200">
-        <div className="flex items-center gap-4">
-          {/* Logo */}
-          <img src={LogoLight} alt="QuizMate AI" className="h-[130px] w-auto object-contain" />
-        </div>
+      <header className="flex justify-between items-center px-20">
+        <div className="w-[130px]  flex items-center justify-center cursor-pointer" 
+        // onClick={() => navigate('/')}
+        >
+                   <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+                 </div>
         
         <div className="flex items-center gap-2">
           {/* Settings Button */}
@@ -44,10 +47,10 @@ function HomePage() {
             <span className="text-sm hidden sm:inline">Cài đặt</span>
           </Button>
           
-          {/* Menu Button */}
+          {/* Menu Button
           <button className="p-2 hover:bg-gray-100 rounded-full">
             <Menu className="w-5 h-5 text-gray-600" />
-          </button>
+          </button> */}
           
           {/* Avatar */}
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
@@ -57,7 +60,7 @@ function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-[1640px] mx-auto px-4 py-4">
+      <main className="max-w-[1640px] mx-auto px-20 pb-5">
         {/* Top Controls Row */}
         <div className="flex flex-wrap justify-between items-center gap-4 ">
           {/* Left: Tab Filter */}
@@ -132,7 +135,7 @@ function HomePage() {
         
       </main>
       </div>
-      <div className="pt-[195px] min-h-[calc(100vh-195px)]">
+          <div className="pt-[190px] px-20 py-12">
   {renderTabContent()}
 </div>
     </div>
