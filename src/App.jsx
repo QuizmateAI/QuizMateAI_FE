@@ -7,10 +7,12 @@ import ForgotPasswordPage from './Pages/Authentication/ForgotPasswordPage';
 import HomePage from './Pages/Users/HomePage';
 import AdminLayout from './Pages/Admin/AdminLayout';
 import AdminDashboard from './Pages/Admin/AdminDashboard';
+import { LanguageProvider } from './hooks/useLanguage';
 import './App.css'
 
 function App() {
   return (
+    <LanguageProvider>
     <Router>
       <Routes>
         <Route path="/" element={<HeroSection />} />
@@ -24,6 +26,7 @@ function App() {
         </Route>
       </Routes>
     </Router>
+    </LanguageProvider>
   )
 }
 
