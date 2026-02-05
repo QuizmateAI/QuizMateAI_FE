@@ -127,5 +127,42 @@
       "connect": "Connect",
       "copyright": "© 2026 QuizMate AI. Built with intelligence for learners."
     }
+  },
+  "workspace": {
+    "header": {
+      "title": "Untitled workspace",
+      "create": "Create workspace",
+      "share": "Share",
+      "settings": "Settings"
+    },
+    "sources": {
+      "title": "Sources",
+      "addSource": "Add source",
+      "searchPlaceholder": "Search sources",
+      "quickResearch": "Quick research",
+      "emptyTitle": "Saved sources will appear here",
+      "emptyDesc": "Click \"Add source\" to add PDFs, webpages, text, video, or audio files."
+    },
+    "chat": {
+      "title": "Conversation",
+      "emptyTitle": "Add a source to begin",
+      "upload": "Upload source",
+      "placeholder": "Upload a source to get started",
+      "sources": "0 sources"
+    },
+    "studio": {
+      "title": "Studio",
+      "emptyTitle": "Studio outputs will be saved here.",
+      "emptyDesc": "After adding sources, choose audio, video, mind maps, or reports.",
+      "addNote": "Add note",
+      "actions": {
+        "audioOverview": "Audio overview",
+        "videoOverview": "Video overview",
+        "mindMap": "Mind map",
+        "report": "Report",
+        "flashcards": "Flashcards",
+        "quiz": "Quiz"
+      }
+    }
   }
 }
