@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";  
-import { Label } from "@/components/ui/label"; 
 import { Checkbox } from "@/components/ui/checkbox"; 
-import { EyeOff, Eye, X } from 'lucide-react';
+import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
+import { ChevronLeft } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
-import LogoLight from "@/assets/LightMode_Logo.png";
+import { useLanguage } from '@/hooks/useLanguage';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { t, fontClass } = useLanguage();
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,11 +22,10 @@ const RegisterPage = () => {
     agreeToTerms: false
   });
 
-  const handleChange = (e) => {
-    const { id, value, type, checked } = e.target;
+  const handleChange = (field) => (e) => {
     setFormData(prev => ({
       ...prev,
-      [id]: type === 'checkbox' ? checked : value
+      [field]: e.target.value
     }));
   };
 
@@ -36,120 +36,73 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white font-['Poppins'] flex flex-col">
-      {/* Header: Logo & Cancel Button */}
-      <header className="flex justify-between items-center px-12 py-8">
-        <div className="flex items-center gap-2">
-          <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
-          </div>
-        </div>
-        
-        <Button variant="ghost" className="flex items-center gap-2 text-black hover:bg-gray-100" onClick={() => navigate('/')}>
-          <X className="w-5 h-5 text-[#DF0D0C]" />
-          <span>Cancel</span>
-        </Button>
-      </header>
-
+    <div className={`min-h-screen bg-white flex flex-col ${fontClass}`}>
       {/* Main Content */}
-      <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-12 items-center px-8 pb-12">
+      <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-12 items-center px-8 py-8">
         
         {/* Left Side: Form Container */}
         <div className="max-w-md w-full mx-auto md:mx-0">
           <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+            {/* Nút quay về Login */}
+            <button 
+              onClick={() => navigate('/login')}
+              className="flex items-center gap-1 text-sm font-medium text-[#313131] mb-6 hover:text-[#0455BF] transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" /> {t('backToLogin')}
+            </button>
+
             <div className="mb-10">
-              <h1 className="text-4xl font-semibold text-[#313131] mb-4">Sign up</h1>
-              <p className="text-gray-500">Let's get you all set up so you can access your personal account.</p>
+              <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('signUpTitle')}</h1>
+              <p className="text-gray-500">{t('signUpSubtitle')}</p>
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* First Name & Last Name */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input 
-                    type="text" 
-                    id="firstName" 
-                    placeholder="John" 
-                    className="h-14 border-[#79747E]"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="grid w-full items-center gap-1.5">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input 
-                    type="text" 
-                    id="lastName" 
-                    placeholder="Doe" 
-                    className="h-14 border-[#79747E]"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  type="email" 
-                  id="email" 
-                  placeholder="john.doe@gmail.com" 
-                  className="h-14 border-[#79747E]"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
+                <FloatingInput
+                  id="firstName"
+                  type="text"
+                  label={t('firstName')}
+                  value={formData.firstName}
+                  onChange={handleChange('firstName')}
+                />
+                <FloatingInput
+                  id="lastName"
+                  type="text"
+                  label={t('lastName')}
+                  value={formData.lastName}
+                  onChange={handleChange('lastName')}
                 />
               </div>
 
+              {/* Email */}
+              <FloatingInput
+                id="email"
+                type="email"
+                label={t('email')}
+                value={formData.email}
+                onChange={handleChange('email')}
+              />
+
               {/* Password */}
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input 
-                    type={showPassword ? "text" : "password"} 
-                    id="password" 
-                    placeholder="••••••••••••••••" 
-                    className="h-14 border-[#79747E] pr-12"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+              <FloatingPasswordInput
+                id="password"
+                label={t('password')}
+                value={formData.password}
+                onChange={handleChange('password')}
+                showPassword={showPassword}
+                onTogglePassword={() => setShowPassword(!showPassword)}
+              />
 
               {/* Confirm Password */}
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Input 
-                    type={showConfirmPassword ? "text" : "password"} 
-                    id="confirmPassword" 
-                    placeholder="••••••••••••••••" 
-                    className="h-14 border-[#79747E] pr-12"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showConfirmPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+              <FloatingPasswordInput
+                id="confirmPassword"
+                label={t('confirmPassword')}
+                value={formData.confirmPassword}
+                onChange={handleChange('confirmPassword')}
+                showPassword={showConfirmPassword}
+                onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
+              />
 
               {/* Terms and Conditions */}
               <div className="flex items-start space-x-2">
@@ -160,7 +113,7 @@ const RegisterPage = () => {
                   required
                 />
                 <label htmlFor="agreeToTerms" className="text-sm text-[#313131] cursor-pointer leading-relaxed">
-                  I agree to all the <a href="#" className="text-[#FF8682] hover:underline">Terms</a> and <a href="#" className="text-[#FF8682] hover:underline">Privacy Policies</a>
+                  {t('agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('terms')}</a> {t('and')} <a href="#" className="text-[#FF8682] hover:underline">{t('privacyPolicies')}</a>
                 </label>
               </div>
 
@@ -169,12 +122,12 @@ const RegisterPage = () => {
                 type="submit"
                 className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] text-white text-base font-semibold transition-all"
               >
-                Create account
+                {t('createAccount')}
               </Button>
 
               {/* Login Link */}
               <p className="text-center text-sm text-[#313131] font-medium">
-                Already have an account? {' '}
+                {t('alreadyHaveAccount')} {' '}
                 <a 
                   href="#"
                   onClick={(e) => {
@@ -183,14 +136,14 @@ const RegisterPage = () => {
                   }}
                   className="text-[#FF8682] hover:underline cursor-pointer"
                 >
-                  Login
+                  {t('login')}
                 </a>
               </p>
 
               {/* Divider */}
               <div className="relative flex items-center py-4">
                 <div className="flex-grow border-t border-gray-200"></div>
-                <span className="flex-shrink mx-4 text-gray-400 text-sm">Or register with</span>
+                <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('orRegisterWith')}</span>
                 <div className="flex-grow border-t border-gray-200"></div>
               </div>
 
