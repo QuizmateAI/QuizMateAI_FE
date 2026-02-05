@@ -1,24 +1,24 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
-import { useLanguage } from '@/hooks/useLanguage';
 
 // Stats với key để lấy translation
 const stats = [
-  { labelKey: 'totalUsers', value: '12,540', icon: Users, color: 'text-blue-600' },
-  { labelKey: 'monthlyRevenue', value: '$45,200', icon: TrendingUp, color: 'text-green-600' },
-  { labelKey: 'aiTokensUsed', value: '1.2M', icon: Zap, color: 'text-amber-600' },
-  { labelKey: 'violationReports', value: '14', icon: AlertTriangle, color: 'text-red-600' },
+  { labelKey: 'dashboard.totalUsers', value: '12,540', icon: Users, color: 'text-blue-600' },
+  { labelKey: 'dashboard.monthlyRevenue', value: '$45,200', icon: TrendingUp, color: 'text-green-600' },
+  { labelKey: 'dashboard.aiTokensUsed', value: '1.2M', icon: Zap, color: 'text-amber-600' },
+  { labelKey: 'dashboard.violationReports', value: '14', icon: AlertTriangle, color: 'text-red-600' },
 ];
 
 function AdminDashboard() {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#313131]">{t('systemOverview')}</h1>
-        <p className="text-gray-500">{t('welcomeBack')}</p>
+        <h1 className="text-2xl font-bold text-[#313131]">{t('dashboard.systemOverview')}</h1>
+        <p className="text-gray-500">{t('dashboard.welcomeBack')}</p>
       </div>
 
       {/* Grid thống kê nhanh */}
@@ -31,7 +31,7 @@ function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-green-500 font-medium">{t('comparedToLastMonth')}</p>
+              <p className="text-xs text-green-500 font-medium">{t('dashboard.comparedToLastMonth')}</p>
             </CardContent>
           </Card>
         ))}
@@ -40,10 +40,10 @@ function AdminDashboard() {
       {/* Placeholder cho Biểu đồ & Bảng dữ liệu */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 h-[400px] flex items-center justify-center text-gray-400 border-dashed border-2">
-           {t('userGrowthChart')}
+           {t('dashboard.userGrowthChart')}
         </Card>
         <Card className="h-[400px] flex items-center justify-center text-gray-400 border-dashed border-2">
-           {t('newUsersList')}
+           {t('dashboard.newUsersList')}
         </Card>
       </div>
     </div>

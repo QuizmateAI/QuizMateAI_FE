@@ -1,9 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Map, BrainCircuit, Mic } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
 
 const FeaturesSection = () => {
-    const { t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   return (
     <section id="features" className={`py-32 bg-[#FAFAFA] ${fontClass}`}>

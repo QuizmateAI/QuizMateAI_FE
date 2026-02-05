@@ -1,9 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
 
 const TestimonialsSection = () => {
-    const { t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   return (
     <section className={`bg-[#2563EB] py-32 text-white overflow-hidden relative ${fontClass}`}>

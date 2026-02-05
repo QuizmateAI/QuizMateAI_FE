@@ -1,12 +1,13 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, CheckCircle2 } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
 
 const PricingSection = () => {
-    const { t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   return (
     <section id="pricing" className={`py-32 bg-white ${fontClass}`}>

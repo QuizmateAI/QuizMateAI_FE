@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox"; 
 import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
 import { ChevronLeft, Globe } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import LogoLight from "@/assets/LightMode_Logo.png";
-import { useLanguage } from '@/hooks/useLanguage';
 
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { language, toggleLanguage, t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  
+  // Lấy ngôn ngữ hiện tại và tính toán font class
+  const currentLang = i18n.language;
+  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+
+  // Hàm chuyển đổi ngôn ngữ
+  const toggleLanguage = () => {
+    const newLang = currentLang === 'vi' ? 'en' : 'vi';
+    i18n.changeLanguage(newLang);
+  };
   
   // Login form state
   const [emailValue, setEmailValue] = useState('');
@@ -62,7 +72,7 @@ const LoginPage = () => {
           className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
         >
           <Globe className="w-4 h-4" />
-          <span>{language === 'vi' ? 'VI' : 'EN'}</span>
+          <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
         </button>
       </header>
 
@@ -80,12 +90,12 @@ const LoginPage = () => {
                 onClick={() => navigate('/')}
                 className="flex items-center gap-1 text-sm font-medium text-[#313131] mb-6 hover:text-[#0455BF] transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" /> {t('backToHome')}
+                <ChevronLeft className="w-4 h-4" /> {t('auth.backToHome')}
               </button>
 
               <div className="mb-5">
-                <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('login')}</h1>
-                <p className="text-gray-500">{t('loginSubtitle')}</p>
+                <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('auth.login')}</h1>
+                <p className="text-gray-500">{t('auth.loginSubtitle')}</p>
               </div>
 
               <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
@@ -93,7 +103,7 @@ const LoginPage = () => {
                 <FloatingInput
                   id="email"
                   type="email"
-                  label={t('email')}
+                  label={t('auth.email')}
                   value={emailValue}
                   onChange={(e) => setEmailValue(e.target.value)}
                 />
@@ -101,7 +111,7 @@ const LoginPage = () => {
                 {/* Password Input - Floating Label */}
                 <FloatingPasswordInput
                   id="password"
-                  label={t('password')}
+                  label={t('auth.password')}
                   value={passwordValue}
                   onChange={(e) => setPasswordValue(e.target.value)}
                   showPassword={showPassword}
@@ -112,7 +122,7 @@ const LoginPage = () => {
                   <div className="flex items-center space-x-2">
                     <Checkbox id="remember" />
                     <label htmlFor="remember" className="text-sm font-medium text-[#313131] cursor-pointer">
-                      {t('rememberMe')}
+                      {t('auth.rememberMe')}
                     </label>
                   </div>
                   {/* Chuyển sang View Quên mật khẩu */}
@@ -124,21 +134,21 @@ const LoginPage = () => {
                     }}
                     className="text-sm font-medium text-[#FF8682] hover:underline"
                   >
-                    {t('forgotPassword')}
+                    {t('auth.forgotPassword')}
                   </a>
                 </div>
 
                 <Button className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] text-white text-base font-semibold transition-all">
-                  {t('loginButton')}
+                  {t('auth.loginButton')}
                 </Button>
 
                 <p className="text-center text-sm text-[#313131] font-medium">
-                  {t('noAccount')} <a href="#" onClick={(e) => { e.preventDefault(); setView('register'); }} className="text-[#FF8682] hover:underline">{t('signUp')}</a>
+                  {t('auth.noAccount')} <a href="#" onClick={(e) => { e.preventDefault(); setView('register'); }} className="text-[#FF8682] hover:underline">{t('auth.signUp')}</a>
                 </p>
 
                 <div className="relative flex items-center py-1">
                   <div className="flex-grow border-t border-gray-200"></div>
-                  <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('orLoginWith')}</span>
+                  <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('auth.orLoginWith')}</span>
                   <div className="flex-grow border-t border-gray-200"></div>
                 </div>
 
@@ -162,13 +172,13 @@ const LoginPage = () => {
                 onClick={() => setView('login')}
                 className="flex items-center gap-1 text-sm font-medium text-[#313131] mb-8 hover:text-black"
               >
-                <ChevronLeft className="w-4 h-4" /> {t('backToLogin')}
+                <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
               </button>
 
               <div className="mb-10">
-                <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('forgotPasswordTitle')}</h1>
+                <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('auth.forgotPasswordTitle')}</h1>
                 <p className="text-gray-500 leading-relaxed">
-                  {t('forgotPasswordSubtitle')}
+                  {t('auth.forgotPasswordSubtitle')}
                 </p>
               </div>
 
@@ -176,18 +186,18 @@ const LoginPage = () => {
                 <FloatingInput
                   id="forgot-email"
                   type="email"
-                  label={t('email')}
+                  label={t('auth.email')}
                   value={emailValue}
                   onChange={(e) => setEmailValue(e.target.value)}
                 />
 
                 <Button className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] text-white text-base font-semibold transition-all">
-                  {t('submit')}
+                  {t('auth.submit')}
                 </Button>
 
                 <div className="relative flex items-center py-4">
                   <div className="flex-grow border-t border-gray-200"></div>
-                  <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('orLoginWith')}</span>
+                  <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('auth.orLoginWith')}</span>
                   <div className="flex-grow border-t border-gray-200"></div>
                 </div>
 
@@ -208,12 +218,12 @@ const LoginPage = () => {
                 onClick={() => setView('login')}
                 className="flex items-center gap-1 text-sm font-medium text-[#313131] mb-6 hover:text-[#0455BF] transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" /> {t('backToLogin')}
+                <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
               </button>
 
               <div className="mb-8">
-                <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('signUpTitle')}</h1>
-                <p className="text-gray-500">{t('signUpSubtitle')}</p>
+                <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('auth.signUpTitle')}</h1>
+                <p className="text-gray-500">{t('auth.signUpSubtitle')}</p>
               </div>
 
               <form className="space-y-5" onSubmit={handleRegisterSubmit}>
@@ -222,14 +232,14 @@ const LoginPage = () => {
                   <FloatingInput
                     id="firstName"
                     type="text"
-                    label={t('firstName')}
+                    label={t('auth.firstName')}
                     value={formData.firstName}
                     onChange={handleChange('firstName')}
                   />
                   <FloatingInput
                     id="lastName"
                     type="text"
-                    label={t('lastName')}
+                    label={t('auth.lastName')}
                     value={formData.lastName}
                     onChange={handleChange('lastName')}
                   />
@@ -239,7 +249,7 @@ const LoginPage = () => {
                 <FloatingInput
                   id="register-email"
                   type="email"
-                  label={t('email')}
+                  label={t('auth.email')}
                   value={formData.email}
                   onChange={handleChange('email')}
                 />
@@ -247,7 +257,7 @@ const LoginPage = () => {
                 {/* Password */}
                 <FloatingPasswordInput
                   id="register-password"
-                  label={t('password')}
+                  label={t('auth.password')}
                   value={formData.password}
                   onChange={handleChange('password')}
                   showPassword={showPassword}
@@ -257,7 +267,7 @@ const LoginPage = () => {
                 {/* Confirm Password */}
                 <FloatingPasswordInput
                   id="confirmPassword"
-                  label={t('confirmPassword')}
+                  label={t('auth.confirmPassword')}
                   value={formData.confirmPassword}
                   onChange={handleChange('confirmPassword')}
                   showPassword={showConfirmPassword}
@@ -273,7 +283,7 @@ const LoginPage = () => {
                     required
                   />
                   <label htmlFor="agreeToTerms" className="text-sm text-[#313131] cursor-pointer leading-relaxed">
-                    {t('agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('terms')}</a> {t('and')} <a href="#" className="text-[#FF8682] hover:underline">{t('privacyPolicies')}</a>
+                    {t('auth.agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.terms')}</a> {t('auth.and')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.privacyPolicies')}</a>
                   </label>
                 </div>
 
@@ -282,12 +292,12 @@ const LoginPage = () => {
                   type="submit"
                   className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] text-white text-base font-semibold transition-all"
                 >
-                  {t('createAccount')}
+                  {t('auth.createAccount')}
                 </Button>
 
                 {/* Login Link */}
                 <p className="text-center text-sm text-[#313131] font-medium">
-                  {t('alreadyHaveAccount')} {' '}
+                  {t('auth.alreadyHaveAccount')} {' '}
                   <a 
                     href="#"
                     onClick={(e) => {
@@ -296,14 +306,14 @@ const LoginPage = () => {
                     }}
                     className="text-[#FF8682] hover:underline cursor-pointer"
                   >
-                    {t('login')}
+                    {t('auth.login')}
                   </a>
                 </p>
 
                 {/* Divider */}
                 <div className="relative flex items-center py-2">
                   <div className="flex-grow border-t border-gray-200"></div>
-                  <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('orRegisterWith')}</span>
+                  <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('auth.orRegisterWith')}</span>
                   <div className="flex-grow border-t border-gray-200"></div>
                 </div>
 

@@ -7,22 +7,22 @@ import {
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.png";
-import { useLanguage } from '@/hooks/useLanguage';
+import { useTranslation } from 'react-i18next';
 
 // Menu items với key để lấy translation
 const menuItems = [
-  { icon: LayoutDashboard, labelKey: 'dashboard', path: '/admin' },
-  { icon: Users, labelKey: 'users', path: '/admin/users' },
-  { icon: ShieldAlert, labelKey: 'moderation', path: '/admin/moderation' },
-  { icon: Cpu, labelKey: 'aiSettings', path: '/admin/ai-settings' },
-  { icon: CreditCard, labelKey: 'billing', path: '/admin/billing' },
-  { icon: Settings, labelKey: 'settings', path: '/admin/settings' },
+  { icon: LayoutDashboard, labelKey: 'sidebar.dashboard', path: '/admin' },
+  { icon: Users, labelKey: 'sidebar.users', path: '/admin/users' },
+  { icon: ShieldAlert, labelKey: 'sidebar.moderation', path: '/admin/moderation' },
+  { icon: Cpu, labelKey: 'sidebar.aiSettings', path: '/admin/ai-settings' },
+  { icon: CreditCard, labelKey: 'sidebar.billing', path: '/admin/billing' },
+  { icon: Settings, labelKey: 'sidebar.settings', path: '/admin/settings' },
 ];
 
 function AdminSidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   return (
     <div className={cn(
