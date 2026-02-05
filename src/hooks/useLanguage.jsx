@@ -64,6 +64,82 @@ export const translations = {
     backToLogin: 'Back to login',
     submit: 'Submit',
     processing: 'Processing...',
+
+    // Landing Page
+    landingPage: {
+      nav: {
+        features: 'Features',
+        solutions: 'Solutions',
+        pricing: 'Pricing',
+        login: 'Login',
+        signup: 'Sign up free'
+      },
+      hero: {
+        badge: '✨ AI-Powered Learning Innovation',
+        titlePart1: 'Master Any Subject with',
+        titlePart2: 'QuizMate AI',
+        subtitle: 'Upload your study materials (PDFs, Videos, or URLs) and let our AI build personalized roadmaps and interactive quizzes.',
+        startLearning: 'Start Learning Now',
+        watchDemo: 'Watch Demo',
+        activeStudents: 'Active Students'
+      },
+      features: {
+        title: 'Revolutionize Your Learning Journey',
+        roadmapTitle: 'AI Roadmap',
+        roadmapDesc: 'Our AI analyzes your materials and generates a step-by-step learning path from basics to advanced.',
+        quizTitle: 'Smart Quizzes',
+        quizDesc: 'Generate multiple-choice or essay questions instantly from any PDF, YouTube video, or website link.',
+        companionTitle: 'AI Companion',
+        companionDesc: 'Interact with your AI tutor via voice to clear doubts and explain complex concepts in real-time.'
+      },
+      pricing: {
+        titlePart1: 'Choose',
+        titlePart2: 'Your Plan',
+        subtitle: 'Flexible pricing for every learner',
+        free: 'Free',
+        pro: 'Professional',
+        elite: 'Elite',
+        billedMonthly: 'Billed Monthly',
+        mostPopular: 'MOST POPULAR',
+        getStarted: 'Get Started',
+        selectPro: 'Select Pro Plan',
+        features: {
+           fiveRoadmaps: '5 AI Roadmaps / month',
+           basicQuizzes: 'Basic AI Quizzes',
+           voiceTutor: 'Voice AI Tutor',
+           unlimitedRoadmaps: 'Unlimited AI Roadmaps',
+           advancedVoice: 'Advanced Voice Companion',
+           urlVideo: 'URL & Video Processing',
+           everythingPro: 'Everything in Pro',
+           studyGroup: 'Study Group (5 Users)',
+           apiAccess: 'API Access for Devs'
+        }
+      },
+      testimonials: {
+        title: 'What our students are saying 😍',
+        student1Quote: '"QuizMate AI completely changed how I prepare for my exams. Generating quizzes from lecture videos is a game changer!"',
+        student1Role: 'Medical Student',
+        student2Quote: '"The AI Roadmap is incredible. It broke down my 200-page textbook into 10 logical learning phases. Highly recommend!"',
+        student2Role: 'Computer Science Major'
+      },
+      footer: {
+        brandDesc: 'Empowering students worldwide with AI-driven study tools for a smarter future.',
+        product: 'Product',
+        productLinks: {
+          roadmap: 'AI Roadmap',
+          quizzes: 'Smart Quizzes',
+          groups: 'Study Groups'
+        },
+        company: 'Company',
+        companyLinks: {
+          about: 'About Our AI',
+          privacy: 'Privacy Policy',
+          terms: 'Terms of Service'
+        },
+        connect: 'Connect',
+        copyright: '© 2026 QuizMate AI. Built with intelligence for learners.'
+      }
+    },
   },
   vi: {
     // Sidebar
@@ -124,6 +200,82 @@ export const translations = {
     backToLogin: 'Quay lại đăng nhập',
     submit: 'Gửi',
     processing: 'Đang xử lý...',
+
+    // Landing Page
+    landingPage: {
+      nav: {
+        features: 'Tính năng',
+        solutions: 'Giải pháp',
+        pricing: 'Bảng giá',
+        login: 'Đăng nhập',
+        signup: 'Đăng ký'
+      },
+      hero: {
+        badge: '✨ Đột phá học tập cùng AI',
+        titlePart1: 'Chinh phục mọi kiến thức cùng',
+        titlePart2: 'QuizMate AI',
+        subtitle: 'Tải lên tài liệu học tập (PDF, Video, hoặc URL) và để AI xây dựng lộ trình cá nhân hóa cùng bộ câu hỏi tương tác.',
+        startLearning: 'Bắt đầu học ngay',
+        watchDemo: 'Xem Demo',
+        activeStudents: 'Học viên tích cực'
+      },
+      features: {
+        title: 'Cách mạng hóa hành trình học tập',
+        roadmapTitle: 'Lộ trình AI',
+        roadmapDesc: 'AI phân tích tài liệu và tạo lộ trình học tập từng bước từ cơ bản đến nâng cao.',
+        quizTitle: 'Trắc nghiệm thông minh',
+        quizDesc: 'Tạo câu hỏi trắc nghiệm hoặc tự luận tức thì từ bất kỳ file PDF, video YouTube hay đường link website nào.',
+        companionTitle: 'Trợ lý AI',
+        companionDesc: 'Tương tác với gia sư AI qua giọng nói để giải đáp thắc mắc và giải thích các khái niệm phức tạp theo thời gian thực.'
+      },
+      pricing: {
+        titlePart1: 'Chọn',
+        titlePart2: 'Gói của bạn',
+        subtitle: 'Chi phí linh hoạt cho mọi người học',
+        free: 'Miễn phí',
+        pro: 'Chuyên nghiệp',
+        elite: 'Cao cấp',
+        billedMonthly: 'Thanh toán hàng tháng',
+        mostPopular: 'PHỔ BIẾN NHẤT',
+        getStarted: 'Bắt đầu ngay',
+        selectPro: 'Chọn gói Pro',
+        features: {
+           fiveRoadmaps: '5 Lộ trình AI / tháng',
+           basicQuizzes: 'Trắc nghiệm AI cơ bản',
+           voiceTutor: 'Gia sư AI giọng nói',
+           unlimitedRoadmaps: 'Lộ trình AI không giới hạn',
+           advancedVoice: 'Trợ lý giọng nói nâng cao',
+           urlVideo: 'Xử lý URL & Video',
+           everythingPro: 'Bao gồm tất cả của Pro',
+           studyGroup: 'Nhóm học tập (5 người)',
+           apiAccess: 'Quyền truy cập API cho Dev'
+        }
+      },
+      testimonials: {
+        title: 'Học viên nói gì về chúng tôi 😍',
+        student1Quote: '"QuizMate AI đã thay đổi hoàn toàn cách tôi ôn thi. Việc tạo câu hỏi từ video bài giảng đúng là thay đổi cuộc chơi!"',
+        student1Role: 'Sinh viên Y khoa',
+        student2Quote: '"Lộ trình AI thật sự đáng kinh ngạc. Nó chia nhỏ cuốn giáo trình 200 trang của tôi thành 10 giai đoạn học logic. Cực kỳ đề xuất!"',
+        student2Role: 'Sinh viên Khoa học máy tính'
+      },
+      footer: {
+        brandDesc: 'Trao quyền cho học sinh toàn cầu với các công cụ học tập AI cho một tương lai thông minh hơn.',
+        product: 'Sản phẩm',
+        productLinks: {
+          roadmap: 'Lộ trình AI',
+          quizzes: 'Trắc nghiệm thông minh',
+          groups: 'Nhóm học tập'
+        },
+        company: 'Công ty',
+        companyLinks: {
+          about: 'Về AI của chúng tôi',
+          privacy: 'Chính sách bảo mật',
+          terms: 'Điều khoản dịch vụ'
+        },
+        connect: 'Kết nối',
+        copyright: '© 2026 QuizMate AI. Xây dựng bằng trí tuệ dành cho người học.'
+      }
+    }
   }
 };
 
@@ -145,7 +297,12 @@ export function LanguageProvider({ children }) {
 
   // Hàm lấy text theo key
   const t = (key) => {
-    return translations[language][key] || key;
+    const keys = key.split('.');
+    let value = translations[language];
+    for (const k of keys) {
+      if (value) value = value[k];
+    }
+    return value || key;
   };
 
   // Class font dựa trên ngôn ngữ (Poppins cho EN, sans cho VI)
