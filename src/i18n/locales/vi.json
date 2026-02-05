@@ -127,5 +127,42 @@
       "connect": "Kết nối",
       "copyright": "© 2026 QuizMate AI. Xây dựng bằng trí tuệ dành cho người học."
     }
+  },
+  "workspace": {
+    "header": {
+      "title": "Sổ ghi chú chưa đặt tên",
+      "create": "Tạo sổ ghi chú",
+      "share": "Chia sẻ",
+      "settings": "Cài đặt"
+    },
+    "sources": {
+      "title": "Nguồn",
+      "addSource": "Thêm nguồn",
+      "searchPlaceholder": "Tìm nguồn",
+      "quickResearch": "Nghiên cứu nhanh",
+      "emptyTitle": "Các nguồn đã lưu sẽ xuất hiện ở đây",
+      "emptyDesc": "Nhấp vào \"Thêm nguồn\" để thêm PDF, trang web, văn bản, video hoặc tệp âm thanh."
+    },
+    "chat": {
+      "title": "Cuộc trò chuyện",
+      "emptyTitle": "Thêm một nguồn để bắt đầu",
+      "upload": "Tải nguồn lên",
+      "placeholder": "Tải một nguồn lên để bắt đầu",
+      "sources": "0 nguồn"
+    },
+    "studio": {
+      "title": "Studio",
+      "emptyTitle": "Đầu ra của Studio sẽ được lưu ở đây.",
+      "emptyDesc": "Sau khi thêm nguồn, hãy chọn âm thanh, video, bản đồ tư duy hoặc báo cáo.",
+      "addNote": "Thêm ghi chú",
+      "actions": {
+        "audioOverview": "Tổng quan bằng âm thanh",
+        "videoOverview": "Tổng quan bằng video",
+        "mindMap": "Bản đồ tư duy",
+        "report": "Báo cáo",
+        "flashcards": "Thẻ ghi nhớ",
+        "quiz": "Bài kiểm tra"
+      }
+    }
   }
 }
