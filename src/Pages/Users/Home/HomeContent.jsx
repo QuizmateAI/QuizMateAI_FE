@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreVertical, ChevronRight } from "lucide-react";
@@ -114,7 +115,7 @@ function HomeContent({ viewMode }) {
 
       <section>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-medium text-[#303030]">Sổ ghi chú gần đây</h2>
+          <h2 className="text-xl font-medium text-[#303030]">Workspace gần đây</h2>
           <Button
             variant="ghost"
             size="sm"
