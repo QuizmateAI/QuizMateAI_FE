@@ -57,7 +57,7 @@ function StudioPanel() {
           </p>
         </div>
 
-        <button className="w-full rounded-full bg-black text-white text-sm font-medium py-2 flex items-center justify-center gap-2">
+        <button className="w-full rounded-full bg-[#2563EB] text-white text-sm font-medium py-2 flex items-center justify-center gap-2">
           <span className={fontClass}>{text.addNote[language]}</span>
         </button>
       </div>

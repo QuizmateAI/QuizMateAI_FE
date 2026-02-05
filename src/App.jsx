@@ -8,6 +8,7 @@ import HomePage from './Pages/Users/HomePage';
 import AdminLayout from './Pages/Admin/AdminLayout';
 import AdminDashboard from './Pages/Admin/AdminDashboard';
 import { LanguageProvider } from './hooks/useLanguage';
+import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
 import './App.css'
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           {/* Các route con khác của admin có thể được thêm ở đây */}
         </Route>
+        <Route path="/workspace" element={<WorkspacePage />} />
       </Routes>
     </Router>
     </LanguageProvider>

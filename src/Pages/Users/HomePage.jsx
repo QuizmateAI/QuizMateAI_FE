@@ -125,7 +125,7 @@ function HomePage() {
             </Button> */}
 
             {/* Create Button */}
-            <Button className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white rounded-full h-9 px-4">
+            <Button className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#6682bd] text-white rounded-full h-9 px-4">
               <Plus className="w-4 h-4" />
               <span className="text-sm font-medium">Tạo mới</span>
             </Button>

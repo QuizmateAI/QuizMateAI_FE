@@ -32,8 +32,11 @@ function ChatPanel() {
       </div>
 
       <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center justify-between gap-3 border border-gray-200 rounded-2xl px-4 py-3">
-          <p className={`text-sm text-gray-500 ${fontClass}`}>{text.placeholder[language]}</p>
+        <div className="flex items-center gap-3 border border-gray-200 rounded-2xl px-4 py-2">
+          <input
+            className={`flex-1 bg-transparent outline-none text-sm text-gray-600 ${fontClass}`}
+            placeholder={text.placeholder[language]}
+          />
           <span className={`text-xs text-gray-400 ${fontClass}`}>{text.sources[language]}</span>
         </div>
       </div>
