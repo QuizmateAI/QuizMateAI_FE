@@ -1,6 +1,7 @@
 import React from "react";
 import { MoreVertical, Plus } from "lucide-react";
-import { formatDate, formatUpdatedTime, workspaceData } from "@/Pages/Users/Home/workspaceData";
+import workspaceData from "@/Pages/Users/Home/workspaceData";
+import { formatDate, formatUpdatedTime } from "@/Pages/Users/Home/workspaceData";
 
 function UserWorkspace({ viewMode }) {
   // Logic nghiệp vụ: chuyển đổi hiển thị giữa lưới và danh sách
