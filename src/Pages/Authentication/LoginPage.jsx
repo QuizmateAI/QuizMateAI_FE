@@ -21,7 +21,7 @@ const LoginPage = () => {
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
           {/* Logo - Import từ assets */}
-          <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
+          <div className="w-[150px] h-[150px] flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
             <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
           </div>
         </div>
@@ -33,7 +33,7 @@ const LoginPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-12 items-center px-8 pb-12">
+      <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-8 items-center px-12 pb-12">
         
         {/* Left Side: Form Container */}
         <div className="max-w-md w-full mx-auto md:mx-0">
@@ -106,7 +106,11 @@ const LoginPage = () => {
                 </div>
 
                 <div className="grid gap-4">
-                  <Button variant="outline" className="h-14 border-[#515DEF]">
+                  <Button 
+                    variant="outline" 
+                    className="h-14 border-[#515DEF]"
+                    onClick={() => navigate('/home')}
+                  >
                     <FcGoogle className="w-6 h-6" />
                   </Button>
                 </div>

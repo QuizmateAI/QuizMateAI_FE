@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox"; 
 import { EyeOff, Eye, X } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
+import LogoLight from "@/assets/LightMode_Logo.png";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ const RegisterPage = () => {
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
           <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/LightMode_Logo.png" alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+            <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
           </div>
         </div>
         
