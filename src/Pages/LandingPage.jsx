@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button"; // Cần cài đặt Shadcn UI Button
 import { Badge } from "@/components/ui/badge";   // Cần cài đặt Shadcn UI Badge
 import { PlayCircle } from 'lucide-react';       // Icon, thường đi kèm Shadcn
+import LogoLight from "@/assets/LightMode_Logo.png"; 
+import LogoDark from "@/assets/DarkMode_Logo.png"; 
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -13,13 +15,13 @@ const HeroSection = () => {
 
       {/* ================= HEADER / NAVBAR ================= */}
       {/* Sử dụng flexbox để căn chỉnh các phần tử trong header */}
-      <header className="container mx-auto flex items-center justify-between py-6 px-4 md:px-8">
+      <header className="container mx-[100px] flex items-center justify-between">
         
         {/* Phần bên trái: Logo và Menu điều hướng */}
         <div className="flex items-center gap-x-12">
           {/* Logo dự án */}
           <a href="#" className="text-xl font-bold text-gray-900">
-            QuizMate AI
+            <img src={LogoLight} alt="QuizMate AI Logo" className="h-[120px] w-[120px]" />
           </a>
 
           {/* Menu điều hướng - Ẩn trên mobile (hidden), hiện trên tablet trở lên (md:flex) */}
@@ -36,7 +38,7 @@ const HeroSection = () => {
           <Button variant="ghost" className="hidden md:inline-flex font-medium" onClick={() => navigate('/login')}>Log in</Button>
           
           {/* Nút Get started - Nút chính, màu tím */}
-          <Button className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-6">
+          <Button className="bg-[#0455BF] hover:bg-[#03449a] text-white font-medium px-6">
             Get started
           </Button>
         </div>
@@ -59,7 +61,7 @@ const HeroSection = () => {
           {/* Tiêu đề chính (H1) - Chữ lớn, đậm. Dùng span để tô màu tím cho phần nhấn mạnh */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight">
             Master Any Subject with{' '}
-            <span className="text-purple-600 block md:inline">Personalized AI Quizzes</span>
+            <span className="text-[#0455BF] block md:inline">Personalized AI Quizzes</span>
           </h1>
 
           {/* Đoạn văn mô tả */}
@@ -70,7 +72,7 @@ const HeroSection = () => {
           {/* Các nút CTA bên dưới text */}
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto pt-4 justify-center md:justify-start">
             {/* Nút chính */}
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white h-12 px-8 text-base font-semibold">
+            <Button className="bg-[#0455BF] hover:bg-[#03449a] text-white  h-12 px-8 text-base font-semibold">
               Try for free
             </Button>
             

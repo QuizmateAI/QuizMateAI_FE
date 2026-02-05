@@ -6,7 +6,7 @@ import {
   PanelLeftClose
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import LogoLight from "@/assets/DarkMode_Logo.png";
+import LogoDark from "@/assets/DarkMode_Logo.png";
 import { useLanguage } from '@/hooks/useLanguage';
 
 // Menu items với key để lấy translation
@@ -44,7 +44,7 @@ function AdminSidebar({ collapsed, onToggle }) {
           title={collapsed ? "Mở rộng sidebar" : undefined}
         >
           <img 
-            src={LogoLight} 
+            src={LogoDark} 
             alt="Logo" 
             className={cn(
               "transition-all duration-300",
