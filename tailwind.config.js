@@ -7,6 +7,10 @@ export default {
   ],
   theme: {
   	extend: {
+		fontFamily: {
+			// Thêm dòng này để định nghĩa font
+			poppins: ['Poppins', 'sans-serif'],
+      	},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
