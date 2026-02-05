@@ -118,11 +118,11 @@ function HomePage() {
               </button>
             </div>
 
-            {/* Sort Dropdown */}
+            {/* Sort Dropdown
             <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-1 rounded-full border-gray-300">
               <span className="text-sm">Gần đây nhất</span>
               <ChevronDown className="w-3.5 h-3.5" />
-            </Button>
+            </Button> */}
 
             {/* Create Button */}
             <Button className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white rounded-full h-9 px-4">
