@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox"; 
 import { EyeOff, Eye, X } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
-import { AiFillApple } from "react-icons/ai";
+import LogoLight from "@/assets/LightMode_Logo.png";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const RegisterPage = () => {
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
           <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/LightMode_Logo.png" alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+            <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
           </div>
         </div>
         
@@ -195,12 +195,9 @@ const RegisterPage = () => {
               </div>
 
               {/* Social Login Buttons */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-4">
                 <Button variant="outline" className="h-14 border-[#515DEF] hover:bg-gray-50">
                   <FcGoogle className="w-6 h-6" />
-                </Button>
-                <Button variant="outline" className="h-14 border-[#515DEF] hover:bg-gray-50">
-                  <AiFillApple className="w-6 h-6 text-[#313131]" />
                 </Button>
               </div>
             </form>
