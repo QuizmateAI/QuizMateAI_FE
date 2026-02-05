@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";  
-import { Label } from "@/components/ui/label"; 
-import { X, ChevronLeft, AlertCircle, CheckCircle } from 'lucide-react';
+import { FloatingInput } from "@/components/ui/floating-input";
+import { ChevronLeft, AlertCircle, CheckCircle, Globe } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import { AiFillApple } from "react-icons/ai";
 import { validateForgotPasswordForm, submitForgotPasswordRequest } from './ForgotPassword';
 import LogoLight from "@/assets/LightMode_Logo.png";
+import { useLanguage } from '@/hooks/useLanguage';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -16,6 +16,7 @@ const ForgotPasswordPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const { language, toggleLanguage, t, fontClass } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,8 +60,8 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white font-['Poppins'] flex flex-col">
-      {/* Header: Logo & Cancel Button */}
+    <div className={`min-h-screen bg-white flex flex-col ${fontClass}`}>
+      {/* Header: Logo & Language Toggle */}
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
           <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
@@ -68,10 +69,14 @@ const ForgotPasswordPage = () => {
           </div>
         </div>
         
-        <Button variant="ghost" className="flex items-center gap-2 text-black hover:bg-gray-100" onClick={() => navigate('/')}>
-          <X className="w-5 h-5 text-[#DF0D0C]" />
-          <span>Cancel</span>
-        </Button>
+        {/* Nút đổi ngôn ngữ */}
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
+        >
+          <Globe className="w-4 h-4" />
+          <span>{language === 'vi' ? 'VI' : 'EN'}</span>
+        </button>
       </header>
 
       {/* Main Content */}
@@ -83,15 +88,15 @@ const ForgotPasswordPage = () => {
             {/* Back to Login Button */}
             <button 
               onClick={() => navigate('/login')}
-              className="flex items-center gap-1 text-sm font-medium text-[#313131] mb-8 hover:text-black transition-colors"
+              className="flex items-center gap-1 text-sm font-medium text-[#313131] mb-8 hover:text-[#0455BF] transition-colors"
             >
-              <ChevronLeft className="w-5 h-5" /> Back to login
+              <ChevronLeft className="w-5 h-5" /> {t('backToLogin')}
             </button>
 
             <div className="mb-10">
-              <h1 className="text-4xl font-semibold text-[#313131] mb-4">Forgot your password?</h1>
+              <h1 className="text-4xl font-semibold text-[#313131] mb-4">{t('forgotPasswordTitle')}</h1>
               <p className="text-gray-500 leading-relaxed">
-                Don't worry, happens to all of us. Enter your email below to recover your password
+                {t('forgotPasswordSubtitle')}
               </p>
             </div>
 
@@ -116,17 +121,16 @@ const ForgotPasswordPage = () => {
                 </div>
               )}
 
-              {/* Email Input */}
-              <div className="grid w-full items-center gap-1.5 relative">
-                <Label htmlFor="email" className={errors.email ? 'text-red-600' : ''}>Email</Label>
-                <Input 
-                  type="email" 
-                  id="email" 
-                  placeholder="john.doe@gmail.com" 
-                  className={`h-14 border-[#79747E] ${errors.email ? 'border-red-500 focus:border-red-500' : ''}`}
+              {/* Email Input - Floating Label */}
+              <div>
+                <FloatingInput
+                  id="email"
+                  type="email"
+                  label={t('email')}
                   value={email}
                   onChange={handleEmailChange}
                   disabled={isLoading}
+                  error={errors.email}
                 />
                 {errors.email && (
                   <div className="flex items-center gap-2 mt-2">
@@ -142,13 +146,13 @@ const ForgotPasswordPage = () => {
                 disabled={isLoading}
                 className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] text-white text-base font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Đang xử lý...' : 'Submit'}
+                {isLoading ? t('processing') : t('submit')}
               </Button>
 
               {/* Divider */}
               <div className="relative flex items-center py-4">
                 <div className="flex-grow border-t border-gray-200"></div>
-                <span className="flex-shrink mx-4 text-gray-400 text-sm">Or login with</span>
+                <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('orLoginWith')}</span>
                 <div className="flex-grow border-t border-gray-200"></div>
               </div>
 
