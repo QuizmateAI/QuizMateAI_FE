@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 // Tạo Context để quản lý ngôn ngữ toàn cục
 const LanguageContext = createContext();
 
-// Translations cho Admin Module
+// Translations cho toàn bộ ứng dụng
 export const translations = {
   en: {
     // Sidebar
@@ -29,6 +29,41 @@ export const translations = {
     // Header
     systemTitle: 'QuizMate AI System',
     version: 'Version 2026.1.0',
+
+    // Authentication - Login
+    login: 'Login',
+    loginSubtitle: 'Login to access your QuizMate account',
+    email: 'Email',
+    password: 'Password',
+    rememberMe: 'Remember me',
+    forgotPassword: 'Forgot Password',
+    loginButton: 'Login',
+    noAccount: "Don't have an account?",
+    signUp: 'Sign up',
+    orLoginWith: 'Or login with',
+    backToHome: 'Back to Home',
+
+    // Authentication - Register
+    signUpTitle: 'Sign up',
+    signUpSubtitle: "Let's get you all set up so you can access your personal account.",
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    confirmPassword: 'Confirm Password',
+    agreeToTerms: 'I agree to all the',
+    terms: 'Terms',
+    and: 'and',
+    privacyPolicies: 'Privacy Policies',
+    createAccount: 'Create account',
+    alreadyHaveAccount: 'Already have an account?',
+    orRegisterWith: 'Or register with',
+    cancel: 'Cancel',
+
+    // Authentication - Forgot Password
+    forgotPasswordTitle: 'Forgot your password?',
+    forgotPasswordSubtitle: "Don't worry, happens to all of us. Enter your email below to recover your password",
+    backToLogin: 'Back to login',
+    submit: 'Submit',
+    processing: 'Processing...',
   },
   vi: {
     // Sidebar
@@ -54,6 +89,41 @@ export const translations = {
     // Header
     systemTitle: 'Hệ thống QuizMate AI',
     version: 'Phiên bản 2026.1.0',
+
+    // Authentication - Login
+    login: 'Đăng nhập',
+    loginSubtitle: 'Đăng nhập để truy cập tài khoản QuizMate của bạn',
+    email: 'Email',
+    password: 'Mật khẩu',
+    rememberMe: 'Ghi nhớ đăng nhập',
+    forgotPassword: 'Quên mật khẩu',
+    loginButton: 'Đăng nhập',
+    noAccount: 'Chưa có tài khoản?',
+    signUp: 'Đăng ký',
+    orLoginWith: 'Hoặc đăng nhập với',
+    backToHome: 'Về trang chủ',
+
+    // Authentication - Register
+    signUpTitle: 'Đăng ký',
+    signUpSubtitle: 'Hãy thiết lập để bạn có thể truy cập tài khoản cá nhân của mình.',
+    firstName: 'Tên',
+    lastName: 'Họ',
+    confirmPassword: 'Xác nhận mật khẩu',
+    agreeToTerms: 'Tôi đồng ý với tất cả',
+    terms: 'Điều khoản',
+    and: 'và',
+    privacyPolicies: 'Chính sách bảo mật',
+    createAccount: 'Tạo tài khoản',
+    alreadyHaveAccount: 'Đã có tài khoản?',
+    orRegisterWith: 'Hoặc đăng ký với',
+    cancel: 'Hủy',
+
+    // Authentication - Forgot Password
+    forgotPasswordTitle: 'Quên mật khẩu?',
+    forgotPasswordSubtitle: 'Đừng lo, ai cũng có lúc quên. Nhập email của bạn để khôi phục mật khẩu',
+    backToLogin: 'Quay lại đăng nhập',
+    submit: 'Gửi',
+    processing: 'Đang xử lý...',
   }
 };
 

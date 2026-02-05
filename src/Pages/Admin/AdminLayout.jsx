@@ -29,9 +29,9 @@ function AdminLayout() {
               <span>{language === 'vi' ? 'VI' : 'EN'}</span>
             </button>
             <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-[#313131] leading-none">Admin QuizMate</p>
+                <p className="text-sm font-bold font-poppins text-[#313131] leading-none">Admin QuizMate</p>
               </div>
-            <div className="w-10 h-10 rounded-full bg-blue-100 border flex items-center justify-center text-blue-600 font-bold">
+            <div className="w-10 h-10 rounded-full bg-blue-100 border flex items-center justify-center text-blue-600 font-bold font-poppins">
               AD
             </div>
           </div>
