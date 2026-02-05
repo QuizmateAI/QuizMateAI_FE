@@ -70,3 +70,7 @@
   @apply text-[#313131] antialiased;
   }
 }
+
+html {
+  scroll-behavior: smooth;
+}

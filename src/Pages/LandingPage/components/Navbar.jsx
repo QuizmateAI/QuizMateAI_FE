@@ -2,12 +2,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
-import { Globe } from 'lucide-react';
+import { Globe, Sun, Moon } from 'lucide-react';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import LogoLight from "@/assets/LightMode_Logo.png";
+import LogoDark from "@/assets/DarkMode_Logo.png";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   
   // Lấy ngôn ngữ hiện tại và tính toán font class
   const currentLang = i18n.language;
@@ -21,38 +24,68 @@ const Navbar = () => {
 
   return (
     // Thẻ nav bọc ngoài cùng: Luôn dính, có Z-index cao nhất, và có nền để không bị lẫn nội dung
-    <nav className={`sticky top-0 z-[100] w-full bg-white border-b border-gray-100 shadow-sm ${fontClass}`}>
+    <nav className={`sticky top-0 z-[100] w-full transition-colors duration-300 ${fontClass} ${
+      isDarkMode 
+        ? 'bg-slate-950 border-b border-slate-800' 
+        : 'bg-white border-b border-gray-100 shadow-sm'
+    }`}>
       <div className="container mx-auto flex items-center justify-between h-20">
         <div className="flex items-center gap-x-12">
           <img 
-            src={LogoLight} 
+            src={isDarkMode ? LogoDark : LogoLight} 
             alt="QuizMate Logo" 
             className="h-[100px] w-[120px] cursor-pointer object-contain" 
             onClick={() => navigate('/')} 
           />
-          <div className="hidden lg:flex items-center gap-x-8 text-sm font-bold text-gray-500 uppercase tracking-widest">
-            <a href="#features" className="hover:text-[#2563EB] transition-colors">{t('landingPage.nav.features')}</a>
-            <a href="#solutions" className="hover:text-[#2563EB] transition-colors">{t('landingPage.nav.solutions')}</a>
-            <a href="#pricing" className="hover:text-[#2563EB] transition-colors">{t('landingPage.nav.pricing')}</a>
+          <div className={`hidden lg:flex items-center gap-x-8 text-sm font-bold uppercase tracking-widest ${
+            isDarkMode ? 'text-slate-400' : 'text-gray-500'
+          }`}>
+            <a href="#features" className={`transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`}>{t('landingPage.nav.features')}</a>
+            <a href="#solutions" className={`transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`}>{t('landingPage.nav.solutions')}</a>
+            <a href="#pricing" className={`transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`}>{t('landingPage.nav.pricing')}</a>
           </div>
         </div>
-        <div className="flex items-center gap-x-4">
+        <div className="flex items-center gap-x-3">
+          {/* Nút chuyển đổi Dark Mode */}
+          <button
+            onClick={toggleDarkMode}
+            className={`p-2.5 rounded-lg border transition-all duration-300 ${
+              isDarkMode 
+                ? 'border-slate-700 hover:bg-slate-800 text-yellow-400' 
+                : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+            }`}
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          {/* Nút chuyển đổi ngôn ngữ */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors text-sm font-medium ${
+              isDarkMode 
+                ? 'border-slate-700 hover:bg-slate-800 text-slate-400' 
+                : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+            }`}
           >
             <Globe className="w-4 h-4" />
             <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
           </button>
           <Button 
             variant="ghost" 
-            className="font-bold text-gray-700"
+            // Thêm min-w-[120px] để cố định chiều rộng và justify-center để chữ luôn nằm giữa
+            className={`font-bold min-w-[120px] justify-center border-2 ${
+              isDarkMode ? 'text-slate-300 hover:text-white hover:bg-slate-800 border-slate-400' : 'text-gray-700 border-slate-600'
+            }`}
             onClick={() => navigate('/login')}
           >
             {t('landingPage.nav.login')}
           </Button>
           <Button 
-            className="bg-[#2563EB] hover:bg-blue-700 text-white font-bold px-8 rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-95"
+            className={`font-bold px-8 rounded-xl transition-all active:scale-95 ${
+              isDarkMode 
+                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/30' 
+                : 'bg-[#2563EB] hover:bg-blue-700 text-white shadow-lg shadow-blue-100'
+            }`}
             onClick={() => navigate('/register')}
           >
             {t('landingPage.nav.signup')}
