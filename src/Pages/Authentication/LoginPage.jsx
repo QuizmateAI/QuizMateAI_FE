@@ -8,6 +8,7 @@ import { FcGoogle } from "react-icons/fc";
 import LogoLight from "@/assets/LightMode_Logo.png";
 import { useLanguage } from '@/hooks/useLanguage';
 
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
