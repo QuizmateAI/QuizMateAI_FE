@@ -7,6 +7,7 @@ import { X, ChevronLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import { AiFillApple } from "react-icons/ai";
 import { validateForgotPasswordForm, submitForgotPasswordRequest } from './ForgotPassword';
+import LogoLight from "@/assets/LightMode_Logo.png";
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const ForgotPasswordPage = () => {
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
           <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/LightMode_Logo.png" alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+            <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
           </div>
         </div>
         

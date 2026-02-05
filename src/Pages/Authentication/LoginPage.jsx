@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label"; 
 import { Checkbox } from "@/components/ui/checkbox"; 
 import { EyeOff, X, ChevronLeft } from 'lucide-react';
-import { FaFacebook } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import { AiFillApple } from "react-icons/ai";
+import LogoLight from "@/assets/LightMode_Logo.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -21,9 +20,9 @@ const LoginPage = () => {
       {/* Header: Logo & Cancel Button */}
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
-          {/* Logo - Sửa lại đường dẫn public chuẩn cho Vite */}
-          <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/LightMode_Logo.png" alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+          {/* Logo - Import từ assets */}
+          <div className="w-[150px] h-[150px] flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
+            <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
           </div>
         </div>
         
@@ -34,7 +33,7 @@ const LoginPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-12 items-center px-8 pb-12">
+      <main className="flex-1 container mx-auto grid md:grid-cols-2 gap-8 items-center px-12 pb-12">
         
         {/* Left Side: Form Container */}
         <div className="max-w-md w-full mx-auto md:mx-0">
@@ -106,12 +105,13 @@ const LoginPage = () => {
                   <div className="flex-grow border-t border-gray-200"></div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="h-14 border-[#515DEF]">
+                <div className="grid gap-4">
+                  <Button 
+                    variant="outline" 
+                    className="h-14 border-[#515DEF]"
+                    onClick={() => navigate('/home')}
+                  >
                     <FcGoogle className="w-6 h-6" />
-                  </Button>
-                  <Button variant="outline" className="h-14 border-[#515DEF]">
-                    <AiFillApple className="w-6 h-6 text-[#313131]" />
                   </Button>
                 </div>
               </form>
@@ -151,12 +151,9 @@ const LoginPage = () => {
                   <div className="flex-grow border-t border-gray-200"></div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid  gap-4">
                   <Button variant="outline" className="h-14 border-[#515DEF]">
                     <FcGoogle className="w-6 h-6" />
-                  </Button>
-                  <Button variant="outline" className="h-14 border-[#515DEF]">
-                    <AiFillApple className="w-6 h-6 text-[#313131]" />
                   </Button>
                 </div>
               </form>
