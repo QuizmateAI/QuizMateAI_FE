@@ -1,18 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { Globe } from 'lucide-react';
 import AdminSidebar from './components/AdminSidebar';
+import { useLanguage } from '@/hooks/useLanguage';
 
 function AdminLayout() {
+  const { language, toggleLanguage, t, fontClass } = useLanguage();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   return (
-    <div className="flex bg-[#F8FAFC] min-h-screen">
-      <AdminSidebar />
+    <div className={`flex bg-[#F8FAFC] min-h-screen ${fontClass}`}>
+      <AdminSidebar 
+        collapsed={sidebarCollapsed} 
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+      />
       
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Topbar đơn giản */}
-        <header className="h-16 bg-white border-b flex items-center justify-between px-0">
-          <h2 className="text-lg font-semibold text-[#313131]">Hệ thống QuizMate AI</h2>
+        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+          <h2 className="text-lg font-semibold text-[#313131]">{t('systemTitle')}</h2>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500 italic">Phiên bản 2026.1.0</span>
+            {/* Nút đổi ngôn ngữ */}
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
+            >
+              <Globe className="w-4 h-4" />
+              <span>{language === 'vi' ? 'VI' : 'EN'}</span>
+            </button>
+            <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-[#313131] leading-none">Admin QuizMate</p>
+              </div>
             <div className="w-10 h-10 rounded-full bg-blue-100 border flex items-center justify-center text-blue-600 font-bold">
               AD
             </div>
