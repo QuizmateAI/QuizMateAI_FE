@@ -7,10 +7,11 @@ export default {
   ],
   theme: {
   	extend: {
-		// fontFamily: {
-		// 	// Thêm dòng này để định nghĩa font
-		// 	sans: ['Arial', 'Helvetica', 'sans-serif']
-      	// },
+		fontFamily: {
+			// Poppins cho tiếng Anh, Sans-serif cho tiếng Việt
+			poppins: ['Poppins', 'sans-serif'],
+			sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+      	},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
