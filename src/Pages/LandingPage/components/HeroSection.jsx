@@ -1,11 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PlayCircle } from 'lucide-react';
-import { useLanguage } from '@/hooks/useLanguage';
 
 const HeroSection = () => {
-  const { t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   return (
     <section className={`container mx-auto flex flex-col md:flex-row items-center lg:py-2 gap-8 ${fontClass}`}>

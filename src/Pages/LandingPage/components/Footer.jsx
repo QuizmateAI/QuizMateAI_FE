@@ -1,10 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.png";
-import { useLanguage } from '@/hooks/useLanguage';
 
 const Footer = () => {
-  const { t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   return (
     <footer className={`py-10 border-t border-gray-100 bg-white ${fontClass}`}>

@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import AdminSidebar from './components/AdminSidebar';
-import { useLanguage } from '@/hooks/useLanguage';
 
 function AdminLayout() {
-  const { language, toggleLanguage, t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
+  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  
+  const toggleLanguage = () => {
+    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+  };
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
@@ -18,7 +24,7 @@ function AdminLayout() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Topbar đơn giản */}
         <header className="h-16 bg-white border-b flex items-center justify-between px-6">
-          <h2 className="text-lg font-semibold text-[#313131]">{t('systemTitle')}</h2>
+          <h2 className="text-lg font-semibold text-[#313131]">{t('header.systemTitle')}</h2>
           <div className="flex items-center gap-4">
             {/* Nút đổi ngôn ngữ */}
             <button
@@ -26,7 +32,7 @@ function AdminLayout() {
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
             >
               <Globe className="w-4 h-4" />
-              <span>{language === 'vi' ? 'VI' : 'EN'}</span>
+              <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
             </button>
             <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold font-poppins text-[#313131] leading-none">Admin QuizMate</p>

@@ -9,11 +9,11 @@ import AdminLayout from './Pages/Admin/AdminLayout';
 import AdminDashboard from './Pages/Admin/AdminDashboard';
 import { LanguageProvider } from './hooks/useLanguage';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
+import './i18n'; // Import i18n configuration
 import './App.css'
 
 function App() {
   return (
-    <LanguageProvider>
     <Router>
       <Routes>
         <Route path="/" element={<HeroSection />} />
@@ -28,7 +28,6 @@ function App() {
         <Route path="/workspace" element={<WorkspacePage />} />
       </Routes>
     </Router>
-    </LanguageProvider>
   )
 }
 
