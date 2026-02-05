@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from "@/components/ui/button";
 import { FloatingInput } from "@/components/ui/floating-input";
 import { ChevronLeft, AlertCircle, CheckCircle, Globe } from 'lucide-react';
@@ -7,7 +8,6 @@ import { FcGoogle } from "react-icons/fc";
 import { AiFillApple } from "react-icons/ai";
 import { validateForgotPasswordForm, submitForgotPasswordRequest } from './ForgotPassword';
 import LogoLight from "@/assets/LightMode_Logo.png";
-import { useLanguage } from '@/hooks/useLanguage';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -16,7 +16,13 @@ const ForgotPasswordPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const { language, toggleLanguage, t, fontClass } = useLanguage();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
+  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  
+  const toggleLanguage = () => {
+    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,7 +81,7 @@ const ForgotPasswordPage = () => {
           className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
         >
           <Globe className="w-4 h-4" />
-          <span>{language === 'vi' ? 'VI' : 'EN'}</span>
+          <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
         </button>
       </header>
 
