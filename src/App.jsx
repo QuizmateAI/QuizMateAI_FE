@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HeroSection from './Pages/LandingPage';
+import HeroSection from './Pages/LandingPage/LandingPage';
 import LoginPage from './Pages/Authentication/LoginPage';
 import RegisterPage from './Pages/Authentication/RegisterPage';
 import ForgotPasswordPage from './Pages/Authentication/ForgotPasswordPage';
 import HomePage from './Pages/Users/HomePage';
+import AdminLayout from './Pages/Admin/AdminLayout';
+import AdminDashboard from './Pages/Admin/AdminDashboard';
+import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
+import './i18n'; // Import i18n configuration
 import './App.css'
 
-
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <Router>
       <Routes>
@@ -19,6 +20,11 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/admin" element={<AdminLayout />} >
+          <Route index element={<AdminDashboard />} />
+          {/* Các route con khác của admin có thể được thêm ở đây */}
+        </Route>
+        <Route path="/workspace" element={<WorkspacePage />} />
       </Routes>
     </Router>
   )
