@@ -63,7 +63,10 @@
     "newPassword": "Mật khẩu mới",
     "confirmNewPassword": "Xác nhận mật khẩu mới",
     "newPasswordSubtitle": "Nhập mật khẩu mới của bạn",
-    "resetPassword": "Đặt lại mật khẩu"
+    "resetPassword": "Đặt lại mật khẩu",
+    "otpSent": "Mã OTP đã được gửi đến email của bạn",
+    "otpVerified": "Xác thực OTP thành công",
+    "resetPasswordSuccess": "Đổi mật khẩu thành công, hãy đăng nhập"
   },
   "landingPage": {
     "nav": {
