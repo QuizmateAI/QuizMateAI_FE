@@ -28,6 +28,8 @@
     "loginSubtitle": "Login to access your QuizMate account",
     "email": "Email",
     "password": "Password",
+    "username": "Username",
+    "fullname": "Full Name",
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot Password",
     "loginButton": "Login",
@@ -52,7 +54,16 @@
     "forgotPasswordSubtitle": "Don't worry, happens to all of us. Enter your email below to recover your password",
     "backToLogin": "Back to login",
     "submit": "Submit",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "sendOTP": "Send OTP",
+    "enterOTPSubtitle": "Enter the OTP code sent to your email",
+    "otpCode": "OTP Code",
+    "verifyOTP": "Verify OTP",
+    "resendOTP": "Resend OTP",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "newPasswordSubtitle": "Enter your new password",
+    "resetPassword": "Reset Password"
   },
   "landingPage": {
     "nav": {

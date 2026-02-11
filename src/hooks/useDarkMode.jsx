@@ -13,6 +13,11 @@ export function DarkModeProvider({ children }) {
   // Lưu trạng thái vào localStorage khi thay đổi
   useEffect(() => {
     localStorage.setItem('quizmate_dark_mode', JSON.stringify(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [isDarkMode]);
 
   // Hàm toggle dark mode
