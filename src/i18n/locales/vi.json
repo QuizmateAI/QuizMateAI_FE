@@ -2,11 +2,13 @@
   "sidebar": {
     "dashboard": "Dashboard",
     "users": "Người dùng",
+    "groups": "Nhóm",
     "moderation": "Kiểm duyệt",
     "aiSettings": "Cấu hình AI",
     "billing": "Doanh thu",
     "settings": "Cài đặt",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "adminAccounts": "Tài khoản Admin"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -17,7 +19,26 @@
     "violationReports": "Báo cáo vi phạm",
     "comparedToLastMonth": "+12% so với tháng trước",
     "userGrowthChart": "[Biểu đồ tăng trưởng người dùng - Shadcn Chart]",
-    "newUsersList": "[Danh sách người dùng mới đăng ký]"
+    "newUsersList": "[Danh sách người dùng mới đăng ký]",
+    "totalAdmins": "Tổng Admin",
+    "systemLoad": "Tải hệ thống",
+    "superAdminDesc": "Chào mừng đến với trung tâm điều khiển Super Admin."
+  },
+  "adminManagement": {
+    "title": "Quản lý Admin",
+    "desc": "Quản lý các quản trị viên hệ thống.",
+    "add": "Thêm Admin mới",
+    "cardTitle": "Tài khoản Admin",
+    "searchPlaceholder": "Tìm kiếm theo username hoặc email...",
+    "table": {
+      "id": "ID",
+      "username": "Tên đăng nhập",
+      "email": "Email",
+      "status": "Trạng thái",
+      "lastLogin": "Đăng nhập lần cuối",
+      "actions": "Hành động"
+    },
+    "noData": "Không tìm thấy tài khoản admin nào."
   },
   "header": {
     "systemTitle": "Hệ thống QuizMate AI",
@@ -177,6 +198,60 @@
         "flashcards": "Thẻ ghi nhớ",
         "quiz": "Bài kiểm tra"
       }
+    }
+  },
+  "userPage": {
+    "title": "Quản lý người dùng",
+    "desc": "Quản lý tất cả người dùng trong hệ thống.",
+    "refresh": "Làm mới",
+    "cardTitle": "Danh sách người dùng",
+    "searchPlaceholder": "Tìm kiếm theo tên hoặc email...",
+    "loading": "Đang tải dữ liệu...",
+    "noData": "Không tìm thấy người dùng nào.",
+    "table": {
+      "id": "ID",
+      "avatar": "Avatar",
+      "username": "Username",
+      "user": "Người dùng",
+      "email": "Email",
+      "fullName": "Họ tên",
+      "role": "Vai trò",
+      "status": "Trạng thái",
+      "birthday": "Ngày sinh",
+      "createdAt": "Ngày tạo",
+      "actions": "Hành động"
+    },
+    "setActive": "Kích hoạt",
+    "setInactive": "Vô hiệu hóa",
+    "setBanned": "Cấm",
+    "status": {
+      "ACTIVE": "Hoạt động",
+      "INACTIVE": "Không hoạt động",
+      "BANNED": "Bị cấm"
+    },
+    "changeStatus": "Đổi trạng thái"
+  },
+  "groupPage": {
+    "title": "Quản lý nhóm",
+    "desc": "Quản lý tất cả các nhóm học tập.",
+    "refresh": "Làm mới",
+    "cardTitle": "Danh sách nhóm",
+    "searchPlaceholder": "Tìm kiếm theo tên nhóm...",
+    "loading": "Đang tải dữ liệu...",
+    "noData": "Không tìm thấy nhóm nào.",
+    "members": "thành viên",
+    "viewDetail": "Xem chi tiết",
+    "detailTitle": "Chi tiết nhóm",
+    "detailDesc": "Thông tin chi tiết về nhóm học tập.",
+    "noDetail": "Không có thông tin chi tiết.",
+    "table": {
+      "id": "ID",
+      "name": "Tên nhóm",
+      "description": "Mô tả",
+      "members": "Số thành viên",
+      "leader": "Trưởng nhóm",
+      "createdAt": "Ngày tạo",
+      "actions": "Hành động"
     }
   }
 }

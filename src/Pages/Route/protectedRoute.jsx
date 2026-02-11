@@ -34,8 +34,9 @@ export const ProtectedRoute = ({ allowedRoles }) => {
     // 2. Kiểm tra Role
     // Nếu có danh sách role cho phép và role của user không nằm trong đó
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // Nếu user cố truy cập trang admin -> Về home hoặc trang 403
-        // Ở đây đẩy về Home hoặc trang mặc định của họ
+        // Nếu user cố truy cập trang không được phép
+        if (user.role === 'ADMIN') return <Navigate to="/admin" replace />;
+        if (user.role === 'SUPER_ADMIN') return <Navigate to="/super-admin" replace />;
         return <Navigate to="/home" replace />;
     }
 
@@ -53,8 +54,8 @@ export const PublicRoute = () => {
 
     // Nếu đã có token và thông tin user -> Đã login
     if (token && user) {
-        // Có thể điều chỉnh logic: Admin về /admin, User về /home
-        // Theo yêu cầu: "ấn vào login cũng đẩy về HomePage"
+        if (user.role === 'ADMIN') return <Navigate to="/admin" replace />;
+        if (user.role === 'SUPER_ADMIN') return <Navigate to="/super-admin" replace />;
         return <Navigate to="/home" replace />;
     }
 
