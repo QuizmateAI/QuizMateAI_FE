@@ -74,12 +74,10 @@ export const useForgotPassword = (setView, t) => {
     setIsLoading(true);
     
     try {
-      const response = await resetPassword({
-        email: forgotPasswordData.email,
-        otp: forgotPasswordData.otp,
-        newPassword: forgotPasswordData.newPassword,
-        confirmNewPassword: forgotPasswordData.confirmNewPassword
-      });
+      const response = await resetPassword(
+        forgotPasswordData.email,
+        forgotPasswordData.newPassword
+      );
       
       if (response.statusCode === 200 || response.statusCode === 0) {
         setSuccessMessage(t('auth.resetPasswordSuccess') || 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập.');

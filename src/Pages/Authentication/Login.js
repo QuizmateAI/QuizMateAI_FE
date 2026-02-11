@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { login } from '@/api/Authentication';
+import { login, googleLogin } from '@/api/Authentication';
 import { useGoogleLogin } from '@react-oauth/google';
 
 export const useLogin = (navigate, t) => {
@@ -61,6 +61,23 @@ export const useLogin = (navigate, t) => {
     }
   });
 
+  const handleGoogleSubmit = async (credentialResponse) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      console.log("ID Token sẵn sàng gửi về BE:", credentialResponse);
+      const response = await googleLogin(credentialResponse);
+      if (response.statusCode === 200 || response.statusCode === 0) {
+         navigate('/home');
+      }
+    } catch (err) {
+      setError(t('auth.loginGoogleFailed') || 'Đăng nhập Google thất bại');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     loginData,
     showPassword,
@@ -70,6 +87,7 @@ export const useLogin = (navigate, t) => {
     setError,
     handleLoginChange,
     handleLoginSubmit,
-    handleGoogleLogin
+    handleGoogleLogin,
+    handleGoogleSubmit
   };
 };
