@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
 import { ChevronLeft, Globe, Sun, Moon, Loader2 } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import LogoLight from "@/assets/LightMode_Logo.png";
 import LogoDark from "@/assets/DarkMode_Logo.png";
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
@@ -163,16 +163,19 @@ const LoginPageContent = () => {
                   <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
                 </div>
 
-                <div className="grid gap-4">
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="h-14 border-[#515DEF] dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
-                    onClick={() => loginHook.handleGoogleLogin()}
-                    disabled={loginHook.isLoading}
-                  >
-                    <FcGoogle className="w-6 h-6" />
-                  </Button>
+                <div className="flex justify-center w-full mt-2">
+                  <GoogleLogin
+                    onSuccess={credentialResponse => {
+                      loginHook.handleGoogleSubmit(credentialResponse.credential);
+                    }}
+                    onError={() => {
+                      loginHook.setError(t('auth.loginGoogleFailed'));
+                    }}
+                    theme={isDarkMode ? "filled_black" : "outline"}
+                    shape="pill"
+                    size="large"
+                    width="384px"
+                  />
                 </div>
               </form>
             </div>
@@ -454,16 +457,19 @@ const LoginPageContent = () => {
                 </div>
 
                 {/* Social Login Buttons */}
-                <div className="grid gap-4">
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="h-14 border-[#515DEF] dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 hover:bg-gray-50"
-                    onClick={() => loginHook.handleGoogleLogin()}
-                    disabled={registerHook.isLoading}
-                  >
-                    <FcGoogle className="w-6 h-6" />
-                  </Button>
+                <div className="flex justify-center w-full mt-2">
+                  <GoogleLogin
+                    onSuccess={credentialResponse => {
+                      loginHook.handleGoogleSubmit(credentialResponse.credential);
+                    }}
+                    onError={() => {
+                      loginHook.setError(t('auth.loginGoogleFailed'));
+                    }}
+                    theme={isDarkMode ? "filled_black" : "outline"}
+                    shape="pill"
+                    size="large"
+                    width="384px"
+                  />
                 </div>
               </form>
             </div>
@@ -486,15 +492,11 @@ const LoginPageContent = () => {
   );
 };
 
-const LoginPage = () => {
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    
+const LoginPage = () => {    
     return (
-        <GoogleOAuthProvider clientId={googleClientId}>
             <DarkModeProvider>
                 <LoginPageContent />
             </DarkModeProvider>
-        </GoogleOAuthProvider>
     )
 }
 

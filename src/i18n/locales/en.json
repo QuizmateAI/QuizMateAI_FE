@@ -63,7 +63,10 @@
     "newPassword": "New Password",
     "confirmNewPassword": "Confirm New Password",
     "newPasswordSubtitle": "Enter your new password",
-    "resetPassword": "Reset Password"
+    "resetPassword": "Reset Password",
+    "otpSent": "OTP code has been sent to your email",
+    "otpVerified": "OTP verified successfully",
+    "resetPasswordSuccess": "Password reset successful, please login"
   },
   "landingPage": {
     "nav": {
