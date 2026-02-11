@@ -25,9 +25,9 @@ export function FloatingInput({
         onChange={onChange}
         disabled={disabled}
         className={cn(
-          "peer h-full w-full rounded-lg border border-gray-300 border-t-transparent bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-[#313131] outline-none transition-all",
-          "placeholder-shown:border placeholder-shown:border-gray-300 placeholder-shown:border-t-gray-300",
-          "focus:border-2 focus:border-[#0455BF] focus:border-t-transparent focus:outline-none",
+          "peer h-full w-full rounded-lg border border-gray-300 dark:border-slate-700 border-t-transparent dark:border-t-transparent bg-transparent px-3 py-2.5 font-sans text-sm font-normal text-[#313131] dark:text-white outline-none ring-0 transition-all",
+          "placeholder-shown:border placeholder-shown:border-gray-300 placeholder-shown:border-t-gray-300 dark:placeholder-shown:border-slate-700 dark:placeholder-shown:border-t-slate-700",
+          "focus:border-2 focus:border-[#0455BF] focus:border-t-transparent dark:focus:border-blue-500 dark:focus:border-t-transparent focus:outline-none focus:ring-0 focus:ring-offset-0",
           "disabled:border-0 disabled:bg-gray-50",
           error && "border-red-500 focus:border-red-500",
           className
@@ -38,10 +38,10 @@ export function FloatingInput({
         htmlFor={id}
         className={cn(
           "before:content[' '] after:content[' '] pointer-events-none absolute left-0 -top-1.5 flex h-full w-full select-none text-[11px] font-normal leading-tight transition-all",
-          "before:pointer-events-none before:mt-[6.5px] before:mr-1 before:box-border before:block before:h-1.5 before:w-2.5 before:rounded-tl-md before:border-t before:border-l before:border-gray-300 before:transition-all",
-          "after:pointer-events-none after:mt-[6.5px] after:ml-1 after:box-border after:block after:h-1.5 after:w-2.5 after:flex-grow after:rounded-tr-md after:border-t after:border-r after:border-gray-300 after:transition-all",
-          "peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[3.5] peer-placeholder-shown:text-gray-500 peer-placeholder-shown:before:border-transparent peer-placeholder-shown:after:border-transparent",
-          "peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-[#0455BF] peer-focus:before:border-t-2 peer-focus:before:border-l-2 peer-focus:before:!border-[#0455BF] peer-focus:after:border-t-2 peer-focus:after:border-r-2 peer-focus:after:!border-[#0455BF]",
+          "before:pointer-events-none before:mt-[6.5px] before:mr-1 before:box-border before:block before:h-1.5 before:w-2.5 before:rounded-tl-md before:border-t before:border-l before:border-gray-300 dark:before:border-slate-700 before:transition-all",
+          "after:pointer-events-none after:mt-[6.5px] after:ml-1 after:box-border after:block after:h-1.5 after:w-2.5 after:flex-grow after:rounded-tr-md after:border-t after:border-r after:border-gray-300 dark:after:border-slate-700 after:transition-all",
+          "peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[3.5] peer-placeholder-shown:text-gray-500 dark:peer-placeholder-shown:text-slate-400 peer-placeholder-shown:before:border-transparent peer-placeholder-shown:after:border-transparent",
+          "peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-[#0455BF] dark:peer-focus:text-blue-500 peer-focus:before:border-t-2 peer-focus:before:border-l-2 peer-focus:before:!border-[#0455BF] dark:peer-focus:before:!border-blue-500 peer-focus:after:border-t-2 peer-focus:after:border-r-2 peer-focus:after:!border-[#0455BF] dark:peer-focus:after:!border-blue-500",
           "peer-disabled:text-transparent peer-disabled:before:border-transparent peer-disabled:after:border-transparent peer-disabled:peer-placeholder-shown:text-gray-500",
           error && "text-red-500 peer-focus:text-red-500 peer-focus:before:!border-red-500 peer-focus:after:!border-red-500"
         )}
@@ -75,9 +75,9 @@ export function FloatingPasswordInput({
         onChange={onChange}
         disabled={disabled}
         className={cn(
-          "peer h-full w-full rounded-lg border border-gray-300 border-t-transparent bg-transparent px-3 py-2.5 pr-10 font-sans text-sm font-normal text-[#313131] outline-none transition-all",
-          "placeholder-shown:border placeholder-shown:border-gray-300 placeholder-shown:border-t-gray-300",
-          "focus:border-2 focus:border-[#0455BF] focus:border-t-transparent focus:outline-none",
+          "peer h-full w-full rounded-lg border border-gray-300 dark:border-slate-700 border-t-transparent dark:border-t-transparent bg-transparent px-3 py-2.5 pr-10 font-sans text-sm font-normal text-[#313131] dark:text-white outline-none ring-0 transition-all",
+          "placeholder-shown:border placeholder-shown:border-gray-300 placeholder-shown:border-t-gray-300 dark:placeholder-shown:border-slate-700 dark:placeholder-shown:border-t-slate-700",
+          "focus:border-2 focus:border-[#0455BF] focus:border-t-transparent dark:focus:border-blue-500 dark:focus:border-t-transparent focus:outline-none focus:ring-0 focus:ring-offset-0",
           "disabled:border-0 disabled:bg-gray-50",
           error && "border-red-500 focus:border-red-500",
           className
@@ -88,10 +88,10 @@ export function FloatingPasswordInput({
         htmlFor={id}
         className={cn(
           "before:content[' '] after:content[' '] pointer-events-none absolute left-0 -top-1.5 flex h-full w-full select-none text-[11px] font-normal leading-tight transition-all",
-          "before:pointer-events-none before:mt-[6.5px] before:mr-1 before:box-border before:block before:h-1.5 before:w-2.5 before:rounded-tl-md before:border-t before:border-l before:border-gray-300 before:transition-all",
-          "after:pointer-events-none after:mt-[6.5px] after:ml-1 after:box-border after:block after:h-1.5 after:w-2.5 after:flex-grow after:rounded-tr-md after:border-t after:border-r after:border-gray-300 after:transition-all",
-          "peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[3.5] peer-placeholder-shown:text-gray-500 peer-placeholder-shown:before:border-transparent peer-placeholder-shown:after:border-transparent",
-          "peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-[#0455BF] peer-focus:before:border-t-2 peer-focus:before:border-l-2 peer-focus:before:!border-[#0455BF] peer-focus:after:border-t-2 peer-focus:after:border-r-2 peer-focus:after:!border-[#0455BF]",
+          "before:pointer-events-none before:mt-[6.5px] before:mr-1 before:box-border before:block before:h-1.5 before:w-2.5 before:rounded-tl-md before:border-t before:border-l before:border-gray-300 dark:before:border-slate-700 before:transition-all",
+          "after:pointer-events-none after:mt-[6.5px] after:ml-1 after:box-border after:block after:h-1.5 after:w-2.5 after:flex-grow after:rounded-tr-md after:border-t after:border-r after:border-gray-300 dark:after:border-slate-700 after:transition-all",
+          "peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[3.5] peer-placeholder-shown:text-gray-500 dark:peer-placeholder-shown:text-slate-400 peer-placeholder-shown:before:border-transparent peer-placeholder-shown:after:border-transparent",
+          "peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-[#0455BF] dark:peer-focus:text-blue-500 peer-focus:before:border-t-2 peer-focus:before:border-l-2 peer-focus:before:!border-[#0455BF] dark:peer-focus:before:!border-blue-500 peer-focus:after:border-t-2 peer-focus:after:border-r-2 peer-focus:after:!border-[#0455BF] dark:peer-focus:after:!border-blue-500",
           "peer-disabled:text-transparent peer-disabled:before:border-transparent peer-disabled:after:border-transparent peer-disabled:peer-placeholder-shown:text-gray-500",
           error && "text-red-500 peer-focus:text-red-500 peer-focus:before:!border-red-500 peer-focus:after:!border-red-500"
         )}

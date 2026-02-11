@@ -86,7 +86,7 @@ const Navbar = () => {
                 ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/30' 
                 : 'bg-[#2563EB] hover:bg-blue-700 text-white shadow-lg shadow-blue-100'
             }`}
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/login', { state: { view: 'register' } })}
           >
             {t('landingPage.nav.signup')}
           </Button>

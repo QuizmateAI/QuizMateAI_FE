@@ -28,6 +28,8 @@
     "loginSubtitle": "Đăng nhập để truy cập tài khoản QuizMate của bạn",
     "email": "Email",
     "password": "Mật khẩu",
+    "username": "Tên đăng nhập",
+    "fullname": "Họ và tên",
     "rememberMe": "Ghi nhớ đăng nhập",
     "forgotPassword": "Quên mật khẩu",
     "loginButton": "Đăng nhập",
@@ -52,7 +54,16 @@
     "forgotPasswordSubtitle": "Đừng lo, ai cũng có lúc quên. Nhập email của bạn để khôi phục mật khẩu",
     "backToLogin": "Quay lại đăng nhập",
     "submit": "Gửi",
-    "processing": "Đang xử lý..."
+    "processing": "Đang xử lý...",
+    "sendOTP": "Gửi mã OTP",
+    "enterOTPSubtitle": "Nhập mã OTP đã được gửi đến email của bạn",
+    "otpCode": "Mã OTP",
+    "verifyOTP": "Xác thực OTP",
+    "resendOTP": "Gửi lại mã OTP",
+    "newPassword": "Mật khẩu mới",
+    "confirmNewPassword": "Xác nhận mật khẩu mới",
+    "newPasswordSubtitle": "Nhập mật khẩu mới của bạn",
+    "resetPassword": "Đặt lại mật khẩu"
   },
   "landingPage": {
     "nav": {
