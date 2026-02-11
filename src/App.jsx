@@ -8,6 +8,7 @@ import HomePage from './Pages/Users/HomePage';
 import AdminLayout from './Pages/Admin/AdminLayout';
 import AdminDashboard from './Pages/Admin/AdminDashboard';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
+import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute'; // Import bảo vệ route
 import './i18n'; // Import i18n configuration
 import './App.css'
 
@@ -15,16 +16,27 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home */}
+        <Route element={<PublicRoute />}>
         <Route path="/" element={<HeroSection />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/admin" element={<AdminLayout />} >
-          <Route index element={<AdminDashboard />} />
-          {/* Các route con khác của admin có thể được thêm ở đây */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
-        <Route path="/workspace" element={<WorkspacePage />} />
+
+        {/* Route cần đăng nhập (User, Admin, Super Admin) */}
+        <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN', 'SUPER_ADMIN']} />}>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/workspace" element={<WorkspacePage />} />
+        </Route>
+
+        {/* Route dành riêng cho Admin/Super Admin */}
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']} />}>
+          <Route path="/admin" element={<AdminLayout />} >
+            <Route index element={<AdminDashboard />} />
+            {/* Các route con khác của admin có thể được thêm ở đây */}
+          </Route>
+        </Route>
       </Routes>
     </Router>
   )
