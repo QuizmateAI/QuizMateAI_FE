@@ -7,6 +7,11 @@ import ForgotPasswordPage from './Pages/Authentication/ForgotPasswordPage';
 import HomePage from './Pages/Users/HomePage';
 import AdminLayout from './Pages/Admin/AdminLayout';
 import AdminDashboard from './Pages/Admin/AdminDashboard';
+import UserManagement from './Pages/Admin/UserManagement';
+import GroupManagement from './Pages/Admin/GroupManagement';
+import SuperAdminLayout from './Pages/SuperAdmin/SuperAdminLayout';
+import SuperAdminDashboard from './Pages/SuperAdmin/SuperAdminDashboard';
+import AdminManagement from './Pages/SuperAdmin/AdminManagement';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute'; // Import bảo vệ route
 import './i18n'; // Import i18n configuration
@@ -24,17 +29,26 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
-        {/* Route cần đăng nhập (User, Admin, Super Admin) */}
-        <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN', 'SUPER_ADMIN']} />}>
+        {/* Route cần đăng nhập (User, Admin) - Super Admin không được vào */}
+        <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']} />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/workspace" element={<WorkspacePage />} />
         </Route>
 
-        {/* Route dành riêng cho Admin/Super Admin */}
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']} />}>
+         {/* Route dành riêng cho Super Admin */}
+         <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
+          <Route path="/super-admin" element={<SuperAdminLayout />} >
+            <Route index element={<SuperAdminDashboard />} />
+            <Route path="admins" element={<AdminManagement />} />
+          </Route>
+        </Route>
+
+        {/* Route dành riêng cho Admin - Super Admin không được vào */}
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />} >
             <Route index element={<AdminDashboard />} />
-            {/* Các route con khác của admin có thể được thêm ở đây */}
+            <Route path="users" element={<UserManagement />} />
+            <Route path="groups" element={<GroupManagement />} />
           </Route>
         </Route>
       </Routes>

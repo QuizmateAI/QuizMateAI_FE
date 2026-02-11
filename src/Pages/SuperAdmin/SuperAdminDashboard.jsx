@@ -1,18 +1,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Users, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
+import { Users, TrendingUp, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { useDarkMode } from '@/hooks/useDarkMode';
 
-// Stats với key để lấy translation
 const stats = [
-  { labelKey: 'dashboard.totalUsers', value: '12,540', icon: Users, color: 'text-blue-600' },
-  { labelKey: 'dashboard.monthlyRevenue', value: '$45,200', icon: TrendingUp, color: 'text-green-600' },
-  { labelKey: 'dashboard.aiTokensUsed', value: '1.2M', icon: Zap, color: 'text-amber-600' },
-  { labelKey: 'dashboard.violationReports', value: '14', icon: AlertTriangle, color: 'text-red-600' },
+  { labelKey: 'dashboard.totalAdmins', value: '12', icon: ShieldCheck, color: 'text-blue-600' },
+  { labelKey: 'dashboard.totalUsers', value: '12,540', icon: Users, color: 'text-green-600' },
+  { labelKey: 'dashboard.systemLoad', value: '45%', icon: TrendingUp, color: 'text-amber-600' },
 ];
 
-function AdminDashboard() {
+function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -22,14 +20,14 @@ function AdminDashboard() {
       <div>
         <h1 className={`text-3xl font-black tracking-tight ${
           isDarkMode ? 'text-white' : 'text-slate-900'
-        }`}>{t('dashboard.systemOverview')}</h1>
+        }`}>{t('sidebar.dashboard')}</h1>
         <p className={`font-medium ${
           isDarkMode ? 'text-slate-400' : 'text-gray-500'
-        }`}>{t('dashboard.welcomeBack')}</p>
+        }`}>{t('dashboard.superAdminDesc')}</p>
       </div>
 
-      {/* Grid thống kê nhanh */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((stat) => (
           <Card key={stat.labelKey} className={`border shadow-sm transition-colors duration-300 ${
             isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'
@@ -44,27 +42,20 @@ function AdminDashboard() {
               <div className={`text-2xl font-bold ${
                 isDarkMode ? 'text-white' : 'text-slate-900'
               }`}>{stat.value}</div>
-              <p className="text-xs text-green-500 font-medium">{t('dashboard.comparedToLastMonth')}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Placeholder cho Biểu đồ & Bảng dữ liệu */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className={`lg:col-span-2 h-[400px] flex items-center justify-center border-dashed border-2 transition-colors duration-300 ${
-          isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-500' : 'bg-white border-slate-300 text-gray-400'
-        }`}>
-           {t('dashboard.userGrowthChart')}
-        </Card>
+       <div className="grid grid-cols-1 gap-6">
         <Card className={`h-[400px] flex items-center justify-center border-dashed border-2 transition-colors duration-300 ${
           isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-500' : 'bg-white border-slate-300 text-gray-400'
         }`}>
-           {t('dashboard.newUsersList')}
+            System Monitoring Chart Placeholder
         </Card>
       </div>
     </div>
   );
 }
 
-export default AdminDashboard;
+export default SuperAdminDashboard;
