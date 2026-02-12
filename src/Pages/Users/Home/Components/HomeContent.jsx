@@ -1,8 +1,8 @@
 
 import React from "react";
 import { MoreVertical } from "lucide-react";
-import workspaceData from "@/Pages/Users/Home/workspaceData";
-import { formatDate, formatUpdatedTime } from "@/Pages/Users/Home/workspaceData";
+import workspaceData from "@/Pages/Users/Home/Components/workspaceData";
+import { formatDate, formatUpdatedTime } from "@/Pages/Users/Home/Components/workspaceData";
 import { useTranslation } from "react-i18next";
 
 function WorkspaceCard({ workspace, isList, isDarkMode }) {

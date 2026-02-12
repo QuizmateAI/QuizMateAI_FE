@@ -1,8 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical, Plus } from "lucide-react";
-import workspaceData from "@/Pages/Users/Home/workspaceData";
-import { formatDate, formatUpdatedTime } from "@/Pages/Users/Home/workspaceData";
+import workspaceData from "@/Pages/Users/Home/Components/workspaceData";
+import { formatDate, formatUpdatedTime } from "@/Pages/Users/Home/Components/workspaceData";
 import { useTranslation } from "react-i18next";
 
 function UserWorkspace({ viewMode, isDarkMode }) {

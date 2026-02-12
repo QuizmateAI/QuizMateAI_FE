@@ -206,6 +206,12 @@
     },
     "group": {
       "noUpdates": "Không có cập nhật"
+    },
+    "profile": {
+      "greeting": "Chào {{name}},",
+      "logout": "Đăng xuất",
+      "privacyPolicy": "Chính sách quyền riêng tư",
+      "termsOfService": "Điều khoản dịch vụ"
     }
   },
   "workspace": {
