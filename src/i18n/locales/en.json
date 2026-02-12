@@ -206,6 +206,12 @@
     },
     "group": {
       "noUpdates": "No updates"
+    },
+    "profile": {
+      "greeting": "Hi {{name}},",
+      "logout": "Log out",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service"
     }
   },
   "workspace": {
