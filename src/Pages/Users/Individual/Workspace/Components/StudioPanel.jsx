@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { Mic2, Film, GitBranch, FileText, CreditCard, BadgeCheck } from "lucide-react";
 
-function StudioPanel() {
+function StudioPanel({ isDarkMode = false }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
@@ -16,9 +16,9 @@ function StudioPanel() {
   ];
 
   return (
-    <aside className="bg-white rounded-2xl border border-gray-200 h-full overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200">
-        <p className={`text-base text-gray-800 ${fontClass}`}>{t("workspace.studio.title")}</p>
+    <aside className={`rounded-2xl border h-full overflow-hidden transition-colors duration-300 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
+      <div className={`px-4 py-3 border-b transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <p className={`text-base ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>{t("workspace.studio.title")}</p>
       </div>
 
       <div className="p-4 space-y-4">
@@ -28,10 +28,12 @@ function StudioPanel() {
             return (
               <button
                 key={action.key}
-                className="rounded-xl bg-gray-100 px-3 py-3 text-left flex items-start gap-2"
+                className={`rounded-xl px-3 py-3 text-left flex items-start gap-2 transition-colors duration-300 ${
+                  isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-100"
+                }`}
               >
-                <Icon className="w-4 h-4 text-gray-500 mt-0.5" />
-                <span className={`text-xs text-gray-600 ${fontClass}`}>
+                <Icon className={`w-4 h-4 mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
+                <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
                   {t(`workspace.studio.actions.${action.key}`)}
                 </span>
               </button>
@@ -40,10 +42,10 @@ function StudioPanel() {
         </div>
 
         <div className="pt-6 text-center space-y-2">
-          <p className={`text-sm text-gray-700 font-medium ${fontClass}`}>
+          <p className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
             {t("workspace.studio.emptyTitle")}
           </p>
-          <p className={`text-xs text-gray-500 ${fontClass}`}>
+          <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
             {t("workspace.studio.emptyDesc")}
           </p>
         </div>

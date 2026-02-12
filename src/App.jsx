@@ -4,7 +4,7 @@ import HeroSection from './Pages/LandingPage/LandingPage';
 import LoginPage from './Pages/Authentication/LoginPage';
 import RegisterPage from './Pages/Authentication/RegisterPage';
 import ForgotPasswordPage from './Pages/Authentication/ForgotPasswordPage';
-import HomePage from './Pages/Users/HomePage';
+import HomePage from './Pages/Users/Home/HomePage';
 import AdminLayout from './Pages/Admin/AdminLayout';
 import AdminDashboard from './Pages/Admin/AdminDashboard';
 import UserManagement from './Pages/Admin/UserManagement';

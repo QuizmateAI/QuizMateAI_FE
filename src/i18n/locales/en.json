@@ -44,6 +44,13 @@
     "systemTitle": "QuizMate AI System",
     "version": "Version 2026.1.0"
   },
+  "common": {
+    "settings": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark"
+  },
   "auth": {
     "login": "Login",
     "loginSubtitle": "Login to access your QuizMate account",
@@ -161,6 +168,44 @@
       },
       "connect": "Connect",
       "copyright": "© 2026 QuizMate AI. Built with intelligence for learners."
+    }
+  },
+  "home": {
+    "tabs": {
+      "all": "All",
+      "workspace": "My workspaces",
+      "group": "My groups"
+    },
+    "view": {
+      "grid": "Grid view",
+      "list": "List view"
+    },
+    "actions": {
+      "create": "Create new",
+      "createWorkspace": "Create new workspace",
+      "createGroup": "Create group"
+    },
+    "sections": {
+      "featured": "Featured notebooks",
+      "recent": "Recent workspaces",
+      "myWorkspaces": "My workspaces",
+      "myGroups": "My groups"
+    },
+    "table": {
+      "title": "Title",
+      "sources": "Sources",
+      "created": "Created",
+      "role": "Role",
+      "members": "Members",
+      "updates": "Updates"
+    },
+    "labels": {
+      "owner": "Owner",
+      "sourcesUnit": "sources",
+      "membersUnit": "members"
+    },
+    "group": {
+      "noUpdates": "No updates"
     }
   },
   "workspace": {
