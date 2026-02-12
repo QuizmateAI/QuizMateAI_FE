@@ -1,27 +1,21 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Users, UsersRound, ShieldAlert, 
-  Cpu, CreditCard, Settings, LogOut,
-  PanelLeftClose
+  LayoutDashboard, Users, 
+  PanelLeftClose, LogOut
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.png";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
-// Menu items với key để lấy translation
+// Menu items
 const menuItems = [
-  { icon: LayoutDashboard, labelKey: 'sidebar.dashboard', path: '/admin' },
-  { icon: Users, labelKey: 'sidebar.users', path: '/admin/users' },
-  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/admin/groups' },
-  { icon: ShieldAlert, labelKey: 'sidebar.moderation', path: '/admin/moderation' },
-  { icon: Cpu, labelKey: 'sidebar.aiSettings', path: '/admin/ai-settings' },
-  { icon: CreditCard, labelKey: 'sidebar.billing', path: '/admin/billing' },
-  { icon: Settings, labelKey: 'sidebar.settings', path: '/admin/settings' },
+  { icon: LayoutDashboard, labelKey: 'sidebar.dashboard', path: '/super-admin' },
+  { icon: Users, labelKey: 'sidebar.adminAccounts', path: '/super-admin/admins' }, // New key needed
 ];
 
-function AdminSidebar({ collapsed, onToggle }) {
+function SuperAdminSidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
@@ -36,7 +30,7 @@ function AdminSidebar({ collapsed, onToggle }) {
 
   return (
     <div className={cn(
-      "border-r h-screen flex flex-col transition-all duration-300",
+      "border-r h-screen flex flex-col transition-all duration-300", 
       collapsed ? "w-20" : "w-64",
       isDarkMode ? "bg-slate-900 border-slate-800" : "bg-[#204D87]"
     )}>
@@ -46,7 +40,7 @@ function AdminSidebar({ collapsed, onToggle }) {
         collapsed ? "flex-col p-3 gap-2" : "justify-between p-4",
         isDarkMode ? "border-slate-700" : "border-white/10"
       )}>
-        {/* Logo - khi collapsed thì hover để mở rộng */}
+        {/* Logo */}
         <div 
           className={cn(
             "transition-all duration-300",
@@ -67,7 +61,7 @@ function AdminSidebar({ collapsed, onToggle }) {
           />
         </div>
 
-        {/* Icon đóng sidebar - chỉ hiện khi mở */}
+        {/* Icon đóng sidebar */}
         {!collapsed && (
           <button
             onClick={onToggle}
@@ -120,7 +114,7 @@ function AdminSidebar({ collapsed, onToggle }) {
             collapsed ? "px-0 justify-center" : "px-4 justify-start"
           )}
         >
-          <LogOut className="w-4 h-4 flex-shrink-0" />
+          <LogOut className="w-5 h-5" />
           {!collapsed && <span>{t('sidebar.logout')}</span>}
         </button>
       </div>
@@ -128,4 +122,4 @@ function AdminSidebar({ collapsed, onToggle }) {
   );
 }
 
-export default AdminSidebar;
+export default SuperAdminSidebar;

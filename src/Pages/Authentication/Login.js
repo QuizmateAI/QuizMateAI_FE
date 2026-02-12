@@ -16,6 +16,13 @@ export const useLogin = (navigate, t) => {
     setError('');
   };
 
+  // Hàm điều hướng theo role
+  const navigateByRole = (role) => {
+    if (role === 'SUPER_ADMIN') return navigate('/super-admin');
+    if (role === 'ADMIN') return navigate('/admin');
+    return navigate('/home');
+  };
+
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -24,7 +31,7 @@ export const useLogin = (navigate, t) => {
     try {
       const response = await login(loginData);
       if (response.statusCode === 200 || response.statusCode === 0) {
-        navigate('/home');
+        navigateByRole(response.data.role);
       }
     } catch (err) {
       setError(err.message || t('auth.loginFailed') || 'Đăng nhập thất bại, vui lòng thử lại');
@@ -68,7 +75,7 @@ export const useLogin = (navigate, t) => {
       console.log("ID Token sẵn sàng gửi về BE:", credentialResponse);
       const response = await googleLogin(credentialResponse);
       if (response.statusCode === 200 || response.statusCode === 0) {
-         navigate('/home');
+         navigateByRole(response.data.role);
       }
     } catch (err) {
       setError(t('auth.loginGoogleFailed') || 'Đăng nhập Google thất bại');
