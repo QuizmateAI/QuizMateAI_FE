@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Globe, Sun, Moon } from 'lucide-react';
-import AdminSidebar from './components/AdminSidebar';
+import SuperAdminSidebar from './components/SuperAdminSidebar';
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
 
-function AdminLayoutContent() {
+function SuperAdminLayoutContent() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const currentLang = i18n.language;
@@ -20,7 +20,7 @@ function AdminLayoutContent() {
     <div className={`flex min-h-screen transition-colors duration-300 ${fontClass} ${
       isDarkMode ? 'bg-slate-950' : 'bg-[#F8FAFC]'
     }`}>
-      <AdminSidebar 
+      <SuperAdminSidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
       />
@@ -61,17 +61,16 @@ function AdminLayoutContent() {
             <div className="text-right hidden sm:block">
                 <p className={`text-sm font-bold font-poppins leading-none ${
                   isDarkMode ? 'text-white' : 'text-[#313131]'
-                }`}>Admin QuizMate</p>
+                }`}>Super Admin</p>
               </div>
             <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold font-poppins ${
-              isDarkMode ? 'bg-blue-900 border-blue-700 text-blue-300' : 'bg-blue-100 border-blue-200 text-blue-600'
+              isDarkMode ? 'bg-indigo-900 border-indigo-700 text-indigo-300' : 'bg-indigo-100 border-indigo-200 text-indigo-700'
             }`}>
-              AD
+              SA
             </div>
           </div>
         </header>
 
-        {/* Vùng hiển thị nội dung trang (Dashboard, User management...) */}
         <main className="flex-1 overflow-y-auto p-0">
           <Outlet />
         </main>
@@ -80,11 +79,11 @@ function AdminLayoutContent() {
   );
 }
 
-function AdminLayout() {
+function SuperAdminLayout() {
   return (
     <DarkModeProvider>
-      <AdminLayoutContent />
+      <SuperAdminLayoutContent />
     </DarkModeProvider>
   );
 }
-export default AdminLayout;
+export default SuperAdminLayout;

@@ -2,11 +2,13 @@
   "sidebar": {
     "dashboard": "Dashboard",
     "users": "Users",
+    "groups": "Groups",
     "moderation": "Moderation",
     "aiSettings": "AI Settings",
     "billing": "Billing",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "adminAccounts": "Admin Accounts"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -17,7 +19,26 @@
     "violationReports": "Violation Reports",
     "comparedToLastMonth": "+12% compared to last month",
     "userGrowthChart": "[User Growth Chart - Shadcn Chart]",
-    "newUsersList": "[Newly Registered Users List]"
+    "newUsersList": "[Newly Registered Users List]",
+    "totalAdmins": "Total Admins",
+    "systemLoad": "System Load",
+    "superAdminDesc": "Welcome to the Super Admin control center."
+  },
+  "adminManagement": {
+    "title": "Admin Management",
+    "desc": "Manage system administrators.",
+    "add": "Add New Admin",
+    "cardTitle": "Admin Accounts",
+    "searchPlaceholder": "Search by username or email...",
+    "table": {
+      "id": "ID",
+      "username": "Username",
+      "email": "Email",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "actions": "Actions"
+    },
+    "noData": "No admin accounts found."
   },
   "header": {
     "systemTitle": "QuizMate AI System",
@@ -177,6 +198,60 @@
         "flashcards": "Flashcards",
         "quiz": "Quiz"
       }
+    }
+  },
+  "userPage": {
+    "title": "User Management",
+    "desc": "Manage all users in the system.",
+    "refresh": "Refresh",
+    "cardTitle": "User List",
+    "searchPlaceholder": "Search by name or email...",
+    "loading": "Loading data...",
+    "noData": "No users found.",
+    "table": {
+      "id": "ID",
+      "avatar": "Avatar",
+      "username": "Username",
+      "user": "User",
+      "email": "Email",
+      "fullName": "Full Name",
+      "role": "Role",
+      "status": "Status",
+      "birthday": "Birthday",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    },
+    "setActive": "Set Active",
+    "setInactive": "Set Inactive",
+    "setBanned": "Ban User",
+    "status": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "BANNED": "Banned"
+    },
+    "changeStatus": "Change Status"
+  },
+  "groupPage": {
+    "title": "Group Management",
+    "desc": "Manage all study groups.",
+    "refresh": "Refresh",
+    "cardTitle": "Group List",
+    "searchPlaceholder": "Search by group name...",
+    "loading": "Loading data...",
+    "noData": "No groups found.",
+    "members": "members",
+    "viewDetail": "View Detail",
+    "detailTitle": "Group Detail",
+    "detailDesc": "Detailed information about the study group.",
+    "noDetail": "No detail information available.",
+    "table": {
+      "id": "ID",
+      "name": "Group Name",
+      "description": "Description",
+      "members": "Members",
+      "leader": "Leader",
+      "createdAt": "Created At",
+      "actions": "Actions"
     }
   }
 }
