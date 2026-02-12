@@ -9,6 +9,7 @@ const workspaceData = [
     dateAt: "2026-01-24T09:00:00+07:00",
     sources: 1,
     color: "bg-purple-50",
+    darkColor: "bg-purple-950/60",
   },
   {
     id: 2,
@@ -20,6 +21,7 @@ const workspaceData = [
     dateAt: "2026-01-31T09:00:00+07:00",
     sources: 6,
     color: "bg-yellow-50",
+    darkColor: "bg-yellow-950/60",
   },
   {
     id: 3,
@@ -31,6 +33,7 @@ const workspaceData = [
     dateAt: "2026-01-23T09:00:00+07:00",
     sources: 2,
     color: "bg-blue-50",
+    darkColor: "bg-blue-950/60",
   },
   {
     id: 4,
@@ -42,6 +45,7 @@ const workspaceData = [
     dateAt: "2026-01-21T09:00:00+07:00",
     sources: 3,
     color: "bg-green-50",
+    darkColor: "bg-green-950/60",
   },
   {
     id: 5,
@@ -53,6 +57,7 @@ const workspaceData = [
     dateAt: "2026-01-19T09:00:00+07:00",
     sources: 2,
     color: "bg-pink-50",
+    darkColor: "bg-pink-950/60",
   },
   {
     id: 6,
@@ -64,6 +69,7 @@ const workspaceData = [
     dateAt: "2026-01-18T09:00:00+07:00",
     sources: 4,
     color: "bg-orange-50",
+    darkColor: "bg-orange-950/60",
   },
   {
     id: 7,
@@ -75,6 +81,7 @@ const workspaceData = [
     dateAt: "2026-01-16T09:00:00+07:00",
     sources: 2,
     color: "bg-indigo-50",
+    darkColor: "bg-indigo-950/60",
   },
   {
     id: 8,
@@ -86,6 +93,7 @@ const workspaceData = [
     dateAt: "2026-01-14T09:00:00+07:00",
     sources: 5,
     color: "bg-teal-50",
+    darkColor: "bg-teal-950/60",
   },
   {
     id: 9,
@@ -97,6 +105,7 @@ const workspaceData = [
     dateAt: "2026-01-10T09:00:00+07:00",
     sources: 1,
     color: "bg-rose-50",
+    darkColor: "bg-rose-950/60",
   },
   {
     id: 10,
@@ -108,6 +117,7 @@ const workspaceData = [
     dateAt: "2026-01-05T09:00:00+07:00",
     sources: 3,
     color: "bg-sky-50",
+    darkColor: "bg-sky-950/60",
   },
 ];
 

@@ -44,6 +44,13 @@
     "systemTitle": "Hệ thống QuizMate AI",
     "version": "Phiên bản 2026.1.0"
   },
+  "common": {
+    "settings": "Cài đặt",
+    "language": "Ngôn ngữ",
+    "theme": "Giao diện",
+    "light": "Sáng",
+    "dark": "Tối"
+  },
   "auth": {
     "login": "Đăng nhập",
     "loginSubtitle": "Đăng nhập để truy cập tài khoản QuizMate của bạn",
@@ -161,6 +168,44 @@
       },
       "connect": "Kết nối",
       "copyright": "© 2026 QuizMate AI. Xây dựng bằng trí tuệ dành cho người học."
+    }
+  },
+  "home": {
+    "tabs": {
+      "all": "Tất cả",
+      "workspace": "Workspace của tôi",
+      "group": "Nhóm của tôi"
+    },
+    "view": {
+      "grid": "Chế độ lưới",
+      "list": "Chế độ danh sách"
+    },
+    "actions": {
+      "create": "Tạo mới",
+      "createWorkspace": "Tạo workspace mới",
+      "createGroup": "Tạo nhóm"
+    },
+    "sections": {
+      "featured": "Sổ ghi chú nổi bật",
+      "recent": "Workspace gần đây",
+      "myWorkspaces": "Workspace của tôi",
+      "myGroups": "Nhóm của tôi"
+    },
+    "table": {
+      "title": "Tiêu đề",
+      "sources": "Nguồn",
+      "created": "Đã tạo",
+      "role": "Vai trò",
+      "members": "Thành viên",
+      "updates": "Cập nhật"
+    },
+    "labels": {
+      "owner": "Owner",
+      "sourcesUnit": "nguồn",
+      "membersUnit": "thành viên"
+    },
+    "group": {
+      "noUpdates": "Không có cập nhật"
     }
   },
   "workspace": {
