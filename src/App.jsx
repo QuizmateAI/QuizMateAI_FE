@@ -44,6 +44,8 @@ function App() {
           <Route path="/super-admin" element={<SuperAdminLayout />} >
             <Route index element={<SuperAdminDashboard />} />
             <Route path="admins" element={<AdminManagement />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="groups" element={<GroupManagement />} />
           </Route>
         </Route>
 
