@@ -8,7 +8,8 @@
     "billing": "Billing",
     "settings": "Settings",
     "logout": "Logout",
-    "adminAccounts": "Admin Accounts"
+    "adminAccounts": "Admin Accounts",
+    "rbac": "RBAC System"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -22,7 +23,10 @@
     "newUsersList": "[Newly Registered Users List]",
     "totalAdmins": "Total Admins",
     "systemLoad": "System Load",
-    "superAdminDesc": "Welcome to the Super Admin control center."
+    "superAdminDesc": "Welcome to the Super Admin control center.",
+    "userCount": "Regular Users",
+    "quickActions": "Quick Actions",
+    "roleOverview": "Role Overview"
   },
   "adminManagement": {
     "title": "Admin Management",
@@ -49,7 +53,20 @@
     "language": "Language",
     "theme": "Theme",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "refresh": "Refresh"
+  },
+  "rbac": {
+    "title": "RBAC System",
+    "desc": "Manage system roles and permissions - Role Based Access Control.",
+    "tabs": {
+      "permissions": "Permissions",
+      "auditLogs": "Audit Logs"
+    },
+    "permissionsList": "Permissions List",
+    "userRoleManagement": "User Role & Permissions Management",
+    "userRoleDesc": "Shows only ADMIN and SUPER_ADMIN accounts.",
+    "auditLogs": "RBAC Audit Logs"
   },
   "auth": {
     "login": "Login",
@@ -94,7 +111,9 @@
     "resetPassword": "Reset Password",
     "otpSent": "OTP code has been sent to your email",
     "otpVerified": "OTP verified successfully",
-    "resetPasswordSuccess": "Password reset successful, please login"
+    "resetPasswordSuccess": "Password reset successful, please login",
+    "loginWithGoogle": "Sign in with Google",
+    "loginGoogleFailed": "Google login failed. Please try again."
   },
   "landingPage": {
     "nav": {
