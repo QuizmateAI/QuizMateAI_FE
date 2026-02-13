@@ -8,7 +8,8 @@
     "billing": "Doanh thu",
     "settings": "Cài đặt",
     "logout": "Đăng xuất",
-    "adminAccounts": "Tài khoản Admin"
+    "adminAccounts": "Tài khoản Admin",
+    "rbac": "Phân quyền RBAC"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -22,7 +23,10 @@
     "newUsersList": "[Danh sách người dùng mới đăng ký]",
     "totalAdmins": "Tổng Admin",
     "systemLoad": "Tải hệ thống",
-    "superAdminDesc": "Chào mừng đến với trung tâm điều khiển Super Admin."
+    "superAdminDesc": "Chào mừng đến với trung tâm điều khiển Super Admin.",
+    "userCount": "Người dùng thường",
+    "quickActions": "Thao tác nhanh",
+    "roleOverview": "Phân bổ vai trò"
   },
   "adminManagement": {
     "title": "Quản lý Admin",
@@ -49,7 +53,20 @@
     "language": "Ngôn ngữ",
     "theme": "Giao diện",
     "light": "Sáng",
-    "dark": "Tối"
+    "dark": "Tối",
+    "refresh": "Làm mới"
+  },
+  "rbac": {
+    "title": "Phân quyền RBAC",
+    "desc": "Quản lý vai trò và quyền hạn hệ thống - Role Based Access Control.",
+    "tabs": {
+      "permissions": "Danh sách quyền",
+      "auditLogs": "Nhật ký kiểm toán"
+    },
+    "permissionsList": "Danh sách Permissions",
+    "userRoleManagement": "Quản lý Role & Permissions người dùng",
+    "userRoleDesc": "Chỉ hiển thị tài khoản ADMIN và SUPER_ADMIN.",
+    "auditLogs": "Nhật ký kiểm toán RBAC"
   },
   "auth": {
     "login": "Đăng nhập",
@@ -94,7 +111,9 @@
     "resetPassword": "Đặt lại mật khẩu",
     "otpSent": "Mã OTP đã được gửi đến email của bạn",
     "otpVerified": "Xác thực OTP thành công",
-    "resetPasswordSuccess": "Đổi mật khẩu thành công, hãy đăng nhập"
+    "resetPasswordSuccess": "Đổi mật khẩu thành công, hãy đăng nhập",
+    "loginWithGoogle": "Đăng nhập bằng Google",
+    "loginGoogleFailed": "Đăng nhập Google thất bại. Vui lòng thử lại."
   },
   "landingPage": {
     "nav": {

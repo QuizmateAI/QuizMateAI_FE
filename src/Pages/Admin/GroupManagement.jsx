@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAllGroups, getGroupDetail } from '@/api/AdminAPI';
+import { getAllGroups, getGroupDetail } from '@/api/ManagementSystemAPI';
 
 function GroupManagement() {
   const { t, i18n } = useTranslation();
@@ -48,11 +48,10 @@ function GroupManagement() {
     setError('');
     try {
       const response = await getAllGroups();
-      if (response.statusCode === 200) {
-        setGroups(response.data || []);
-      }
+      const data = response?.data ?? response;
+      setGroups(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || 'Không thể tải danh sách nhóm');
+      setError(err?.message || 'Không thể tải danh sách nhóm');
       console.error('Lỗi khi lấy danh sách groups:', err);
     } finally {
       setIsLoading(false);
@@ -67,11 +66,11 @@ function GroupManagement() {
   const handleViewDetail = async (groupId) => {
     setDetailLoading(true);
     setIsDetailOpen(true);
+    setSelectedGroup(null);
     try {
       const response = await getGroupDetail(groupId);
-      if (response.statusCode === 200) {
-        setSelectedGroup(response.data);
-      }
+      const data = response?.data ?? response;
+      setSelectedGroup(data || null);
     } catch (err) {
       console.error('Lỗi khi lấy chi tiết group:', err);
       setSelectedGroup(null);
@@ -81,10 +80,12 @@ function GroupManagement() {
   };
 
   // Lọc groups theo search term
-  const filteredGroups = groups.filter(group => 
-    group.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    group.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredGroups = groups.filter((group) => {
+    const name = group.groupName || group.name || '';
+    const desc = group.description || '';
+    const term = searchTerm.toLowerCase();
+    return name.toLowerCase().includes(term) || desc.toLowerCase().includes(term);
+  });
 
   // Format ngày tạo
   const formatDate = (dateString) => {
@@ -173,14 +174,14 @@ function GroupManagement() {
                 ) : filteredGroups.length > 0 ? (
                   filteredGroups.map((group) => (
                     <TableRow 
-                      key={group.id} 
+                      key={group.groupId ?? group.id} 
                       className={`border-b transition-colors ${
                         isDarkMode 
                           ? 'border-slate-800 hover:bg-slate-800/50' 
                           : 'border-slate-100 hover:bg-slate-50/50'
                       }`}
                     >
-                      <TableCell className="font-bold text-blue-600 dark:text-blue-400">{group.id}</TableCell>
+                      <TableCell className="font-bold text-blue-600 dark:text-blue-400">{group.groupId ?? group.id}</TableCell>
                       <TableCell className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         <div className="flex items-center gap-2">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -188,7 +189,7 @@ function GroupManagement() {
                           }`}>
                             <Users className="w-4 h-4 text-indigo-500" />
                           </div>
-                          {group.name}
+                          {group.groupName || group.name}
                         </div>
                       </TableCell>
                       <TableCell className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} truncate max-w-[200px]`}>
@@ -196,11 +197,11 @@ function GroupManagement() {
                       </TableCell>
                       <TableCell>
                         <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg px-2.5 py-0.5 border-none">
-                          {group.memberCount || 0} {t('groupPage.members')}
+                          {group.memberCount ?? 0} {t('groupPage.members')}
                         </Badge>
                       </TableCell>
                       <TableCell className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                        {group.leaderName || '-'}
+                        {group.createdByFullName || group.createdByUsername || group.leaderName || '-'}
                       </TableCell>
                       <TableCell className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {formatDate(group.createdAt)}
@@ -214,7 +215,7 @@ function GroupManagement() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className={`w-48 ${isDarkMode ? 'bg-slate-800 border-slate-700' : ''}`}>
                             <DropdownMenuItem 
-                              onClick={() => handleViewDetail(group.id)}
+                              onClick={() => handleViewDetail(group.groupId ?? group.id)}
                               className="cursor-pointer"
                             >
                               <Eye className="w-4 h-4 mr-2 text-blue-500" />
@@ -255,11 +256,11 @@ function GroupManagement() {
               <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-500" />
             </div>
           ) : selectedGroup ? (
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
               <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                 <p className="text-sm text-slate-500">{t('groupPage.table.name')}</p>
                 <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {selectedGroup.name}
+                  {selectedGroup.groupName || selectedGroup.name}
                 </p>
               </div>
               <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
@@ -268,7 +269,51 @@ function GroupManagement() {
                   {selectedGroup.description || '-'}
                 </p>
               </div>
-              {/* Có thể thêm các thông tin khác khi có response từ API */}
+              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                <p className="text-sm text-slate-500 mb-2">Chủ nhóm / Người tạo</p>
+                <p className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
+                  {selectedGroup.createdByFullName || selectedGroup.createdByUsername || '-'}
+                </p>
+              </div>
+              {selectedGroup.topicName && (
+                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                  <p className="text-sm text-slate-500">Chủ đề</p>
+                  <p className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>{selectedGroup.topicName}</p>
+                </div>
+              )}
+              {selectedGroup.members && selectedGroup.members.length > 0 && (
+                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                  <p className="text-sm text-slate-500 mb-3">Thành viên ({selectedGroup.members.length})</p>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {selectedGroup.members.map((m) => (
+                      <div
+                        key={m.groupMemberId ?? m.userId}
+                        className={`flex items-center justify-between py-2 border-b last:border-0 ${
+                          isDarkMode ? 'border-slate-700' : 'border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {m.avatar ? (
+                            <img src={m.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              isDarkMode ? 'bg-slate-700' : 'bg-slate-200'
+                            }`}>
+                              <Users className="w-4 h-4 text-slate-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className={`font-medium text-sm ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                              {m.fullName || m.username}
+                            </p>
+                            <p className="text-xs text-slate-500">{m.role}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="py-10 text-center text-slate-400">
