@@ -1,18 +1,20 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Users, 
-  PanelLeftClose, LogOut
+  LayoutDashboard, Users, UsersRound,
+  PanelLeftClose, LogOut, Shield
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.png";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
-// Menu items
+// Menu items - giống Admin: Users, Groups + thêm Admin Accounts (RBAC)
 const menuItems = [
   { icon: LayoutDashboard, labelKey: 'sidebar.dashboard', path: '/super-admin' },
-  { icon: Users, labelKey: 'sidebar.adminAccounts', path: '/super-admin/admins' }, // New key needed
+  { icon: Users, labelKey: 'sidebar.users', path: '/super-admin/users' },
+  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/super-admin/groups' },
+  { icon: Shield, labelKey: 'sidebar.adminAccounts', path: '/super-admin/admins' },
 ];
 
 function SuperAdminSidebar({ collapsed, onToggle }) {
