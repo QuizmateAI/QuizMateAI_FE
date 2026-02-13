@@ -21,7 +21,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAllUsers, updateUserStatus } from '@/api/AdminAPI';
+import { getAllUsers, updateUserStatus } from '@/api/ManagementSystemAPI';
 
 function UserManagement() {
   const { t, i18n } = useTranslation();
@@ -39,11 +39,10 @@ function UserManagement() {
     setError('');
     try {
       const response = await getAllUsers();
-      if (response.statusCode === 200) {
-        setUsers(response.data || []);
-      }
+      const data = response?.data ?? response;
+      setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || 'Không thể tải danh sách người dùng');
+      setError(err?.message || 'Không thể tải danh sách người dùng');
       console.error('Lỗi khi lấy danh sách users:', err);
     } finally {
       setIsLoading(false);
@@ -57,15 +56,14 @@ function UserManagement() {
   // Cập nhật trạng thái người dùng
   const handleUpdateStatus = async (userId, newStatus) => {
     try {
-      const response = await updateUserStatus(userId, newStatus);
-      if (response.statusCode === 200) {
-        // Cập nhật state local
-        setUsers(users.map(user => 
+      await updateUserStatus(userId, newStatus);
+      setUsers((prev) =>
+        prev.map((user) =>
           user.id === userId ? { ...user, status: newStatus } : user
-        ));
-      }
+        )
+      );
     } catch (err) {
-      setError(err.message || 'Không thể cập nhật trạng thái');
+      setError(err?.message || 'Không thể cập nhật trạng thái');
       console.error('Lỗi khi cập nhật status:', err);
     }
   };
@@ -157,18 +155,18 @@ function UserManagement() {
         
         <CardContent className="p-0">
           <div className="overflow-hidden">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  <TableHead className="w-[60px] font-bold text-slate-500">{t('userPage.table.id')}</TableHead>
-                  <TableHead className="w-[60px] font-bold text-slate-500">{t('userPage.table.avatar')}</TableHead>
-                  <TableHead className="w-[180px] font-bold text-slate-500">{t('userPage.table.username')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('userPage.table.email')}</TableHead>
-                  <TableHead className="w-[150px] font-bold text-slate-500">{t('userPage.table.fullName')}</TableHead>
-                  <TableHead className="w-[100px] font-bold text-slate-500">{t('userPage.table.role')}</TableHead>
-                  <TableHead className="w-[100px] font-bold text-slate-500">{t('userPage.table.status')}</TableHead>
-                  <TableHead className="w-[160px] font-bold text-slate-500">{t('userPage.table.createdAt')}</TableHead>
-                  <TableHead className="text-right w-[80px] font-bold text-slate-500">{t('userPage.table.actions')}</TableHead>
+                  <TableHead className="w-[60px] text-left font-bold text-slate-500">{t('userPage.table.id')}</TableHead>
+                  <TableHead className="w-[70px] text-left font-bold text-slate-500">{t('userPage.table.avatar')}</TableHead>
+                  <TableHead className="w-[100px] text-left font-bold text-slate-500">{t('userPage.table.username')}</TableHead>
+                  <TableHead className="w-[180px] text-left font-bold text-slate-500">{t('userPage.table.email')}</TableHead>
+                  <TableHead className="w-[160px] text-left font-bold text-slate-500">{t('userPage.table.fullName')}</TableHead>
+                  <TableHead className="w-[90px] text-center font-bold text-slate-500">{t('userPage.table.role')}</TableHead>
+                  <TableHead className="w-[100px] text-center font-bold text-slate-500">{t('userPage.table.status')}</TableHead>
+                  <TableHead className="w-[140px] text-left font-bold text-slate-500">{t('userPage.table.createdAt')}</TableHead>
+                  <TableHead className="w-[80px] text-right font-bold text-slate-500">{t('userPage.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -189,8 +187,8 @@ function UserManagement() {
                           : 'border-slate-100 hover:bg-slate-50/50'
                       }`}
                     >
-                      <TableCell className="font-bold text-blue-600 dark:text-blue-400">{user.id}</TableCell>
-                      <TableCell>
+                      <TableCell className="w-[60px] text-left font-bold text-blue-600 dark:text-blue-400">{user.id}</TableCell>
+                      <TableCell className="w-[70px] text-left">
                         {user.avatar ? (
                           <img 
                             src={user.avatar} 
@@ -205,29 +203,29 @@ function UserManagement() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                      <TableCell className={`w-[100px] text-left font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         {user.username}
                       </TableCell>
-                      <TableCell className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
+                      <TableCell className={`w-[180px] text-left ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                         {user.email}
                       </TableCell>
-                      <TableCell className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
+                      <TableCell className={`w-[160px] text-left ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                         {user.fullName || '-'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[90px] text-center">
                         <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg px-2.5 py-0.5 border-none">
                           {user.role}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[100px] text-center">
                         <Badge className={`rounded-lg px-2.5 py-0.5 border-none ${getStatusBadge(user.status)}`}>
                           {user.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <TableCell className={`w-[140px] text-left text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {formatDate(user.createdAt)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="w-[80px] text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
@@ -250,6 +248,14 @@ function UserManagement() {
                             >
                               <Shield className="w-4 h-4 mr-2 text-amber-500" />
                               {t('userPage.setInactive')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateStatus(user.id, 'BANNED')}
+                              disabled={user.status === 'BANNED'}
+                              className="cursor-pointer"
+                            >
+                              <Ban className="w-4 h-4 mr-2 text-rose-500" />
+                              {t('userPage.setBanned')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                           </DropdownMenuContent>
