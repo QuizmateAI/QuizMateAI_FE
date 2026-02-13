@@ -1,22 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, Grid3x3, List, LogOut, Moon, Plus, Settings, Sun, X } from 'lucide-react';
+import { Globe, Grid3x3, List, Moon, Plus, Settings, Sun } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.png";
 import LogoDark from "@/assets/DarkMode_Logo.png";
 import HomeContent from "@/Pages/Users/Home/Components/HomeContent";
 import UserWorkspace from "@/Pages/Users/Home/Components/UserWorkspace";
 import UserGroup from "@/Pages/Users/Home/Components/UserGroup";
+import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import profileData from '@/Pages/Users/Individual/Profile/Components/ProfileData';
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const settingsRef = useRef(null);
-  const profileRef = useRef(null);
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
@@ -29,7 +27,7 @@ function HomePage() {
   };
 
   useEffect(() => {
-    if (!isSettingsOpen && !isProfileOpen) {
+    if (!isSettingsOpen) {
       return;
     }
 
@@ -37,16 +35,12 @@ function HomePage() {
       if (settingsRef.current && !settingsRef.current.contains(event.target)) {
         setIsSettingsOpen(false);
       }
-
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setIsProfileOpen(false);
-      }
     };
 
     // Logic nghiep vu: dong menu khi click ra ngoai.
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isSettingsOpen, isProfileOpen]);
+  }, [isSettingsOpen]);
 
   // Logic nghiệp vụ: hiển thị nội dung theo tab đang chọn
   const renderTabContent = () => {
@@ -132,77 +126,7 @@ function HomePage() {
             <Menu className="w-5 h-5 text-gray-600" />
           </button> */}
           
-          {/* Avatar */}
-          <div ref={profileRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setIsProfileOpen((prev) => !prev)}
-              className="w-9 h-9 rounded-full overflow-hidden border border-transparent hover:border-blue-400 transition-colors"
-              aria-expanded={isProfileOpen}
-              aria-haspopup="menu"
-            >
-              <img
-                src={profileData.avatarUrl}
-                alt={profileData.fullName}
-                className="w-full h-full object-cover"
-              />
-            </button>
-
-            {isProfileOpen ? (
-              <div
-                role="menu"
-                className={`absolute right-0 mt-2 w-[340px] rounded-3xl border shadow-xl overflow-hidden transition-colors duration-300 ${
-                  isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-gray-200 text-gray-800'
-                }`}
-              >
-                <div className="px-5 pt-4 pb-3 relative">
-                  <p className={`text-center text-sm font-semibold ${fontClass} ${isDarkMode ? 'text-slate-100' : 'text-gray-800'}`}>
-                    {profileData.email}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setIsProfileOpen(false)}
-                    className={`absolute right-4 top-3 p-1 rounded-full ${isDarkMode ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-gray-100 text-gray-500'}`}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="px-6 pb-4">
-                  <div className="flex flex-col items-center justify-center text-center gap-2">
-                    <div className="w-20 h-20 rounded-full overflow-hidden border border-gray-300/50">
-                      <img
-                        src={profileData.avatarUrl}
-                        alt={profileData.fullName}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <p className={`text-xl leading-tight font-medium ${isDarkMode ? 'text-white' : 'text-gray-800'} ${fontClass}`}>
-                      {t('home.profile.greeting', { name: profileData.fullName })}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="px-4 pb-4">
-                  <button
-                    type="button"
-                    className={`w-full rounded-2xl px-4 py-4 flex items-center gap-3 text-left ${
-                      isDarkMode ? 'bg-slate-950 text-slate-100 hover:bg-black/40' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span className={`text-[15px] font-medium ${fontClass}`}>{t('home.profile.logout')}</span>
-                  </button>
-                </div>
-
-                <div className={`pb-5 text-center text-xs ${isDarkMode ? 'text-slate-300' : 'text-gray-500'} ${fontClass}`}>
-                  <button type="button" className="hover:underline">{t('home.profile.privacyPolicy')}</button>
-                  <span className="mx-2">•</span>
-                  <button type="button" className="hover:underline">{t('home.profile.termsOfService')}</button>
-                </div>
-              </div>
-            ) : null}
-          </div>
+          <UserProfilePopover isDarkMode={isDarkMode} />
         </div>
       </header>
 

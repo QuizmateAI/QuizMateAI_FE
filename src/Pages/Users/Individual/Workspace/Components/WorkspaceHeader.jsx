@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.png";
 import LogoDark from "@/assets/DarkMode_Logo.png";
 import { useNavigate } from "react-router-dom";
+import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 
 function WorkspaceHeader({ settingsMenu = null, isDarkMode = false }) {
   const { t, i18n } = useTranslation();
@@ -55,9 +56,7 @@ function WorkspaceHeader({ settingsMenu = null, isDarkMode = false }) {
               <span className={fontClass}>{t("workspace.header.settings")}</span>
             </Button>
           )}
-          <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-            U
-          </div>
+          <UserProfilePopover isDarkMode={isDarkMode} />
         </div>
       </div>
     </header>

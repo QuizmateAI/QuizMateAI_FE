@@ -209,6 +209,7 @@
     },
     "profile": {
       "greeting": "Hi {{name}},",
+      "manageAccount": "Manage your Google Account",
       "logout": "Log out",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service"
