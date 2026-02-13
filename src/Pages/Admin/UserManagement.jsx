@@ -155,7 +155,7 @@ function UserManagement() {
         
         <CardContent className="p-0">
           <div className="overflow-hidden">
-            <Table className="table-fixed">
+            <Table className = "table-auto min-w-full text-left">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                   <TableHead className="w-[60px] text-left font-bold text-slate-500">{t('userPage.table.id')}</TableHead>

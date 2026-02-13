@@ -42,7 +42,19 @@
       "lastLogin": "Last Login",
       "actions": "Actions"
     },
-    "noData": "No admin accounts found."
+    "noData": "No admin accounts found.",
+    "form": {
+      "title": "Create New Admin",
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "fullName": "Full Name",
+      "submit": "Create Admin",
+      "cancel": "Cancel",
+      "success": "Admin account created successfully.",
+      "error": "Failed to create admin account."
+    }
   },
   "header": {
     "systemTitle": "QuizMate AI System",
@@ -322,6 +334,47 @@
       "leader": "Leader",
       "createdAt": "Created At",
       "actions": "Actions"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "description": "Manage your learning journey and personal settings.",
+    "edit": "Edit",
+    "share": "Share",
+    "unlocked": "Unlocked {{days}} days ago",
+    "xpProgress": "XP Progress",
+    "aiTokens": "AI Tokens",
+    "topUp": "Top Up",
+    "tokenDesc": "Enough for ~20 quizzes.",
+    "achievements": "Achievements",
+    "viewAllBadges": "View All Badges",
+    "tabs": {
+        "analytics": "Analytics",
+        "roadmaps": "My Roadmaps",
+        "settings": "Settings"
+    },
+    "skillMatrix": {
+        "title": "Skill Matrix",
+        "desc": "Your strengths & areas to improve"
+    },
+    "stats": {
+        "topicsMastered": "Topics Mastered",
+        "learningTime": "Learning Time",
+        "dayStreak": "Day Streak",
+        "avgScore": "Avg. Score"
+    },
+    "recentActivity": "Recent Activity",
+    "roadmap": {
+        "create": "Create New Roadmap",
+        "createDesc": "Paste URL, Upload PDF, or Enter Topic",
+        "progress": "Progress",
+        "continue": "Continue",
+        "lastStudied": "Last studied {{days}} days ago"
+    },
+    "settings": {
+        "title": "Account Settings",
+        "desc": "Update your personal information",
+        "placeholder": "Settings panel placeholder..."
     }
   }
 }
