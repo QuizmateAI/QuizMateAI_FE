@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Search, RefreshCw, Shield } from 'lucide-react';
+import { Plus, Trash2, Edit, Search, Shield, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -13,15 +22,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   getAllSystemUsers,
@@ -43,24 +43,31 @@ const ADMIN_ALLOWED_CODES = [
 function AdminManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  
+  // State definitions
   const [searchTerm, setSearchTerm] = useState('');
   const [admins, setAdmins] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-
+  
+  // Create Admin Dialog State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    username: '', email: '', password: '', confirmPassword: '', fullName: '',
+  const [formData, setFormData] = useState({ 
+    username: '', 
+    email: '', 
+    password: '', 
+    confirmPassword: '', 
+    fullName: '' 
   });
 
-  // RBAC popup
+  // RBAC Dialog State
   const [isRbacOpen, setIsRbacOpen] = useState(false);
+  const [isRbacLoading, setIsRbacLoading] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [permissions, setPermissions] = useState([]);
   const [userPermissions, setUserPermissions] = useState([]);
-  const [isRbacLoading, setIsRbacLoading] = useState(false);
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
@@ -208,7 +215,7 @@ function AdminManagement() {
             {t('adminManagement.desc')}
           </p>
         </div>
-        <Button
+        <Button 
           className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
           onClick={() => setIsCreateOpen(true)}
         >
@@ -257,7 +264,7 @@ function AdminManagement() {
 
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="table-auto min-w-full text-left">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className="border-b border-slate-100 dark:border-slate-800">
                   <TableHead className="w-[80px] text-left font-bold text-slate-500">{t('adminManagement.table.id')}</TableHead>
@@ -270,14 +277,7 @@ function AdminManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20">
-                      <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-500" />
-                      <p className="mt-2 text-slate-400">Đang tải...</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
+                {filteredAdmins.length > 0 ? (
                   filteredAdmins.map((admin) => (
                     <TableRow
                       key={admin.id}
@@ -320,11 +320,19 @@ function AdminManagement() {
                       </TableCell>
                     </TableRow>
                   ))
+                ) : (
+                  !isLoading && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
+                        {t('adminManagement.noData')}
+                      </TableCell>
+                    </TableRow>
+                  )
                 )}
-                {!isLoading && filteredAdmins.length === 0 && (
-                  <TableRow>
+                {isLoading && (
+                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
-                      {t('adminManagement.noData')}
+                      Loading...
                     </TableCell>
                   </TableRow>
                 )}

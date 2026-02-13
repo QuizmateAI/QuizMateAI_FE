@@ -42,7 +42,19 @@
       "lastLogin": "Đăng nhập lần cuối",
       "actions": "Hành động"
     },
-    "noData": "Không tìm thấy tài khoản admin nào."
+    "noData": "Không tìm thấy tài khoản admin nào.",
+    "form": {
+      "title": "Tạo Admin Mới",
+      "username": "Tên đăng nhập",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "confirmPassword": "Xác nhận mật khẩu",
+      "fullName": "Họ và tên",
+      "submit": "Tạo Admin",
+      "cancel": "Hủy",
+      "success": "Tạo tài khoản admin thành công.",
+      "error": "Tạo tài khoản admin thất bại."
+    }
   },
   "header": {
     "systemTitle": "Hệ thống QuizMate AI",
@@ -322,6 +334,47 @@
       "leader": "Trưởng nhóm",
       "createdAt": "Ngày tạo",
       "actions": "Hành động"
+    }
+  },
+  "profile": {
+    "title": "Hồ Sơ Của Tôi",
+    "description": "Quản lý lộ trình học tập và cài đặt cá nhân.",
+    "edit": "Chỉnh sửa",
+    "share": "Chia sẻ",
+    "unlocked": "Mở khóa {{days}} ngày trước",
+    "xpProgress": "Tiến độ XP",
+    "aiTokens": "AI Tokens",
+    "topUp": "Nạp thêm",
+    "tokenDesc": "Đủ cho ~20 bài trắc nghiệm.",
+    "achievements": "Thành tích",
+    "viewAllBadges": "Xem tất cả huy hiệu",
+    "tabs": {
+        "analytics": "Thống kê",
+        "roadmaps": "Lộ trình",
+        "settings": "Cài đặt"
+    },
+    "skillMatrix": {
+        "title": "Ma trận kỹ năng",
+        "desc": "Điểm mạnh & điểm cần cải thiện"
+    },
+    "stats": {
+        "topicsMastered": "Chủ đề đã học",
+        "learningTime": "Thời gian học",
+        "dayStreak": "Chuỗi ngày",
+        "avgScore": "Điểm trung bình"
+    },
+    "recentActivity": "Hoạt động gần đây",
+    "roadmap": {
+        "create": "Tạo lộ trình mới",
+        "createDesc": "Dán URL, Tải PDF, hoặc nhập chủ đề",
+        "progress": "Tiến độ",
+        "continue": "Tiếp tục",
+        "lastStudied": "Học {{days}} ngày trước"
+    },
+    "settings": {
+        "title": "Cài đặt tài khoản",
+        "desc": "Cập nhật thông tin cá nhân",
+        "placeholder": "Khu vực cài đặt..."
     }
   }
 }
