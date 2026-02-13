@@ -10,7 +10,7 @@ import api from './api';
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/admin/users');
+    const response = await api.get('/management/users');
     return response;
   } catch (error) {
     throw error;
@@ -41,6 +41,22 @@ export const updateUserStatus = async (userId, status) => {
 export const getAllGroups = async () => {
   try {
     const response = await api.get('/admin/groups');
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ============= SYSTEM MANAGEMENT =============
+
+/**
+ * Tạo tài khoản admin mới
+ * @param {Object} adminData - Dữ liệu admin mới { username, email, password, confirmPassword, fullName }
+ * @returns {Promise} Response từ server
+ */
+export const createAdmin = async (adminData) => {
+  try {
+    const response = await api.post('/rbac/system/admins', adminData);
     return response;
   } catch (error) {
     throw error;
