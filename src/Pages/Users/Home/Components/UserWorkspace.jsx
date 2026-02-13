@@ -10,6 +10,21 @@ function UserWorkspace({ viewMode, isDarkMode }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
+  function getWorkspaceCardColorByOrder(orderNumber, darkModeEnabled) {
+    // Logic nghiệp vụ: gán màu theo vòng lặp xanh lá -> cam -> xanh biển khi tạo workspace mới.
+    const colorCycle = [
+      { light: "bg-green-50", dark: "bg-green-950/60" },
+      { light: "bg-orange-50", dark: "bg-orange-950/60" },
+      { light: "bg-blue-50", dark: "bg-blue-950/60" },
+    ];
+
+    const safeOrder = Number.isFinite(Number(orderNumber)) ? Number(orderNumber) : 1;
+    const colorIndex = (Math.max(safeOrder, 1) - 1) % colorCycle.length;
+    const selectedColor = colorCycle[colorIndex];
+
+    return darkModeEnabled ? selectedColor.dark : selectedColor.light;
+  }
+
   // Logic nghiệp vụ: chuyển đổi hiển thị giữa lưới và danh sách
   const isList = viewMode === "list";
   const workspaces = [...workspaceData].sort(
@@ -76,8 +91,8 @@ function UserWorkspace({ viewMode, isDarkMode }) {
           </div>
 
           {workspaces.map((workspace) => {
-            // Logic nghiệp vụ: chọn màu nền card theo chế độ sáng/tối
-            const cardBg = isDarkMode ? workspace.darkColor : workspace.color;
+            // Logic nghiệp vụ: ưu tiên thứ tự tạo (id) để gán màu tự động theo vòng lặp.
+            const cardBg = getWorkspaceCardColorByOrder(workspace.id, isDarkMode);
 
             return (
               <div

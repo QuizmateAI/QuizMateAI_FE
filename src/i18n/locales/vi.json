@@ -240,6 +240,7 @@
     },
     "profile": {
       "greeting": "Chào {{name}},",
+      "manageAccount": "Quản lý Tài khoản của bạn",
       "logout": "Đăng xuất",
       "privacyPolicy": "Chính sách quyền riêng tư",
       "termsOfService": "Điều khoản dịch vụ"

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
@@ -39,20 +40,21 @@ function WorkspacePage() {
 
 	const settingsMenu = (
 		<div ref={settingsRef} className="relative">
-			<button
+			<Button
+				variant="outline"
 				type="button"
 				onClick={() => setIsSettingsOpen((prev) => !prev)}
-				className={`flex items-center gap-2 rounded-full h-9 px-4 text-sm border transition-colors duration-300 ${
+				className={`rounded-full h-9 px-4 flex items-center gap-2 ${
 					isDarkMode
 						? "border-slate-700 text-slate-200 hover:bg-slate-900"
-						: "border-gray-200 text-gray-700 hover:bg-gray-50"
+						: "border-gray-200"
 				}`}
 				aria-expanded={isSettingsOpen}
 				aria-haspopup="menu"
 			>
 				<Settings className="w-4 h-4" />
 				<span className={fontClass}>{t("common.settings")}</span>
-			</button>
+			</Button>
 
 			{isSettingsOpen ? (
 				<div
