@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Edit, Search } from 'lucide-react';
+import { Plus, Trash2, Edit, Search, Shield, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -22,15 +22,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
   getAllSystemUsers,
@@ -52,45 +43,33 @@ const ADMIN_ALLOWED_CODES = [
 function AdminManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  
+  // State definitions
   const [searchTerm, setSearchTerm] = useState('');
-  const [admins, setAdmins] = useState(initialAdmins);
+  const [admins, setAdmins] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  
+  // Create Admin Dialog State
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({ 
+    username: '', 
+    email: '', 
+    password: '', 
+    confirmPassword: '', 
+    fullName: '' 
+  });
+
+  // RBAC Dialog State
+  const [isRbacOpen, setIsRbacOpen] = useState(false);
+  const [isRbacLoading, setIsRbacLoading] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [permissions, setPermissions] = useState([]);
+  const [userPermissions, setUserPermissions] = useState([]);
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewAdmin(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleCreateAdmin = async () => {
-    if (newAdmin.password !== newAdmin.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-    
-    try {
-      const response = await createAdmin(newAdmin);
-      if (response && response.data) {
-        const createdAdmin = response.data.data;
-        if (createdAdmin) {
-            setAdmins([{
-                id: createdAdmin.id,
-                username: createdAdmin.username,
-                email: createdAdmin.email,
-                status: createdAdmin.status || 'Active',
-                lastLogin: 'Never'
-            }, ...admins]);
-        }
-        
-        setIsDialogOpen(false);
-        setNewAdmin({ username: '', email: '', password: '', confirmPassword: '', fullName: '' });
-        alert(t('adminManagement.form.success'));
-      }
-    } catch (error) {
-      console.error("Failed to create admin:", error);
-      alert(t('adminManagement.form.error'));
-    }
-  };
 
   const fetchAdmins = async () => {
     setIsLoading(true);
@@ -236,7 +215,10 @@ function AdminManagement() {
             {t('adminManagement.desc')}
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
+          onClick={() => setIsCreateOpen(true)}
+        >
           <Plus className="w-5 h-5 mr-2" />
           {t('adminManagement.add')}
         </Button>
@@ -295,22 +277,7 @@ function AdminManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAdmins.map((admin) => (
-                  <TableRow key={admin.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <TableCell className="font-bold text-blue-600 dark:text-blue-400">{admin.id}</TableCell>
-                    <TableCell className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{admin.username}</TableCell>
-                    <TableCell className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>{admin.email}</TableCell>
-                    <TableCell>
-                      <Badge className={`rounded-lg px-2.5 py-0.5 border-none ${
-                        admin.status === 'Active' 
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                      }`}>
-                        {admin.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ) : (
+                {filteredAdmins.length > 0 ? (
                   filteredAdmins.map((admin) => (
                     <TableRow
                       key={admin.id}
@@ -353,11 +320,19 @@ function AdminManagement() {
                       </TableCell>
                     </TableRow>
                   ))
+                ) : (
+                  !isLoading && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
+                        {t('adminManagement.noData')}
+                      </TableCell>
+                    </TableRow>
+                  )
                 )}
-                {!isLoading && filteredAdmins.length === 0 && (
-                  <TableRow>
+                {isLoading && (
+                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
-                      {t('adminManagement.noData')}
+                      Loading...
                     </TableCell>
                   </TableRow>
                 )}
