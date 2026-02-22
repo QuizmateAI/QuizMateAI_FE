@@ -377,5 +377,64 @@
         "desc": "Cập nhật thông tin cá nhân",
         "placeholder": "Khu vực cài đặt..."
     }
+  },
+  "profile": {
+    "title": "Hồ sơ của tôi",
+    "description": "Quản lý hành trình học tập và cài đặt cá nhân của bạn.",
+    "personalInfo": "Thông tin cá nhân",
+    "personalInfoDesc": "Cập nhật thông tin cơ bản của bạn",
+    "email": "Email",
+    "fullName": "Họ và tên",
+    "fullNamePlaceholder": "Nhập họ và tên",
+    "birthday": "Ngày sinh",
+    "security": "Bảo mật",
+    "securityDesc": "Quản lý mật khẩu và bảo mật tài khoản của bạn",
+    "changePassword": "Đổi mật khẩu",
+    "changePasswordDesc": "Nhập mật khẩu cũ và mật khẩu mới để cập nhật",
+    "oldPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmNewPassword": "Xác nhận mật khẩu mới",
+    "edit": "Chỉnh sửa",
+    "save": "Lưu thay đổi",
+    "saving": "Đang lưu...",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "signOut": "Đăng xuất",
+    "loadError": "Không thể tải thông tin tài khoản",
+    "updateSuccess": "Cập nhật thông tin thành công",
+    "updateError": "Cập nhật thông tin thất bại",
+    "avatarSuccess": "Cập nhật ảnh đại diện thành công",
+    "avatarError": "Cập nhật ảnh đại diện thất bại",
+    "invalidFileType": "Vui lòng chọn file hình ảnh",
+    "fileTooLarge": "Kích thước file không được vượt quá 5MB",
+    "fullNameRequired": "Vui lòng nhập họ và tên",
+    "passwordFieldsRequired": "Vui lòng điền đầy đủ các trường mật khẩu",
+    "passwordMismatch": "Mật khẩu xác nhận không khớp",
+    "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
+    "passwordSuccess": "Đổi mật khẩu thành công",
+    "passwordError": "Đổi mật khẩu thất bại",
+    "xpProgress": "Tiến độ XP",
+    "achievements": "Thành tựu",
+    "unlockedDaysAgo": "Mở khóa {{days}} ngày trước",
+    "tabs": {
+      "overview": "Tổng quan",
+      "settings": "Cài đặt"
+    },
+    "badges": {
+      "quizMaster": "Bậc thầy Quiz",
+      "streakKeeper": "Giữ Streak",
+      "speedster": "Tốc độ cao"
+    },
+    "skillMatrix": {
+      "title": "Ma trận kỹ năng",
+      "desc": "Điểm mạnh và những điểm cần cải thiện"
+    },
+    "stats": {
+      "topicsMastered": "Chủ đề đã thành thạo",
+      "learningTime": "Thời gian học",
+      "dayStreak": "Ngày liên tiếp",
+      "avgScore": "Điểm trung bình"
+    },
+    "recentActivity": "Hoạt động gần đây"
   }
 }

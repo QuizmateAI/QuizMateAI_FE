@@ -13,7 +13,7 @@ import SuperAdminLayout from './Pages/SuperAdmin/SuperAdminLayout';
 import SuperAdminDashboard from './Pages/SuperAdmin/SuperAdminDashboard';
 import AdminManagement from './Pages/SuperAdmin/AdminManagement';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
-import Profile from './Pages/Users/Profile/Profile';
+import ProfilePage from './Pages/Users/Individual/Profile/ProfilePage';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute'; // Import bảo vệ route
 import './i18n'; // Import i18n configuration
 import './App.css'
@@ -23,7 +23,7 @@ function App() {
     <Router>
       <Routes>
         {/* Temporary Profile Route */}
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
         {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home */}
         <Route element={<PublicRoute />}>
