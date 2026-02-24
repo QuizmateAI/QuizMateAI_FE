@@ -201,6 +201,57 @@
       "copyright": "© 2026 QuizMate AI. Xây dựng bằng trí tuệ dành cho người học."
     }
   },
+  "groupManage": {
+    "title": "Quản lý nhóm",
+    "subtitle": "Quản lý nhóm của bạn",
+    "tabs": {
+      "dashboard": "Tổng quan",
+      "members": "Thành viên",
+      "settings": "Cài đặt"
+    },
+    "dashboard": {
+      "totalMembers": "Tổng thành viên",
+      "contributors": "Cộng tác viên",
+      "canUpload": "Được upload",
+      "progress": "Tiến độ",
+      "noDescription": "Chưa có mô tả",
+      "topic": "Chủ đề",
+      "roleDistribution": "Phân bổ vai trò",
+      "recentActivity": "Hoạt động gần đây",
+      "learningProgress": "Tiến độ học tập",
+      "progressPlaceholder": "Biểu đồ & phân tích sẽ hiển thị tại đây",
+      "ago": "trước",
+      "activityJoined": "Một thành viên mới tham gia nhóm",
+      "activityUploaded": "Tài liệu mới được tải lên workspace",
+      "activityQuiz": "Một thành viên hoàn thành bài quiz",
+      "activityRole": "Vai trò thành viên được cập nhật"
+    },
+    "members": {
+      "all": "Tất cả",
+      "searchPlaceholder": "Tìm theo tên hoặc email...",
+      "name": "Tên",
+      "email": "Email",
+      "role": "Vai trò",
+      "upload": "Upload",
+      "yes": "Có",
+      "showing": "Hiển thị {{count}} / {{total}} thành viên"
+    },
+    "settings": {
+      "groupInfo": "Thông tin nhóm",
+      "edit": "Chỉnh sửa",
+      "save": "Lưu thay đổi",
+      "saveSuccess": "Cập nhật nhóm thành công!",
+      "saveError": "Cập nhật nhóm thất bại.",
+      "subject": "Môn học",
+      "dangerZone": "Vùng nguy hiểm",
+      "deleteWarning": "Khi xóa nhóm, bạn không thể hoàn tác. Toàn bộ dữ liệu sẽ bị xóa vĩnh viễn.",
+      "deleteGroup": "Xóa nhóm này",
+      "deleteConfirm": "Bạn có chắc chắn không?",
+      "confirmDelete": "Có, xóa",
+      "deleteError": "Xóa nhóm thất bại.",
+      "leaderOnly": "Chỉ trưởng nhóm mới có thể thay đổi cài đặt."
+    }
+  },
   "home": {
     "tabs": {
       "all": "Tất cả",
@@ -345,7 +396,10 @@
       "title": "Sổ ghi chú chưa đặt tên",
       "create": "Tạo sổ ghi chú",
       "share": "Chia sẻ",
-      "settings": "Cài đặt"
+      "settings": "Cài đặt",
+      "groupSubtitle": "Không gian làm việc nhóm",
+      "createWorkspace": "Tạo workspace mới",
+      "invite": "Mời"
     },
     "sources": {
       "title": "Nguồn",

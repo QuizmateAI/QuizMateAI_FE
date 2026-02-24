@@ -17,13 +17,13 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
 
   // Hiển thị vai trò dạng tiếng Việt/Anh
   const getRoleLabel = (role) => {
-    if (role === 'GROUP_LEADER') return t('home.group.leader');
+    if (role === 'LEADER') return t('home.group.leader');
     if (role === 'CONTRIBUTOR') return t('home.group.contributor');
     return t('home.group.member');
   };
 
   const getRoleBadgeClass = (role) => {
-    if (role === 'GROUP_LEADER') {
+    if (role === 'LEADER') {
       return isDarkMode ? 'bg-blue-950/50 text-blue-400' : 'bg-blue-100 text-blue-700';
     }
     if (role === 'CONTRIBUTOR') {

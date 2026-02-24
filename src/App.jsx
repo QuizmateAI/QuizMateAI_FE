@@ -14,6 +14,7 @@ import SuperAdminDashboard from './Pages/SuperAdmin/SuperAdminDashboard';
 import AdminManagement from './Pages/SuperAdmin/AdminManagement';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
 import GroupWorkspacePage from './Pages/Users/Group/GroupWorkspacePage';
+import GroupManagementPage from './Pages/Users/Group/GroupManagementPage';
 import ProfilePage from './Pages/Users/Individual/Profile/ProfilePage';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute'; // Import bảo vệ route
 import './i18n'; // Import i18n configuration
@@ -23,10 +24,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Temporary Profile Route */}
-        <Route path="/profile" element={<ProfilePage />} />
 
-        {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home */}
+        {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home
+        page của role đó */}
         <Route element={<PublicRoute />}>
         <Route path="/" element={<HeroSection />} />
           <Route path="/login" element={<LoginPage />} />
@@ -34,11 +34,13 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
-        {/* Route cần đăng nhập (User, Admin) - Super Admin không được vào */}
-        <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']} />}>
+        {/* Route cần đăng nhập (User) - Super Admin, Admin không được vào */}
+        <Route element={<ProtectedRoute allowedRoles={['USER']} />}>
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/workspace" element={<WorkspacePage />} />
           <Route path="/group-workspace/:groupId" element={<GroupWorkspacePage />} />
+          <Route path="/group-manage/:groupId" element={<GroupManagementPage />} />
         </Route>
 
          {/* Route dành riêng cho Super Admin */}
