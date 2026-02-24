@@ -32,7 +32,7 @@ function GroupMembersPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
 
-  const isLeader = currentUserRole === 'GROUP_LEADER';
+  const isLeader = currentUserRole === 'LEADER';
 
   // Tải danh sách thành viên
   const loadMembers = useCallback(async () => {
@@ -98,19 +98,19 @@ function GroupMembersPanel({
 
   // Hiển thị nhãn vai trò
   const getRoleLabel = (role) => {
-    if (role === 'GROUP_LEADER') return t('home.group.leader');
+    if (role === 'LEADER') return t('home.group.leader');
     if (role === 'CONTRIBUTOR') return t('home.group.contributor');
     return t('home.group.member');
   };
 
   const getRoleIcon = (role) => {
-    if (role === 'GROUP_LEADER') return <Crown className="w-3 h-3" />;
+    if (role === 'LEADER') return <Crown className="w-3 h-3" />;
     if (role === 'CONTRIBUTOR') return <Shield className="w-3 h-3" />;
     return null;
   };
 
   const getRoleBadgeClass = (role) => {
-    if (role === 'GROUP_LEADER') {
+    if (role === 'LEADER') {
       return isDarkMode ? 'bg-amber-950/50 text-amber-400' : 'bg-amber-100 text-amber-700';
     }
     if (role === 'CONTRIBUTOR') {
@@ -188,8 +188,8 @@ function GroupMembersPanel({
               <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold ${
                 isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-200 text-gray-600'
               }`}>
-                {member.avatarUrl ? (
-                  <img src={member.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+                {member.avatar ? (
+                  <img src={member.avatar} alt="" className="w-9 h-9 rounded-full object-cover" />
                 ) : (
                   (member.fullName || member.username || '?').charAt(0).toUpperCase()
                 )}
@@ -224,7 +224,7 @@ function GroupMembersPanel({
               </div>
 
               {/* Menu thao tác (chỉ leader và không phải chính mình) */}
-              {isLeader && !member.isCurrentUser && member.role !== 'GROUP_LEADER' && (
+              {isLeader && !member.isCurrentUser && member.role !== 'LEADER' && (
                 <div className="relative">
                   <button
                     onClick={() => setOpenMenuId(openMenuId === member.userId ? null : member.userId)}
