@@ -38,7 +38,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={['USER']} />}>
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/home" element={<HomePage />} />
-          <Route path="/workspace" element={<WorkspacePage />} />
+          <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
           <Route path="/group-workspace/:groupId" element={<GroupWorkspacePage />} />
           <Route path="/group-manage/:groupId" element={<GroupManagementPage />} />
         </Route>

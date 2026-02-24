@@ -7,7 +7,12 @@ import LogoDark from "@/assets/DarkMode_Logo.png";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 
-function WorkspaceHeader({ settingsMenu = null, isDarkMode = false }) {
+function WorkspaceHeader({
+  settingsMenu = null,
+  isDarkMode = false,
+  workspaceTitle = "",
+  workspaceSubtitle = "",
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const navigate = useNavigate();
@@ -22,9 +27,16 @@ function WorkspaceHeader({ settingsMenu = null, isDarkMode = false }) {
           >
             <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
           </div>
-          <p className={`text-sm ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-            {t("workspace.header.title")}
-          </p>
+          <div className="flex flex-col">
+            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
+              {workspaceTitle || t("workspace.header.title")}
+            </p>
+            {workspaceSubtitle ? (
+              <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-500"} ${fontClass}`}>
+                {workspaceSubtitle}
+              </p>
+            ) : null}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

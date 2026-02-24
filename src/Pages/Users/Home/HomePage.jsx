@@ -89,7 +89,10 @@ function HomePage() {
 
   // Xử lý tạo workspace
   const handleCreate = async (data) => {
-    await createWorkspace(data);
+    const newWorkspace = await createWorkspace(data);
+    if (newWorkspace?.workspaceId) {
+      navigate(`/workspace/${newWorkspace.workspaceId}`);
+    }
   };
 
   // Xử lý cập nhật workspace
