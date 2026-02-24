@@ -4,6 +4,7 @@ import {
   createWorkspace as createWorkspaceAPI,
   updateWorkspace as updateWorkspaceAPI,
   deleteWorkspace as deleteWorkspaceAPI,
+  getWorkspaceById,
   getAllTopics,
 } from '@/api/WorkspaceAPI';
 
@@ -11,8 +12,10 @@ import {
 export function useWorkspace() {
   const [workspaces, setWorkspaces] = useState([]);
   const [topics, setTopics] = useState([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState(null);
   const [loading, setLoading] = useState(false);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [workspaceDetailLoading, setWorkspaceDetailLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Lấy danh sách workspace của user
@@ -40,6 +43,28 @@ export function useWorkspace() {
       console.error('Lỗi khi lấy danh sách topics:', err);
     } finally {
       setTopicsLoading(false);
+    }
+  }, []);
+
+  // Lấy chi tiết workspace theo id
+  const fetchWorkspaceDetail = useCallback(async (workspaceId) => {
+    if (!workspaceId) {
+      setCurrentWorkspace(null);
+      return null;
+    }
+
+    setWorkspaceDetailLoading(true);
+    try {
+      const res = await getWorkspaceById(workspaceId);
+      const workspace = res.data || null;
+      setCurrentWorkspace(workspace);
+      return workspace;
+    } catch (err) {
+      console.error('Lỗi khi lấy chi tiết workspace:', err);
+      setCurrentWorkspace(null);
+      throw err;
+    } finally {
+      setWorkspaceDetailLoading(false);
     }
   }, []);
 
@@ -76,11 +101,14 @@ export function useWorkspace() {
   return {
     workspaces,
     topics,
+    currentWorkspace,
     loading,
     topicsLoading,
+    workspaceDetailLoading,
     error,
     fetchWorkspaces,
     fetchTopics,
+    fetchWorkspaceDetail,
     createWorkspace,
     editWorkspace,
     removeWorkspace,
