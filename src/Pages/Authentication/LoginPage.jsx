@@ -7,7 +7,7 @@ import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-i
 import { ChevronLeft, Globe, Sun, Moon, Loader2 } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import LogoLight from "@/assets/LightMode_Logo.png";
-import LogoDark from "@/assets/DarkMode_Logo.png";
+import { GoogleLogin } from '@react-oauth/google'; // Import GoogleLogin component
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
 import { useLogin } from './Login';
 import { useRegister } from './Register';
@@ -162,18 +162,20 @@ const LoginPageContent = () => {
                   <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
                 </div>
 
+                {/* Google Login Button */}
                 <div className="flex justify-center w-full mt-2">
-                  <button
-                    type="button"
-                    onClick={() => loginHook.handleGoogleLogin()}
-                    className={`flex items-center justify-center gap-3 w-full max-w-[384px] h-[44px] px-6 rounded-full border text-sm font-medium transition-all duration-200 ${isDarkMode
-                      ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-                      }`}
-                  >
-                    <FcGoogle className="w-5 h-5" />
-                    <span>{t('auth.loginWithGoogle')}</span>
-                  </button>
+                  <div className="w-full flex justify-center">
+                    <GoogleLogin
+                      onSuccess={loginHook.handleGoogleSubmit}
+                      onError={() => console.log('Login Failed')}
+                      useOneTap
+                      theme={isDarkMode ? 'filled_black' : 'outline'}
+                      shape="pill"
+                      width="384"
+                      text="signin_with"
+                      locale={currentLang}
+                    />
+                  </div>
                 </div>
               </form>
             </div>
@@ -454,19 +456,20 @@ const LoginPageContent = () => {
                   <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
                 </div>
 
-                {/* Social Login Buttons */}
+                {/* Social Login Buttons - Register View */}
                 <div className="flex justify-center w-full mt-2">
-                  <button
-                    type="button"
-                    onClick={() => loginHook.handleGoogleLogin()}
-                    className={`flex items-center justify-center gap-3 w-full max-w-[384px] h-[44px] px-6 rounded-full border text-sm font-medium transition-all duration-200 ${isDarkMode
-                      ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-                      }`}
-                  >
-                    <FcGoogle className="w-5 h-5" />
-                    <span>{t('auth.loginWithGoogle')}</span>
-                  </button>
+                  <div className="w-full flex justify-center">
+                    <GoogleLogin
+                      onSuccess={loginHook.handleGoogleSubmit}
+                      onError={() => console.log('Login Failed')}
+                      useOneTap
+                      theme={isDarkMode ? 'filled_black' : 'outline'}
+                      shape="pill"
+                      width="384"
+                      text="signin_with"
+                      locale={currentLang}
+                    />
+                  </div>
                 </div>
               </form>
             </div>

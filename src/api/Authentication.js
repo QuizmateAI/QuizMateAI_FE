@@ -62,7 +62,7 @@ export const checkUsername = async (username) => {
 
 /**
  * Đăng nhập bằng Google
- * @param {string} idToken - ID Token từ Google OAuth
+ * @param {string} idToken - Google Credential/Access Token
  * @returns {Promise} Response chứa token và thông tin user
  */
 export const googleLogin = async (idToken) => {
