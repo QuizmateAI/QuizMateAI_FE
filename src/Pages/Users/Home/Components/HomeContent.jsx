@@ -1,156 +1,187 @@
 
-import React from "react";
-import { MoreVertical } from "lucide-react";
-import workspaceData from "@/Pages/Users/Home/Components/workspaceData";
-import { formatDate, formatUpdatedTime } from "@/Pages/Users/Home/Components/workspaceData";
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { MoreVertical, Pencil, Trash2, Loader2, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-function WorkspaceCard({ workspace, isList, isDarkMode }) {
-  function getWorkspaceCardColorByOrder(orderNumber, darkModeEnabled) {
-    // Logic nghiệp vụ: gán màu theo vòng lặp xanh lá -> cam -> xanh biển khi tạo workspace mới.
-    const colorCycle = [
-      { light: "bg-green-50", dark: "bg-green-950/60" },
-      { light: "bg-orange-50", dark: "bg-orange-950/60" },
-      { light: "bg-blue-50", dark: "bg-blue-950/60" },
-    ];
+// Hiển thị ngày tạo workspace theo locale
+function formatDate(dateAt, locale = "vi-VN") {
+  if (!dateAt) return "";
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(dateAt));
+}
 
-    const safeOrder = Number.isFinite(Number(orderNumber)) ? Number(orderNumber) : 1;
-    const colorIndex = (Math.max(safeOrder, 1) - 1) % colorCycle.length;
-    const selectedColor = colorCycle[colorIndex];
+// Gán màu card theo vòng lặp
+function getCardColor(index, isDark) {
+  const colors = [
+    { light: "bg-green-50", dark: "bg-green-950/60" },
+    { light: "bg-orange-50", dark: "bg-orange-950/60" },
+    { light: "bg-blue-50", dark: "bg-blue-950/60" },
+  ];
+  const c = colors[index % colors.length];
+  return isDark ? c.dark : c.light;
+}
 
-    return darkModeEnabled ? selectedColor.dark : selectedColor.light;
-  }
+// Menu dropdown cho workspace card
+function CardMenu({ onEdit, onDelete, isDarkMode }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
 
-  // Logic nghiệp vụ: chọn màu card theo id để không phụ thuộc dữ liệu màu trong mock data.
-  const cardBg = getWorkspaceCardColorByOrder(workspace.id, isDarkMode);
+  // Logic nghiệp vụ: đóng menu khi click ra ngoài
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   return (
-    <div
-      className={`${cardBg} rounded-xl ${
-        isList ? "h-24" : "h-56"
-      } p-6 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between relative group border ${
-        isDarkMode ? "border-slate-800" : "border-gray-200"
-      } overflow-hidden`}
-    >
-      <div className="flex items-start justify-between">
-        <div className="text-3xl shrink-0">{workspace.emoji}</div>
-        <button className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/5 rounded-full">
-          <MoreVertical className={`w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`} />
-        </button>
-      </div>
-
-      <div className={`flex-1 min-w-0 ${isList ? "mt-1" : "mt-2"}`}>
-        <h3
-          className={`font-medium text-base leading-snug ${
-            isDarkMode ? "text-white" : "text-[#1F1F1F]"
-          } ${isList ? "line-clamp-1" : "line-clamp-2"}`}
-        >
-          {workspace.title}
-        </h3>
-        <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${isList ? "line-clamp-1" : ""}`}>
-          {workspace.description}
-        </p>
-        <div className={`text-xs flex items-center gap-2 ${isDarkMode ? "text-slate-500" : "text-gray-500"} ${isList ? "mt-1" : "mt-2"}`}>
-          <span className="truncate">{formatUpdatedTime(workspace.updatedAt)}</span>
-          <span className={`w-1 h-1 rounded-full ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
-          <span className="truncate">{workspace.count}</span>
-        </div>
-      </div>
-
-      <div
-        className={`flex items-center justify-between text-sm ${
-          isDarkMode ? "text-slate-400" : "text-gray-600"
-        } ${isList ? "mt-1 pt-0 border-t-0" : "mt-3 pt-3 border-t"} ${
-          isDarkMode ? "border-slate-700/50" : "border-gray-200/50"
-        }`}
+    <div ref={menuRef} className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
+        className="p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/5 rounded-full"
       >
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs truncate">{formatDate(workspace.dateAt)}</span>
-          <span className="text-xs">·</span>
-          <span className="text-xs truncate">{workspace.sources} nguồn</span>
+        <MoreVertical className={`w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`} />
+      </button>
+      {open && (
+        <div className={`absolute right-0 top-8 z-20 w-36 rounded-lg border shadow-lg py-1 ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-50"}`}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            {t("home.workspace.edit")}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            {t("home.workspace.delete")}
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function HomeContent({ viewMode, isDarkMode }) {
+function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, onOpenDelete }) {
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const locale = i18n.language === "en" ? "en-US" : "vi-VN";
 
-  // Logic nghiệp vụ: đổi layout theo chế độ xem
   const isList = viewMode === "list";
-  const recentWorkspaces = [...workspaceData]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
 
-  const featuredNotes = [
-    { id: 1, title: "Featured 1", color: "bg-purple-50", darkColor: "bg-purple-950/60" },
-    { id: 2, title: "Featured 2", color: "bg-yellow-50", darkColor: "bg-yellow-950/60" },
-    { id: 3, title: "Featured 3", color: "bg-blue-50", darkColor: "bg-blue-950/60" },
-    { id: 4, title: "Featured 4", color: "bg-green-50", darkColor: "bg-green-950/60" },
-    { id: 5, title: "Featured 5", color: "bg-pink-50", darkColor: "bg-pink-950/60" },
-  ];
+  // Logic nghiệp vụ: hiển thị 5 workspace gần nhất
+  const recentWorkspaces = [...workspaces]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
 
   return (
     <div className={`space-y-10 ${fontClass}`}>
-      <section className="mb-10">
-        <h2 className={`text-xl font-medium mb-4 transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>{t("home.sections.featured")}</h2>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
-          {featuredNotes.map((note) => (
-            <div
-              key={note.id}
-              className={`${isDarkMode ? note.darkColor : note.color} rounded-xl min-w-[280px] h-56 flex-shrink-0 cursor-pointer hover:shadow-md transition-all border ${
-                isDarkMode ? "border-slate-800" : "border-gray-200"
-              }`}
-            />
-          ))}
-        </div>
-      </section>
-
+      {/* Section: Workspace gần đây */}
       <section>
         <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-xl font-medium transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>{t("home.sections.recent")}</h2>
+          <h2 className={`text-xl font-medium transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>
+            {t("home.sections.recent")}
+          </h2>
         </div>
 
-        {isList ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+          </div>
+        ) : recentWorkspaces.length === 0 ? (
+          <div className={`flex flex-col items-center justify-center py-16 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+            <FolderOpen className="w-12 h-12 mb-3 opacity-40" />
+            <p className="text-sm font-medium">{t("home.workspace.noWorkspaces")}</p>
+            <p className="text-xs mt-1">{t("home.workspace.noWorkspacesDesc")}</p>
+          </div>
+        ) : isList ? (
           <div className={`rounded-2xl border transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
-            <div className={`grid grid-cols-[minmax(240px,2fr)_minmax(110px,0.7fr)_minmax(140px,0.8fr)_minmax(120px,0.6fr)_32px] gap-4 px-4 py-3 text-xs font-semibold ${
+            <div className={`grid grid-cols-[minmax(240px,2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-xs font-semibold ${
               isDarkMode ? "text-slate-500" : "text-gray-500"
             }`}>
               <span>{t("home.table.title")}</span>
-              <span>{t("home.table.sources")}</span>
+              <span>{t("home.workspace.topic")}</span>
+              <span>{t("home.workspace.subject")}</span>
               <span>{t("home.table.created")}</span>
-              <span>{t("home.table.role")}</span>
+              <span>{t("home.workspace.status")}</span>
               <span />
             </div>
             <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-gray-200"}`}>
-              {recentWorkspaces.map((workspace) => (
+              {recentWorkspaces.map((ws) => (
                 <div
-                  key={workspace.id}
-                  className={`grid grid-cols-[minmax(240px,2fr)_minmax(110px,0.7fr)_minmax(140px,0.8fr)_minmax(120px,0.6fr)_32px] gap-4 px-4 py-3 text-sm ${
-                    isDarkMode ? "text-slate-300" : "text-gray-700"
+                  key={ws.workspaceId}
+                  onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+                  className={`grid grid-cols-[minmax(240px,2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-sm cursor-pointer group transition-colors ${
+                    isDarkMode ? "text-slate-300 hover:bg-slate-800/50" : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-lg">{workspace.emoji}</span>
-                    <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{workspace.title}</span>
+                    <span className="text-lg">📝</span>
+                    <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.title}</span>
                   </div>
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{workspace.sources} {t("home.labels.sourcesUnit")}</span>
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(workspace.dateAt)}</span>
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{t("home.labels.owner")}</span>
-                  <button className={isDarkMode ? "text-slate-500 hover:text-slate-300" : "text-gray-400 hover:text-gray-600"}>
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
+                  <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.topic?.title || "—"}</span>
+                  <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.subject?.title || "—"}</span>
+                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(ws.createdAt, locale)}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full w-fit ${
+                    ws.status === "ACTIVE"
+                      ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-50 text-green-700"
+                      : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
+                  }`}>{ws.status}</span>
+                  <CardMenu isDarkMode={isDarkMode} onEdit={() => onOpenEdit(ws)} onDelete={() => onOpenDelete(ws)} />
                 </div>
               ))}
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {recentWorkspaces.map((workspace) => (
-              <WorkspaceCard key={workspace.id} workspace={workspace} isList={isList} isDarkMode={isDarkMode} />
-            ))}
+            {recentWorkspaces.map((ws, idx) => {
+              const cardBg = getCardColor(idx, isDarkMode);
+              return (
+                <div
+                  key={ws.workspaceId}
+                  onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+                  className={`${cardBg} rounded-xl h-56 p-5 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between relative group border ${
+                    isDarkMode ? "border-slate-800" : "border-gray-200"
+                  } overflow-hidden`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="text-3xl shrink-0">📝</div>
+                    <CardMenu isDarkMode={isDarkMode} onEdit={() => onOpenEdit(ws)} onDelete={() => onOpenDelete(ws)} />
+                  </div>
+
+                  <div className="flex-1 min-w-0 mt-2">
+                    <h3 className={`font-medium text-base line-clamp-2 leading-snug ${isDarkMode ? "text-white" : "text-[#1F1F1F]"}`}>
+                      {ws.title}
+                    </h3>
+                    <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.topic?.title}</p>
+                    <div className={`text-xs mt-1 flex items-center gap-2 ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+                      <span className="truncate">{ws.subject?.title}</span>
+                    </div>
+                  </div>
+
+                  <div className={`flex items-center justify-between text-sm mt-3 pt-3 border-t ${
+                    isDarkMode ? "text-slate-400 border-slate-700/50" : "text-gray-600 border-gray-200/50"
+                  }`}>
+                    <span className="text-xs truncate">{formatDate(ws.createdAt, locale)}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      ws.status === "ACTIVE"
+                        ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-100 text-green-700"
+                        : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
+                    }`}>{ws.status}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
