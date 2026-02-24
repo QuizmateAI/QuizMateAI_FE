@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import WorkspaceHeader from '@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader';
-import GroupMembersPanel from '@/Pages/Users/Group/Components/GroupMembersPanel';
+import GroupWorkspaceHeader from './Components/GroupWorkspaceHeader';
+import SourcesPanel from '@/Pages/Users/Individual/Workspace/Components/SourcesPanel';
 import ChatPanel from '@/Pages/Users/Individual/Workspace/Components/ChatPanel';
 import StudioPanel from '@/Pages/Users/Individual/Workspace/Components/StudioPanel';
-import InviteMemberDialog from '@/Pages/Users/Group/Components/InviteMemberDialog';
-import { Globe, Moon, Settings, Sun } from 'lucide-react';
+import InviteMemberDialog from './Components/InviteMemberDialog';
+import { Globe, Moon, Settings, Sun, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useGroup } from '@/hooks/useGroup';
@@ -14,28 +14,25 @@ import { useGroup } from '@/hooks/useGroup';
 // Trang workspace dành cho nhóm - bố cục 3 cột giống WorkspacePage
 function GroupWorkspacePage() {
   const { groupId } = useParams();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const settingsRef = useRef(null);
 
-  const {
-    groups,
-    fetchMembers,
-    grantUpload,
-    revokeUpload,
-    updateMemberRole,
-    inviteMember,
-    removeMember,
-  } = useGroup();
+  const { groups, inviteMember } = useGroup();
 
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
   // Tìm thông tin nhóm hiện tại từ danh sách
   const currentGroup = groups.find((g) => String(g.groupId) === String(groupId));
-  const currentUserRole = currentGroup?.memberRole || 'MEMBER';
+
+  // Xử lý mời thành viên
+  const handleInvite = useCallback(async (email) => {
+    await inviteMember(groupId, email);
+  }, [groupId, inviteMember]);
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
@@ -55,11 +52,6 @@ function GroupWorkspacePage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isSettingsOpen]);
-
-  // Xử lý mời thành viên
-  const handleInvite = useCallback(async (email) => {
-    await inviteMember(groupId, email);
-  }, [groupId, inviteMember]);
 
   // Menu cài đặt (tái sử dụng pattern từ WorkspacePage)
   const settingsMenu = (
@@ -122,24 +114,36 @@ function GroupWorkspacePage() {
     </div>
   );
 
+  // Nút quản lý nhóm thêm vào settingsMenu
+  const manageGroupButton = (
+    <Button
+      variant="outline"
+      type="button"
+      onClick={() => navigate(`/group-manage/${groupId}`)}
+      className={`rounded-full h-9 px-4 flex items-center gap-2 ${
+        isDarkMode
+          ? 'border-slate-700 text-slate-200 hover:bg-slate-900'
+          : 'border-gray-200'
+      }`}
+    >
+      <Users className="w-4 h-4" />
+      <span className={fontClass}>{t('groupManage.title')}</span>
+    </Button>
+  );
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-[#F7FBFF]'}`}>
-      <WorkspaceHeader settingsMenu={settingsMenu} isDarkMode={isDarkMode} />
+      <GroupWorkspaceHeader 
+        groupName={currentGroup?.groupName}
+        settingsMenu={<div className="flex items-center gap-2">{manageGroupButton}{settingsMenu}</div>} 
+        isDarkMode={isDarkMode}
+        onOpenInvite={() => setInviteDialogOpen(true)}
+      />
       <div className="flex-1 min-h-[calc(100vh-64px)]">
         <div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
           <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_320px] gap-4 h-[calc(100vh-64px-32px)]">
-            {/* Panel trái: Danh sách thành viên (thay SourcesPanel) */}
-            <GroupMembersPanel
-              isDarkMode={isDarkMode}
-              groupId={groupId}
-              currentUserRole={currentUserRole}
-              fetchMembers={fetchMembers}
-              onGrantUpload={grantUpload}
-              onRevokeUpload={revokeUpload}
-              onUpdateRole={updateMemberRole}
-              onRemoveMember={removeMember}
-              onOpenInvite={() => setInviteDialogOpen(true)}
-            />
+            {/* Panel trái: Sources (giống WorkspacePage cá nhân) */}
+            <SourcesPanel isDarkMode={isDarkMode} />
             {/* Panel giữa: Chat (tái sử dụng) */}
             <ChatPanel isDarkMode={isDarkMode} />
             {/* Panel phải: Studio (tái sử dụng) */}

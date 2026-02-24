@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Globe, Grid3x3, List, Moon, Plus, Settings, Sun } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.png";
@@ -16,12 +17,14 @@ import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
 
 function HomePage() {
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('workspace');
   const [viewMode, setViewMode] = useState('grid');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Hook quản lý workspace: CRUD + topics
   const {
@@ -104,6 +107,16 @@ function HomePage() {
     await createGroup(data);
   };
 
+  // Mở dialog tạo workspace nếu được gọi từ GroupWorkspace
+  useEffect(() => {
+    if (location.state?.openCreateDialog) {
+      setCreateDialogMode('workspace');
+      setCreateDialogOpen(true);
+      // Xóa state sau khi đã xử lý
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
   useEffect(() => {
     if (!isSettingsOpen) {
       return;
@@ -148,12 +161,14 @@ function HomePage() {
       );
     }
 
+    // Default: hiển thị workspace
     return (
-      <HomeContent
+      <UserWorkspace
         viewMode={viewMode}
         isDarkMode={isDarkMode}
         workspaces={workspaces}
         loading={loading}
+        onOpenCreate={handleOpenCreate}
         onOpenEdit={handleOpenEdit}
         onOpenDelete={handleOpenDelete}
       />
@@ -243,16 +258,6 @@ function HomePage() {
           <div className={`flex items-center gap-1 rounded-full p-1 border ${
             isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-gray-50 border-gray-200'
           }`}>
-            <button 
-              onClick={() => setActiveTab('all')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                activeTab === 'all' 
-                  ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
-                  : isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              {t('home.tabs.all')}
-            </button>
             <button 
               onClick={() => setActiveTab('workspace')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
