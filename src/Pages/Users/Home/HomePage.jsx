@@ -6,9 +6,14 @@ import LogoDark from "@/assets/DarkMode_Logo.png";
 import HomeContent from "@/Pages/Users/Home/Components/HomeContent";
 import UserWorkspace from "@/Pages/Users/Home/Components/UserWorkspace";
 import UserGroup from "@/Pages/Users/Home/Components/UserGroup";
+import CreateNewDialog from "@/Pages/Users/Home/Components/CreateNewDialog";
+import EditWorkspaceDialog from "@/Pages/Users/Home/Components/EditWorkspaceDialog";
+import DeleteWorkspaceDialog from "@/Pages/Users/Home/Components/DeleteWorkspaceDialog";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { useWorkspace } from '@/hooks/useWorkspace';
+import { useGroup } from '@/hooks/useGroup';
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState('all');
@@ -18,12 +23,85 @@ function HomePage() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
+  // Hook quản lý workspace: CRUD + topics
+  const {
+    workspaces,
+    topics,
+    loading,
+    topicsLoading,
+    fetchTopics,
+    createWorkspace,
+    editWorkspace,
+    removeWorkspace,
+  } = useWorkspace();
+
+  // Hook quản lý group: CRUD + members
+  const {
+    groups,
+    topics: groupTopics,
+    loading: groupLoading,
+    topicsLoading: groupTopicsLoading,
+    fetchTopics: fetchGroupTopics,
+    createGroup,
+  } = useGroup();
+
+  // State cho các dialog
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDialogMode, setCreateDialogMode] = useState('workspace');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState(null);
+
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
     i18n.changeLanguage(newLang);
+  };
+
+  // Mở dialog tạo workspace mới (mặc định tab workspace)
+  const handleOpenCreate = () => {
+    setCreateDialogMode('workspace');
+    setCreateDialogOpen(true);
+  };
+
+  // Mở dialog tạo nhóm mới (mặc định tab group)
+  const handleOpenCreateGroup = () => {
+    setCreateDialogMode('group');
+    setCreateDialogOpen(true);
+  };
+
+  // Mở dialog sửa workspace
+  const handleOpenEdit = (ws) => {
+    setSelectedWorkspace(ws);
+    setEditDialogOpen(true);
+  };
+
+  // Mở dialog xóa workspace
+  const handleOpenDelete = (ws) => {
+    setSelectedWorkspace(ws);
+    setDeleteDialogOpen(true);
+  };
+
+  // Xử lý tạo workspace
+  const handleCreate = async (data) => {
+    await createWorkspace(data);
+  };
+
+  // Xử lý cập nhật workspace
+  const handleEdit = async (workspaceId, data) => {
+    await editWorkspace(workspaceId, data);
+  };
+
+  // Xử lý xóa workspace
+  const handleDelete = async (workspaceId) => {
+    await removeWorkspace(workspaceId);
+  };
+
+  // Xử lý tạo nhóm
+  const handleCreateGroup = async (data) => {
+    await createGroup(data);
   };
 
   useEffect(() => {
@@ -45,14 +123,41 @@ function HomePage() {
   // Logic nghiệp vụ: hiển thị nội dung theo tab đang chọn
   const renderTabContent = () => {
     if (activeTab === 'workspace') {
-      return <UserWorkspace viewMode={viewMode} isDarkMode={isDarkMode} />;
+      return (
+        <UserWorkspace
+          viewMode={viewMode}
+          isDarkMode={isDarkMode}
+          workspaces={workspaces}
+          loading={loading}
+          onOpenCreate={handleOpenCreate}
+          onOpenEdit={handleOpenEdit}
+          onOpenDelete={handleOpenDelete}
+        />
+      );
     }
 
     if (activeTab === 'group') {
-      return <UserGroup viewMode={viewMode} isDarkMode={isDarkMode} />;
+      return (
+        <UserGroup
+          viewMode={viewMode}
+          isDarkMode={isDarkMode}
+          groups={groups}
+          loading={groupLoading}
+          onOpenCreate={handleOpenCreateGroup}
+        />
+      );
     }
 
-    return <HomeContent viewMode={viewMode} isDarkMode={isDarkMode} />;
+    return (
+      <HomeContent
+        viewMode={viewMode}
+        isDarkMode={isDarkMode}
+        workspaces={workspaces}
+        loading={loading}
+        onOpenEdit={handleOpenEdit}
+        onOpenDelete={handleOpenDelete}
+      />
+    );
   };
 
   return (
@@ -200,7 +305,10 @@ function HomePage() {
             </Button> */}
 
             {/* Create Button */}
-            <Button className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#6682bd] text-white rounded-full h-9 px-4">
+            <Button
+              onClick={handleOpenCreate}
+              className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#6682bd] text-white rounded-full h-9 px-4"
+            >
               <Plus className="w-4 h-4" />
               <span className={`text-sm font-medium ${fontClass}`}>{t('home.actions.create')}</span>
             </Button>
@@ -213,6 +321,36 @@ function HomePage() {
           <div className="pt-[190px] px-20 py-12">
   {renderTabContent()}
 </div>
+
+      {/* Dialogs */}
+      <CreateNewDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        topics={topics.length > 0 ? topics : groupTopics}
+        topicsLoading={topicsLoading || groupTopicsLoading}
+        onFetchTopics={fetchTopics}
+        onCreateWorkspace={handleCreate}
+        onCreateGroup={handleCreateGroup}
+        isDarkMode={isDarkMode}
+        initialMode={createDialogMode}
+      />
+      <EditWorkspaceDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        workspace={selectedWorkspace}
+        topics={topics}
+        topicsLoading={topicsLoading}
+        onFetchTopics={fetchTopics}
+        onEdit={handleEdit}
+        isDarkMode={isDarkMode}
+      />
+      <DeleteWorkspaceDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        workspace={selectedWorkspace}
+        onDelete={handleDelete}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 }
