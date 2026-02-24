@@ -201,6 +201,57 @@
       "copyright": "© 2026 QuizMate AI. Built with intelligence for learners."
     }
   },
+  "groupManage": {
+    "title": "Group Management",
+    "subtitle": "Manage your group",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "members": "Members",
+      "settings": "Settings"
+    },
+    "dashboard": {
+      "totalMembers": "Total Members",
+      "contributors": "Contributors",
+      "canUpload": "Can Upload",
+      "progress": "Progress",
+      "noDescription": "No description",
+      "topic": "Topic",
+      "roleDistribution": "Role Distribution",
+      "recentActivity": "Recent Activity",
+      "learningProgress": "Learning Progress",
+      "progressPlaceholder": "Charts & analytics will appear here",
+      "ago": "ago",
+      "activityJoined": "A new member joined the group",
+      "activityUploaded": "New source uploaded to workspace",
+      "activityQuiz": "Quiz completed by a member",
+      "activityRole": "Member role was updated"
+    },
+    "members": {
+      "all": "All",
+      "searchPlaceholder": "Search by name or email...",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "upload": "Upload",
+      "yes": "Yes",
+      "showing": "Showing {{count}} of {{total}} members"
+    },
+    "settings": {
+      "groupInfo": "Group Information",
+      "edit": "Edit",
+      "save": "Save Changes",
+      "saveSuccess": "Group updated successfully!",
+      "saveError": "Failed to update group.",
+      "subject": "Subject",
+      "dangerZone": "Danger Zone",
+      "deleteWarning": "Once you delete a group, there is no going back. All data will be permanently removed.",
+      "deleteGroup": "Delete this group",
+      "deleteConfirm": "Are you absolutely sure?",
+      "confirmDelete": "Yes, delete",
+      "deleteError": "Failed to delete group.",
+      "leaderOnly": "Only the group leader can modify settings."
+    }
+  },
   "home": {
     "tabs": {
       "all": "All",
@@ -345,7 +396,10 @@
       "title": "Untitled workspace",
       "create": "Create workspace",
       "share": "Share",
-      "settings": "Settings"
+      "settings": "Settings",
+      "groupSubtitle": "Group Workspace",
+      "createWorkspace": "Create new workspace",
+      "invite": "Invite"
     },
     "sources": {
       "title": "Sources",
