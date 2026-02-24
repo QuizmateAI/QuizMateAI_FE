@@ -13,6 +13,7 @@ import SuperAdminLayout from './Pages/SuperAdmin/SuperAdminLayout';
 import SuperAdminDashboard from './Pages/SuperAdmin/SuperAdminDashboard';
 import AdminManagement from './Pages/SuperAdmin/AdminManagement';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
+import GroupWorkspacePage from './Pages/Users/Group/GroupWorkspacePage';
 import ProfilePage from './Pages/Users/Individual/Profile/ProfilePage';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute'; // Import bảo vệ route
 import './i18n'; // Import i18n configuration
@@ -37,6 +38,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']} />}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/workspace" element={<WorkspacePage />} />
+          <Route path="/group-workspace/:groupId" element={<GroupWorkspacePage />} />
         </Route>
 
          {/* Route dành riêng cho Super Admin */}
