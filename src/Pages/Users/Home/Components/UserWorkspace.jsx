@@ -81,10 +81,11 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, onOpenCreate
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
+  const workspaceList = Array.isArray(workspaces) ? workspaces : [];
 
   const isList = viewMode === "list";
   // Sắp xếp theo ngày tạo mới nhất
-  const sorted = [...workspaces].sort(
+  const sorted = [...workspaceList].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 

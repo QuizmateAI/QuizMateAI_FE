@@ -8,6 +8,15 @@ import {
   getAllTopics,
 } from '@/api/WorkspaceAPI';
 
+function normalizeWorkspaceList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.content)) return payload.content;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.result)) return payload.result;
+  return [];
+}
+
 // Hook quản lý toàn bộ logic workspace: CRUD + topics
 export function useWorkspace() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -24,7 +33,7 @@ export function useWorkspace() {
     setError(null);
     try {
       const res = await getWorkspacesByUser();
-      setWorkspaces(res.data || []);
+      setWorkspaces(normalizeWorkspaceList(res?.data ?? res));
     } catch (err) {
       setError(err.message || 'Không thể tải danh sách workspace');
       console.error('Lỗi khi lấy danh sách workspace:', err);
@@ -71,26 +80,28 @@ export function useWorkspace() {
   // Tạo workspace mới
   const createWorkspace = useCallback(async (data) => {
     const res = await createWorkspaceAPI(data);
+    const newWorkspace = res?.data ?? res;
     // Thêm workspace mới vào đầu danh sách
-    setWorkspaces((prev) => [res.data, ...prev]);
-    return res.data;
+    setWorkspaces((prev) => [newWorkspace, ...normalizeWorkspaceList(prev)]);
+    return newWorkspace;
   }, []);
 
   // Cập nhật workspace
   const editWorkspace = useCallback(async (workspaceId, data) => {
     const res = await updateWorkspaceAPI(workspaceId, data);
+    const updatedWorkspace = res?.data ?? res;
     // Cập nhật workspace trong danh sách
     setWorkspaces((prev) =>
-      prev.map((ws) => (ws.workspaceId === workspaceId ? res.data : ws))
+      normalizeWorkspaceList(prev).map((ws) => (ws.workspaceId === workspaceId ? updatedWorkspace : ws))
     );
-    return res.data;
+    return updatedWorkspace;
   }, []);
 
   // Xóa workspace
   const removeWorkspace = useCallback(async (workspaceId) => {
     await deleteWorkspaceAPI(workspaceId);
     // Loại bỏ workspace khỏi danh sách
-    setWorkspaces((prev) => prev.filter((ws) => ws.workspaceId !== workspaceId));
+    setWorkspaces((prev) => normalizeWorkspaceList(prev).filter((ws) => ws.workspaceId !== workspaceId));
   }, []);
 
   // Tải dữ liệu khi mount
