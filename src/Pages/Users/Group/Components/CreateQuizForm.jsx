@@ -1,17 +1,14 @@
 import React, { useState } from "react";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-// Danh sách dạng câu hỏi
+// Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
 
-// Dialog tạo Quiz — hỗ trợ 2 tab: Thủ công & AI
-function CreateQuizDialog({ open, onOpenChange, isDarkMode, onCreateQuiz }) {
+// Form tạo Quiz — hiển thị inline trong ChatPanel thay vì popup
+function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [tab, setTab] = useState("manual");
@@ -64,7 +61,6 @@ function CreateQuizDialog({ open, onOpenChange, isDarkMode, onCreateQuiz }) {
         ? { mode: "manual", name, timeType, duration, passingScore, questions }
         : { mode: "ai", name: aiName, difficulty: aiDifficulty, totalQuestions: aiTotalQuestions, timeType: aiTimeType, duration: aiDuration, prompt: aiPrompt };
       await onCreateQuiz?.(data);
-      onOpenChange(false);
     } catch {
       // Lỗi xử lý bởi component cha
     } finally {
@@ -88,19 +84,28 @@ function CreateQuizDialog({ open, onOpenChange, isDarkMode, onCreateQuiz }) {
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`sm:max-w-[600px] max-h-[85vh] overflow-y-auto ${fontClass} ${
-        isDarkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-gray-200 text-gray-900"
-      }`}>
-        <DialogHeader>
-          <DialogTitle className={fontClass}>{t("workspace.quiz.createTitle")}</DialogTitle>
-          <DialogDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
-            {t("workspace.quiz.createDesc")}
-          </DialogDescription>
-        </DialogHeader>
+    <div className="flex flex-col h-full">
+      {/* Header với nút quay lại */}
+      <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-2">
+          <BadgeCheck className="w-5 h-5 text-blue-500" />
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+            {t("workspace.quiz.createTitle")}
+          </p>
+        </div>
+      </div>
+
+      {/* Nội dung form cuộn được */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+          {t("workspace.quiz.createDesc")}
+        </p>
 
         {/* Tab chọn chế độ */}
-        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-900" : "bg-gray-100"}`}>
+        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
           <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("workspace.quiz.tabManual")}</button>
           <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("workspace.quiz.tabAI")}</button>
         </div>
@@ -132,7 +137,7 @@ function CreateQuizDialog({ open, onOpenChange, isDarkMode, onCreateQuiz }) {
             {/* Danh sách câu hỏi */}
             <div className="space-y-3">
               {questions.map((q, qIdx) => (
-                <div key={qIdx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-gray-50"}`}>
+                <div key={qIdx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center justify-between">
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>#{qIdx + 1}</span>
                     <button onClick={() => removeQuestion(qIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded">
@@ -143,7 +148,8 @@ function CreateQuizDialog({ open, onOpenChange, isDarkMode, onCreateQuiz }) {
                     {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`workspace.quiz.types.${qt}`)}</option>)}
                   </select>
                   <input className={inputCls} placeholder={t("workspace.quiz.questionText")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
-                  {/* Danh sách đáp án (cho multiple choice) */}
+
+                  {/* Đáp án cho multiple choice / multiple select */}
                   {(q.type === "multipleChoice" || q.type === "multipleSelect") && (
                     <div className="space-y-1.5 pl-2">
                       {q.answers.map((a, aIdx) => (
@@ -166,7 +172,7 @@ function CreateQuizDialog({ open, onOpenChange, isDarkMode, onCreateQuiz }) {
                           />
                         </div>
                       ))}
-                      <button onClick={() => addAnswer(qIdx)} className={`text-xs text-blue-500 hover:underline flex items-center gap-1 mt-1`}>
+                      <button onClick={() => addAnswer(qIdx)} className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-1">
                         <Plus className="w-3 h-3" /> {t("workspace.quiz.addAnswer")}
                       </button>
                     </div>
@@ -226,23 +232,23 @@ function CreateQuizDialog({ open, onOpenChange, isDarkMode, onCreateQuiz }) {
             </div>
           </div>
         )}
+      </div>
 
-        {/* Nút hành động */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-            {t("workspace.quiz.cancel")}
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
-            {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {tab === "manual"
-              ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.create"))
-              : (submitting ? t("workspace.quiz.generating") : t("workspace.quiz.generateAI"))
-            }
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Nút hành động cố định dưới cùng */}
+      <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
+          {t("workspace.quiz.cancel")}
+        </Button>
+        <Button onClick={handleSubmit} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+          {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+          {tab === "manual"
+            ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.create"))
+            : (submitting ? t("workspace.quiz.generating") : t("workspace.quiz.generateAI"))
+          }
+        </Button>
+      </div>
+    </div>
   );
 }
 
-export default CreateQuizDialog;
+export default CreateQuizForm;
