@@ -584,6 +584,10 @@
       "generating": "AI đang tạo...",
       "phases": "giai đoạn",
       "knowledge": "kiến thức",
+      "allPhases": "Tất cả Phases",
+      "rename": "Đổi tên",
+      "delete": "Xóa",
+      "itemCount": "{{count}} mục",
       "postLearning": "Post-learning",
       "postLearningDesc": "Hoàn thành tất cả knowledge để mở bài post-learning."
     },
