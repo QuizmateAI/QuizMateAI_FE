@@ -5,7 +5,7 @@ import GroupWorkspaceHeader from './Components/GroupWorkspaceHeader';
 import SourcesPanel from '@/Pages/Users/Individual/Workspace/Components/SourcesPanel';
 import ChatPanel from '@/Pages/Users/Individual/Workspace/Components/ChatPanel';
 import StudioPanel from '@/Pages/Users/Individual/Workspace/Components/StudioPanel';
-import InviteMemberDialog from './Components/InviteMemberDialog';
+import InviteMemberDialog from './Group_leader/InviteMemberDialog';
 import { Globe, Moon, Settings, Sun, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';

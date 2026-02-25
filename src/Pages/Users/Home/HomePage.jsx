@@ -32,10 +32,13 @@ function HomePage() {
     topics,
     loading,
     topicsLoading,
+    pagination,
     fetchTopics,
     createWorkspace,
     editWorkspace,
     removeWorkspace,
+    changePage,
+    changePageSize,
   } = useWorkspace();
 
   // Hook quản lý group: CRUD + members
@@ -145,6 +148,9 @@ function HomePage() {
           isDarkMode={isDarkMode}
           workspaces={workspaces}
           loading={loading}
+          pagination={pagination}
+          onPageChange={changePage}
+          onPageSizeChange={changePageSize}
           onOpenCreate={handleOpenCreate}
           onOpenEdit={handleOpenEdit}
           onOpenDelete={handleOpenDelete}
@@ -171,6 +177,9 @@ function HomePage() {
         isDarkMode={isDarkMode}
         workspaces={workspaces}
         loading={loading}
+        pagination={pagination}
+        onPageChange={changePage}
+        onPageSizeChange={changePageSize}
         onOpenCreate={handleOpenCreate}
         onOpenEdit={handleOpenEdit}
         onOpenDelete={handleOpenDelete}
