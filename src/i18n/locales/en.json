@@ -584,6 +584,10 @@
       "generating": "AI is generating...",
       "phases": "phases",
       "knowledge": "knowledge",
+      "allPhases": "All Phases",
+      "rename": "Rename",
+      "delete": "Delete",
+      "itemCount": "{{count}} items",
       "postLearning": "Post-learning",
       "postLearningDesc": "Complete all knowledge items to unlock post-learning."
     },
