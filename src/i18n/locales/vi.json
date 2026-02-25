@@ -383,6 +383,10 @@
       "edit": "Chỉnh sửa",
       "confirmDeleteName": "Bạn sắp xóa"
     },
+    "pagination": {
+      "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",
+      "page": "trang"
+    },
     "profile": {
       "greeting": "Chào {{name}},",
       "manageAccount": "Quản lý Tài khoản của bạn",
@@ -644,47 +648,6 @@
       "leader": "Trưởng nhóm",
       "createdAt": "Ngày tạo",
       "actions": "Hành động"
-    }
-  },
-  "profile": {
-    "title": "Hồ Sơ Của Tôi",
-    "description": "Quản lý lộ trình học tập và cài đặt cá nhân.",
-    "edit": "Chỉnh sửa",
-    "share": "Chia sẻ",
-    "unlocked": "Mở khóa {{days}} ngày trước",
-    "xpProgress": "Tiến độ XP",
-    "aiTokens": "AI Tokens",
-    "topUp": "Nạp thêm",
-    "tokenDesc": "Đủ cho ~20 bài trắc nghiệm.",
-    "achievements": "Thành tích",
-    "viewAllBadges": "Xem tất cả huy hiệu",
-    "tabs": {
-        "analytics": "Thống kê",
-        "roadmaps": "Lộ trình",
-        "settings": "Cài đặt"
-    },
-    "skillMatrix": {
-        "title": "Ma trận kỹ năng",
-        "desc": "Điểm mạnh & điểm cần cải thiện"
-    },
-    "stats": {
-        "topicsMastered": "Chủ đề đã học",
-        "learningTime": "Thời gian học",
-        "dayStreak": "Chuỗi ngày",
-        "avgScore": "Điểm trung bình"
-    },
-    "recentActivity": "Hoạt động gần đây",
-    "roadmap": {
-        "create": "Tạo lộ trình mới",
-        "createDesc": "Dán URL, Tải PDF, hoặc nhập chủ đề",
-        "progress": "Tiến độ",
-        "continue": "Tiếp tục",
-        "lastStudied": "Học {{days}} ngày trước"
-    },
-    "settings": {
-        "title": "Cài đặt tài khoản",
-        "desc": "Cập nhật thông tin cá nhân",
-        "placeholder": "Khu vực cài đặt..."
     }
   },
   "profile": {

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical, Plus, Pencil, Trash2, Loader2, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import Pagination from "./Pagination";
 
 // Hiển thị ngày tạo workspace theo locale
 function formatDate(dateAt, locale = "vi-VN") {
@@ -76,17 +77,20 @@ function WorkspaceMenu({ onEdit, onDelete, isDarkMode }) {
   );
 }
 
-function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, onOpenCreate, onOpenEdit, onOpenDelete }) {
+function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, onPageChange, onPageSizeChange, onOpenCreate, onOpenEdit, onOpenDelete }) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
 
   const isList = viewMode === "list";
-  // Sắp xếp theo ngày tạo mới nhất
-  const sorted = [...workspaces].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Sắp xếp theo ngày tạo mới nhất - đảm bảo workspaces là mảng hợp lệ
+  const sorted = Array.isArray(workspaces) 
+    ? [...workspaces].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : [];
+
+  // Thông tin pagination mặc định nếu không có
+  const paginationInfo = pagination || { page: 0, size: 10, totalPages: 0, totalElements: 0 };
 
   // Trạng thái loading
   if (loading) {
@@ -111,60 +115,76 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, onOpenCreate
       </div>
 
       {isList ? (
-        <div className={`rounded-2xl border transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
-          <div className={`grid grid-cols-[minmax(240px,2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-xs font-semibold ${
-            isDarkMode ? "text-slate-500" : "text-gray-500"
-          }`}>
-            <span>{t("home.table.title")}</span>
-            <span>{t("home.workspace.topic")}</span>
-            <span>{t("home.workspace.subject")}</span>
-            <span>{t("home.table.created")}</span>
-            <span>{t("home.workspace.status")}</span>
-            <span />
+        <>
+          <div className={`rounded-2xl border transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
+            <div className={`grid grid-cols-[minmax(240px,2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-xs font-semibold ${
+              isDarkMode ? "text-slate-500" : "text-gray-500"
+            }`}>
+              <span>{t("home.table.title")}</span>
+              <span>{t("home.workspace.topic")}</span>
+              <span>{t("home.workspace.subject")}</span>
+              <span>{t("home.table.created")}</span>
+              <span>{t("home.workspace.status")}</span>
+              <span />
+            </div>
+
+            {sorted.length === 0 ? (
+              <div className={`px-4 py-10 text-center ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                <FolderOpen className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">{t("home.workspace.noWorkspaces")}</p>
+                <p className="text-xs mt-1">{t("home.workspace.noWorkspacesDesc")}</p>
+              </div>
+            ) : (
+              <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-gray-200"}`}>
+                {sorted.map((ws) => (
+                  <div
+                    key={ws.workspaceId}
+                    onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+                    className={`grid grid-cols-[minmax(240px,2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-sm cursor-pointer group transition-colors ${
+                      isDarkMode ? "text-slate-300 hover:bg-slate-800/50" : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-lg">📝</span>
+                      <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.title}</span>
+                    </div>
+                    <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.topic?.title || "—"}</span>
+                    <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.subject?.title || "—"}</span>
+                    <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(ws.createdAt, locale)}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full w-fit ${
+                      ws.status === "ACTIVE"
+                        ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-50 text-green-700"
+                        : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
+                    }`}>
+                      {ws.status}
+                    </span>
+                    <WorkspaceMenu
+                      isDarkMode={isDarkMode}
+                      onEdit={() => onOpenEdit(ws)}
+                      onDelete={() => onOpenDelete(ws)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {sorted.length === 0 ? (
-            <div className={`px-4 py-10 text-center ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-              <FolderOpen className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">{t("home.workspace.noWorkspaces")}</p>
-              <p className="text-xs mt-1">{t("home.workspace.noWorkspacesDesc")}</p>
-            </div>
-          ) : (
-            <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-gray-200"}`}>
-              {sorted.map((ws) => (
-                <div
-                  key={ws.workspaceId}
-                  onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
-                  className={`grid grid-cols-[minmax(240px,2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-sm cursor-pointer group transition-colors ${
-                    isDarkMode ? "text-slate-300 hover:bg-slate-800/50" : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-lg">📝</span>
-                    <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.title}</span>
-                  </div>
-                  <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.topic?.title || "—"}</span>
-                  <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.subject?.title || "—"}</span>
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(ws.createdAt, locale)}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full w-fit ${
-                    ws.status === "ACTIVE"
-                      ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-50 text-green-700"
-                      : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {ws.status}
-                  </span>
-                  <WorkspaceMenu
-                    isDarkMode={isDarkMode}
-                    onEdit={() => onOpenEdit(ws)}
-                    onDelete={() => onOpenDelete(ws)}
-                  />
-                </div>
-              ))}
-            </div>
+          {/* Pagination cho list view */}
+          {sorted.length > 0 && (
+            <Pagination
+              currentPage={paginationInfo.page}
+              totalPages={paginationInfo.totalPages}
+              totalElements={paginationInfo.totalElements}
+              pageSize={paginationInfo.size}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+              isDarkMode={isDarkMode}
+            />
           )}
-        </div>
+        </>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {/* Card tạo workspace mới */}
           <div
             className={`rounded-xl border-2 border-dashed h-56 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden ${
@@ -238,7 +258,21 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, onOpenCreate
               </div>
             );
           })}
-        </div>
+          </div>
+
+          {/* Pagination cho grid view */}
+          {sorted.length > 0 && (
+            <Pagination
+              currentPage={paginationInfo.page}
+              totalPages={paginationInfo.totalPages}
+              totalElements={paginationInfo.totalElements}
+              pageSize={paginationInfo.size}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+              isDarkMode={isDarkMode}
+            />
+          )}
+        </>
       )}
     </section>
   );

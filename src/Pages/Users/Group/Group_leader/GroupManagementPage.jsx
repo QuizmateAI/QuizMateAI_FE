@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useGroup } from '@/hooks/useGroup';
 import { ArrowLeft, LayoutDashboard, Users, Settings } from 'lucide-react';
-import GroupDashboardTab from './Components/GroupDashboardTab';
-import GroupMembersTab from './Components/GroupMembersTab';
-import GroupSettingsTab from './Components/GroupSettingsTab';
-import InviteMemberDialog from './Components/InviteMemberDialog';
+import GroupDashboardTab from './GroupDashboardTab';
+import GroupMembersTab from './GroupMembersTab';
+import GroupSettingsTab from './GroupSettingsTab';
+import InviteMemberDialog from './InviteMemberDialog';
 
 // Trang quản lý nhóm: Dashboard + Thành viên + Cài đặt
 function GroupManagementPage() {

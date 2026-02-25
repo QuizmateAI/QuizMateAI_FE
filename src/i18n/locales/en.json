@@ -383,9 +383,13 @@
       "edit": "Edit",
       "confirmDeleteName": "You are about to delete"
     },
+    "pagination": {
+      "showing": "Showing {{start}} - {{end}} of {{total}}",
+      "page": "page"
+    },
     "profile": {
       "greeting": "Hi {{name}},",
-      "manageAccount": "Manage your Google Account",
+      "manageAccount": "Manage your Account",
       "logout": "Log out",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service"
@@ -644,47 +648,6 @@
       "leader": "Leader",
       "createdAt": "Created At",
       "actions": "Actions"
-    }
-  },
-  "profile": {
-    "title": "My Profile",
-    "description": "Manage your learning journey and personal settings.",
-    "edit": "Edit",
-    "share": "Share",
-    "unlocked": "Unlocked {{days}} days ago",
-    "xpProgress": "XP Progress",
-    "aiTokens": "AI Tokens",
-    "topUp": "Top Up",
-    "tokenDesc": "Enough for ~20 quizzes.",
-    "achievements": "Achievements",
-    "viewAllBadges": "View All Badges",
-    "tabs": {
-        "analytics": "Analytics",
-        "roadmaps": "My Roadmaps",
-        "settings": "Settings"
-    },
-    "skillMatrix": {
-        "title": "Skill Matrix",
-        "desc": "Your strengths & areas to improve"
-    },
-    "stats": {
-        "topicsMastered": "Topics Mastered",
-        "learningTime": "Learning Time",
-        "dayStreak": "Day Streak",
-        "avgScore": "Avg. Score"
-    },
-    "recentActivity": "Recent Activity",
-    "roadmap": {
-        "create": "Create New Roadmap",
-        "createDesc": "Paste URL, Upload PDF, or Enter Topic",
-        "progress": "Progress",
-        "continue": "Continue",
-        "lastStudied": "Last studied {{days}} days ago"
-    },
-    "settings": {
-        "title": "Account Settings",
-        "desc": "Update your personal information",
-        "placeholder": "Settings panel placeholder..."
     }
   },
   "profile": {
