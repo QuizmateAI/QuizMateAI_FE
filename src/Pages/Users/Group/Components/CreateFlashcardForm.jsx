@@ -1,16 +1,13 @@
 import React, { useState } from "react";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, CreditCard, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 // Danh sách dạng thẻ flashcard
 const CARD_TYPES = ["termDefinition", "questionAnswer", "imageDescription", "cloze"];
 
-// Dialog tạo Flashcard — hỗ trợ 2 tab: Thủ công & AI
-function CreateFlashcardDialog({ open, onOpenChange, isDarkMode, onCreateFlashcard }) {
+// Form tạo Flashcard — hiển thị inline trong ChatPanel thay vì popup
+function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [tab, setTab] = useState("manual");
@@ -48,7 +45,6 @@ function CreateFlashcardDialog({ open, onOpenChange, isDarkMode, onCreateFlashca
         ? { mode: "manual", deckName, cards }
         : { mode: "ai", deckName: aiDeckName, totalCards: aiTotalCards, prompt: aiPrompt };
       await onCreateFlashcard?.(data);
-      onOpenChange(false);
     } catch {
       // Lỗi xử lý bởi component cha
     } finally {
@@ -72,19 +68,28 @@ function CreateFlashcardDialog({ open, onOpenChange, isDarkMode, onCreateFlashca
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`sm:max-w-[560px] max-h-[85vh] overflow-y-auto ${fontClass} ${
-        isDarkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-gray-200 text-gray-900"
-      }`}>
-        <DialogHeader>
-          <DialogTitle className={fontClass}>{t("workspace.flashcard.createTitle")}</DialogTitle>
-          <DialogDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
-            {t("workspace.flashcard.createDesc")}
-          </DialogDescription>
-        </DialogHeader>
+    <div className="flex flex-col h-full">
+      {/* Header với nút quay lại */}
+      <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-2">
+          <CreditCard className="w-5 h-5 text-amber-500" />
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+            {t("workspace.flashcard.createTitle")}
+          </p>
+        </div>
+      </div>
+
+      {/* Nội dung form cuộn được */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+          {t("workspace.flashcard.createDesc")}
+        </p>
 
         {/* Tab chọn chế độ */}
-        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-900" : "bg-gray-100"}`}>
+        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
           <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("workspace.flashcard.tabManual")}</button>
           <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("workspace.flashcard.tabAI")}</button>
         </div>
@@ -99,7 +104,7 @@ function CreateFlashcardDialog({ open, onOpenChange, isDarkMode, onCreateFlashca
             {/* Danh sách thẻ */}
             <div className="space-y-3">
               {cards.map((card, idx) => (
-                <div key={idx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-gray-50"}`}>
+                <div key={idx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center justify-between">
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>#{idx + 1}</span>
                     <div className="flex items-center gap-2">
@@ -136,23 +141,23 @@ function CreateFlashcardDialog({ open, onOpenChange, isDarkMode, onCreateFlashca
             </div>
           </div>
         )}
+      </div>
 
-        {/* Nút hành động */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-            {t("workspace.flashcard.cancel")}
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
-            {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {tab === "manual"
-              ? (submitting ? t("workspace.flashcard.creating") : t("workspace.flashcard.create"))
-              : (submitting ? t("workspace.flashcard.generating") : t("workspace.flashcard.generateAI"))
-            }
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Nút hành động cố định dưới cùng */}
+      <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
+          {t("workspace.flashcard.cancel")}
+        </Button>
+        <Button onClick={handleSubmit} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+          {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+          {tab === "manual"
+            ? (submitting ? t("workspace.flashcard.creating") : t("workspace.flashcard.create"))
+            : (submitting ? t("workspace.flashcard.generating") : t("workspace.flashcard.generateAI"))
+          }
+        </Button>
+      </div>
+    </div>
   );
 }
 
-export default CreateFlashcardDialog;
+export default CreateFlashcardForm;

@@ -2,9 +2,12 @@ import React from "react";
 import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import CreateQuizForm from "./CreateQuizForm";
+import CreateFlashcardForm from "./CreateFlashcardForm";
+import CreateRoadmapForm from "./CreateRoadmapForm";
 
 // Panel chính hiển thị nội dung workspace: trạng thái trống, quiz, flashcard, roadmap...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUploadClick }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUploadClick, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -96,7 +99,35 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUplo
     );
   }
 
-  // Khi đang hiển thị nội dung cụ thể (quiz, flashcard, roadmap...) — placeholder
+  // Khi đang hiển thị form tạo nội dung — render inline thay vì popup
+  // Render form phù hợp dựa vào activeView
+  const renderActiveContent = () => {
+    switch (activeView) {
+      case "createQuiz":
+        return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} />;
+      case "createFlashcard":
+        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} />;
+      case "createRoadmap":
+        return <CreateRoadmapForm isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onBack={onBack} />;
+      default:
+        return null;
+    }
+  };
+
+  const activeContent = renderActiveContent();
+
+  // Nếu có form đang hiển thị (createQuiz, createFlashcard, createRoadmap) — render inline
+  if (activeContent) {
+    return (
+      <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
+        isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
+      }`}>
+        {activeContent}
+      </section>
+    );
+  }
+
+  // Khi đang hiển thị nội dung cụ thể khác (mockTest, prelearning...) — placeholder
   return (
     <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
       isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"

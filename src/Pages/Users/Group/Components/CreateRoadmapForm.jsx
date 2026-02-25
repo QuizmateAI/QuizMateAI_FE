@@ -1,13 +1,10 @@
 import React, { useState } from "react";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, GitBranch, GraduationCap } from "lucide-react";
+import { Plus, Trash2, Loader2, GitBranch, GraduationCap, ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-// Dialog tạo Roadmap — hỗ trợ 2 tab: Thủ công & AI
-function CreateRoadmapDialog({ open, onOpenChange, isDarkMode, onCreateRoadmap, hasPrelearning = false }) {
+// Form tạo Roadmap — hiển thị inline trong ChatPanel thay vì popup
+function CreateRoadmapForm({ isDarkMode = false, onCreateRoadmap, onBack, hasPrelearning = false }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [tab, setTab] = useState("manual");
@@ -64,7 +61,6 @@ function CreateRoadmapDialog({ open, onOpenChange, isDarkMode, onCreateRoadmap, 
         ? { mode: "manual", name, goal, phases }
         : { mode: "ai", name, goal };
       await onCreateRoadmap?.(data);
-      onOpenChange(false);
     } catch {
       // Lỗi xử lý bởi component cha
     } finally {
@@ -86,22 +82,28 @@ function CreateRoadmapDialog({ open, onOpenChange, isDarkMode, onCreateRoadmap, 
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`sm:max-w-[600px] max-h-[85vh] overflow-y-auto ${fontClass} ${
-        isDarkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-gray-200 text-gray-900"
-      }`}>
-        <DialogHeader>
-          <DialogTitle className={`flex items-center gap-2 ${fontClass}`}>
-            <GitBranch className="w-5 h-5 text-emerald-500" />
+    <div className="flex flex-col h-full">
+      {/* Header với nút quay lại */}
+      <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-2">
+          <GitBranch className="w-5 h-5 text-emerald-500" />
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
             {t("workspace.roadmap.createTitle")}
-          </DialogTitle>
-          <DialogDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
-            {t("workspace.roadmap.createDesc")}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
+      </div>
+
+      {/* Nội dung form cuộn được */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+          {t("workspace.roadmap.createDesc")}
+        </p>
 
         {/* Tab chọn chế độ */}
-        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-900" : "bg-gray-100"}`}>
+        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
           <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("workspace.roadmap.tabManual")}</button>
           <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("workspace.roadmap.tabAI")}</button>
         </div>
@@ -120,7 +122,7 @@ function CreateRoadmapDialog({ open, onOpenChange, isDarkMode, onCreateRoadmap, 
             {/* Danh sách phases */}
             <div className="space-y-3">
               {phases.map((phase, pIdx) => (
-                <div key={pIdx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-gray-50"}`}>
+                <div key={pIdx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center justify-between">
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                       Phase {pIdx + 1}
@@ -157,7 +159,7 @@ function CreateRoadmapDialog({ open, onOpenChange, isDarkMode, onCreateRoadmap, 
             {/* Tab AI — yêu cầu làm pre-learning trước */}
             {!hasPrelearning ? (
               <div className={`rounded-xl p-6 text-center space-y-3 border ${
-                isDarkMode ? "border-slate-800 bg-slate-900" : "border-amber-200 bg-amber-50"
+                isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-amber-200 bg-amber-50"
               }`}>
                 <GraduationCap className={`w-10 h-10 mx-auto ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
                 <p className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
@@ -184,23 +186,23 @@ function CreateRoadmapDialog({ open, onOpenChange, isDarkMode, onCreateRoadmap, 
             )}
           </div>
         )}
+      </div>
 
-        {/* Nút hành động */}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-            {t("workspace.roadmap.cancel")}
-          </Button>
-          <Button onClick={handleSubmit} disabled={submitting || (tab === "ai" && !hasPrelearning)} className="bg-[#2563EB] hover:bg-blue-700 text-white">
-            {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {tab === "manual"
-              ? (submitting ? t("workspace.roadmap.creating") : t("workspace.roadmap.create"))
-              : (submitting ? t("workspace.roadmap.generating") : t("workspace.roadmap.generateAI"))
-            }
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Nút hành động cố định dưới cùng */}
+      <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
+          {t("workspace.roadmap.cancel")}
+        </Button>
+        <Button onClick={handleSubmit} disabled={submitting || (tab === "ai" && !hasPrelearning)} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+          {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+          {tab === "manual"
+            ? (submitting ? t("workspace.roadmap.creating") : t("workspace.roadmap.create"))
+            : (submitting ? t("workspace.roadmap.generating") : t("workspace.roadmap.generateAI"))
+          }
+        </Button>
+      </div>
+    </div>
   );
 }
 
-export default CreateRoadmapDialog;
+export default CreateRoadmapForm;
