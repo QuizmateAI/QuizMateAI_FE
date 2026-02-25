@@ -7,6 +7,7 @@ import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-i
 import { ChevronLeft, Globe, Sun, Moon, Loader2 } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import LogoLight from "@/assets/LightMode_Logo.png";
+import LogoDark from "@/assets/DarkMode_Logo.png";
 import { GoogleLogin } from '@react-oauth/google'; // Import GoogleLogin component
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
 import { useLogin } from './Login';
