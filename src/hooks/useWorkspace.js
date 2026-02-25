@@ -8,6 +8,15 @@ import {
   getAllTopics,
 } from '@/api/WorkspaceAPI';
 
+function normalizeWorkspaceList(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.content)) return payload.content;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.result)) return payload.result;
+  return [];
+}
+
 // Hook quản lý toàn bộ logic workspace: CRUD + topics
 export function useWorkspace() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -120,9 +129,9 @@ export function useWorkspace() {
     const res = await updateWorkspaceAPI(workspaceId, data);
     // Cập nhật workspace trong danh sách local
     setWorkspaces((prev) =>
-      prev.map((ws) => (ws.workspaceId === workspaceId ? res.data : ws))
+      normalizeWorkspaceList(prev).map((ws) => (ws.workspaceId === workspaceId ? updatedWorkspace : ws))
     );
-    return res.data;
+    return updatedWorkspace;
   }, []);
 
   // Xóa workspace
