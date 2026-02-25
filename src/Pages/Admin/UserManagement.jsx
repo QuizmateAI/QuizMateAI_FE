@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAllUsers, updateUserStatus } from '@/api/ManagementSystemAPI';
+import AdminPagination from './components/AdminPagination';
 
 function UserManagement() {
   const { t, i18n } = useTranslation();
@@ -30,20 +31,43 @@ function UserManagement() {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+  });
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  // Lấy danh sách người dùng từ API
-  const fetchUsers = async () => {
+  // Lấy danh sách người dùng từ API (có hỗ trợ phân trang)
+  const fetchUsers = async (page = 0, size = 10) => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await getAllUsers();
-      const data = response?.data ?? response;
-      setUsers(Array.isArray(data) ? data : []);
+      const response = await getAllUsers(page, size);
+      const responseData = response?.data || {};
+      
+      // Xử lý cấu trúc response có thể là paginated hoặc array thuần
+      if (Array.isArray(responseData)) {
+        setUsers(responseData);
+        setPagination({ page: 0, size: responseData.length, totalPages: 1, totalElements: responseData.length });
+      } else if (responseData.content && Array.isArray(responseData.content)) {
+        setUsers(responseData.content);
+        setPagination({
+          page: responseData.number || 0,
+          size: responseData.size || size,
+          totalPages: responseData.totalPages || 0,
+          totalElements: responseData.totalElements || 0,
+        });
+      } else {
+        setUsers([]);
+        setPagination({ page: 0, size: size, totalPages: 0, totalElements: 0 });
+      }
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách người dùng');
       console.error('Lỗi khi lấy danh sách users:', err);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -52,6 +76,16 @@ function UserManagement() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Thay đổi trang
+  const handlePageChange = (newPage) => {
+    fetchUsers(newPage, pagination.size);
+  };
+
+  // Thay đổi kích thước trang
+  const handlePageSizeChange = (newSize) => {
+    fetchUsers(0, newSize);
+  };
 
   // Cập nhật trạng thái người dùng
   const handleUpdateStatus = async (userId, newStatus) => {
@@ -114,7 +148,7 @@ function UserManagement() {
           </p>
         </div>
         <Button 
-          onClick={fetchUsers}
+          onClick={() => fetchUsers(pagination.page, pagination.size)}
           disabled={isLoading}
           className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
         >
@@ -273,6 +307,19 @@ function UserManagement() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination */}
+          {users.length > 0 && (
+            <AdminPagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalElements={pagination.totalElements}
+              pageSize={pagination.size}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              isDarkMode={isDarkMode}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

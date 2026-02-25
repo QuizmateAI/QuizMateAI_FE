@@ -44,6 +44,21 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
     }
   }, [open, workspace]);
 
+  // Verify subject tồn tại trong topics sau khi topics load xong
+  useEffect(() => {
+    if (open && workspace && topics.length > 0 && topicId && subjectId) {
+      const topic = topics.find((t) => t.topicId === Number(topicId));
+      if (topic && topic.subjects) {
+        // Kiểm tra xem subject có tồn tại trong list subjects của topic không
+        const subjectExists = topic.subjects.some((s) => s.subjectId === Number(subjectId));
+        if (!subjectExists) {
+          console.warn(`Subject ${subjectId} không tồn tại trong topic ${topicId}, reset subject`);
+          setSubjectId('');
+        }
+      }
+    }
+  }, [open, workspace, topics, topicId, subjectId]);
+
   // Reset subject khi đổi topic (chỉ khi topic thay đổi so với ban đầu)
   const handleTopicChange = (newTopicId) => {
     setTopicId(newTopicId);

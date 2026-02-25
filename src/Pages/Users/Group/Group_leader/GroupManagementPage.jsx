@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useGroup } from '@/hooks/useGroup';
@@ -13,11 +13,20 @@ import InviteMemberDialog from './InviteMemberDialog';
 function GroupManagementPage() {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Lấy tab từ URL, mặc định là 'dashboard'
+  const validTabs = ['dashboard', 'members', 'settings'];
+  const tabFromUrl = searchParams.get('tab');
+  const activeTab = validTabs.includes(tabFromUrl) ? tabFromUrl : 'dashboard';
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab }, { replace: true });
+  };
+
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [members, setMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);

@@ -234,6 +234,8 @@
       "role": "Role",
       "upload": "Upload",
       "yes": "Yes",
+      "no": "No",
+      "reload": "Reload",
       "showing": "Showing {{count}} of {{total}} members"
     },
     "settings": {
