@@ -74,3 +74,53 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Ẩn scrollbar nhưng vẫn scroll được */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tooltip animation — hiện từ trong ra */
+.tooltip-right,
+.tooltip-left {
+  position: relative;
+}
+.tooltip-right::after,
+.tooltip-left::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scale(0.8);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 50;
+}
+.tooltip-right::after {
+  left: calc(100% + 8px);
+  transform-origin: left center;
+  background: #1e293b;
+  color: #f1f5f9;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.tooltip-left::after {
+  right: calc(100% + 8px);
+  transform-origin: right center;
+  background: #1e293b;
+  color: #f1f5f9;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.tooltip-right:hover::after,
+.tooltip-left:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
