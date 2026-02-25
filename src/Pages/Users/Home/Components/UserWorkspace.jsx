@@ -82,6 +82,7 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
+  const workspaceList = Array.isArray(workspaces) ? workspaces : [];
 
   const isList = viewMode === "list";
   // Sắp xếp theo ngày tạo mới nhất - đảm bảo workspaces là mảng hợp lệ
