@@ -11,8 +11,16 @@ import {
   Loader2,
   Users,
   Mail,
-  ChevronDown,
+  RefreshCw,
+  XCircle,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/Components/ui/dropdown-menu';
 
 // Tab Thành viên: Danh sách đầy đủ + quản lý quyền + mời/xóa
 function GroupMembersTab({
@@ -32,7 +40,6 @@ function GroupMembersTab({
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [openMenuId, setOpenMenuId] = useState(null);
   const [filterRole, setFilterRole] = useState('all');
   const [confirmRemove, setConfirmRemove] = useState(null);
 
@@ -45,42 +52,51 @@ function GroupMembersTab({
     return matchSearch && matchRole;
   });
 
-  // Xử lý cấp/thu hồi upload
+  const [reloading, setReloading] = useState(false);
+
+  // Nút reload danh sách thành viên
+  const handleReload = useCallback(async () => {
+    setReloading(true);
+    try {
+      await onReload();
+    } finally {
+      setReloading(false);
+    }
+  }, [onReload]);
+
+  // Xử lý cấp/thu hồi upload (dùng groupMemberId theo API)
   const handleToggleUpload = useCallback(async (member) => {
     try {
       if (member.canUpload) {
-        await onRevokeUpload(groupId, member.userId);
+        await onRevokeUpload(groupId, member.groupMemberId);
       } else {
-        await onGrantUpload(groupId, member.userId);
+        await onGrantUpload(groupId, member.groupMemberId);
       }
       await onReload();
     } catch (err) {
       console.error('Lỗi cập nhật quyền upload:', err);
     }
-    setOpenMenuId(null);
   }, [groupId, onGrantUpload, onRevokeUpload, onReload]);
 
-  // Xử lý đổi vai trò
+  // Xử lý đổi vai trò (dùng groupMemberId theo API)
   const handleChangeRole = useCallback(async (member, newRole) => {
     try {
-      await onUpdateRole(groupId, member.userId, newRole);
+      await onUpdateRole(groupId, member.groupMemberId, newRole);
       await onReload();
     } catch (err) {
       console.error('Lỗi đổi vai trò:', err);
     }
-    setOpenMenuId(null);
   }, [groupId, onUpdateRole, onReload]);
 
-  // Xử lý xóa thành viên
+  // Xử lý xóa thành viên (dùng groupMemberId theo API)
   const handleRemoveMember = useCallback(async (member) => {
     try {
-      await onRemoveMember(groupId, member.userId);
+      await onRemoveMember(groupId, member.groupMemberId);
       await onReload();
     } catch (err) {
       console.error('Lỗi xóa thành viên:', err);
     }
     setConfirmRemove(null);
-    setOpenMenuId(null);
   }, [groupId, onRemoveMember, onReload]);
 
   // Hiển thị vai trò
@@ -158,20 +174,34 @@ function GroupMembersTab({
           ))}
         </div>
 
-        {/* Nút mời */}
-        {isLeader && (
+        {/* Nút reload + mời */}
+        <div className="flex items-center gap-2 ml-auto">
           <button
-            onClick={onOpenInvite}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-600/20 ml-auto"
+            onClick={handleReload}
+            disabled={reloading || membersLoading}
+            title={t('groupManage.members.reload')}
+            className={`p-2.5 rounded-xl border transition-all active:scale-95 ${
+              isDarkMode
+                ? 'border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-200 disabled:opacity-40'
+                : 'border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40'
+            }`}
           >
-            <UserPlus className="w-4 h-4" />
-            {t('home.group.invite')}
+            <RefreshCw className={`w-4 h-4 ${reloading ? 'animate-spin' : ''}`} />
           </button>
-        )}
+          {isLeader && (
+            <button
+              onClick={onOpenInvite}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-600/20"
+            >
+              <UserPlus className="w-4 h-4" />
+              {t('home.group.invite')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Bảng thành viên */}
-      <div className={`${cardClass} overflow-hidden`}>
+      <div className={cardClass}>
         {/* Header bảng */}
         <div className={`grid grid-cols-[minmax(200px,2fr)_minmax(180px,1.5fr)_minmax(120px,1fr)_minmax(80px,0.5fr)_60px] gap-4 px-5 py-3.5 text-xs font-semibold border-b ${
           isDarkMode ? 'text-slate-500 border-slate-800 bg-slate-900/50' : 'text-gray-400 border-gray-100 bg-gray-50/50'
@@ -196,14 +226,15 @@ function GroupMembersTab({
             </p>
           </div>
         ) : (
-          <div className={`divide-y ${isDarkMode ? 'divide-slate-800/50' : 'divide-gray-100'}`}>
-            {filteredMembers.map((member) => (
-              <div
-                key={member.userId}
-                className={`grid grid-cols-[minmax(200px,2fr)_minmax(180px,1.5fr)_minmax(120px,1fr)_minmax(80px,0.5fr)_60px] gap-4 px-5 py-3.5 items-center text-sm transition-colors ${
-                  isDarkMode ? 'hover:bg-slate-800/30' : 'hover:bg-gray-50/50'
-                }`}
-              >
+          <div className="overflow-x-auto">
+            <div className={`divide-y ${isDarkMode ? 'divide-slate-800/50' : 'divide-gray-100'}`}>
+              {filteredMembers.map((member) => (
+                <div
+                  key={member.userId}
+                  className={`grid grid-cols-[minmax(200px,2fr)_minmax(180px,1.5fr)_minmax(120px,1fr)_minmax(80px,0.5fr)_60px] gap-4 px-5 py-3.5 items-center text-sm transition-colors ${
+                    isDarkMode ? 'hover:bg-slate-800/30' : 'hover:bg-gray-50/50'
+                  }`}
+                >
                 {/* Tên + Avatar */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold ${
@@ -260,82 +291,96 @@ function GroupMembersTab({
                       {t('groupManage.members.yes')}
                     </span>
                   ) : (
-                    <span className={`text-xs ${isDarkMode ? 'text-slate-600' : 'text-gray-300'}`}>—</span>
+                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg ${
+                      isDarkMode ? 'bg-red-950/30 text-red-400' : 'bg-red-50 text-red-500'
+                    }`}>
+                      <XCircle className="w-3 h-3" />
+                      {t('groupManage.members.no')}
+                    </span>
                   )}
                 </div>
 
                 {/* Menu hành động */}
-                <div className="relative flex justify-end">
+                <div className="flex justify-end">
                   {isLeader && !member.isCurrentUser && member.role !== 'LEADER' ? (
-                    <>
-                      <button
-                        onClick={() => setOpenMenuId(openMenuId === member.userId ? null : member.userId)}
-                        className={`p-1.5 rounded-lg transition-all active:scale-95 ${
-                          isDarkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-200 text-gray-400'
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={`p-1.5 rounded-lg transition-all active:scale-95 focus:outline-none ${
+                            isDarkMode
+                              ? 'hover:bg-slate-700 text-slate-400 data-[state=open]:bg-slate-700 data-[state=open]:text-slate-200'
+                              : 'hover:bg-gray-200 text-gray-400 data-[state=open]:bg-gray-200 data-[state=open]:text-gray-700'
+                          }`}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className={`w-56 p-1 rounded-xl shadow-xl ${
+                          isDarkMode
+                            ? 'bg-slate-950 border-slate-800 text-slate-300'
+                            : 'bg-white border-gray-200 text-gray-700'
                         }`}
                       >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
+                        {/* Cấp/thu hồi upload */}
+                        <DropdownMenuItem
+                          onClick={() => handleToggleUpload(member)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm cursor-pointer rounded-lg ${
+                            isDarkMode ? 'focus:bg-slate-900 focus:text-slate-200' : 'focus:bg-gray-50 focus:text-gray-900'
+                          }`}
+                        >
+                          <Upload className="w-4 h-4" />
+                          {member.canUpload
+                            ? t('home.group.revokeUpload')
+                            : t('home.group.grantUpload')}
+                        </DropdownMenuItem>
 
-                      {openMenuId === member.userId && (
-                        <div className={`absolute right-0 top-9 z-30 w-52 rounded-xl border shadow-xl overflow-hidden ${
-                          isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-gray-200'
-                        }`}>
-                          {/* Cấp/thu hồi upload */}
-                          <button
-                            onClick={() => handleToggleUpload(member)}
-                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                              isDarkMode ? 'text-slate-300 hover:bg-slate-900' : 'text-gray-700 hover:bg-gray-50'
+                        {/* Đổi vai trò */}
+                        {member.role === 'MEMBER' && (
+                          <DropdownMenuItem
+                            onClick={() => handleChangeRole(member, 'CONTRIBUTOR')}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm cursor-pointer rounded-lg ${
+                              isDarkMode ? 'focus:bg-slate-900 focus:text-slate-200' : 'focus:bg-gray-50 focus:text-gray-900'
                             }`}
                           >
-                            <Upload className="w-4 h-4" />
-                            {member.canUpload ? t('home.group.revokeUpload') : t('home.group.grantUpload')}
-                          </button>
-
-                          {/* Đổi vai trò */}
-                          {member.role === 'MEMBER' && (
-                            <button
-                              onClick={() => handleChangeRole(member, 'CONTRIBUTOR')}
-                              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                                isDarkMode ? 'text-slate-300 hover:bg-slate-900' : 'text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              <Shield className="w-4 h-4" />
-                              {t('home.group.changeRole')} → {t('home.group.contributor')}
-                            </button>
-                          )}
-                          {member.role === 'CONTRIBUTOR' && (
-                            <button
-                              onClick={() => handleChangeRole(member, 'MEMBER')}
-                              className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                                isDarkMode ? 'text-slate-300 hover:bg-slate-900' : 'text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              <Shield className="w-4 h-4" />
-                              {t('home.group.changeRole')} → {t('home.group.member')}
-                            </button>
-                          )}
-
-                          {/* Divider */}
-                          <div className={`border-t ${isDarkMode ? 'border-slate-800' : 'border-gray-100'}`} />
-
-                          {/* Xóa thành viên */}
-                          <button
-                            onClick={() => setConfirmRemove(member)}
-                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
-                              isDarkMode ? 'text-red-400 hover:bg-red-950/30' : 'text-red-600 hover:bg-red-50'
+                            <Shield className="w-4 h-4" />
+                            {t('home.group.changeRole')} → {t('home.group.contributor')}
+                          </DropdownMenuItem>
+                        )}
+                        {member.role === 'CONTRIBUTOR' && (
+                          <DropdownMenuItem
+                            onClick={() => handleChangeRole(member, 'MEMBER')}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm cursor-pointer rounded-lg ${
+                              isDarkMode ? 'focus:bg-slate-900 focus:text-slate-200' : 'focus:bg-gray-50 focus:text-gray-900'
                             }`}
                           >
-                            <UserMinus className="w-4 h-4" />
-                            {t('home.group.removeMember')}
-                          </button>
-                        </div>
-                      )}
-                    </>
+                            <Shield className="w-4 h-4" />
+                            {t('home.group.changeRole')} → {t('home.group.member')}
+                          </DropdownMenuItem>
+                        )}
+
+                        <DropdownMenuSeparator className={isDarkMode ? 'bg-slate-800 my-1' : 'bg-gray-100 my-1'} />
+
+                        {/* Xóa thành viên */}
+                        <DropdownMenuItem
+                          onClick={() => setConfirmRemove(member)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm cursor-pointer rounded-lg ${
+                            isDarkMode
+                              ? 'text-red-400 focus:bg-red-950/30 focus:text-red-300'
+                              : 'text-red-600 focus:bg-red-50 focus:text-red-700'
+                          }`}
+                        >
+                          <UserMinus className="w-4 h-4" />
+                          {t('home.group.removeMember')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   ) : null}
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
       </div>

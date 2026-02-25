@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAllGroups, getGroupDetail } from '@/api/ManagementSystemAPI';
+import AdminPagination from './components/AdminPagination';
 
 function GroupManagement() {
   const { t, i18n } = useTranslation();
@@ -39,20 +40,43 @@ function GroupManagement() {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+  });
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  // Lấy danh sách nhóm từ API
-  const fetchGroups = async () => {
+  // Lấy danh sách nhóm từ API (có hỗ trợ phân trang)
+  const fetchGroups = async (page = 0, size = 10) => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await getAllGroups();
-      const data = response?.data ?? response;
-      setGroups(Array.isArray(data) ? data : []);
+      const response = await getAllGroups(page, size);
+      const responseData = response?.data || {};
+      
+      // Xử lý cấu trúc response có thể là paginated hoặc array thuần
+      if (Array.isArray(responseData)) {
+        setGroups(responseData);
+        setPagination({ page: 0, size: responseData.length, totalPages: 1, totalElements: responseData.length });
+      } else if (responseData.content && Array.isArray(responseData.content)) {
+        setGroups(responseData.content);
+        setPagination({
+          page: responseData.number || 0,
+          size: responseData.size || size,
+          totalPages: responseData.totalPages || 0,
+          totalElements: responseData.totalElements || 0,
+        });
+      } else {
+        setGroups([]);
+        setPagination({ page: 0, size: size, totalPages: 0, totalElements: 0 });
+      }
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách nhóm');
       console.error('Lỗi khi lấy danh sách groups:', err);
+      setGroups([]);
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +85,16 @@ function GroupManagement() {
   useEffect(() => {
     fetchGroups();
   }, []);
+
+  // Thay đổi trang
+  const handlePageChange = (newPage) => {
+    fetchGroups(newPage, pagination.size);
+  };
+
+  // Thay đổi kích thước trang
+  const handlePageSizeChange = (newSize) => {
+    fetchGroups(0, newSize);
+  };
 
   // Xem chi tiết nhóm
   const handleViewDetail = async (groupId) => {
@@ -110,7 +144,7 @@ function GroupManagement() {
           </p>
         </div>
         <Button 
-          onClick={fetchGroups}
+          onClick={() => fetchGroups(pagination.page, pagination.size)}
           disabled={isLoading}
           className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-95"
         >
@@ -236,6 +270,19 @@ function GroupManagement() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination */}
+          {groups.length > 0 && (
+            <AdminPagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalElements={pagination.totalElements}
+              pageSize={pagination.size}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              isDarkMode={isDarkMode}
+            />
+          )}
         </CardContent>
       </Card>
 

@@ -234,6 +234,8 @@
       "role": "Vai trò",
       "upload": "Upload",
       "yes": "Có",
+      "no": "Không",
+      "reload": "Tải lại",
       "showing": "Hiển thị {{count}} / {{total}} thành viên"
     },
     "settings": {
