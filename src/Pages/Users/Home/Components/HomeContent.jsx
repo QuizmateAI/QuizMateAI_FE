@@ -76,11 +76,12 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
+  const workspaceList = Array.isArray(workspaces) ? workspaces : [];
 
   const isList = viewMode === "list";
 
   // Logic nghiệp vụ: hiển thị 5 workspace gần nhất
-  const recentWorkspaces = [...workspaces]
+  const recentWorkspaces = [...workspaceList]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
