@@ -1,7 +1,8 @@
 import api from './api';
 
-export const getAllUsers = async () => {
-  const response = await api.get('/management/users');
+// Lấy danh sách users (có hỗ trợ phân trang)
+export const getAllUsers = async (page = 0, size = 10) => {
+  const response = await api.get(`/management/users?page=${page}&size=${size}`);
   return response;
 };
 
@@ -10,8 +11,9 @@ export const updateUserStatus = async (userId, status) => {
   return response;
 };
 
-export const getAllGroups = async () => {
-  const response = await api.get('/management/groups');
+// Lấy danh sách groups (có hỗ trợ phân trang)
+export const getAllGroups = async (page = 0, size = 10) => {
+  const response = await api.get(`/management/groups?page=${page}&size=${size}`);
   return response;
 };
 
