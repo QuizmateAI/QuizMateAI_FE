@@ -2,9 +2,13 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import GroupWorkspaceHeader from './Components/GroupWorkspaceHeader';
-import SourcesPanel from '@/Pages/Users/Individual/Workspace/Components/SourcesPanel';
-import ChatPanel from '@/Pages/Users/Individual/Workspace/Components/ChatPanel';
-import StudioPanel from '@/Pages/Users/Individual/Workspace/Components/StudioPanel';
+import SourcesPanel from './Components/SourcesPanel';
+import ChatPanel from './Components/ChatPanel';
+import StudioPanel from './Components/StudioPanel';
+import UploadSourceDialog from './Components/UploadSourceDialog';
+import CreateQuizDialog from './Components/CreateQuizDialog';
+import CreateFlashcardDialog from './Components/CreateFlashcardDialog';
+import CreateRoadmapDialog from './Components/CreateRoadmapDialog';
 import InviteMemberDialog from './Group_leader/InviteMemberDialog';
 import { Globe, Moon, Settings, Sun, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +23,13 @@ function GroupWorkspacePage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(true);
+  const [quizDialogOpen, setQuizDialogOpen] = useState(false);
+  const [flashcardDialogOpen, setFlashcardDialogOpen] = useState(false);
+  const [roadmapDialogOpen, setRoadmapDialogOpen] = useState(false);
+  const [activeView, setActiveView] = useState(null);
+  const [sources, setSources] = useState([]);
+  const [outputs, setOutputs] = useState([]);
   const settingsRef = useRef(null);
 
   const { groups, inviteMember } = useGroup();
@@ -33,6 +44,81 @@ function GroupWorkspacePage() {
   const handleInvite = useCallback(async (email) => {
     await inviteMember(groupId, email);
   }, [groupId, inviteMember]);
+
+  // Xử lý upload file tài liệu
+  const handleUploadFiles = useCallback(async (files) => {
+    // TODO: Gọi API upload thật cho workspace nhóm
+    const newSources = files.map((file, index) => ({
+      id: `src-${Date.now()}-${index}`,
+      name: file.name,
+      type: file.type?.includes('pdf') ? 'pdf' : file.type?.includes('image') ? 'image' : file.type?.includes('video') ? 'video' : 'file',
+      size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+    }));
+    setSources((prev) => [...prev, ...newSources]);
+  }, []);
+
+  // Xử lý thêm URL tài liệu
+  const handleAddUrl = useCallback(async (url) => {
+    // TODO: Gọi API thêm URL cho workspace nhóm
+    setSources((prev) => [
+      ...prev,
+      {
+        id: `src-${Date.now()}`,
+        name: url,
+        type: 'url',
+        size: '',
+      },
+    ]);
+  }, []);
+
+  // Xóa tài liệu khỏi workspace nhóm
+  const handleRemoveSource = useCallback((sourceId) => {
+    setSources((prev) => prev.filter((source) => source.id !== sourceId));
+  }, []);
+
+  // Xử lý hành động từ studio panel
+  const handleStudioAction = useCallback((actionKey) => {
+    switch (actionKey) {
+      case 'createRoadmap':
+        setRoadmapDialogOpen(true);
+        break;
+      case 'createQuiz':
+        setQuizDialogOpen(true);
+        break;
+      case 'createFlashcard':
+        setFlashcardDialogOpen(true);
+        break;
+      case 'mockTest':
+        setActiveView('mockTest');
+        break;
+      case 'prelearning':
+        setActiveView('prelearning');
+        break;
+      default:
+        break;
+    }
+  }, []);
+
+  // Xử lý tạo quiz
+  const handleCreateQuiz = useCallback(async (data) => {
+    // TODO: Gọi API tạo quiz cho group
+    setOutputs((prev) => [...prev, { name: data.name || 'Quiz', type: 'Quiz' }]);
+    setActiveView('quiz');
+  }, []);
+
+  // Xử lý tạo flashcard
+  const handleCreateFlashcard = useCallback(async (data) => {
+    // TODO: Gọi API tạo flashcard cho group
+    setOutputs((prev) => [...prev, { name: data.deckName || 'Flashcard', type: 'Flashcard' }]);
+    setActiveView('flashcard');
+  }, []);
+
+  // Xử lý tạo roadmap
+  const handleCreateRoadmap = useCallback(async (data) => {
+    // TODO: Gọi API tạo roadmap cho group
+    setOutputs((prev) => [...prev, { name: data.name || 'Roadmap', type: 'Roadmap' }]);
+    setActiveView('roadmap');
+  }, []);
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
@@ -142,15 +228,55 @@ function GroupWorkspacePage() {
       <div className="flex-1 min-h-[calc(100vh-64px)]">
         <div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
           <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_320px] gap-4 h-[calc(100vh-64px-32px)]">
-            {/* Panel trái: Sources (giống WorkspacePage cá nhân) */}
-            <SourcesPanel isDarkMode={isDarkMode} />
-            {/* Panel giữa: Chat (tái sử dụng) */}
-            <ChatPanel isDarkMode={isDarkMode} />
-            {/* Panel phải: Studio (tái sử dụng) */}
-            <StudioPanel isDarkMode={isDarkMode} />
+            <SourcesPanel
+              isDarkMode={isDarkMode}
+              sources={sources}
+              onAddSource={() => setUploadDialogOpen(true)}
+              onRemoveSource={handleRemoveSource}
+            />
+            <ChatPanel
+              isDarkMode={isDarkMode}
+              sources={sources}
+              activeView={activeView}
+              onUploadClick={() => setUploadDialogOpen(true)}
+            />
+            <StudioPanel
+              isDarkMode={isDarkMode}
+              onAction={handleStudioAction}
+              outputs={outputs}
+            />
           </div>
         </div>
       </div>
+
+      <UploadSourceDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        isDarkMode={isDarkMode}
+        onUploadFiles={handleUploadFiles}
+        onAddUrl={handleAddUrl}
+      />
+
+      <CreateQuizDialog
+        open={quizDialogOpen}
+        onOpenChange={setQuizDialogOpen}
+        isDarkMode={isDarkMode}
+        onCreateQuiz={handleCreateQuiz}
+      />
+
+      <CreateFlashcardDialog
+        open={flashcardDialogOpen}
+        onOpenChange={setFlashcardDialogOpen}
+        isDarkMode={isDarkMode}
+        onCreateFlashcard={handleCreateFlashcard}
+      />
+
+      <CreateRoadmapDialog
+        open={roadmapDialogOpen}
+        onOpenChange={setRoadmapDialogOpen}
+        isDarkMode={isDarkMode}
+        onCreateRoadmap={handleCreateRoadmap}
+      />
 
       {/* Dialog mời thành viên */}
       <InviteMemberDialog
