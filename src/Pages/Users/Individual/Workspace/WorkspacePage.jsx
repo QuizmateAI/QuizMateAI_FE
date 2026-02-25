@@ -6,9 +6,6 @@ import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesP
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
 import UploadSourceDialog from "@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog";
-import CreateQuizDialog from "@/Pages/Users/Individual/Workspace/Components/CreateQuizDialog";
-import CreateFlashcardDialog from "@/Pages/Users/Individual/Workspace/Components/CreateFlashcardDialog";
-import CreateRoadmapDialog from "@/Pages/Users/Individual/Workspace/Components/CreateRoadmapDialog";
 import { Globe, Moon, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -26,15 +23,28 @@ function WorkspacePage() {
 	// State quản lý tài liệu (sources) — mock data, sẽ kết nối API sau
 	const [sources, setSources] = useState([]);
 	const [outputs, setOutputs] = useState([]);
+	const [isLeftResizing, setIsLeftResizing] = useState(false);
+	const [isRightResizing, setIsRightResizing] = useState(false);
 
-	// State quản lý các dialog — hiện upload dialog mặc định khi vào workspace lần đầu
+	// State quản lý dialog upload — hiện upload dialog mặc định khi vào workspace lần đầu
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(true);
-	const [quizDialogOpen, setQuizDialogOpen] = useState(false);
-	const [flashcardDialogOpen, setFlashcardDialogOpen] = useState(false);
-	const [roadmapDialogOpen, setRoadmapDialogOpen] = useState(false);
+	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
+	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
+
+	// State quản lý kích thước panel (px) — kéo thả để thay đổi
+	const [leftWidth, setLeftWidth] = useState(320);
+	const [rightWidth, setRightWidth] = useState(320);
 
 	// Trạng thái hiển thị nội dung chính (null = chưa chọn hoạt động)
 	const [activeView, setActiveView] = useState(null);
+
+	// Hằng số kích thước panel
+	const COLLAPSED_WIDTH = 56;
+	const MIN_WIDTH = 240;
+	const MAX_WIDTH = 500;
+
+	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : leftWidth;
+	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : rightWidth;
 
 	const currentLang = i18n.language;
 	const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
@@ -91,49 +101,82 @@ function WorkspacePage() {
 		setSources((prev) => prev.filter((s) => s.id !== sourceId));
 	}, []);
 
-	// Xử lý action từ Studio Panel
+	// Xử lý action từ Studio Panel — hiển thị form inline trong ChatPanel
 	const handleStudioAction = useCallback((actionKey) => {
-		switch (actionKey) {
-			case "createRoadmap":
-				setRoadmapDialogOpen(true);
-				break;
-			case "createQuiz":
-				setQuizDialogOpen(true);
-				break;
-			case "createFlashcard":
-				setFlashcardDialogOpen(true);
-				break;
-			case "mockTest":
-				setActiveView("mockTest");
-				break;
-			case "prelearning":
-				setActiveView("prelearning");
-				break;
-			default:
-				break;
-		}
+		setActiveView(actionKey);
 	}, []);
 
-	// Xử lý tạo quiz
+	// Xử lý tạo quiz — gọi từ form inline trong ChatPanel
 	const handleCreateQuiz = useCallback(async (data) => {
 		// TODO: Gọi API tạo quiz
 		setOutputs((prev) => [...prev, { name: data.name || "Quiz", type: "Quiz" }]);
-		setActiveView("quiz");
+		setActiveView(null);
 	}, []);
 
-	// Xử lý tạo flashcard
+	// Xử lý tạo flashcard — gọi từ form inline trong ChatPanel
 	const handleCreateFlashcard = useCallback(async (data) => {
 		// TODO: Gọi API tạo flashcard
 		setOutputs((prev) => [...prev, { name: data.deckName || "Flashcard", type: "Flashcard" }]);
-		setActiveView("flashcard");
+		setActiveView(null);
 	}, []);
 
-	// Xử lý tạo roadmap
+	// Xử lý tạo roadmap — gọi từ form inline trong ChatPanel
 	const handleCreateRoadmap = useCallback(async (data) => {
 		// TODO: Gọi API tạo roadmap
 		setOutputs((prev) => [...prev, { name: data.name || "Roadmap", type: "Roadmap" }]);
-		setActiveView("roadmap");
+		setActiveView(null);
 	}, []);
+
+	// Quay về trạng thái mặc định khi bấm nút Back trong form
+	const handleBackFromForm = useCallback(() => {
+		setActiveView(null);
+	}, []);
+
+	// Kéo thả thay đổi kích thước panel trái (Sources)
+	const handleLeftResize = useCallback((e) => {
+		if (isSourcesCollapsed) return;
+		e.preventDefault();
+		setIsLeftResizing(true);
+		const startX = e.clientX;
+		const startW = leftWidth;
+		const onMove = (ev) => {
+			setLeftWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startW + ev.clientX - startX)));
+		};
+		const onUp = () => {
+			setIsLeftResizing(false);
+			document.removeEventListener("mousemove", onMove);
+			document.removeEventListener("mouseup", onUp);
+			document.body.style.cursor = "";
+			document.body.style.userSelect = "";
+		};
+		document.body.style.cursor = "col-resize";
+		document.body.style.userSelect = "none";
+		document.addEventListener("mousemove", onMove);
+		document.addEventListener("mouseup", onUp);
+	}, [leftWidth, isSourcesCollapsed]);
+
+	// Kéo thả thay đổi kích thước panel phải (Studio)
+	const handleRightResize = useCallback((e) => {
+		if (isStudioCollapsed) return;
+		e.preventDefault();
+		setIsRightResizing(true);
+		const startX = e.clientX;
+		const startW = rightWidth;
+		const onMove = (ev) => {
+			setRightWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startW - (ev.clientX - startX))));
+		};
+		const onUp = () => {
+			setIsRightResizing(false);
+			document.removeEventListener("mousemove", onMove);
+			document.removeEventListener("mouseup", onUp);
+			document.body.style.cursor = "";
+			document.body.style.userSelect = "";
+		};
+		document.body.style.cursor = "col-resize";
+		document.body.style.userSelect = "none";
+		document.addEventListener("mousemove", onMove);
+		document.addEventListener("mouseup", onUp);
+	}, [rightWidth, isStudioCollapsed]);
 
 	const settingsMenu = (
 		<div ref={settingsRef} className="relative">
@@ -196,33 +239,80 @@ function WorkspacePage() {
 	);
 
 	return (
-		<div className={`min-h-screen flex flex-col transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-[#F7FBFF]"}`}>
+		<div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-[#F7FBFF]"}`}>
 			<WorkspaceHeader
 				settingsMenu={settingsMenu}
 				isDarkMode={isDarkMode}
 				workspaceTitle={currentWorkspace?.title}
 				workspaceSubtitle={currentWorkspace?.topic?.title || currentWorkspace?.subject?.title}
 			/>
-			<div className="flex-1 min-h-[calc(100vh-64px)]">
+			<div className="flex-1 min-h-0">
 				<div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
-					<div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_320px] gap-4 h-[calc(100vh-64px-32px)]">
-						<SourcesPanel
-							isDarkMode={isDarkMode}
-							sources={sources}
-							onAddSource={() => setUploadDialogOpen(true)}
-							onRemoveSource={handleRemoveSource}
-						/>
-						<ChatPanel
-							isDarkMode={isDarkMode}
-							sources={sources}
-							activeView={activeView}
-							onUploadClick={() => setUploadDialogOpen(true)}
-						/>
-						<StudioPanel
-							isDarkMode={isDarkMode}
-							onAction={handleStudioAction}
-							outputs={outputs}
-						/>
+					{/* Layout flex với resize handles — kéo thả để thay đổi kích thước */}
+					<div className="flex h-full">
+						{/* Panel nguồn tài liệu (trái) */}
+						<div
+							style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
+							className={`shrink-0 h-full ${isLeftResizing ? "" : "transition-[width,min-width] duration-300 ease-in-out"}`}
+						>
+							<SourcesPanel
+								isDarkMode={isDarkMode}
+								sources={sources}
+								onAddSource={() => setUploadDialogOpen(true)}
+								onRemoveSource={handleRemoveSource}
+								isCollapsed={isSourcesCollapsed}
+								onToggleCollapse={() => setIsSourcesCollapsed((prev) => !prev)}
+
+							/>
+						</div>
+
+						{/* Resize handle trái */}
+						<div
+							className={`shrink-0 flex items-center justify-center ${isLeftResizing ? "" : "transition-all duration-300 ease-in-out"} ${isSourcesCollapsed ? "w-2" : "w-4 cursor-col-resize group"}`}
+							onMouseDown={isSourcesCollapsed ? undefined : handleLeftResize}
+						>
+							{!isSourcesCollapsed && (
+								<div className={`w-0.5 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
+							)}
+						</div>
+
+						{/* Panel khu vực học tập (giữa) */}
+						<div className="flex-1 min-w-0 h-full">
+							<ChatPanel
+								isDarkMode={isDarkMode}
+								sources={sources}
+								activeView={activeView}
+								onUploadClick={() => setUploadDialogOpen(true)}
+								onCreateQuiz={handleCreateQuiz}
+								onCreateFlashcard={handleCreateFlashcard}
+								onCreateRoadmap={handleCreateRoadmap}
+								onBack={handleBackFromForm}
+							/>
+						</div>
+
+						{/* Resize handle phải */}
+						<div
+							className={`shrink-0 flex items-center justify-center ${isRightResizing ? "" : "transition-all duration-300 ease-in-out"} ${isStudioCollapsed ? "w-2" : "w-4 cursor-col-resize group"}`}
+							onMouseDown={isStudioCollapsed ? undefined : handleRightResize}
+						>
+							{!isStudioCollapsed && (
+								<div className={`w-0.5 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
+							)}
+						</div>
+
+						{/* Panel Studio (phải) */}
+						<div
+							style={{ width: effectiveRightWidth, minWidth: effectiveRightWidth }}
+							className={`shrink-0 h-full ${isRightResizing ? "" : "transition-[width,min-width] duration-300 ease-in-out"}`}
+						>
+							<StudioPanel
+								isDarkMode={isDarkMode}
+								onAction={handleStudioAction}
+								outputs={outputs}
+								isCollapsed={isStudioCollapsed}
+								onToggleCollapse={() => setIsStudioCollapsed((prev) => !prev)}
+							/>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -236,29 +326,7 @@ function WorkspacePage() {
 				onAddUrl={handleAddUrl}
 			/>
 
-			{/* Dialog tạo Quiz */}
-			<CreateQuizDialog
-				open={quizDialogOpen}
-				onOpenChange={setQuizDialogOpen}
-				isDarkMode={isDarkMode}
-				onCreateQuiz={handleCreateQuiz}
-			/>
 
-			{/* Dialog tạo Flashcard */}
-			<CreateFlashcardDialog
-				open={flashcardDialogOpen}
-				onOpenChange={setFlashcardDialogOpen}
-				isDarkMode={isDarkMode}
-				onCreateFlashcard={handleCreateFlashcard}
-			/>
-
-			{/* Dialog tạo Roadmap */}
-			<CreateRoadmapDialog
-				open={roadmapDialogOpen}
-				onOpenChange={setRoadmapDialogOpen}
-				isDarkMode={isDarkMode}
-				onCreateRoadmap={handleCreateRoadmap}
-			/>
 		</div>
 	);
 }
