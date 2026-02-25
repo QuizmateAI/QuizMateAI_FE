@@ -18,10 +18,7 @@ function GroupWorkspaceHeader({
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const navigate = useNavigate();
 
-  // Xử lý tạo workspace mới - quay về trang home và mở form
-  const handleCreateWorkspace = () => {
-    navigate('/home', { state: { openCreateDialog: true } });
-  };
+ 
 
   return (
     <header className={`w-full h-16 border-b transition-colors duration-300 ${isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"}`}>
@@ -44,15 +41,7 @@ function GroupWorkspaceHeader({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button 
-            onClick={handleCreateWorkspace}
-            className={`rounded-full text-white h-9 px-4 flex items-center gap-2 ${
-              isDarkMode ? "bg-blue-600 hover:bg-blue-500" : "bg-[#2563EB] hover:bg-blue-700"
-            }`}
-          >
-            <Plus className="w-4 h-4" />
-            <span className={fontClass}>{t("workspace.header.createWorkspace")}</span>
-          </Button>
+
           <Button
             onClick={onOpenInvite}
             variant="outline"

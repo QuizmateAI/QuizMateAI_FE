@@ -1,8 +1,8 @@
 import api from './api';
 
-// Lấy danh sách workspace theo user đang đăng nhập
-export const getWorkspacesByUser = async () => {
-  const response = await api.get('/workSpace/getByUser');
+// Lấy danh sách workspace theo user đang đăng nhập (có hỗ trợ phân trang)
+export const getWorkspacesByUser = async (page = 0, size = 10) => {
+  const response = await api.get(`/workSpace/getByUser?page=${page}&size=${size}`);
   return response;
 };
 
