@@ -573,13 +573,23 @@
       "totalTime": "Total time",
       "perQuestion": "Per question",
       "timeDuration": "Duration (minutes)",
-      "passingScore": "Passing score (%)",
+      "passingScore": "Passing score (0-10)",
+      "maxAttempt": "Max attempts",
+      "intent": "Quiz Intent",
+      "overallDifficulty": "Overall Difficulty",
+      "timerMode": "Enable timer mode",
+      "minutes": "min",
       "addQuestion": "Add question",
       "questionType": "Question type",
       "questionText": "Question text",
+      "questionDuration": "Time limit (seconds)",
+      "explanation": "Explanation",
+      "explanationPlaceholder": "Explain the correct answer...",
       "answers": "Answers",
       "addAnswer": "Add answer",
       "correctAnswer": "Correct answer",
+      "deleteQuiz": "Delete quiz",
+      "loading": "Loading quizzes...",
       "types": {
         "multipleChoice": "Multiple Choice",
         "multipleSelect": "Multiple Select",
@@ -593,6 +603,53 @@
         "medium": "Medium",
         "hard": "Hard"
       },
+      "bloomLevels": {
+        "remember": "Remember",
+        "understand": "Understand",
+        "apply": "Apply",
+        "analyze": "Analyze",
+        "evaluate": "Evaluate"
+      },
+      "intentLabels": {
+        "PRE_LEARNING": "Pre-learning",
+        "POST_LEARNING": "Post-learning",
+        "REVIEW": "Review"
+      },
+      "statusLabels": {
+        "ACTIVE": "Active",
+        "DRAFT": "Draft",
+        "COMPLETED": "Completed",
+        "INACTIVE": "Inactive"
+      },
+      "statusFilter": {
+        "all": "All",
+        "ACTIVE": "Active",
+        "DRAFT": "Draft",
+        "COMPLETED": "Completed"
+      },
+      "validation": {
+        "nameRequired": "Please enter a quiz name.",
+        "createFailed": "Failed to create quiz. Please try again."
+      },
+      "contextSelector": {
+        "title": "Quiz Location",
+        "contextType": "Context Type",
+        "sourceType": "Source",
+        "selectWorkspace": "Select Workspace",
+        "selectGroup": "Select Group",
+        "selectRoadmap": "Select Roadmap",
+        "selectPhase": "Select Phase",
+        "selectKnowledge": "Select Knowledge",
+        "placeholder": "-- Select --",
+        "loading": "Loading...",
+        "types": {
+          "WORKSPACE": "Workspace",
+          "GROUP": "Group",
+          "ROADMAP": "Roadmap",
+          "PHASE": "Phase",
+          "KNOWLEDGE": "Knowledge"
+        }
+      },
       "aiConfig": {
         "totalQuestions": "Total questions",
         "difficultyDistribution": "Difficulty distribution",
@@ -603,6 +660,30 @@
         "promptPlaceholder": "Enter additional instructions for AI...",
         "byCount": "By count",
         "byPercent": "By percentage"
+      },
+      "detail": {
+        "edit": "Edit",
+        "createdAt": "Created",
+        "updatedAt": "Updated",
+        "loadingDetail": "Loading quiz details...",
+        "noSessions": "No sessions found.",
+        "session": "Session",
+        "questions": "questions",
+        "noQuestions": "No questions in this session."
+      },
+      "edit": {
+        "title": "Edit Quiz",
+        "desc": "Update quiz information, questions and answers.",
+        "loading": "Loading quiz data...",
+        "loadFailed": "Failed to load quiz data.",
+        "status": "Status",
+        "questionsSection": "Questions",
+        "newTag": "NEW",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "saveSuccess": "Quiz updated successfully!",
+        "saveFailed": "Failed to save quiz. Please try again."
       },
       "create": "Create Quiz",
       "creating": "Creating...",

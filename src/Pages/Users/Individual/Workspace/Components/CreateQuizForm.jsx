@@ -1,38 +1,186 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, ChevronDown, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { createFullQuiz } from "@/api/QuizAPI";
+import { getWorkspacesByUser } from "@/api/WorkspaceAPI";
+import { getMyJoinedGroups } from "@/api/GroupAPI";
+import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap, getKnowledgesByPhase } from "@/api/RoadmapAPI";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
+const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "REVIEW"];
+const BLOOM_LEVELS = [
+  { id: 1, key: "remember" },
+  { id: 2, key: "understand" },
+  { id: 3, key: "apply" },
+  { id: 4, key: "analyze" },
+  { id: 5, key: "evaluate" },
+];
+const CONTEXT_TYPES = ["WORKSPACE", "GROUP", "ROADMAP", "PHASE", "KNOWLEDGE"];
 
 // Form tạo Quiz — hiển thị inline trong ChatPanel thay vì popup
-function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack }) {
+function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType: defaultContextType = "WORKSPACE", contextId: defaultContextId }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [tab, setTab] = useState("manual");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // State quản lý vị trí tạo quiz (context selector)
+  const [selectedContextType, setSelectedContextType] = useState(defaultContextType);
+  const [selectedContextId, setSelectedContextId] = useState(defaultContextId || "");
+  const [contextLoading, setContextLoading] = useState(false);
+
+  // Dữ liệu cho từng cấp dropdown — cascade: source → roadmap → phase → knowledge
+  const [sourceType, setSourceType] = useState(defaultContextType === "GROUP" ? "GROUP" : "WORKSPACE");
+  const [sourceId, setSourceId] = useState("");
+  const [workspaces, setWorkspaces] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [roadmaps, setRoadmaps] = useState([]);
+  const [phases, setPhases] = useState([]);
+  const [knowledges, setKnowledges] = useState([]);
+  const [selectedRoadmapId, setSelectedRoadmapId] = useState("");
+  const [selectedPhaseId, setSelectedPhaseId] = useState("");
+
+  // Tải danh sách workspace và group khi mount
+  useEffect(() => {
+    const loadSources = async () => {
+      try {
+        const [wsRes, grRes] = await Promise.all([getWorkspacesByUser(0, 100), getMyJoinedGroups()]);
+        setWorkspaces(wsRes.data?.content || wsRes.data || []);
+        setGroups(grRes.data || []);
+      } catch (e) {
+        console.error("Lỗi khi tải workspaces/groups:", e);
+      }
+    };
+    loadSources();
+  }, []);
+
+  // Khi contextType là WORKSPACE hoặc GROUP — lấy contextId trực tiếp
+  // Khi contextType là ROADMAP/PHASE/KNOWLEDGE — cần cascade fetch
+  useEffect(() => {
+    if (selectedContextType === "WORKSPACE") {
+      setSelectedContextId(defaultContextType === "WORKSPACE" ? defaultContextId : "");
+    } else if (selectedContextType === "GROUP") {
+      setSelectedContextId(defaultContextType === "GROUP" ? defaultContextId : "");
+    }
+  }, [selectedContextType]);
+
+  // Khi thay đổi contextType — reset cascade dropdowns
+  const handleContextTypeChange = (newType) => {
+    setSelectedContextType(newType);
+    setSelectedContextId("");
+    setSourceId("");
+    setRoadmaps([]);
+    setPhases([]);
+    setKnowledges([]);
+    setSelectedRoadmapId("");
+    setSelectedPhaseId("");
+    // Mặc định source type cho roadmap/phase/knowledge
+    if (newType === "WORKSPACE" || newType === "GROUP") {
+      setSourceType(newType);
+    }
+  };
+
+  // Khi chọn workspace/group làm contextId trực tiếp
+  const handleDirectContextSelect = (id) => {
+    setSelectedContextId(id);
+  };
+
+  // Khi chọn source (workspace/group) để tải roadmaps
+  const handleSourceSelect = useCallback(async (id) => {
+    setSourceId(id);
+    setRoadmaps([]);
+    setPhases([]);
+    setKnowledges([]);
+    setSelectedRoadmapId("");
+    setSelectedPhaseId("");
+    setSelectedContextId("");
+    if (!id) return;
+    setContextLoading(true);
+    try {
+      const res = sourceType === "GROUP"
+        ? await getRoadmapsByGroup(id, 0, 100)
+        : await getRoadmapsByWorkspace(id, 0, 100);
+      setRoadmaps(res.data?.content || res.data || []);
+    } catch (e) {
+      console.error("Lỗi tải roadmaps:", e);
+    } finally {
+      setContextLoading(false);
+    }
+  }, [sourceType]);
+
+  // Khi chọn roadmap — nếu contextType=ROADMAP thì set contextId, nếu PHASE/KNOWLEDGE thì tải phases
+  const handleRoadmapSelect = useCallback(async (roadmapId) => {
+    setSelectedRoadmapId(roadmapId);
+    setPhases([]);
+    setKnowledges([]);
+    setSelectedPhaseId("");
+    if (selectedContextType === "ROADMAP") {
+      setSelectedContextId(roadmapId);
+      return;
+    }
+    if (!roadmapId) { setSelectedContextId(""); return; }
+    setContextLoading(true);
+    try {
+      const res = await getPhasesByRoadmap(roadmapId, 0, 100);
+      setPhases(res.data?.content || res.data || []);
+    } catch (e) {
+      console.error("Lỗi tải phases:", e);
+    } finally {
+      setContextLoading(false);
+    }
+  }, [selectedContextType]);
+
+  // Khi chọn phase — nếu contextType=PHASE thì set contextId, nếu KNOWLEDGE thì tải knowledges
+  const handlePhaseSelect = useCallback(async (phaseId) => {
+    setSelectedPhaseId(phaseId);
+    setKnowledges([]);
+    if (selectedContextType === "PHASE") {
+      setSelectedContextId(phaseId);
+      return;
+    }
+    if (!phaseId) { setSelectedContextId(""); return; }
+    setContextLoading(true);
+    try {
+      const res = await getKnowledgesByPhase(phaseId, 0, 100);
+      setKnowledges(res.data?.content || res.data || []);
+    } catch (e) {
+      console.error("Lỗi tải knowledges:", e);
+    } finally {
+      setContextLoading(false);
+    }
+  }, [selectedContextType]);
+
+  // Khi chọn knowledge — set contextId
+  const handleKnowledgeSelect = (knowledgeId) => {
+    setSelectedContextId(knowledgeId);
+  };
 
   // State cho tab Manual
   const [name, setName] = useState("");
-  const [timeType, setTimeType] = useState("total");
   const [duration, setDuration] = useState(30);
-  const [passingScore, setPassingScore] = useState(60);
+  const [passingScore, setPassingScore] = useState(7.5);
+  const [maxAttempt, setMaxAttempt] = useState(3);
+  const [quizIntent, setQuizIntent] = useState("PRE_LEARNING");
+  const [timerMode, setTimerMode] = useState(true);
+  const [overallDifficulty, setOverallDifficulty] = useState("medium");
   const [questions, setQuestions] = useState([]);
 
   // State cho tab AI
   const [aiName, setAiName] = useState("");
   const [aiDifficulty, setAiDifficulty] = useState("medium");
   const [aiTotalQuestions, setAiTotalQuestions] = useState(20);
-  const [aiTimeType, setAiTimeType] = useState("total");
   const [aiDuration, setAiDuration] = useState(30);
   const [aiPrompt, setAiPrompt] = useState("");
 
   // Thêm câu hỏi mới (manual)
   const addQuestion = () => {
     setQuestions((prev) => [...prev, {
-      type: "multipleChoice", text: "", answers: [{ text: "", correct: false }, { text: "", correct: false }],
+      type: "multipleChoice", text: "", difficulty: "medium", bloomId: 1, duration: 0, explanation: "",
+      answers: [{ text: "", correct: false }, { text: "", correct: false }],
     }]);
   };
 
@@ -53,16 +201,50 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack }) {
     ));
   };
 
-  // Xử lý submit
+  // Xử lý submit — gọi API tạo quiz hoàn chỉnh (multi-step)
   const handleSubmit = async () => {
     setSubmitting(true);
+    setError("");
     try {
-      const data = tab === "manual"
-        ? { mode: "manual", name, timeType, duration, passingScore, questions }
-        : { mode: "ai", name: aiName, difficulty: aiDifficulty, totalQuestions: aiTotalQuestions, timeType: aiTimeType, duration: aiDuration, prompt: aiPrompt };
-      await onCreateQuiz?.(data);
-    } catch {
-      // Lỗi xử lý bởi component cha
+      if (tab === "manual") {
+        // Validate cơ bản
+        if (!name.trim()) {
+          setError(t("workspace.quiz.validation.nameRequired"));
+          setSubmitting(false);
+          return;
+        }
+
+        // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → session → questions → answers)
+        const result = await createFullQuiz({
+          contextType: selectedContextType,
+          contextId: Number(selectedContextId),
+          title: name,
+          duration,
+          quizIntent,
+          timerMode,
+          passingScore,
+          maxAttempt,
+          overallDifficulty,
+          questions,
+        });
+
+        // Thông báo component cha quiz đã được tạo thành công
+        await onCreateQuiz?.({ quizId: result.quizId, title: result.title, ...result });
+      } else {
+        // Tab AI — vẫn gọi callback component cha (chưa có API AI)
+        const data = {
+          mode: "ai",
+          name: aiName,
+          difficulty: aiDifficulty,
+          totalQuestions: aiTotalQuestions,
+          duration: aiDuration,
+          prompt: aiPrompt,
+        };
+        await onCreateQuiz?.(data);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tạo quiz:", err);
+      setError(err.message || t("workspace.quiz.validation.createFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -116,23 +298,175 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack }) {
               <label className={labelCls}>{t("workspace.quiz.name")}</label>
               <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+
+            {/* Chọn vị trí tạo quiz (Context Type + Context ID) */}
+            <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-blue-200 bg-blue-50/30"}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                <span className={`text-xs font-semibold ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
+                  {t("workspace.quiz.contextSelector.title")}
+                </span>
+              </div>
+
+              {/* Dropdown chọn context type */}
               <div>
-                <label className={labelCls}>{t("workspace.quiz.timeType")}</label>
-                <select className={selectCls} value={timeType} onChange={(e) => setTimeType(e.target.value)}>
-                  <option value="total">{t("workspace.quiz.totalTime")}</option>
-                  <option value="perQuestion">{t("workspace.quiz.perQuestion")}</option>
+                <label className={labelCls}>{t("workspace.quiz.contextSelector.contextType")}</label>
+                <select className={selectCls} value={selectedContextType} onChange={(e) => handleContextTypeChange(e.target.value)}>
+                  {CONTEXT_TYPES.map((ct) => (
+                    <option key={ct} value={ct}>{t(`workspace.quiz.contextSelector.types.${ct}`)}</option>
+                  ))}
                 </select>
               </div>
+
+              {/* WORKSPACE — chọn workspace trực tiếp */}
+              {selectedContextType === "WORKSPACE" && (
+                <div>
+                  <label className={labelCls}>{t("workspace.quiz.contextSelector.selectWorkspace")}</label>
+                  <select className={selectCls} value={selectedContextId} onChange={(e) => handleDirectContextSelect(e.target.value)}>
+                    <option value="">{t("workspace.quiz.contextSelector.placeholder")}</option>
+                    {workspaces.map((ws) => (
+                      <option key={ws.workSpaceId || ws.id} value={ws.workSpaceId || ws.id}>
+                        {ws.title || ws.name || `Workspace #${ws.workSpaceId || ws.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* GROUP — chọn group trực tiếp */}
+              {selectedContextType === "GROUP" && (
+                <div>
+                  <label className={labelCls}>{t("workspace.quiz.contextSelector.selectGroup")}</label>
+                  <select className={selectCls} value={selectedContextId} onChange={(e) => handleDirectContextSelect(e.target.value)}>
+                    <option value="">{t("workspace.quiz.contextSelector.placeholder")}</option>
+                    {groups.map((g) => (
+                      <option key={g.groupId} value={g.groupId}>
+                        {g.groupName || `Group #${g.groupId}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* ROADMAP / PHASE / KNOWLEDGE — cascade: chọn source → roadmap → phase → knowledge */}
+              {(selectedContextType === "ROADMAP" || selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && (
+                <>
+                  {/* Chọn nguồn dữ liệu (workspace hoặc group) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.contextSelector.sourceType")}</label>
+                      <select className={selectCls} value={sourceType} onChange={(e) => { setSourceType(e.target.value); setSourceId(""); setRoadmaps([]); setPhases([]); setKnowledges([]); setSelectedRoadmapId(""); setSelectedPhaseId(""); setSelectedContextId(""); }}>
+                        <option value="WORKSPACE">{t("workspace.quiz.contextSelector.types.WORKSPACE")}</option>
+                        <option value="GROUP">{t("workspace.quiz.contextSelector.types.GROUP")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>{sourceType === "GROUP" ? t("workspace.quiz.contextSelector.selectGroup") : t("workspace.quiz.contextSelector.selectWorkspace")}</label>
+                      <select className={selectCls} value={sourceId} onChange={(e) => handleSourceSelect(e.target.value)}>
+                        <option value="">{t("workspace.quiz.contextSelector.placeholder")}</option>
+                        {(sourceType === "GROUP" ? groups : workspaces).map((item) => {
+                          const id = sourceType === "GROUP" ? item.groupId : (item.workSpaceId || item.id);
+                          const label = sourceType === "GROUP" ? (item.groupName || `Group #${id}`) : (item.title || item.name || `Workspace #${id}`);
+                          return <option key={id} value={id}>{label}</option>;
+                        })}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Chọn roadmap */}
+                  {sourceId && (
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.contextSelector.selectRoadmap")}</label>
+                      <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={contextLoading}>
+                        <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                        {roadmaps.map((rm) => (
+                          <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
+                            {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Chọn phase (chỉ cho PHASE và KNOWLEDGE) */}
+                  {(selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && selectedRoadmapId && (
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.contextSelector.selectPhase")}</label>
+                      <select className={selectCls} value={selectedPhaseId} onChange={(e) => handlePhaseSelect(e.target.value)} disabled={contextLoading}>
+                        <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                        {phases.map((ph) => (
+                          <option key={ph.phaseId || ph.id} value={ph.phaseId || ph.id}>
+                            {ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Chọn knowledge (chỉ cho KNOWLEDGE) */}
+                  {selectedContextType === "KNOWLEDGE" && selectedPhaseId && (
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.contextSelector.selectKnowledge")}</label>
+                      <select className={selectCls} value={selectedContextId} onChange={(e) => handleKnowledgeSelect(e.target.value)} disabled={contextLoading}>
+                        <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                        {knowledges.map((kn) => (
+                          <option key={kn.knowledgeId || kn.id} value={kn.knowledgeId || kn.id}>
+                            {kn.title || kn.name || `Knowledge #${kn.knowledgeId || kn.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Cấu hình Quiz Intent và Timer */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>{t("workspace.quiz.intent")}</label>
+                <select className={selectCls} value={quizIntent} onChange={(e) => setQuizIntent(e.target.value)}>
+                  {QUIZ_INTENTS.map((intent) => <option key={intent} value={intent}>{t(`workspace.quiz.intentLabels.${intent}`)}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}</label>
+                <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
+                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
                 <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
               </div>
               <div>
                 <label className={labelCls}>{t("workspace.quiz.passingScore")}</label>
-                <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={100} />
+                <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
+              </div>
+              <div>
+                <label className={labelCls}>{t("workspace.quiz.maxAttempt")}</label>
+                <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
               </div>
             </div>
+
+            {/* Toggle Timer Mode */}
+            <div className="flex items-center gap-3">
+              <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
+                <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.timerMode")}</span>
+              </label>
+            </div>
+
+            {/* Thông báo lỗi */}
+            {error && (
+              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
+                {error}
+              </div>
+            )}
 
             {/* Danh sách câu hỏi */}
             <div className="space-y-3">
@@ -140,14 +474,38 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack }) {
                 <div key={qIdx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center justify-between">
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>#{qIdx + 1}</span>
-                    <button onClick={() => removeQuestion(qIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded">
+                    <button onClick={() => removeQuestion(qIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all active:scale-95">
                       <Trash2 className="w-3.5 h-3.5 text-red-500" />
                     </button>
                   </div>
-                  <select className={selectCls} value={q.type} onChange={(e) => updateQuestion(qIdx, "type", e.target.value)}>
-                    {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`workspace.quiz.types.${qt}`)}</option>)}
-                  </select>
+
+                  {/* Loại câu hỏi + Độ khó + Bloom */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <select className={selectCls} value={q.type} onChange={(e) => updateQuestion(qIdx, "type", e.target.value)}>
+                      {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`workspace.quiz.types.${qt}`)}</option>)}
+                    </select>
+                    <select className={selectCls} value={q.difficulty} onChange={(e) => updateQuestion(qIdx, "difficulty", e.target.value)}>
+                      {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+                    </select>
+                    <select className={selectCls} value={q.bloomId} onChange={(e) => updateQuestion(qIdx, "bloomId", Number(e.target.value))}>
+                      {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`workspace.quiz.bloomLevels.${b.key}`)}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Nội dung câu hỏi */}
                   <input className={inputCls} placeholder={t("workspace.quiz.questionText")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
+
+                  {/* Thời gian mỗi câu (giây) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.questionDuration")}</label>
+                      <input type="number" className={inputCls} value={q.duration} onChange={(e) => updateQuestion(qIdx, "duration", Number(e.target.value))} min={0} placeholder="0" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.explanation")}</label>
+                      <input className={inputCls} placeholder={t("workspace.quiz.explanationPlaceholder")} value={q.explanation} onChange={(e) => updateQuestion(qIdx, "explanation", e.target.value)} />
+                    </div>
+                  </div>
 
                   {/* Đáp án cho multiple choice / multiple select */}
                   {(q.type === "multipleChoice" || q.type === "multipleSelect") && (
@@ -213,18 +571,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack }) {
                 <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>{t("workspace.quiz.timeType")}</label>
-                <select className={selectCls} value={aiTimeType} onChange={(e) => setAiTimeType(e.target.value)}>
-                  <option value="total">{t("workspace.quiz.totalTime")}</option>
-                  <option value="perQuestion">{t("workspace.quiz.perQuestion")}</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
-                <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
-              </div>
+            <div>
+              <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
+              <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
             </div>
             <div>
               <label className={labelCls}>{t("workspace.quiz.aiConfig.additionalPrompt")}</label>
