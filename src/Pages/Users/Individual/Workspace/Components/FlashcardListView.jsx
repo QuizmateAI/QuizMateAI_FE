@@ -1,7 +1,19 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, CreditCard, FolderOpen } from "lucide-react";
+import { Search, X, Plus, CreditCard, FolderOpen, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Hàm format ngày giờ ngắn gọn
+function formatShortDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const mins = String(d.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${mins}`;
+}
 
 // Cấu hình màu badge belong-to
 const BELONG_STYLES = {
@@ -12,29 +24,32 @@ const BELONG_STYLES = {
 
 // Mock data — sẽ thay bằng API sau
 const MOCK_FLASHCARDS = [
-  { id: "f1", name: "React Hooks Cards", belongTo: "knowledge", belongToName: "Custom Hooks", cardsCount: 30 },
-  { id: "f2", name: "JavaScript Terms", belongTo: "workspace", belongToName: "React Workspace", cardsCount: 50 },
-  { id: "f3", name: "Team Flashcards", belongTo: "group", belongToName: "Study Group A", cardsCount: 40 },
-  { id: "f4", name: "JSX Syntax Cards", belongTo: "knowledge", belongToName: "JSX & Components", cardsCount: 20 },
+  { id: "f1", name: "React Hooks Cards", belongTo: "knowledge", belongToName: "Custom Hooks", cardsCount: 30, createdAt: "2026-02-19T08:00:00", updatedAt: "2026-02-25T10:30:00" },
+  { id: "f2", name: "JavaScript Terms", belongTo: "workspace", belongToName: "React Workspace", cardsCount: 50, createdAt: "2026-02-18T14:00:00", updatedAt: "2026-02-24T16:45:00" },
+  { id: "f3", name: "Team Flashcards", belongTo: "group", belongToName: "Study Group A", cardsCount: 40, createdAt: "2026-02-21T09:30:00", updatedAt: "2026-02-26T08:15:00" },
+  { id: "f4", name: "JSX Syntax Cards", belongTo: "knowledge", belongToName: "JSX & Components", cardsCount: 20, createdAt: "2026-02-20T11:00:00", updatedAt: "2026-02-23T13:20:00" },
 ];
 
 const FILTER_OPTIONS = ["all", "knowledge", "workspace", "group"];
 
-function FlashcardListView({ isDarkMode, onCreateFlashcard }) {
+function FlashcardListView({ isDarkMode, onCreateFlashcard, createdItems = [] }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
 
+  // Gộp mock data với các item đã tạo từ form
+  const allFlashcards = useMemo(() => [...MOCK_FLASHCARDS, ...createdItems], [createdItems]);
+
   const filtered = useMemo(() => {
-    let items = MOCK_FLASHCARDS;
+    let items = allFlashcards;
     if (filterType !== "all") items = items.filter(f => f.belongTo === filterType);
     if (searchQuery.trim()) items = items.filter(f =>
       f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.belongToName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
     return items;
-  }, [searchQuery, filterType]);
+  }, [allFlashcards, searchQuery, filterType]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -89,6 +104,10 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard }) {
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{fc.name}</p>
                     <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{fc.cardsCount} {t("workspace.flashcard.cards")}</p>
+                    <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(fc.createdAt)}</span>
+                      {fc.updatedAt && <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" />{t("workspace.listView.updatedAt")}: {formatShortDate(fc.updatedAt)}</span>}
+                    </div>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? bs.dark : bs.light}`}>{fc.belongToName}</span>
                 </div>

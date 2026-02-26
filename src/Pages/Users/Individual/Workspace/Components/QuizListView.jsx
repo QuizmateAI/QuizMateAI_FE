@@ -1,7 +1,19 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, BadgeCheck, FolderOpen } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Hàm format ngày giờ ngắn gọn
+function formatShortDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const mins = String(d.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${mins}`;
+}
 
 // Cấu hình màu badge belong-to
 const BELONG_STYLES = {
@@ -14,23 +26,26 @@ const BELONG_STYLES = {
 
 // Mock data — sẽ thay bằng API sau
 const MOCK_QUIZZES = [
-  { id: "q1", name: "JS Fundamentals Quiz", belongTo: "workspace", belongToName: "React Workspace", questionsCount: 20, status: "COMPLETED" },
-  { id: "q2", name: "JSX Components Quiz", belongTo: "knowledge", belongToName: "JSX & Components", questionsCount: 10, status: "ACTIVE" },
-  { id: "q3", name: "Hooks Post-learning Test", belongTo: "phase", belongToName: "Advanced Hooks", questionsCount: 15, status: "PENDING" },
-  { id: "q4", name: "React Mastery Mock", belongTo: "roadmap", belongToName: "React Advanced", questionsCount: 50, status: "ACTIVE" },
-  { id: "q5", name: "Team Practice Quiz", belongTo: "group", belongToName: "Study Group A", questionsCount: 25, status: "ACTIVE" },
+  { id: "q1", name: "JS Fundamentals Quiz", belongTo: "workspace", belongToName: "React Workspace", questionsCount: 20, status: "COMPLETED", createdAt: "2026-02-18T09:00:00", updatedAt: "2026-02-24T15:30:00" },
+  { id: "q2", name: "JSX Components Quiz", belongTo: "knowledge", belongToName: "JSX & Components", questionsCount: 10, status: "ACTIVE", createdAt: "2026-02-20T10:15:00", updatedAt: "2026-02-25T11:00:00" },
+  { id: "q3", name: "Hooks Post-learning Test", belongTo: "phase", belongToName: "Advanced Hooks", questionsCount: 15, status: "PENDING", createdAt: "2026-02-21T14:00:00", updatedAt: "2026-02-23T08:45:00" },
+  { id: "q4", name: "React Mastery Mock", belongTo: "roadmap", belongToName: "React Advanced", questionsCount: 50, status: "ACTIVE", createdAt: "2026-02-22T16:30:00", updatedAt: "2026-02-26T09:00:00" },
+  { id: "q5", name: "Team Practice Quiz", belongTo: "group", belongToName: "Study Group A", questionsCount: 25, status: "ACTIVE", createdAt: "2026-02-23T11:00:00", updatedAt: "2026-02-25T17:20:00" },
 ];
 
 const FILTER_OPTIONS = ["all", "knowledge", "phase", "roadmap", "workspace", "group"];
 
-function QuizListView({ isDarkMode, onCreateQuiz }) {
+function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
 
+  // Gộp mock data với các item đã tạo từ form
+  const allQuizzes = useMemo(() => [...MOCK_QUIZZES, ...createdItems], [createdItems]);
+
   const filtered = useMemo(() => {
-    let items = MOCK_QUIZZES;
+    let items = allQuizzes;
     if (filterType !== "all") items = items.filter(q => q.belongTo === filterType);
     if (searchQuery.trim()) items = items.filter(q =>
       q.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,6 +107,10 @@ function QuizListView({ isDarkMode, onCreateQuiz }) {
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{quiz.name}</p>
                     <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{quiz.questionsCount} {t("workspace.quiz.questions")}</p>
+                    <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(quiz.createdAt)}</span>
+                      {quiz.updatedAt && <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" />{t("workspace.listView.updatedAt")}: {formatShortDate(quiz.updatedAt)}</span>}
+                    </div>
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? bs.dark : bs.light}`}>{quiz.belongToName}</span>
                 </div>
