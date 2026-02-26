@@ -39,6 +39,8 @@ function WorkspacePage() {
 
 	// Trạng thái hiển thị nội dung chính (null = chưa chọn hoạt động)
 	const [activeView, setActiveView] = useState(null);
+	// State lưu quiz đang được xem chi tiết hoặc chỉnh sửa
+	const [selectedQuiz, setSelectedQuiz] = useState(null);
 
 	// Hằng số kích thước panel
 	const COLLAPSED_WIDTH = 56;
@@ -122,23 +124,28 @@ function WorkspacePage() {
 		});
 	}, []);
 
-	// Xử lý tạo quiz — gọi từ form inline trong ChatPanel
+	// Xử lý tạo quiz — callback khi CreateQuizForm hoàn tất API multi-step
 	const handleCreateQuiz = useCallback(async (data) => {
-		// TODO: Gọi API tạo quiz
-		const quizName = data.name || "Quiz";
-		const now = new Date().toISOString();
-		setCreatedItems((prev) => [...prev, {
-			id: `created-q-${Date.now()}`,
-			name: quizName,
-			type: "Quiz",
-			belongTo: "workspace",
-			belongToName: "Current Workspace",
-			questionsCount: data.questions?.length || 0,
-			status: "ACTIVE",
-			createdAt: now,
-			updatedAt: now,
-		}]);
+		// Quiz đã được tạo xong từ CreateQuizForm → chuyển về list view
 		setActiveView("quiz");
+	}, []);
+
+	// Xử lý xem chi tiết quiz — khi click vào quiz trong danh sách
+	const handleViewQuiz = useCallback((quiz) => {
+		setSelectedQuiz(quiz);
+		setActiveView("quizDetail");
+	}, []);
+
+	// Xử lý chuyển sang chỉnh sửa quiz — từ detail view
+	const handleEditQuiz = useCallback((quiz) => {
+		setSelectedQuiz(quiz);
+		setActiveView("editQuiz");
+	}, []);
+
+	// Xử lý lưu quiz sau khi chỉnh sửa — quay về detail view
+	const handleSaveQuiz = useCallback((updatedQuiz) => {
+		setSelectedQuiz((prev) => ({ ...prev, ...updatedQuiz }));
+		setActiveView("quizDetail");
 	}, []);
 
 	// Xử lý tạo flashcard — gọi từ form inline trong ChatPanel
@@ -186,8 +193,12 @@ function WorkspacePage() {
 
 	// Quay về list view tương ứng khi bấm nút Back trong form tạo
 	const handleBackFromForm = useCallback(() => {
-		const formToList = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard" };
-		setActiveView(formToList[activeView] || null);
+		const formToList = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", quizDetail: "quiz", editQuiz: "quizDetail" };
+		const nextView = formToList[activeView] || null;
+		if (nextView !== "quizDetail" && nextView !== "editQuiz") {
+			setSelectedQuiz(null);
+		}
+		setActiveView(nextView);
 	}, [activeView]);
 
 	// Kéo thả thay đổi kích thước panel trái (Sources)
@@ -348,6 +359,10 @@ function WorkspacePage() {
 								onCreateRoadmap={handleCreateRoadmap}
 								onBack={handleBackFromForm}
 								workspaceId={workspaceId}
+								selectedQuiz={selectedQuiz}
+								onViewQuiz={handleViewQuiz}
+								onEditQuiz={handleEditQuiz}
+								onSaveQuiz={handleSaveQuiz}
 							/>
 						</div>
 
