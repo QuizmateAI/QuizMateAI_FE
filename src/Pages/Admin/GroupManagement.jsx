@@ -64,7 +64,7 @@ function GroupManagement() {
       } else if (responseData.content && Array.isArray(responseData.content)) {
         setGroups(responseData.content);
         setPagination({
-          page: responseData.number || 0,
+          page: responseData.page ?? responseData.number ?? 0,
           size: responseData.size || size,
           totalPages: responseData.totalPages || 0,
           totalElements: responseData.totalElements || 0,

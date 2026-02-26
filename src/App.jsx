@@ -6,11 +6,10 @@ import RegisterPage from './Pages/Authentication/RegisterPage';
 import ForgotPasswordPage from './Pages/Authentication/ForgotPasswordPage';
 import HomePage from './Pages/Users/Home/HomePage';
 import AdminLayout from './Pages/Admin/AdminLayout';
-import AdminDashboard from './Pages/Admin/AdminDashboard';
 import UserManagement from './Pages/Admin/UserManagement';
 import GroupManagement from './Pages/Admin/GroupManagement';
+import SubscriptionManagement from './Pages/Admin/SubscriptionManagement';
 import SuperAdminLayout from './Pages/SuperAdmin/SuperAdminLayout';
-import SuperAdminDashboard from './Pages/SuperAdmin/SuperAdminDashboard';
 import AdminManagement from './Pages/SuperAdmin/AdminManagement';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
 import GroupWorkspacePage from './Pages/Users/Group/GroupWorkspacePage';
@@ -46,19 +45,21 @@ function App() {
          {/* Route dành riêng cho Super Admin */}
          <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
           <Route path="/super-admin" element={<SuperAdminLayout />} >
-            <Route index element={<SuperAdminDashboard />} />
+            <Route index element={<UserManagement />} />
             <Route path="admins" element={<AdminManagement />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="groups" element={<GroupManagement />} />
+            <Route path="subscriptions" element={<SubscriptionManagement />} />
           </Route>
         </Route>
 
         {/* Route dành riêng cho Admin - Super Admin không được vào */}
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />} >
-            <Route index element={<AdminDashboard />} />
+            <Route index element={<UserManagement />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="groups" element={<GroupManagement />} />
+            <Route path="subscriptions" element={<SubscriptionManagement />} />
           </Route>
         </Route>
       </Routes>
