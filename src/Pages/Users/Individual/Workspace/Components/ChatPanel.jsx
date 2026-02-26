@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
 import CreateFlashcardForm from "./CreateFlashcardForm";
 import CreateRoadmapForm from "./CreateRoadmapForm";
+import RoadmapListView from "./RoadmapListView";
+import QuizListView from "./QuizListView";
+import FlashcardListView from "./FlashcardListView";
+import MockTestListView from "./MockTestListView";
 
-// Panel chính hiển thị nội dung workspace: trạng thái trống, quiz, flashcard, roadmap...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUploadClick, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack }) {
+// Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -95,6 +99,33 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUplo
             ))}
           </div>
         </div>
+      </section>
+    );
+  }
+
+  // Khi đang hiển thị list view — render danh sách tương ứng
+  const renderListView = () => {
+    switch (activeView) {
+      case "roadmap":
+        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} />;
+      case "quiz":
+        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} />;
+      case "flashcard":
+        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} />;
+      case "mockTest":
+        return <MockTestListView isDarkMode={isDarkMode} />;
+      default:
+        return null;
+    }
+  };
+
+  const listContent = renderListView();
+  if (listContent) {
+    return (
+      <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
+        isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
+      }`}>
+        {listContent}
       </section>
     );
   }

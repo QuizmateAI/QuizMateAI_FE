@@ -110,27 +110,28 @@ function WorkspacePage() {
 	const handleCreateQuiz = useCallback(async (data) => {
 		// TODO: Gọi API tạo quiz
 		setOutputs((prev) => [...prev, { name: data.name || "Quiz", type: "Quiz" }]);
-		setActiveView(null);
+		setActiveView("quiz");
 	}, []);
 
 	// Xử lý tạo flashcard — gọi từ form inline trong ChatPanel
 	const handleCreateFlashcard = useCallback(async (data) => {
 		// TODO: Gọi API tạo flashcard
 		setOutputs((prev) => [...prev, { name: data.deckName || "Flashcard", type: "Flashcard" }]);
-		setActiveView(null);
+		setActiveView("flashcard");
 	}, []);
 
 	// Xử lý tạo roadmap — gọi từ form inline trong ChatPanel
 	const handleCreateRoadmap = useCallback(async (data) => {
 		// TODO: Gọi API tạo roadmap
 		setOutputs((prev) => [...prev, { name: data.name || "Roadmap", type: "Roadmap" }]);
-		setActiveView(null);
+		setActiveView("roadmap");
 	}, []);
 
-	// Quay về trạng thái mặc định khi bấm nút Back trong form
+	// Quay về list view tương ứng khi bấm nút Back trong form tạo
 	const handleBackFromForm = useCallback(() => {
-		setActiveView(null);
-	}, []);
+		const formToList = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard" };
+		setActiveView(formToList[activeView] || null);
+	}, [activeView]);
 
 	// Kéo thả thay đổi kích thước panel trái (Sources)
 	const handleLeftResize = useCallback((e) => {
@@ -283,6 +284,7 @@ function WorkspacePage() {
 								sources={sources}
 								activeView={activeView}
 								onUploadClick={() => setUploadDialogOpen(true)}
+								onChangeView={handleStudioAction}
 								onCreateQuiz={handleCreateQuiz}
 								onCreateFlashcard={handleCreateFlashcard}
 								onCreateRoadmap={handleCreateRoadmap}
@@ -311,6 +313,7 @@ function WorkspacePage() {
 								outputs={outputs}
 								isCollapsed={isStudioCollapsed}
 								onToggleCollapse={() => setIsStudioCollapsed((prev) => !prev)}
+								activeView={activeView}
 							/>
 						</div>
 					</div>
