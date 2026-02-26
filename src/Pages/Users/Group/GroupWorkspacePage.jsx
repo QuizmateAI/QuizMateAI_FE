@@ -25,7 +25,8 @@ function GroupWorkspacePage() {
   const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
   const [activeView, setActiveView] = useState(null);
   const [sources, setSources] = useState([]);
-  const [outputs, setOutputs] = useState([]);
+  const [createdItems, setCreatedItems] = useState([]);
+  const [accessHistory, setAccessHistory] = useState([]);
   const [leftWidth, setLeftWidth] = useState(320);
   const [rightWidth, setRightWidth] = useState(320);
   const [isLeftResizing, setIsLeftResizing] = useState(false);
@@ -86,34 +87,100 @@ function GroupWorkspacePage() {
 
   // Xử lý hành động từ studio panel — hiển thị form inline trong ChatPanel
   const handleStudioAction = useCallback((actionKey) => {
+    // Ghi lịch sử truy cập khi người dùng mở list view
+    const viewTypeMap = { roadmap: 'Roadmap', quiz: 'Quiz', flashcard: 'Flashcard', mockTest: 'MockTest' };
+    if (viewTypeMap[actionKey]) {
+      addAccessHistory(viewTypeMap[actionKey], viewTypeMap[actionKey], actionKey);
+    }
     setActiveView(actionKey);
+  }, []);
+
+  // Hàm thêm vào lịch sử truy cập — ghi nhận mỗi lần truy cập list view
+  const addAccessHistory = useCallback((name, type, actionKey) => {
+    setAccessHistory((prev) => {
+      const filtered = prev.filter((item) => item.actionKey !== actionKey);
+      return [{ name, type, actionKey, accessedAt: new Date().toISOString() }, ...filtered].slice(0, 20);
+    });
   }, []);
 
   // Xử lý tạo quiz — gọi từ form inline trong ChatPanel
   const handleCreateQuiz = useCallback(async (data) => {
     // TODO: Gọi API tạo quiz cho group
-    setOutputs((prev) => [...prev, { name: data.name || 'Quiz', type: 'Quiz' }]);
-    setActiveView(null);
+    const quizName = data.name || 'Quiz';
+    const now = new Date().toISOString();
+    setCreatedItems((prev) => [...prev, {
+      id: `created-q-${Date.now()}`,
+      name: quizName,
+      type: 'Quiz',
+      belongTo: 'group',
+      belongToName: 'Current Group',
+      questionsCount: data.questions?.length || 0,
+      status: 'ACTIVE',
+      createdAt: now,
+      updatedAt: now,
+    }]);
+    setActiveView('quiz');
   }, []);
 
   // Xử lý tạo flashcard — gọi từ form inline trong ChatPanel
   const handleCreateFlashcard = useCallback(async (data) => {
     // TODO: Gọi API tạo flashcard cho group
-    setOutputs((prev) => [...prev, { name: data.deckName || 'Flashcard', type: 'Flashcard' }]);
-    setActiveView(null);
+    const deckName = data.deckName || 'Flashcard';
+    const now = new Date().toISOString();
+    setCreatedItems((prev) => [...prev, {
+      id: `created-f-${Date.now()}`,
+      name: deckName,
+      type: 'Flashcard',
+      belongTo: 'group',
+      belongToName: 'Current Group',
+      cardsCount: data.cards?.length || 0,
+      createdAt: now,
+      updatedAt: now,
+    }]);
+    setActiveView('flashcard');
   }, []);
 
   // Xử lý tạo roadmap — gọi từ form inline trong ChatPanel
   const handleCreateRoadmap = useCallback(async (data) => {
     // TODO: Gọi API tạo roadmap cho group
-    setOutputs((prev) => [...prev, { name: data.name || 'Roadmap', type: 'Roadmap' }]);
-    setActiveView(null);
+    const roadmapName = data.name || 'Roadmap';
+    const now = new Date().toISOString();
+    const ts = Date.now();
+
+    // Map phases & knowledges từ form sang cấu trúc giống MOCK_ROADMAPS
+    const mappedPhases = (data.phases || []).map((phase, pIdx) => ({
+      id: `ph-${ts}-${pIdx}`,
+      name: phase.name || `Phase ${pIdx + 1}`,
+      createdAt: now,
+      updatedAt: now,
+      knowledges: (phase.knowledges || []).map((kn, kIdx) => ({
+        id: `kn-${ts}-${pIdx}-${kIdx}`,
+        name: kn.name || `Knowledge ${kIdx + 1}`,
+        quizCount: 0,
+        flashcardCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      })),
+    }));
+
+    setCreatedItems((prev) => [...prev, {
+      id: `created-rm-${ts}`,
+      name: roadmapName,
+      type: 'Roadmap',
+      phasesCount: mappedPhases.length,
+      status: 'ACTIVE',
+      phases: mappedPhases,
+      createdAt: now,
+      updatedAt: now,
+    }]);
+    setActiveView('roadmap');
   }, []);
 
-  // Quay về trạng thái mặc định khi bấm nút Back trong form
+  // Quay về list view tương ứng khi bấm nút Back trong form tạo
   const handleBackFromForm = useCallback(() => {
-    setActiveView(null);
-  }, []);
+    const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard' };
+    setActiveView(formToList[activeView] || null);
+  }, [activeView]);
 
   // Kéo thả thay đổi kích thước panel trái (Sources)
   const handleLeftResize = useCallback((e) => {
@@ -301,7 +368,9 @@ function GroupWorkspacePage() {
                 isDarkMode={isDarkMode}
                 sources={sources}
                 activeView={activeView}
+                createdItems={createdItems}
                 onUploadClick={() => setUploadDialogOpen(true)}
+                onChangeView={handleStudioAction}
                 onCreateQuiz={handleCreateQuiz}
                 onCreateFlashcard={handleCreateFlashcard}
                 onCreateRoadmap={handleCreateRoadmap}
@@ -327,9 +396,10 @@ function GroupWorkspacePage() {
               <StudioPanel
                 isDarkMode={isDarkMode}
                 onAction={handleStudioAction}
-                outputs={outputs}
+                accessHistory={accessHistory}
                 isCollapsed={isStudioCollapsed}
                 onToggleCollapse={() => setIsStudioCollapsed((prev) => !prev)}
+                activeView={activeView}
               />
             </div>
           </div>

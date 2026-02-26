@@ -11,7 +11,7 @@ import FlashcardListView from "./FlashcardListView";
 import MockTestListView from "./MockTestListView";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -105,13 +105,18 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUplo
 
   // Khi đang hiển thị list view — render danh sách tương ứng
   const renderListView = () => {
+    // Lọc createdItems theo loại tương ứng
+    const createdRoadmaps = createdItems.filter(i => i.type === "Roadmap");
+    const createdQuizzes = createdItems.filter(i => i.type === "Quiz");
+    const createdFlashcards = createdItems.filter(i => i.type === "Flashcard");
+
     switch (activeView) {
       case "roadmap":
-        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} />;
+        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} />;
       case "quiz":
-        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} />;
+        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} createdItems={createdQuizzes} />;
       case "flashcard":
-        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} />;
+        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} createdItems={createdFlashcards} />;
       case "mockTest":
         return <MockTestListView isDarkMode={isDarkMode} />;
       default:

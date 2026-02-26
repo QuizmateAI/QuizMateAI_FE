@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map } from "lucide-react";
+import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map, Clock, History } from "lucide-react";
 
 // Lấy icon và màu theo loại output đã tạo
 function getOutputIcon(type) {
@@ -26,8 +26,23 @@ function getActiveKey(view) {
   return map[view] || view;
 }
 
+// Hàm format thời gian truy cập gần đây
+function formatAccessTime(dateStr, t) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return t("workspace.studio.accessedNow");
+  if (diffMin < 60) return `${diffMin}m`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d`;
+}
+
 // Panel chứa các nút chức năng chính của workspace
-function StudioPanel({ isDarkMode = false, onAction, outputs = [], isCollapsed = false, onToggleCollapse, activeView = null }) {
+function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isCollapsed = false, onToggleCollapse, activeView = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [hoverTooltip, setHoverTooltip] = useState(null);
@@ -99,19 +114,20 @@ function StudioPanel({ isDarkMode = false, onAction, outputs = [], isCollapsed =
             );
           })}
 
-          {/* Hiển thị icon các output đã tạo khi thu gọn */}
-          {outputs.length > 0 && (
+          {/* Hiển thị icon lịch sử truy cập khi thu gọn */}
+          {accessHistory.length > 0 && (
             <>
               <div className={`w-8 border-t my-1 ${isDarkMode ? "border-slate-700" : "border-gray-200"}`} />
-              {outputs.map((output, i) => {
-                const { icon: OutputIcon, color } = getOutputIcon(output.type);
+              {accessHistory.slice(0, 5).map((item, i) => {
+                const { icon: OutputIcon, color } = getOutputIcon(item.type);
                 return (
                   <div
                     key={i}
-                    onMouseEnter={(event) => showTooltip(event, output.name)}
+                    onMouseEnter={(event) => showTooltip(event, item.name)}
                     onMouseLeave={() => setHoverTooltip(null)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isDarkMode ? "bg-slate-800" : "bg-gray-50"
+                    onClick={() => onAction?.(item.actionKey)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
+                      isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-50 hover:bg-gray-100"
                     }`}
                   >
                     <OutputIcon className={`w-4 h-4 ${color}`} />
@@ -178,31 +194,37 @@ function StudioPanel({ isDarkMode = false, onAction, outputs = [], isCollapsed =
         })}
       </div>
 
-      {/* Khu vực hiển thị kết quả đã tạo */}
+      {/* Khu vực hiển thị lịch sử truy cập */}
       <div className={`flex-1 px-4 pb-4 overflow-y-auto border-t mt-1 pt-3 ${isDarkMode ? "border-slate-800" : "border-gray-100"}`}>
-        <p className={`text-xs font-semibold uppercase tracking-wide mb-2 text-left ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-          {t("workspace.studio.outputs")}
-        </p>
-        {outputs.length === 0 ? (
+        <div className="flex items-center gap-1.5 mb-2">
+          <History className={`w-3.5 h-3.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+          <p className={`text-xs font-semibold uppercase tracking-wide text-left ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
+            {t("workspace.studio.accessHistory")}
+          </p>
+        </div>
+        {accessHistory.length === 0 ? (
           <div className="text-center py-6">
             <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-              {t("workspace.studio.noOutputs")}
+              {t("workspace.studio.noHistory")}
             </p>
           </div>
         ) : (
           <div className="space-y-2">
-            {outputs.map((output, i) => {
-              const { icon: OutputIcon, color, bg } = getOutputIcon(output.type);
+            {accessHistory.map((item, i) => {
+              const { icon: OutputIcon, color, bg } = getOutputIcon(item.type);
               return (
-                <div key={i} className={`rounded-lg px-3 py-2.5 flex items-center gap-3 text-sm cursor-pointer transition-colors ${
+                <div key={i} onClick={() => onAction?.(item.actionKey)} className={`rounded-lg px-3 py-2.5 flex items-center gap-3 text-sm cursor-pointer transition-colors ${
                   isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-gray-50 hover:bg-gray-100 text-gray-700"
                 }`}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
                     <OutputIcon className={`w-4 h-4 ${color}`} />
                   </div>
                   <div className="min-w-0 flex-1 text-left">
-                    <p className={`font-medium truncate ${fontClass}`}>{output.name}</p>
-                    <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{output.type}</p>
+                    <p className={`font-medium truncate ${fontClass}`}>{item.name}</p>
+                    <p className={`text-xs mt-0.5 flex items-center gap-1 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                      <Clock className="w-3 h-3" />
+                      {formatAccessTime(item.accessedAt, t)}
+                    </p>
                   </div>
                 </div>
               );

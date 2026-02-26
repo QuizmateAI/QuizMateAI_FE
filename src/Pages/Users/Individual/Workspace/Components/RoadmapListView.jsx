@@ -1,7 +1,19 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, ChevronRight, GitBranch, Folder, FileText, BadgeCheck, CreditCard, FolderOpen } from "lucide-react";
+import { Search, X, Plus, ChevronRight, GitBranch, Folder, FileText, BadgeCheck, CreditCard, FolderOpen, Clock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Hàm format ngày giờ ngắn gọn
+function formatShortDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const mins = String(d.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${mins}`;
+}
 
 // Cấu hình style cho breadcrumb theo cấp
 const LEVEL_STYLES = [
@@ -15,33 +27,38 @@ const LEVEL_ICONS = [GitBranch, Folder, FileText];
 // Mock data — sẽ thay bằng API sau
 const MOCK_ROADMAPS = [
   { id: "rm-1", name: "React Advanced Patterns", phasesCount: 2, status: "ACTIVE",
+    createdAt: "2026-02-20T08:30:00", updatedAt: "2026-02-25T14:20:00",
     phases: [
-      { id: "ph-1", name: "Fundamentals", knowledges: [
-        { id: "kn-1", name: "JSX & Components", quizCount: 2, flashcardCount: 3 },
-        { id: "kn-2", name: "Props & State", quizCount: 1, flashcardCount: 2 },
+      { id: "ph-1", name: "Fundamentals", createdAt: "2026-02-20T08:30:00", updatedAt: "2026-02-24T10:00:00", knowledges: [
+        { id: "kn-1", name: "JSX & Components", quizCount: 2, flashcardCount: 3, createdAt: "2026-02-20T09:00:00", updatedAt: "2026-02-23T11:30:00" },
+        { id: "kn-2", name: "Props & State", quizCount: 1, flashcardCount: 2, createdAt: "2026-02-20T09:30:00", updatedAt: "2026-02-22T16:45:00" },
       ]},
-      { id: "ph-2", name: "Advanced Hooks", knowledges: [
-        { id: "kn-3", name: "useReducer & useContext", quizCount: 1, flashcardCount: 1 },
+      { id: "ph-2", name: "Advanced Hooks", createdAt: "2026-02-21T10:00:00", updatedAt: "2026-02-25T14:20:00", knowledges: [
+        { id: "kn-3", name: "useReducer & useContext", quizCount: 1, flashcardCount: 1, createdAt: "2026-02-21T10:30:00", updatedAt: "2026-02-25T14:20:00" },
       ]},
     ]
   },
   { id: "rm-2", name: "Data Structures & Algorithms", phasesCount: 1, status: "ACTIVE",
-    phases: [{ id: "ph-3", name: "Linear Structures", knowledges: [
-      { id: "kn-4", name: "Arrays & Linked Lists", quizCount: 3, flashcardCount: 4 },
+    createdAt: "2026-02-22T10:00:00", updatedAt: "2026-02-24T09:15:00",
+    phases: [{ id: "ph-3", name: "Linear Structures", createdAt: "2026-02-22T10:00:00", updatedAt: "2026-02-24T09:15:00", knowledges: [
+      { id: "kn-4", name: "Arrays & Linked Lists", quizCount: 3, flashcardCount: 4, createdAt: "2026-02-22T10:30:00", updatedAt: "2026-02-24T09:15:00" },
     ]}]
   },
 ];
 
-function RoadmapListView({ isDarkMode, onCreateRoadmap }) {
+function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [] }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [path, setPath] = useState([]);
   const depth = path.length;
 
+  // Gộp mock data với các item đã tạo từ form
+  const allRoadmaps = useMemo(() => [...MOCK_ROADMAPS, ...createdItems], [createdItems]);
+
   // Lấy items theo cấp hiện tại
   const currentItems = useMemo(() => {
-    if (depth === 0) return MOCK_ROADMAPS;
+    if (depth === 0) return allRoadmaps;
     if (depth === 1) return path[0].data?.phases || [];
     if (depth === 2) return path[1].data?.knowledges || [];
     if (depth === 3) {
@@ -136,6 +153,12 @@ function RoadmapListView({ isDarkMode, onCreateRoadmap }) {
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{item.name}</p>
                     <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{getSubtitle(item)}</p>
+                    {item.createdAt && (
+                      <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(item.createdAt)}</span>
+                        {item.updatedAt && <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" />{t("workspace.listView.updatedAt")}: {formatShortDate(item.updatedAt)}</span>}
+                      </div>
+                    )}
                   </div>
                   {canDrill && <ChevronRight className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />}
                 </div>

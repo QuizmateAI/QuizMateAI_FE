@@ -464,7 +464,10 @@
         "prelearning": "Pre-learning"
       },
       "outputs": "Generated Outputs",
-      "noOutputs": "No outputs yet."
+      "noOutputs": "No outputs yet.",
+      "accessHistory": "Access History",
+      "noHistory": "No recent activity.",
+      "accessedNow": "Just now"
     },
     "upload": {
       "title": "Upload Documents",
@@ -615,6 +618,8 @@
       "create": "Create new",
       "noItems": "No items yet",
       "noResults": "No results found",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
       "levels": {
         "roadmap": "All Roadmaps",
         "phase": "Phases",
