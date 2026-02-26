@@ -642,6 +642,9 @@
         "selectKnowledge": "Select Knowledge",
         "placeholder": "-- Select --",
         "loading": "Loading...",
+        "reload": "Reload",
+        "currentWorkspace": "Using current workspace",
+        "currentGroup": "Using current group",
         "types": {
           "WORKSPACE": "Workspace",
           "GROUP": "Group",
