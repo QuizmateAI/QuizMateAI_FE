@@ -15,7 +15,7 @@ import AdminManagement from './Pages/SuperAdmin/AdminManagement';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
 import GroupWorkspacePage from './Pages/Users/Group/GroupWorkspacePage';
 import GroupManagementPage from './Pages/Users/Group/Group_leader/GroupManagementPage';
-import ProfilePage from './Pages/Users/Individual/Profile/ProfilePage';
+import ProfilePage from './Pages/Users/Profile/ProfilePage';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute'; // Import bảo vệ route
 import './i18n'; // Import i18n configuration
 import './App.css'

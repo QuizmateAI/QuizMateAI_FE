@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MoreVertical, Plus, Pencil, Trash2, Loader2, FolderOpen } from "lucide-react";
+import { MoreVertical, Plus, Pencil, Trash2, Loader2, FolderOpen, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Pagination from "./Pagination";
 
@@ -83,12 +83,22 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
   const workspaceList = Array.isArray(workspaces) ? workspaces : [];
+  const [searchQuery, setSearchQuery] = useState("");
 
   const isList = viewMode === "list";
   // Sắp xếp theo ngày tạo mới nhất - đảm bảo workspaces là mảng hợp lệ
-  const sorted = Array.isArray(workspaces) 
+  const allSorted = Array.isArray(workspaces) 
     ? [...workspaces].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     : [];
+
+  // Lọc theo từ khóa tìm kiếm
+  const sorted = searchQuery.trim()
+    ? allSorted.filter((ws) =>
+        ws.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ws.topic?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ws.subject?.title?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allSorted;
 
   // Thông tin pagination mặc định nếu không có
   const paginationInfo = pagination || { page: 0, size: 10, totalPages: 0, totalElements: 0 };
@@ -113,6 +123,31 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
         <h2 className={`text-xl font-medium transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>
           {t("home.sections.myWorkspaces")}
         </h2>
+      </div>
+
+      {/* Thanh tìm kiếm */}
+      <div className="mb-4">
+        <div className={`relative max-w-md`}>
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("home.search.workspacePlaceholder")}
+            className={`w-full pl-9 pr-9 py-2 rounded-xl text-sm border transition-colors outline-none ${isDarkMode
+              ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+              : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500"
+            }`}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDarkMode ? "text-slate-400 hover:text-white" : "text-gray-400 hover:text-gray-700"}`}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {isList ? (

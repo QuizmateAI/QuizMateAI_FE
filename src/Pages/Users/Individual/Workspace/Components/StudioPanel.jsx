@@ -12,19 +12,27 @@ function getOutputIcon(type) {
 
 // Danh sách hành động chính trong Studio
 const STUDIO_ACTIONS = [
-  { key: "createRoadmap", icon: GitBranch, color: "text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-950/40" },
-  { key: "createQuiz", icon: BadgeCheck, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-950/40" },
-  { key: "createFlashcard", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-950/40" },
+  { key: "roadmap", icon: GitBranch, color: "text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-950/40" },
+  { key: "quiz", icon: BadgeCheck, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-950/40" },
+  { key: "flashcard", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-950/40" },
   { key: "mockTest", icon: ClipboardList, color: "text-purple-500", bg: "bg-purple-100 dark:bg-purple-950/40" },
   { key: "prelearning", icon: GraduationCap, color: "text-rose-500", bg: "bg-rose-100 dark:bg-rose-950/40" },
 ];
 
+// Lấy action key đang active từ activeView
+function getActiveKey(view) {
+  if (!view) return null;
+  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard" };
+  return map[view] || view;
+}
+
 // Panel chứa các nút chức năng chính của workspace
-function StudioPanel({ isDarkMode = false, onAction, outputs = [], isCollapsed = false, onToggleCollapse }) {
+function StudioPanel({ isDarkMode = false, onAction, outputs = [], isCollapsed = false, onToggleCollapse, activeView = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
+  const highlightKey = getActiveKey(activeView);
 
   useEffect(() => {
     if (!isCollapsed) {
@@ -79,7 +87,9 @@ function StudioPanel({ isDarkMode = false, onAction, outputs = [], isCollapsed =
                 onMouseEnter={(event) => showTooltip(event, t(`workspace.studio.actions.${action.key}`))}
                 onMouseLeave={() => setHoverTooltip(null)}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                  isDarkMode
+                  highlightKey === action.key
+                    ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
+                    : isDarkMode
                     ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
@@ -147,7 +157,11 @@ function StudioPanel({ isDarkMode = false, onAction, outputs = [], isCollapsed =
               key={action.key}
               onClick={() => onAction?.(action.key)}
               className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${
-                isDarkMode
+                highlightKey === action.key
+                  ? isDarkMode
+                    ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20"
+                    : "bg-blue-50 border border-blue-200"
+                  : isDarkMode
                   ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700"
                   : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
               }`}
