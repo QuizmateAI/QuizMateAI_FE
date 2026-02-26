@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
 import CreateFlashcardForm from "./CreateFlashcardForm";
 import CreateRoadmapForm from "./CreateRoadmapForm";
-import RoadmapListView from "@/Pages/Users/Individual/Workspace/Components/RoadmapListView";
-import QuizListView from "@/Pages/Users/Individual/Workspace/Components/QuizListView";
-import FlashcardListView from "@/Pages/Users/Individual/Workspace/Components/FlashcardListView";
-import MockTestListView from "@/Pages/Users/Individual/Workspace/Components/MockTestListView";
+import RoadmapListView from "./RoadmapListView";
+import QuizListView from "./QuizListView";
+import FlashcardListView from "./FlashcardListView";
+import MockTestListView from "./MockTestListView";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
 function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack, groupId = null }) {

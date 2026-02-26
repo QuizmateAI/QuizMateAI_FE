@@ -675,7 +675,16 @@
       "delete": "Delete",
       "itemCount": "{{count}} items",
       "postLearning": "Post-learning",
-      "postLearningDesc": "Complete all knowledge items to unlock post-learning."
+      "postLearningDesc": "Complete all knowledge items to unlock post-learning.",
+      "quizDesc": "Practice quiz questions for this knowledge topic.",
+      "flashcardDesc": "Study flashcards for this knowledge topic.",
+      "startPostLearning": "You can now start the post-learning test!",
+      "addQuiz": "Add Quiz",
+      "addFlashcard": "Add Flashcard",
+      "quizNamePlaceholder": "Enter quiz name...",
+      "flashcardNamePlaceholder": "Enter flashcard name...",
+      "noQuizYet": "No quiz created yet.",
+      "noFlashcardYet": "No flashcard created yet."
     },
     "mockTest": {
       "title": "Mock Test",
@@ -690,6 +699,7 @@
     "listView": {
       "searchPlaceholder": "Search...",
       "create": "Create new",
+      "start": "Start",
       "noItems": "No items yet",
       "noResults": "No results found",
       "createdAt": "Created",
