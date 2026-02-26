@@ -11,7 +11,7 @@ import FlashcardListView from "./FlashcardListView";
 import MockTestListView from "./MockTestListView";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack, workspaceId = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -112,7 +112,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
 
     switch (activeView) {
       case "roadmap":
-        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} />;
+        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} workspaceId={workspaceId} />;
       case "quiz":
         return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} createdItems={createdQuizzes} />;
       case "flashcard":

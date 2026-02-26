@@ -5,9 +5,13 @@ import { Button } from "@/components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
 import CreateFlashcardForm from "./CreateFlashcardForm";
 import CreateRoadmapForm from "./CreateRoadmapForm";
+import RoadmapListView from "@/Pages/Users/Individual/Workspace/Components/RoadmapListView";
+import QuizListView from "@/Pages/Users/Individual/Workspace/Components/QuizListView";
+import FlashcardListView from "@/Pages/Users/Individual/Workspace/Components/FlashcardListView";
+import MockTestListView from "@/Pages/Users/Individual/Workspace/Components/MockTestListView";
 
-// Panel chính hiển thị nội dung workspace: trạng thái trống, quiz, flashcard, roadmap...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUploadClick, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack }) {
+// Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack, groupId = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -99,8 +103,39 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUplo
     );
   }
 
+  // Khi đang hiển thị list view — render danh sách tương ứng
+  const renderListView = () => {
+    // Lọc createdItems theo loại tương ứng
+    const createdRoadmaps = createdItems.filter(i => i.type === "Roadmap");
+    const createdQuizzes = createdItems.filter(i => i.type === "Quiz");
+    const createdFlashcards = createdItems.filter(i => i.type === "Flashcard");
+
+    switch (activeView) {
+      case "roadmap":
+        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} groupId={groupId} />;
+      case "quiz":
+        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} createdItems={createdQuizzes} />;
+      case "flashcard":
+        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} createdItems={createdFlashcards} />;
+      case "mockTest":
+        return <MockTestListView isDarkMode={isDarkMode} />;
+      default:
+        return null;
+    }
+  };
+
+  const listContent = renderListView();
+  if (listContent) {
+    return (
+      <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
+        isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
+      }`}>
+        {listContent}
+      </section>
+    );
+  }
+
   // Khi đang hiển thị form tạo nội dung — render inline thay vì popup
-  // Render form phù hợp dựa vào activeView
   const renderActiveContent = () => {
     switch (activeView) {
       case "createQuiz":
@@ -127,7 +162,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUplo
     );
   }
 
-  // Khi đang hiển thị nội dung cụ thể khác (mockTest, prelearning...) — placeholder
+  // Placeholder khi đang hiển thị nội dung cụ thể khác
   return (
     <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
       isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
@@ -135,14 +170,11 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, onUplo
       <div className={`px-4 py-3 border-b transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>{t("workspace.chat.title")}</p>
       </div>
-
       <div className="flex-1 overflow-y-auto p-4">
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
           {t("workspace.chat.aiThinking")}
         </p>
       </div>
-
-      {/* Thanh input dưới cùng */}
       <div className={`p-4 border-t transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className={`flex items-center gap-3 border rounded-2xl px-4 py-2 ${
           isDarkMode ? "border-slate-700 bg-slate-950" : "border-gray-200"

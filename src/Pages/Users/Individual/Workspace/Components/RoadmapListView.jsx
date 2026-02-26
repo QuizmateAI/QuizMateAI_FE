@@ -1,7 +1,16 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, ChevronRight, GitBranch, Folder, FileText, BadgeCheck, CreditCard, FolderOpen, Clock, RefreshCw } from "lucide-react";
+import { Search, X, Plus, ChevronRight, GitBranch, Folder, FileText, BadgeCheck, CreditCard, FolderOpen, Clock, RefreshCw, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  getRoadmapsByGroup,
+  getRoadmapsByWorkspace,
+  getPhasesByRoadmap,
+  getKnowledgesByPhase,
+  deleteRoadmap,
+  deletePhase,
+  deleteKnowledge,
+} from "@/api/RoadmapAPI";
 
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
@@ -24,62 +33,183 @@ const LEVEL_STYLES = [
 ];
 const LEVEL_ICONS = [GitBranch, Folder, FileText];
 
-// Mock data — sẽ thay bằng API sau
-const MOCK_ROADMAPS = [
-  { id: "rm-1", name: "React Advanced Patterns", phasesCount: 2, status: "ACTIVE",
-    createdAt: "2026-02-20T08:30:00", updatedAt: "2026-02-25T14:20:00",
-    phases: [
-      { id: "ph-1", name: "Fundamentals", createdAt: "2026-02-20T08:30:00", updatedAt: "2026-02-24T10:00:00", knowledges: [
-        { id: "kn-1", name: "JSX & Components", quizCount: 2, flashcardCount: 3, createdAt: "2026-02-20T09:00:00", updatedAt: "2026-02-23T11:30:00" },
-        { id: "kn-2", name: "Props & State", quizCount: 1, flashcardCount: 2, createdAt: "2026-02-20T09:30:00", updatedAt: "2026-02-22T16:45:00" },
-      ]},
-      { id: "ph-2", name: "Advanced Hooks", createdAt: "2026-02-21T10:00:00", updatedAt: "2026-02-25T14:20:00", knowledges: [
-        { id: "kn-3", name: "useReducer & useContext", quizCount: 1, flashcardCount: 1, createdAt: "2026-02-21T10:30:00", updatedAt: "2026-02-25T14:20:00" },
-      ]},
-    ]
-  },
-  { id: "rm-2", name: "Data Structures & Algorithms", phasesCount: 1, status: "ACTIVE",
-    createdAt: "2026-02-22T10:00:00", updatedAt: "2026-02-24T09:15:00",
-    phases: [{ id: "ph-3", name: "Linear Structures", createdAt: "2026-02-22T10:00:00", updatedAt: "2026-02-24T09:15:00", knowledges: [
-      { id: "kn-4", name: "Arrays & Linked Lists", quizCount: 3, flashcardCount: 4, createdAt: "2026-02-22T10:30:00", updatedAt: "2026-02-24T09:15:00" },
-    ]}]
-  },
-];
-
-function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [] }) {
+function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [], groupId = null, workspaceId = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [path, setPath] = useState([]);
   const depth = path.length;
 
-  // Gộp mock data với các item đã tạo từ form
-  const allRoadmaps = useMemo(() => [...MOCK_ROADMAPS, ...createdItems], [createdItems]);
+  // State cho dữ liệu API
+  const [roadmaps, setRoadmaps] = useState([]);
+  const [phases, setPhases] = useState([]);
+  const [knowledges, setKnowledges] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  // Fetch danh sách roadmap khi mount hoặc khi createdItems thay đổi
+  const fetchRoadmaps = useCallback(async () => {
+    if (!groupId && !workspaceId) {
+      // Không có groupId hay workspaceId — không fetch
+      setRoadmaps([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      let res;
+      if (groupId) {
+        res = await getRoadmapsByGroup(groupId, 0, 50);
+      } else {
+        res = await getRoadmapsByWorkspace(workspaceId, 0, 50);
+      }
+      const items = (res?.data?.content || []).map((rm) => ({
+        id: rm.roadmapId,
+        name: rm.title,
+        description: rm.description,
+        status: rm.status,
+        createdAt: rm.createdAt,
+        roadmapType: rm.roadmapType,
+        createVia: rm.createVia,
+      }));
+      setRoadmaps(items);
+    } catch {
+      // Lỗi khi fetch — giữ nguyên state cũ
+    } finally {
+      setLoading(false);
+    }
+  }, [groupId, workspaceId]);
+
+  useEffect(() => {
+    fetchRoadmaps();
+  }, [fetchRoadmaps, createdItems.length]);
+
+  // Fetch phases khi drill vào roadmap
+  const fetchPhases = useCallback(async (roadmapId) => {
+    setLoading(true);
+    try {
+      const res = await getPhasesByRoadmap(roadmapId, 0, 50);
+      const items = (res?.data?.content || []).map((ph) => ({
+        id: ph.phaseId,
+        name: ph.title,
+        description: ph.description,
+        status: ph.status,
+        phaseIndex: ph.phaseIndex,
+        studyDurationInDay: ph.studyDurationInDay,
+        roadmapId: ph.roadmapId,
+      }));
+      setPhases(items);
+    } catch {
+      setPhases([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch knowledges khi drill vào phase
+  const fetchKnowledges = useCallback(async (phaseId) => {
+    setLoading(true);
+    try {
+      const res = await getKnowledgesByPhase(phaseId, 0, 50);
+      const items = (res?.data?.content || []).map((kn) => ({
+        id: kn.knowledgeId,
+        name: kn.title,
+        description: kn.description,
+        status: kn.status,
+        phaseId: kn.phaseId,
+      }));
+      setKnowledges(items);
+    } catch {
+      setKnowledges([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Gộp API data với các item mới tạo từ form (chưa có trên server)
+  const allRoadmaps = useMemo(() => {
+    const fromCreated = createdItems.map((rm) => ({
+      id: rm.id || rm.roadmapId,
+      name: rm.name || rm.title,
+      description: rm.description,
+      status: rm.status || "INACTIVE",
+      createdAt: rm.createdAt,
+    }));
+    // Loại bỏ trùng ID
+    const apiIds = new Set(roadmaps.map((r) => r.id));
+    const unique = fromCreated.filter((r) => !apiIds.has(r.id));
+    return [...roadmaps, ...unique];
+  }, [roadmaps, createdItems]);
 
   // Lấy items theo cấp hiện tại
   const currentItems = useMemo(() => {
     if (depth === 0) return allRoadmaps;
-    if (depth === 1) return path[0].data?.phases || [];
-    if (depth === 2) return path[1].data?.knowledges || [];
-    if (depth === 3) {
-      const kn = path[2].data;
-      return [
-        ...Array(kn?.quizCount || 0).fill(0).map((_, i) => ({ id: `q-${i}`, name: `Quiz ${i + 1}`, itemType: "quiz" })),
-        ...Array(kn?.flashcardCount || 0).fill(0).map((_, i) => ({ id: `f-${i}`, name: `Flashcard ${i + 1}`, itemType: "flashcard" })),
-      ];
-    }
+    if (depth === 1) return phases;
+    if (depth === 2) return knowledges;
     return [];
-  }, [path, depth]);
+  }, [depth, allRoadmaps, phases, knowledges]);
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return currentItems;
     return currentItems.filter(it => it.name?.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [currentItems, searchQuery]);
 
-  const drillDown = (item) => { if (depth < 3) { setPath(p => [...p, { id: item.id, name: item.name, data: item }]); setSearchQuery(""); } };
-  const goTo = (idx) => { setPath(p => p.slice(0, idx)); setSearchQuery(""); };
+  const drillDown = async (item) => {
+    if (depth === 0) {
+      // Drill vào roadmap → fetch phases
+      setPath(p => [...p, { id: item.id, name: item.name, data: item }]);
+      setSearchQuery("");
+      await fetchPhases(item.id);
+    } else if (depth === 1) {
+      // Drill vào phase → fetch knowledges
+      setPath(p => [...p, { id: item.id, name: item.name, data: item }]);
+      setSearchQuery("");
+      await fetchKnowledges(item.id);
+    }
+  };
 
-  const levelKeys = ["roadmap", "phase", "knowledge", "items"];
+  const goTo = async (idx) => {
+    if (idx === 0) {
+      setPath([]);
+      setSearchQuery("");
+      setPhases([]);
+      setKnowledges([]);
+    } else if (idx === 1) {
+      setPath(p => p.slice(0, 1));
+      setSearchQuery("");
+      setKnowledges([]);
+      // Re-fetch phases cho roadmap đầu tiên trong path
+      if (path[0]) await fetchPhases(path[0].id);
+    } else {
+      setPath(p => p.slice(0, idx));
+      setSearchQuery("");
+    }
+  };
+
+  // Xử lý xóa item
+  const handleDelete = async (e, item) => {
+    e.stopPropagation();
+    setDeletingId(item.id);
+    try {
+      if (depth === 0) {
+        await deleteRoadmap(item.id);
+        await fetchRoadmaps();
+      } else if (depth === 1) {
+        const roadmapId = path[0]?.id;
+        await deletePhase(item.id, roadmapId);
+        await fetchPhases(roadmapId);
+      } else if (depth === 2) {
+        const phaseId = path[1]?.id;
+        await deleteKnowledge(item.id, phaseId);
+        await fetchKnowledges(phaseId);
+      }
+    } catch {
+      // Lỗi xóa — bỏ qua
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const levelKeys = ["roadmap", "phase", "knowledge"];
 
   const getItemIcon = (item) => {
     if (item.itemType === "quiz") return { Icon: BadgeCheck, color: "text-blue-500", bg: isDarkMode ? "bg-blue-950/40" : "bg-blue-100" };
@@ -90,9 +220,9 @@ function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [] }) {
 
   const getSubtitle = (item) => {
     if (item.itemType) return item.itemType;
-    if (depth === 0) return `${item.phasesCount || item.phases?.length || 0} ${t("workspace.roadmap.phases")}`;
-    if (depth === 1) return `${item.knowledges?.length || 0} ${t("workspace.roadmap.knowledge")}`;
-    if (depth === 2) return `${item.quizCount || 0} quiz · ${item.flashcardCount || 0} flashcard`;
+    if (depth === 0) return `${item.status || "INACTIVE"} · ${item.createVia || "MANUAL"}`;
+    if (depth === 1) return `${item.status || "INACTIVE"}${item.studyDurationInDay ? ` · ${item.studyDurationInDay}d` : ""}`;
+    if (depth === 2) return `${item.status || "INACTIVE"}`;
     return "";
   };
 
@@ -136,19 +266,24 @@ function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [] }) {
 
       {/* Danh sách */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Loading...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{searchQuery ? t("workspace.listView.noResults") : t("workspace.listView.noItems")}</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.map(item => {
+            {filtered.map((item, index) => {
               const { Icon, color, bg } = getItemIcon(item);
-              const canDrill = depth < 3 && !item.itemType;
+              const canDrill = depth < 2 && !item.itemType;
               return (
-                <div key={item.id} onClick={canDrill ? () => drillDown(item) : undefined}
-                  className={`rounded-xl px-4 py-3 flex items-center gap-3 transition-all ${canDrill ? "cursor-pointer" : ""} ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
+                <div key={`${item.id}-${index}`} onClick={canDrill ? () => drillDown(item) : undefined}
+                  className={`rounded-xl px-4 py-3 flex items-center gap-3 transition-all group ${canDrill ? "cursor-pointer" : ""} ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${bg}`}><Icon className={`w-4 h-4 ${color}`} /></div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{item.name}</p>
@@ -156,11 +291,20 @@ function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [] }) {
                     {item.createdAt && (
                       <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(item.createdAt)}</span>
-                        {item.updatedAt && <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" />{t("workspace.listView.updatedAt")}: {formatShortDate(item.updatedAt)}</span>}
                       </div>
                     )}
                   </div>
-                  {canDrill && <ChevronRight className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />}
+                  <div className="flex items-center gap-1">
+                    {/* Nút xóa — chỉ hiện khi hover */}
+                    <button
+                      onClick={(e) => handleDelete(e, item)}
+                      disabled={deletingId === item.id}
+                      className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-red-950/50 text-red-400" : "hover:bg-red-50 text-red-500"}`}
+                    >
+                      {deletingId === item.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                    {canDrill && <ChevronRight className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />}
+                  </div>
                 </div>
               );
             })}
