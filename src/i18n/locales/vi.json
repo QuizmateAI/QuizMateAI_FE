@@ -756,7 +756,16 @@
       "delete": "Xóa",
       "itemCount": "{{count}} mục",
       "postLearning": "Post-learning",
-      "postLearningDesc": "Hoàn thành tất cả knowledge để mở bài post-learning."
+      "postLearningDesc": "Hoàn thành tất cả knowledge để mở bài post-learning.",
+      "quizDesc": "Làm bài quiz cho chủ đề kiến thức này.",
+      "flashcardDesc": "Ôn tập flashcard cho chủ đề kiến thức này.",
+      "startPostLearning": "Bạn có thể bắt đầu bài post-learning!",
+      "addQuiz": "Thêm Quiz",
+      "addFlashcard": "Thêm Flashcard",
+      "quizNamePlaceholder": "Nhập tên quiz...",
+      "flashcardNamePlaceholder": "Nhập tên flashcard...",
+      "noQuizYet": "Chưa có quiz nào.",
+      "noFlashcardYet": "Chưa có flashcard nào."
     },
     "mockTest": {
       "title": "Mock Test",
@@ -771,6 +780,7 @@
     "listView": {
       "searchPlaceholder": "Tìm kiếm...",
       "create": "Tạo mới",
+      "start": "Bắt đầu",
       "noItems": "Chưa có mục nào",
       "noResults": "Không tìm thấy kết quả",
       "createdAt": "Tạo lúc",
