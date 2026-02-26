@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, Edit, Search, Shield, RefreshCw } from 'lucide-react';
+import {
+  Plus, Trash2, Edit, Search, Shield, RefreshCw,
+  Users, Package, CreditCard, Banknote, FileText,
+  ClipboardList, Settings, UsersRound, ShieldCheck, Eye, Pencil,
+} from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,13 +36,29 @@ import {
 } from '@/api/ManagementSystemAPI';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
-// Permissions mà ADMIN được phép (khớp với BE RbacRoleMatrix.adminAllowedPermissions)
 const ADMIN_ALLOWED_CODES = [
-  'user:read', 'user:update', 'user:status_update', 'user:assign_role',
-  'plan:read', 'plan:write', 'subscription:read', 'subscription:write',
+  'user:read', 'user:status_update',
+  'subscription:read', 'subscription:write',
   'payment:read', 'payment:write', 'material:moderate', 'audit:read',
   'system-settings:read', 'group:read_all',
 ];
+
+const PERM_CATEGORIES = [
+  { prefix: 'user:',              label: 'Users',          icon: Users,         color: 'text-blue-400',    bg: 'from-blue-500 to-blue-600' },
+  { prefix: 'group:',             label: 'Groups',         icon: UsersRound,    color: 'text-violet-400',  bg: 'from-violet-500 to-purple-600' },
+  { prefix: 'plan:',              label: 'Plans',          icon: Package,       color: 'text-cyan-400',    bg: 'from-cyan-500 to-teal-500' },
+  { prefix: 'subscription:',      label: 'Subscriptions',  icon: CreditCard,    color: 'text-emerald-400', bg: 'from-emerald-500 to-green-600' },
+  { prefix: 'payment:',           label: 'Payments',       icon: Banknote,      color: 'text-amber-400',   bg: 'from-amber-500 to-orange-500' },
+  { prefix: 'material:',          label: 'Materials',      icon: FileText,      color: 'text-rose-400',    bg: 'from-rose-500 to-pink-600' },
+  { prefix: 'audit:',             label: 'Audit',          icon: ClipboardList, color: 'text-indigo-400',  bg: 'from-indigo-500 to-blue-600' },
+  { prefix: 'system-settings:',   label: 'System',         icon: Settings,      color: 'text-slate-400',   bg: 'from-slate-500 to-slate-600' },
+];
+
+const getPermCategory = (code) => PERM_CATEGORIES.find((c) => code.startsWith(c.prefix));
+const getPermAction = (code) => {
+  const action = code.split(':')[1] || '';
+  return action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 function AdminManagement() {
   const { t, i18n } = useTranslation();
@@ -76,9 +96,9 @@ function AdminManagement() {
     setError('');
     try {
       const res = await getAllSystemUsers();
-      const data = res?.data ?? res;
-      const list = Array.isArray(data) ? data : [];
-      setAdmins(list.filter((u) => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN'));
+      const pageData = res?.data ?? res;
+      const list = Array.isArray(pageData?.content) ? pageData.content : (Array.isArray(pageData) ? pageData : []);
+      setAdmins(list.filter((u) => u.role === 'ADMIN'));
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách admin');
     } finally {
@@ -130,8 +150,8 @@ function AdminManagement() {
         listPermissions(),
         admin.role === 'ADMIN' ? getUserPermissions(admin.id) : Promise.resolve({ data: [] }),
       ]);
-      const permData = permRes?.data ?? permRes;
-      const allPerms = Array.isArray(permData) ? permData : [];
+      const permPageData = permRes?.data ?? permRes;
+      const allPerms = Array.isArray(permPageData?.content) ? permPageData.content : (Array.isArray(permPageData) ? permPageData : []);
       const adminPerms = allPerms.filter((p) => ADMIN_ALLOWED_CODES.includes(p.code?.toLowerCase()));
       setPermissions(adminPerms);
 
@@ -367,84 +387,134 @@ function AdminManagement() {
 
       {/* RBAC Popup */}
       <Dialog open={isRbacOpen} onOpenChange={setIsRbacOpen}>
-        <DialogContent className={`max-w-xl max-h-[90vh] overflow-hidden flex flex-col ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
-          <DialogHeader>
-            <DialogTitle className={isDarkMode ? 'text-white' : ''}>
-              Phân quyền: {selectedAdmin?.username}
-            </DialogTitle>
-            <DialogDescription>
-              Bật/tắt quyền cho tài khoản ADMIN. SUPER_ADMIN có toàn quyền mặc định.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent hideClose className={`max-w-xl max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden ${isDarkMode ? 'bg-[#0f1629] border-white/[0.08]' : 'bg-white'}`}>
+          {/* Fixed header */}
+          <div className={`flex-shrink-0 px-6 pt-6 pb-4 border-b ${isDarkMode ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+            <DialogHeader className="p-0 space-y-1">
+              <DialogTitle className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                Phân quyền: {selectedAdmin?.username}
+              </DialogTitle>
+              <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
+                Bật/tắt quyền cho tài khoản ADMIN. SUPER_ADMIN có toàn quyền mặc định.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          {selectedAdmin && (
-            <div className="flex flex-col gap-4 py-2 overflow-y-auto">
-              {selectedAdmin.role === 'SUPER_ADMIN' ? (
-                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Tài khoản SUPER_ADMIN có toàn quyền mặc định, không cần cấu hình.
-                </p>
-              ) : selectedAdmin.role === 'ADMIN' && (
-                <>
-                  <div className="flex items-center justify-between border-b pb-3">
-                    <Label className="text-sm font-medium">Quyền hạn ({userPermissions.length}/{permissions.length})</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAllPermissions(!allSelected)}
-                      className="rounded-lg"
-                    >
-                      {allSelected ? 'Bỏ tất cả' : 'Cấp tất cả'}
-                    </Button>
+          {/* Scrollable body */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+            {selectedAdmin && (
+              <>
+                {selectedAdmin.role === 'SUPER_ADMIN' ? (
+                  <div className={`flex flex-col items-center justify-center py-10 gap-3`}>
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                      <ShieldCheck className="w-7 h-7 text-white" />
+                    </div>
+                    <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Tài khoản SUPER_ADMIN có toàn quyền mặc định.
+                    </p>
                   </div>
+                ) : selectedAdmin.role === 'ADMIN' && (
+                  <div className="space-y-4">
+                    {/* Counter + Toggle All */}
+                    <div className={`flex items-center justify-between`}>
+                      <div className="flex items-center gap-2">
+                        <div className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                          isDarkMode ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {userPermissions.length}/{permissions.length}
+                        </div>
+                        <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>quyền đã cấp</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAllPermissions(!allSelected)}
+                        className={`rounded-lg text-xs h-8 cursor-pointer ${isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}
+                      >
+                        {allSelected ? 'Bỏ tất cả' : 'Cấp tất cả'}
+                      </Button>
+                    </div>
 
-                  <div className="border rounded-lg overflow-hidden max-h-[50vh] overflow-y-auto">
-                    <table className="w-full text-sm">
-                      <thead className={isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}>
-                        <tr>
-                          <th className="text-left py-3 px-4 font-medium text-slate-600 dark:text-slate-400 w-[45%]">Quyền</th>
-                          <th className="text-left py-3 px-4 font-medium text-slate-600 dark:text-slate-400 w-[40%]">Mô tả</th>
-                          <th className="text-right py-3 px-4 font-medium text-slate-600 dark:text-slate-400 w-[15%]">Bật/Tắt</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isRbacLoading ? (
-                          <tr><td colSpan={3} className="py-8 text-center text-slate-400">Đang tải...</td></tr>
-                        ) : (
-                          permissions.map((p) => {
-                            const code = String(p.code).toLowerCase();
-                            const checked = userPermissions.includes(code);
-                            return (
-                              <tr
-                                key={p.code}
-                                className={`border-t ${isDarkMode ? 'border-slate-700 hover:bg-slate-800/50' : 'border-slate-100 hover:bg-slate-50'}`}
-                              >
-                                <td className="py-3 px-4 font-mono text-xs">{p.code}</td>
-                                <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{p.description || '-'}</td>
-                                <td className="py-3 px-4 text-right">
-                                  <Switch
-                                    checked={checked}
-                                    onCheckedChange={() => togglePermission(code)}
-                                  />
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
+                    {isRbacLoading ? (
+                      <div className="py-12 text-center text-slate-400 text-sm">Đang tải...</div>
+                    ) : (
+                      <div className="space-y-4">
+                        {PERM_CATEGORIES.map((cat) => {
+                          const catPerms = permissions.filter((p) => String(p.code).toLowerCase().startsWith(cat.prefix));
+                          if (catPerms.length === 0) return null;
+                          const CatIcon = cat.icon;
+                          const allCatChecked = catPerms.every((p) => userPermissions.includes(String(p.code).toLowerCase()));
+                          return (
+                            <div key={cat.prefix} className={`rounded-xl border overflow-hidden ${isDarkMode ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-slate-50/50'}`}>
+                              {/* Category header */}
+                              <div className={`flex items-center gap-2.5 px-4 py-2.5 ${isDarkMode ? 'bg-white/[0.02]' : 'bg-slate-50'}`}>
+                                <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${cat.bg} flex items-center justify-center shadow-sm`}>
+                                  <CatIcon className="w-3.5 h-3.5 text-white" />
+                                </div>
+                                <span className={`text-xs font-bold uppercase tracking-wider ${cat.color}`}>{cat.label}</span>
+                                <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                  allCatChecked
+                                    ? isDarkMode ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-100 text-emerald-600'
+                                    : isDarkMode ? 'bg-white/5 text-slate-500' : 'bg-slate-200 text-slate-400'
+                                }`}>
+                                  {catPerms.filter((p) => userPermissions.includes(String(p.code).toLowerCase())).length}/{catPerms.length}
+                                </span>
+                              </div>
+                              {/* Permission items */}
+                              <div className={`divide-y ${isDarkMode ? 'divide-white/[0.04]' : 'divide-slate-100'}`}>
+                                {catPerms.map((p) => {
+                                  const code = String(p.code).toLowerCase();
+                                  const checked = userPermissions.includes(code);
+                                  const action = getPermAction(code);
+                                  const isRead = code.includes('read');
+                                  return (
+                                    <label key={p.code} className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors duration-150 ${
+                                      checked
+                                        ? isDarkMode ? 'bg-blue-500/[0.07]' : 'bg-blue-50/60'
+                                        : isDarkMode ? 'hover:bg-white/[0.02]' : 'hover:bg-white'
+                                    }`}>
+                                      <Switch checked={checked} onCheckedChange={() => togglePermission(code)} />
+                                      <div className={`w-6 h-6 rounded-md flex items-center justify-center ${
+                                        checked
+                                          ? isDarkMode ? 'bg-white/10' : 'bg-blue-100'
+                                          : isDarkMode ? 'bg-white/5' : 'bg-slate-100'
+                                      }`}>
+                                        {isRead
+                                          ? <Eye className={`w-3 h-3 ${checked ? cat.color : isDarkMode ? 'text-slate-600' : 'text-slate-300'}`} />
+                                          : <Pencil className={`w-3 h-3 ${checked ? cat.color : isDarkMode ? 'text-slate-600' : 'text-slate-300'}`} />
+                                        }
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <span className={`text-sm font-medium ${
+                                          checked ? isDarkMode ? 'text-white' : 'text-slate-800' : isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                                        }`}>{action}</span>
+                                      </div>
+                                      <span className={`font-mono text-[10px] ${isDarkMode ? 'text-slate-600' : 'text-slate-300'}`}>{p.code}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                </>
-              )}
-            </div>
-          )}
-
-          <DialogFooter className="mt-4 border-t pt-4">
-            <Button variant="outline" onClick={() => setIsRbacOpen(false)}>Đóng</Button>
-            {selectedAdmin?.role === 'ADMIN' && (
-              <Button onClick={handleSyncPermissions} disabled={isRbacLoading}>Đồng bộ quyền</Button>
+                )}
+              </>
             )}
-          </DialogFooter>
+          </div>
+
+          {/* Fixed footer */}
+          <div className={`flex-shrink-0 px-6 py-4 border-t flex justify-end gap-3 ${isDarkMode ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+            <Button variant="outline" onClick={() => setIsRbacOpen(false)} className={`rounded-lg cursor-pointer ${isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>Đóng</Button>
+            {selectedAdmin?.role === 'ADMIN' && (
+              <Button onClick={handleSyncPermissions} disabled={isRbacLoading} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-lg shadow-blue-600/25 cursor-pointer">
+                Đồng bộ quyền
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

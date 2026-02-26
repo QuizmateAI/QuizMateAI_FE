@@ -1,5 +1,11 @@
 import api from './api';
 
+// Lấy quyền của user hiện tại (ADMIN/SUPER_ADMIN)
+export const getMyPermissions = async () => {
+  const response = await api.get('/management/me/permissions');
+  return response;
+};
+
 // Lấy danh sách users (có hỗ trợ phân trang)
 export const getAllUsers = async (page = 0, size = 10) => {
   const response = await api.get(`/management/users?page=${page}&size=${size}`);
@@ -27,13 +33,13 @@ export const createAdmin = async (data) => {
   return response;
 };
 
-export const getAllSystemUsers = async () => {
-  const response = await api.get('/rbac/system/users');
+export const getAllSystemUsers = async (page = 0, size = 100) => {
+  const response = await api.get(`/rbac/system/users?page=${page}&size=${size}`);
   return response;
 };
 
-export const listPermissions = async () => {
-  const response = await api.get('/rbac/system/permissions');
+export const listPermissions = async (page = 0, size = 100) => {
+  const response = await api.get(`/rbac/system/permissions?page=${page}&size=${size}`);
   return response;
 };
 
@@ -67,5 +73,52 @@ export const getAuditLogs = async (actorId, action) => {
   if (actorId != null) params.append('actorId', actorId);
   if (action) params.append('action', action);
   const response = await api.get(`/rbac/system/audit-logs?${params.toString()}`);
+  return response;
+};
+
+// Plan APIs — maps to PlanController (/api/plan/...)
+export const getAllPlans = async () => {
+  const response = await api.get('/plan/all');
+  return response;
+};
+
+export const getPlanById = async (planId) => {
+  const response = await api.get(`/plan/${planId}`);
+  return response;
+};
+
+export const createPlan = async (data) => {
+  const response = await api.post('/plan/create', data);
+  return response;
+};
+
+export const updatePlan = async (planId, data) => {
+  const response = await api.put(`/plan/${planId}`, data);
+  return response;
+};
+
+export const deletePlan = async (planId) => {
+  const response = await api.delete(`/plan/${planId}`);
+  return response;
+};
+
+export const togglePlanStatus = async (planId) => {
+  const response = await api.patch(`/plan/${planId}/toggle-status`);
+  return response;
+};
+
+export const getPlansByStatus = async (status) => {
+  const response = await api.get(`/plan/status/${status}`);
+  return response;
+};
+
+export const getPurchasablePlans = async (type) => {
+  const response = await api.get(`/plan/purchasable?type=${type}`);
+  return response;
+};
+
+// Payment APIs — maps to PaymentController (/api/payment/...)
+export const getUserPayments = async () => {
+  const response = await api.get('/payment/user');
   return response;
 };
