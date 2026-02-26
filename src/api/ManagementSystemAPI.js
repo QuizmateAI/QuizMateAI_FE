@@ -17,6 +17,31 @@ export const updateUserStatus = async (userId, status) => {
   return response;
 };
 
+export const getUserById = async (userId) => {
+  const response = await api.get(`/management/users/${userId}`);
+  return response;
+};
+
+export const getWorkspacesByUserId = async (userId, page = 0, size = 20) => {
+  const response = await api.get(`/management/users/${userId}/workspaces?page=${page}&size=${size}`);
+  return response;
+};
+
+export const getGroupsByUserId = async (userId) => {
+  const response = await api.get(`/management/users/${userId}/groups`);
+  return response;
+};
+
+export const getUserSubscription = async (userId) => {
+  const response = await api.get(`/management/users/${userId}/subscription`);
+  return response;
+};
+
+export const getGroupSubscription = async (groupId) => {
+  const response = await api.get(`/management/groups/${groupId}/subscription`);
+  return response;
+};
+
 // Lấy danh sách groups (có hỗ trợ phân trang)
 export const getAllGroups = async (page = 0, size = 10) => {
   const response = await api.get(`/management/groups?page=${page}&size=${size}`);
@@ -68,11 +93,18 @@ export const revokePermissionFromUser = async (userId, permissionCode) => {
   return response;
 };
 
-export const getAuditLogs = async (actorId, action) => {
+export const getAuditLogs = async (actorId, action, page = 0, size = 50) => {
   const params = new URLSearchParams();
   if (actorId != null) params.append('actorId', actorId);
   if (action) params.append('action', action);
+  params.append('page', page);
+  params.append('size', size);
   const response = await api.get(`/rbac/system/audit-logs?${params.toString()}`);
+  return response;
+};
+
+export const getGroupLogs = async (groupId) => {
+  const response = await api.get(`/management/groups/${groupId}/logs`);
   return response;
 };
 

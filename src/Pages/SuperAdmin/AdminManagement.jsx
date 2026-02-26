@@ -35,6 +35,7 @@ import {
   syncUserPermissions,
 } from '@/api/ManagementSystemAPI';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { useToast } from '@/context/ToastContext';
 
 const ADMIN_ALLOWED_CODES = [
   'user:read', 'user:status_update',
@@ -63,13 +64,13 @@ const getPermAction = (code) => {
 function AdminManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const { showSuccess, showError } = useToast();
   
   // State definitions
   const [searchTerm, setSearchTerm] = useState('');
   const [admins, setAdmins] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   
   // Create Admin Dialog State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -111,11 +112,15 @@ function AdminManagement() {
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp');
+      const msg = t('adminManagement.form.passwordMismatch');
+      setError(msg);
+      showError(msg);
       return;
     }
     if (formData.password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+      const msg = t('adminManagement.form.passwordTooShort');
+      setError(msg);
+      showError(msg);
       return;
     }
     setIsSubmitting(true);
@@ -128,13 +133,14 @@ function AdminManagement() {
         confirmPassword: formData.confirmPassword,
         fullName: formData.fullName || undefined,
       });
-      setSuccessMsg('Tạo admin thành công');
-      setTimeout(() => setSuccessMsg(''), 3000);
+      showSuccess(t('adminManagement.form.success'));
       setIsCreateOpen(false);
       setFormData({ username: '', email: '', password: '', confirmPassword: '', fullName: '' });
       fetchAdmins();
     } catch (err) {
-      setError(err?.message || 'Không thể tạo admin');
+      const msg = err?.message || t('adminManagement.form.error');
+      setError(msg);
+      showError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -187,10 +193,11 @@ function AdminManagement() {
     setError('');
     try {
       await syncUserPermissions(selectedAdmin.id, userPermissions);
-      setSuccessMsg('Đã đồng bộ quyền thành công');
-      setTimeout(() => setSuccessMsg(''), 3000);
+      showSuccess(t('adminManagement.syncSuccess'));
     } catch (err) {
-      setError(err?.message || 'Không thể đồng bộ quyền');
+      const msg = err?.message || t('adminManagement.syncError');
+      setError(msg);
+      showError(msg);
     } finally {
       setIsRbacLoading(false);
     }
@@ -249,12 +256,6 @@ function AdminManagement() {
           {error}
         </div>
       )}
-      {successMsg && (
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-100 dark:bg-emerald-900/30 px-4 py-3 text-emerald-700 dark:text-emerald-400">
-          {successMsg}
-        </div>
-      )}
-
       <Card
         className={`border shadow-sm overflow-hidden rounded-[24px] transition-colors duration-300 ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
