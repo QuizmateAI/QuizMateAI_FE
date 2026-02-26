@@ -642,6 +642,9 @@
         "selectKnowledge": "Chọn Kiến thức",
         "placeholder": "-- Chọn --",
         "loading": "Đang tải...",
+        "reload": "Tải lại",
+        "currentWorkspace": "Sử dụng workspace hiện tại",
+        "currentGroup": "Sử dụng nhóm hiện tại",
         "types": {
           "WORKSPACE": "Workspace",
           "GROUP": "Nhóm",
