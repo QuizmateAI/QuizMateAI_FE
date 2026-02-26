@@ -156,6 +156,7 @@ export const createFullQuiz = async ({
   maxAttempt,
   overallDifficulty,
   questions = [],
+  status = 'ACTIVE',
 }) => {
   // Bước 1: Tạo quiz
   const quizRes = await createQuiz({
@@ -221,13 +222,13 @@ export const createFullQuiz = async ({
     }
   }
 
-  // Bước 5: Cập nhật quiz sang ACTIVE với passScore và maxAttempt
+  // Bước 5: Cập nhật quiz với status (ACTIVE hoặc DRAFT), passScore và maxAttempt
   const updatedQuiz = await updateQuiz(quizId, {
     contextType,
     contextId,
     quizIntent,
     duration,
-    status: 'ACTIVE',
+    status,
     timerMode,
     maxAttempt: maxAttempt || null,
     passScore: passingScore || null,

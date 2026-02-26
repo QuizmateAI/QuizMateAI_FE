@@ -577,7 +577,9 @@
       "maxAttempt": "Số lần tối đa",
       "intent": "Mục đích Quiz",
       "overallDifficulty": "Độ khó tổng thể",
-      "timerMode": "Bật chế độ đếm giờ",
+      "timerMode": "Chế độ tổng thời gian",
+      "timerModeHintOn": "Tất cả câu hỏi dùng chung thời gian tổng",
+      "timerModeHintOff": "Mỗi câu hỏi có thời gian riêng",
       "minutes": "phút",
       "addQuestion": "Thêm câu hỏi",
       "questionType": "Dạng câu hỏi",
@@ -629,7 +631,8 @@
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
-        "createFailed": "Tạo quiz thất bại. Vui lòng thử lại."
+        "createFailed": "Tạo quiz thất bại. Vui lòng thử lại.",
+        "postLearningLimit": "Giai đoạn này đã có bài Post-learning. Mỗi giai đoạn chỉ được phép có một bài."
       },
       "contextSelector": {
         "title": "Vị trí tạo Quiz",
@@ -689,6 +692,8 @@
         "saveFailed": "Lưu quiz thất bại. Vui lòng thử lại."
       },
       "create": "Tạo Quiz",
+      "createActive": "Tạo & Kích hoạt",
+      "saveDraft": "Lưu bản nháp",
       "creating": "Đang tạo...",
       "cancel": "Hủy",
       "generateAI": "Tạo bằng AI",
@@ -726,7 +731,41 @@
       "cancel": "Hủy",
       "generateAI": "Tạo bằng AI",
       "generating": "AI đang tạo...",
-      "cards": "thẻ"
+      "cards": "thẻ",
+      "detailTitle": "Chi tiết Flashcard",
+      "items": "mục",
+      "noItems": "Chưa có thẻ nào.",
+      "addItem": "Thêm thẻ",
+      "editItem": "Sửa thẻ",
+      "deleteItem": "Xóa thẻ",
+      "deleteItemConfirm": "Bạn có chắc muốn xóa thẻ này?",
+      "deleteSet": "Xóa Flashcard",
+      "deleteSetConfirm": "Bạn có chắc muốn xóa bộ flashcard này?",
+      "frontContent": "Mặt trước",
+      "backContent": "Mặt sau",
+      "frontContentPlaceholder": "Nhập nội dung mặt trước...",
+      "backContentPlaceholder": "Nhập nội dung mặt sau...",
+      "save": "Lưu",
+      "saving": "Đang lưu...",
+      "edit": "Sửa",
+      "rename": "Đổi tên",
+      "renamePlaceholder": "Nhập tên mới...",
+      "status": "Trạng thái",
+      "activate": "Kích hoạt",
+      "deactivate": "Đặt nháp",
+      "statusDRAFT": "Bản nháp",
+      "statusACTIVE": "Đang hoạt động",
+      "createVia": "Tạo bởi",
+      "contextType": "Ngữ cảnh",
+      "addItemSuccess": "Thêm thẻ thành công!",
+      "updateItemSuccess": "Cập nhật thẻ thành công!",
+      "deleteItemSuccess": "Xóa thẻ thành công!",
+      "renameSuccess": "Đổi tên thành công!",
+      "statusUpdateSuccess": "Cập nhật trạng thái thành công!",
+      "createSuccess": "Tạo flashcard thành công!",
+      "error": "Có lỗi xảy ra. Vui lòng thử lại.",
+      "flipCard": "Nhấn để lật",
+      "itemNumber": "Thẻ #{{number}}"
     },
     "roadmap": {
       "createTitle": "Tạo Roadmap",
@@ -773,12 +812,40 @@
     "mockTest": {
       "title": "Mock Test",
       "desc": "Tạo bài kiểm tra mô phỏng dựa trên tài liệu.",
+      "createTitle": "Tạo Mock Test",
+      "createDesc": "Tạo bài kiểm tra tổng hợp bao phủ toàn bộ lộ trình.",
+      "name": "Tên Mock Test",
+      "namePlaceholder": "Nhập tên mock test...",
+      "selectRoadmap": "Chọn Lộ trình",
+      "onePerRoadmap": "Mỗi lộ trình chỉ được có tối đa một mock test.",
       "configFormat": "Bạn có muốn cấu hình format mock test riêng không?",
       "uploadFormat": "Tải tài liệu chứa format",
       "customConfig": "Tự cấu hình",
       "useDefault": "Dùng mặc định",
       "start": "Bắt đầu Mock Test",
-      "completeAllPhases": "Hoàn thành tất cả post-learning và phase để mở mock test cuối cùng."
+      "completeAllPhases": "Hoàn thành tất cả post-learning và phase để mở mock test cuối cùng.",
+      "noItems": "Chưa có mock test nào.",
+      "validation": {
+        "roadmapRequired": "Vui lòng chọn một lộ trình.",
+        "mockTestLimit": "Lộ trình này đã có mock test. Mỗi lộ trình chỉ được phép có một bài."
+      },
+      "detail": {
+        "edit": "Chỉnh sửa"
+      },
+      "edit": {
+        "title": "Chỉnh sửa Mock Test",
+        "desc": "Cập nhật thông tin, câu hỏi và câu trả lời của mock test.",
+        "loading": "Đang tải dữ liệu mock test...",
+        "loadFailed": "Không thể tải dữ liệu mock test.",
+        "status": "Trạng thái",
+        "questionsSection": "Câu hỏi",
+        "newTag": "MỚI",
+        "save": "Lưu thay đổi",
+        "saving": "Đang lưu...",
+        "cancel": "Hủy",
+        "saveSuccess": "Cập nhật mock test thành công!",
+        "saveFailed": "Lưu mock test thất bại. Vui lòng thử lại."
+      }
     },
     "listView": {
       "searchPlaceholder": "Tìm kiếm...",

@@ -1,55 +1,55 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, CreditCard, FolderOpen, Clock, RefreshCw } from "lucide-react";
+import { Search, X, Plus, CreditCard, FolderOpen, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getFlashcardsByContext } from "@/api/FlashcardAPI";
 
-// Hàm format ngày giờ ngắn gọn
-function formatShortDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  const hours = String(d.getHours()).padStart(2, "0");
-  const mins = String(d.getMinutes()).padStart(2, "0");
-  return `${day}/${month}/${year} ${hours}:${mins}`;
-}
-
-// Cấu hình màu badge belong-to
-const BELONG_STYLES = {
-  knowledge: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
-  workspace: { light: "bg-slate-100 text-slate-700", dark: "bg-slate-800 text-slate-300" },
-  group: { light: "bg-purple-100 text-purple-700", dark: "bg-purple-950/50 text-purple-400" },
+// Cấu hình màu badge trạng thái
+const STATUS_STYLES = {
+  ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
+  DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
 };
 
-// Mock data — sẽ thay bằng API sau
-const MOCK_FLASHCARDS = [
-  { id: "f1", name: "React Hooks Cards", belongTo: "knowledge", belongToName: "Custom Hooks", cardsCount: 30, createdAt: "2026-02-19T08:00:00", updatedAt: "2026-02-25T10:30:00" },
-  { id: "f2", name: "JavaScript Terms", belongTo: "workspace", belongToName: "React Workspace", cardsCount: 50, createdAt: "2026-02-18T14:00:00", updatedAt: "2026-02-24T16:45:00" },
-  { id: "f3", name: "Team Flashcards", belongTo: "group", belongToName: "Study Group A", cardsCount: 40, createdAt: "2026-02-21T09:30:00", updatedAt: "2026-02-26T08:15:00" },
-  { id: "f4", name: "JSX Syntax Cards", belongTo: "knowledge", belongToName: "JSX & Components", cardsCount: 20, createdAt: "2026-02-20T11:00:00", updatedAt: "2026-02-23T13:20:00" },
-];
+const FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT"];
 
-const FILTER_OPTIONS = ["all", "knowledge", "workspace", "group"];
-
-function FlashcardListView({ isDarkMode, onCreateFlashcard, createdItems = [] }) {
+// Danh sách flashcard sets — lấy từ API theo contextType/contextId
+function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onDeleteFlashcard, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [flashcards, setFlashcards] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Gộp mock data với các item đã tạo từ form
-  const allFlashcards = useMemo(() => [...MOCK_FLASHCARDS, ...createdItems], [createdItems]);
+  // Lấy danh sách flashcard từ API
+  const fetchFlashcards = useCallback(async () => {
+    if (!contextId) return;
+    setLoading(true);
+    try {
+      const res = await getFlashcardsByContext(contextType, contextId);
+      setFlashcards(res.data || []);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách flashcard:", err);
+      setFlashcards([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [contextType, contextId]);
 
-  const filtered = useMemo(() => {
-    let items = allFlashcards;
-    if (filterType !== "all") items = items.filter(f => f.belongTo === filterType);
-    if (searchQuery.trim()) items = items.filter(f =>
-      f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.belongToName?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  useEffect(() => {
+    fetchFlashcards();
+  }, [fetchFlashcards]);
+
+  // Lọc và tìm kiếm
+  const filtered = React.useMemo(() => {
+    let items = flashcards;
+    if (filterType !== "all") items = items.filter(f => f.status === filterType);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      items = items.filter(f => f.flashcardSetName?.toLowerCase().includes(q));
+    }
     return items;
-  }, [allFlashcards, searchQuery, filterType]);
+  }, [flashcards, searchQuery, filterType]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -79,7 +79,7 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, createdItems = [] })
                 ? isDarkMode ? "bg-amber-950/50 text-amber-400" : "bg-amber-100 text-amber-700"
                 : isDarkMode ? "text-slate-400 hover:bg-slate-800" : "text-gray-500 hover:bg-gray-100"
               }`}>
-              {t(`workspace.listView.filter.${opt}`)}
+              {opt === "all" ? t("workspace.listView.filter.all") : t(`workspace.flashcard.status${opt}`)}
             </button>
           ))}
         </div>
@@ -87,7 +87,11 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, createdItems = [] })
 
       {/* Danh sách */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
@@ -95,21 +99,35 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, createdItems = [] })
         ) : (
           <div className="space-y-2">
             {filtered.map(fc => {
-              const bs = BELONG_STYLES[fc.belongTo] || BELONG_STYLES.workspace;
+              const ss = STATUS_STYLES[fc.status] || STATUS_STYLES.DRAFT;
               return (
-                <div key={fc.id} className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
+                <div key={fc.flashcardSetId}
+                  onClick={() => onViewFlashcard?.(fc)}
+                  className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all group ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-amber-950/40" : "bg-amber-100"}`}>
                     <CreditCard className="w-4 h-4 text-amber-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{fc.name}</p>
-                    <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{fc.cardsCount} {t("workspace.flashcard.cards")}</p>
+                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{fc.flashcardSetName}</p>
+                    <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                      {fc.items?.length || 0} {t("workspace.flashcard.cards")}
+                    </p>
                     <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(fc.createdAt)}</span>
-                      {fc.updatedAt && <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" />{t("workspace.listView.updatedAt")}: {formatShortDate(fc.updatedAt)}</span>}
+                      <span className="flex items-center gap-1">{t("workspace.flashcard.createVia")}: {fc.createVia}</span>
                     </div>
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? bs.dark : bs.light}`}>{fc.belongToName}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
+                      {t(`workspace.flashcard.status${fc.status}`)}
+                    </span>
+                    {onDeleteFlashcard && (
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteFlashcard(fc); }}
+                        className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-red-950/30 text-red-400" : "hover:bg-red-100 text-red-500"}`}
+                        title={t("workspace.flashcard.deleteSet")}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
