@@ -62,7 +62,8 @@ function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [], group
       } else {
         res = await getRoadmapsByWorkspace(workspaceId, 0, 50);
       }
-      const items = (res?.data?.content || []).map((rm) => ({
+      const content = res?.data?.data?.content || res?.data?.content || [];
+      const items = content.map((rm) => ({
         id: rm.roadmapId,
         name: rm.title,
         description: rm.description,
@@ -88,7 +89,8 @@ function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [], group
     setLoading(true);
     try {
       const res = await getPhasesByRoadmap(roadmapId, 0, 50);
-      const items = (res?.data?.content || []).map((ph) => ({
+      const content = res?.data?.data?.content || res?.data?.content || [];
+      const items = content.map((ph) => ({
         id: ph.phaseId,
         name: ph.title,
         description: ph.description,
@@ -110,7 +112,8 @@ function RoadmapListView({ isDarkMode, onCreateRoadmap, createdItems = [], group
     setLoading(true);
     try {
       const res = await getKnowledgesByPhase(phaseId, 0, 50);
-      const items = (res?.data?.content || []).map((kn) => ({
+      const content = res?.data?.data?.content || res?.data?.content || [];
+      const items = content.map((kn) => ({
         id: kn.knowledgeId,
         name: kn.title,
         description: kn.description,
