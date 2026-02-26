@@ -1,11 +1,23 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, ClipboardList, FolderOpen, Clock } from "lucide-react";
+import { Search, X, ClipboardList, FolderOpen, Clock, RefreshCw } from "lucide-react";
+
+// Hàm format ngày giờ ngắn gọn
+function formatShortDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const mins = String(d.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${mins}`;
+}
 
 // Mock data — sẽ thay bằng API sau
 const MOCK_MOCKTESTS = [
-  { id: "mt1", name: "React Final Assessment", belongToName: "React Advanced Patterns", questionsCount: 60, duration: "90 min", status: "ACTIVE" },
-  { id: "mt2", name: "DS&A Comprehensive Test", belongToName: "Data Structures", questionsCount: 40, duration: "60 min", status: "PENDING" },
+  { id: "mt1", name: "React Final Assessment", belongToName: "React Advanced Patterns", questionsCount: 60, duration: "90 min", status: "ACTIVE", createdAt: "2026-02-22T08:00:00", updatedAt: "2026-02-25T16:30:00" },
+  { id: "mt2", name: "DS&A Comprehensive Test", belongToName: "Data Structures", questionsCount: 40, duration: "60 min", status: "PENDING", createdAt: "2026-02-23T10:00:00", updatedAt: "2026-02-26T09:45:00" },
 ];
 
 const BELONG_STYLE = { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" };
@@ -61,6 +73,10 @@ function MockTestListView({ isDarkMode }) {
                     <span>{mt.questionsCount} {t("workspace.quiz.questions")}</span>
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{mt.duration}</span>
                   </p>
+                  <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(mt.createdAt)}</span>
+                    {mt.updatedAt && <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" />{t("workspace.listView.updatedAt")}: {formatShortDate(mt.updatedAt)}</span>}
+                  </div>
                 </div>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? BELONG_STYLE.dark : BELONG_STYLE.light}`}>{mt.belongToName}</span>
               </div>

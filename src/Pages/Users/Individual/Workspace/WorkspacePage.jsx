@@ -22,7 +22,8 @@ function WorkspacePage() {
 
 	// State quản lý tài liệu (sources) — mock data, sẽ kết nối API sau
 	const [sources, setSources] = useState([]);
-	const [outputs, setOutputs] = useState([]);
+	const [createdItems, setCreatedItems] = useState([]);
+	const [accessHistory, setAccessHistory] = useState([]);
 	const [isLeftResizing, setIsLeftResizing] = useState(false);
 	const [isRightResizing, setIsRightResizing] = useState(false);
 
@@ -103,27 +104,93 @@ function WorkspacePage() {
 
 	// Xử lý action từ Studio Panel — hiển thị form inline trong ChatPanel
 	const handleStudioAction = useCallback((actionKey) => {
+		// Ghi lịch sử truy cập khi người dùng mở list view
+		const viewTypeMap = { roadmap: "Roadmap", quiz: "Quiz", flashcard: "Flashcard", mockTest: "MockTest" };
+		if (viewTypeMap[actionKey]) {
+			addAccessHistory(viewTypeMap[actionKey], viewTypeMap[actionKey], actionKey);
+		}
 		setActiveView(actionKey);
+	}, []);
+
+	// Hàm thêm vào lịch sử truy cập — ghi nhận mỗi lần truy cập list view
+	const addAccessHistory = useCallback((name, type, actionKey) => {
+		setAccessHistory((prev) => {
+			// Xóa trùng nếu đã có item cùng actionKey
+			const filtered = prev.filter((item) => item.actionKey !== actionKey);
+			return [{ name, type, actionKey, accessedAt: new Date().toISOString() }, ...filtered].slice(0, 20);
+		});
 	}, []);
 
 	// Xử lý tạo quiz — gọi từ form inline trong ChatPanel
 	const handleCreateQuiz = useCallback(async (data) => {
 		// TODO: Gọi API tạo quiz
-		setOutputs((prev) => [...prev, { name: data.name || "Quiz", type: "Quiz" }]);
+		const quizName = data.name || "Quiz";
+		const now = new Date().toISOString();
+		setCreatedItems((prev) => [...prev, {
+			id: `created-q-${Date.now()}`,
+			name: quizName,
+			type: "Quiz",
+			belongTo: "workspace",
+			belongToName: "Current Workspace",
+			questionsCount: data.questions?.length || 0,
+			status: "ACTIVE",
+			createdAt: now,
+			updatedAt: now,
+		}]);
 		setActiveView("quiz");
 	}, []);
 
 	// Xử lý tạo flashcard — gọi từ form inline trong ChatPanel
 	const handleCreateFlashcard = useCallback(async (data) => {
 		// TODO: Gọi API tạo flashcard
-		setOutputs((prev) => [...prev, { name: data.deckName || "Flashcard", type: "Flashcard" }]);
+		const deckName = data.deckName || "Flashcard";
+		const now = new Date().toISOString();
+		setCreatedItems((prev) => [...prev, {
+			id: `created-f-${Date.now()}`,
+			name: deckName,
+			type: "Flashcard",
+			belongTo: "workspace",
+			belongToName: "Current Workspace",
+			cardsCount: data.cards?.length || 0,
+			createdAt: now,
+			updatedAt: now,
+		}]);
 		setActiveView("flashcard");
 	}, []);
 
 	// Xử lý tạo roadmap — gọi từ form inline trong ChatPanel
 	const handleCreateRoadmap = useCallback(async (data) => {
 		// TODO: Gọi API tạo roadmap
-		setOutputs((prev) => [...prev, { name: data.name || "Roadmap", type: "Roadmap" }]);
+		const roadmapName = data.name || "Roadmap";
+		const now = new Date().toISOString();
+		const ts = Date.now();
+
+		// Map phases & knowledges từ form sang cấu trúc giống MOCK_ROADMAPS
+		const mappedPhases = (data.phases || []).map((phase, pIdx) => ({
+			id: `ph-${ts}-${pIdx}`,
+			name: phase.name || `Phase ${pIdx + 1}`,
+			createdAt: now,
+			updatedAt: now,
+			knowledges: (phase.knowledges || []).map((kn, kIdx) => ({
+				id: `kn-${ts}-${pIdx}-${kIdx}`,
+				name: kn.name || `Knowledge ${kIdx + 1}`,
+				quizCount: 0,
+				flashcardCount: 0,
+				createdAt: now,
+				updatedAt: now,
+			})),
+		}));
+
+		setCreatedItems((prev) => [...prev, {
+			id: `created-rm-${ts}`,
+			name: roadmapName,
+			type: "Roadmap",
+			phasesCount: mappedPhases.length,
+			status: "ACTIVE",
+			phases: mappedPhases,
+			createdAt: now,
+			updatedAt: now,
+		}]);
 		setActiveView("roadmap");
 	}, []);
 
@@ -283,6 +350,7 @@ function WorkspacePage() {
 								isDarkMode={isDarkMode}
 								sources={sources}
 								activeView={activeView}
+								createdItems={createdItems}
 								onUploadClick={() => setUploadDialogOpen(true)}
 								onChangeView={handleStudioAction}
 								onCreateQuiz={handleCreateQuiz}
@@ -310,7 +378,7 @@ function WorkspacePage() {
 							<StudioPanel
 								isDarkMode={isDarkMode}
 								onAction={handleStudioAction}
-								outputs={outputs}
+								accessHistory={accessHistory}
 								isCollapsed={isStudioCollapsed}
 								onToggleCollapse={() => setIsStudioCollapsed((prev) => !prev)}
 								activeView={activeView}
