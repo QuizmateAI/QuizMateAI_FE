@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, ChevronDown, MapPin } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz } from "@/api/QuizAPI";
-import { getWorkspacesByUser } from "@/api/WorkspaceAPI";
-import { getMyJoinedGroups } from "@/api/GroupAPI";
-import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap, getKnowledgesByPhase } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase } from "@/api/RoadmapAPI";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -18,7 +16,8 @@ const BLOOM_LEVELS = [
   { id: 4, key: "analyze" },
   { id: 5, key: "evaluate" },
 ];
-const CONTEXT_TYPES = ["WORKSPACE", "GROUP", "ROADMAP", "PHASE", "KNOWLEDGE"];
+// Danh sách contextType cho Individual Workspace (không hiển thị GROUP)
+const CONTEXT_TYPES = ["WORKSPACE", "ROADMAP", "PHASE", "KNOWLEDGE"];
 
 // Form tạo Quiz — hiển thị inline trong ChatPanel thay vì popup
 function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType: defaultContextType = "WORKSPACE", contextId: defaultContextId }) {
@@ -28,89 +27,49 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // State quản lý vị trí tạo quiz (context selector)
+  // State quản lý vị trí tạo quiz — Individual luôn dùng workspace hiện tại
   const [selectedContextType, setSelectedContextType] = useState(defaultContextType);
   const [selectedContextId, setSelectedContextId] = useState(defaultContextId || "");
   const [contextLoading, setContextLoading] = useState(false);
 
-  // Dữ liệu cho từng cấp dropdown — cascade: source → roadmap → phase → knowledge
-  const [sourceType, setSourceType] = useState(defaultContextType === "GROUP" ? "GROUP" : "WORKSPACE");
-  const [sourceId, setSourceId] = useState("");
-  const [workspaces, setWorkspaces] = useState([]);
-  const [groups, setGroups] = useState([]);
+  // Dữ liệu cascade dropdown: roadmap → phase → knowledge (từ workspace hiện tại)
   const [roadmaps, setRoadmaps] = useState([]);
   const [phases, setPhases] = useState([]);
   const [knowledges, setKnowledges] = useState([]);
   const [selectedRoadmapId, setSelectedRoadmapId] = useState("");
   const [selectedPhaseId, setSelectedPhaseId] = useState("");
 
-  // Tải danh sách workspace và group khi mount
-  useEffect(() => {
-    const loadSources = async () => {
-      try {
-        const [wsRes, grRes] = await Promise.all([getWorkspacesByUser(0, 100), getMyJoinedGroups()]);
-        setWorkspaces(wsRes.data?.content || wsRes.data || []);
-        setGroups(grRes.data || []);
-      } catch (e) {
-        console.error("Lỗi khi tải workspaces/groups:", e);
-      }
-    };
-    loadSources();
-  }, []);
-
-  // Khi contextType là WORKSPACE hoặc GROUP — lấy contextId trực tiếp
-  // Khi contextType là ROADMAP/PHASE/KNOWLEDGE — cần cascade fetch
-  useEffect(() => {
-    if (selectedContextType === "WORKSPACE") {
-      setSelectedContextId(defaultContextType === "WORKSPACE" ? defaultContextId : "");
-    } else if (selectedContextType === "GROUP") {
-      setSelectedContextId(defaultContextType === "GROUP" ? defaultContextId : "");
-    }
-  }, [selectedContextType]);
-
-  // Khi thay đổi contextType — reset cascade dropdowns
-  const handleContextTypeChange = (newType) => {
-    setSelectedContextType(newType);
-    setSelectedContextId("");
-    setSourceId("");
-    setRoadmaps([]);
-    setPhases([]);
-    setKnowledges([]);
-    setSelectedRoadmapId("");
-    setSelectedPhaseId("");
-    // Mặc định source type cho roadmap/phase/knowledge
-    if (newType === "WORKSPACE" || newType === "GROUP") {
-      setSourceType(newType);
-    }
-  };
-
-  // Khi chọn workspace/group làm contextId trực tiếp
-  const handleDirectContextSelect = (id) => {
-    setSelectedContextId(id);
-  };
-
-  // Khi chọn source (workspace/group) để tải roadmaps
-  const handleSourceSelect = useCallback(async (id) => {
-    setSourceId(id);
-    setRoadmaps([]);
-    setPhases([]);
-    setKnowledges([]);
-    setSelectedRoadmapId("");
-    setSelectedPhaseId("");
-    setSelectedContextId("");
-    if (!id) return;
+  // Tải danh sách roadmap từ workspace hiện tại
+  const loadRoadmaps = useCallback(async () => {
+    if (!defaultContextId) return;
     setContextLoading(true);
     try {
-      const res = sourceType === "GROUP"
-        ? await getRoadmapsByGroup(id, 0, 100)
-        : await getRoadmapsByWorkspace(id, 0, 100);
+      const res = await getRoadmapsByWorkspace(defaultContextId, 0, 100);
       setRoadmaps(res.data?.content || res.data || []);
     } catch (e) {
       console.error("Lỗi tải roadmaps:", e);
     } finally {
       setContextLoading(false);
     }
-  }, [sourceType]);
+  }, [defaultContextId]);
+
+  // Khi thay đổi contextType — reset cascade và auto-fill
+  const handleContextTypeChange = (newType) => {
+    setSelectedContextType(newType);
+    setSelectedContextId(newType === "WORKSPACE" ? (defaultContextId || "") : "");
+    setRoadmaps([]);
+    setPhases([]);
+    setKnowledges([]);
+    setSelectedRoadmapId("");
+    setSelectedPhaseId("");
+  };
+
+  // Tự động tải roadmaps khi chọn ROADMAP/PHASE/KNOWLEDGE
+  useEffect(() => {
+    if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(selectedContextType)) {
+      loadRoadmaps();
+    }
+  }, [selectedContextType, loadRoadmaps]);
 
   // Khi chọn roadmap — nếu contextType=ROADMAP thì set contextId, nếu PHASE/KNOWLEDGE thì tải phases
   const handleRoadmapSelect = useCallback(async (roadmapId) => {
@@ -157,6 +116,46 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   // Khi chọn knowledge — set contextId
   const handleKnowledgeSelect = (knowledgeId) => {
     setSelectedContextId(knowledgeId);
+  };
+
+  // Hàm reload cho từng cấp dropdown
+  const reloadRoadmaps = () => {
+    setSelectedRoadmapId("");
+    setPhases([]);
+    setKnowledges([]);
+    setSelectedPhaseId("");
+    if (selectedContextType === "ROADMAP") setSelectedContextId("");
+    loadRoadmaps();
+  };
+
+  const reloadPhases = async () => {
+    if (!selectedRoadmapId) return;
+    setSelectedPhaseId("");
+    setKnowledges([]);
+    if (selectedContextType === "PHASE") setSelectedContextId("");
+    setContextLoading(true);
+    try {
+      const res = await getPhasesByRoadmap(selectedRoadmapId, 0, 100);
+      setPhases(res.data?.content || res.data || []);
+    } catch (e) {
+      console.error("Lỗi tải phases:", e);
+    } finally {
+      setContextLoading(false);
+    }
+  };
+
+  const reloadKnowledges = async () => {
+    if (!selectedPhaseId) return;
+    if (selectedContextType === "KNOWLEDGE") setSelectedContextId("");
+    setContextLoading(true);
+    try {
+      const res = await getKnowledgesByPhase(selectedPhaseId, 0, 100);
+      setKnowledges(res.data?.content || res.data || []);
+    } catch (e) {
+      console.error("Lỗi tải knowledges:", e);
+    } finally {
+      setContextLoading(false);
+    }
   };
 
   // State cho tab Manual
@@ -318,80 +317,44 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                 </select>
               </div>
 
-              {/* WORKSPACE — chọn workspace trực tiếp */}
+              {/* WORKSPACE — tự động sử dụng workspace hiện tại */}
               {selectedContextType === "WORKSPACE" && (
-                <div>
-                  <label className={labelCls}>{t("workspace.quiz.contextSelector.selectWorkspace")}</label>
-                  <select className={selectCls} value={selectedContextId} onChange={(e) => handleDirectContextSelect(e.target.value)}>
-                    <option value="">{t("workspace.quiz.contextSelector.placeholder")}</option>
-                    {workspaces.map((ws) => (
-                      <option key={ws.workSpaceId || ws.id} value={ws.workSpaceId || ws.id}>
-                        {ws.title || ws.name || `Workspace #${ws.workSpaceId || ws.id}`}
-                      </option>
-                    ))}
-                  </select>
+                <div className={`text-xs px-3 py-2 rounded-lg flex items-center gap-2 ${isDarkMode ? "bg-green-950/30 text-green-400" : "bg-green-50 text-green-700"}`}>
+                  <BadgeCheck className="w-3.5 h-3.5" />
+                  <span className={fontClass}>{t("workspace.quiz.contextSelector.currentWorkspace")}</span>
                 </div>
               )}
 
-              {/* GROUP — chọn group trực tiếp */}
-              {selectedContextType === "GROUP" && (
-                <div>
-                  <label className={labelCls}>{t("workspace.quiz.contextSelector.selectGroup")}</label>
-                  <select className={selectCls} value={selectedContextId} onChange={(e) => handleDirectContextSelect(e.target.value)}>
-                    <option value="">{t("workspace.quiz.contextSelector.placeholder")}</option>
-                    {groups.map((g) => (
-                      <option key={g.groupId} value={g.groupId}>
-                        {g.groupName || `Group #${g.groupId}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* ROADMAP / PHASE / KNOWLEDGE — cascade: chọn source → roadmap → phase → knowledge */}
+              {/* ROADMAP / PHASE / KNOWLEDGE — cascade từ workspace hiện tại */}
               {(selectedContextType === "ROADMAP" || selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && (
                 <>
-                  {/* Chọn nguồn dữ liệu (workspace hoặc group) */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className={labelCls}>{t("workspace.quiz.contextSelector.sourceType")}</label>
-                      <select className={selectCls} value={sourceType} onChange={(e) => { setSourceType(e.target.value); setSourceId(""); setRoadmaps([]); setPhases([]); setKnowledges([]); setSelectedRoadmapId(""); setSelectedPhaseId(""); setSelectedContextId(""); }}>
-                        <option value="WORKSPACE">{t("workspace.quiz.contextSelector.types.WORKSPACE")}</option>
-                        <option value="GROUP">{t("workspace.quiz.contextSelector.types.GROUP")}</option>
-                      </select>
+                  {/* Chọn roadmap + nút reload */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectRoadmap")}</span>
+                      <button type="button" onClick={reloadRoadmaps} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                        <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                      </button>
                     </div>
-                    <div>
-                      <label className={labelCls}>{sourceType === "GROUP" ? t("workspace.quiz.contextSelector.selectGroup") : t("workspace.quiz.contextSelector.selectWorkspace")}</label>
-                      <select className={selectCls} value={sourceId} onChange={(e) => handleSourceSelect(e.target.value)}>
-                        <option value="">{t("workspace.quiz.contextSelector.placeholder")}</option>
-                        {(sourceType === "GROUP" ? groups : workspaces).map((item) => {
-                          const id = sourceType === "GROUP" ? item.groupId : (item.workSpaceId || item.id);
-                          const label = sourceType === "GROUP" ? (item.groupName || `Group #${id}`) : (item.title || item.name || `Workspace #${id}`);
-                          return <option key={id} value={id}>{label}</option>;
-                        })}
-                      </select>
-                    </div>
+                    <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={contextLoading}>
+                      <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                      {roadmaps.map((rm) => (
+                        <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
+                          {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* Chọn roadmap */}
-                  {sourceId && (
-                    <div>
-                      <label className={labelCls}>{t("workspace.quiz.contextSelector.selectRoadmap")}</label>
-                      <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={contextLoading}>
-                        <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
-                        {roadmaps.map((rm) => (
-                          <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
-                            {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Chọn phase (chỉ cho PHASE và KNOWLEDGE) */}
+                  {/* Chọn phase + nút reload (chỉ cho PHASE và KNOWLEDGE) */}
                   {(selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && selectedRoadmapId && (
                     <div>
-                      <label className={labelCls}>{t("workspace.quiz.contextSelector.selectPhase")}</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectPhase")}</span>
+                        <button type="button" onClick={reloadPhases} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                          <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                        </button>
+                      </div>
                       <select className={selectCls} value={selectedPhaseId} onChange={(e) => handlePhaseSelect(e.target.value)} disabled={contextLoading}>
                         <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
                         {phases.map((ph) => (
@@ -403,10 +366,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                     </div>
                   )}
 
-                  {/* Chọn knowledge (chỉ cho KNOWLEDGE) */}
+                  {/* Chọn knowledge + nút reload (chỉ cho KNOWLEDGE) */}
                   {selectedContextType === "KNOWLEDGE" && selectedPhaseId && (
                     <div>
-                      <label className={labelCls}>{t("workspace.quiz.contextSelector.selectKnowledge")}</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectKnowledge")}</span>
+                        <button type="button" onClick={reloadKnowledges} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                          <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                        </button>
+                      </div>
                       <select className={selectCls} value={selectedContextId} onChange={(e) => handleKnowledgeSelect(e.target.value)} disabled={contextLoading}>
                         <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
                         {knowledges.map((kn) => (
