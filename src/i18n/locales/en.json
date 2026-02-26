@@ -577,7 +577,9 @@
       "maxAttempt": "Max attempts",
       "intent": "Quiz Intent",
       "overallDifficulty": "Overall Difficulty",
-      "timerMode": "Enable timer mode",
+      "timerMode": "Total time mode",
+      "timerModeHintOn": "All questions share the overall quiz duration",
+      "timerModeHintOff": "Each question has its own time limit",
       "minutes": "min",
       "addQuestion": "Add question",
       "questionType": "Question type",
@@ -629,7 +631,8 @@
       },
       "validation": {
         "nameRequired": "Please enter a quiz name.",
-        "createFailed": "Failed to create quiz. Please try again."
+        "createFailed": "Failed to create quiz. Please try again.",
+        "postLearningLimit": "This phase already has a Post-learning quiz. Only one is allowed per phase."
       },
       "contextSelector": {
         "title": "Quiz Location",
@@ -689,6 +692,8 @@
         "saveFailed": "Failed to save quiz. Please try again."
       },
       "create": "Create Quiz",
+      "createActive": "Create & Activate",
+      "saveDraft": "Save Draft",
       "creating": "Creating...",
       "cancel": "Cancel",
       "generateAI": "Generate with AI",
@@ -726,7 +731,41 @@
       "cancel": "Cancel",
       "generateAI": "Generate with AI",
       "generating": "AI is generating...",
-      "cards": "cards"
+      "cards": "cards",
+      "detailTitle": "Flashcard Detail",
+      "items": "items",
+      "noItems": "No flashcard items yet.",
+      "addItem": "Add Item",
+      "editItem": "Edit Item",
+      "deleteItem": "Delete Item",
+      "deleteItemConfirm": "Are you sure you want to delete this item?",
+      "deleteSet": "Delete Flashcard",
+      "deleteSetConfirm": "Are you sure you want to delete this flashcard set?",
+      "frontContent": "Front",
+      "backContent": "Back",
+      "frontContentPlaceholder": "Enter front content...",
+      "backContentPlaceholder": "Enter back content...",
+      "save": "Save",
+      "saving": "Saving...",
+      "edit": "Edit",
+      "rename": "Rename",
+      "renamePlaceholder": "Enter new name...",
+      "status": "Status",
+      "activate": "Activate",
+      "deactivate": "Set as Draft",
+      "statusDRAFT": "Draft",
+      "statusACTIVE": "Active",
+      "createVia": "Created via",
+      "contextType": "Context",
+      "addItemSuccess": "Item added successfully!",
+      "updateItemSuccess": "Item updated successfully!",
+      "deleteItemSuccess": "Item deleted successfully!",
+      "renameSuccess": "Flashcard renamed successfully!",
+      "statusUpdateSuccess": "Status updated successfully!",
+      "createSuccess": "Flashcard created successfully!",
+      "error": "An error occurred. Please try again.",
+      "flipCard": "Click to flip",
+      "itemNumber": "Card #{{number}}"
     },
     "roadmap": {
       "createTitle": "Create Roadmap",
@@ -773,12 +812,40 @@
     "mockTest": {
       "title": "Mock Test",
       "desc": "Create a mock test based on your documents.",
+      "createTitle": "Create Mock Test",
+      "createDesc": "Create a comprehensive test covering an entire roadmap.",
+      "name": "Mock Test Name",
+      "namePlaceholder": "Enter mock test name...",
+      "selectRoadmap": "Select Roadmap",
+      "onePerRoadmap": "Each roadmap can have at most one mock test.",
       "configFormat": "Would you like to configure a custom mock test format?",
       "uploadFormat": "Upload format document",
       "customConfig": "Custom config",
       "useDefault": "Use default",
       "start": "Start Mock Test",
-      "completeAllPhases": "Complete all post-learning tests and phases to unlock the final mock test."
+      "completeAllPhases": "Complete all post-learning tests and phases to unlock the final mock test.",
+      "noItems": "No mock tests yet.",
+      "validation": {
+        "roadmapRequired": "Please select a roadmap.",
+        "mockTestLimit": "This roadmap already has a mock test. Only one is allowed per roadmap."
+      },
+      "detail": {
+        "edit": "Edit"
+      },
+      "edit": {
+        "title": "Edit Mock Test",
+        "desc": "Update mock test information, questions and answers.",
+        "loading": "Loading mock test data...",
+        "loadFailed": "Failed to load mock test data.",
+        "status": "Status",
+        "questionsSection": "Questions",
+        "newTag": "NEW",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "saveSuccess": "Mock test updated successfully!",
+        "saveFailed": "Failed to save mock test. Please try again."
+      }
     },
     "listView": {
       "searchPlaceholder": "Search...",
