@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Globe, Sun, Moon } from 'lucide-react';
 import SuperAdminSidebar from './components/SuperAdminSidebar';
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
+import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 
 function SuperAdminLayoutContent() {
   const { t, i18n } = useTranslation();
@@ -82,7 +83,9 @@ function SuperAdminLayoutContent() {
 function SuperAdminLayout() {
   return (
     <DarkModeProvider>
-      <SuperAdminLayoutContent />
+      <AdminPermissionsProvider>
+        <SuperAdminLayoutContent />
+      </AdminPermissionsProvider>
     </DarkModeProvider>
   );
 }

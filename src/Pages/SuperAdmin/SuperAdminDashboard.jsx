@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Shield,
   Activity,
+  CreditCard,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -99,6 +100,14 @@ function SuperAdminDashboard() {
       path: '/super-admin/groups',
       color: 'text-amber-600 dark:text-amber-400',
       bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+    },
+    {
+      title: t('sidebar.subscriptions'),
+      desc: t('subscription.desc'),
+      icon: CreditCard,
+      path: '/super-admin/subscriptions',
+      color: 'text-violet-600 dark:text-violet-400',
+      bgColor: 'bg-violet-100 dark:bg-violet-900/30',
     },
     {
       title: t('sidebar.adminAccounts'),

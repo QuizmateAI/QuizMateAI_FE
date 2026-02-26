@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Globe, Sun, Moon } from 'lucide-react';
 import AdminSidebar from './components/AdminSidebar';
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
+import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 
 function AdminLayoutContent() {
   const { t, i18n } = useTranslation();
@@ -83,7 +84,9 @@ function AdminLayoutContent() {
 function AdminLayout() {
   return (
     <DarkModeProvider>
-      <AdminLayoutContent />
+      <AdminPermissionsProvider>
+        <AdminLayoutContent />
+      </AdminPermissionsProvider>
     </DarkModeProvider>
   );
 }

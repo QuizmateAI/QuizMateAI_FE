@@ -42,6 +42,12 @@ export const inviteMember = async (groupId, email) => {
   return response;
 };
 
+// Lấy danh sách lời mời đang chờ của nhóm (count + list)
+export const getPendingInvitations = async (groupId) => {
+  const response = await api.get(`/group/${groupId}/invitations`);
+  return response;
+};
+
 // Chấp nhận lời mời vào nhóm (từ link email)
 export const acceptInvitation = async (token) => {
   const response = await api.get(`/group/invitation/accept?token=${token}`);
