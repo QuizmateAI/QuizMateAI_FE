@@ -55,7 +55,7 @@ function UserManagement() {
       } else if (responseData.content && Array.isArray(responseData.content)) {
         setUsers(responseData.content);
         setPagination({
-          page: responseData.number || 0,
+          page: responseData.page ?? responseData.number ?? 0,
           size: responseData.size || size,
           totalPages: responseData.totalPages || 0,
           totalElements: responseData.totalElements || 0,
@@ -172,7 +172,7 @@ function UserManagement() {
           isDarkMode ? 'border-slate-800' : 'border-slate-100'
         }`}>
           <CardTitle className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            {t('userPage.cardTitle')} ({filteredUsers.length})
+            {t('userPage.cardTitle')}
           </CardTitle>
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
