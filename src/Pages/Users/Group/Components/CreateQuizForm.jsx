@@ -1,8 +1,8 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { createFullQuiz } from "@/api/QuizAPI";
+import { createFullQuiz, getQuizzesByContext } from "@/api/QuizAPI";
 import { getRoadmapsByGroup, getPhasesByRoadmap, getKnowledgesByPhase } from "@/api/RoadmapAPI";
 
 // Danh sách dạng câu hỏi và độ khó
@@ -16,8 +16,8 @@ const BLOOM_LEVELS = [
   { id: 4, key: "analyze" },
   { id: 5, key: "evaluate" },
 ];
-// Danh sách contextType cho Group (không hiển thị WORKSPACE cá nhân)
-const CONTEXT_TYPES = ["GROUP", "ROADMAP", "PHASE", "KNOWLEDGE"];
+// Danh sách contextType cho Group (ROADMAP dành cho MockTest, không hiển thị WORKSPACE)
+const CONTEXT_TYPES = ["GROUP", "PHASE", "KNOWLEDGE"];
 
 // Form tạo Quiz cho Group — hiển thị inline trong ChatPanel thay vì popup
 function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType: defaultContextType = "GROUP", contextId: defaultContextId }) {
@@ -64,23 +64,19 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     setSelectedPhaseId("");
   };
 
-  // Tự động tải roadmaps khi chọn ROADMAP/PHASE/KNOWLEDGE
+  // Tự động tải roadmaps khi chọn PHASE/KNOWLEDGE
   useEffect(() => {
-    if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(selectedContextType)) {
+    if (["PHASE", "KNOWLEDGE"].includes(selectedContextType)) {
       loadRoadmaps();
     }
   }, [selectedContextType, loadRoadmaps]);
 
-  // Khi chọn roadmap — nếu contextType=ROADMAP thì set contextId, nếu PHASE/KNOWLEDGE thì tải phases
+  // Khi chọn roadmap — tải phases cho PHASE/KNOWLEDGE
   const handleRoadmapSelect = useCallback(async (roadmapId) => {
     setSelectedRoadmapId(roadmapId);
     setPhases([]);
     setKnowledges([]);
     setSelectedPhaseId("");
-    if (selectedContextType === "ROADMAP") {
-      setSelectedContextId(roadmapId);
-      return;
-    }
     if (!roadmapId) { setSelectedContextId(""); return; }
     setContextLoading(true);
     try {
@@ -124,7 +120,6 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     setPhases([]);
     setKnowledges([]);
     setSelectedPhaseId("");
-    if (selectedContextType === "ROADMAP") setSelectedContextId("");
     loadRoadmaps();
   };
 
@@ -201,7 +196,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   };
 
   // Xử lý submit — gọi API tạo quiz hoàn chỉnh (multi-step)
-  const handleSubmit = async () => {
+  const handleSubmit = async (quizStatus = "ACTIVE") => {
     setSubmitting(true);
     setError("");
     try {
@@ -211,6 +206,22 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           setError(t("workspace.quiz.validation.nameRequired"));
           setSubmitting(false);
           return;
+        }
+
+        // Kiểm tra giới hạn: mỗi PHASE chỉ được 1 POST_LEARNING quiz
+        if (selectedContextType === "PHASE" && quizIntent === "POST_LEARNING" && selectedContextId) {
+          try {
+            const existingRes = await getQuizzesByContext("PHASE", Number(selectedContextId));
+            const existingQuizzes = existingRes.data || [];
+            const hasPostLearning = existingQuizzes.some(q => q.quizIntent === "POST_LEARNING");
+            if (hasPostLearning) {
+              setError(t("workspace.quiz.validation.postLearningLimit"));
+              setSubmitting(false);
+              return;
+            }
+          } catch (e) {
+            console.error("Lỗi kiểm tra giới hạn quiz:", e);
+          }
         }
 
         // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → session → questions → answers)
@@ -225,6 +236,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           maxAttempt,
           overallDifficulty,
           questions,
+          status: quizStatus,
         });
 
         // Thông báo component cha quiz đã được tạo thành công
@@ -325,8 +337,8 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                 </div>
               )}
 
-              {/* ROADMAP / PHASE / KNOWLEDGE — cascade từ group hiện tại */}
-              {(selectedContextType === "ROADMAP" || selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && (
+              {/* PHASE / KNOWLEDGE — cascade từ group hiện tại */}
+              {(selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && (
                 <>
                   {/* Chọn roadmap + nút reload */}
                   <div>
@@ -405,11 +417,26 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
-                <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
-              </div>
+            {/* Toggle Timer Mode */}
+            <div className="flex items-center gap-3">
+              <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
+                <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.timerMode")}</span>
+              </label>
+              <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
+                {timerMode ? t("workspace.quiz.timerModeHintOn") : t("workspace.quiz.timerModeHintOff")}
+              </span>
+            </div>
+
+            <div className={`grid ${timerMode ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
+              {/* Thời lượng tổng — chỉ hiện khi timerMode=true */}
+              {timerMode && (
+                <div>
+                  <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
+                  <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
+                </div>
+              )}
               <div>
                 <label className={labelCls}>{t("workspace.quiz.passingScore")}</label>
                 <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
@@ -418,15 +445,6 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                 <label className={labelCls}>{t("workspace.quiz.maxAttempt")}</label>
                 <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
               </div>
-            </div>
-
-            {/* Toggle Timer Mode */}
-            <div className="flex items-center gap-3">
-              <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
-                <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.timerMode")}</span>
-              </label>
             </div>
 
             {/* Thông báo lỗi */}
@@ -463,12 +481,14 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                   {/* Nội dung câu hỏi */}
                   <input className={inputCls} placeholder={t("workspace.quiz.questionText")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
 
-                  {/* Thời gian mỗi câu (giây) */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className={labelCls}>{t("workspace.quiz.questionDuration")}</label>
-                      <input type="number" className={inputCls} value={q.duration} onChange={(e) => updateQuestion(qIdx, "duration", Number(e.target.value))} min={0} placeholder="0" />
-                    </div>
+                  {/* Thời gian mỗi câu (giây) — chỉ hiện khi timerMode=false */}
+                  <div className={`grid ${!timerMode ? "grid-cols-2" : ""} gap-2`}>
+                    {!timerMode && (
+                      <div>
+                        <label className={labelCls}>{t("workspace.quiz.questionDuration")}</label>
+                        <input type="number" className={inputCls} value={q.duration} onChange={(e) => updateQuestion(qIdx, "duration", Number(e.target.value))} min={0} placeholder="0" />
+                      </div>
+                    )}
                     <div>
                       <label className={labelCls}>{t("workspace.quiz.explanation")}</label>
                       <input className={inputCls} placeholder={t("workspace.quiz.explanationPlaceholder")} value={q.explanation} onChange={(e) => updateQuestion(qIdx, "explanation", e.target.value)} />
@@ -556,10 +576,17 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
           {t("workspace.quiz.cancel")}
         </Button>
-        <Button onClick={handleSubmit} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
-          {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+        {tab === "manual" && (
+          <Button variant="outline" onClick={() => handleSubmit("DRAFT")} disabled={submitting}
+            className={`${isDarkMode ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            {t("workspace.quiz.saveDraft")}
+          </Button>
+        )}
+        <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
           {tab === "manual"
-            ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.create"))
+            ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.createActive"))
             : (submitting ? t("workspace.quiz.generating") : t("workspace.quiz.generateAI"))
           }
         </Button>

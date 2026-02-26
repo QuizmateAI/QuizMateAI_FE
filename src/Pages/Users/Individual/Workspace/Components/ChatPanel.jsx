@@ -10,10 +10,14 @@ import QuizListView from "./QuizListView";
 import QuizDetailView from "./QuizDetailView";
 import EditQuizForm from "./EditQuizForm";
 import FlashcardListView from "./FlashcardListView";
+import FlashcardDetailView from "./FlashcardDetailView";
 import MockTestListView from "./MockTestListView";
+import CreateMockTestForm from "./CreateMockTestForm";
+import MockTestDetailView from "./MockTestDetailView";
+import EditMockTestForm from "./EditMockTestForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -118,9 +122,9 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
       case "quiz":
         return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="WORKSPACE" contextId={workspaceId} />;
       case "flashcard":
-        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} createdItems={createdFlashcards} />;
+        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="WORKSPACE" contextId={workspaceId} />;
       case "mockTest":
-        return <MockTestListView isDarkMode={isDarkMode} />;
+        return <MockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="WORKSPACE" contextId={workspaceId} />;
       default:
         return null;
     }
@@ -144,13 +148,21 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
       case "createQuiz":
         return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
       case "createFlashcard":
-        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} />;
+        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
       case "createRoadmap":
         return <CreateRoadmapForm isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onBack={onBack} />;
+      case "flashcardDetail":
+        return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
       case "quizDetail":
         return selectedQuiz ? <QuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
       case "editQuiz":
         return selectedQuiz ? <EditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
+      case "createMockTest":
+        return <CreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
+      case "mockTestDetail":
+        return selectedMockTest ? <MockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
+      case "editMockTest":
+        return selectedMockTest ? <EditMockTestForm isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onSave={onSaveMockTest} /> : null;
       default:
         return null;
     }
