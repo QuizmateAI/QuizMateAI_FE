@@ -10,6 +10,7 @@ import { Globe, Moon, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { createRoadmap } from "@/api/RoadmapAPI";
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
@@ -158,41 +159,30 @@ function WorkspacePage() {
 		setActiveView("flashcard");
 	}, []);
 
-	// Xử lý tạo roadmap — gọi từ form inline trong ChatPanel
+	// Xử lý tạo roadmap — gọi API tạo roadmap cho workspace cá nhân
 	const handleCreateRoadmap = useCallback(async (data) => {
-		// TODO: Gọi API tạo roadmap
-		const roadmapName = data.name || "Roadmap";
-		const now = new Date().toISOString();
-		const ts = Date.now();
-
-		// Map phases & knowledges từ form sang cấu trúc giống MOCK_ROADMAPS
-		const mappedPhases = (data.phases || []).map((phase, pIdx) => ({
-			id: `ph-${ts}-${pIdx}`,
-			name: phase.name || `Phase ${pIdx + 1}`,
-			createdAt: now,
-			updatedAt: now,
-			knowledges: (phase.knowledges || []).map((kn, kIdx) => ({
-				id: `kn-${ts}-${pIdx}-${kIdx}`,
-				name: kn.name || `Knowledge ${kIdx + 1}`,
-				quizCount: 0,
-				flashcardCount: 0,
-				createdAt: now,
-				updatedAt: now,
-			})),
-		}));
-
-		setCreatedItems((prev) => [...prev, {
-			id: `created-rm-${ts}`,
-			name: roadmapName,
-			type: "Roadmap",
-			phasesCount: mappedPhases.length,
-			status: "ACTIVE",
-			phases: mappedPhases,
-			createdAt: now,
-			updatedAt: now,
-		}]);
-		setActiveView("roadmap");
-	}, []);
+		try {
+			const res = await createRoadmap({
+				groupId: workspaceId,
+				name: data.name || "Roadmap",
+				description: data.goal || data.description || "",
+			});
+			const created = res.data?.data || res.data;
+			setCreatedItems((prev) => [...prev, {
+				id: created.roadmapId || created.id || `created-rm-${Date.now()}`,
+				name: created.title || data.name || "Roadmap",
+				type: "Roadmap",
+				status: created.status || "INACTIVE",
+				createVia: created.createVia || "MANUAL",
+				roadmapType: created.roadmapType || "GENERAL",
+				createdAt: created.createdAt || new Date().toISOString(),
+			}]);
+			setActiveView("roadmap");
+		} catch (err) {
+			// Lỗi tạo roadmap — log để debug
+			console.error("Tạo roadmap thất bại:", err);
+		}
+	}, [workspaceId]);
 
 	// Quay về list view tương ứng khi bấm nút Back trong form tạo
 	const handleBackFromForm = useCallback(() => {
@@ -357,6 +347,7 @@ function WorkspacePage() {
 								onCreateFlashcard={handleCreateFlashcard}
 								onCreateRoadmap={handleCreateRoadmap}
 								onBack={handleBackFromForm}
+								workspaceId={workspaceId}
 							/>
 						</div>
 
