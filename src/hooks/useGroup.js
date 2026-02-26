@@ -7,6 +7,7 @@ import {
   revokeUpload as revokeUploadAPI,
   updateMemberRole as updateMemberRoleAPI,
   inviteMember as inviteMemberAPI,
+  getPendingInvitations as getPendingInvitationsAPI,
   removeMember as removeMemberAPI,
 } from '@/api/GroupAPI';
 import { getAllTopics } from '@/api/WorkspaceAPI';
@@ -82,6 +83,12 @@ export function useGroup() {
     return res.data;
   }, []);
 
+  // Lấy danh sách lời mời đang chờ (count + invitations)
+  const fetchPendingInvitations = useCallback(async (groupId) => {
+    const res = await getPendingInvitationsAPI(groupId);
+    return res?.data || { count: 0, invitations: [] };
+  }, []);
+
   // Xóa thành viên khỏi nhóm
   const removeMember = useCallback(async (groupId, memberId) => {
     await removeMemberAPI(groupId, memberId);
@@ -106,6 +113,7 @@ export function useGroup() {
     revokeUpload,
     updateMemberRole,
     inviteMember,
+    fetchPendingInvitations,
     removeMember,
   };
 }

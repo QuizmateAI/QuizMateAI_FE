@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Users, UsersRound,
-  PanelLeftClose, LogOut, Shield
+  Users, UsersRound,
+  PanelLeftClose, LogOut, Shield, CreditCard
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.png";
@@ -11,9 +11,9 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 
 // Menu items - giống Admin: Users, Groups + thêm Admin Accounts (RBAC)
 const menuItems = [
-  { icon: LayoutDashboard, labelKey: 'sidebar.dashboard', path: '/super-admin' },
-  { icon: Users, labelKey: 'sidebar.users', path: '/super-admin/users' },
+  { icon: Users, labelKey: 'sidebar.users', path: '/super-admin/users', alsoMatch: '/super-admin' },
   { icon: UsersRound, labelKey: 'sidebar.groups', path: '/super-admin/groups' },
+  { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/super-admin/subscriptions' },
   { icon: Shield, labelKey: 'sidebar.adminAccounts', path: '/super-admin/admins' },
 ];
 
@@ -84,7 +84,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
             className={cn(
               "w-full flex items-center gap-3 py-3 rounded-lg text-sm font-medium transition-colors",
               collapsed ? "px-0 justify-center" : "px-4",
-              location.pathname === item.path 
+              (location.pathname === item.path || location.pathname === item.alsoMatch) 
                 ? isDarkMode 
                   ? "bg-slate-700 text-white font-semibold" 
                   : "bg-[#c0d3fc] text-black font-semibold"
