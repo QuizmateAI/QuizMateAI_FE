@@ -41,6 +41,10 @@ function WorkspacePage() {
 	const [activeView, setActiveView] = useState(null);
 	// State lưu quiz đang được xem chi tiết hoặc chỉnh sửa
 	const [selectedQuiz, setSelectedQuiz] = useState(null);
+	// State lưu flashcard đang được xem chi tiết
+	const [selectedFlashcard, setSelectedFlashcard] = useState(null);
+	// State lưu mock test đang được xem chi tiết hoặc chỉnh sửa
+	const [selectedMockTest, setSelectedMockTest] = useState(null);
 
 	// Hằng số kích thước panel
 	const COLLAPSED_WIDTH = 56;
@@ -148,22 +152,29 @@ function WorkspacePage() {
 		setActiveView("quizDetail");
 	}, []);
 
-	// Xử lý tạo flashcard — gọi từ form inline trong ChatPanel
-	const handleCreateFlashcard = useCallback(async (data) => {
-		// TODO: Gọi API tạo flashcard
-		const deckName = data.deckName || "Flashcard";
-		const now = new Date().toISOString();
-		setCreatedItems((prev) => [...prev, {
-			id: `created-f-${Date.now()}`,
-			name: deckName,
-			type: "Flashcard",
-			belongTo: "workspace",
-			belongToName: "Current Workspace",
-			cardsCount: data.cards?.length || 0,
-			createdAt: now,
-			updatedAt: now,
-		}]);
+	// Xử lý tạo flashcard — callback từ CreateFlashcardForm (API đã gọi xong)
+	const handleCreateFlashcard = useCallback(async () => {
+		// Chuyển về list view để reload danh sách
 		setActiveView("flashcard");
+	}, []);
+
+	// Xử lý xem chi tiết flashcard — khi click vào flashcard trong danh sách
+	const handleViewFlashcard = useCallback((flashcard) => {
+		setSelectedFlashcard(flashcard);
+		setActiveView("flashcardDetail");
+	}, []);
+
+	// Xử lý xóa flashcard — gọi API xóa flashcard set
+	const handleDeleteFlashcard = useCallback(async (flashcard) => {
+		if (!window.confirm("Bạn có chắc muốn xóa bộ flashcard này?")) return;
+		try {
+			const { deleteFlashcardSet } = await import("@/api/FlashcardAPI");
+			await deleteFlashcardSet(flashcard.flashcardSetId);
+			// Quay về list view để reload danh sách
+			setActiveView("flashcard");
+		} catch (err) {
+			console.error("Xóa flashcard thất bại:", err);
+		}
 	}, []);
 
 	// Xử lý tạo roadmap — gọi API tạo roadmap cho workspace cá nhân
@@ -248,13 +259,42 @@ function WorkspacePage() {
 
 	// Quay về list view tương ứng khi bấm nút Back trong form tạo
 	const handleBackFromForm = useCallback(() => {
-		const formToList = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", quizDetail: "quiz", editQuiz: "quizDetail" };
+		const formToList = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", quizDetail: "quiz", editQuiz: "quizDetail", flashcardDetail: "flashcard", createMockTest: "mockTest", mockTestDetail: "mockTest", editMockTest: "mockTestDetail" };
 		const nextView = formToList[activeView] || null;
 		if (nextView !== "quizDetail" && nextView !== "editQuiz") {
 			setSelectedQuiz(null);
 		}
+		if (nextView !== "flashcardDetail") {
+			setSelectedFlashcard(null);
+		}
+		if (nextView !== "mockTestDetail" && nextView !== "editMockTest") {
+			setSelectedMockTest(null);
+		}
 		setActiveView(nextView);
 	}, [activeView]);
+
+	// Xử lý tạo mock test — quay về list sau khi tạo thành công
+	const handleCreateMockTest = useCallback(async () => {
+		setActiveView("mockTest");
+	}, []);
+
+	// Xử lý xem chi tiết mock test
+	const handleViewMockTest = useCallback((mt) => {
+		setSelectedMockTest(mt);
+		setActiveView("mockTestDetail");
+	}, []);
+
+	// Xử lý chỉnh sửa mock test
+	const handleEditMockTest = useCallback((mt) => {
+		setSelectedMockTest(mt);
+		setActiveView("editMockTest");
+	}, []);
+
+	// Xử lý lưu mock test sau khi chỉnh sửa
+	const handleSaveMockTest = useCallback((updatedMt) => {
+		setSelectedMockTest((prev) => ({ ...prev, ...updatedMt }));
+		setActiveView("mockTestDetail");
+	}, []);
 
 	// Kéo thả thay đổi kích thước panel trái (Sources)
 	const handleLeftResize = useCallback((e) => {
@@ -412,12 +452,20 @@ function WorkspacePage() {
 								onCreateQuiz={handleCreateQuiz}
 								onCreateFlashcard={handleCreateFlashcard}
 								onCreateRoadmap={handleCreateRoadmap}
+								onCreateMockTest={handleCreateMockTest}
 								onBack={handleBackFromForm}
 								workspaceId={workspaceId}
 								selectedQuiz={selectedQuiz}
 								onViewQuiz={handleViewQuiz}
 								onEditQuiz={handleEditQuiz}
 								onSaveQuiz={handleSaveQuiz}
+								selectedFlashcard={selectedFlashcard}
+								onViewFlashcard={handleViewFlashcard}
+								onDeleteFlashcard={handleDeleteFlashcard}
+								selectedMockTest={selectedMockTest}
+								onViewMockTest={handleViewMockTest}
+								onEditMockTest={handleEditMockTest}
+								onSaveMockTest={handleSaveMockTest}
 							/>
 						</div>
 

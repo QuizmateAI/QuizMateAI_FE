@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, Save, X } from "lucide-react";
+import { Plus, Trash2, Loader2, ClipboardList, ArrowLeft, Save, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
@@ -11,7 +11,6 @@ import {
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
-const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "PRACTICE"];
 const BLOOM_LEVELS = [
   { id: 1, key: "remember" },
   { id: 2, key: "understand" },
@@ -27,8 +26,11 @@ const QUESTION_TYPE_MAP = {
 const DIFFICULTY_MAP = { easy: "EASY", medium: "MEDIUM", hard: "HARD" };
 const REVERSE_DIFFICULTY = { EASY: "easy", MEDIUM: "medium", HARD: "hard" };
 
-// Form chỉnh sửa Quiz — tải dữ liệu hiện có và cho phép cập nhật
-function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = "WORKSPACE", contextId }) {
+/**
+ * Form chỉnh sửa Mock Test — giao diện tím (purple) để phân biệt với EditQuizForm (xanh dương)
+ * Logic hoàn toàn giống EditQuizForm, chỉ khác màu sắc + icon
+ */
+function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextType = "ROADMAP", contextId }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [submitting, setSubmitting] = useState(false);
@@ -38,29 +40,26 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
 
   // State thông tin quiz
   const [name, setName] = useState(quiz?.title || "");
-  const [duration, setDuration] = useState(quiz?.duration || 30);
+  const [duration, setDuration] = useState(quiz?.duration || 60);
   const [passingScore, setPassingScore] = useState(quiz?.passScore || 7.5);
-  const [maxAttempt, setMaxAttempt] = useState(quiz?.maxAttempt || 3);
-  const [quizIntent, setQuizIntent] = useState(quiz?.quizIntent || "PRE_LEARNING");
+  const [maxAttempt, setMaxAttempt] = useState(quiz?.maxAttempt || 1);
   const [timerMode, setTimerMode] = useState(quiz?.timerMode ?? true);
   const [overallDifficulty, setOverallDifficulty] = useState(
     quiz?.overallDifficulty ? REVERSE_DIFFICULTY[quiz.overallDifficulty] || "medium" : "medium"
   );
   const [status, setStatus] = useState(quiz?.status || "ACTIVE");
 
-  // State session và questions — lưu sessionId gốc để liên kết
+  // State session và questions
   const [sessionId, setSessionId] = useState(null);
   const [questions, setQuestions] = useState([]);
-  // Track các question/answer đã xóa để gọi API delete
   const [deletedQuestionIds, setDeletedQuestionIds] = useState([]);
   const [deletedAnswerIds, setDeletedAnswerIds] = useState([]);
 
-  // Tải dữ liệu quiz hiện có: sessions → questions → answers
+  // Tải dữ liệu mock test hiện có: sessions → questions → answers
   const loadExistingData = useCallback(async () => {
     if (!quiz?.quizId) return;
     setLoading(true);
     try {
-      // Lấy session gốc (ROOT)
       const sessRes = await getSessionsByQuiz(quiz.quizId);
       const sessionList = sessRes.data || [];
       const rootSession = sessionList.find((s) => s.sessionType === "ROOT") || sessionList[0];
@@ -70,11 +69,9 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
       }
       setSessionId(rootSession.sessionId);
 
-      // Lấy questions
       const qRes = await getQuestionsBySession(rootSession.sessionId);
       const questionList = qRes.data || [];
 
-      // Lấy answers cho mỗi question và chuyển đổi sang format frontend
       const formattedQuestions = [];
       for (const q of questionList) {
         const aRes = await getAnswersByQuestion(q.questionId);
@@ -82,7 +79,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         const typeName = QUESTION_TYPE_ID_MAP[q.questionTypeId] || "multipleChoice";
 
         const formatted = {
-          questionId: q.questionId, // Giữ ID gốc để update
+          questionId: q.questionId,
           isNew: false,
           type: typeName,
           text: q.content || "",
@@ -93,7 +90,6 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
           starred: q.isStarred ?? false,
         };
 
-        // Chuyển đổi answers dựa theo loại câu hỏi
         if (typeName === "multipleChoice" || typeName === "multipleSelect") {
           formatted.answers = answers.map((a) => ({
             answerId: a.answerId,
@@ -104,20 +100,19 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         } else if (typeName === "trueFalse") {
           const trueAns = answers.find((a) => a.content === "True");
           formatted.correctAnswer = trueAns?.isCorrect ? "true" : "false";
-          formatted._tfAnswers = answers; // Lưu để update sau
+          formatted._tfAnswers = answers;
         } else {
-          // fillBlank, shortAnswer
           const correctAns = answers.find((a) => a.isCorrect);
           formatted.correctAnswer = correctAns?.content || "";
-          formatted._singleAnswer = correctAns; // Lưu để update sau
+          formatted._singleAnswer = correctAns;
         }
 
         formattedQuestions.push(formatted);
       }
       setQuestions(formattedQuestions);
     } catch (err) {
-      console.error("Lỗi khi tải dữ liệu quiz:", err);
-      setError(t("workspace.quiz.edit.loadFailed"));
+      console.error("Lỗi khi tải dữ liệu mock test:", err);
+      setError(t("workspace.mockTest.edit.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -127,7 +122,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
     loadExistingData();
   }, [loadExistingData]);
 
-  // Thêm câu hỏi mới (chưa có trên server)
+  // Thêm câu hỏi mới
   const addQuestion = () => {
     setQuestions((prev) => [...prev, {
       questionId: null,
@@ -140,7 +135,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
     }]);
   };
 
-  // Xóa câu hỏi — lưu ID vào danh sách xóa nếu đã tồn tại trên server
+  // Xóa câu hỏi
   const removeQuestion = (idx) => {
     const q = questions[idx];
     if (q.questionId && !q.isNew) {
@@ -154,14 +149,14 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
     setQuestions((prev) => prev.map((q, i) => i === idx ? { ...q, [field]: value } : q));
   };
 
-  // Thêm đáp án cho câu hỏi
+  // Thêm đáp án
   const addAnswer = (qIdx) => {
     setQuestions((prev) => prev.map((q, i) =>
       i === qIdx ? { ...q, answers: [...(q.answers || []), { answerId: null, isNew: true, text: "", correct: false }] } : q
     ));
   };
 
-  // Xóa đáp án — lưu ID vào danh sách xóa nếu đã tồn tại
+  // Xóa đáp án
   const removeAnswer = (qIdx, aIdx) => {
     const q = questions[qIdx];
     const ans = q.answers?.[aIdx];
@@ -173,7 +168,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
     ));
   };
 
-  // Xử lý lưu quiz — gọi API cập nhật quiz, questions, answers
+  // Xử lý lưu mock test
   const handleSave = async () => {
     setSubmitting(true);
     setError("");
@@ -185,13 +180,13 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         return;
       }
 
-      // Bước 1: Cập nhật thông tin quiz chung
+      // Bước 1: Cập nhật thông tin quiz chung — contextType luôn là ROADMAP
       await updateQuiz(quiz.quizId, {
-        contextType,
-        contextId: Number(contextId),
+        contextType: "ROADMAP",
+        contextId: Number(quiz.roadmapId || contextId),
         title: name,
         duration,
-        quizIntent,
+        quizIntent: "REVIEW",
         timerMode,
         status,
         maxAttempt: maxAttempt || null,
@@ -200,12 +195,12 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         overallDifficulty: DIFFICULTY_MAP[overallDifficulty] || null,
       });
 
-      // Bước 2: Xóa các answers đã đánh dấu xóa
+      // Bước 2: Xóa answers đã đánh dấu
       for (const aId of deletedAnswerIds) {
         try { await deleteAnswer(aId); } catch (e) { console.warn("Lỗi xóa answer:", aId, e); }
       }
 
-      // Bước 3: Xóa các questions đã đánh dấu xóa
+      // Bước 3: Xóa questions đã đánh dấu
       for (const qId of deletedQuestionIds) {
         try { await deleteQuestion(qId); } catch (e) { console.warn("Lỗi xóa question:", qId, e); }
       }
@@ -216,7 +211,6 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         const difficulty = DIFFICULTY_MAP[q.difficulty] || "MEDIUM";
 
         if (q.isNew) {
-          // Tạo question mới
           const qRes = await createQuestion({
             quizSessionId: sessionId,
             questionTypeId,
@@ -228,7 +222,6 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
           });
           const newQuestionId = qRes.data?.questionId;
 
-          // Tạo answers cho question mới
           if (q.type === "multipleChoice" || q.type === "multipleSelect") {
             for (const ans of (q.answers || [])) {
               await createAnswer({ questionId: newQuestionId, content: ans.text, isCorrect: ans.correct });
@@ -240,7 +233,6 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
             await createAnswer({ questionId: newQuestionId, content: q.correctAnswer || "", isCorrect: true });
           }
         } else {
-          // Cập nhật question đã tồn tại
           await updateQuestion(q.questionId, {
             questionTypeId,
             bloomId: q.bloomId || 1,
@@ -250,7 +242,6 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
             explanation: q.explanation || "",
           });
 
-          // Cập nhật/tạo answers
           if (q.type === "multipleChoice" || q.type === "multipleSelect") {
             for (const ans of (q.answers || [])) {
               if (ans.isNew) {
@@ -260,13 +251,11 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
               }
             }
           } else if (q.type === "trueFalse") {
-            // Cập nhật 2 answer True/False
             for (const tfAns of (q._tfAnswers || [])) {
               const isCorrect = (tfAns.content === "True" && q.correctAnswer === "true") || (tfAns.content === "False" && q.correctAnswer !== "true");
               await updateAnswer(tfAns.answerId, { content: tfAns.content, isCorrect });
             }
           } else {
-            // fillBlank, shortAnswer — cập nhật đáp án duy nhất
             if (q._singleAnswer?.answerId) {
               await updateAnswer(q._singleAnswer.answerId, { content: q.correctAnswer || "", isCorrect: true });
             }
@@ -274,23 +263,21 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         }
       }
 
-      setSuccess(t("workspace.quiz.edit.saveSuccess"));
+      setSuccess(t("workspace.mockTest.edit.saveSuccess"));
       setDeletedQuestionIds([]);
       setDeletedAnswerIds([]);
-
-      // Gọi callback cha
       onSave?.({ quizId: quiz.quizId, title: name });
     } catch (err) {
-      console.error("Lỗi khi lưu quiz:", err);
-      setError(err.message || t("workspace.quiz.edit.saveFailed"));
+      console.error("Lỗi khi lưu mock test:", err);
+      setError(err.message || t("workspace.mockTest.edit.saveFailed"));
     } finally {
       setSubmitting(false);
     }
   };
 
   const inputCls = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
-    isDarkMode ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
-              : "bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400"
+    isDarkMode ? "bg-slate-800 border-slate-700 text-white focus:border-purple-500 placeholder:text-slate-500"
+              : "bg-white border-gray-300 text-gray-900 focus:border-purple-500 placeholder:text-gray-400"
   }`;
   const selectCls = `${inputCls} appearance-none cursor-pointer`;
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
@@ -298,23 +285,23 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
   if (loading) {
     return (
       <div className="flex flex-col h-full items-center justify-center gap-3">
-        <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>{t("workspace.quiz.edit.loading")}</p>
+        <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-purple-500" : "text-purple-400"}`} />
+        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>{t("workspace.mockTest.edit.loading")}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header — icon tím */}
       <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-2">
-          <BadgeCheck className="w-5 h-5 text-blue-500" />
+          <ClipboardList className="w-5 h-5 text-purple-500" />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
-            {t("workspace.quiz.edit.title")}
+            {t("workspace.mockTest.edit.title")}
           </p>
         </div>
       </div>
@@ -322,7 +309,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
       {/* Form chỉnh sửa */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-          {t("workspace.quiz.edit.desc")}
+          {t("workspace.mockTest.edit.desc")}
         </p>
 
         {/* Thông báo lỗi/thành công */}
@@ -337,43 +324,35 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
           </div>
         )}
 
-        {/* Tên Quiz */}
+        {/* Tên Mock Test */}
         <div>
-          <label className={labelCls}>{t("workspace.quiz.name")}</label>
-          <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
+          <label className={labelCls}>{t("workspace.mockTest.name")}</label>
+          <input className={inputCls} placeholder={t("workspace.mockTest.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
-        {/* Intent + Difficulty */}
+        {/* Difficulty + Status */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>{t("workspace.quiz.intent")}</label>
-            <select className={selectCls} value={quizIntent} onChange={(e) => setQuizIntent(e.target.value)}>
-              {QUIZ_INTENTS.map((intent) => <option key={intent} value={intent}>{t(`workspace.quiz.intentLabels.${intent}`)}</option>)}
-            </select>
-          </div>
           <div>
             <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}</label>
             <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
               {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
             </select>
           </div>
-        </div>
-
-        {/* Status */}
-        <div>
-          <label className={labelCls}>{t("workspace.quiz.edit.status")}</label>
-          <select className={selectCls} value={status} onChange={(e) => setStatus(e.target.value)}>
-            {["ACTIVE", "DRAFT"].map((s) => (
-              <option key={s} value={s}>{t(`workspace.quiz.statusLabels.${s}`)}</option>
-            ))}
-          </select>
+          <div>
+            <label className={labelCls}>{t("workspace.mockTest.edit.status")}</label>
+            <select className={selectCls} value={status} onChange={(e) => setStatus(e.target.value)}>
+              {["ACTIVE", "DRAFT"].map((s) => (
+                <option key={s} value={s}>{t(`workspace.quiz.statusLabels.${s}`)}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Toggle Timer Mode */}
         <div className="flex items-center gap-3">
           <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
             <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+              className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
             <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.timerMode")}</span>
           </label>
           <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
@@ -381,7 +360,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
           </span>
         </div>
 
-        {/* Duration + PassScore + MaxAttempt — Duration chỉ hiện khi timerMode=true */}
+        {/* Duration + PassScore + MaxAttempt */}
         <div className={`grid ${timerMode ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
           {timerMode && (
             <div>
@@ -402,21 +381,21 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         {/* Danh sách câu hỏi */}
         <div className="space-y-3">
           <h4 className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-            {t("workspace.quiz.edit.questionsSection")} ({questions.length})
+            {t("workspace.mockTest.edit.questionsSection")} ({questions.length})
           </h4>
 
           {questions.map((q, qIdx) => (
             <div key={q.questionId || `new-${qIdx}`} className={`rounded-lg border p-3 space-y-2 ${
               q.isNew
-                ? isDarkMode ? "border-blue-800/50 bg-blue-950/20" : "border-blue-200 bg-blue-50/30"
+                ? isDarkMode ? "border-purple-800/50 bg-purple-950/20" : "border-purple-200 bg-purple-50/30"
                 : isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"
             }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>#{qIdx + 1}</span>
                   {q.isNew && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isDarkMode ? "bg-blue-900/50 text-blue-400" : "bg-blue-100 text-blue-600"}`}>
-                      {t("workspace.quiz.edit.newTag")}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isDarkMode ? "bg-purple-900/50 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
+                      {t("workspace.mockTest.edit.newTag")}
                     </span>
                   )}
                 </div>
@@ -460,7 +439,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
                 <div className="space-y-1.5 pl-2">
                   {(q.answers || []).map((a, aIdx) => (
                     <div key={a.answerId || `new-ans-${aIdx}`} className="flex items-center gap-2">
-                      <input type={q.type === "multipleSelect" ? "checkbox" : "radio"} name={`edit-q-${qIdx}`} checked={a.correct}
+                      <input type={q.type === "multipleSelect" ? "checkbox" : "radio"} name={`edit-mt-q-${qIdx}`} checked={a.correct}
                         onChange={() => {
                           const newAnswers = q.answers.map((ans, ai) => ({
                             ...ans,
@@ -481,7 +460,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => addAnswer(qIdx)} className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-1">
+                  <button onClick={() => addAnswer(qIdx)} className="text-xs text-purple-500 hover:underline flex items-center gap-1 mt-1">
                     <Plus className="w-3 h-3" /> {t("workspace.quiz.addAnswer")}
                   </button>
                 </div>
@@ -506,19 +485,19 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         </div>
       </div>
 
-      {/* Nút lưu cố định dưới cùng */}
+      {/* Nút lưu cố định dưới cùng — nút tím */}
       <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-          {t("workspace.quiz.edit.cancel")}
+          {t("workspace.mockTest.edit.cancel")}
         </Button>
-        <Button onClick={handleSave} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+        <Button onClick={handleSave} disabled={submitting} className="bg-purple-600 hover:bg-purple-700 text-white">
           {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
           <Save className="w-4 h-4 mr-1" />
-          {submitting ? t("workspace.quiz.edit.saving") : t("workspace.quiz.edit.save")}
+          {submitting ? t("workspace.mockTest.edit.saving") : t("workspace.mockTest.edit.save")}
         </Button>
       </div>
     </div>
   );
 }
 
-export default EditQuizForm;
+export default EditMockTestForm;

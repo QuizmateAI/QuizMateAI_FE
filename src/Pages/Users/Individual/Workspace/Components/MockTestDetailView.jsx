@@ -1,35 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star, Trash2,
-  ChevronDown, ChevronRight, Target, BookOpen, Hash, Save, X, Plus, CheckCircle2
+  ArrowLeft, ClipboardList, Timer, BarChart3, Clock, Loader2, Edit3, Star, Trash2,
+  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
-  updateQuiz, updateQuestion, updateAnswer, deleteQuestion, deleteAnswer,
-  createQuestion, createAnswer, toggleStarQuestion, QUESTION_TYPE_ID_MAP
+  toggleStarQuestion, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
 
-// Map loại câu hỏi frontend sang questionTypeId backend
-const QUESTION_TYPE_MAP = {
-  multipleChoice: 1, multipleSelect: 2, shortAnswer: 3, trueFalse: 4, fillBlank: 5,
-};
-const DIFFICULTY_MAP = { easy: "EASY", medium: "MEDIUM", hard: "HARD" };
-const REVERSE_DIFFICULTY = { EASY: "easy", MEDIUM: "medium", HARD: "hard" };
-
-// Cấu hình màu badge trạng thái quiz
+// Cấu hình màu badge trạng thái (giống quiz)
 const STATUS_STYLES = {
   ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
   DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
   COMPLETED: { light: "bg-blue-100 text-blue-700", dark: "bg-blue-950/50 text-blue-400" },
   INACTIVE: { light: "bg-slate-100 text-slate-500", dark: "bg-slate-800 text-slate-400" },
-};
-
-const INTENT_STYLES = {
-  PRE_LEARNING: { light: "bg-purple-100 text-purple-700", dark: "bg-purple-950/50 text-purple-400" },
-  POST_LEARNING: { light: "bg-cyan-100 text-cyan-700", dark: "bg-cyan-950/50 text-cyan-400" },
-  PRACTICE: { light: "bg-orange-100 text-orange-700", dark: "bg-orange-950/50 text-orange-400" },
 };
 
 // Hàm format ngày giờ
@@ -39,35 +25,35 @@ function formatDate(dateStr) {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-// Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
-function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKSPACE", contextId }) {
+/**
+ * Component hiển thị chi tiết Mock Test — giao diện tím (purple) để phân biệt với Quiz (xanh dương)
+ * Cấu trúc giống QuizDetailView: sessions → questions → answers
+ */
+function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
-  const [questionsMap, setQuestionsMap] = useState({}); // sessionId -> questions[]
-  const [answersMap, setAnswersMap] = useState({}); // questionId -> answers[]
+  const [questionsMap, setQuestionsMap] = useState({});
+  const [answersMap, setAnswersMap] = useState({});
   const [expandedSessions, setExpandedSessions] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [starringId, setStarringId] = useState(null);
 
-  // Lấy toàn bộ dữ liệu quiz chi tiết: sessions → questions → answers
+  // Tải toàn bộ dữ liệu chi tiết: sessions → questions → answers
   const fetchFullDetail = useCallback(async () => {
     if (!quiz?.quizId) return;
     setLoading(true);
     try {
-      // Bước 1: Lấy sessions
       const sessRes = await getSessionsByQuiz(quiz.quizId);
       const sessionList = sessRes.data || [];
       setSessions(sessionList);
 
-      // Tự động mở rộng session đầu tiên
       if (sessionList.length > 0) {
         setExpandedSessions({ [sessionList[0].sessionId]: true });
       }
 
-      // Bước 2: Lấy questions cho mỗi session
       const qMap = {};
       const aMap = {};
       for (const session of sessionList) {
@@ -75,7 +61,6 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
         const questions = qRes.data || [];
         qMap[session.sessionId] = questions;
 
-        // Bước 3: Lấy answers cho mỗi question
         for (const question of questions) {
           const aRes = await getAnswersByQuestion(question.questionId);
           aMap[question.questionId] = aRes.data || [];
@@ -84,7 +69,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
       setQuestionsMap(qMap);
       setAnswersMap(aMap);
     } catch (err) {
-      console.error("Lỗi khi tải chi tiết quiz:", err);
+      console.error("Lỗi khi tải chi tiết mock test:", err);
     } finally {
       setLoading(false);
     }
@@ -94,23 +79,19 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
     fetchFullDetail();
   }, [fetchFullDetail]);
 
-  // Toggle mở rộng/thu gọn session
   const toggleSession = (sessionId) => {
     setExpandedSessions((prev) => ({ ...prev, [sessionId]: !prev[sessionId] }));
   };
 
-  // Toggle mở rộng/thu gọn câu hỏi (hiển thị answers)
   const toggleQuestion = (questionId) => {
     setExpandedQuestions((prev) => ({ ...prev, [questionId]: !prev[questionId] }));
   };
 
-  // Đánh dấu/bỏ dấu sao câu hỏi
   const handleToggleStar = async (questionId, sessionId) => {
     if (starringId) return;
     setStarringId(questionId);
     try {
       const res = await toggleStarQuestion(questionId);
-      // Lấy giá trị isStarred mới từ API response, fallback sang đảo ngược nếu không có
       const newStarValue = res?.data?.isStarred;
       setQuestionsMap((prev) => ({
         ...prev,
@@ -127,37 +108,36 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
   };
 
   const ss = STATUS_STYLES[quiz?.status] || STATUS_STYLES.DRAFT;
-  const is = INTENT_STYLES[quiz?.quizIntent] || {};
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
-      {/* Header */}
+      {/* Header — màu tím thay vì xanh */}
       <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className="flex items-center gap-3">
           <button onClick={onBack} className={`p-1.5 rounded-lg transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-2">
-            <BadgeCheck className="w-5 h-5 text-blue-500" />
+            <ClipboardList className="w-5 h-5 text-purple-500" />
             <p className={`text-base font-medium truncate max-w-[300px] ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{quiz?.title}</p>
           </div>
         </div>
-        <Button onClick={() => onEdit?.(quiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
+        <Button onClick={() => onEdit?.(quiz)} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
           <Edit3 className="w-4 h-4" />
-          <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
+          <span className="text-sm">{t("workspace.mockTest.detail.edit")}</span>
         </Button>
       </div>
 
       {/* Nội dung chi tiết */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {/* Thông tin tổng quan quiz */}
-        <div className={`rounded-xl p-4 border ${isDarkMode ? "bg-slate-800/50 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+        {/* Thông tin tổng quan — viền/nền tím */}
+        <div className={`rounded-xl p-4 border ${isDarkMode ? "bg-purple-950/20 border-purple-900/40" : "bg-purple-50/50 border-purple-200"}`}>
           <div className="flex items-start justify-between mb-3">
             <h3 className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>{quiz?.title}</h3>
             <div className="flex items-center gap-2">
-              {quiz?.quizIntent && (
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? is.dark || "" : is.light || ""}`}>
-                  {t(`workspace.quiz.intentLabels.${quiz.quizIntent}`)}
+              {quiz?.roadmapName && (
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? "bg-purple-950/50 text-purple-400" : "bg-purple-100 text-purple-700"}`}>
+                  {quiz.roadmapName}
                 </span>
               )}
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
@@ -168,17 +148,17 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
 
           {/* Thẻ thông tin dạng grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {quiz?.duration && (
-              <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${quiz.duration} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
+            {quiz?.duration > 0 && (
+              <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${quiz.duration} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} accent="purple" />
             )}
             {quiz?.overallDifficulty && (
-              <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${quiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} />
+              <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${quiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} accent="purple" />
             )}
             {quiz?.passScore != null && (
-              <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={quiz.passScore} isDarkMode={isDarkMode} />
+              <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={quiz.passScore} isDarkMode={isDarkMode} accent="purple" />
             )}
             {quiz?.maxAttempt != null && (
-              <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={quiz.maxAttempt} isDarkMode={isDarkMode} />
+              <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={quiz.maxAttempt} isDarkMode={isDarkMode} accent="purple" />
             )}
           </div>
 
@@ -198,7 +178,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
         {/* Danh sách sessions + questions */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-purple-500" : "text-purple-400"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail")}</p>
           </div>
         ) : sessions.length === 0 ? (
@@ -211,27 +191,27 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
             const questions = questionsMap[session.sessionId] || [];
 
             return (
-              <div key={session.sessionId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
-                {/* Session header */}
+              <div key={session.sessionId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-purple-900/40" : "border-purple-200"}`}>
+                {/* Session header — nền tím nhạt */}
                 <button
                   onClick={() => toggleSession(session.sessionId)}
-                  className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${isDarkMode ? "bg-slate-800/30 hover:bg-slate-800/60" : "bg-slate-100/50 hover:bg-slate-100"}`}
+                  className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${isDarkMode ? "bg-purple-950/20 hover:bg-purple-950/40" : "bg-purple-50/50 hover:bg-purple-100/50"}`}
                 >
                   <div className="flex items-center gap-2">
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    <BookOpen className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-500"}`} />
+                    <BookOpen className={`w-4 h-4 ${isDarkMode ? "text-purple-400" : "text-purple-500"}`} />
                     <span className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
                       {t("workspace.quiz.detail.session")} {sIdx + 1}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-200 text-gray-500"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-purple-900/50 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
                       {questions.length} {t("workspace.quiz.detail.questions")}
                     </span>
                   </div>
                 </button>
 
-                {/* Danh sách câu hỏi của session */}
+                {/* Danh sách câu hỏi */}
                 {isExpanded && (
-                  <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-slate-200"}`}>
+                  <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-purple-100"}`}>
                     {questions.length === 0 ? (
                       <div className={`px-4 py-6 text-center text-sm ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                         {t("workspace.quiz.detail.noQuestions")}
@@ -244,9 +224,9 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
 
                         return (
                           <div key={question.questionId} className={`px-4 py-3 ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
-                            {/* Question header */}
                             <div className="flex items-start gap-3">
-                              <span className={`text-xs font-bold mt-0.5 shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isDarkMode ? "bg-blue-950/50 text-blue-400" : "bg-blue-100 text-blue-600"}`}>
+                              {/* Số thứ tự — màu tím */}
+                              <span className={`text-xs font-bold mt-0.5 shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isDarkMode ? "bg-purple-950/50 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
                                 {qIdx + 1}
                               </span>
                               <div className="flex-1 min-w-0">
@@ -272,9 +252,9 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
                                   </div>
                                 </div>
 
-                                {/* Meta info: type, difficulty, bloom, duration */}
+                                {/* Meta info: type, difficulty, bloom, duration — badge tím */}
                                 <div className={`flex items-center gap-2 mt-1.5 flex-wrap text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                                  <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
+                                  <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? "bg-purple-950/40 text-purple-400" : "bg-purple-50 text-purple-600"}`}>
                                     {t(`workspace.quiz.types.${typeName}`)}
                                   </span>
                                   {question.difficulty && (
@@ -294,7 +274,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
                                   )}
                                 </div>
 
-                                {/* Answers — hiển thị khi mở rộng */}
+                                {/* Answers */}
                                 {isQExpanded && (
                                   <div className="mt-3 space-y-1.5">
                                     {answers.map((ans, aIdx) => (
@@ -344,11 +324,11 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
   );
 }
 
-// Component chip thông tin dùng lại
-function InfoChip({ icon: Icon, label, value, isDarkMode }) {
+// Component chip thông tin — sắc tím
+function InfoChip({ icon: Icon, label, value, isDarkMode, accent = "purple" }) {
   return (
     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
-      <Icon className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+      <Icon className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-purple-400" : "text-purple-500"}`} />
       <div>
         <p className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{label}</p>
         <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>{value}</p>
@@ -357,4 +337,4 @@ function InfoChip({ icon: Icon, label, value, isDarkMode }) {
   );
 }
 
-export default QuizDetailView;
+export default MockTestDetailView;
