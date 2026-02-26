@@ -11,6 +11,15 @@ export const createRoadmap = async (data) => {
   return response;
 };
 
+// Tạo roadmap general cho workspace cá nhân — POST /roadmap/create/workspace/{workspaceId}
+export const createRoadmapForWorkspace = async (data) => {
+  const response = await api.post(`/roadmap/create/workspace/${Number(data.workspaceId)}`, {
+    title: data.name || data.title || 'Roadmap',
+    description: data.goal || data.description || '',
+  });
+  return response;
+};
+
 // Lấy danh sách roadmap của group (có phân trang)
 export const getRoadmapsByGroup = async (groupId, page = 0, size = 10) => {
   const response = await api.get(`/roadmap/group/${groupId}?page=${page}&size=${size}`);
