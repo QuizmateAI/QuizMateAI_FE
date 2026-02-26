@@ -464,7 +464,10 @@
         "prelearning": "Pre-learning"
       },
       "outputs": "Kết quả đã tạo",
-      "noOutputs": "Chưa có kết quả nào."
+      "noOutputs": "Chưa có kết quả nào.",
+      "accessHistory": "Lịch sử truy cập",
+      "noHistory": "Chưa có hoạt động gần đây.",
+      "accessedNow": "Vừa xong"
     },
     "upload": {
       "title": "Tải tài liệu lên",
@@ -615,6 +618,8 @@
       "create": "Tạo mới",
       "noItems": "Chưa có mục nào",
       "noResults": "Không tìm thấy kết quả",
+      "createdAt": "Tạo lúc",
+      "updatedAt": "Cập nhật",
       "levels": {
         "roadmap": "Tất cả Roadmap",
         "phase": "Giai đoạn",

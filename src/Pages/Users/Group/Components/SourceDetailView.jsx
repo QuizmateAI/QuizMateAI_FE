@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { ArrowLeft, FileText, Image, Film, Link2, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
