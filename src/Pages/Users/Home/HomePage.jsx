@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Globe, Grid3x3, List, Moon, Plus, Settings, Sun } from 'lucide-react';
+import { Globe, Grid3x3, List, Moon, Plus, Settings, Sun, CreditCard } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.png";
 import LogoDark from "@/assets/DarkMode_Logo.png";
 import HomeContent from "@/Pages/Users/Home/Components/HomeContent";
@@ -247,6 +247,19 @@ function HomePage() {
                   </span>
                   <span className={`text-xs font-semibold ${fontClass}`}>
                     {isDarkMode ? t('common.dark') : t('common.light')}
+                  </span>
+                </button>
+                <div className={`h-px w-full ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`} />
+                <button
+                  type="button"
+                  onClick={() => { setIsSettingsOpen(false); navigate('/profile', { state: { tab: 'subscription' } }); }}
+                  className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
+                    isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`flex items-center gap-2 ${fontClass}`}>
+                    <CreditCard className="w-4 h-4" />
+                    {t('common.subscription')}
                   </span>
                 </button>
               </div>

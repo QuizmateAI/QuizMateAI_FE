@@ -66,7 +66,8 @@
     "theme": "Giao diện",
     "light": "Sáng",
     "dark": "Tối",
-    "refresh": "Làm mới"
+    "refresh": "Làm mới",
+    "subscription": "Gói đăng ký"
   },
   "rbac": {
     "title": "Phân quyền RBAC",
@@ -269,6 +270,11 @@
       "createWorkspace": "Tạo workspace mới",
       "createGroup": "Tạo nhóm"
     },
+    "search": {
+      "workspacePlaceholder": "Tìm kiếm workspace...",
+      "groupPlaceholder": "Tìm kiếm nhóm...",
+      "noResults": "Không tìm thấy kết quả"
+    },
     "create": {
       "personalTab": "Workspace cá nhân",
       "groupTab": "Workspace nhóm"
@@ -448,6 +454,9 @@
       "emptyTitle": "Kết quả sẽ hiển thị ở đây.",
       "emptyDesc": "Chọn một hoạt động bên dưới để bắt đầu.",
       "actions": {
+        "roadmap": "Roadmap",
+        "quiz": "Quiz",
+        "flashcard": "Flashcard",
         "createRoadmap": "Tạo Roadmap",
         "createQuiz": "Tạo Quiz",
         "createFlashcard": "Tạo Flashcard",
@@ -600,6 +609,26 @@
       "useDefault": "Dùng mặc định",
       "start": "Bắt đầu Mock Test",
       "completeAllPhases": "Hoàn thành tất cả post-learning và phase để mở mock test cuối cùng."
+    },
+    "listView": {
+      "searchPlaceholder": "Tìm kiếm...",
+      "create": "Tạo mới",
+      "noItems": "Chưa có mục nào",
+      "noResults": "Không tìm thấy kết quả",
+      "levels": {
+        "roadmap": "Tất cả Roadmap",
+        "phase": "Giai đoạn",
+        "knowledge": "Kiến thức",
+        "items": "Mục"
+      },
+      "filter": {
+        "all": "Tất cả",
+        "knowledge": "Kiến thức",
+        "phase": "Giai đoạn",
+        "roadmap": "Roadmap",
+        "workspace": "Workspace",
+        "group": "Nhóm"
+      }
     }
   },
   "userPage": {
@@ -696,7 +725,8 @@
     "unlockedDaysAgo": "Mở khóa {{days}} ngày trước",
     "tabs": {
       "overview": "Tổng quan",
-      "settings": "Cài đặt"
+      "settings": "Cài đặt",
+      "subscription": "Gói đăng ký"
     },
     "badges": {
       "quizMaster": "Bậc thầy Quiz",
@@ -713,6 +743,36 @@
       "dayStreak": "Ngày liên tiếp",
       "avgScore": "Điểm trung bình"
     },
-    "recentActivity": "Hoạt động gần đây"
+    "recentActivity": "Hoạt động gần đây",
+    "subscription": {
+      "currentPlan": "Gói hiện tại",
+      "currentPlanDesc": "Gói đăng ký đang sử dụng",
+      "freeDesc": "Các tính năng cơ bản để bắt đầu",
+      "activeStatus": "Đang hoạt động",
+      "currentLabel": "Gói hiện tại",
+      "mostPopular": "PHỔ BIẾN NHẤT",
+      "perMonth": "tháng",
+      "upgrade": "Nâng cấp ngay",
+      "guaranteeTitle": "Đảm bảo hoàn tiền trong 30 ngày",
+      "guaranteeDesc": "Dùng thử không rủi ro. Nếu không hài lòng, hoàn tiền toàn bộ trong 30 ngày.",
+      "plans": {
+        "free": { "name": "Miễn phí" },
+        "pro": { "name": "Chuyên nghiệp" },
+        "elite": { "name": "Cao cấp" }
+      },
+      "features": {
+        "fiveRoadmaps": "5 AI Roadmap / tháng",
+        "basicQuizzes": "AI Quiz cơ bản",
+        "voiceTutor": "Gia sư AI giọng nói",
+        "unlimitedRoadmaps": "AI Roadmap không giới hạn",
+        "advancedVoice": "AI Companion giọng nói nâng cao",
+        "urlVideo": "Xử lý URL & Video",
+        "prioritySupport": "Hỗ trợ ưu tiên",
+        "everythingPro": "Tất cả tính năng Pro",
+        "studyGroup": "Nhóm học tập (5 người)",
+        "apiAccess": "Truy cập API cho lập trình viên",
+        "customBranding": "Tùy chỉnh thương hiệu"
+      }
+    }
   }
 }

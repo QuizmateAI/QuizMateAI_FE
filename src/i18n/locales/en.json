@@ -66,7 +66,8 @@
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "subscription": "Subscription Plans"
   },
   "rbac": {
     "title": "RBAC System",
@@ -269,6 +270,11 @@
       "createWorkspace": "Create new workspace",
       "createGroup": "Create group"
     },
+    "search": {
+      "workspacePlaceholder": "Search workspaces...",
+      "groupPlaceholder": "Search groups...",
+      "noResults": "No results found"
+    },
     "create": {
       "personalTab": "Personal Workspace",
       "groupTab": "Group Workspace"
@@ -448,6 +454,9 @@
       "emptyTitle": "Outputs will appear here.",
       "emptyDesc": "Pick an activity below to get started.",
       "actions": {
+        "roadmap": "Roadmap",
+        "quiz": "Quiz",
+        "flashcard": "Flashcard",
         "createRoadmap": "Create Roadmap",
         "createQuiz": "Create Quiz",
         "createFlashcard": "Create Flashcard",
@@ -600,6 +609,26 @@
       "useDefault": "Use default",
       "start": "Start Mock Test",
       "completeAllPhases": "Complete all post-learning tests and phases to unlock the final mock test."
+    },
+    "listView": {
+      "searchPlaceholder": "Search...",
+      "create": "Create new",
+      "noItems": "No items yet",
+      "noResults": "No results found",
+      "levels": {
+        "roadmap": "All Roadmaps",
+        "phase": "Phases",
+        "knowledge": "Knowledge",
+        "items": "Items"
+      },
+      "filter": {
+        "all": "All",
+        "knowledge": "Knowledge",
+        "phase": "Phase",
+        "roadmap": "Roadmap",
+        "workspace": "Workspace",
+        "group": "Group"
+      }
     }
   },
   "userPage": {
@@ -696,7 +725,8 @@
     "unlockedDaysAgo": "Unlocked {{days}} days ago",
     "tabs": {
       "overview": "Overview",
-      "settings": "Settings"
+      "settings": "Settings",
+      "subscription": "Subscription"
     },
     "badges": {
       "quizMaster": "Quiz Master",
@@ -713,6 +743,36 @@
       "dayStreak": "Day Streak",
       "avgScore": "Avg. Score"
     },
-    "recentActivity": "Recent Activity"
+    "recentActivity": "Recent Activity",
+    "subscription": {
+      "currentPlan": "Current Plan",
+      "currentPlanDesc": "Your active subscription plan",
+      "freeDesc": "Basic features for getting started",
+      "activeStatus": "Active",
+      "currentLabel": "Current Plan",
+      "mostPopular": "MOST POPULAR",
+      "perMonth": "month",
+      "upgrade": "Upgrade Now",
+      "guaranteeTitle": "30-Day Money-Back Guarantee",
+      "guaranteeDesc": "Try risk-free. If you're not satisfied, get a full refund within 30 days.",
+      "plans": {
+        "free": { "name": "Free" },
+        "pro": { "name": "Professional" },
+        "elite": { "name": "Elite" }
+      },
+      "features": {
+        "fiveRoadmaps": "5 AI Roadmaps / month",
+        "basicQuizzes": "Basic AI Quizzes",
+        "voiceTutor": "Voice AI Tutor",
+        "unlimitedRoadmaps": "Unlimited AI Roadmaps",
+        "advancedVoice": "Advanced Voice Companion",
+        "urlVideo": "URL & Video Processing",
+        "prioritySupport": "Priority Support",
+        "everythingPro": "Everything in Pro",
+        "studyGroup": "Study Group (5 Users)",
+        "apiAccess": "API Access for Devs",
+        "customBranding": "Custom Branding"
+      }
+    }
   }
 }
