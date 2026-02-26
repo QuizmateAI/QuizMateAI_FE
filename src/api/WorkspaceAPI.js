@@ -30,6 +30,12 @@ export const getWorkspaceById = async (workspaceId) => {
   return response;
 };
 
+// Lấy danh sách roadmap của workspace (có phân trang)
+export const getRoadmapsByWorkspace = async (workspaceId, page = 0, size = 10) => {
+  const response = await api.get(`/roadmap/workspace/${workspaceId}?page=${page}&size=${size}`);
+  return response;
+};
+
 // Lấy danh sách topics (có phân trang)
 export const getAllTopics = async (page = 0, size = 100) => {
   const response = await api.get(`/topic/all?page=${page}&size=${size}`);

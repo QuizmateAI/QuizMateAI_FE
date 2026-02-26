@@ -1,24 +1,20 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, Users, UsersRound, ShieldAlert, 
-  Cpu, CreditCard, Settings, LogOut,
+  Users, UsersRound,
+  CreditCard, LogOut,
   PanelLeftClose
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.png";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
-// Menu items với key để lấy translation
-const menuItems = [
-  { icon: LayoutDashboard, labelKey: 'sidebar.dashboard', path: '/admin' },
-  { icon: Users, labelKey: 'sidebar.users', path: '/admin/users' },
-  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/admin/groups' },
-  { icon: ShieldAlert, labelKey: 'sidebar.moderation', path: '/admin/moderation' },
-  { icon: Cpu, labelKey: 'sidebar.aiSettings', path: '/admin/ai-settings' },
-  { icon: CreditCard, labelKey: 'sidebar.billing', path: '/admin/billing' },
-  { icon: Settings, labelKey: 'sidebar.settings', path: '/admin/settings' },
+const ALL_MENU_ITEMS = [
+  { icon: Users, labelKey: 'sidebar.users', path: '/admin/users', alsoMatch: '/admin', requiredPerm: 'user:read' },
+  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/admin/groups', requiredPerm: 'group:read_all' },
+  { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/admin/subscriptions', requiredPerm: 'subscription:read' },
 ];
 
 function AdminSidebar({ collapsed, onToggle }) {
@@ -26,6 +22,11 @@ function AdminSidebar({ collapsed, onToggle }) {
   const location = useLocation();
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const { permissions, loading } = useAdminPermissions();
+
+  const menuItems = ALL_MENU_ITEMS.filter(
+    (item) => !item.requiredPerm || loading || permissions.has(item.requiredPerm)
+  );
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -88,7 +89,7 @@ function AdminSidebar({ collapsed, onToggle }) {
             className={cn(
               "w-full flex items-center gap-3 py-3 rounded-lg text-sm font-medium transition-colors",
               collapsed ? "px-0 justify-center" : "px-4",
-              location.pathname === item.path 
+              (location.pathname === item.path || location.pathname === item.alsoMatch) 
                 ? isDarkMode 
                   ? "bg-slate-700 text-white font-semibold" 
                   : "bg-[#c0d3fc] text-black font-semibold"
