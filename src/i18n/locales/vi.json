@@ -54,8 +54,12 @@
       "submit": "Tạo Admin",
       "cancel": "Hủy",
       "success": "Tạo tài khoản admin thành công.",
-      "error": "Tạo tài khoản admin thất bại."
-    }
+      "error": "Tạo tài khoản admin thất bại.",
+      "passwordMismatch": "Mật khẩu xác nhận không khớp.",
+      "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự."
+    },
+    "syncSuccess": "Đã đồng bộ quyền thành công.",
+    "syncError": "Không thể đồng bộ quyền."
   },
   "header": {
     "systemTitle": "Hệ thống QuizMate AI",
@@ -79,7 +83,9 @@
     "permissionsList": "Danh sách Permissions",
     "userRoleManagement": "Quản lý Role & Permissions người dùng",
     "userRoleDesc": "Chỉ hiển thị tài khoản ADMIN và SUPER_ADMIN.",
-    "auditLogs": "Nhật ký kiểm toán RBAC"
+    "auditLogs": "Nhật ký kiểm toán RBAC",
+    "syncSuccess": "Đã đồng bộ quyền thành công.",
+    "syncError": "Không thể đồng bộ quyền."
   },
   "subscription": {
     "title": "Quản lý gói đăng ký",
@@ -119,6 +125,8 @@
     "deleteSuccess": "Xóa gói thành công!",
     "submitError": "Không thể lưu gói.",
     "deleteError": "Không thể xóa gói.",
+    "planInUse": "Gói này đang có ít nhất 1 người sử dụng",
+    "defaultPlanExists": "Đã tồn tại gói mặc định cho loại {{type}}. Chỉ có thể có 1 gói INDIVIDUAL default và 1 gói GROUP default.",
     "tabs": {
       "plans": "Gói đăng ký",
       "subscriptions": "Đăng ký"
@@ -150,7 +158,8 @@
     "stats": {
       "totalPlans": "Tổng số gói",
       "activeSubs": "Gói đang hoạt động",
-      "individual": "Loại gói",
+      "individual": "Cá nhân",
+      "group": "Nhóm",
       "totalRevenue": "Tổng doanh thu"
     }
   },
@@ -705,7 +714,59 @@
       "INACTIVE": "Không hoạt động",
       "BANNED": "Bị cấm"
     },
-    "changeStatus": "Đổi trạng thái"
+    "changeStatus": "Đổi trạng thái",
+    "viewDetail": "Xem chi tiết"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Tổng quan",
+      "workspaces": "Workspaces",
+      "groups": "Nhóm",
+      "logs": "Nhật ký",
+      "subscription": "Gói"
+    },
+    "workspacesCount": "Số workspace",
+    "groupsCount": "Số nhóm",
+    "subscription": "Gói hiện tại",
+    "noPlan": "Chưa có gói",
+    "createdAt": "Ngày tạo",
+    "noWorkspaces": "Chưa có workspace nào.",
+    "roadmaps": "Roadmap",
+    "noRoadmaps": "Chưa có roadmap.",
+    "noGroups": "Chưa tham gia nhóm nào.",
+    "members": "thành viên",
+    "noLogs": "Chưa có nhật ký.",
+    "noSubscription": "Chưa có gói đăng ký.",
+    "status": "Trạng thái",
+    "endDate": "Ngày hết hạn",
+    "price": "Giá",
+    "noDetail": "Không thể tải chi tiết."
+  },
+  "groupDetail": {
+    "description": "Mô tả",
+    "membersList": "Danh sách thành viên",
+    "tabs": {
+      "overview": "Tổng quan",
+      "members": "Thành viên",
+      "content": "Nội dung",
+      "logs": "Nhật ký",
+      "subscription": "Gói"
+    },
+    "members": "thành viên",
+    "leader": "Chủ nhóm",
+    "membersCount": "Số thành viên",
+    "roadmapsCount": "Số roadmap",
+    "subscription": "Gói hiện tại",
+    "noPlan": "Chưa có gói",
+    "createdAt": "Ngày tạo",
+    "noMembers": "Chưa có thành viên.",
+    "roadmaps": "Roadmap",
+    "noRoadmaps": "Chưa có roadmap.",
+    "noLogs": "Chưa có nhật ký.",
+    "noSubscription": "Chưa có gói đăng ký.",
+    "status": "Trạng thái",
+    "endDate": "Ngày hết hạn",
+    "price": "Giá"
   },
   "groupPage": {
     "title": "Quản lý nhóm",
