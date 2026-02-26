@@ -573,13 +573,23 @@
       "totalTime": "Thời gian tổng",
       "perQuestion": "Thời gian mỗi câu",
       "timeDuration": "Thời gian (phút)",
-      "passingScore": "Điểm để đậu (%)",
+      "passingScore": "Điểm đậu (0-10)",
+      "maxAttempt": "Số lần tối đa",
+      "intent": "Mục đích Quiz",
+      "overallDifficulty": "Độ khó tổng thể",
+      "timerMode": "Bật chế độ đếm giờ",
+      "minutes": "phút",
       "addQuestion": "Thêm câu hỏi",
       "questionType": "Dạng câu hỏi",
       "questionText": "Nội dung câu hỏi",
+      "questionDuration": "Giới hạn thời gian (giây)",
+      "explanation": "Giải thích",
+      "explanationPlaceholder": "Giải thích đáp án đúng...",
       "answers": "Câu trả lời",
       "addAnswer": "Thêm đáp án",
       "correctAnswer": "Đáp án đúng",
+      "deleteQuiz": "Xóa quiz",
+      "loading": "Đang tải danh sách quiz...",
       "types": {
         "multipleChoice": "Trắc nghiệm một đáp án",
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
@@ -593,6 +603,53 @@
         "medium": "Trung bình",
         "hard": "Khó"
       },
+      "bloomLevels": {
+        "remember": "Ghi nhớ",
+        "understand": "Hiểu",
+        "apply": "Áp dụng",
+        "analyze": "Phân tích",
+        "evaluate": "Đánh giá"
+      },
+      "intentLabels": {
+        "PRE_LEARNING": "Trước khi học",
+        "POST_LEARNING": "Sau khi học",
+        "REVIEW": "Ôn tập"
+      },
+      "statusLabels": {
+        "ACTIVE": "Đang hoạt động",
+        "DRAFT": "Bản nháp",
+        "COMPLETED": "Đã hoàn thành",
+        "INACTIVE": "Không hoạt động"
+      },
+      "statusFilter": {
+        "all": "Tất cả",
+        "ACTIVE": "Đang hoạt động",
+        "DRAFT": "Bản nháp",
+        "COMPLETED": "Đã hoàn thành"
+      },
+      "validation": {
+        "nameRequired": "Vui lòng nhập tên quiz.",
+        "createFailed": "Tạo quiz thất bại. Vui lòng thử lại."
+      },
+      "contextSelector": {
+        "title": "Vị trí tạo Quiz",
+        "contextType": "Loại ngữ cảnh",
+        "sourceType": "Nguồn",
+        "selectWorkspace": "Chọn Workspace",
+        "selectGroup": "Chọn Nhóm",
+        "selectRoadmap": "Chọn Lộ trình",
+        "selectPhase": "Chọn Giai đoạn",
+        "selectKnowledge": "Chọn Kiến thức",
+        "placeholder": "-- Chọn --",
+        "loading": "Đang tải...",
+        "types": {
+          "WORKSPACE": "Workspace",
+          "GROUP": "Nhóm",
+          "ROADMAP": "Lộ trình",
+          "PHASE": "Giai đoạn",
+          "KNOWLEDGE": "Kiến thức"
+        }
+      },
       "aiConfig": {
         "totalQuestions": "Tổng số câu",
         "difficultyDistribution": "Phân bổ độ khó",
@@ -603,6 +660,30 @@
         "promptPlaceholder": "Nhập yêu cầu bổ sung cho AI...",
         "byCount": "Theo số lượng",
         "byPercent": "Theo phần trăm"
+      },
+      "detail": {
+        "edit": "Chỉnh sửa",
+        "createdAt": "Ngày tạo",
+        "updatedAt": "Cập nhật",
+        "loadingDetail": "Đang tải chi tiết quiz...",
+        "noSessions": "Không tìm thấy phiên nào.",
+        "session": "Phiên",
+        "questions": "câu hỏi",
+        "noQuestions": "Không có câu hỏi trong phiên này."
+      },
+      "edit": {
+        "title": "Chỉnh sửa Quiz",
+        "desc": "Cập nhật thông tin quiz, câu hỏi và đáp án.",
+        "loading": "Đang tải dữ liệu quiz...",
+        "loadFailed": "Tải dữ liệu quiz thất bại.",
+        "status": "Trạng thái",
+        "questionsSection": "Câu hỏi",
+        "newTag": "MỚI",
+        "save": "Lưu thay đổi",
+        "saving": "Đang lưu...",
+        "cancel": "Hủy",
+        "saveSuccess": "Cập nhật quiz thành công!",
+        "saveFailed": "Lưu quiz thất bại. Vui lòng thử lại."
       },
       "create": "Tạo Quiz",
       "creating": "Đang tạo...",

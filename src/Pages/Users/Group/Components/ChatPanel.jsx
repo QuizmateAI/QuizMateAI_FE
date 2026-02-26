@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
 import CreateFlashcardForm from "./CreateFlashcardForm";
 import CreateRoadmapForm from "./CreateRoadmapForm";
-import RoadmapListView from "./RoadmapListView";
-import QuizListView from "./QuizListView";
-import FlashcardListView from "./FlashcardListView";
-import MockTestListView from "./MockTestListView";
+import RoadmapListView from "@/Pages/Users/Individual/Workspace/Components/RoadmapListView";
+import QuizListView from "@/Pages/Users/Individual/Workspace/Components/QuizListView";
+import QuizDetailView from "@/Pages/Users/Individual/Workspace/Components/QuizDetailView";
+import EditQuizForm from "./EditQuizForm";
+import FlashcardListView from "@/Pages/Users/Individual/Workspace/Components/FlashcardListView";
+import MockTestListView from "@/Pages/Users/Individual/Workspace/Components/MockTestListView";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack, groupId = null }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onBack, groupId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -114,7 +116,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
       case "roadmap":
         return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} groupId={groupId} />;
       case "quiz":
-        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} createdItems={createdQuizzes} />;
+        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="GROUP" contextId={groupId} />;
       case "flashcard":
         return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} createdItems={createdFlashcards} />;
       case "mockTest":
@@ -139,11 +141,15 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
   const renderActiveContent = () => {
     switch (activeView) {
       case "createQuiz":
-        return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} />;
+        return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="GROUP" contextId={groupId} />;
       case "createFlashcard":
         return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} />;
       case "createRoadmap":
         return <CreateRoadmapForm isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onBack={onBack} />;
+      case "quizDetail":
+        return selectedQuiz ? <QuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="GROUP" contextId={groupId} /> : null;
+      case "editQuiz":
+        return selectedQuiz ? <EditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="GROUP" contextId={groupId} /> : null;
       default:
         return null;
     }
