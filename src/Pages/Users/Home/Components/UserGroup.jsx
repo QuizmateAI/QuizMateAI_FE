@@ -1,5 +1,5 @@
-import React from "react";
-import { Users, Loader2, FolderOpen, Plus, ExternalLink } from "lucide-react";
+import React, { useState } from "react";
+import { Users, Loader2, FolderOpen, Plus, ExternalLink, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -9,6 +9,16 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const navigate = useNavigate();
   const isList = viewMode === "list";
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Lọc nhóm theo từ khóa tìm kiếm
+  const filteredGroups = searchQuery.trim()
+    ? groups.filter((g) =>
+        g.groupName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        g.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        g.topicTitle?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : groups;
 
   // Chuyển sang trang group workspace khi click vào nhóm
   const handleNavigateGroup = (group) => {
@@ -58,8 +68,35 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
         </button>
       </div>
 
+      {/* Thanh tìm kiếm */}
+      {groups.length > 0 && (
+        <div className="mb-4">
+          <div className="relative max-w-md">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("home.search.groupPlaceholder")}
+              className={`w-full pl-9 pr-9 py-2 rounded-xl text-sm border transition-colors outline-none ${isDarkMode
+                ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
+                : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500"
+              }`}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isDarkMode ? "text-slate-400 hover:text-white" : "text-gray-400 hover:text-gray-700"}`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Trạng thái rỗng */}
-      {groups.length === 0 ? (
+      {filteredGroups.length === 0 && groups.length === 0 ? (
         <div className={`rounded-2xl border p-12 text-center ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
           <FolderOpen className={`w-12 h-12 mx-auto mb-3 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
           <p className={`text-sm font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{t("home.group.noGroups")}</p>
@@ -84,7 +121,13 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
             <span />
           </div>
           <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-gray-200"}`}>
-            {groups.map((group) => (
+            {filteredGroups.length === 0 && searchQuery && (
+              <div className={`px-4 py-8 text-center ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">{t("home.search.noResults")}</p>
+              </div>
+            )}
+            {filteredGroups.map((group) => (
               <div
                 key={group.groupId}
                 onClick={() => handleNavigateGroup(group)}
@@ -131,7 +174,14 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
             <span className="text-sm font-medium">{t("home.actions.createGroup")}</span>
           </button>
 
-          {groups.map((group) => (
+          {filteredGroups.length === 0 && searchQuery && (
+            <div className={`col-span-full flex flex-col items-center justify-center py-12 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+              <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">{t("home.search.noResults")}</p>
+            </div>
+          )}
+
+          {filteredGroups.map((group) => (
             <div
               key={group.groupId}
               onClick={() => handleNavigateGroup(group)}

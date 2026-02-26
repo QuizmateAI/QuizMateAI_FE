@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Camera, User, Mail, Calendar, Lock, Loader2, Check, X, Eye, EyeOff,
   Settings, Globe, Moon, Sun, LogOut, Shield, Zap, Award, TrendingUp,
-  BookOpen, Clock, Star, Edit3
+  BookOpen, Clock, Star, Edit3, CreditCard, Crown, Sparkles
 } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { getUserProfile, updateUserProfile, changePassword, uploadAvatar } from "@/api/ProfileAPI";
@@ -126,6 +126,7 @@ function ProfilePage() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
+  const location = useLocation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language;
   const fileInputRef = useRef(null);
@@ -183,6 +184,15 @@ function ProfilePage() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  // Xử lý chuyển tab từ trang khác (ví dụ: từ HomePage settings)
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+      // Xóa state sau khi đã xử lý
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   // Click outside để đóng settings menu
   useEffect(() => {
@@ -365,6 +375,18 @@ function ProfilePage() {
             </span>
             <span className="text-xs font-semibold">{isDarkMode ? t("common.dark") : t("common.light")}</span>
           </button>
+          <button
+            type="button"
+            onClick={() => { setIsSettingsOpen(false); setActiveTab("subscription"); }}
+            className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
+              isDarkMode ? "hover:bg-slate-800" : "hover:bg-gray-50"
+            }`}
+          >
+            <span className={`flex items-center gap-2 ${fontClass}`}>
+              <CreditCard className="w-4 h-4" />
+              {t("common.subscription")}
+            </span>
+          </button>
           <div className={`h-px w-full ${isDarkMode ? "bg-slate-700" : "bg-gray-100"}`} />
           <button
             type="button"
@@ -528,9 +550,13 @@ function ProfilePage() {
             {/* Right Column: Tabs */}
             <div className="lg:col-span-8 xl:col-span-9">
               <Tabs className="w-full">
-                <TabsList isDarkMode={isDarkMode} className="grid w-full max-w-[400px] grid-cols-2">
+                <TabsList isDarkMode={isDarkMode} className="grid w-full max-w-[500px] grid-cols-3">
                   <TabsTrigger active={activeTab === "overview"} onClick={() => setActiveTab("overview")} isDarkMode={isDarkMode}>
                     {t("profile.tabs.overview")}
+                  </TabsTrigger>
+                  <TabsTrigger active={activeTab === "subscription"} onClick={() => setActiveTab("subscription")} isDarkMode={isDarkMode}>
+                    <CreditCard className="w-4 h-4 mr-1.5" />
+                    {t("profile.tabs.subscription")}
                   </TabsTrigger>
                   <TabsTrigger active={activeTab === "settings"} onClick={() => setActiveTab("settings")} isDarkMode={isDarkMode}>
                     {t("profile.tabs.settings")}
@@ -691,6 +717,137 @@ function ProfilePage() {
                         <Lock className="w-4 h-4 mr-2" />
                         {t("profile.changePassword")}
                       </Button>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Subscription Tab */}
+                <TabsContent active={activeTab === "subscription"} className="space-y-6">
+                  {/* Gói hiện tại */}
+                  <Card className={`backdrop-blur-xl ${isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white/70 border-white/60"}`}>
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDarkMode ? "bg-blue-950/50" : "bg-blue-100"}`}>
+                          <Crown className={`w-5 h-5 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                        </div>
+                        <div>
+                          <CardTitle>{t("profile.subscription.currentPlan")}</CardTitle>
+                          <CardDescription className={isDarkMode ? "text-slate-400" : ""}>{t("profile.subscription.currentPlanDesc")}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className={`flex items-center justify-between p-4 rounded-xl border ${isDarkMode ? "bg-slate-800/50 border-slate-700" : "bg-blue-50 border-blue-200"}`}>
+                        <div className="flex items-center gap-3">
+                          <Badge className={`text-sm px-3 py-1 ${isDarkMode ? "bg-blue-600 text-white" : "bg-blue-600 text-white"}`}>Free</Badge>
+                          <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>{t("profile.subscription.freeDesc")}</span>
+                        </div>
+                        <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("profile.subscription.activeStatus")}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Danh sách gói đăng ký */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Gói Free */}
+                    <Card className={`relative backdrop-blur-xl transition-all hover:shadow-lg ${isDarkMode ? "bg-slate-900/50 border-slate-700/50 hover:border-slate-600" : "bg-white/70 border-white/60 hover:border-slate-300 shadow-slate-900/10"}`}>
+                      <CardHeader className="text-center pb-2">
+                        <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 ${isDarkMode ? "bg-slate-800" : "bg-slate-100"}`}>
+                          <User className={`w-6 h-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
+                        </div>
+                        <CardTitle className="text-lg">{t("profile.subscription.plans.free.name")}</CardTitle>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold">$0</span>
+                          <span className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>/{t("profile.subscription.perMonth")}</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pt-4">
+                        <div className={`h-px w-full ${isDarkMode ? "bg-slate-700" : "bg-slate-200"}`} />
+                        {["fiveRoadmaps", "basicQuizzes", "voiceTutor"].map((feature) => (
+                          <div key={feature} className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{t(`profile.subscription.features.${feature}`)}</span>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          disabled
+                          className={`w-full mt-4 rounded-full transition-all active:scale-95 ${isDarkMode ? "border-slate-600 text-slate-400" : "border-slate-300 text-slate-500"}`}
+                        >
+                          {t("profile.subscription.currentLabel")}
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    {/* Gói Pro */}
+                    <Card className={`relative backdrop-blur-xl transition-all hover:shadow-xl ring-2 ${isDarkMode ? "bg-slate-900/50 border-blue-500/50 ring-blue-500/30 hover:ring-blue-500/50 shadow-blue-900/20" : "bg-white/70 border-blue-300 ring-blue-200 hover:ring-blue-300 shadow-blue-900/10"}`}>
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge className="bg-blue-600 text-white text-xs px-3 py-0.5">{t("profile.subscription.mostPopular")}</Badge>
+                      </div>
+                      <CardHeader className="text-center pb-2 pt-8">
+                        <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 ${isDarkMode ? "bg-blue-950/50" : "bg-blue-100"}`}>
+                          <Zap className={`w-6 h-6 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                        </div>
+                        <CardTitle className="text-lg">{t("profile.subscription.plans.pro.name")}</CardTitle>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold">$9.99</span>
+                          <span className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>/{t("profile.subscription.perMonth")}</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pt-4">
+                        <div className={`h-px w-full ${isDarkMode ? "bg-slate-700" : "bg-slate-200"}`} />
+                        {["unlimitedRoadmaps", "advancedVoice", "urlVideo", "prioritySupport"].map((feature) => (
+                          <div key={feature} className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                            <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{t(`profile.subscription.features.${feature}`)}</span>
+                          </div>
+                        ))}
+                        <Button className="w-full mt-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-95">
+                          {t("profile.subscription.upgrade")}
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    {/* Gói Elite */}
+                    <Card className={`relative backdrop-blur-xl transition-all hover:shadow-lg ${isDarkMode ? "bg-slate-900/50 border-slate-700/50 hover:border-amber-500/30" : "bg-white/70 border-white/60 hover:border-amber-300 shadow-slate-900/10"}`}>
+                      <CardHeader className="text-center pb-2">
+                        <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 ${isDarkMode ? "bg-amber-950/50" : "bg-amber-100"}`}>
+                          <Sparkles className={`w-6 h-6 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
+                        </div>
+                        <CardTitle className="text-lg">{t("profile.subscription.plans.elite.name")}</CardTitle>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold">$19.99</span>
+                          <span className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>/{t("profile.subscription.perMonth")}</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pt-4">
+                        <div className={`h-px w-full ${isDarkMode ? "bg-slate-700" : "bg-slate-200"}`} />
+                        {["everythingPro", "studyGroup", "apiAccess", "customBranding"].map((feature) => (
+                          <div key={feature} className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                            <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>{t(`profile.subscription.features.${feature}`)}</span>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          className={`w-full mt-4 rounded-full transition-all active:scale-95 ${isDarkMode ? "border-amber-500/50 text-amber-400 hover:bg-amber-950/30" : "border-amber-300 text-amber-700 hover:bg-amber-50"}`}
+                        >
+                          {t("profile.subscription.upgrade")}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* FAQ / Thông tin bổ sung */}
+                  <Card className={`backdrop-blur-xl ${isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white/70 border-white/60"}`}>
+                    <CardContent className="py-6">
+                      <div className="flex items-center gap-3">
+                        <Shield className={`w-5 h-5 flex-shrink-0 ${isDarkMode ? "text-green-400" : "text-green-600"}`} />
+                        <div>
+                          <p className={`text-sm font-medium ${isDarkMode ? "text-white" : "text-slate-900"}`}>{t("profile.subscription.guaranteeTitle")}</p>
+                          <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{t("profile.subscription.guaranteeDesc")}</p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
