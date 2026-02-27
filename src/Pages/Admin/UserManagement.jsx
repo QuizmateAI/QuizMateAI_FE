@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, User, MoreHorizontal, Shield, Ban, CheckCircle2 } from 'lucide-react';
+import { Search, RefreshCw, User, MoreHorizontal, Shield, Ban, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -25,8 +26,11 @@ import { getAllUsers, updateUserStatus } from '@/api/ManagementSystemAPI';
 import AdminPagination from './components/AdminPagination';
 
 function UserManagement() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -215,7 +219,8 @@ function UserManagement() {
                   filteredUsers.map((user) => (
                     <TableRow 
                       key={user.id} 
-                      className={`border-b transition-colors ${
+                      onClick={() => navigate(`${basePath}/users/${user.id}`)}
+                      className={`border-b transition-colors cursor-pointer ${
                         isDarkMode 
                           ? 'border-slate-800 hover:bg-slate-800/50' 
                           : 'border-slate-100 hover:bg-slate-50/50'
@@ -259,7 +264,7 @@ function UserManagement() {
                       <TableCell className={`w-[140px] text-left text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {formatDate(user.createdAt)}
                       </TableCell>
-                      <TableCell className="w-[80px] text-right">
+                      <TableCell className="w-[80px] text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
@@ -267,6 +272,14 @@ function UserManagement() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className={`w-48 ${isDarkMode ? 'bg-slate-800 border-slate-700' : ''}`}>
+                            <DropdownMenuItem 
+                              onClick={() => navigate(`${basePath}/users/${user.id}`)}
+                              className="cursor-pointer"
+                            >
+                              <Eye className="w-4 h-4 mr-2 text-blue-500" />
+                              {t('userPage.viewDetail')}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               onClick={() => handleUpdateStatus(user.id, 'ACTIVE')}
                               disabled={user.status === 'ACTIVE'}

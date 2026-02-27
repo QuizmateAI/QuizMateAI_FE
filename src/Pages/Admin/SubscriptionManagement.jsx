@@ -7,7 +7,7 @@ import {
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
   Presentation, Bot, BrainCircuit, BarChart3, AlignLeft,
   BookOpenText, SlidersHorizontal, Layers,
-  Crown,
+  Crown, Infinity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
+import { useToast } from '@/context/ToastContext';
 import {
   getAllPlans, createPlan, updatePlan, deletePlan, togglePlanStatus,
 } from '@/api/ManagementSystemAPI';
@@ -97,6 +98,7 @@ function SubscriptionManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { permissions, loading: permLoading } = useAdminPermissions();
+  const { showSuccess, showError } = useToast();
   const canWrite = !permLoading && permissions.has('subscription:write');
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const dk = isDarkMode;
@@ -105,7 +107,6 @@ function SubscriptionManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,15 +121,13 @@ function SubscriptionManagement() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailPlan, setDetailPlan] = useState(null);
 
-  const showSuccess = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
-
   const fetchPlans = async () => {
     setIsLoading(true); setError('');
     try {
       const res = await getAllPlans();
       const data = res?.data ?? res;
       setPlans(Array.isArray(data) ? data : []);
-    } catch (err) { setError(err?.message || t('subscription.fetchError')); }
+    } catch (err) { const msg = err?.message || t('subscription.fetchError'); setError(msg); showError(msg); }
     finally { setIsLoading(false); }
   };
 
@@ -141,7 +140,14 @@ function SubscriptionManagement() {
 
   const openEditForm = (plan) => {
     setEditingPlan(plan);
-    setFormData({ planName: plan.planName || '', price: plan.price ?? '0', planType: plan.type || 'INDIVIDUAL', durationInDay: plan.durationInDay ?? '30', isDefault: plan.isDefault ?? false });
+    const isDef = plan.isDefault ?? false;
+    setFormData({
+      planName: plan.planName || '',
+      price: isDef ? '0' : String(plan.price ?? '0'),
+      planType: plan.type || 'INDIVIDUAL',
+      durationInDay: isDef ? '999999' : String(plan.durationInDay ?? '30'),
+      isDefault: isDef,
+    });
     setLimitData(plan.planLimit ? { ...EMPTY_LIMIT, ...plan.planLimit } : { ...EMPTY_LIMIT });
     setFeatureData(plan.planFeature ? { ...EMPTY_FEATURE, ...plan.planFeature } : { ...EMPTY_FEATURE });
     setIsFormOpen(true); setError('');
@@ -149,7 +155,16 @@ function SubscriptionManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.planName.trim()) { setError(t('subscription.nameRequired')); return; }
+    if (!formData.planName.trim()) { const msg = t('subscription.nameRequired'); setError(msg); showError(msg); return; }
+    if (formData.isDefault) {
+      const existingDefault = plans.find((p) => p.isDefault && (p.type || '').toUpperCase() === (formData.planType || '').toUpperCase());
+      if (existingDefault && (!editingPlan || existingDefault.planId !== editingPlan.planId)) {
+        const msg = t('subscription.defaultPlanExists', { type: formData.planType });
+        setError(msg);
+        showError(msg);
+        return;
+      }
+    }
     setIsSubmitting(true); setError('');
     try {
       if (editingPlan) {
@@ -168,22 +183,43 @@ function SubscriptionManagement() {
         showSuccess(t('subscription.createSuccess'));
       }
       setIsFormOpen(false); fetchPlans();
-    } catch (err) { setError(err?.message || t('subscription.submitError')); }
+    } catch (err) {
+      const rawMsg = err?.message || '';
+      let msg = rawMsg || t('subscription.submitError');
+      if (rawMsg === 'Default plan already exists for this type' || rawMsg?.includes?.('Default plan already exists')) {
+        msg = t('subscription.defaultPlanExists', { type: formData.planType });
+      }
+      setError(msg);
+      showError(msg);
+    }
     finally { setIsSubmitting(false); }
   };
 
   const handleToggleStatus = async (plan) => {
     try { await togglePlanStatus(plan.planId); showSuccess(t('subscription.updateSuccess')); fetchPlans(); }
-    catch (err) { setError(err?.message || t('subscription.submitError')); }
+    catch (err) { const msg = err?.message || t('subscription.submitError'); setError(msg); showError(msg); }
   };
 
   const confirmDelete = (plan) => { setDeletingPlan(plan); setIsDeleteOpen(true); };
 
   const handleDelete = async () => {
     if (!deletingPlan) return; setIsSubmitting(true);
-    try { await deletePlan(deletingPlan.planId); showSuccess(t('subscription.deleteSuccess')); setIsDeleteOpen(false); setDeletingPlan(null); fetchPlans(); }
-    catch (err) { setError(err?.message || t('subscription.deleteError')); }
-    finally { setIsSubmitting(false); }
+    try {
+      await deletePlan(deletingPlan.planId);
+      showSuccess(t('subscription.deleteSuccess'));
+      fetchPlans();
+    } catch (err) {
+      const rawMsg = err?.message || '';
+      const msg = (rawMsg === 'Plan is in use' || rawMsg?.includes?.('Plan is in use'))
+        ? t('subscription.planInUse')
+        : (rawMsg || t('subscription.deleteError'));
+      setError(msg);
+      showError(msg);
+    } finally {
+      setIsDeleteOpen(false);
+      setDeletingPlan(null);
+      setIsSubmitting(false);
+    }
   };
 
   const filteredPlans = plans.filter((p) => (p.planName || '').toLowerCase().includes(searchTerm.toLowerCase()));
@@ -226,16 +262,12 @@ function SubscriptionManagement() {
         )}
       </div>
 
-      {/* Messages */}
-      {error && <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-rose-600 dark:text-rose-400 text-sm font-medium">{error}</div>}
-      {successMsg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-emerald-600 dark:text-emerald-400 text-sm font-medium">{successMsg}</div>}
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: t('subscription.stats.totalPlans'), value: plans.length, icon: Package, from: 'from-blue-500', to: 'to-blue-600', shadow: 'shadow-blue-500/20' },
-          { label: 'Individual', value: individualCount, icon: User, from: 'from-cyan-500', to: 'to-teal-500', shadow: 'shadow-cyan-500/20' },
-          { label: 'Group', value: groupCount, icon: Users, from: 'from-violet-500', to: 'to-purple-600', shadow: 'shadow-violet-500/20' },
+          { label: t('subscription.stats.individual'), value: individualCount, icon: User, from: 'from-cyan-500', to: 'to-teal-500', shadow: 'shadow-cyan-500/20' },
+          { label: t('subscription.stats.group'), value: groupCount, icon: Users, from: 'from-violet-500', to: 'to-purple-600', shadow: 'shadow-violet-500/20' },
           { label: t('subscription.stats.activeSubs'), value: `${activeCount}/${plans.length}`, icon: Zap, from: 'from-amber-400', to: 'to-orange-500', shadow: 'shadow-amber-500/20' },
         ].map((s) => (
           <div key={s.label} className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] cursor-default ${
@@ -328,7 +360,11 @@ function SubscriptionManagement() {
                     </span>
                   </TableCell>
                   <TableCell className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
-                    <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{plan.durationInDay} {t('subscription.days')}</span>
+                    {plan.isDefault ? (
+                      <span className="flex items-center gap-1.5"><Infinity className="w-3.5 h-3.5" />{t('subscription.unlimited')}</span>
+                    ) : (
+                      <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{plan.durationInDay} {t('subscription.days')}</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold ${
@@ -394,11 +430,24 @@ function SubscriptionManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.price')} (VND)</Label>
-                    <Input type="number" min="0" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className={inputCls} />
+                    {formData.isDefault ? (
+                      <div className={`mt-1.5 h-10 rounded-lg border flex items-center gap-2 px-3 ${dk ? 'bg-white/5 border-white/10 text-emerald-400' : 'bg-slate-50 border-slate-200 text-emerald-600'}`}>
+                        <span className="font-medium">0</span>
+                      </div>
+                    ) : (
+                      <Input type="number" min="0" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className={inputCls} />
+                    )}
                   </div>
                   <div>
                     <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.duration')}</Label>
-                    <Input type="number" min="1" value={formData.durationInDay} onChange={(e) => setFormData({ ...formData, durationInDay: e.target.value })} placeholder="30" className={inputCls} />
+                    {formData.isDefault ? (
+                      <div className={`mt-1.5 h-10 rounded-lg border flex items-center gap-2 px-3 ${dk ? 'bg-white/5 border-white/10 text-amber-400' : 'bg-slate-50 border-slate-200 text-amber-600'}`}>
+                        <Infinity className="w-5 h-5" />
+                        <span className="font-medium">{t('subscription.unlimited')}</span>
+                      </div>
+                    ) : (
+                      <Input type="number" min="1" value={formData.durationInDay} onChange={(e) => setFormData({ ...formData, durationInDay: e.target.value })} placeholder="30" className={inputCls} />
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -411,7 +460,7 @@ function SubscriptionManagement() {
                   </div>
                   <div className="flex items-end pb-1">
                     <label className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${dk ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
-                      <Switch checked={formData.isDefault} onCheckedChange={(val) => setFormData({ ...formData, isDefault: val })} />
+                      <Switch checked={formData.isDefault} onCheckedChange={(val) => setFormData({ ...formData, isDefault: val, price: val ? '0' : formData.price, durationInDay: val ? '999999' : '30' })} />
                       <span className={`text-sm font-medium ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Default Plan</span>
                     </label>
                   </div>
@@ -477,15 +526,15 @@ function SubscriptionManagement() {
       </Dialog>
 
       {/* ──── Delete Confirmation ──── */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent hideClose className={`max-w-md ${dk ? 'bg-[#0f1629] border-white/[0.08]' : ''}`}>
+      <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!open && !isSubmitting) setIsDeleteOpen(false); }}>
+        <DialogContent hideClose className={`max-w-md ${dk ? 'bg-[#0f1629] border-white/[0.08]' : ''}`} onPointerDownOutside={(e) => isSubmitting && e.preventDefault()} onInteractOutside={(e) => isSubmitting && e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className={dk ? 'text-white' : ''}>{t('subscription.confirmDelete')}</DialogTitle>
             <DialogDescription>{t('subscription.confirmDeleteDesc', { name: deletingPlan?.planName })}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteOpen(false)} className={`cursor-pointer ${dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>{t('auth.cancel')}</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting} className="cursor-pointer">{isSubmitting ? t('subscription.deleting') : t('subscription.delete')}</Button>
+            <Button type="button" variant="outline" onClick={() => setIsDeleteOpen(false)} className={`cursor-pointer ${dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>{t('auth.cancel')}</Button>
+            <Button type="button" variant="destructive" onClick={handleDelete} disabled={isSubmitting} className="cursor-pointer">{isSubmitting ? t('subscription.deleting') : t('subscription.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -527,7 +576,7 @@ function SubscriptionManagement() {
                   {[
                     { label: t('subscription.table.price'), value: formatCurrency(detailPlan.price), color: dk ? 'text-emerald-400' : 'text-emerald-600' },
                     { label: 'Type', value: detailPlan.type, color: dk ? 'text-blue-400' : 'text-blue-600' },
-                    { label: t('subscription.table.duration'), value: `${detailPlan.durationInDay} ${t('subscription.days')}`, color: dk ? 'text-amber-400' : 'text-amber-600' },
+                    { label: t('subscription.table.duration'), value: detailPlan.isDefault ? t('subscription.unlimited') : `${detailPlan.durationInDay} ${t('subscription.days')}`, color: dk ? 'text-amber-400' : 'text-amber-600' },
                   ].map((item) => (
                     <div key={item.label} className={`p-3.5 rounded-xl text-center ${dk ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-slate-50 border border-slate-100'}`}>
                       <p className={`text-[11px] font-semibold uppercase tracking-wider ${dk ? 'text-slate-500' : 'text-slate-400'}`}>{item.label}</p>

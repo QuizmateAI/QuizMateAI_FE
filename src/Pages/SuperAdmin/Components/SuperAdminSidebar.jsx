@@ -11,11 +11,17 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 
 // Menu items - giống Admin: Users, Groups + thêm Admin Accounts (RBAC)
 const menuItems = [
-  { icon: Users, labelKey: 'sidebar.users', path: '/super-admin/users', alsoMatch: '/super-admin' },
-  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/super-admin/groups' },
+  { icon: Users, labelKey: 'sidebar.users', path: '/super-admin/users', alsoMatch: '/super-admin', matchPrefix: true },
+  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/super-admin/groups', matchPrefix: true },
   { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/super-admin/subscriptions' },
   { icon: Shield, labelKey: 'sidebar.adminAccounts', path: '/super-admin/admins' },
 ];
+
+const isActive = (item, pathname) => {
+  if (pathname === item.path || pathname === item.alsoMatch) return true;
+  if (item.matchPrefix && pathname.startsWith(item.path + '/')) return true;
+  return false;
+};
 
 function SuperAdminSidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
@@ -84,7 +90,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
             className={cn(
               "w-full flex items-center gap-3 py-3 rounded-lg text-sm font-medium transition-colors",
               collapsed ? "px-0 justify-center" : "px-4",
-              (location.pathname === item.path || location.pathname === item.alsoMatch) 
+              isActive(item, location.pathname) 
                 ? isDarkMode 
                   ? "bg-slate-700 text-white font-semibold" 
                   : "bg-[#c0d3fc] text-black font-semibold"

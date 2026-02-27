@@ -31,12 +31,14 @@ import {
   getAllSystemUsers,
 } from '@/api/ManagementSystemAPI';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { useToast } from '@/context/ToastContext';
 
 const ROLES = ['USER', 'ADMIN', 'SUPER_ADMIN'];
 
 function RbacManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const { showSuccess, showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [activeTab, setActiveTab] = useState('permissions'); // permissions | audit
@@ -45,7 +47,6 @@ function RbacManagement() {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
 
   // User permission modal
   const [selectedUser, setSelectedUser] = useState(null);
@@ -124,11 +125,12 @@ function RbacManagement() {
     setError('');
     try {
       await syncUserPermissions(selectedUser.id, userPermissions);
-      setSuccessMsg('Đã đồng bộ quyền thành công');
-      setTimeout(() => setSuccessMsg(''), 3000);
+      showSuccess(t('rbac.syncSuccess'));
       setUserPermissions(await (await getUserPermissions(selectedUser.id)).data);
     } catch (err) {
-      setError(err?.message || 'Không thể đồng bộ quyền');
+      const msg = err?.message || t('rbac.syncError');
+      setError(msg);
+      showError(msg);
     } finally {
       setIsModalLoading(false);
     }
@@ -166,12 +168,6 @@ function RbacManagement() {
           {error}
         </div>
       )}
-      {successMsg && (
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-100 dark:bg-emerald-900/30 px-4 py-3 text-emerald-700 dark:text-emerald-400">
-          {successMsg}
-        </div>
-      )}
-
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
         {tabs.map((tab) => (
           <button
