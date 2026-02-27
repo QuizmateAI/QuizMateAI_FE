@@ -535,7 +535,8 @@
         "createQuiz": "Create Quiz",
         "createFlashcard": "Create Flashcard",
         "mockTest": "Mock Test",
-        "prelearning": "Pre-learning"
+        "prelearning": "Pre-learning",
+        "postLearning": "Post-learning"
       },
       "outputs": "Generated Outputs",
       "noOutputs": "No outputs yet.",
@@ -807,7 +808,43 @@
       "quizNamePlaceholder": "Enter quiz name...",
       "flashcardNamePlaceholder": "Enter flashcard name...",
       "noQuizYet": "No quiz created yet.",
-      "noFlashcardYet": "No flashcard created yet."
+      "noFlashcardYet": "No flashcard created yet.",
+      "noMockTestYet": "No mock test created yet.",
+      "noPostLearningYet": "No post-learning quiz yet."
+    },
+    "postLearning": {
+      "title": "Post-learning",
+      "createTitle": "Create Post-learning",
+      "createDesc": "Create a post-learning quiz for a specific phase.",
+      "name": "Post-learning Name",
+      "namePlaceholder": "Enter post-learning quiz name...",
+      "selectRoadmap": "Select Roadmap",
+      "selectPhase": "Select Phase",
+      "onePerPhase": "Each phase can have at most one post-learning quiz.",
+      "noItems": "No post-learning quizzes yet.",
+      "allPhasesCovered": "All phases already have a post-learning quiz.",
+      "validation": {
+        "phaseRequired": "Please select a phase.",
+        "postLearningLimit": "This phase already has a post-learning quiz. Only one is allowed per phase.",
+        "phaseAlreadyHas": "This phase already has a post-learning quiz. Please choose another phase."
+      },
+      "detail": {
+        "edit": "Edit"
+      },
+      "edit": {
+        "title": "Edit Post-learning",
+        "desc": "Update post-learning quiz information, questions and answers.",
+        "loading": "Loading post-learning data...",
+        "loadFailed": "Failed to load post-learning data.",
+        "status": "Status",
+        "questionsSection": "Questions",
+        "newTag": "NEW",
+        "save": "Save Changes",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "saveSuccess": "Post-learning updated successfully!",
+        "saveFailed": "Failed to save post-learning. Please try again."
+      }
     },
     "mockTest": {
       "title": "Mock Test",
@@ -825,9 +862,11 @@
       "start": "Start Mock Test",
       "completeAllPhases": "Complete all post-learning tests and phases to unlock the final mock test.",
       "noItems": "No mock tests yet.",
+      "allRoadmapsCovered": "All roadmaps already have a mock test.",
       "validation": {
         "roadmapRequired": "Please select a roadmap.",
-        "mockTestLimit": "This roadmap already has a mock test. Only one is allowed per roadmap."
+        "mockTestLimit": "This roadmap already has a mock test. Only one is allowed per roadmap.",
+        "roadmapAlreadyHas": "This roadmap already has a mock test. Please choose another roadmap."
       },
       "detail": {
         "edit": "Edit"

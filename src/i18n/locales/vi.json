@@ -535,7 +535,8 @@
         "createQuiz": "Tạo Quiz",
         "createFlashcard": "Tạo Flashcard",
         "mockTest": "Mock Test",
-        "prelearning": "Pre-learning"
+        "prelearning": "Pre-learning",
+        "postLearning": "Post-learning"
       },
       "outputs": "Kết quả đã tạo",
       "noOutputs": "Chưa có kết quả nào.",
@@ -807,7 +808,43 @@
       "quizNamePlaceholder": "Nhập tên quiz...",
       "flashcardNamePlaceholder": "Nhập tên flashcard...",
       "noQuizYet": "Chưa có quiz nào.",
-      "noFlashcardYet": "Chưa có flashcard nào."
+      "noFlashcardYet": "Chưa có flashcard nào.",
+      "noMockTestYet": "Chưa có mock test nào.",
+      "noPostLearningYet": "Chưa có bài post-learning nào."
+    },
+    "postLearning": {
+      "title": "Post-learning",
+      "createTitle": "Tạo Post-learning",
+      "createDesc": "Tạo bài kiểm tra sau khi học cho một giai đoạn cụ thể.",
+      "name": "Tên Post-learning",
+      "namePlaceholder": "Nhập tên bài post-learning...",
+      "selectRoadmap": "Chọn Lộ trình",
+      "selectPhase": "Chọn Giai đoạn",
+      "onePerPhase": "Mỗi giai đoạn chỉ được có tối đa một bài post-learning.",
+      "noItems": "Chưa có bài post-learning nào.",
+      "allPhasesCovered": "Tất cả giai đoạn đã có bài post-learning.",
+      "validation": {
+        "phaseRequired": "Vui lòng chọn một giai đoạn.",
+        "postLearningLimit": "Giai đoạn này đã có bài post-learning. Mỗi giai đoạn chỉ được phép có một bài.",
+        "phaseAlreadyHas": "Giai đoạn này đã có bài post-learning. Vui lòng chọn giai đoạn khác."
+      },
+      "detail": {
+        "edit": "Chỉnh sửa"
+      },
+      "edit": {
+        "title": "Chỉnh sửa Post-learning",
+        "desc": "Cập nhật thông tin, câu hỏi và câu trả lời của bài post-learning.",
+        "loading": "Đang tải dữ liệu post-learning...",
+        "loadFailed": "Không thể tải dữ liệu post-learning.",
+        "status": "Trạng thái",
+        "questionsSection": "Câu hỏi",
+        "newTag": "MỚI",
+        "save": "Lưu thay đổi",
+        "saving": "Đang lưu...",
+        "cancel": "Hủy",
+        "saveSuccess": "Cập nhật post-learning thành công!",
+        "saveFailed": "Lưu post-learning thất bại. Vui lòng thử lại."
+      }
     },
     "mockTest": {
       "title": "Mock Test",
@@ -825,9 +862,11 @@
       "start": "Bắt đầu Mock Test",
       "completeAllPhases": "Hoàn thành tất cả post-learning và phase để mở mock test cuối cùng.",
       "noItems": "Chưa có mock test nào.",
+      "allRoadmapsCovered": "Tất cả lộ trình đã có mock test.",
       "validation": {
         "roadmapRequired": "Vui lòng chọn một lộ trình.",
-        "mockTestLimit": "Lộ trình này đã có mock test. Mỗi lộ trình chỉ được phép có một bài."
+        "mockTestLimit": "Lộ trình này đã có mock test. Mỗi lộ trình chỉ được phép có một bài.",
+        "roadmapAlreadyHas": "Lộ trình này đã có mock test. Vui lòng chọn lộ trình khác."
       },
       "detail": {
         "edit": "Chỉnh sửa"

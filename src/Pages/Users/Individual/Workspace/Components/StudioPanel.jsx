@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map, Clock, History } from "lucide-react";
+import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, Award, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map, Clock, History } from "lucide-react";
 
 // Lấy icon và màu theo loại output đã tạo
 function getOutputIcon(type) {
@@ -17,12 +17,13 @@ const STUDIO_ACTIONS = [
   { key: "flashcard", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-950/40" },
   { key: "mockTest", icon: ClipboardList, color: "text-purple-500", bg: "bg-purple-100 dark:bg-purple-950/40" },
   { key: "prelearning", icon: GraduationCap, color: "text-rose-500", bg: "bg-rose-100 dark:bg-rose-950/40" },
+  { key: "postLearning", icon: Award, color: "text-cyan-500", bg: "bg-cyan-100 dark:bg-cyan-950/40" },
 ];
 
 // Lấy action key đang active từ activeView
 function getActiveKey(view) {
   if (!view) return null;
-  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard" };
+  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", createMockTest: "mockTest", createPostLearning: "postLearning" };
   return map[view] || view;
 }
 

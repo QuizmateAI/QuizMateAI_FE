@@ -16,10 +16,8 @@ const BLOOM_LEVELS = [
   { id: 4, key: "analyze" },
   { id: 5, key: "evaluate" },
 ];
-// Danh sách contextType cho Group (ROADMAP dành cho MockTest, không hiển thị WORKSPACE)
-const CONTEXT_TYPES = ["GROUP", "PHASE", "KNOWLEDGE"];
-
 // Form tạo Quiz cho Group — hiển thị inline trong ChatPanel thay vì popup
+// Quiz chỉ tạo trong KNOWLEDGE context (cascade: roadmap → phase → knowledge)
 function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType: defaultContextType = "GROUP", contextId: defaultContextId }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -27,9 +25,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // State quản lý vị trí tạo quiz — Group luôn dùng group hiện tại
-  const [selectedContextType, setSelectedContextType] = useState(defaultContextType);
-  const [selectedContextId, setSelectedContextId] = useState(defaultContextId || "");
+  // State quản lý vị trí tạo quiz — luôn dùng KNOWLEDGE context
+  const [selectedContextType] = useState("KNOWLEDGE");
+  const [selectedContextId, setSelectedContextId] = useState("");
   const [contextLoading, setContextLoading] = useState(false);
 
   // Dữ liệu cascade dropdown: roadmap → phase → knowledge (từ group hiện tại)
@@ -53,23 +51,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     }
   }, [defaultContextId]);
 
-  // Khi thay đổi contextType — reset cascade và auto-fill
-  const handleContextTypeChange = (newType) => {
-    setSelectedContextType(newType);
-    setSelectedContextId(newType === "GROUP" ? (defaultContextId || "") : "");
-    setRoadmaps([]);
-    setPhases([]);
-    setKnowledges([]);
-    setSelectedRoadmapId("");
-    setSelectedPhaseId("");
-  };
-
-  // Tự động tải roadmaps khi chọn PHASE/KNOWLEDGE
+  // Tự động tải roadmaps khi mount (luôn cần cho cascade KNOWLEDGE)
   useEffect(() => {
-    if (["PHASE", "KNOWLEDGE"].includes(selectedContextType)) {
-      loadRoadmaps();
-    }
-  }, [selectedContextType, loadRoadmaps]);
+    loadRoadmaps();
+  }, [loadRoadmaps]);
 
   // Khi chọn roadmap — tải phases cho PHASE/KNOWLEDGE
   const handleRoadmapSelect = useCallback(async (roadmapId) => {
@@ -89,15 +74,12 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     }
   }, [selectedContextType]);
 
-  // Khi chọn phase — nếu contextType=PHASE thì set contextId, nếu KNOWLEDGE thì tải knowledges
+  // Khi chọn phase — tải knowledges (luôn KNOWLEDGE context)
   const handlePhaseSelect = useCallback(async (phaseId) => {
     setSelectedPhaseId(phaseId);
     setKnowledges([]);
-    if (selectedContextType === "PHASE") {
-      setSelectedContextId(phaseId);
-      return;
-    }
-    if (!phaseId) { setSelectedContextId(""); return; }
+    setSelectedContextId("");
+    if (!phaseId) return;
     setContextLoading(true);
     try {
       const res = await getKnowledgesByPhase(phaseId, 0, 100);
@@ -107,7 +89,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     } finally {
       setContextLoading(false);
     }
-  }, [selectedContextType]);
+  }, []);
 
   // Khi chọn knowledge — set contextId
   const handleKnowledgeSelect = (knowledgeId) => {
@@ -127,7 +109,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     if (!selectedRoadmapId) return;
     setSelectedPhaseId("");
     setKnowledges([]);
-    if (selectedContextType === "PHASE") setSelectedContextId("");
+    setSelectedContextId("");
     setContextLoading(true);
     try {
       const res = await getPhasesByRoadmap(selectedRoadmapId, 0, 100);
@@ -141,7 +123,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
   const reloadKnowledges = async () => {
     if (!selectedPhaseId) return;
-    if (selectedContextType === "KNOWLEDGE") setSelectedContextId("");
+    setSelectedContextId("");
     setContextLoading(true);
     try {
       const res = await getKnowledgesByPhase(selectedPhaseId, 0, 100);
@@ -310,94 +292,71 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
               <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
-            {/* Chọn vị trí tạo quiz (Context Type + Context ID) */}
+            {/* Chọn kiến thức (cascade: roadmap → phase → knowledge) */}
             <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-blue-200 bg-blue-50/30"}`}>
               <div className="flex items-center gap-2 mb-1">
                 <MapPin className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
                 <span className={`text-xs font-semibold ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
-                  {t("workspace.quiz.contextSelector.title")}
+                  {t("workspace.quiz.contextSelector.selectKnowledge")}
                 </span>
               </div>
 
-              {/* Dropdown chọn context type */}
+              {/* Chọn roadmap */}
               <div>
-                <label className={labelCls}>{t("workspace.quiz.contextSelector.contextType")}</label>
-                <select className={selectCls} value={selectedContextType} onChange={(e) => handleContextTypeChange(e.target.value)}>
-                  {CONTEXT_TYPES.map((ct) => (
-                    <option key={ct} value={ct}>{t(`workspace.quiz.contextSelector.types.${ct}`)}</option>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectRoadmap")}</span>
+                  <button type="button" onClick={reloadRoadmaps} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                    <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                  </button>
+                </div>
+                <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={contextLoading}>
+                  <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                  {roadmaps.map((rm) => (
+                    <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
+                      {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              {/* GROUP — tự động sử dụng group hiện tại */}
-              {selectedContextType === "GROUP" && (
-                <div className={`text-xs px-3 py-2 rounded-lg flex items-center gap-2 ${isDarkMode ? "bg-green-950/30 text-green-400" : "bg-green-50 text-green-700"}`}>
-                  <BadgeCheck className="w-3.5 h-3.5" />
-                  <span className={fontClass}>{t("workspace.quiz.contextSelector.currentGroup")}</span>
+              {/* Chọn phase */}
+              {selectedRoadmapId && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectPhase")}</span>
+                    <button type="button" onClick={reloadPhases} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                      <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                    </button>
+                  </div>
+                  <select className={selectCls} value={selectedPhaseId} onChange={(e) => handlePhaseSelect(e.target.value)} disabled={contextLoading}>
+                    <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                    {phases.map((ph) => (
+                      <option key={ph.phaseId || ph.id} value={ph.phaseId || ph.id}>
+                        {ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
-              {/* PHASE / KNOWLEDGE — cascade từ group hiện tại */}
-              {(selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && (
-                <>
-                  {/* Chọn roadmap + nút reload */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectRoadmap")}</span>
-                      <button type="button" onClick={reloadRoadmaps} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
-                        <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
-                      </button>
-                    </div>
-                    <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={contextLoading}>
-                      <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
-                      {roadmaps.map((rm) => (
-                        <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
-                          {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
-                        </option>
-                      ))}
-                    </select>
+              {/* Chọn knowledge */}
+              {selectedPhaseId && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectKnowledge")}</span>
+                    <button type="button" onClick={reloadKnowledges} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                      <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                    </button>
                   </div>
-
-                  {/* Chọn phase + nút reload (chỉ cho PHASE và KNOWLEDGE) */}
-                  {(selectedContextType === "PHASE" || selectedContextType === "KNOWLEDGE") && selectedRoadmapId && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectPhase")}</span>
-                        <button type="button" onClick={reloadPhases} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
-                          <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
-                        </button>
-                      </div>
-                      <select className={selectCls} value={selectedPhaseId} onChange={(e) => handlePhaseSelect(e.target.value)} disabled={contextLoading}>
-                        <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
-                        {phases.map((ph) => (
-                          <option key={ph.phaseId || ph.id} value={ph.phaseId || ph.id}>
-                            {ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Chọn knowledge + nút reload (chỉ cho KNOWLEDGE) */}
-                  {selectedContextType === "KNOWLEDGE" && selectedPhaseId && (
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectKnowledge")}</span>
-                        <button type="button" onClick={reloadKnowledges} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
-                          <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
-                        </button>
-                      </div>
-                      <select className={selectCls} value={selectedContextId} onChange={(e) => handleKnowledgeSelect(e.target.value)} disabled={contextLoading}>
-                        <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
-                        {knowledges.map((kn) => (
-                          <option key={kn.knowledgeId || kn.id} value={kn.knowledgeId || kn.id}>
-                            {kn.title || kn.name || `Knowledge #${kn.knowledgeId || kn.id}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </>
+                  <select className={selectCls} value={selectedContextId} onChange={(e) => handleKnowledgeSelect(e.target.value)} disabled={contextLoading}>
+                    <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                    {knowledges.map((kn) => (
+                      <option key={kn.knowledgeId || kn.id} value={kn.knowledgeId || kn.id}>
+                        {kn.title || kn.name || `Knowledge #${kn.knowledgeId || kn.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
 

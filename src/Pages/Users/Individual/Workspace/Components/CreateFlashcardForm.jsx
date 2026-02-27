@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, CreditCard, ArrowLeft, MapPin, RefreshCw, BadgeCheck } from "lucide-react";
+import { Plus, Trash2, Loader2, CreditCard, ArrowLeft, MapPin, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFlashcardSet, addFlashcardItem } from "@/api/FlashcardAPI";
 import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase } from "@/api/RoadmapAPI";
 
 // Danh sách dạng thẻ flashcard
 const CARD_TYPES = ["termDefinition", "questionAnswer", "imageDescription", "cloze"];
-// Danh sách contextType cho Individual Workspace (WORKSPACE mặc định, KNOWLEDGE cần chọn cascade)
-const CONTEXT_TYPES = ["WORKSPACE", "KNOWLEDGE"];
+// Flashcard chỉ tạo trong KNOWLEDGE context (cascade: roadmap → phase → knowledge)
 
 // Form tạo Flashcard — gọi API tạo set rồi thêm items
 function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, contextType: defaultContextType = "WORKSPACE", contextId: defaultContextId }) {
@@ -17,9 +16,9 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
   const [tab, setTab] = useState("manual");
   const [submitting, setSubmitting] = useState(false);
 
-  // State quản lý vị trí tạo flashcard — Individual luôn dùng workspace hiện tại
-  const [selectedContextType, setSelectedContextType] = useState(defaultContextType);
-  const [selectedContextId, setSelectedContextId] = useState(defaultContextId || "");
+  // State quản lý vị trí tạo flashcard — luôn dùng KNOWLEDGE context
+  const [selectedContextType] = useState("KNOWLEDGE");
+  const [selectedContextId, setSelectedContextId] = useState("");
   const [contextLoading, setContextLoading] = useState(false);
 
   // Dữ liệu cascade dropdown: roadmap → phase → knowledge (từ workspace hiện tại)
@@ -43,23 +42,10 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
     }
   }, [defaultContextId]);
 
-  // Khi thay đổi contextType — reset cascade và auto-fill
-  const handleContextTypeChange = (newType) => {
-    setSelectedContextType(newType);
-    setSelectedContextId(newType === "WORKSPACE" ? (defaultContextId || "") : "");
-    setRoadmaps([]);
-    setPhases([]);
-    setKnowledges([]);
-    setSelectedRoadmapId("");
-    setSelectedPhaseId("");
-  };
-
-  // Tự động tải roadmaps khi chọn KNOWLEDGE
+  // Tự động tải roadmaps khi mount (luôn cần cho cascade KNOWLEDGE)
   useEffect(() => {
-    if (selectedContextType === "KNOWLEDGE") {
-      loadRoadmaps();
-    }
-  }, [selectedContextType, loadRoadmaps]);
+    loadRoadmaps();
+  }, [loadRoadmaps]);
 
   // Khi chọn roadmap — tải phases
   const handleRoadmapSelect = useCallback(async (roadmapId) => {
@@ -243,89 +229,64 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
           <div className="flex items-center gap-2 mb-1">
             <MapPin className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
             <span className={`text-xs font-semibold ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
-              {t("workspace.flashcard.contextSelector.title")}
+              {t("workspace.quiz.contextSelector.title")}
             </span>
           </div>
 
-          {/* Dropdown chọn context type */}
+          {/* Cascade: roadmap → phase → knowledge */}
           <div>
-            <label className={labelCls}>{t("workspace.flashcard.contextSelector.contextType")}</label>
-            <select className={selectCls} value={selectedContextType} onChange={(e) => handleContextTypeChange(e.target.value)}>
-              {CONTEXT_TYPES.map((ct) => (
-                <option key={ct} value={ct}>{t(`workspace.flashcard.contextSelector.types.${ct}`)}</option>
+            <div className="flex items-center justify-between mb-1">
+              <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectRoadmap")}</span>
+              <button type="button" onClick={reloadRoadmaps} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+            <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={contextLoading}>
+              <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+              {roadmaps.map((rm) => (
+                <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
+                  {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
+                </option>
               ))}
             </select>
           </div>
 
-          {/* WORKSPACE — tự động sử dụng workspace hiện tại */}
-          {selectedContextType === "WORKSPACE" && (
-            <div className={`text-xs px-3 py-2 rounded-lg flex items-center gap-2 ${isDarkMode ? "bg-green-950/30 text-green-400" : "bg-green-50 text-green-700"}`}>
-              <BadgeCheck className="w-3.5 h-3.5" />
-              <span className={fontClass}>{t("workspace.flashcard.contextSelector.currentWorkspace")}</span>
+          {selectedRoadmapId && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectPhase")}</span>
+                <button type="button" onClick={reloadPhases} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                  <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+              <select className={selectCls} value={selectedPhaseId} onChange={(e) => handlePhaseSelect(e.target.value)} disabled={contextLoading}>
+                <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                {phases.map((ph) => (
+                  <option key={ph.phaseId || ph.id} value={ph.phaseId || ph.id}>
+                    {ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
-          {/* KNOWLEDGE — cascade: roadmap → phase → knowledge */}
-          {selectedContextType === "KNOWLEDGE" && (
-            <>
-              {/* Chọn roadmap + nút reload */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.flashcard.contextSelector.selectRoadmap")}</span>
-                  <button type="button" onClick={reloadRoadmaps} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.flashcard.contextSelector.reload")}>
-                    <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
-                  </button>
-                </div>
-                <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={contextLoading}>
-                  <option value="">{contextLoading ? t("workspace.flashcard.contextSelector.loading") : t("workspace.flashcard.contextSelector.placeholder")}</option>
-                  {roadmaps.map((rm) => (
-                    <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
-                      {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
-                    </option>
-                  ))}
-                </select>
+          {selectedPhaseId && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.quiz.contextSelector.selectKnowledge")}</span>
+                <button type="button" onClick={reloadKnowledges} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.quiz.contextSelector.reload")}>
+                  <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
+                </button>
               </div>
-
-              {/* Chọn phase + nút reload */}
-              {selectedRoadmapId && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.flashcard.contextSelector.selectPhase")}</span>
-                    <button type="button" onClick={reloadPhases} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.flashcard.contextSelector.reload")}>
-                      <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
-                    </button>
-                  </div>
-                  <select className={selectCls} value={selectedPhaseId} onChange={(e) => handlePhaseSelect(e.target.value)} disabled={contextLoading}>
-                    <option value="">{contextLoading ? t("workspace.flashcard.contextSelector.loading") : t("workspace.flashcard.contextSelector.placeholder")}</option>
-                    {phases.map((ph) => (
-                      <option key={ph.phaseId || ph.id} value={ph.phaseId || ph.id}>
-                        {ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Chọn knowledge + nút reload */}
-              {selectedPhaseId && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{t("workspace.flashcard.contextSelector.selectKnowledge")}</span>
-                    <button type="button" onClick={reloadKnowledges} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`} title={t("workspace.flashcard.contextSelector.reload")}>
-                      <RefreshCw className={`w-3 h-3 ${contextLoading ? "animate-spin" : ""}`} />
-                    </button>
-                  </div>
-                  <select className={selectCls} value={selectedContextId} onChange={(e) => handleKnowledgeSelect(e.target.value)} disabled={contextLoading}>
-                    <option value="">{contextLoading ? t("workspace.flashcard.contextSelector.loading") : t("workspace.flashcard.contextSelector.placeholder")}</option>
-                    {knowledges.map((kn) => (
-                      <option key={kn.knowledgeId || kn.id} value={kn.knowledgeId || kn.id}>
-                        {kn.title || kn.name || `Knowledge #${kn.knowledgeId || kn.id}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </>
+              <select className={selectCls} value={selectedContextId} onChange={(e) => handleKnowledgeSelect(e.target.value)} disabled={contextLoading}>
+                <option value="">{contextLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                {knowledges.map((kn) => (
+                  <option key={kn.knowledgeId || kn.id} value={kn.knowledgeId || kn.id}>
+                    {kn.title || kn.name || `Knowledge #${kn.knowledgeId || kn.id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
 

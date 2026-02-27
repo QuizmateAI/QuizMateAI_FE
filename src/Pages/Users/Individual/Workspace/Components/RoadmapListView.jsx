@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Search, X, Plus, ChevronRight, GitBranch, Folder, FileText,
   BadgeCheck, CreditCard, FolderOpen, Clock, Loader2, Trash2,
-  Pencil, GraduationCap, ClipboardList,
+  Pencil, GraduationCap, ClipboardList, Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,8 @@ import {
   createPhase,
   createKnowledge,
 } from "@/api/RoadmapAPI";
+import { getQuizzesByContext, deleteQuiz as deleteQuizAPI } from "@/api/QuizAPI";
+import { getFlashcardsByContext, deleteFlashcardSet } from "@/api/FlashcardAPI";
 
 /* ==================== Helpers ==================== */
 function formatShortDate(dateStr) {
@@ -46,6 +48,14 @@ function RoadmapListView({
   createdItems = [],
   groupId = null,
   workspaceId = null,
+  onNavigateToCreateMockTest,
+  onNavigateToCreatePostLearning,
+  onNavigateToCreateQuiz,
+  onNavigateToCreateFlashcard,
+  onViewMockTest,
+  onViewPostLearning,
+  onViewQuiz,
+  onViewFlashcard,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -62,11 +72,11 @@ function RoadmapListView({
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  // Dữ liệu local state — quiz, flashcard, post-learning, mock test (chưa có API)
+  // Dữ liệu API — mock test, post-learning, quiz, flashcard
+  const [mockTests, setMockTests] = useState([]);
+  const [postLearnings, setPostLearnings] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
-  const [postLearning, setPostLearning] = useState(null);
-  const [mockTest, setMockTest] = useState(null);
 
   // Inline add (thêm phase / knowledge / quiz / flashcard)
   const [addingType, setAddingType] = useState(null);
@@ -124,6 +134,34 @@ function RoadmapListView({
     finally { setLoading(false); }
   }, []);
 
+  // Tải mock test cho roadmap (API thật)
+  const fetchMockTests = useCallback(async (roadmapId) => {
+    try {
+      const res = await getQuizzesByContext("ROADMAP", roadmapId);
+      setMockTests(res.data || []);
+    } catch { setMockTests([]); }
+  }, []);
+
+  // Tải post-learning cho phase (API thật)
+  const fetchPostLearnings = useCallback(async (phaseId) => {
+    try {
+      const res = await getQuizzesByContext("PHASE", phaseId);
+      setPostLearnings(res.data || []);
+    } catch { setPostLearnings([]); }
+  }, []);
+
+  // Tải quiz và flashcard cho knowledge (API thật)
+  const fetchQuizzesAndFlashcards = useCallback(async (knowledgeId) => {
+    try {
+      const [qRes, fRes] = await Promise.all([
+        getQuizzesByContext("KNOWLEDGE", knowledgeId),
+        getFlashcardsByContext("KNOWLEDGE", knowledgeId),
+      ]);
+      setQuizzes((qRes.data || []).map(q => ({ ...q, id: q.quizId, name: q.title, itemType: "quiz" })));
+      setFlashcards((fRes.data || []).map(f => ({ ...f, id: f.flashcardSetId, name: f.flashcardSetName, itemType: "flashcard" })));
+    } catch { setQuizzes([]); setFlashcards([]); }
+  }, []);
+
   /* ==================== NAVIGATION (drill-down / breadcrumb) ==================== */
   const allRoadmaps = useMemo(() => {
     const fromCreated = createdItems.map((rm) => ({
@@ -156,35 +194,34 @@ function RoadmapListView({
       setPath((p) => [...p, { id: item.id, name: item.name, data: item }]);
       setSearchQuery("");
       await fetchPhases(item.id);
-      // Mock test — reset khi vào roadmap mới
-      setMockTest(null);
+      // Tải mock test thực tế cho roadmap này
+      fetchMockTests(item.id);
     } else if (depth === 1) {
       setPath((p) => [...p, { id: item.id, name: item.name, data: item }]);
       setSearchQuery("");
       await fetchKnowledges(item.id);
-      // Post-learning — reset khi vào phase mới
-      setPostLearning(null);
+      // Tải post-learning thực tế cho phase này
+      fetchPostLearnings(item.id);
     } else if (depth === 2) {
-      // Drill vào knowledge → hiện quiz + flashcard (local state, reset)
+      // Drill vào knowledge → tải quiz + flashcard thực tế
       setPath((p) => [...p, { id: item.id, name: item.name, data: item }]);
       setSearchQuery("");
-      setQuizzes([]);
-      setFlashcards([]);
+      fetchQuizzesAndFlashcards(item.id);
     }
   };
 
   const goTo = async (idx) => {
     if (idx === 0) {
       setPath([]); setSearchQuery(""); setPhases([]); setKnowledges([]);
-      setQuizzes([]); setFlashcards([]); setPostLearning(null); setMockTest(null);
+      setQuizzes([]); setFlashcards([]); setPostLearnings([]); setMockTests([]);
     } else if (idx === 1) {
       setPath((p) => p.slice(0, 1)); setSearchQuery(""); setKnowledges([]);
-      setQuizzes([]); setFlashcards([]); setPostLearning(null);
-      if (path[0]) await fetchPhases(path[0].id);
+      setQuizzes([]); setFlashcards([]); setPostLearnings([]);
+      if (path[0]) { await fetchPhases(path[0].id); fetchMockTests(path[0].id); }
     } else if (idx === 2) {
       setPath((p) => p.slice(0, 2)); setSearchQuery("");
       setQuizzes([]); setFlashcards([]);
-      if (path[1]) await fetchKnowledges(path[1].id);
+      if (path[1]) { await fetchKnowledges(path[1].id); fetchPostLearnings(path[1].id); }
     } else {
       setPath((p) => p.slice(0, idx)); setSearchQuery("");
     }
@@ -207,10 +244,12 @@ function RoadmapListView({
         await deleteKnowledge(item.id, path[1]?.id);
         await fetchKnowledges(path[1]?.id);
       } else if (depth === 3) {
-        // Xóa quiz hoặc flashcard — chỉ xóa local state
+        // Xóa quiz hoặc flashcard — gọi API thật
         if (item.itemType === "quiz") {
+          await deleteQuizAPI(item.id);
           setQuizzes((prev) => prev.filter((q) => q.id !== item.id));
         } else if (item.itemType === "flashcard") {
+          await deleteFlashcardSet(item.id);
           setFlashcards((prev) => prev.filter((f) => f.id !== item.id));
         }
       }
@@ -218,28 +257,25 @@ function RoadmapListView({
     finally { setDeletingId(null); }
   };
 
-  /* ==================== CREATE / DELETE đặc biệt (MockTest, PostLearning) — local state ==================== */
-  const handleCreateSpecial = (type) => {
-    if (type === "mockTest") {
-      setMockTest({
-        id: `mock-${Date.now()}`,
-        name: t("workspace.mockTest.title"),
-        status: "ACTIVE",
-        createdAt: new Date().toISOString(),
-      });
-    } else if (type === "postLearning") {
-      setPostLearning({
-        id: `pl-${Date.now()}`,
-        name: t("workspace.roadmap.postLearning"),
-        status: "ACTIVE",
-        createdAt: new Date().toISOString(),
-      });
-    }
+  /* ==================== DELETE MockTest / PostLearning qua API ==================== */
+  const handleDeleteMockTest = async (e, quizId) => {
+    e.stopPropagation();
+    setDeletingId(quizId);
+    try {
+      await deleteQuizAPI(quizId);
+      setMockTests(prev => prev.filter(mt => mt.quizId !== quizId));
+    } catch { /* bỏ qua */ }
+    finally { setDeletingId(null); }
   };
 
-  const handleDeleteSpecial = (type) => {
-    if (type === "mockTest") setMockTest(null);
-    else if (type === "postLearning") setPostLearning(null);
+  const handleDeletePostLearning = async (e, quizId) => {
+    e.stopPropagation();
+    setDeletingId(quizId);
+    try {
+      await deleteQuizAPI(quizId);
+      setPostLearnings(prev => prev.filter(pl => pl.quizId !== quizId));
+    } catch { /* bỏ qua */ }
+    finally { setDeletingId(null); }
   };
 
   /* ==================== INLINE ADD ==================== */
@@ -253,18 +289,6 @@ function RoadmapListView({
       } else if (addingType === "knowledge" && depth === 2) {
         await createKnowledge(path[1].id, { name: addName.trim() });
         await fetchKnowledges(path[1].id);
-      } else if (addingType === "quiz" && depth === 3) {
-        // Tạo quiz — chỉ local state
-        setQuizzes((prev) => [...prev, {
-          id: `quiz-${Date.now()}`, name: addName.trim(),
-          itemType: "quiz", status: "ACTIVE", createdAt: new Date().toISOString(),
-        }]);
-      } else if (addingType === "flashcard" && depth === 3) {
-        // Tạo flashcard — chỉ local state
-        setFlashcards((prev) => [...prev, {
-          id: `fc-${Date.now()}`, name: addName.trim(),
-          itemType: "flashcard", status: "ACTIVE", createdAt: new Date().toISOString(),
-        }]);
       }
     } catch { /* bỏ qua */ }
     finally { setAddLoading(false); setAddingType(null); setAddName(""); }
@@ -293,91 +317,63 @@ function RoadmapListView({
     return "";
   };
 
-  /* ---------- Special Card (MockTest / PostLearning) với CRUD local ---------- */
+  /* ---------- Render section MockTest (depth 1) / PostLearning (depth 2) ---------- */
   const renderSpecialCard = (type) => {
     const isMock = type === "mockTest";
-    const entity = isMock ? mockTest : postLearning;
-    const Icon = isMock ? ClipboardList : GraduationCap;
-    const title = isMock ? t("workspace.mockTest.title") : t("workspace.roadmap.postLearning");
+    const items = isMock ? mockTests : postLearnings;
+    const Icon = isMock ? ClipboardList : Award;
+    const title = isMock ? t("workspace.mockTest.title") : t("workspace.postLearning.title");
+    const limitNote = isMock ? t("workspace.mockTest.onePerRoadmap") : t("workspace.postLearning.onePerPhase");
+    const emptyText = isMock ? t("workspace.roadmap.noMockTestYet") : t("workspace.roadmap.noPostLearningYet");
+    const canCreate = items.length === 0;
+    const onCreate = isMock ? onNavigateToCreateMockTest : onNavigateToCreatePostLearning;
+    const onView = isMock ? onViewMockTest : onViewPostLearning;
+    const onDel = isMock ? handleDeleteMockTest : handleDeletePostLearning;
+    const colorScheme = isMock
+      ? { border: isDarkMode ? "border-purple-700/30 bg-purple-950/10" : "border-purple-200 bg-purple-50/50", iconBg: isDarkMode ? "bg-purple-950/40" : "bg-purple-100", iconColor: "text-purple-500", headerColor: isDarkMode ? "text-purple-300" : "text-purple-700", noteColor: isDarkMode ? "text-purple-400/60" : "text-purple-500/70", itemBg: isDarkMode ? "bg-purple-950/20 hover:bg-purple-950/40 border border-purple-800/30" : "bg-purple-50 hover:bg-purple-100 border border-purple-200", btnColor: isDarkMode ? "text-purple-400 hover:bg-purple-950/30" : "text-purple-600 hover:bg-purple-50" }
+      : { border: isDarkMode ? "border-cyan-700/30 bg-cyan-950/10" : "border-cyan-200 bg-cyan-50/50", iconBg: isDarkMode ? "bg-cyan-950/40" : "bg-cyan-100", iconColor: "text-cyan-500", headerColor: isDarkMode ? "text-cyan-300" : "text-cyan-700", noteColor: isDarkMode ? "text-cyan-400/60" : "text-cyan-500/70", itemBg: isDarkMode ? "bg-cyan-950/20 hover:bg-cyan-950/40 border border-cyan-800/30" : "bg-cyan-50 hover:bg-cyan-100 border border-cyan-200", btnColor: isDarkMode ? "text-cyan-400 hover:bg-cyan-950/30" : "text-cyan-600 hover:bg-cyan-50" };
 
-    // Entity đã tồn tại — hiện thông tin + actions
-    if (entity) {
-      return (
-        <div className={`rounded-xl border-2 p-4 mb-3 transition-all ${
-          isMock
-            ? isDarkMode ? "border-purple-700/50 bg-purple-950/20" : "border-purple-300 bg-purple-50"
-            : isDarkMode ? "border-orange-700/50 bg-orange-950/20" : "border-orange-300 bg-orange-50"
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-              isMock
-                ? isDarkMode ? "bg-purple-950/50" : "bg-purple-100"
-                : isDarkMode ? "bg-orange-950/50" : "bg-orange-100"
-            }`}>
-              <Icon className={`w-5 h-5 ${isMock ? "text-purple-500" : "text-orange-500"}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                {entity.name || title}
-              </p>
-              <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {entity.status || "ACTIVE"}
-                {entity.createdAt && ` · ${formatShortDate(entity.createdAt)}`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" className={`rounded-full text-xs h-8 px-4 transition-all active:scale-95 ${
-                isMock
-                  ? "bg-purple-600 hover:bg-purple-700 text-white"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
-              }`}>
-                {t("workspace.listView.start")}
-              </Button>
-              <button
-                onClick={() => handleDeleteSpecial(type)}
-                className={`p-1.5 rounded-lg transition-all ${
-                  isDarkMode ? "hover:bg-red-950/50 text-red-400" : "hover:bg-red-50 text-red-500"
-                }`}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Chưa có entity — hiện nút tạo mới
     return (
-      <div className={`rounded-xl border-2 border-dashed p-4 mb-3 transition-all ${
-        isMock
-          ? isDarkMode ? "border-purple-700/30 bg-purple-950/10" : "border-purple-200 bg-purple-50/50"
-          : isDarkMode ? "border-orange-700/30 bg-orange-950/10" : "border-orange-200 bg-orange-50/50"
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-            isMock
-              ? isDarkMode ? "bg-purple-950/30" : "bg-purple-100/70"
-              : isDarkMode ? "bg-orange-950/30" : "bg-orange-100/70"
-          }`}>
-            <Icon className={`w-5 h-5 ${isMock ? "text-purple-400" : "text-orange-400"}`} />
+      <div className={`rounded-xl border-2 p-3 mb-3 ${colorScheme.border}`}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Icon className={`w-4 h-4 ${colorScheme.iconColor}`} />
+            <span className={`text-xs font-semibold ${colorScheme.headerColor} ${fontClass}`}>
+              {title} ({items.length})
+            </span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{title}</p>
-            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-              {isMock ? t("workspace.mockTest.completeAllPhases") : t("workspace.roadmap.postLearningDesc")}
-            </p>
-          </div>
-          <Button size="sm" onClick={() => handleCreateSpecial(type)}
-            className={`rounded-full text-xs h-8 px-4 transition-all active:scale-95 ${
-              isMock
-                ? "bg-purple-600 hover:bg-purple-700 text-white"
-                : "bg-orange-500 hover:bg-orange-600 text-white"
-            }`}>
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            {t("workspace.listView.create")}
-          </Button>
+          {canCreate && onCreate && (
+            <button onClick={onCreate}
+              className={`text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all active:scale-95 ${colorScheme.btnColor}`}>
+              <Plus className="w-3.5 h-3.5" /> {t("workspace.listView.create")}
+            </button>
+          )}
         </div>
+        {items.length > 0 ? (
+          <div className="space-y-2">
+            {items.map(item => (
+              <div key={item.quizId} onClick={() => onView?.(item)}
+                className={`rounded-lg px-3 py-2 flex items-center gap-3 cursor-pointer transition-all ${colorScheme.itemBg}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${colorScheme.iconBg}`}>
+                  <Icon className={`w-3.5 h-3.5 ${colorScheme.iconColor}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{item.title}</p>
+                  <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                    {item.status}{item.createdAt && ` · ${formatShortDate(item.createdAt)}`}
+                  </p>
+                </div>
+                <button onClick={(e) => onDel(e, item.quizId)} disabled={deletingId === item.quizId}
+                  className={`p-1.5 rounded-lg transition-all ${isDarkMode ? "hover:bg-red-950/50 text-red-400" : "hover:bg-red-50 text-red-500"}`}>
+                  {deletingId === item.quizId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className={`text-xs text-center py-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{emptyText}</p>
+        )}
+        <p className={`text-[10px] mt-2 ${colorScheme.noteColor} ${fontClass}`}>{limitNote}</p>
       </div>
     );
   };
@@ -455,14 +451,18 @@ function RoadmapListView({
     );
   };
 
-  /* ---------- Render một item (quiz/flashcard) trong depth 3 ---------- */
+  /* ---------- Render một item (quiz/flashcard) trong depth 3 — dữ liệu API ---------- */
   const renderDepth3Item = (item, index) => {
     const isQuiz = item.itemType === "quiz";
-    const isRenaming = renamingId === item.id;
+    const handleView = () => {
+      if (isQuiz) onViewQuiz?.(item);
+      else onViewFlashcard?.(item);
+    };
     return (
       <div
         key={`${item.itemType}-${item.id}-${index}`}
-        className={`rounded-xl px-4 py-3 flex items-center gap-3 transition-all group ${
+        onClick={handleView}
+        className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all group ${
           isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"
         }`}
       >
@@ -476,41 +476,13 @@ function RoadmapListView({
             : <CreditCard className="w-4 h-4 text-amber-500" />}
         </div>
         <div className="flex-1 min-w-0">
-          {isRenaming ? (
-            <input
-              autoFocus
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  // Rename local state
-                  if (isQuiz) setQuizzes((prev) => prev.map((q) => q.id === item.id ? { ...q, name: renameValue.trim() || q.name } : q));
-                  else setFlashcards((prev) => prev.map((f) => f.id === item.id ? { ...f, name: renameValue.trim() || f.name } : f));
-                  setRenamingId(null);
-                }
-                if (e.key === "Escape") setRenamingId(null);
-              }}
-              onBlur={() => {
-                if (isQuiz) setQuizzes((prev) => prev.map((q) => q.id === item.id ? { ...q, name: renameValue.trim() || q.name } : q));
-                else setFlashcards((prev) => prev.map((f) => f.id === item.id ? { ...f, name: renameValue.trim() || f.name } : f));
-                setRenamingId(null);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className={`w-full text-sm font-medium bg-transparent outline-none border-b ${
-                isDarkMode ? "border-blue-400 text-white" : "border-blue-500 text-gray-900"
-              }`}
-            />
-          ) : (
-            <>
-              <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                {item.name}
-              </p>
-              <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {getSubtitle(item)}
-              </p>
-            </>
-          )}
-          {item.createdAt && !isRenaming && (
+          <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+            {item.name}
+          </p>
+          <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+            {getSubtitle(item)}
+          </p>
+          {item.createdAt && (
             <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -520,14 +492,6 @@ function RoadmapListView({
           )}
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={(e) => { e.stopPropagation(); setRenamingId(item.id); setRenameValue(item.name || ""); }}
-            className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${
-              isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"
-            }`}
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
           <button
             onClick={(e) => handleDelete(e, item)}
             disabled={deletingId === item.id}
@@ -623,7 +587,7 @@ function RoadmapListView({
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Loading...</p>
           </div>
         ) : depth === 3 ? (
-          /* ===== Depth 3: Quiz & Flashcard sections với CRUD local ===== */
+          /* ===== Depth 3: Quiz & Flashcard sections — dữ liệu API thật ===== */
           <div className="space-y-5">
             {/* --- Quiz section --- */}
             <div>
@@ -634,8 +598,8 @@ function RoadmapListView({
                     Quiz ({quizzes.length})
                   </span>
                 </div>
-                {addingType !== "quiz" && (
-                  <button onClick={() => { setAddingType("quiz"); setAddName(""); }}
+                {onNavigateToCreateQuiz && (
+                  <button onClick={onNavigateToCreateQuiz}
                     className={`text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all active:scale-95 ${
                       isDarkMode ? "text-blue-400 hover:bg-blue-950/30" : "text-blue-600 hover:bg-blue-50"
                     }`}>
@@ -645,12 +609,11 @@ function RoadmapListView({
               </div>
               <div className="space-y-2">
                 {quizzes.map((quiz, index) => renderDepth3Item(quiz, index))}
-                {quizzes.length === 0 && addingType !== "quiz" && (
+                {quizzes.length === 0 && (
                   <p className={`text-xs text-center py-3 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                     {t("workspace.roadmap.noQuizYet")}
                   </p>
                 )}
-                {addingType === "quiz" && renderAddRow()}
               </div>
             </div>
 
@@ -666,8 +629,8 @@ function RoadmapListView({
                     Flashcard ({flashcards.length})
                   </span>
                 </div>
-                {addingType !== "flashcard" && (
-                  <button onClick={() => { setAddingType("flashcard"); setAddName(""); }}
+                {onNavigateToCreateFlashcard && (
+                  <button onClick={onNavigateToCreateFlashcard}
                     className={`text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all active:scale-95 ${
                       isDarkMode ? "text-amber-400 hover:bg-amber-950/30" : "text-amber-600 hover:bg-amber-50"
                     }`}>
@@ -677,12 +640,11 @@ function RoadmapListView({
               </div>
               <div className="space-y-2">
                 {flashcards.map((fc, index) => renderDepth3Item(fc, index))}
-                {flashcards.length === 0 && addingType !== "flashcard" && (
+                {flashcards.length === 0 && (
                   <p className={`text-xs text-center py-3 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                     {t("workspace.roadmap.noFlashcardYet")}
                   </p>
                 )}
-                {addingType === "flashcard" && renderAddRow()}
               </div>
             </div>
           </div>

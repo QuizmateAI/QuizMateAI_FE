@@ -8,7 +8,11 @@ export const getQuizzesByContext = async (contextType, contextId) => {
   return response;
 };
 
-// Tạo quiz mới (Bước 1)
+// Lấy danh sách quiz của user đang đăng nhập
+export const getQuizzesByUser = async () => {
+  const response = await api.get('/quiz/getByUser');
+  return response;
+};// Tạo quiz mới (Bước 1)
 export const createQuiz = async (data) => {
   const response = await api.post('/quiz/create', data);
   return response;
@@ -156,7 +160,6 @@ export const createFullQuiz = async ({
   maxAttempt,
   overallDifficulty,
   questions = [],
-  status = 'ACTIVE',
 }) => {
   // Bước 1: Tạo quiz
   const quizRes = await createQuiz({
@@ -222,13 +225,13 @@ export const createFullQuiz = async ({
     }
   }
 
-  // Bước 5: Cập nhật quiz với status (ACTIVE hoặc DRAFT), passScore và maxAttempt
+  // Bước 5: Cập nhật quiz sang ACTIVE với passScore và maxAttempt
   const updatedQuiz = await updateQuiz(quizId, {
     contextType,
     contextId,
     quizIntent,
     duration,
-    status,
+    status: 'ACTIVE',
     timerMode,
     maxAttempt: maxAttempt || null,
     passScore: passingScore || null,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X, Plus, CreditCard, FolderOpen, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getFlashcardsByContext } from "@/api/FlashcardAPI";
+import { getFlashcardsByUser } from "@/api/FlashcardAPI";
 
 // Cấu hình màu badge trạng thái
 const STATUS_STYLES = {
@@ -13,7 +13,7 @@ const STATUS_STYLES = {
 const FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT"];
 
 // Danh sách flashcard sets — lấy từ API theo contextType/contextId
-function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onDeleteFlashcard, contextType = "WORKSPACE", contextId }) {
+function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onDeleteFlashcard }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,20 +21,20 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onD
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Lấy danh sách flashcard từ API
+  // Lấy danh sách flashcard của user, lọc theo KNOWLEDGE context
   const fetchFlashcards = useCallback(async () => {
-    if (!contextId) return;
     setLoading(true);
     try {
-      const res = await getFlashcardsByContext(contextType, contextId);
-      setFlashcards(res.data || []);
+      const res = await getFlashcardsByUser();
+      const all = res.data || [];
+      setFlashcards(all.filter(f => f.contextType === "KNOWLEDGE"));
     } catch (err) {
       console.error("Lỗi khi lấy danh sách flashcard:", err);
       setFlashcards([]);
     } finally {
       setLoading(false);
     }
-  }, [contextType, contextId]);
+  }, []);
 
   useEffect(() => {
     fetchFlashcards();

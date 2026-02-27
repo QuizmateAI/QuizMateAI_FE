@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Search, X, ClipboardList, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Search, X, Award, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { getQuizzesByUser, deleteQuiz } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace, getRoadmapsByGroup } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap } from "@/api/RoadmapAPI";
 
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
@@ -24,20 +24,20 @@ const STATUS_STYLE = {
 };
 
 /**
- * MockTestListView — hiển thị danh sách Mock Test (quiz với contextType=ROADMAP)
- * Dùng getQuizzesByUser và lọc theo contextType === "ROADMAP"
+ * PostLearningListView — hiển thị danh sách Post-learning (quiz với contextType=PHASE)
+ * Dùng getQuizzesByUser và lọc theo contextType === "PHASE"
  */
-function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contextType = "WORKSPACE", contextId }) {
+function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLearning, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
-  const [mockTests, setMockTests] = useState([]);
+  const [postLearnings, setPostLearnings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [roadmaps, setRoadmaps] = useState([]);
+  const [allPhaseIds, setAllPhaseIds] = useState([]);
 
-  // Tải danh sách mock test + roadmap để kiểm tra giới hạn
-  const fetchMockTests = useCallback(async () => {
+  // Tải danh sách post-learning + tất cả phases từ roadmaps để kiểm tra giới hạn
+  const fetchPostLearnings = useCallback(async () => {
     setLoading(true);
     try {
       // Tải song song: quizzes + roadmaps
@@ -47,37 +47,49 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
         contextId ? loadRoadmapsFn(contextId, 0, 100) : Promise.resolve({ data: [] }),
       ]);
       const all = quizRes.data || [];
-      setMockTests(all.filter(q => q.contextType === "ROADMAP"));
-      setRoadmaps(rmRes.data?.content || rmRes.data || []);
+      setPostLearnings(all.filter(q => q.contextType === "PHASE"));
+
+      // Tải tất cả phases từ mỗi roadmap
+      const roadmapsList = rmRes.data?.content || rmRes.data || [];
+      const phasePromises = roadmapsList.map(rm =>
+        getPhasesByRoadmap(rm.roadmapId || rm.id, 0, 100).catch(() => ({ data: [] }))
+      );
+      const phaseResults = await Promise.all(phasePromises);
+      const collectedPhaseIds = [];
+      phaseResults.forEach(res => {
+        const phases = res.data?.content || res.data || [];
+        phases.forEach(ph => collectedPhaseIds.push(String(ph.phaseId || ph.id)));
+      });
+      setAllPhaseIds(collectedPhaseIds);
     } catch (err) {
-      console.error("Lỗi tải danh sách mock test:", err);
-      setMockTests([]);
+      console.error("Lỗi tải danh sách post-learning:", err);
+      setPostLearnings([]);
     } finally {
       setLoading(false);
     }
   }, [contextType, contextId]);
 
-  // Tính toán: tất cả roadmaps đã có mocktest chưa
-  const allRoadmapsCovered = useMemo(() => {
-    if (roadmaps.length === 0) return false;
-    const coveredIds = new Set(mockTests.map(mt => String(mt.contextId)));
-    return roadmaps.every(rm => coveredIds.has(String(rm.roadmapId || rm.id)));
-  }, [mockTests, roadmaps]);
+  // Tính toán: tất cả phases đã có post-learning chưa
+  const allPhasesCovered = useMemo(() => {
+    if (allPhaseIds.length === 0) return false;
+    const coveredIds = new Set(postLearnings.map(pl => String(pl.contextId)));
+    return allPhaseIds.every(phaseId => coveredIds.has(phaseId));
+  }, [postLearnings, allPhaseIds]);
 
   useEffect(() => {
-    fetchMockTests();
-  }, [fetchMockTests]);
+    fetchPostLearnings();
+  }, [fetchPostLearnings]);
 
-  // Xóa mock test
+  // Xóa post-learning
   const handleDelete = useCallback(async (e, quizId) => {
     e.stopPropagation();
     if (deletingId) return;
     setDeletingId(quizId);
     try {
       await deleteQuiz(quizId);
-      setMockTests(prev => prev.filter(q => q.quizId !== quizId));
+      setPostLearnings(prev => prev.filter(q => q.quizId !== quizId));
     } catch (err) {
-      console.error("Lỗi xóa mock test:", err);
+      console.error("Lỗi xóa post-learning:", err);
     } finally {
       setDeletingId(null);
     }
@@ -85,49 +97,48 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
 
   // Lọc theo tìm kiếm
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return mockTests;
+    if (!searchQuery.trim()) return postLearnings;
     const query = searchQuery.toLowerCase();
-    return mockTests.filter(mt =>
-      mt.title?.toLowerCase().includes(query) ||
-      mt.roadmapName?.toLowerCase().includes(query)
+    return postLearnings.filter(pl =>
+      pl.title?.toLowerCase().includes(query)
     );
-  }, [mockTests, searchQuery]);
+  }, [postLearnings, searchQuery]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
       {/* Header */}
       <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className="flex items-center gap-2">
-          <ClipboardList className="w-5 h-5 text-purple-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>Mock Test</p>
+          <Award className="w-5 h-5 text-cyan-500" />
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{t("workspace.postLearning.title")}</p>
           <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
-            {mockTests.length}
+            {postLearnings.length}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={fetchMockTests} disabled={loading}
+          <Button variant="outline" onClick={fetchPostLearnings} disabled={loading}
             className={`rounded-full h-9 w-9 p-0 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          {onCreateMockTest && (
-            <Button onClick={onCreateMockTest} disabled={allRoadmapsCovered}
+          {onCreatePostLearning && (
+            <Button onClick={onCreatePostLearning} disabled={allPhasesCovered}
               className={`rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 ${
-                allRoadmapsCovered
+                allPhasesCovered
                   ? "bg-gray-400 dark:bg-slate-600 text-white cursor-not-allowed opacity-60"
-                  : "bg-purple-600 hover:bg-purple-700 text-white"
+                  : "bg-cyan-600 hover:bg-cyan-700 text-white"
               }`}
-              title={allRoadmapsCovered ? t("workspace.mockTest.allRoadmapsCovered") : ""}>
+              title={allPhasesCovered ? t("workspace.postLearning.allPhasesCovered") : ""}>
               <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Thông báo tất cả roadmaps đã có mock test */}
-      {allRoadmapsCovered && (
+      {/* Thông báo tất cả phases đã có post-learning */}
+      {allPhasesCovered && (
         <div className={`mx-4 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${isDarkMode ? "bg-amber-950/30 text-amber-400" : "bg-amber-50 text-amber-700"}`}>
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-          <span>{t("workspace.mockTest.allRoadmapsCovered")}</span>
+          <span>{t("workspace.postLearning.allPhasesCovered")}</span>
         </div>
       )}
 
@@ -151,39 +162,35 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
           <div className="flex flex-col items-center justify-center py-16">
             <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {searchQuery ? t("workspace.listView.noResults") : t("workspace.mockTest.noItems")}
+              {searchQuery ? t("workspace.listView.noResults") : t("workspace.postLearning.noItems")}
             </p>
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.map(mt => {
-              const statusStyle = STATUS_STYLE[mt.status] || STATUS_STYLE.DRAFT;
+            {filtered.map(pl => {
+              const statusStyle = STATUS_STYLE[pl.status] || STATUS_STYLE.DRAFT;
               return (
-                <div key={mt.quizId} onClick={() => onViewMockTest?.(mt)}
+                <div key={pl.quizId} onClick={() => onViewPostLearning?.(pl)}
                   className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-purple-950/40" : "bg-purple-100"}`}>
-                    <ClipboardList className="w-4 h-4 text-purple-500" />
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-cyan-950/40" : "bg-cyan-100"}`}>
+                    <Award className="w-4 h-4 text-cyan-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{mt.title}</p>
+                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{pl.title}</p>
                     <p className={`text-xs mt-0.5 flex items-center gap-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      {mt.duration > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{mt.duration} {t("workspace.quiz.minutes")}</span>}
+                      {pl.duration > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{pl.duration} {t("workspace.quiz.minutes")}</span>}
                       <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${isDarkMode ? statusStyle.dark : statusStyle.light}`}>
-                        {t(`workspace.quiz.statusLabels.${mt.status}`)}
+                        {t(`workspace.quiz.statusLabels.${pl.status}`)}
                       </span>
                     </p>
                     <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(mt.createdAt)}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(pl.createdAt)}</span>
                     </div>
                   </div>
-                  {/* Badge tên roadmap */}
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? "bg-emerald-950/50 text-emerald-400" : "bg-emerald-100 text-emerald-700"}`}>
-                    {mt.roadmapName}
-                  </span>
                   {/* Nút xóa */}
-                  <button onClick={(e) => handleDelete(e, mt.quizId)}
+                  <button onClick={(e) => handleDelete(e, pl.quizId)}
                     className={`p-1.5 rounded-lg transition-all active:scale-95 ${isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"}`}>
-                    {deletingId === mt.quizId ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                    {deletingId === pl.quizId ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
                   </button>
                 </div>
               );
@@ -195,4 +202,4 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
   );
 }
 
-export default MockTestListView;
+export default PostLearningListView;

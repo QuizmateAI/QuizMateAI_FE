@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getQuizzesByContext, deleteQuiz } from "@/api/QuizAPI";
+import { getQuizzesByUser, deleteQuiz } from "@/api/QuizAPI";
 
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
@@ -34,7 +34,7 @@ const INTENT_STYLES = {
 // Bộ lọc theo trạng thái
 const STATUS_FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT", "COMPLETED"];
 
-function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WORKSPACE", contextId }) {
+function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,20 +43,20 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  // Lấy danh sách quiz từ API
+  // Lấy danh sách quiz của user, lọc theo KNOWLEDGE context
   const fetchQuizzes = useCallback(async () => {
-    if (!contextId) return;
     setLoading(true);
     try {
-      const res = await getQuizzesByContext(contextType, contextId);
-      setQuizzes(res.data || []);
+      const res = await getQuizzesByUser();
+      const all = res.data || [];
+      setQuizzes(all.filter(q => q.contextType === "KNOWLEDGE"));
     } catch (err) {
       console.error("Lỗi khi lấy danh sách quiz:", err);
       setQuizzes([]);
     } finally {
       setLoading(false);
     }
-  }, [contextType, contextId]);
+  }, []);
 
   // Gọi API khi component mount hoặc context thay đổi
   useEffect(() => {

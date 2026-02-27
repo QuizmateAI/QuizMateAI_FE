@@ -6,6 +6,12 @@ export const getFlashcardsByContext = async (contextType, contextId) => {
   return response;
 };
 
+// Lấy danh sách flashcard của user đang đăng nhập
+export const getFlashcardsByUser = async () => {
+  const response = await api.get('/flashcards/getByUser');
+  return response;
+};
+
 // Tạo flashcard set mới (trạng thái DRAFT)
 export const createFlashcardSet = async (data) => {
   const response = await api.post('/flashcards/create', data);
