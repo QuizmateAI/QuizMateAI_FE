@@ -54,8 +54,12 @@
       "submit": "Create Admin",
       "cancel": "Cancel",
       "success": "Admin account created successfully.",
-      "error": "Failed to create admin account."
-    }
+      "error": "Failed to create admin account.",
+      "passwordMismatch": "Password confirmation does not match.",
+      "passwordTooShort": "Password must be at least 6 characters."
+    },
+    "syncSuccess": "Permissions synced successfully.",
+    "syncError": "Failed to sync permissions."
   },
   "header": {
     "systemTitle": "QuizMate AI System",
@@ -80,7 +84,9 @@
     "permissionsList": "Permissions List",
     "userRoleManagement": "User Role & Permissions Management",
     "userRoleDesc": "Shows only ADMIN and SUPER_ADMIN accounts.",
-    "auditLogs": "RBAC Audit Logs"
+    "auditLogs": "RBAC Audit Logs",
+    "syncSuccess": "Permissions synced successfully.",
+    "syncError": "Failed to sync permissions."
   },
   "subscription": {
     "title": "Subscription Management",
@@ -120,6 +126,8 @@
     "deleteSuccess": "Plan deleted successfully!",
     "submitError": "Failed to save plan.",
     "deleteError": "Failed to delete plan.",
+    "planInUse": "This plan has at least 1 user using it",
+    "defaultPlanExists": "A default plan already exists for {{type}}. Only 1 INDIVIDUAL default and 1 GROUP default plan are allowed.",
     "tabs": {
       "plans": "Plans",
       "subscriptions": "Subscriptions"
@@ -151,7 +159,8 @@
     "stats": {
       "totalPlans": "Total Plans",
       "activeSubs": "Active Plans",
-      "individual": "Plan Types",
+      "individual": "Individual",
+      "group": "Group",
       "totalRevenue": "Total Revenue"
     }
   },
@@ -900,7 +909,59 @@
       "INACTIVE": "Inactive",
       "BANNED": "Banned"
     },
-    "changeStatus": "Change Status"
+    "changeStatus": "Change Status",
+    "viewDetail": "View Detail"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Overview",
+      "workspaces": "Workspaces",
+      "groups": "Groups",
+      "logs": "Logs",
+      "subscription": "Subscription"
+    },
+    "workspacesCount": "Workspaces",
+    "groupsCount": "Groups",
+    "subscription": "Current Plan",
+    "noPlan": "No plan",
+    "createdAt": "Created At",
+    "noWorkspaces": "No workspaces yet.",
+    "roadmaps": "Roadmaps",
+    "noRoadmaps": "No roadmaps.",
+    "noGroups": "Not in any groups.",
+    "members": "members",
+    "noLogs": "No logs yet.",
+    "noSubscription": "No subscription.",
+    "status": "Status",
+    "endDate": "End Date",
+    "price": "Price",
+    "noDetail": "Cannot load detail."
+  },
+  "groupDetail": {
+    "description": "Description",
+    "membersList": "Members list",
+    "tabs": {
+      "overview": "Overview",
+      "members": "Members",
+      "content": "Content",
+      "logs": "Logs",
+      "subscription": "Subscription"
+    },
+    "members": "members",
+    "leader": "Leader",
+    "membersCount": "Members",
+    "roadmapsCount": "Roadmaps",
+    "subscription": "Current Plan",
+    "noPlan": "No plan",
+    "createdAt": "Created At",
+    "noMembers": "No members yet.",
+    "roadmaps": "Roadmaps",
+    "noRoadmaps": "No roadmaps.",
+    "noLogs": "No logs yet.",
+    "noSubscription": "No subscription.",
+    "status": "Status",
+    "endDate": "End Date",
+    "price": "Price"
   },
   "groupPage": {
     "title": "Group Management",
