@@ -99,11 +99,6 @@ function CreateNewDialog({
         ? t('home.workspace.topicRequired')
         : t('home.group.topicRequired');
     }
-    if (!subjectId) {
-      newErrors.subjectId = mode === 'workspace'
-        ? t('home.workspace.subjectRequired')
-        : t('home.group.subjectRequired');
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -118,13 +113,13 @@ function CreateNewDialog({
       if (mode === 'workspace') {
         await onCreateWorkspace({
           topicId: Number(topicId),
-          subjectId: Number(subjectId),
+          ...(subjectId ? { subjectId: Number(subjectId) } : {}),
           title: wsTitle.trim(),
         });
       } else {
         await onCreateGroup({
           topicId: Number(topicId),
-          subjectId: Number(subjectId),
+          ...(subjectId ? { subjectId: Number(subjectId) } : {}),
           groupName: groupName.trim(),
           description: description.trim(),
         });
@@ -304,10 +299,10 @@ function CreateNewDialog({
             {errors.topicId && <p className="text-red-500 text-xs mt-1">{errors.topicId}</p>}
           </div>
 
-          {/* Chọn Subject (chung cho cả 2 mode) */}
+          {/* Chọn Subject (không bắt buộc) */}
           <div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t(`${topicNs}.subjectLabel`)}
+              {t(`${topicNs}.subjectLabel`)} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
             </label>
             <div className="relative">
               <select

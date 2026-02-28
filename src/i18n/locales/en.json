@@ -72,7 +72,8 @@
     "light": "Light",
     "dark": "Dark",
     "refresh": "Refresh",
-    "subscription": "Subscription Plans"
+    "subscription": "Subscription Plans",
+    "optional": "optional"
   },
   "rbac": {
     "title": "RBAC System",
@@ -591,14 +592,20 @@
       "timerModeHintOff": "Each question has its own time limit",
       "minutes": "min",
       "addQuestion": "Add question",
+      "totalQuestions": "Total questions",
       "questionType": "Question type",
+      "questionTypeLabel": "Type",
+      "difficultyLabel": "Difficulty",
+      "bloomLabel": "Bloom level",
       "questionText": "Question text",
+      "questionTextLabel": "Question content",
       "questionDuration": "Time limit (seconds)",
       "explanation": "Explanation",
       "explanationPlaceholder": "Explain the correct answer...",
       "answers": "Answers",
       "addAnswer": "Add answer",
       "correctAnswer": "Correct answer",
+      "correctAnswerLabel": "Correct answer",
       "deleteQuiz": "Delete quiz",
       "loading": "Loading quizzes...",
       "types": {
@@ -663,6 +670,38 @@
           "ROADMAP": "Roadmap",
           "PHASE": "Phase",
           "KNOWLEDGE": "Knowledge"
+        }
+      },
+      "quickCreate": {
+        "emptyRoadmap": "You don't have any roadmaps yet.",
+        "emptyPhase": "This roadmap has no phases yet.",
+        "emptyKnowledge": "This phase has no knowledge items yet.",
+        "createBtn": "Create",
+        "titleRequired": "Please enter a name.",
+        "createFailed": "Failed to create. Please try again.",
+        "name": "Name",
+        "description": "Description",
+        "cancel": "Cancel",
+        "create": "Create",
+        "creating": "Creating...",
+        "roadmap": {
+          "title": "Create Roadmap",
+          "desc": "Quickly create a new learning roadmap.",
+          "namePlaceholder": "e.g. JavaScript Fundamentals",
+          "descPlaceholder": "Brief description of this roadmap..."
+        },
+        "phase": {
+          "title": "Create Phase",
+          "desc": "Add a new phase to the selected roadmap.",
+          "namePlaceholder": "e.g. Phase 1: Basics",
+          "descPlaceholder": "What will be covered in this phase...",
+          "studyDuration": "Study duration (days)"
+        },
+        "knowledge": {
+          "title": "Create Knowledge",
+          "desc": "Add a new knowledge item to the selected phase.",
+          "namePlaceholder": "e.g. Variables & Data Types",
+          "descPlaceholder": "Brief description of this knowledge..."
         }
       },
       "aiConfig": {
@@ -816,7 +855,13 @@
       "quizNamePlaceholder": "Enter quiz name...",
       "flashcardNamePlaceholder": "Enter flashcard name...",
       "noQuizYet": "No quiz created yet.",
-      "noFlashcardYet": "No flashcard created yet."
+      "noFlashcardYet": "No flashcard created yet.",
+      "gridView": "Grid view",
+      "listView": "List view",
+      "phaseDescPlaceholder": "Enter phase description...",
+      "knowledgeDescPlaceholder": "Enter knowledge description...",
+      "description": "Description",
+      "doubleClickToRename": "Double-click to rename"
     },
     "mockTest": {
       "title": "Mock Test",
