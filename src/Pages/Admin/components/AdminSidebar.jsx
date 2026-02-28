@@ -12,10 +12,16 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 
 const ALL_MENU_ITEMS = [
-  { icon: Users, labelKey: 'sidebar.users', path: '/admin/users', alsoMatch: '/admin', requiredPerm: 'user:read' },
-  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/admin/groups', requiredPerm: 'group:read_all' },
+  { icon: Users, labelKey: 'sidebar.users', path: '/admin/users', alsoMatch: '/admin', requiredPerm: 'user:read', matchPrefix: true },
+  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/admin/groups', requiredPerm: 'group:read_all', matchPrefix: true },
   { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/admin/subscriptions', requiredPerm: 'subscription:read' },
 ];
+
+const isActive = (item, pathname) => {
+  if (pathname === item.path || pathname === item.alsoMatch) return true;
+  if (item.matchPrefix && pathname.startsWith(item.path + '/')) return true;
+  return false;
+};
 
 function AdminSidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
@@ -89,7 +95,7 @@ function AdminSidebar({ collapsed, onToggle }) {
             className={cn(
               "w-full flex items-center gap-3 py-3 rounded-lg text-sm font-medium transition-colors",
               collapsed ? "px-0 justify-center" : "px-4",
-              (location.pathname === item.path || location.pathname === item.alsoMatch) 
+              isActive(item, location.pathname) 
                 ? isDarkMode 
                   ? "bg-slate-700 text-white font-semibold" 
                   : "bg-[#c0d3fc] text-black font-semibold"
