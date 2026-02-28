@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Users, Eye, MoreHorizontal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -19,27 +20,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAllGroups, getGroupDetail } from '@/api/ManagementSystemAPI';
+import { getAllGroups } from '@/api/ManagementSystemAPI';
 import AdminPagination from './components/AdminPagination';
 
 function GroupManagement() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 0,
     size: 10,
@@ -94,23 +88,6 @@ function GroupManagement() {
   // Thay đổi kích thước trang
   const handlePageSizeChange = (newSize) => {
     fetchGroups(0, newSize);
-  };
-
-  // Xem chi tiết nhóm
-  const handleViewDetail = async (groupId) => {
-    setDetailLoading(true);
-    setIsDetailOpen(true);
-    setSelectedGroup(null);
-    try {
-      const response = await getGroupDetail(groupId);
-      const data = response?.data ?? response;
-      setSelectedGroup(data || null);
-    } catch (err) {
-      console.error('Lỗi khi lấy chi tiết group:', err);
-      setSelectedGroup(null);
-    } finally {
-      setDetailLoading(false);
-    }
   };
 
   // Lọc groups theo search term
@@ -188,12 +165,12 @@ function GroupManagement() {
             <Table>
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  <TableHead className="w-[60px] font-bold text-slate-500">{t('groupPage.table.id')}</TableHead>
-                  <TableHead className="w-[200px] font-bold text-slate-500">{t('groupPage.table.name')}</TableHead>
-                  <TableHead className="font-bold text-slate-500">{t('groupPage.table.description')}</TableHead>
-                  <TableHead className="w-[120px] font-bold text-slate-500">{t('groupPage.table.members')}</TableHead>
-                  <TableHead className="w-[150px] font-bold text-slate-500">{t('groupPage.table.leader')}</TableHead>
-                  <TableHead className="w-[120px] font-bold text-slate-500">{t('groupPage.table.createdAt')}</TableHead>
+                  <TableHead className="w-[60px] font-bold text-slate-500 text-left">{t('groupPage.table.id')}</TableHead>
+                  <TableHead className="w-[200px] font-bold text-slate-500 text-left">{t('groupPage.table.name')}</TableHead>
+                  <TableHead className="font-bold text-slate-500 text-left">{t('groupPage.table.description')}</TableHead>
+                  <TableHead className="w-[120px] font-bold text-slate-500 text-left">{t('groupPage.table.members')}</TableHead>
+                  <TableHead className="w-[150px] font-bold text-slate-500 text-left">{t('groupPage.table.leader')}</TableHead>
+                  <TableHead className="w-[120px] font-bold text-slate-500 text-left">{t('groupPage.table.createdAt')}</TableHead>
                   <TableHead className="text-right w-[80px] font-bold text-slate-500">{t('groupPage.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -209,14 +186,15 @@ function GroupManagement() {
                   filteredGroups.map((group) => (
                     <TableRow 
                       key={group.groupId ?? group.id} 
-                      className={`border-b transition-colors ${
+                      onClick={() => navigate(`${basePath}/groups/${group.groupId ?? group.id}`)}
+                      className={`border-b transition-colors cursor-pointer ${
                         isDarkMode 
                           ? 'border-slate-800 hover:bg-slate-800/50' 
                           : 'border-slate-100 hover:bg-slate-50/50'
                       }`}
                     >
-                      <TableCell className="font-bold text-blue-600 dark:text-blue-400">{group.groupId ?? group.id}</TableCell>
-                      <TableCell className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                      <TableCell className="font-bold text-blue-600 dark:text-blue-400 text-left">{group.groupId ?? group.id}</TableCell>
+                      <TableCell className={`font-semibold text-left ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         <div className="flex items-center gap-2">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
@@ -226,21 +204,23 @@ function GroupManagement() {
                           {group.groupName || group.name}
                         </div>
                       </TableCell>
-                      <TableCell className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} truncate max-w-[200px]`}>
+                      <TableCell className={`text-left ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} truncate max-w-[200px]`}>
                         {group.description || '-'}
                       </TableCell>
-                      <TableCell>
-                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg px-2.5 py-0.5 border-none">
+                      <TableCell className="text-left align-top whitespace-nowrap">
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg px-2.5 py-0.5 border-none whitespace-nowrap inline-flex">
                           {group.memberCount ?? 0} {t('groupPage.members')}
                         </Badge>
                       </TableCell>
-                      <TableCell className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                        {group.createdByFullName || group.createdByUsername || group.leaderName || '-'}
+                      <TableCell className="text-left align-top whitespace-nowrap">
+                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg px-2.5 py-0.5 border-none whitespace-nowrap inline-flex">
+                          {group.createdByFullName || group.createdByUsername || group.leaderName || '-'}
+                        </Badge>
                       </TableCell>
-                      <TableCell className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <TableCell className={`text-left text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {formatDate(group.createdAt)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
@@ -249,7 +229,7 @@ function GroupManagement() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className={`w-48 ${isDarkMode ? 'bg-slate-800 border-slate-700' : ''}`}>
                             <DropdownMenuItem 
-                              onClick={() => handleViewDetail(group.groupId ?? group.id)}
+                              onClick={() => navigate(`${basePath}/groups/${group.groupId ?? group.id}`)}
                               className="cursor-pointer"
                             >
                               <Eye className="w-4 h-4 mr-2 text-blue-500" />
@@ -286,89 +266,6 @@ function GroupManagement() {
         </CardContent>
       </Card>
 
-      {/* Group Detail Dialog */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className={`max-w-lg ${isDarkMode ? 'bg-slate-900 border-slate-800' : ''}`}>
-          <DialogHeader>
-            <DialogTitle className={isDarkMode ? 'text-white' : ''}>
-              {t('groupPage.detailTitle')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('groupPage.detailDesc')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {detailLoading ? (
-            <div className="py-10 text-center">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-500" />
-            </div>
-          ) : selectedGroup ? (
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                <p className="text-sm text-slate-500">{t('groupPage.table.name')}</p>
-                <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {selectedGroup.groupName || selectedGroup.name}
-                </p>
-              </div>
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                <p className="text-sm text-slate-500">{t('groupPage.table.description')}</p>
-                <p className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                  {selectedGroup.description || '-'}
-                </p>
-              </div>
-              <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                <p className="text-sm text-slate-500 mb-2">Chủ nhóm / Người tạo</p>
-                <p className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>
-                  {selectedGroup.createdByFullName || selectedGroup.createdByUsername || '-'}
-                </p>
-              </div>
-              {selectedGroup.topicName && (
-                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                  <p className="text-sm text-slate-500">Chủ đề</p>
-                  <p className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>{selectedGroup.topicName}</p>
-                </div>
-              )}
-              {selectedGroup.members && selectedGroup.members.length > 0 && (
-                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-                  <p className="text-sm text-slate-500 mb-3">Thành viên ({selectedGroup.members.length})</p>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {selectedGroup.members.map((m) => (
-                      <div
-                        key={m.groupMemberId ?? m.userId}
-                        className={`flex items-center justify-between py-2 border-b last:border-0 ${
-                          isDarkMode ? 'border-slate-700' : 'border-slate-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {m.avatar ? (
-                            <img src={m.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
-                          ) : (
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              isDarkMode ? 'bg-slate-700' : 'bg-slate-200'
-                            }`}>
-                              <Users className="w-4 h-4 text-slate-400" />
-                            </div>
-                          )}
-                          <div>
-                            <p className={`font-medium text-sm ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                              {m.fullName || m.username}
-                            </p>
-                            <p className="text-xs text-slate-500">{m.role}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-10 text-center text-slate-400">
-              {t('groupPage.noDetail')}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

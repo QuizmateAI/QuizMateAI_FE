@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz, getQuizzesByContext } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
+import QuickCreateDialog from "./QuickCreateDialog";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -39,6 +40,14 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [selectedRoadmapId, setSelectedRoadmapId] = useState("");
   const [selectedPhaseId, setSelectedPhaseId] = useState("");
 
+  // Cờ đánh dấu đã tải xong từng cấp (để phân biệt mảng rỗng do chưa tải vs không có dữ liệu)
+  const [roadmapsLoaded, setRoadmapsLoaded] = useState(false);
+  const [phasesLoaded, setPhasesLoaded] = useState(false);
+  const [knowledgesLoaded, setKnowledgesLoaded] = useState(false);
+
+  // State quản lý dialog tạo nhanh
+  const [quickCreateType, setQuickCreateType] = useState(null); // "roadmap" | "phase" | "knowledge" | null
+
   // Tải danh sách roadmap từ workspace hiện tại
   const loadRoadmaps = useCallback(async () => {
     if (!defaultContextId) return;
@@ -50,6 +59,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       console.error("Lỗi tải roadmaps:", e);
     } finally {
       setContextLoading(false);
+      setRoadmapsLoaded(true);
     }
   }, [defaultContextId]);
 
@@ -62,6 +72,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     setKnowledges([]);
     setSelectedRoadmapId("");
     setSelectedPhaseId("");
+    setRoadmapsLoaded(false);
+    setPhasesLoaded(false);
+    setKnowledgesLoaded(false);
   };
 
   // Tự động tải roadmaps khi chọn PHASE/KNOWLEDGE
@@ -86,6 +99,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       console.error("Lỗi tải phases:", e);
     } finally {
       setContextLoading(false);
+      setPhasesLoaded(true);
     }
   }, [selectedContextType]);
 
@@ -106,6 +120,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       console.error("Lỗi tải knowledges:", e);
     } finally {
       setContextLoading(false);
+      setKnowledgesLoaded(true);
     }
   }, [selectedContextType]);
 
@@ -120,6 +135,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     setPhases([]);
     setKnowledges([]);
     setSelectedPhaseId("");
+    setRoadmapsLoaded(false);
+    setPhasesLoaded(false);
+    setKnowledgesLoaded(false);
     loadRoadmaps();
   };
 
@@ -136,6 +154,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       console.error("Lỗi tải phases:", e);
     } finally {
       setContextLoading(false);
+      setPhasesLoaded(true);
     }
   };
 
@@ -150,8 +169,36 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       console.error("Lỗi tải knowledges:", e);
     } finally {
       setContextLoading(false);
+      setKnowledgesLoaded(true);
     }
   };
+
+  // Hàm tạo nhanh — bind parentId rồi truyền cho QuickCreateDialog
+  const getQuickCreateFn = () => {
+    if (quickCreateType === "roadmap") return (data) => createRoadmapForWorkspace({ ...data, workspaceId: defaultContextId });
+    if (quickCreateType === "phase") return (data) => createPhase(selectedRoadmapId, data);
+    if (quickCreateType === "knowledge") return (data) => createKnowledge(selectedPhaseId, data);
+    return null;
+  };
+
+  // Callback sau khi tạo nhanh thành công — reload dropdown tương ứng
+  const handleQuickCreated = () => {
+    if (quickCreateType === "roadmap") reloadRoadmaps();
+    else if (quickCreateType === "phase") reloadPhases();
+    else if (quickCreateType === "knowledge") reloadKnowledges();
+  };
+
+  // Component hiển thị empty state + nút tạo nhanh
+  const EmptyState = ({ messageKey, createType }) => (
+    <div className={`flex items-center gap-2 text-xs px-3 py-2.5 rounded-lg ${isDarkMode ? "bg-amber-950/20 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+      <span className={`flex-1 ${fontClass}`}>{t(messageKey)}</span>
+      <button type="button" onClick={() => setQuickCreateType(createType)}
+        className={`shrink-0 text-[11px] font-medium px-2 py-1 rounded-md transition-all active:scale-95 ${isDarkMode ? "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}>
+        <Plus className="w-3 h-3 inline mr-0.5" />{t("workspace.quiz.quickCreate.createBtn")}
+      </button>
+    </div>
+  );
 
   // State cho tab Manual
   const [name, setName] = useState("");
@@ -162,6 +209,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [timerMode, setTimerMode] = useState(true);
   const [overallDifficulty, setOverallDifficulty] = useState("medium");
   const [questions, setQuestions] = useState([]);
+  const [totalQuestions, setTotalQuestions] = useState(0);
 
   // State cho tab AI
   const [aiName, setAiName] = useState("");
@@ -170,17 +218,37 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [aiDuration, setAiDuration] = useState(30);
   const [aiPrompt, setAiPrompt] = useState("");
 
+  // Tự động sinh câu hỏi khi thay đổi tổng số câu
+  const handleTotalQuestionsChange = (val) => {
+    const count = Math.max(0, Number(val));
+    setTotalQuestions(count);
+    if (count === 0) { setQuestions([]); return; }
+    setQuestions((prev) => {
+      if (count > prev.length) {
+        const toAdd = count - prev.length;
+        const newItems = Array.from({ length: toAdd }, () => ({
+          type: "multipleChoice", text: "", difficulty: "medium", bloomId: 1, duration: 0, explanation: "",
+          answers: [{ text: "", correct: false }, { text: "", correct: false }],
+        }));
+        return [...prev, ...newItems];
+      }
+      return prev.slice(0, count);
+    });
+  };
+
   // Thêm câu hỏi mới (manual)
   const addQuestion = () => {
     setQuestions((prev) => [...prev, {
       type: "multipleChoice", text: "", difficulty: "medium", bloomId: 1, duration: 0, explanation: "",
       answers: [{ text: "", correct: false }, { text: "", correct: false }],
     }]);
+    setTotalQuestions((prev) => prev + 1);
   };
 
   // Xóa câu hỏi
   const removeQuestion = (idx) => {
     setQuestions((prev) => prev.filter((_, i) => i !== idx));
+    setTotalQuestions((prev) => Math.max(0, prev - 1));
   };
 
   // Cập nhật câu hỏi
@@ -356,6 +424,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                         </option>
                       ))}
                     </select>
+                    {/* Thông báo không có roadmap + nút tạo nhanh */}
+                    {!contextLoading && roadmapsLoaded && roadmaps.length === 0 && (
+                      <EmptyState messageKey="workspace.quiz.quickCreate.emptyRoadmap" createType="roadmap" />
+                    )}
                   </div>
 
                   {/* Chọn phase + nút reload (chỉ cho PHASE và KNOWLEDGE) */}
@@ -375,6 +447,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                           </option>
                         ))}
                       </select>
+                      {/* Thông báo không có phase + nút tạo nhanh */}
+                      {!contextLoading && phasesLoaded && phases.length === 0 && (
+                        <EmptyState messageKey="workspace.quiz.quickCreate.emptyPhase" createType="phase" />
+                      )}
                     </div>
                   )}
 
@@ -395,6 +471,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                           </option>
                         ))}
                       </select>
+                      {/* Thông báo không có knowledge + nút tạo nhanh */}
+                      {!contextLoading && knowledgesLoaded && knowledges.length === 0 && (
+                        <EmptyState messageKey="workspace.quiz.quickCreate.emptyKnowledge" createType="knowledge" />
+                      )}
                     </div>
                   )}
                 </>
@@ -456,6 +536,12 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
             {/* Danh sách câu hỏi */}
             <div className="space-y-3">
+              {/* Ô nhập tổng số câu hỏi — auto generate */}
+              <div>
+                <label className={labelCls}>{t("workspace.quiz.totalQuestions")}</label>
+                <input type="number" className={inputCls} value={totalQuestions} onChange={(e) => handleTotalQuestionsChange(e.target.value)} min={0} placeholder="0" />
+              </div>
+
               {questions.map((q, qIdx) => (
                 <div key={qIdx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center justify-between">
@@ -467,19 +553,31 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
                   {/* Loại câu hỏi + Độ khó + Bloom */}
                   <div className="grid grid-cols-3 gap-2">
-                    <select className={selectCls} value={q.type} onChange={(e) => updateQuestion(qIdx, "type", e.target.value)}>
-                      {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`workspace.quiz.types.${qt}`)}</option>)}
-                    </select>
-                    <select className={selectCls} value={q.difficulty} onChange={(e) => updateQuestion(qIdx, "difficulty", e.target.value)}>
-                      {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
-                    </select>
-                    <select className={selectCls} value={q.bloomId} onChange={(e) => updateQuestion(qIdx, "bloomId", Number(e.target.value))}>
-                      {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`workspace.quiz.bloomLevels.${b.key}`)}</option>)}
-                    </select>
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.questionTypeLabel")}</label>
+                      <select className={selectCls} value={q.type} onChange={(e) => updateQuestion(qIdx, "type", e.target.value)}>
+                        {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`workspace.quiz.types.${qt}`)}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.difficultyLabel")}</label>
+                      <select className={selectCls} value={q.difficulty} onChange={(e) => updateQuestion(qIdx, "difficulty", e.target.value)}>
+                        {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.bloomLabel")}</label>
+                      <select className={selectCls} value={q.bloomId} onChange={(e) => updateQuestion(qIdx, "bloomId", Number(e.target.value))}>
+                        {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`workspace.quiz.bloomLevels.${b.key}`)}</option>)}
+                      </select>
+                    </div>
                   </div>
 
                   {/* Nội dung câu hỏi */}
-                  <input className={inputCls} placeholder={t("workspace.quiz.questionText")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
+                  <div>
+                    <label className={labelCls}>{t("workspace.quiz.questionTextLabel")}</label>
+                    <input className={inputCls} placeholder={t("workspace.quiz.questionText")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
+                  </div>
 
                   {/* Thời gian mỗi câu (giây) — chỉ hiện khi timerMode=false */}
                   <div className={`grid ${!timerMode ? "grid-cols-2" : ""} gap-2`}>
@@ -524,15 +622,21 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                     </div>
                   )}
                   {q.type === "trueFalse" && (
-                    <select className={selectCls} value={q.correctAnswer || "true"}
-                      onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)}>
-                      <option value="true">True</option>
-                      <option value="false">False</option>
-                    </select>
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.correctAnswerLabel")}</label>
+                      <select className={selectCls} value={q.correctAnswer || "true"}
+                        onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)}>
+                        <option value="true">True</option>
+                        <option value="false">False</option>
+                      </select>
+                    </div>
                   )}
                   {(q.type === "fillBlank" || q.type === "shortAnswer") && (
-                    <input className={inputCls} placeholder={t("workspace.quiz.correctAnswer")} value={q.correctAnswer || ""}
-                      onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)} />
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.correctAnswerLabel")}</label>
+                      <input className={inputCls} placeholder={t("workspace.quiz.correctAnswer")} value={q.correctAnswer || ""}
+                        onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)} />
+                    </div>
                   )}
                 </div>
               ))}
@@ -591,6 +695,16 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           }
         </Button>
       </div>
+
+      {/* Dialog tạo nhanh Roadmap / Phase / Knowledge */}
+      <QuickCreateDialog
+        open={!!quickCreateType}
+        onOpenChange={(val) => { if (!val) setQuickCreateType(null); }}
+        type={quickCreateType || "roadmap"}
+        isDarkMode={isDarkMode}
+        createFn={getQuickCreateFn()}
+        onCreated={handleQuickCreated}
+      />
     </div>
   );
 }

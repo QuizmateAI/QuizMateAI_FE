@@ -54,8 +54,12 @@
       "submit": "Tạo Admin",
       "cancel": "Hủy",
       "success": "Tạo tài khoản admin thành công.",
-      "error": "Tạo tài khoản admin thất bại."
-    }
+      "error": "Tạo tài khoản admin thất bại.",
+      "passwordMismatch": "Mật khẩu xác nhận không khớp.",
+      "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự."
+    },
+    "syncSuccess": "Đã đồng bộ quyền thành công.",
+    "syncError": "Không thể đồng bộ quyền."
   },
   "header": {
     "systemTitle": "Hệ thống QuizMate AI",
@@ -68,7 +72,8 @@
     "light": "Sáng",
     "dark": "Tối",
     "refresh": "Làm mới",
-    "subscription": "Gói đăng ký"
+    "subscription": "Gói đăng ký",
+    "optional": "tùy chọn"
   },
   "rbac": {
     "title": "Phân quyền RBAC",
@@ -80,7 +85,9 @@
     "permissionsList": "Danh sách Permissions",
     "userRoleManagement": "Quản lý Role & Permissions người dùng",
     "userRoleDesc": "Chỉ hiển thị tài khoản ADMIN và SUPER_ADMIN.",
-    "auditLogs": "Nhật ký kiểm toán RBAC"
+    "auditLogs": "Nhật ký kiểm toán RBAC",
+    "syncSuccess": "Đã đồng bộ quyền thành công.",
+    "syncError": "Không thể đồng bộ quyền."
   },
   "subscription": {
     "title": "Quản lý gói đăng ký",
@@ -120,6 +127,8 @@
     "deleteSuccess": "Xóa gói thành công!",
     "submitError": "Không thể lưu gói.",
     "deleteError": "Không thể xóa gói.",
+    "planInUse": "Gói này đang có ít nhất 1 người sử dụng",
+    "defaultPlanExists": "Đã tồn tại gói mặc định cho loại {{type}}. Chỉ có thể có 1 gói INDIVIDUAL default và 1 gói GROUP default.",
     "tabs": {
       "plans": "Gói đăng ký",
       "subscriptions": "Đăng ký"
@@ -151,7 +160,8 @@
     "stats": {
       "totalPlans": "Tổng số gói",
       "activeSubs": "Gói đang hoạt động",
-      "individual": "Loại gói",
+      "individual": "Cá nhân",
+      "group": "Nhóm",
       "totalRevenue": "Tổng doanh thu"
     }
   },
@@ -582,14 +592,20 @@
       "timerModeHintOff": "Mỗi câu hỏi có thời gian riêng",
       "minutes": "phút",
       "addQuestion": "Thêm câu hỏi",
+      "totalQuestions": "Tổng số câu hỏi",
       "questionType": "Dạng câu hỏi",
+      "questionTypeLabel": "Loại",
+      "difficultyLabel": "Độ khó",
+      "bloomLabel": "Cấp Bloom",
       "questionText": "Nội dung câu hỏi",
+      "questionTextLabel": "Nội dung câu hỏi",
       "questionDuration": "Giới hạn thời gian (giây)",
       "explanation": "Giải thích",
       "explanationPlaceholder": "Giải thích đáp án đúng...",
       "answers": "Câu trả lời",
       "addAnswer": "Thêm đáp án",
       "correctAnswer": "Đáp án đúng",
+      "correctAnswerLabel": "Đáp án đúng",
       "deleteQuiz": "Xóa quiz",
       "loading": "Đang tải danh sách quiz...",
       "types": {
@@ -654,6 +670,38 @@
           "ROADMAP": "Lộ trình",
           "PHASE": "Giai đoạn",
           "KNOWLEDGE": "Kiến thức"
+        }
+      },
+      "quickCreate": {
+        "emptyRoadmap": "Bạn chưa có roadmap nào.",
+        "emptyPhase": "Roadmap này chưa có phase nào.",
+        "emptyKnowledge": "Phase này chưa có kiến thức nào.",
+        "createBtn": "Tạo mới",
+        "titleRequired": "Vui lòng nhập tên.",
+        "createFailed": "Tạo mới thất bại. Vui lòng thử lại.",
+        "name": "Tên",
+        "description": "Mô tả",
+        "cancel": "Hủy",
+        "create": "Tạo",
+        "creating": "Đang tạo...",
+        "roadmap": {
+          "title": "Tạo Roadmap",
+          "desc": "Tạo nhanh một lộ trình học tập mới.",
+          "namePlaceholder": "VD: Nền tảng JavaScript",
+          "descPlaceholder": "Mô tả ngắn về lộ trình này..."
+        },
+        "phase": {
+          "title": "Tạo Phase",
+          "desc": "Thêm phase mới vào roadmap đã chọn.",
+          "namePlaceholder": "VD: Giai đoạn 1: Cơ bản",
+          "descPlaceholder": "Nội dung của giai đoạn này...",
+          "studyDuration": "Thời gian học (ngày)"
+        },
+        "knowledge": {
+          "title": "Tạo Kiến thức",
+          "desc": "Thêm kiến thức mới vào phase đã chọn.",
+          "namePlaceholder": "VD: Biến & Kiểu dữ liệu",
+          "descPlaceholder": "Mô tả ngắn về kiến thức này..."
         }
       },
       "aiConfig": {
@@ -807,7 +855,13 @@
       "quizNamePlaceholder": "Nhập tên quiz...",
       "flashcardNamePlaceholder": "Nhập tên flashcard...",
       "noQuizYet": "Chưa có quiz nào.",
-      "noFlashcardYet": "Chưa có flashcard nào."
+      "noFlashcardYet": "Chưa có flashcard nào.",
+      "gridView": "Dạng lưới",
+      "listView": "Dạng danh sách",
+      "phaseDescPlaceholder": "Nhập mô tả cho phase...",
+      "knowledgeDescPlaceholder": "Nhập mô tả cho knowledge...",
+      "description": "Mô tả",
+      "doubleClickToRename": "Nhấp đúp để đổi tên"
     },
     "mockTest": {
       "title": "Mock Test",
@@ -900,7 +954,59 @@
       "INACTIVE": "Không hoạt động",
       "BANNED": "Bị cấm"
     },
-    "changeStatus": "Đổi trạng thái"
+    "changeStatus": "Đổi trạng thái",
+    "viewDetail": "Xem chi tiết"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Tổng quan",
+      "workspaces": "Workspaces",
+      "groups": "Nhóm",
+      "logs": "Nhật ký",
+      "subscription": "Gói"
+    },
+    "workspacesCount": "Số workspace",
+    "groupsCount": "Số nhóm",
+    "subscription": "Gói hiện tại",
+    "noPlan": "Chưa có gói",
+    "createdAt": "Ngày tạo",
+    "noWorkspaces": "Chưa có workspace nào.",
+    "roadmaps": "Roadmap",
+    "noRoadmaps": "Chưa có roadmap.",
+    "noGroups": "Chưa tham gia nhóm nào.",
+    "members": "thành viên",
+    "noLogs": "Chưa có nhật ký.",
+    "noSubscription": "Chưa có gói đăng ký.",
+    "status": "Trạng thái",
+    "endDate": "Ngày hết hạn",
+    "price": "Giá",
+    "noDetail": "Không thể tải chi tiết."
+  },
+  "groupDetail": {
+    "description": "Mô tả",
+    "membersList": "Danh sách thành viên",
+    "tabs": {
+      "overview": "Tổng quan",
+      "members": "Thành viên",
+      "content": "Nội dung",
+      "logs": "Nhật ký",
+      "subscription": "Gói"
+    },
+    "members": "thành viên",
+    "leader": "Chủ nhóm",
+    "membersCount": "Số thành viên",
+    "roadmapsCount": "Số roadmap",
+    "subscription": "Gói hiện tại",
+    "noPlan": "Chưa có gói",
+    "createdAt": "Ngày tạo",
+    "noMembers": "Chưa có thành viên.",
+    "roadmaps": "Roadmap",
+    "noRoadmaps": "Chưa có roadmap.",
+    "noLogs": "Chưa có nhật ký.",
+    "noSubscription": "Chưa có gói đăng ký.",
+    "status": "Trạng thái",
+    "endDate": "Ngày hết hạn",
+    "price": "Giá"
   },
   "groupPage": {
     "title": "Quản lý nhóm",
