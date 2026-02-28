@@ -73,7 +73,6 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
     const newErrors = {};
     if (!title.trim()) newErrors.title = t('home.workspace.titleRequired');
     if (!topicId) newErrors.topicId = t('home.workspace.topicRequired');
-    if (!subjectId) newErrors.subjectId = t('home.workspace.subjectRequired');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,7 +85,7 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
     try {
       await onEdit(workspace.workspaceId, {
         topicId: Number(topicId),
-        subjectId: Number(subjectId),
+        ...(subjectId ? { subjectId: Number(subjectId) } : {}),
         title: title.trim(),
       });
       onOpenChange(false);
@@ -166,10 +165,10 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
             {errors.topicId && <p className="text-red-500 text-xs mt-1">{errors.topicId}</p>}
           </div>
 
-          {/* Chọn Subject */}
+          {/* Chọn Subject (không bắt buộc) */}
           <div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.workspace.subjectLabel')}
+              {t('home.workspace.subjectLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
             </label>
             <div className="relative">
               <select

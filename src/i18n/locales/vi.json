@@ -72,7 +72,8 @@
     "light": "Sáng",
     "dark": "Tối",
     "refresh": "Làm mới",
-    "subscription": "Gói đăng ký"
+    "subscription": "Gói đăng ký",
+    "optional": "tùy chọn"
   },
   "rbac": {
     "title": "Phân quyền RBAC",
@@ -591,14 +592,20 @@
       "timerModeHintOff": "Mỗi câu hỏi có thời gian riêng",
       "minutes": "phút",
       "addQuestion": "Thêm câu hỏi",
+      "totalQuestions": "Tổng số câu hỏi",
       "questionType": "Dạng câu hỏi",
+      "questionTypeLabel": "Loại",
+      "difficultyLabel": "Độ khó",
+      "bloomLabel": "Cấp Bloom",
       "questionText": "Nội dung câu hỏi",
+      "questionTextLabel": "Nội dung câu hỏi",
       "questionDuration": "Giới hạn thời gian (giây)",
       "explanation": "Giải thích",
       "explanationPlaceholder": "Giải thích đáp án đúng...",
       "answers": "Câu trả lời",
       "addAnswer": "Thêm đáp án",
       "correctAnswer": "Đáp án đúng",
+      "correctAnswerLabel": "Đáp án đúng",
       "deleteQuiz": "Xóa quiz",
       "loading": "Đang tải danh sách quiz...",
       "types": {
@@ -663,6 +670,38 @@
           "ROADMAP": "Lộ trình",
           "PHASE": "Giai đoạn",
           "KNOWLEDGE": "Kiến thức"
+        }
+      },
+      "quickCreate": {
+        "emptyRoadmap": "Bạn chưa có roadmap nào.",
+        "emptyPhase": "Roadmap này chưa có phase nào.",
+        "emptyKnowledge": "Phase này chưa có kiến thức nào.",
+        "createBtn": "Tạo mới",
+        "titleRequired": "Vui lòng nhập tên.",
+        "createFailed": "Tạo mới thất bại. Vui lòng thử lại.",
+        "name": "Tên",
+        "description": "Mô tả",
+        "cancel": "Hủy",
+        "create": "Tạo",
+        "creating": "Đang tạo...",
+        "roadmap": {
+          "title": "Tạo Roadmap",
+          "desc": "Tạo nhanh một lộ trình học tập mới.",
+          "namePlaceholder": "VD: Nền tảng JavaScript",
+          "descPlaceholder": "Mô tả ngắn về lộ trình này..."
+        },
+        "phase": {
+          "title": "Tạo Phase",
+          "desc": "Thêm phase mới vào roadmap đã chọn.",
+          "namePlaceholder": "VD: Giai đoạn 1: Cơ bản",
+          "descPlaceholder": "Nội dung của giai đoạn này...",
+          "studyDuration": "Thời gian học (ngày)"
+        },
+        "knowledge": {
+          "title": "Tạo Kiến thức",
+          "desc": "Thêm kiến thức mới vào phase đã chọn.",
+          "namePlaceholder": "VD: Biến & Kiểu dữ liệu",
+          "descPlaceholder": "Mô tả ngắn về kiến thức này..."
         }
       },
       "aiConfig": {
@@ -816,7 +855,13 @@
       "quizNamePlaceholder": "Nhập tên quiz...",
       "flashcardNamePlaceholder": "Nhập tên flashcard...",
       "noQuizYet": "Chưa có quiz nào.",
-      "noFlashcardYet": "Chưa có flashcard nào."
+      "noFlashcardYet": "Chưa có flashcard nào.",
+      "gridView": "Dạng lưới",
+      "listView": "Dạng danh sách",
+      "phaseDescPlaceholder": "Nhập mô tả cho phase...",
+      "knowledgeDescPlaceholder": "Nhập mô tả cho knowledge...",
+      "description": "Mô tả",
+      "doubleClickToRename": "Nhấp đúp để đổi tên"
     },
     "mockTest": {
       "title": "Mock Test",
