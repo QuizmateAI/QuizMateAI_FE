@@ -311,168 +311,224 @@ const LoginPageContent = () => {
           {/* --- VIEW: REGISTER --- */}
           {view === 'register' && (
             <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-              {/* Nút quay về Login */}
+              {/* Nút quay về Login hoặc quay lại form đăng ký */}
               <button
-                onClick={() => { setView('login'); registerHook.setError(''); registerHook.setSuccessMessage(''); }}
+                onClick={() => {
+                  if (registerHook.registerStep === 'otp') {
+                    // Quay lại bước nhập form
+                    registerHook.setRegisterStep('form');
+                    registerHook.setOtp('');
+                    registerHook.setError('');
+                    registerHook.setSuccessMessage('');
+                  } else {
+                    setView('login');
+                    registerHook.resetRegisterState();
+                  }
+                }}
                 className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-6 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" /> {t('auth.backToLogin')}
+                <ChevronLeft className="w-4 h-4" /> {registerHook.registerStep === 'otp' ? (t('auth.backToRegisterForm') || 'Quay lại') : t('auth.backToLogin')}
               </button>
 
               <div className="mb-6">
-                <h1 className="text-4xl font-semibold text-[#313131] dark:text-white mb-4">{t('auth.signUpTitle')}</h1>
-                <p className="text-gray-500 dark:text-slate-400">{t('auth.signUpSubtitle')}</p>
+                <h1 className="text-4xl font-semibold text-[#313131] dark:text-white mb-4">
+                  {registerHook.registerStep === 'otp' ? (t('auth.verifyEmailTitle') || 'Xác thực Email') : t('auth.signUpTitle')}
+                </h1>
+                <p className="text-gray-500 dark:text-slate-400">
+                  {registerHook.registerStep === 'otp'
+                    ? (t('auth.registerOtpSubtitle') || `Nhập mã OTP đã được gửi đến ${registerHook.formData.email}`)
+                    : t('auth.signUpSubtitle')}
+                </p>
               </div>
 
-              <form className="space-y-4" onSubmit={registerHook.handleRegisterSubmit}>
-                {/* Error Message */}
-                {registerHook.error && view === 'register' && (
-                  <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                    {registerHook.error}
-                  </div>
-                )}
-
-                {/* Success Message */}
-                {registerHook.successMessage && view === 'register' && (
-                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
-                    {registerHook.successMessage}
-                  </div>
-                )}
-
-                {/* Fullname */}
-                <div>
-                  <FloatingInput
-                    id="fullname"
-                    type="text"
-                    label={t('auth.fullname') || 'Họ và tên'}
-                    value={registerHook.formData.fullname}
-                    onChange={registerHook.handleChange('fullname')}
-                  />
-                  {registerHook.fieldErrors?.fullname && (
-                    <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.fullname}</p>
-                  )}
+              {/* Error Message */}
+              {registerHook.error && view === 'register' && (
+                <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+                  {registerHook.error}
                 </div>
+              )}
 
-                {/* Username */}
-                <div>
-                  <FloatingInput
-                    id="register-username"
-                    type="text"
-                    label={t('auth.username') || 'Username'}
-                    value={registerHook.formData.username}
-                    onChange={registerHook.handleChange('username')}
-                  />
-                  {registerHook.fieldErrors?.username && (
-                    <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.username}</p>
-                  )}
+              {/* Success Message */}
+              {registerHook.successMessage && view === 'register' && (
+                <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 text-sm">
+                  {registerHook.successMessage}
                 </div>
+              )}
 
-                {/* Email */}
-                <div>
-                  <FloatingInput
-                    id="register-email"
-                    type="email"
-                    label={t('auth.email')}
-                    value={registerHook.formData.email}
-                    onChange={registerHook.handleChange('email')}
-                  />
-                  {registerHook.fieldErrors?.email && (
-                    <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.email}</p>
-                  )}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <FloatingPasswordInput
-                    id="register-password"
-                    label={t('auth.password')}
-                    value={registerHook.formData.password}
-                    onChange={registerHook.handleChange('password')}
-                    showPassword={registerHook.showPassword}
-                    onTogglePassword={() => registerHook.setShowPassword(!registerHook.showPassword)}
-                  />
-                  {registerHook.fieldErrors?.password && (
-                    <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.password}</p>
-                  )}
-                </div>
-
-                {/* Confirm Password */}
-                <div>
-                  <FloatingPasswordInput
-                    id="confirmPassword"
-                    label={t('auth.confirmPassword')}
-                    value={registerHook.formData.confirmPassword}
-                    onChange={registerHook.handleChange('confirmPassword')}
-                    showPassword={registerHook.showConfirmPassword}
-                    onTogglePassword={() => registerHook.setShowConfirmPassword(!registerHook.showConfirmPassword)}
-                  />
-                  {registerHook.fieldErrors?.confirmPassword && (
-                    <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.confirmPassword}</p>
-                  )}
-                </div>
-
-                {/* Terms and Conditions */}
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="agreeToTerms"
-                    checked={registerHook.formData.agreeToTerms}
-                    onCheckedChange={(checked) => registerHook.setFormData(prev => ({ ...prev, agreeToTerms: checked }))}
-                    required
-                    className="border-gray-300 dark:border-slate-600 data-[state=checked]:bg-[#0455BF] dark:data-[state=checked]:bg-blue-600"
-                  />
-                  <label htmlFor="agreeToTerms" className="text-sm text-[#313131] dark:text-slate-300 cursor-pointer leading-relaxed">
-                    {t('auth.agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.terms')}</a> {t('auth.and')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.privacyPolicies')}</a>
-                  </label>
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  disabled={registerHook.isLoading}
-                  className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
-                >
-                  {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.createAccount')}
-                </Button>
-
-                {/* Login Link */}
-                <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
-                  {t('auth.alreadyHaveAccount')} {' '}
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setView('login');
-                      registerHook.setError('');
-                    }}
-                    className="text-[#FF8682] hover:underline cursor-pointer"
-                  >
-                    {t('auth.login')}
-                  </a>
-                </p>
-
-                {/* Divider */}
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
-                  <span className="flex-shrink mx-4 text-gray-400 dark:text-slate-500 text-sm">{t('auth.orRegisterWith')}</span>
-                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
-                </div>
-
-                {/* Social Login Buttons - Register View */}
-                <div className="flex justify-center w-full mt-2">
-                  <div className="w-full flex justify-center">
-                    <GoogleLogin
-                      onSuccess={loginHook.handleGoogleSubmit}
-                      onError={() => console.log('Login Failed')}
-                      useOneTap
-                      theme={isDarkMode ? 'filled_black' : 'outline'}
-                      shape="pill"
-                      width="384"
-                      text="signin_with"
-                      locale={currentLang}
+              {/* --- BƯỚC 1: Form đăng ký --- */}
+              {registerHook.registerStep === 'form' && (
+                <form className="space-y-4" onSubmit={registerHook.handleRegisterSubmit}>
+                  {/* Fullname */}
+                  <div>
+                    <FloatingInput
+                      id="fullname"
+                      type="text"
+                      label={t('auth.fullname') || 'Họ và tên'}
+                      value={registerHook.formData.fullname}
+                      onChange={registerHook.handleChange('fullname')}
                     />
+                    {registerHook.fieldErrors?.fullname && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.fullname}</p>
+                    )}
                   </div>
-                </div>
-              </form>
+
+                  {/* Username */}
+                  <div>
+                    <FloatingInput
+                      id="register-username"
+                      type="text"
+                      label={t('auth.username') || 'Username'}
+                      value={registerHook.formData.username}
+                      onChange={registerHook.handleChange('username')}
+                    />
+                    {registerHook.fieldErrors?.username && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.username}</p>
+                    )}
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <FloatingInput
+                      id="register-email"
+                      type="email"
+                      label={t('auth.email')}
+                      value={registerHook.formData.email}
+                      onChange={registerHook.handleChange('email')}
+                    />
+                    {registerHook.fieldErrors?.email && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.email}</p>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <FloatingPasswordInput
+                      id="register-password"
+                      label={t('auth.password')}
+                      value={registerHook.formData.password}
+                      onChange={registerHook.handleChange('password')}
+                      showPassword={registerHook.showPassword}
+                      onTogglePassword={() => registerHook.setShowPassword(!registerHook.showPassword)}
+                    />
+                    {registerHook.fieldErrors?.password && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.password}</p>
+                    )}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <FloatingPasswordInput
+                      id="confirmPassword"
+                      label={t('auth.confirmPassword')}
+                      value={registerHook.formData.confirmPassword}
+                      onChange={registerHook.handleChange('confirmPassword')}
+                      showPassword={registerHook.showConfirmPassword}
+                      onTogglePassword={() => registerHook.setShowConfirmPassword(!registerHook.showConfirmPassword)}
+                    />
+                    {registerHook.fieldErrors?.confirmPassword && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.confirmPassword}</p>
+                    )}
+                  </div>
+
+                  {/* Terms and Conditions */}
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="agreeToTerms"
+                      checked={registerHook.formData.agreeToTerms}
+                      onCheckedChange={(checked) => registerHook.setFormData(prev => ({ ...prev, agreeToTerms: checked }))}
+                      required
+                      className="border-gray-300 dark:border-slate-600 data-[state=checked]:bg-[#0455BF] dark:data-[state=checked]:bg-blue-600"
+                    />
+                    <label htmlFor="agreeToTerms" className="text-sm text-[#313131] dark:text-slate-300 cursor-pointer leading-relaxed">
+                      {t('auth.agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.terms')}</a> {t('auth.and')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.privacyPolicies')}</a>
+                    </label>
+                  </div>
+
+                  {/* Submit Button - Gửi OTP */}
+                  <Button
+                    type="submit"
+                    disabled={registerHook.isLoading}
+                    className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
+                  >
+                    {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.createAccount')}
+                  </Button>
+
+                  {/* Login Link */}
+                  <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
+                    {t('auth.alreadyHaveAccount')} {' '}
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setView('login');
+                        registerHook.resetRegisterState();
+                      }}
+                      className="text-[#FF8682] hover:underline cursor-pointer"
+                    >
+                      {t('auth.login')}
+                    </a>
+                  </p>
+
+                  {/* Divider */}
+                  <div className="relative flex items-center py-2">
+                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+                    <span className="flex-shrink mx-4 text-gray-400 dark:text-slate-500 text-sm">{t('auth.orRegisterWith')}</span>
+                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+                  </div>
+
+                  {/* Social Login Buttons - Register View */}
+                  <div className="flex justify-center w-full mt-2">
+                    <div className="w-full flex justify-center">
+                      <GoogleLogin
+                        onSuccess={loginHook.handleGoogleSubmit}
+                        onError={() => console.log('Login Failed')}
+                        useOneTap
+                        theme={isDarkMode ? 'filled_black' : 'outline'}
+                        shape="pill"
+                        width="384"
+                        text="signin_with"
+                        locale={currentLang}
+                      />
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {/* --- BƯỚC 2: Xác thực OTP --- */}
+              {registerHook.registerStep === 'otp' && (
+                <form className="space-y-6" onSubmit={registerHook.handleVerifyOTPAndRegister}>
+                  <FloatingInput
+                    id="register-otp-code"
+                    type="text"
+                    label={t('auth.otpCode') || 'Mã OTP'}
+                    value={registerHook.otp}
+                    onChange={registerHook.handleOtpChange}
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={registerHook.isLoading}
+                    className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
+                  >
+                    {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (t('auth.verifyAndRegister') || 'Xác thực & Đăng ký')}
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={registerHook.handleResendOTP}
+                    disabled={registerHook.isLoading}
+                    className="w-full text-center text-sm text-gray-500 dark:text-slate-400 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors disabled:opacity-50"
+                  >
+                    {t('auth.resendOTP') || 'Gửi lại mã OTP'}
+                  </button>
+
+                  {/* Progress Indicator */}
+                  <div className="flex justify-center items-center gap-2 mt-4">
+                    <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-slate-700 transition-colors"></div>
+                    <div className="w-3 h-3 rounded-full bg-[#0455BF] dark:bg-blue-500 transition-colors"></div>
+                  </div>
+                </form>
+              )}
             </div>
           )}
         </div>

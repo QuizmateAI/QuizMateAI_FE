@@ -29,10 +29,20 @@ export const useForgotPassword = (setView, t) => {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Trim email trước khi gửi
+    const trimmedEmail = forgotPasswordData.email.trim();
+    setForgotPasswordData(prev => ({ ...prev, email: trimmedEmail }));
+    
+    if (!trimmedEmail) {
+      setError(t('validation.emailRequired') || 'Email không được để trống');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      const response = await sendOTP(forgotPasswordData.email);
+      const response = await sendOTP(trimmedEmail);
       if (response.statusCode === 200 || response.statusCode === 0) {
         setSuccessMessage(t('auth.otpSent') || 'Mã OTP đã được gửi đến email của bạn');
         setForgotPasswordStep('otp');
@@ -47,10 +57,15 @@ export const useForgotPassword = (setView, t) => {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Trim OTP trước khi gửi
+    const trimmedOtp = forgotPasswordData.otp.trim();
+    setForgotPasswordData(prev => ({ ...prev, otp: trimmedOtp }));
+    
     setIsLoading(true);
     
     try {
-      const response = await verifyOTP(forgotPasswordData.email, forgotPasswordData.otp);
+      const response = await verifyOTP(forgotPasswordData.email.trim(), trimmedOtp);
       if (response.statusCode === 200 || response.statusCode === 0) {
         setSuccessMessage(t('auth.otpVerified') || 'Xác thực OTP thành công');
         setForgotPasswordStep('newPassword');
@@ -66,8 +81,22 @@ export const useForgotPassword = (setView, t) => {
     e.preventDefault();
     setError('');
     
-    if (forgotPasswordData.newPassword !== forgotPasswordData.confirmNewPassword) {
+    const trimmedNewPassword = forgotPasswordData.newPassword;
+    const trimmedConfirmNewPassword = forgotPasswordData.confirmNewPassword;
+    
+    if (trimmedNewPassword !== trimmedConfirmNewPassword) {
       setError(t('auth.passwordMismatch') || 'Mật khẩu xác nhận không khớp');
+      return;
+    }
+    
+    // Validate mật khẩu mới theo quy tắc BE
+    if (trimmedNewPassword.length < 8) {
+      setError(t('validation.passwordLength') || 'Mật khẩu phải nhiều hơn 8 ký tự');
+      return;
+    }
+    
+    if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(trimmedNewPassword)) {
+      setError(t('validation.passwordFormat') || 'Mật khẩu phải chứa cả chữ và số');
       return;
     }
     
@@ -75,8 +104,8 @@ export const useForgotPassword = (setView, t) => {
     
     try {
       const response = await resetPassword(
-        forgotPasswordData.email,
-        forgotPasswordData.newPassword
+        forgotPasswordData.email.trim(),
+        trimmedNewPassword
       );
       
       if (response.statusCode === 200 || response.statusCode === 0) {
