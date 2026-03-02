@@ -16,13 +16,14 @@ const STUDIO_ACTIONS = [
   { key: "quiz", icon: BadgeCheck, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-950/40" },
   { key: "flashcard", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-950/40" },
   { key: "mockTest", icon: ClipboardList, color: "text-purple-500", bg: "bg-purple-100 dark:bg-purple-950/40" },
+  { key: "postLearning", icon: BookMarked, color: "text-orange-500", bg: "bg-orange-100 dark:bg-orange-950/40" },
   { key: "prelearning", icon: GraduationCap, color: "text-rose-500", bg: "bg-rose-100 dark:bg-rose-950/40" },
 ];
 
 // Lấy action key đang active từ activeView
 function getActiveKey(view) {
   if (!view) return null;
-  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard" };
+  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", createMockTest: "mockTest", createPostLearning: "postLearning" };
   return map[view] || view;
 }
 
