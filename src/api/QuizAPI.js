@@ -8,6 +8,12 @@ export const getQuizzesByContext = async (contextType, contextId) => {
   return response;
 };
 
+// Lấy danh sách quiz của user đang đăng nhập
+export const getQuizzesByUser = async () => {
+  const response = await api.get('/quiz/getByUser');
+  return response;
+};
+
 // Tạo quiz mới (Bước 1)
 export const createQuiz = async (data) => {
   const response = await api.post('/quiz/create', data);

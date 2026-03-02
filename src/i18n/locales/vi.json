@@ -564,6 +564,7 @@
         "createQuiz": "Tạo Quiz",
         "createFlashcard": "Tạo Flashcard",
         "mockTest": "Mock Test",
+        "postLearning": "Post-learning",
         "prelearning": "Pre-learning"
       },
       "outputs": "Kết quả đã tạo",
@@ -908,11 +909,14 @@
       "phaseDescPlaceholder": "Nhập mô tả cho phase...",
       "knowledgeDescPlaceholder": "Nhập mô tả cho knowledge...",
       "description": "Mô tả",
-      "doubleClickToRename": "Nhấp đúp để đổi tên"
+      "doubleClickToRename": "Nhấp đúp để đổi tên",
+      "noMockTestYet": "Chưa có mock test nào.",
+      "noPostLearningYet": "Chưa có post-learning nào."
     },
     "mockTest": {
       "title": "Mock Test",
       "desc": "Tạo bài kiểm tra mô phỏng dựa trên tài liệu.",
+      "allRoadmapsCovered": "Tất cả các lộ trình đã có mock test.",
       "createTitle": "Tạo Mock Test",
       "createDesc": "Tạo bài kiểm tra tổng hợp bao phủ toàn bộ lộ trình.",
       "name": "Tên Mock Test",
@@ -928,7 +932,8 @@
       "noItems": "Chưa có mock test nào.",
       "validation": {
         "roadmapRequired": "Vui lòng chọn một lộ trình.",
-        "mockTestLimit": "Lộ trình này đã có mock test. Mỗi lộ trình chỉ được phép có một bài."
+        "mockTestLimit": "Lộ trình này đã có mock test. Mỗi lộ trình chỉ được phép có một bài.",
+        "roadmapAlreadyHas": "Lộ trình này đã có mock test. Vui lòng chọn lộ trình khác."
       },
       "detail": {
         "edit": "Chỉnh sửa"
@@ -946,6 +951,22 @@
         "cancel": "Hủy",
         "saveSuccess": "Cập nhật mock test thành công!",
         "saveFailed": "Lưu mock test thất bại. Vui lòng thử lại."
+      }
+    },
+    "postLearning": {
+      "title": "Post-learning",
+      "desc": "Tạo bài kiểm tra post-learning cho một phase.",
+      "allPhasesCovered": "Tất cả các phase đã có bài post-learning.",
+      "createTitle": "Tạo Post-learning",
+      "createDesc": "Tạo bài kiểm tra post-learning bao phủ một phase cụ thể.",
+      "name": "Tên Post-learning",
+      "namePlaceholder": "Nhập tên post-learning...",
+      "selectPhase": "Chọn Phase",
+      "onePerPhase": "Mỗi phase chỉ được có tối đa một bài post-learning.",
+      "noItems": "Chưa có bài post-learning nào.",
+      "validation": {
+        "phaseRequired": "Vui lòng chọn một phase.",
+        "phaseAlreadyHas": "Phase này đã có bài post-learning. Vui lòng chọn phase khác."
       }
     },
     "listView": {
