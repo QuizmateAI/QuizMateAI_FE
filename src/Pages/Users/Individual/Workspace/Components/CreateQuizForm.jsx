@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz, getQuizzesByContext } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
@@ -20,12 +20,20 @@ const BLOOM_LEVELS = [
 // Danh sách contextType cho Individual Workspace (ROADMAP dành cho MockTest, không hiển thị GROUP)
 const CONTEXT_TYPES = ["WORKSPACE", "PHASE", "KNOWLEDGE"];
 
-// Trọng số mặc định theo độ khó (User defined: easy=10, medium=15, hard=20)
-const DIFFICULTY_WEIGHTS = { easy: 10, medium: 15, hard: 20 };
+// 4 Chiến lược chia điểm (Scoring Strategy Profiles)
+const SCORING_STRATEGIES = {
+  balanced: { easy: 10, medium: 15, hard: 20 },
+  linear:   { easy: 10, medium: 20, hard: 30 },
+  elite:    { easy: 10, medium: 20, hard: 40 },
+  tight:    { easy: 10, medium: 11, hard: 12 },
+};
 
-// Auto-distribute points logic
-const autoDistributePoints = (currentQuestions, totalQuizScore) => {
-  const weights = DIFFICULTY_WEIGHTS;
+// Trọng số mặc định — lấy từ strategy "balanced"
+const DIFFICULTY_WEIGHTS = SCORING_STRATEGIES.balanced;
+
+// Auto-distribute points logic (nhận thêm tham số strategy)
+const autoDistributePoints = (currentQuestions, totalQuizScore, strategy = "balanced") => {
+  const weights = SCORING_STRATEGIES[strategy] || SCORING_STRATEGIES.balanced;
   
   // 1. Tính tổng điểm đã bị khóa bởi người dùng
   const lockedPoints = currentQuestions
@@ -69,13 +77,13 @@ const autoDistributePoints = (currentQuestions, totalQuizScore) => {
   return distributed;
 };
 
-// Aliased for backward compatibility with existing calls
-const calculateScores = autoDistributePoints;
+// Aliased for backward compatibility — wrapper truyền strategy mặc định
+const calculateScores = (qs, maxScore, strategy) => autoDistributePoints(qs, maxScore, strategy);
 
-// Khung câu hỏi mặc định
-const makeDefaultQuestion = () => ({
-  type: "multipleChoice", text: "", difficulty: "medium", bloomId: 1, duration: 0, explanation: "",
-  point: 0, isLocked: false, weight: 15, // Default weight for medium
+// Khung câu hỏi mặc định — nhận difficulty từ overallDifficulty
+const makeDefaultQuestion = (difficulty = "medium") => ({
+  type: "multipleChoice", text: "", difficulty, bloomId: 1, duration: 0, explanation: "",
+  point: 0, isLocked: false, weight: 15,
   answers: [{ text: "", correct: false }, { text: "", correct: false }],
 });
 
@@ -271,6 +279,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [maxScore, setMaxScore] = useState(10);
   const [showNavigator, setShowNavigator] = useState(true);
+  const [selectedStrategy, setSelectedStrategy] = useState("balanced");
 
   // State cho tab AI
   const [aiName, setAiName] = useState("");
@@ -279,42 +288,46 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [aiDuration, setAiDuration] = useState(30);
   const [aiPrompt, setAiPrompt] = useState("");
 
-  // Tải lại điểm (khi thay đổi maxScore hoặc unlock)
-  // Wrapper recalculate với maxScore hiện tại
-  const recalculate = (qs) => calculateScores(qs, maxScore);
+  // Wrapper recalculate với maxScore + strategy hiện tại
+  const recalculate = (qs) => calculateScores(qs, maxScore, selectedStrategy);
 
-  // Toggle khóa điểm: Nếu đang khóa -> mở khóa (auto). Nếu đang mở -> khóa giá trị hiện tại.
+  // Đổi chiến lược chia điểm
+  const handleStrategyChange = (strategy) => {
+    setSelectedStrategy(strategy);
+    setQuestions((prev) => calculateScores(prev, maxScore, strategy));
+  };
+
+  // Toggle khóa điểm — luôn giữ ít nhất 1 câu chưa khóa để thuật toán phân bổ hoạt động đúng.
   const handleToggleLock = (idx) => {
     setQuestions((prev) => {
       const q = prev[idx];
       if (q.isLocked) {
-        // Unlock -> recalculate
         return recalculate(prev.map((item, i) => i === idx ? { ...item, isLocked: false } : item));
-      } else {
-        // Lock -> giữ nguyên điểm hiện tại, set isLocked = true
-        // Gọi calculateScores để đảm bảo tính toán lại phần còn lại (dù về lý thuyết không đổi nhiều)
-        const next = prev.map((item, i) => i === idx ? { ...item, isLocked: true } : item);
-        return calculateScores(next, maxScore);
       }
+      // Không cho khóa nếu đây là câu chưa khóa cuối cùng
+      const unlocked = prev.filter(item => !item.isLocked).length;
+      if (unlocked <= 1) return prev;
+      const next = prev.map((item, i) => i === idx ? { ...item, isLocked: true } : item);
+      return calculateScores(next, maxScore);
     });
   };
 
-  // Tự động sinh câu hỏi khi thay đổi tổng số câu
+  // Tự động sinh câu hỏi khi thay đổi tổng số câu — câu mới dùng overallDifficulty
   const handleTotalQuestionsChange = (val) => {
     const count = Math.max(0, Number(val));
     setTotalQuestions(count);
     if (count === 0) { setQuestions([]); return; }
     setQuestions((prev) => {
       const next = count > prev.length
-        ? [...prev, ...Array.from({ length: count - prev.length }, makeDefaultQuestion)]
+        ? [...prev, ...Array.from({ length: count - prev.length }, () => makeDefaultQuestion(overallDifficulty))]
         : prev.slice(0, count);
       return recalculate(next);
     });
   };
 
-  // Thêm câu hỏi mới
+  // Thêm câu hỏi mới — câu mới dùng overallDifficulty hiện tại
   const addQuestion = () => {
-    setQuestions((prev) => recalculate([...prev, makeDefaultQuestion()]));
+    setQuestions((prev) => recalculate([...prev, makeDefaultQuestion(overallDifficulty)]));
     setTotalQuestions((prev) => prev + 1);
   };
 
@@ -339,11 +352,17 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     ));
   };
 
-  // Thủ công chỉnh điểm → khóa câu hỏi đó
+  // Thủ công chỉnh điểm → khóa câu hỏi đó (chặn nếu là câu cuối cùng chưa khóa)
   const handlePointChange = (idx, value) => {
     const pt = Math.max(0, Math.round(Number(value) * 100) / 100);
     setQuestions((prev) => {
-      const next = prev.map((q, i) => i === idx ? { ...q, point: pt, isLocked: true } : q);
+      const q = prev[idx];
+      // Nếu câu đang unlocked → sẽ bị auto-lock → kiểm tra phải giữ ≥1 câu unlocked
+      if (!q.isLocked) {
+        const unlocked = prev.filter(item => !item.isLocked).length;
+        if (unlocked <= 1) return prev;
+      }
+      const next = prev.map((qi, i) => i === idx ? { ...qi, point: pt, isLocked: true } : qi);
       return calculateScores(next, maxScore);
     });
   };
@@ -360,7 +379,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const handleMaxScoreChange = (val) => {
     const ms = Math.max(0, Number(val));
     setMaxScore(ms);
-    setQuestions((prev) => calculateScores(prev, ms));
+    setQuestions((prev) => calculateScores(prev, ms, selectedStrategy));
   };
 
   // Cuộn tới câu hỏi
@@ -451,6 +470,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
   // Tổng điểm hiện tại (computed)
   const totalScoreDisplay = Math.round(questions.reduce((s, q) => s + (q.point || 0), 0) * 100) / 100;
+  const unlockedCount = questions.filter(q => !q.isLocked).length;
 
   return (
     <div id="create-quiz-header" className="flex flex-col h-full scroll-mt-20">
@@ -655,6 +675,36 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                 </div>
               </div>
 
+              {/* Scoring Strategy — Chiến lược chia điểm */}
+              <div className={`p-3 rounded-xl border transition-all ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-blue-50/50 border-blue-100"}`}>
+                <label className={labelCls}>{t("workspace.quiz.scoringStrategy")}</label>
+                <select className={selectCls} value={selectedStrategy} onChange={(e) => handleStrategyChange(e.target.value)}>
+                  {Object.keys(SCORING_STRATEGIES).map((key) => {
+                    const s = SCORING_STRATEGIES[key];
+                    return <option key={key} value={key}>{t(`workspace.quiz.strategyName.${key}`)} ({s.easy}-{s.medium}-{s.hard})</option>;
+                  })}
+                </select>
+                <p className={`mt-2 text-xs leading-relaxed text-left ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                  <Sparkles className="w-3 h-3 inline mr-1 text-amber-500" />
+                  {t(`workspace.quiz.strategyDesc.${selectedStrategy}`)}
+                </p>
+                {/* Visual Preview — thanh tỷ lệ mini */}
+                <div className="flex items-center gap-1.5 mt-2">
+                  {["easy", "medium", "hard"].map((d) => {
+                    const s = SCORING_STRATEGIES[selectedStrategy];
+                    const total = s.easy + s.medium + s.hard;
+                    const pct = Math.round((s[d] / total) * 100);
+                    const colors = { easy: "bg-green-500", medium: "bg-amber-500", hard: "bg-red-500" };
+                    return (
+                      <div key={d} className="flex items-center gap-1 flex-1 min-w-0">
+                        <div className={`h-1.5 rounded-full transition-all duration-500 ${colors[d]}`} style={{ width: `${pct}%`, minWidth: "8px" }} />
+                        <span className={`text-[10px] shrink-0 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{t(`workspace.quiz.difficultyLevels.${d}`)} {pct}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Question Navigator — điều hướng nhanh */}
               {questions.length > 0 && (
                 <div className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-blue-200 bg-blue-50/30"}`}>
@@ -729,24 +779,22 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                 <div className={`sticky top-0 z-20 flex items-center justify-between px-3 py-2 mb-3 rounded-lg shadow-sm backdrop-blur-md border ${isDarkMode ? "bg-slate-900/90 border-slate-700" : "bg-white/90 border-gray-200"}`}>
                   <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
                     <MapPin className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-                    <select
-                      className={`text-xs w-full bg-transparent outline-none cursor-pointer truncate ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}
-                      onChange={(e) => {
-                        const idx = Number(e.target.value);
-                        if (!isNaN(idx)) {
-                          scrollToQuestion(idx);
-                          e.target.value = "";
+                    <input
+                      type="number"
+                      min={1}
+                      max={questions.length}
+                      placeholder={t("workspace.quiz.navigator.jumpTo")}
+                      className={`text-xs w-full bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isDarkMode ? "text-slate-200 placeholder:text-slate-500" : "text-gray-700 placeholder:text-gray-400"} ${fontClass}`}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const num = Number(e.target.value);
+                          if (num >= 1 && num <= questions.length) {
+                            scrollToQuestion(num - 1);
+                            e.target.value = "";
+                          }
                         }
                       }}
-                      defaultValue=""
-                    >
-                      <option value="" disabled>{t("workspace.quiz.navigator.jumpTo")}</option>
-                      {questions.map((q, idx) => (
-                        <option key={idx} value={idx}>
-                          #{idx + 1}: {q.text ? (q.text.length > 40 ? q.text.substring(0, 40) + "..." : q.text) : `(${t("workspace.quiz.questionTextLabel")})`}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <button
                     type="button"
@@ -773,12 +821,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                           q.isLocked
                             ? isDarkMode ? "bg-blue-950/30 border-blue-500/50 text-blue-300" : "bg-blue-50 border-blue-300 text-blue-700"
                             : isDarkMode ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-gray-100 border-gray-300 text-gray-600"
-                        }`}
-                          value={q.point || 0} onChange={(e) => handlePointChange(qIdx, e.target.value)} step={0.01} min={0} />
+                        } ${!q.isLocked && unlockedCount <= 1 ? "cursor-not-allowed opacity-60" : ""}`}
+                          value={q.point || 0} onChange={(e) => handlePointChange(qIdx, e.target.value)} step={0.01} min={0}
+                          readOnly={!q.isLocked && unlockedCount <= 1}
+                          title={!q.isLocked && unlockedCount <= 1 ? t("workspace.quiz.navigator.lastUnlocked") : ""} />
                         <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{t("workspace.quiz.navigator.pts")}</span>
                         <button type="button" onClick={() => handleToggleLock(qIdx)}
-                          title={q.isLocked ? t("workspace.quiz.navigator.clickUnlock") : t("workspace.quiz.navigator.clickLock")}
-                          className={`flex items-center gap-1.5 px-2 py-0.5 text-[10px] rounded transition-all cursor-pointer border ${q.isLocked 
+                          disabled={!q.isLocked && unlockedCount <= 1}
+                          title={!q.isLocked && unlockedCount <= 1 ? t("workspace.quiz.navigator.lastUnlocked") : q.isLocked ? t("workspace.quiz.navigator.clickUnlock") : t("workspace.quiz.navigator.clickLock")}
+                          className={`flex items-center gap-1.5 px-2 py-0.5 text-[10px] rounded transition-all border ${!q.isLocked && unlockedCount <= 1 ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${q.isLocked 
                             ? (isDarkMode ? "bg-blue-950/30 border-blue-500/50 text-blue-300" : "bg-blue-50 border-blue-300 text-blue-700")
                             : (isDarkMode ? "bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200" : "bg-gray-100 border-gray-300 text-gray-500 hover:text-gray-700")
                           }`}>
