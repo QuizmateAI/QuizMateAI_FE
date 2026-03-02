@@ -16,6 +16,12 @@ export const useLogin = (navigate, t) => {
     setError('');
   };
 
+  // Trim tất cả dữ liệu trước khi submit
+  const trimLoginData = () => ({
+    username: loginData.username.trim(),
+    password: loginData.password
+  });
+
   // Hàm điều hướng theo role
   const navigateByRole = (role) => {
     if (role === 'SUPER_ADMIN') return navigate('/super-admin');
@@ -26,10 +32,15 @@ export const useLogin = (navigate, t) => {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Trim dữ liệu trước khi gửi
+    const trimmed = trimLoginData();
+    setLoginData(trimmed);
+    
     setIsLoading(true);
     
     try {
-      const response = await login(loginData);
+      const response = await login(trimmed);
       console.log("BE Login Response:", response);
       if (response.statusCode === 200 || response.statusCode === 0) {
         navigateByRole(response.data.role);

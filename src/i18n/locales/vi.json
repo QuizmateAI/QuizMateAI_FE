@@ -210,7 +210,26 @@
     "otpVerified": "Xác thực OTP thành công",
     "resetPasswordSuccess": "Đổi mật khẩu thành công, hãy đăng nhập",
     "loginWithGoogle": "Đăng nhập bằng Google",
-    "loginGoogleFailed": "Đăng nhập Google thất bại. Vui lòng thử lại."
+    "loginGoogleFailed": "Đăng nhập Google thất bại. Vui lòng thử lại.",
+    "registerOtpSent": "Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra.",
+    "registerOtpSubtitle": "Nhập mã OTP đã được gửi đến email của bạn để hoàn tất đăng ký",
+    "verifyAndRegister": "Xác thực & Đăng ký",
+    "verifyEmailTitle": "Xác thực Email",
+    "backToRegisterForm": "Quay lại",
+    "registerSuccess": "Đăng ký thành công! Vui lòng đăng nhập."
+  },
+  "validation": {
+    "fullnameRequired": "Họ và tên không được để trống",
+    "usernameRequired": "Tên đăng nhập không được để trống",
+    "usernameLength": "Tên đăng nhập phải từ 3 đến 50 ký tự",
+    "usernameFormat": "Tên đăng nhập phải chứa cả chữ và số, có thể dùng các ký tự . _ @ -",
+    "emailRequired": "Email không được để trống",
+    "emailInvalid": "Email không hợp lệ",
+    "passwordRequired": "Mật khẩu không được để trống",
+    "passwordLength": "Mật khẩu phải nhiều hơn 8 ký tự",
+    "passwordFormat": "Mật khẩu phải chứa cả chữ và số",
+    "confirmPasswordRequired": "Xác nhận mật khẩu không được để trống",
+    "passwordMismatch": "Xác nhận mật khẩu phải giống với mật khẩu"
   },
   "landingPage": {
     "nav": {
@@ -593,6 +612,19 @@
       "minutes": "phút",
       "addQuestion": "Thêm câu hỏi",
       "totalQuestions": "Tổng số câu hỏi",
+      "maxScore": "Tổng điểm",
+      "navigator": {
+        "title": "Điều hướng câu hỏi",
+        "pts": "điểm",
+        "reset": "Đặt lại tất cả điểm",
+        "locked": "Đã khóa",
+        "overflow": "Tổng điểm vượt quá điểm tối đa!",
+        "clickUnlock": "Nhấn để mở khóa (tự động tính)",
+        "clickLock": "Nhấn để khóa điểm hiện tại",
+        "auto": "Tự động tính",
+        "jumpTo": "Chuyển tới câu hỏi...",
+        "scrollTop": "Lên đầu trang"
+      },
       "questionType": "Dạng câu hỏi",
       "questionTypeLabel": "Loại",
       "difficultyLabel": "Độ khó",
@@ -607,6 +639,7 @@
       "correctAnswer": "Đáp án đúng",
       "correctAnswerLabel": "Đáp án đúng",
       "deleteQuiz": "Xóa quiz",
+      "deleteQuestion": "Xóa",
       "loading": "Đang tải danh sách quiz...",
       "types": {
         "multipleChoice": "Trắc nghiệm một đáp án",
