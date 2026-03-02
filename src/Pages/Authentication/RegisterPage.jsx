@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox"; 
-import { FloatingInput, FloatingPasswordInput } from "@/components/ui/floating-input";
+import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox"; 
+import { FloatingInput, FloatingPasswordInput } from "@/Components/ui/floating-input";
 import { ChevronLeft } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 

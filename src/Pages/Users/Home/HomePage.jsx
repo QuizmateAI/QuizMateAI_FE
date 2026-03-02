@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import { Globe, Grid3x3, List, Moon, Plus, Settings, Sun, CreditCard } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.png";
 import LogoDark from "@/assets/DarkMode_Logo.png";

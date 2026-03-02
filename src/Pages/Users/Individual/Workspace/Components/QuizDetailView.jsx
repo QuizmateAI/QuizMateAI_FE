@@ -4,7 +4,7 @@ import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star, Trash2,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, Save, X, Plus, CheckCircle2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import {
   getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
   updateQuiz, updateQuestion, updateAnswer, deleteQuestion, deleteAnswer,

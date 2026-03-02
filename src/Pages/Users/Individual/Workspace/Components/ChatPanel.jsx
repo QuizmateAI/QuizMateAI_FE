@@ -1,7 +1,7 @@
 import React from "react";
 import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
 import CreateFlashcardForm from "./CreateFlashcardForm";
 import CreateRoadmapForm from "./CreateRoadmapForm";

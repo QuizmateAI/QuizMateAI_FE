@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
