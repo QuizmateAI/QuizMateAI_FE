@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, CreditCard, ArrowLeft, MapPin, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFlashcardSet, addFlashcardItem } from "@/api/FlashcardAPI";

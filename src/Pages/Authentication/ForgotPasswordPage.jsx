@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button } from "@/components/ui/button";
-import { FloatingInput } from "@/components/ui/floating-input";
+import { Button } from "@/Components/ui/button";
+import { FloatingInput } from "@/Components/ui/floating-input";
 import { ChevronLeft, AlertCircle, CheckCircle, Globe } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import { AiFillApple } from "react-icons/ai";

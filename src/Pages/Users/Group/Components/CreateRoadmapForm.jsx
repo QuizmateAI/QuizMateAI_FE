@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import {
   Plus, Trash2, Loader2, GitBranch, GraduationCap, ArrowLeft,
   FolderOpen, FileText, MoreVertical, Pencil, ChevronRight, Folder,
