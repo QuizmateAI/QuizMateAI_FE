@@ -622,8 +622,22 @@
         "clickUnlock": "Nhấn để mở khóa (tự động tính)",
         "clickLock": "Nhấn để khóa điểm hiện tại",
         "auto": "Tự động tính",
+        "lastUnlocked": "Phải giữ ít nhất 1 câu chưa khóa để tự cân bằng điểm",
         "jumpTo": "Chuyển tới câu hỏi...",
         "scrollTop": "Lên đầu trang"
+      },
+      "scoringStrategy": "Chiến lược chia điểm",
+      "strategyName": {
+        "balanced": "Tiêu chuẩn",
+        "linear": "Tuyến tính",
+        "elite": "Thách thức",
+        "tight": "Đồng đều"
+      },
+      "strategyDesc": {
+        "balanced": "Tỷ lệ trọng số chuẩn giữa các mức độ khó. Phù hợp với hầu hết bài kiểm tra.",
+        "linear": "Trọng số tăng đều. Câu hỏi khó hơn nhận điểm tỷ lệ thuận cao hơn.",
+        "elite": "Thưởng lớn cho câu hỏi khó. Lý tưởng cho bài thi nâng cao hoặc thi đua.",
+        "tight": "Trọng số gần bằng nhau ở mọi mức. Phù hợp kiểm tra kiến thức cơ bản."
       },
       "questionType": "Dạng câu hỏi",
       "questionTypeLabel": "Loại",

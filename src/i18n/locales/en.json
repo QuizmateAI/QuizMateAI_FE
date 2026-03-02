@@ -622,8 +622,22 @@
         "clickUnlock": "Click to unlock (auto-calculate)",
         "clickLock": "Click to lock current score",
         "auto": "Auto-calculated",
+        "lastUnlocked": "Must keep at least 1 unlocked question for auto-balancing",
         "jumpTo": "Jump to question...",
         "scrollTop": "Scroll to top"
+      },
+      "scoringStrategy": "Scoring Strategy",
+      "strategyName": {
+        "balanced": "Balanced",
+        "linear": "Linear",
+        "elite": "Elite",
+        "tight": "Tight"
+      },
+      "strategyDesc": {
+        "balanced": "Standard weight ratio between difficulty levels. Suitable for most quizzes.",
+        "linear": "Evenly increasing weight. Higher difficulty questions receive proportionally more points.",
+        "elite": "Strongly rewards hard questions. Ideal for advanced or competitive assessments.",
+        "tight": "Nearly equal weight across all levels. Best for knowledge-check quizzes."
       },
       "questionType": "Question type",
       "questionTypeLabel": "Type",
