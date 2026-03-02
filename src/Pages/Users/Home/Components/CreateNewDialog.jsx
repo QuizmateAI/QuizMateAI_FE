@@ -7,8 +7,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '@/Components/ui/dialog';
+import { Button } from '@/Components/ui/button';
 import { Loader2, ChevronDown, Briefcase, Users } from 'lucide-react';
 
 // Dialog hợp nhất tạo workspace cá nhân / group workspace — có tab chuyển đổi

@@ -4,7 +4,7 @@ import {
   ArrowLeft, ClipboardList, Timer, BarChart3, Clock, Loader2, Edit3, Star, Trash2,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import {
   getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
   toggleStarQuestion, QUESTION_TYPE_ID_MAP

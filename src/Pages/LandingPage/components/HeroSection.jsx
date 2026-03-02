@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/Components/ui/button";
+import { Badge } from "@/Components/ui/badge";
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { ArrowUp, Map, BrainCircuit, Mic, Globe, PlayCircle, 
   Check, CheckCircle2, Sparkles, Menu, X  } from 'lucide-react';

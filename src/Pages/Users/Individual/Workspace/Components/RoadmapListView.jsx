@@ -5,7 +5,7 @@ import {
   BadgeCheck, CreditCard, FolderOpen, Clock, Loader2, Trash2,
   Pencil, GraduationCap, ClipboardList, Award,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import {
   getRoadmapsByGroup,
   getRoadmapsByWorkspace,

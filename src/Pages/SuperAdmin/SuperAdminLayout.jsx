@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Globe, Sun, Moon } from 'lucide-react';
-import SuperAdminSidebar from './components/SuperAdminSidebar';
+import SuperAdminSidebar from './Components/SuperAdminSidebar';
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 
