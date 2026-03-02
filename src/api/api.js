@@ -1,10 +1,15 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(baseURL);
+
 // Tạo instance axios với cấu hình mặc định
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
+    Accept: 'application/json',
+    ...(isNgrokUrl ? { 'ngrok-skip-browser-warning': 'true' } : {}),
   },
   timeout: 10000, // 10 giây timeout
 });
