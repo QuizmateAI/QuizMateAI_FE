@@ -7,8 +7,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '@/Components/ui/dialog';
+import { Button } from '@/Components/ui/button';
 import { Loader2, Mail } from 'lucide-react';
 
 // Dialog mời thành viên bằng email

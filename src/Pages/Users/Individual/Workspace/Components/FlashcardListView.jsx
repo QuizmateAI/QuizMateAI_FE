@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X, Plus, CreditCard, FolderOpen, Loader2, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import { getFlashcardsByUser } from "@/api/FlashcardAPI";
 
 // Cấu hình màu badge trạng thái

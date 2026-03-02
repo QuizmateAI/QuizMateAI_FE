@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";

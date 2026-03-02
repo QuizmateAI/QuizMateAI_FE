@@ -5,8 +5,8 @@ import {
   Users, Package, CreditCard, Banknote, FileText,
   ClipboardList, Settings, UsersRound, ShieldCheck, Eye, Pencil,
 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/Components/ui/button";
+import { Input } from "@/Components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+} from "@/Components/ui/dialog";
+import { Label } from "@/Components/ui/label";
+import { Card, CardHeader, CardTitle, CardContent } from "@/Components/ui/card";
 import {
   Table,
   TableBody,
@@ -24,9 +24,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+} from "@/Components/ui/table";
+import { Badge } from "@/Components/ui/badge";
+import { Switch } from "@/Components/ui/switch";
 import {
   getAllSystemUsers,
   createAdmin,

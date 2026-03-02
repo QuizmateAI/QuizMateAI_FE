@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import { Plus, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.png";

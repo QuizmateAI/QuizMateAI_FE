@@ -4,7 +4,7 @@ import {
   ArrowLeft, CreditCard, Plus, Trash2, Edit3, Save, X, Loader2,
   CheckCircle2, ToggleLeft, ToggleRight, ChevronDown, ChevronRight
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import {
   getFlashcardDetail, updateFlashcardSetName, updateFlashcardSetStatus,
   addFlashcardItem, updateFlashcardItem, deleteFlashcardItem
