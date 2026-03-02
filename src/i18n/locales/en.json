@@ -564,6 +564,7 @@
         "createQuiz": "Create Quiz",
         "createFlashcard": "Create Flashcard",
         "mockTest": "Mock Test",
+        "postLearning": "Post-learning",
         "prelearning": "Pre-learning"
       },
       "outputs": "Generated Outputs",
@@ -908,11 +909,14 @@
       "phaseDescPlaceholder": "Enter phase description...",
       "knowledgeDescPlaceholder": "Enter knowledge description...",
       "description": "Description",
-      "doubleClickToRename": "Double-click to rename"
+      "doubleClickToRename": "Double-click to rename",
+      "noMockTestYet": "No mock test created yet.",
+      "noPostLearningYet": "No post-learning created yet."
     },
     "mockTest": {
       "title": "Mock Test",
       "desc": "Create a mock test based on your documents.",
+      "allRoadmapsCovered": "All roadmaps already have a mock test.",
       "createTitle": "Create Mock Test",
       "createDesc": "Create a comprehensive test covering an entire roadmap.",
       "name": "Mock Test Name",
@@ -928,7 +932,8 @@
       "noItems": "No mock tests yet.",
       "validation": {
         "roadmapRequired": "Please select a roadmap.",
-        "mockTestLimit": "This roadmap already has a mock test. Only one is allowed per roadmap."
+        "mockTestLimit": "This roadmap already has a mock test. Only one is allowed per roadmap.",
+        "roadmapAlreadyHas": "This roadmap already has a mock test. Please choose another roadmap."
       },
       "detail": {
         "edit": "Edit"
@@ -946,6 +951,22 @@
         "cancel": "Cancel",
         "saveSuccess": "Mock test updated successfully!",
         "saveFailed": "Failed to save mock test. Please try again."
+      }
+    },
+    "postLearning": {
+      "title": "Post-learning",
+      "desc": "Create a post-learning quiz for a phase.",
+      "allPhasesCovered": "All phases already have a post-learning quiz.",
+      "createTitle": "Create Post-learning",
+      "createDesc": "Create a post-learning quiz covering a specific phase.",
+      "name": "Post-learning Name",
+      "namePlaceholder": "Enter post-learning name...",
+      "selectPhase": "Select Phase",
+      "onePerPhase": "Each phase can have at most one post-learning quiz.",
+      "noItems": "No post-learning quizzes yet.",
+      "validation": {
+        "phaseRequired": "Please select a phase.",
+        "phaseAlreadyHas": "This phase already has a post-learning quiz. Please choose another phase."
       }
     },
     "listView": {

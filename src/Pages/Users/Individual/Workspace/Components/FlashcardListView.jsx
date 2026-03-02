@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X, Plus, CreditCard, FolderOpen, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getFlashcardsByContext } from "@/api/FlashcardAPI";
+import { getFlashcardsByUser } from "@/api/FlashcardAPI";
 
 // Cấu hình màu badge trạng thái
 const STATUS_STYLES = {
@@ -21,12 +21,11 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onD
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Lấy danh sách flashcard từ API
+  // Lấy danh sách flashcard từ API (theo user hiện tại)
   const fetchFlashcards = useCallback(async () => {
-    if (!contextId) return;
     setLoading(true);
     try {
-      const res = await getFlashcardsByContext(contextType, contextId);
+      const res = await getFlashcardsByUser();
       setFlashcards(res.data || []);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách flashcard:", err);
@@ -34,7 +33,7 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onD
     } finally {
       setLoading(false);
     }
-  }, [contextType, contextId]);
+  }, []);
 
   useEffect(() => {
     fetchFlashcards();

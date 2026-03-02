@@ -15,9 +15,11 @@ import MockTestListView from "@/Pages/Users/Individual/Workspace/Components/Mock
 import CreateMockTestForm from "@/Pages/Users/Individual/Workspace/Components/CreateMockTestForm";
 import MockTestDetailView from "@/Pages/Users/Individual/Workspace/Components/MockTestDetailView";
 import EditMockTestForm from "@/Pages/Users/Individual/Workspace/Components/EditMockTestForm";
+import PostLearningListView from "@/Pages/Users/Individual/Workspace/Components/PostLearningListView";
+import CreatePostLearningForm from "@/Pages/Users/Individual/Workspace/Components/CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onBack, groupId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, groupId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -118,13 +120,24 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
 
     switch (activeView) {
       case "roadmap":
-        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} groupId={groupId} />;
+        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} groupId={groupId}
+          onNavigateToCreateMockTest={() => onChangeView?.("createMockTest")}
+          onNavigateToCreatePostLearning={() => onChangeView?.("createPostLearning")}
+          onNavigateToCreateQuiz={() => onChangeView?.("createQuiz")}
+          onNavigateToCreateFlashcard={() => onChangeView?.("createFlashcard")}
+          onViewMockTest={onViewMockTest}
+          onViewPostLearning={onViewPostLearning}
+          onViewQuiz={onViewQuiz}
+          onViewFlashcard={onViewFlashcard}
+        />;
       case "quiz":
         return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="GROUP" contextId={groupId} />;
       case "flashcard":
         return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={groupId} />;
       case "mockTest":
         return <MockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={groupId} />;
+      case "postLearning":
+        return <PostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="GROUP" contextId={groupId} />;
       default:
         return null;
     }
@@ -158,6 +171,8 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
         return selectedQuiz ? <EditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="GROUP" contextId={groupId} /> : null;
       case "createMockTest":
         return <CreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={groupId} />;
+      case "createPostLearning":
+        return <CreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={groupId} />;
       case "mockTestDetail":
         return selectedMockTest ? <MockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
       case "editMockTest":

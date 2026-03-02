@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2, ClipboardList, ArrowLeft, RefreshCw, Save, Rocket, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Loader2, GraduationCap, ArrowLeft, RefreshCw, Save, Rocket, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz, getQuizzesByContext } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace, getRoadmapsByGroup } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap } from "@/api/RoadmapAPI";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -17,28 +17,31 @@ const BLOOM_LEVELS = [
 ];
 
 /**
- * Form tạo Mock Test — tạo quiz với contextType=ROADMAP
- * Mỗi roadmap chỉ được có tối đa 1 mock test
+ * Form tạo Post-learning — tạo quiz với contextType=PHASE
+ * Mỗi phase chỉ được có tối đa 1 post-learning
  */
-function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, contextType = "WORKSPACE", contextId }) {
+function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBack, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [tab, setTab] = useState("manual");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Chọn roadmap
+  // Chọn roadmap → phase
   const [roadmaps, setRoadmaps] = useState([]);
   const [selectedRoadmapId, setSelectedRoadmapId] = useState("");
   const [roadmapLoading, setRoadmapLoading] = useState(false);
+  const [phases, setPhases] = useState([]);
+  const [selectedPhaseId, setSelectedPhaseId] = useState("");
+  const [phaseLoading, setPhaseLoading] = useState(false);
 
-  // Real-time roadmap check
-  const [roadmapHasMockTest, setRoadmapHasMockTest] = useState(false);
-  const [checkingRoadmap, setCheckingRoadmap] = useState(false);
+  // Real-time phase check
+  const [phaseHasPostLearning, setPhaseHasPostLearning] = useState(false);
+  const [checkingPhase, setCheckingPhase] = useState(false);
 
   // State quiz
   const [name, setName] = useState("");
-  const [duration, setDuration] = useState(60);
+  const [duration, setDuration] = useState(30);
   const [passingScore, setPassingScore] = useState(7.5);
   const [maxAttempt, setMaxAttempt] = useState(1);
   const [timerMode, setTimerMode] = useState(true);
@@ -48,8 +51,8 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
   // State AI
   const [aiName, setAiName] = useState("");
   const [aiDifficulty, setAiDifficulty] = useState("medium");
-  const [aiTotalQuestions, setAiTotalQuestions] = useState(30);
-  const [aiDuration, setAiDuration] = useState(60);
+  const [aiTotalQuestions, setAiTotalQuestions] = useState(20);
+  const [aiDuration, setAiDuration] = useState(30);
   const [aiPrompt, setAiPrompt] = useState("");
 
   // Tải danh sách roadmap
@@ -69,20 +72,39 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
 
   useEffect(() => { loadRoadmaps(); }, [loadRoadmaps]);
 
-  // Khi chọn roadmap → kiểm tra real-time đã có mock test chưa
+  // Khi chọn roadmap → tải phases
   const handleRoadmapSelect = useCallback(async (roadmapId) => {
     setSelectedRoadmapId(roadmapId);
-    setRoadmapHasMockTest(false);
+    setSelectedPhaseId("");
+    setPhases([]);
+    setPhaseHasPostLearning(false);
     if (!roadmapId) return;
-    setCheckingRoadmap(true);
+    setPhaseLoading(true);
     try {
-      const res = await getQuizzesByContext("ROADMAP", Number(roadmapId));
-      const existing = res.data || [];
-      setRoadmapHasMockTest(existing.length > 0);
+      const res = await getPhasesByRoadmap(Number(roadmapId), 0, 100);
+      const content = res?.data?.data?.content || res?.data?.content || [];
+      setPhases(content);
     } catch (e) {
-      console.error("Lỗi kiểm tra roadmap:", e);
+      console.error("Lỗi tải phases:", e);
     } finally {
-      setCheckingRoadmap(false);
+      setPhaseLoading(false);
+    }
+  }, []);
+
+  // Khi chọn phase → kiểm tra real-time đã có post-learning chưa
+  const handlePhaseSelect = useCallback(async (phaseId) => {
+    setSelectedPhaseId(phaseId);
+    setPhaseHasPostLearning(false);
+    if (!phaseId) return;
+    setCheckingPhase(true);
+    try {
+      const res = await getQuizzesByContext("PHASE", Number(phaseId));
+      const existing = res.data || [];
+      setPhaseHasPostLearning(existing.length > 0);
+    } catch (e) {
+      console.error("Lỗi kiểm tra phase:", e);
+    } finally {
+      setCheckingPhase(false);
     }
   }, []);
 
@@ -106,27 +128,27 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
     try {
       if (tab === "manual") {
         if (!name.trim()) { setError(t("workspace.quiz.validation.nameRequired")); setSubmitting(false); return; }
-        if (!selectedRoadmapId) { setError(t("workspace.mockTest.validation.roadmapRequired")); setSubmitting(false); return; }
+        if (!selectedPhaseId) { setError(t("workspace.postLearning.validation.phaseRequired")); setSubmitting(false); return; }
 
-        // Kiểm tra giới hạn: mỗi roadmap chỉ được 1 mock test
+        // Kiểm tra giới hạn: mỗi phase chỉ được 1 post-learning
         try {
-          const existingRes = await getQuizzesByContext("ROADMAP", Number(selectedRoadmapId));
+          const existingRes = await getQuizzesByContext("PHASE", Number(selectedPhaseId));
           const existing = existingRes.data || [];
           if (existing.length > 0) {
-            setError(t("workspace.mockTest.validation.mockTestLimit"));
+            setError(t("workspace.quiz.validation.postLearningLimit"));
             setSubmitting(false);
             return;
           }
         } catch (e) {
-          console.error("Lỗi kiểm tra giới hạn mock test:", e);
+          console.error("Lỗi kiểm tra giới hạn post-learning:", e);
         }
 
         const result = await createFullQuiz({
-          contextType: "ROADMAP",
-          contextId: Number(selectedRoadmapId),
+          contextType: "PHASE",
+          contextId: Number(selectedPhaseId),
           title: name,
           duration,
-          quizIntent: "REVIEW",
+          quizIntent: "POST_LEARNING",
           timerMode,
           passingScore,
           maxAttempt,
@@ -134,13 +156,13 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
           questions,
           status: quizStatus,
         });
-        await onCreateMockTest?.({ quizId: result.quizId, title: result.title, ...result });
+        await onCreatePostLearning?.({ quizId: result.quizId, title: result.title, ...result });
       } else {
         const data = { mode: "ai", name: aiName, difficulty: aiDifficulty, totalQuestions: aiTotalQuestions, duration: aiDuration, prompt: aiPrompt };
-        await onCreateMockTest?.(data);
+        await onCreatePostLearning?.(data);
       }
     } catch (err) {
-      console.error("Lỗi khi tạo mock test:", err);
+      console.error("Lỗi khi tạo post-learning:", err);
       setError(err.message || t("workspace.quiz.validation.createFailed"));
     } finally {
       setSubmitting(false);
@@ -154,7 +176,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
   const selectCls = `${inputCls} appearance-none cursor-pointer`;
   const tabCls = (key) => `flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
     tab === key
-      ? isDarkMode ? "bg-slate-800 text-purple-300" : "bg-white text-purple-700 shadow-sm"
+      ? isDarkMode ? "bg-slate-800 text-orange-300" : "bg-white text-orange-700 shadow-sm"
       : isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-500 hover:text-gray-700"
   }`;
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
@@ -167,9 +189,9 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-2">
-          <ClipboardList className="w-5 h-5 text-purple-500" />
+          <GraduationCap className="w-5 h-5 text-orange-500" />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
-            {t("workspace.mockTest.createTitle")}
+            {t("workspace.postLearning.createTitle")}
           </p>
         </div>
       </div>
@@ -177,7 +199,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
       {/* Nội dung form */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-          {t("workspace.mockTest.createDesc")}
+          {t("workspace.postLearning.createDesc")}
         </p>
 
         {/* Tab */}
@@ -188,20 +210,22 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
 
         {tab === "manual" ? (
           <div className="space-y-4">
-            {/* Tên mock test */}
+            {/* Tên post-learning */}
             <div>
-              <label className={labelCls}>{t("workspace.mockTest.name")}</label>
-              <input className={inputCls} placeholder={t("workspace.mockTest.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
+              <label className={labelCls}>{t("workspace.postLearning.name")}</label>
+              <input className={inputCls} placeholder={t("workspace.postLearning.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
-            {/* Chọn roadmap */}
-            <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-purple-800/50 bg-purple-950/20" : "border-purple-200 bg-purple-50/30"}`}>
+            {/* Chọn roadmap → phase */}
+            <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-orange-800/50 bg-orange-950/20" : "border-orange-200 bg-orange-50/30"}`}>
               <div className="flex items-center gap-2 mb-1">
-                <ClipboardList className={`w-4 h-4 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
-                <span className={`text-xs font-semibold ${isDarkMode ? "text-purple-300" : "text-purple-700"} ${fontClass}`}>
-                  {t("workspace.mockTest.selectRoadmap")}
+                <GraduationCap className={`w-4 h-4 ${isDarkMode ? "text-orange-400" : "text-orange-600"}`} />
+                <span className={`text-xs font-semibold ${isDarkMode ? "text-orange-300" : "text-orange-700"} ${fontClass}`}>
+                  {t("workspace.postLearning.selectPhase")}
                 </span>
               </div>
+
+              {/* Roadmap selector */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
@@ -221,22 +245,36 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
                 </select>
               </div>
 
-              {/* Real-time warning khi roadmap đã có mock test */}
-              {checkingRoadmap && (
-                <div className="flex items-center gap-2 mt-1">
-                  <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Checking...</span>
-                </div>
-              )}
-              {roadmapHasMockTest && !checkingRoadmap && (
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {t("workspace.mockTest.validation.roadmapAlreadyHas")}
+              {/* Phase selector */}
+              {selectedRoadmapId && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+                      {t("workspace.quiz.contextSelector.selectPhase")}
+                    </span>
+                    {checkingPhase && <Loader2 className="w-3 h-3 animate-spin text-orange-500" />}
+                  </div>
+                  <select className={selectCls} value={selectedPhaseId} onChange={(e) => handlePhaseSelect(e.target.value)} disabled={phaseLoading}>
+                    <option value="">{phaseLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                    {phases.map((ph) => (
+                      <option key={ph.phaseId || ph.id} value={ph.phaseId || ph.id}>
+                        {ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
-              <p className={`text-[10px] ${isDarkMode ? "text-purple-400/60" : "text-purple-500/70"} ${fontClass}`}>
-                {t("workspace.mockTest.onePerRoadmap")}
+              {/* Real-time warning khi phase đã có post-learning */}
+              {phaseHasPostLearning && !checkingPhase && (
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {t("workspace.postLearning.validation.phaseAlreadyHas")}
+                </div>
+              )}
+
+              <p className={`text-[10px] ${isDarkMode ? "text-orange-400/60" : "text-orange-500/70"} ${fontClass}`}>
+                {t("workspace.postLearning.onePerPhase")}
               </p>
             </div>
 
@@ -258,7 +296,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
             <div className="flex items-center gap-3">
               <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
                 <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                  className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
                 <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.timerMode")}</span>
               </label>
               <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
@@ -329,7 +367,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
                     <div className="space-y-1.5 pl-2">
                       {q.answers.map((a, aIdx) => (
                         <div key={aIdx} className="flex items-center gap-2">
-                          <input type={q.type === "multipleSelect" ? "checkbox" : "radio"} name={`mt-q-${qIdx}`} checked={a.correct}
+                          <input type={q.type === "multipleSelect" ? "checkbox" : "radio"} name={`pl-q-${qIdx}`} checked={a.correct}
                             onChange={() => {
                               const newAnswers = q.answers.map((ans, ai) => ({
                                 ...ans,
@@ -347,7 +385,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
                           />
                         </div>
                       ))}
-                      <button onClick={() => addAnswer(qIdx)} className="text-xs text-purple-500 hover:underline flex items-center gap-1 mt-1">
+                      <button onClick={() => addAnswer(qIdx)} className="text-xs text-orange-500 hover:underline flex items-center gap-1 mt-1">
                         <Plus className="w-3 h-3" /> {t("workspace.quiz.addAnswer")}
                       </button>
                     </div>
@@ -373,8 +411,8 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
         ) : (
           <div className="space-y-4">
             <div>
-              <label className={labelCls}>{t("workspace.mockTest.name")}</label>
-              <input className={inputCls} placeholder={t("workspace.mockTest.namePlaceholder")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
+              <label className={labelCls}>{t("workspace.postLearning.name")}</label>
+              <input className={inputCls} placeholder={t("workspace.postLearning.namePlaceholder")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -406,13 +444,13 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
           {t("workspace.quiz.cancel")}
         </Button>
         {tab === "manual" && (
-          <Button variant="outline" onClick={() => handleSubmit("DRAFT")} disabled={submitting || roadmapHasMockTest}
+          <Button variant="outline" onClick={() => handleSubmit("DRAFT")} disabled={submitting || phaseHasPostLearning}
             className={`${isDarkMode ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             {t("workspace.quiz.saveDraft")}
           </Button>
         )}
-        <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting || roadmapHasMockTest} className="bg-purple-600 hover:bg-purple-700 text-white">
+        <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting || phaseHasPostLearning} className="bg-orange-500 hover:bg-orange-600 text-white">
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
           {tab === "manual"
             ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.createActive"))
@@ -424,4 +462,4 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
   );
 }
 
-export default CreateMockTestForm;
+export default CreatePostLearningForm;
