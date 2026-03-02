@@ -210,7 +210,26 @@
     "otpVerified": "OTP verified successfully",
     "resetPasswordSuccess": "Password reset successful, please login",
     "loginWithGoogle": "Sign in with Google",
-    "loginGoogleFailed": "Google login failed. Please try again."
+    "loginGoogleFailed": "Google login failed. Please try again.",
+    "registerOtpSent": "An OTP code has been sent to your email. Please check your inbox.",
+    "registerOtpSubtitle": "Enter the OTP code sent to your email to complete registration",
+    "verifyAndRegister": "Verify & Register",
+    "verifyEmailTitle": "Verify Email",
+    "backToRegisterForm": "Go back",
+    "registerSuccess": "Registration successful! Please login."
+  },
+  "validation": {
+    "fullnameRequired": "Full name is required",
+    "usernameRequired": "Username is required",
+    "usernameLength": "Username must be between 3 and 50 characters",
+    "usernameFormat": "Username must contain both letters and numbers, allowed characters: . _ @ -",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Email is not valid",
+    "passwordRequired": "Password is required",
+    "passwordLength": "Password must be more than 8 characters",
+    "passwordFormat": "Password must contain both letters and numbers",
+    "confirmPasswordRequired": "Confirm password is required",
+    "passwordMismatch": "Confirm password must match password"
   },
   "landingPage": {
     "nav": {
@@ -593,6 +612,33 @@
       "minutes": "min",
       "addQuestion": "Add question",
       "totalQuestions": "Total questions",
+      "maxScore": "Max score",
+      "navigator": {
+        "title": "Question Navigator",
+        "pts": "pts",
+        "reset": "Reset all scores",
+        "locked": "Locked",
+        "overflow": "Total score exceeds max score!",
+        "clickUnlock": "Click to unlock (auto-calculate)",
+        "clickLock": "Click to lock current score",
+        "auto": "Auto-calculated",
+        "lastUnlocked": "Must keep at least 1 unlocked question for auto-balancing",
+        "jumpTo": "Jump to question...",
+        "scrollTop": "Scroll to top"
+      },
+      "scoringStrategy": "Scoring Strategy",
+      "strategyName": {
+        "balanced": "Balanced",
+        "linear": "Linear",
+        "elite": "Elite",
+        "tight": "Tight"
+      },
+      "strategyDesc": {
+        "balanced": "Standard weight ratio between difficulty levels. Suitable for most quizzes.",
+        "linear": "Evenly increasing weight. Higher difficulty questions receive proportionally more points.",
+        "elite": "Strongly rewards hard questions. Ideal for advanced or competitive assessments.",
+        "tight": "Nearly equal weight across all levels. Best for knowledge-check quizzes."
+      },
       "questionType": "Question type",
       "questionTypeLabel": "Type",
       "difficultyLabel": "Difficulty",
@@ -607,6 +653,7 @@
       "correctAnswer": "Correct answer",
       "correctAnswerLabel": "Correct answer",
       "deleteQuiz": "Delete quiz",
+      "deleteQuestion": "Delete",
       "loading": "Loading quizzes...",
       "types": {
         "multipleChoice": "Multiple Choice",
