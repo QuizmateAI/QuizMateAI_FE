@@ -13,6 +13,7 @@ import SuperAdminLayout from './Pages/SuperAdmin/SuperAdminLayout';
 import AdminManagement from './Pages/SuperAdmin/AdminManagement';
 import UserDetailPage from './Pages/SuperAdmin/UserDetailPage';
 import GroupDetailPage from './Pages/SuperAdmin/GroupDetailPage';
+import TopicManagement from './Pages/SuperAdmin/TopicManagement';
 import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
 import GroupWorkspacePage from './Pages/Users/Group/GroupWorkspacePage';
 import GroupManagementPage from './Pages/Users/Group/Group_leader/GroupManagementPage';
@@ -56,6 +57,7 @@ function App() {
             <Route path="groups/:groupId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
+            <Route path="topics" element={<TopicManagement />} />
           </Route>
         </Route>
 
