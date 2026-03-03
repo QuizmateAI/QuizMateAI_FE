@@ -10,7 +10,8 @@
     "logout": "Logout",
     "adminAccounts": "Admin Accounts",
     "rbac": "RBAC System",
-    "subscriptions": "Subscriptions"
+    "subscriptions": "Subscriptions",
+    "topics": "Topics & Fields"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -60,6 +61,37 @@
     },
     "syncSuccess": "Permissions synced successfully.",
     "syncError": "Failed to sync permissions."
+  },
+  "topicManagement": {
+    "title": "Topic & Field Management",
+    "desc": "Create and organize topics with their fields.",
+    "topics": "Topics",
+    "fields": "Fields",
+    "topicTitlePlaceholder": "Enter topic name...",
+    "fieldTitlePlaceholder": "Enter field name...",
+    "codePlaceholder": "Code (optional)",
+    "createTopic": "Create Topic",
+    "createField": "Create Field",
+    "searchTopics": "Search topics...",
+    "searchFields": "Search fields...",
+    "searchFieldsInTopic": "Search fields in selected topic...",
+    "allTopics": "All topics",
+    "selectTopic": "Select topic",
+    "noTopics": "No topics found.",
+    "noFields": "No fields found.",
+    "topicNameRequired": "Topic name is required.",
+    "fieldNameRequired": "Field name is required.",
+    "selectTopicFirst": "Please select a topic first.",
+    "topicCreated": "Topic created successfully.",
+    "fieldCreated": "Field created successfully.",
+    "topicCreateError": "Failed to create topic.",
+    "fieldCreateError": "Failed to create field.",
+    "table": {
+      "id": "ID",
+      "topic": "Topic",
+      "field": "Field",
+      "fieldsCount": "Fields"
+    }
   },
   "header": {
     "systemTitle": "QuizMate AI System",
