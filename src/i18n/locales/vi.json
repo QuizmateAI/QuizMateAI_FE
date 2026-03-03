@@ -10,7 +10,8 @@
     "logout": "Đăng xuất",
     "adminAccounts": "Tài khoản Admin",
     "rbac": "Phân quyền RBAC",
-    "subscriptions": "Gói đăng ký"
+    "subscriptions": "Gói đăng ký",
+    "topics": "Chủ đề và lĩnh vực"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -60,6 +61,37 @@
     },
     "syncSuccess": "Đã đồng bộ quyền thành công.",
     "syncError": "Không thể đồng bộ quyền."
+  },
+  "topicManagement": {
+    "title": "Quản lý chủ đề và lĩnh vực",
+    "desc": "Tạo mới và sắp xếp chủ đề cùng các lĩnh vực.",
+    "topics": "Chủ đề",
+    "fields": "Lĩnh vực",
+    "topicTitlePlaceholder": "Nhập tên chủ đề...",
+    "fieldTitlePlaceholder": "Nhập tên lĩnh vực...",
+    "codePlaceholder": "Mã (tùy chọn)",
+    "createTopic": "Tạo chủ đề",
+    "createField": "Tạo lĩnh vực",
+    "searchTopics": "Tìm chủ đề...",
+    "searchFields": "Tìm lĩnh vực...",
+    "searchFieldsInTopic": "Tìm lĩnh vực trong chủ đề đã chọn...",
+    "allTopics": "Tất cả chủ đề",
+    "selectTopic": "Chọn chủ đề",
+    "noTopics": "Không tìm thấy chủ đề nào.",
+    "noFields": "Không tìm thấy lĩnh vực nào.",
+    "topicNameRequired": "Vui lòng nhập tên chủ đề.",
+    "fieldNameRequired": "Vui lòng nhập tên lĩnh vực.",
+    "selectTopicFirst": "Vui lòng chọn chủ đề trước.",
+    "topicCreated": "Tạo chủ đề thành công.",
+    "fieldCreated": "Tạo lĩnh vực thành công.",
+    "topicCreateError": "Tạo chủ đề thất bại.",
+    "fieldCreateError": "Tạo lĩnh vực thất bại.",
+    "table": {
+      "id": "ID",
+      "topic": "Chủ đề",
+      "field": "Lĩnh vực",
+      "fieldsCount": "Số lĩnh vực"
+    }
   },
   "header": {
     "systemTitle": "Hệ thống QuizMate AI",
