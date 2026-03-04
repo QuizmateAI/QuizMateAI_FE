@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Search, X, Plus, ChevronRight, GitBranch, Folder, FileText,
   BadgeCheck, CreditCard, FolderOpen, Clock, Loader2, Trash2,
-  Pencil, GraduationCap, ClipboardList, Award,
+  Pencil, GraduationCap, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {

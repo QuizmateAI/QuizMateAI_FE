@@ -5,18 +5,16 @@ import {
   Package, Check, X, Clock, Zap,
   ToggleLeft, ToggleRight, Users, User,
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
-  Presentation, Bot, BrainCircuit, BarChart3, AlignLeft,
+  Presentation, Bot, BarChart3, AlignLeft,
   BookOpenText, SlidersHorizontal, Layers,
   Crown, Infinity,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/Components/ui/table';
-import { Badge } from '@/Components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/Components/ui/dialog';

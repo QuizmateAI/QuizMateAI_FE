@@ -2,8 +2,8 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import LogoLight from "@/assets/LightMode_Logo.png";
-import LogoDark from "@/assets/DarkMode_Logo.png";
+import LogoLight from "@/assets/LightMode_Logo.webp";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 

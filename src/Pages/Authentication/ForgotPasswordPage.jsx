@@ -7,7 +7,7 @@ import { ChevronLeft, AlertCircle, CheckCircle, Globe } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import { AiFillApple } from "react-icons/ai";
 import { validateForgotPasswordForm, submitForgotPasswordRequest } from './ForgotPassword';
-import LogoLight from "@/assets/LightMode_Logo.png";
+import LogoLight from "@/assets/LightMode_Logo.webp";
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -157,9 +157,9 @@ const ForgotPasswordPage = () => {
 
               {/* Divider */}
               <div className="relative flex items-center py-4">
-                <div className="flex-grow border-t border-gray-200"></div>
+                <div className="flex-grow border-t border-gray-200" />
                 <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('orLoginWith')}</span>
-                <div className="flex-grow border-t border-gray-200"></div>
+                <div className="flex-grow border-t border-gray-200" />
               </div>
 
               {/* Social Login Buttons */}
@@ -184,7 +184,7 @@ const ForgotPasswordPage = () => {
               className="w-full h-full object-cover"
             />
           </div>
-          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-0"></div>
+          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-0" />
         </div>
       </main>
     </div>

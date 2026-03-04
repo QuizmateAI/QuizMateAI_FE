@@ -6,7 +6,7 @@ import {
   ListChecks, Activity, CreditCard, ChevronDown, ChevronRight, User as UserIcon,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
+import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import {

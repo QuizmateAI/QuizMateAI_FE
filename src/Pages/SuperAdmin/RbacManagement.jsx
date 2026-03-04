@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Shield, Key, ClipboardList, RefreshCw } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
 import {
   Table,
@@ -25,8 +24,6 @@ import {
   listPermissions,
   getAuditLogs,
   getUserPermissions,
-  grantPermissionToUser,
-  revokePermissionFromUser,
   syncUserPermissions,
   getAllSystemUsers,
 } from '@/api/ManagementSystemAPI';
