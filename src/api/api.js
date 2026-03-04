@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://api.quizmateai.io.vn';
 const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(baseURL);
 
 // Tạo instance axios với cấu hình mặc định

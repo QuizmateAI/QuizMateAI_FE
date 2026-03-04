@@ -122,7 +122,7 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
           </div>
 
-          {/* Chọn Topic */}
+          {/* Choose Topic */}
           <div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
               {t('home.workspace.topicLabel')}
