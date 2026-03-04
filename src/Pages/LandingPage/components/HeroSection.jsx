@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { ArrowUp, Map, BrainCircuit, Mic, Globe, PlayCircle, 
-  Check, CheckCircle2, Sparkles, Menu, X  } from 'lucide-react';
+import { BrainCircuit, PlayCircle  } from 'lucide-react';
 
 const HeroSection = () => {
   const { t, i18n } = useTranslation();
@@ -56,7 +55,7 @@ const HeroSection = () => {
               <div key={i} className={`w-12 h-12 rounded-full border-4 overflow-hidden shadow-md ${
                 isDarkMode ? 'border-slate-950 bg-slate-800' : 'border-white bg-gray-200'
               }`}>
-                <img src={`https://i.pravatar.cc/100?img=${i+15}`} alt="learner" className="w-full h-full object-cover" />
+                <img src={`https://i.pravatar.cc/100?img=${i+15}`} alt="learner" className="w-full h-full object-cover" loading="lazy" width={48} height={48} decoding="async" />
               </div>
             ))}
           </div>
@@ -71,7 +70,7 @@ const HeroSection = () => {
         {/* 1. Decorative Glow */}
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[110%] h-[110%] rounded-full blur-3xl -z-10 ${
           isDarkMode ? 'bg-yellow-500/10' : 'bg-yellow-400/20'
-        }`}></div>
+        }`} />
         
         {/* 2. Khung viền ngoài (Glass) */}
         <div className={`relative z-10 backdrop-blur-2xl p-4 rounded-[50px] border shadow-2xl ${

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+/* Font is loaded via index.html <link> for non-blocking load */
 
 @tailwind base;
 @tailwind components;

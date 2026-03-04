@@ -22,8 +22,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/Components/ui/dialog";
-import LogoLight from "@/assets/LightMode_Logo.png";
-import LogoDark from "@/assets/DarkMode_Logo.png";
+import LogoLight from "@/assets/LightMode_Logo.webp";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 
 // --- Custom Tab Components ---
 const Tabs = ({ children, className }) => <div className={className}>{children}</div>;

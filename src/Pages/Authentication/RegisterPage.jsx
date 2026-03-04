@@ -143,9 +143,9 @@ const RegisterPage = () => {
 
               {/* Divider */}
               <div className="relative flex items-center py-4">
-                <div className="flex-grow border-t border-gray-200"></div>
+                <div className="flex-grow border-t border-gray-200" />
                 <span className="flex-shrink mx-4 text-gray-400 text-sm">{t('orRegisterWith')}</span>
-                <div className="flex-grow border-t border-gray-200"></div>
+                <div className="flex-grow border-t border-gray-200" />
               </div>
 
               {/* Social Login Buttons */}
@@ -167,7 +167,7 @@ const RegisterPage = () => {
               className="w-full h-full object-cover"
             />
           </div>
-          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-0"></div>
+          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-0" />
         </div>
       </main>
     </div>

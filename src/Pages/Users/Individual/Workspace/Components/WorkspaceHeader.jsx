@@ -2,8 +2,8 @@ import React from "react";
 import { Button } from "@/Components/ui/button";
 import { Plus, Settings, Share2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import LogoLight from "@/assets/LightMode_Logo.png";
-import LogoDark from "@/assets/DarkMode_Logo.png";
+import LogoLight from "@/assets/LightMode_Logo.webp";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 

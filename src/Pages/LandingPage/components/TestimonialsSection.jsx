@@ -15,7 +15,7 @@ const TestimonialsSection = () => {
         : 'bg-[#2563EB]'
     }`}>
       {/* Background layer for dark mode */}
-      {isDarkMode && <div className="absolute inset-0 bg-slate-950 -z-20"></div>}
+      {isDarkMode && <div className="absolute inset-0 bg-slate-950 -z-20" />}
       
       {/* Background Sparkles Decor */}
       <Sparkles className="absolute top-10 left-10 w-24 h-24 opacity-10 rotate-12" />
@@ -38,7 +38,7 @@ const TestimonialsSection = () => {
               <div className={`w-16 h-16 rounded-2xl overflow-hidden border-4 rotate-3 ${
                 isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-blue-300 border-white/30'
               }`}>
-                <img src="https://i.pravatar.cc/100?img=32" alt="student" className="w-full h-full object-cover" />
+                <img src="https://i.pravatar.cc/100?img=32" alt="student" className="w-full h-full object-cover" loading="lazy" width={64} height={64} decoding="async" />
               </div>
               <div>
                 <p className="font-black text-lg">Sarah Johnson</p>
@@ -62,7 +62,7 @@ const TestimonialsSection = () => {
               <div className={`w-16 h-16 rounded-2xl overflow-hidden border-4 -rotate-3 ${
                 isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-blue-300 border-white/30'
               }`}>
-                <img src="https://i.pravatar.cc/100?img=44" alt="student" className="w-full h-full object-cover" />
+                <img src="https://i.pravatar.cc/100?img=44" alt="student" className="w-full h-full object-cover" loading="lazy" width={64} height={64} decoding="async" />
               </div>
               <div>
                 <p className="font-black text-lg">Mark Thompson</p>
