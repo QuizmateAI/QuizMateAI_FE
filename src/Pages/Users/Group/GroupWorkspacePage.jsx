@@ -181,7 +181,7 @@ function GroupWorkspacePage() {
         const phase = formPhases[pIdx];
         const phaseRes = await createPhase(roadmapId, {
           name: phase?.name || `Phase ${pIdx + 1}`,
-          description: '',
+          description: phase?.description || '',
           studyDurationInDay: phase?.studyDurationInDay || 0,
         });
 
@@ -196,7 +196,7 @@ function GroupWorkspacePage() {
 
           const knowledgeRes = await createKnowledge(phaseId, {
             name: knowledge?.name || `Knowledge ${kIdx + 1}`,
-            description: '',
+            description: knowledge?.description || '',
           });
 
           const createdKnowledge = knowledgeRes.data?.data || knowledgeRes.data || {};

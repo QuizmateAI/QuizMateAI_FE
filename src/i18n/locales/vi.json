@@ -943,7 +943,9 @@
       "description": "Mô tả",
       "doubleClickToRename": "Nhấp đúp để đổi tên",
       "noMockTestYet": "Chưa có mock test nào.",
-      "noPostLearningYet": "Chưa có post-learning nào."
+      "noPostLearningYet": "Chưa có post-learning nào.",
+      "save": "Lưu",
+      "descriptionLabel": "Mô tả"
     },
     "mockTest": {
       "title": "Mock Test",
