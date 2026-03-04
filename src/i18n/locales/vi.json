@@ -610,7 +610,7 @@
       "desc": "Chọn loại tài liệu bạn muốn thêm vào workspace.",
       "dragDrop": "Kéo thả file vào đây",
       "orBrowse": "hoặc nhấn để chọn file",
-      "supportedFormats": "Hỗ trợ: PDF, hình ảnh (PNG, JPG), video",
+      "supportedFormats": "Hỗ trợ: pdf, docx, doc, pptx, ppt, xlsx, xls, txt, png, mp3, mp4",
       "urlPlaceholder": "Dán đường dẫn YouTube hoặc trang web...",
       "addUrl": "Thêm đường dẫn",
       "uploading": "Đang tải lên...",

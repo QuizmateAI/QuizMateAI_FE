@@ -84,6 +84,7 @@ function RoadmapListView({
   // Inline add (thêm phase / knowledge / quiz / flashcard)
   const [addingType, setAddingType] = useState(null);
   const [addName, setAddName] = useState("");
+  const [addDescription, setAddDescription] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
   // Inline edit (title + description)
@@ -290,14 +291,14 @@ function RoadmapListView({
     setAddLoading(true);
     try {
       if (addingType === "phase" && depth === 1) {
-        await createPhase(path[0].id, { name: addName.trim() });
+        await createPhase(path[0].id, { name: addName.trim(), description: addDescription.trim() });
         await fetchPhases(path[0].id);
       } else if (addingType === "knowledge" && depth === 2) {
-        await createKnowledge(path[1].id, { name: addName.trim() });
+        await createKnowledge(path[1].id, { name: addName.trim(), description: addDescription.trim() });
         await fetchKnowledges(path[1].id);
       }
     } catch { /* bỏ qua */ }
-    finally { setAddLoading(false); setAddingType(null); setAddName(""); }
+    finally { setAddLoading(false); setAddingType(null); setAddName(""); setAddDescription(""); }
   };
 
   /* ==================== EDIT (gọi API update title + description) ==================== */
@@ -463,26 +464,49 @@ function RoadmapListView({
       quiz: t("workspace.roadmap.quizNamePlaceholder"),
       flashcard: t("workspace.roadmap.flashcardNamePlaceholder"),
     };
+    const descriptionPlaceholderMap = {
+      phase: t("workspace.roadmap.phaseDescPlaceholder"),
+      knowledge: t("workspace.roadmap.knowledgeDescPlaceholder"),
+    };
+    const canInputDescription = addingType === "phase" || addingType === "knowledge";
     return (
-      <div className={`rounded-xl px-4 py-3 flex items-center gap-3 border ${
+      <div className={`rounded-xl px-4 py-3 flex items-start gap-3 border ${
         isDarkMode ? "bg-slate-800 border-blue-500/50" : "bg-blue-50/50 border-blue-300"
       }`}>
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-blue-950/40" : "bg-blue-100"}`}>
           <Plus className="w-4 h-4 text-blue-500" />
         </div>
-        <input
-          autoFocus
-          value={addName}
-          onChange={(e) => setAddName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleInlineAdd();
-            if (e.key === "Escape") { setAddingType(null); setAddName(""); }
-          }}
-          placeholder={placeholderMap[addingType] || ""}
-          className={`flex-1 bg-transparent outline-none text-sm ${
-            isDarkMode ? "text-white placeholder:text-slate-500" : "text-gray-900 placeholder:text-gray-400"
-          }`}
-        />
+        <div className="flex-1 space-y-2">
+          <input
+            autoFocus
+            value={addName}
+            onChange={(e) => setAddName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleInlineAdd();
+              if (e.key === "Escape") { setAddingType(null); setAddName(""); setAddDescription(""); }
+            }}
+            placeholder={placeholderMap[addingType] || ""}
+            className={`w-full bg-transparent outline-none text-sm ${
+              isDarkMode ? "text-white placeholder:text-slate-500" : "text-gray-900 placeholder:text-gray-400"
+            }`}
+          />
+          {canInputDescription && (
+            <textarea
+              value={addDescription}
+              onChange={(e) => setAddDescription(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setAddingType(null); setAddName(""); setAddDescription(""); }
+              }}
+              placeholder={descriptionPlaceholderMap[addingType] || ""}
+              rows={2}
+              className={`w-full rounded-lg border px-3 py-2 text-xs outline-none resize-none ${
+                isDarkMode
+                  ? "bg-slate-900 border-slate-700 text-white placeholder:text-slate-500"
+                  : "bg-white border-blue-200 text-gray-900 placeholder:text-gray-400"
+              }`}
+            />
+          )}
+        </div>
         <div className="flex items-center gap-1">
           {addLoading ? (
             <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
@@ -492,7 +516,7 @@ function RoadmapListView({
                 className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-7 px-3 text-xs transition-all active:scale-95">
                 {t("workspace.listView.create")}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setAddingType(null); setAddName(""); }}
+              <Button size="sm" variant="ghost" onClick={() => { setAddingType(null); setAddName(""); setAddDescription(""); }}
                 className={`rounded-lg h-7 px-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 <X className="w-3.5 h-3.5" />
               </Button>
@@ -515,7 +539,7 @@ function RoadmapListView({
     return (
       <div className="mt-3">
         <Button variant="outline"
-          onClick={() => { setAddingType(depth === 1 ? "phase" : "knowledge"); setAddName(""); }}
+          onClick={() => { setAddingType(depth === 1 ? "phase" : "knowledge"); setAddName(""); setAddDescription(""); }}
           className={`rounded-xl h-10 w-full border-dashed border-2 flex items-center gap-2 transition-all active:scale-[0.98] ${
             isDarkMode
               ? "border-slate-700 text-slate-400 hover:border-blue-500 hover:text-blue-400 hover:bg-slate-800/40"

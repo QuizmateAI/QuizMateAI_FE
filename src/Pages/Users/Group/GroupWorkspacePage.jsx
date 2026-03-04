@@ -73,20 +73,6 @@ function GroupWorkspacePage() {
     setSources((prev) => [...prev, ...newSources]);
   }, []);
 
-  // Xử lý thêm URL tài liệu
-  const handleAddUrl = useCallback(async (url) => {
-    // TODO: Gọi API thêm URL cho workspace nhóm
-    setSources((prev) => [
-      ...prev,
-      {
-        id: `src-${Date.now()}`,
-        name: url,
-        type: 'url',
-        size: '',
-      },
-    ]);
-  }, []);
-
   // Xóa tài liệu khỏi workspace nhóm
   const handleRemoveSource = useCallback((sourceId) => {
     setSources((prev) => prev.filter((source) => source.id !== sourceId));
@@ -520,7 +506,6 @@ function GroupWorkspacePage() {
         onOpenChange={setUploadDialogOpen}
         isDarkMode={isDarkMode}
         onUploadFiles={handleUploadFiles}
-        onAddUrl={handleAddUrl}
       />
 
       {/* Dialog mời thành viên */}

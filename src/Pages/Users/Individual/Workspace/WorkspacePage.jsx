@@ -117,17 +117,6 @@ function WorkspacePage() {
         }
 	}, [workspaceId, fetchSources]);
 
-	// Xử lý thêm URL
-	const handleAddUrl = useCallback(async (url) => {
-		// TODO: Gọi API thêm URL — tạm thêm vào state mock
-		setSources((prev) => [...prev, {
-			id: `src-${Date.now()}`,
-			name: url,
-			type: "url",
-			size: "",
-		}]);
-	}, []);
-
 	// Xóa tài liệu
 	const handleRemoveSource = useCallback(async (sourceId) => {
         try {
@@ -532,7 +521,6 @@ function WorkspacePage() {
 				onOpenChange={setUploadDialogOpen}
 				isDarkMode={isDarkMode}
 				onUploadFiles={handleUploadFiles}
-				onAddUrl={handleAddUrl}
 			/>
 
 

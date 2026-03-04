@@ -9,70 +9,30 @@ import {
   DialogFooter,
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
-// Dialog chỉnh sửa workspace với topic/subject selector
-function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoading, onFetchTopics, onEdit, isDarkMode }) {
+// Dialog chỉnh sửa workspace - chỉ cho phép sửa tên workspace
+function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [title, setTitle] = useState('');
-  const [topicId, setTopicId] = useState('');
-  const [subjectId, setSubjectId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
-
-  // Lấy subjects từ topic đã chọn
-  const selectedTopic = topics.find((t) => t.topicId === Number(topicId));
-  const subjects = selectedTopic?.subjects || [];
-
-  // Tải topics khi mở dialog
-  useEffect(() => {
-    if (open && topics.length === 0) {
-      onFetchTopics();
-    }
-  }, [open, topics.length, onFetchTopics]);
 
   // Điền dữ liệu workspace vào form khi mở dialog
   useEffect(() => {
     if (open && workspace) {
       setTitle(workspace.title || '');
-      setTopicId(workspace.topic?.topicId?.toString() || '');
-      setSubjectId(workspace.subject?.subjectId?.toString() || '');
       setErrors({});
       setSubmitting(false);
     }
   }, [open, workspace]);
 
-  // Verify subject tồn tại trong topics sau khi topics load xong
-  useEffect(() => {
-    if (open && workspace && topics.length > 0 && topicId && subjectId) {
-      const topic = topics.find((t) => t.topicId === Number(topicId));
-      if (topic && topic.subjects) {
-        // Kiểm tra xem subject có tồn tại trong list subjects của topic không
-        const subjectExists = topic.subjects.some((s) => s.subjectId === Number(subjectId));
-        if (!subjectExists) {
-          console.warn(`Subject ${subjectId} không tồn tại trong topic ${topicId}, reset subject`);
-          setSubjectId('');
-        }
-      }
-    }
-  }, [open, workspace, topics, topicId, subjectId]);
-
-  // Reset subject khi đổi topic (chỉ khi topic thay đổi so với ban đầu)
-  const handleTopicChange = (newTopicId) => {
-    setTopicId(newTopicId);
-    // Nếu topic mới khác topic ban đầu, reset subject
-    if (Number(newTopicId) !== workspace?.topic?.topicId) {
-      setSubjectId('');
-    }
-  };
-
   // Kiểm tra dữ liệu hợp lệ
   const validate = () => {
     const newErrors = {};
     if (!title.trim()) newErrors.title = t('home.workspace.titleRequired');
-    if (!topicId) newErrors.topicId = t('home.workspace.topicRequired');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,8 +44,6 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
     setSubmitting(true);
     try {
       await onEdit(workspace.workspaceId, {
-        topicId: Number(topicId),
-        ...(subjectId ? { subjectId: Number(subjectId) } : {}),
         title: title.trim(),
       });
       onOpenChange(false);
@@ -102,11 +60,7 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
       : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400'
   }`;
 
-  const selectBase = `w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all appearance-none cursor-pointer ${
-    isDarkMode
-      ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500'
-      : 'bg-white border-gray-300 text-gray-900 focus:border-blue-500'
-  }`;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,7 +82,7 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
           {/* Tên workspace */}
           <div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.workspace.titleLabel')}
+              {t('home.workspace.titleLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -137,58 +91,9 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, topics, topicsLoad
               placeholder={t('home.workspace.titlePlaceholder')}
               className={`${inputBase} ${errors.title ? 'border-red-500' : ''}`}
               autoFocus
+              maxLength={255}
             />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-          </div>
-
-          {/* Chọn Topic */}
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.workspace.topicLabel')}
-            </label>
-            <div className="relative">
-              <select
-                value={topicId}
-                onChange={(e) => handleTopicChange(e.target.value)}
-                className={`${selectBase} ${errors.topicId ? 'border-red-500' : ''}`}
-                disabled={topicsLoading}
-              >
-                <option value="">{topicsLoading ? '...' : t('home.workspace.topicPlaceholder')}</option>
-                {topics.map((topic) => (
-                  <option key={topic.topicId} value={topic.topicId}>
-                    {topic.title}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
-            </div>
-            {errors.topicId && <p className="text-red-500 text-xs mt-1">{errors.topicId}</p>}
-          </div>
-
-          {/* Chọn Subject (không bắt buộc) */}
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.workspace.subjectLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
-            </label>
-            <div className="relative">
-              <select
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-                className={`${selectBase} ${errors.subjectId ? 'border-red-500' : ''} ${!topicId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!topicId || topicsLoading}
-              >
-                <option value="">
-                  {!topicId ? t('home.workspace.selectTopicFirst') : t('home.workspace.subjectPlaceholder')}
-                </option>
-                {subjects.map((subject) => (
-                  <option key={subject.subjectId} value={subject.subjectId}>
-                    {subject.title}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
-            </div>
-            {errors.subjectId && <p className="text-red-500 text-xs mt-1">{errors.subjectId}</p>}
           </div>
 
           <DialogFooter className="pt-2">
