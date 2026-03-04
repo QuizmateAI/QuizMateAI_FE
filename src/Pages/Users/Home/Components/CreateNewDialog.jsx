@@ -92,12 +92,7 @@ function CreateNewDialog({
       if (!wsTitle.trim()) newErrors.title = t('home.workspace.titleRequired');
     } else {
       if (!groupName.trim()) newErrors.groupName = t('home.group.nameRequired');
-    }
-
-    if (!topicId) {
-      newErrors.topicId = mode === 'workspace'
-        ? t('home.workspace.topicRequired')
-        : t('home.group.topicRequired');
+      if (!topicId) newErrors.topicId = t('home.group.topicRequired');
     }
 
     setErrors(newErrors);
@@ -112,8 +107,6 @@ function CreateNewDialog({
     try {
       if (mode === 'workspace') {
         await onCreateWorkspace({
-          topicId: Number(topicId),
-          ...(subjectId ? { subjectId: Number(subjectId) } : {}),
           title: wsTitle.trim(),
         });
       } else {
@@ -275,8 +268,8 @@ function CreateNewDialog({
             </>
           )}
 
-          {/* Chọn Topic (chung cho cả 2 mode) */}
-          <div>
+          {/* Chọn Topic (chỉ cho group) */}
+          {mode === 'group' && (<div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
               {t(`${topicNs}.topicLabel`)}
             </label>
@@ -297,10 +290,10 @@ function CreateNewDialog({
               <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
             {errors.topicId && <p className="text-red-500 text-xs mt-1">{errors.topicId}</p>}
-          </div>
+          </div>)}
 
-          {/* Chọn Subject (không bắt buộc) */}
-          <div>
+          {/* Chọn Subject (chỉ cho group, không bắt buộc) */}
+          {mode === 'group' && (<div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
               {t(`${topicNs}.subjectLabel`)} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
             </label>
@@ -323,7 +316,7 @@ function CreateNewDialog({
               <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
             </div>
             {errors.subjectId && <p className="text-red-500 text-xs mt-1">{errors.subjectId}</p>}
-          </div>
+          </div>)}
 
           <DialogFooter className="pt-2">
             <Button
