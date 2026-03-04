@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star, Trash2,
-  ChevronDown, ChevronRight, Target, BookOpen, Hash, Save, X, Plus, CheckCircle2
+  ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star,
+  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {
-  getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
-  updateQuiz, updateQuestion, updateAnswer, deleteQuestion, deleteAnswer,
-  createQuestion, createAnswer, toggleStarQuestion, QUESTION_TYPE_ID_MAP
+  getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
 
 // Map loại câu hỏi frontend sang questionTypeId backend

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Plus, Trash2, Edit, Search, Shield, RefreshCw,
+  Plus, Search, Shield, RefreshCw,
   Users, Package, CreditCard, Banknote, FileText,
   ClipboardList, Settings, UsersRound, ShieldCheck, Eye, Pencil,
 } from 'lucide-react';
