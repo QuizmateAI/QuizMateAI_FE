@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
+import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
@@ -62,12 +63,34 @@ function WorkspacePage() {
 		i18n.changeLanguage(newLang);
 	};
 
+	// Fetch materials list
+    const fetchSources = useCallback(async () => {
+        if (!workspaceId) return;
+        try {
+            const data = await getMaterialsByWorkspace(workspaceId);
+            if (Array.isArray(data)) {
+                setSources(data.map(item => ({
+                    id: item.materialId,
+                    name: item.title,
+                    type: item.materialType,
+                    status: item.status,
+                    uploadedAt: item.uploadedAt,
+                    // map other fields
+                    ...item
+                })));
+            }
+        } catch (err) {
+            console.error("Failed to fetch materials:", err);
+        }
+    }, [workspaceId]);
+
 	// Lấy thông tin workspace từ API
 	useEffect(() => {
 		if (workspaceId) {
 			fetchWorkspaceDetail(workspaceId).catch(() => {});
+            fetchSources();
 		}
-	}, [workspaceId, fetchWorkspaceDetail]);
+	}, [workspaceId, fetchWorkspaceDetail, fetchSources]);
 
 	// Đóng settings khi click ra ngoài
 	useEffect(() => {
@@ -83,15 +106,16 @@ function WorkspacePage() {
 
 	// Xử lý upload file tài liệu
 	const handleUploadFiles = useCallback(async (files) => {
-		// TODO: Gọi API upload thật — tạm thêm vào state mock
-		const newSources = files.map((f, i) => ({
-			id: `src-${Date.now()}-${i}`,
-			name: f.name,
-			type: f.type?.includes("pdf") ? "pdf" : f.type?.includes("image") ? "image" : f.type?.includes("video") ? "video" : "file",
-			size: `${(f.size / 1024 / 1024).toFixed(1)} MB`,
-		}));
-		setSources((prev) => [...prev, ...newSources]);
-	}, []);
+        try {
+            for (const file of files) {
+                await uploadMaterial(file, workspaceId, "WORKSPACE");
+            }
+            // Refresh list after upload
+            fetchSources();
+        } catch (error) {
+            console.error("Failed to upload files:", error);
+        }
+	}, [workspaceId, fetchSources]);
 
 	// Xử lý thêm URL
 	const handleAddUrl = useCallback(async (url) => {
@@ -105,9 +129,14 @@ function WorkspacePage() {
 	}, []);
 
 	// Xóa tài liệu
-	const handleRemoveSource = useCallback((sourceId) => {
-		setSources((prev) => prev.filter((s) => s.id !== sourceId));
-	}, []);
+	const handleRemoveSource = useCallback(async (sourceId) => {
+        try {
+            await deleteMaterial(sourceId, "WORKSPACE");
+            fetchSources();
+        } catch (error) {
+            console.error("Failed to delete material:", error);
+        }
+	}, [fetchSources]);
 
 	// Xử lý action từ Studio Panel — hiển thị form inline trong ChatPanel
 	const handleStudioAction = useCallback((actionKey) => {
@@ -199,7 +228,7 @@ function WorkspacePage() {
 				const phase = formPhases[pIdx];
 				const phaseRes = await createPhase(roadmapId, {
 					name: phase?.name || `Phase ${pIdx + 1}`,
-					description: "",
+					description: phase?.description || "",
 					studyDurationInDay: phase?.studyDurationInDay || 0,
 				});
 
@@ -214,7 +243,7 @@ function WorkspacePage() {
 
 					const knowledgeRes = await createKnowledge(phaseId, {
 						name: knowledge?.name || `Knowledge ${kIdx + 1}`,
-						description: "",
+						description: knowledge?.description || "",
 					});
 
 					const createdKnowledge = knowledgeRes.data?.data || knowledgeRes.data || {};
