@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Search, X, Plus, ChevronRight, GitBranch, Folder, FileText,
   BadgeCheck, CreditCard, FolderOpen, Clock, Loader2, Trash2,
-  Pencil, GraduationCap, ClipboardList,
+  Pencil, GraduationCap, ClipboardList, Check,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {
@@ -16,6 +16,9 @@ import {
   deleteKnowledge,
   createPhase,
   createKnowledge,
+  updateRoadmap,
+  updatePhase,
+  updateKnowledge,
 } from "@/api/RoadmapAPI";
 import { getQuizzesByContext, deleteQuiz as deleteQuizAPI } from "@/api/QuizAPI";
 import { getFlashcardsByContext, deleteFlashcardSet } from "@/api/FlashcardAPI";
@@ -83,9 +86,11 @@ function RoadmapListView({
   const [addName, setAddName] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
-  // Inline rename
-  const [renamingId, setRenamingId] = useState(null);
-  const [renameValue, setRenameValue] = useState("");
+  // Inline edit (title + description)
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   /* ==================== FETCH DATA (chỉ roadmap/phase/knowledge dùng API thật) ==================== */
   const fetchRoadmaps = useCallback(async () => {
@@ -248,7 +253,7 @@ function RoadmapListView({
       setPath((p) => p.slice(0, idx)); setSearchQuery("");
     }
     setAddingType(null);
-    setRenamingId(null);
+    setEditingId(null);
   };
 
   /* ==================== DELETE ==================== */
@@ -295,6 +300,32 @@ function RoadmapListView({
     finally { setAddLoading(false); setAddingType(null); setAddName(""); }
   };
 
+  /* ==================== EDIT (gọi API update title + description) ==================== */
+  const handleSaveEdit = useCallback(async (item) => {
+    const newTitle = editTitle.trim();
+    const newDesc = editDesc.trim();
+    // Nếu không thay đổi gì → đóng
+    if (newTitle === (item.name || "") && newDesc === (item.description || "")) {
+      setEditingId(null);
+      return;
+    }
+    if (!newTitle) { setEditingId(null); return; }
+    setEditLoading(true);
+    try {
+      if (depth === 0) {
+        await updateRoadmap(item.id, { title: newTitle, description: newDesc, status: item.status });
+        await fetchRoadmaps();
+      } else if (depth === 1) {
+        await updatePhase(item.id, { title: newTitle, description: newDesc, status: item.status, studyDurationInDay: item.studyDurationInDay, phaseIndex: item.phaseIndex });
+        await fetchPhases(path[0]?.id);
+      } else if (depth === 2) {
+        await updateKnowledge(item.id, { title: newTitle, description: newDesc, status: item.status });
+        await fetchKnowledges(path[1]?.id);
+      }
+    } catch { /* bỏ qua */ }
+    finally { setEditLoading(false); setEditingId(null); }
+  }, [depth, editTitle, editDesc, path, fetchRoadmaps, fetchPhases, fetchKnowledges]);
+
   /* ==================== RENDER HELPERS ==================== */
   const levelKeys = ["roadmap", "phase", "knowledge", "items"];
 
@@ -312,9 +343,9 @@ function RoadmapListView({
   const getSubtitle = (item) => {
     if (item.itemType === "quiz") return `Quiz · ${item.status || "ACTIVE"}`;
     if (item.itemType === "flashcard") return `Flashcard · ${item.status || "ACTIVE"}`;
-    if (depth === 0) return `${item.status || "INACTIVE"} · ${item.createVia || "MANUAL"}`;
-    if (depth === 1) return `${item.status || "INACTIVE"}${item.studyDurationInDay ? ` · ${item.studyDurationInDay}d` : ""}`;
-    if (depth === 2) return `${item.status || "INACTIVE"}`;
+    if (depth === 0) return item.description || "";
+    if (depth === 1) return item.description || "";
+    if (depth === 2) return item.description || "";
     return "";
   };
 
@@ -698,12 +729,91 @@ function RoadmapListView({
             {filtered.map((item, index) => {
               const { Icon, color, bg } = getItemIcon(item);
               const canDrill = depth < 3;
-              const isRenaming = renamingId === item.id;
+              const isEditing = editingId === item.id;
 
+              /* --- Chế độ chỉnh sửa (title + description) --- */
+              if (isEditing) {
+                return (
+                  <div
+                    key={`${item.id}-${index}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`rounded-xl px-4 py-3 border-2 transition-all ${
+                      isDarkMode ? "bg-slate-800 border-blue-500/50" : "bg-blue-50/30 border-blue-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${bg}`}>
+                        <Icon className={`w-4 h-4 ${color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        {/* Tiêu đề */}
+                        <div>
+                          <label className={`block text-[11px] font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                            {t("workspace.roadmap.name")}
+                          </label>
+                          <input
+                            autoFocus
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSaveEdit(item); }
+                              if (e.key === "Escape") setEditingId(null);
+                            }}
+                            disabled={editLoading}
+                            placeholder={t("workspace.roadmap.namePlaceholder")}
+                            className={`w-full text-sm font-medium rounded-lg border px-3 py-1.5 outline-none transition-all ${
+                              isDarkMode
+                                ? "bg-slate-900 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
+                                : "bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400"
+                            }`}
+                          />
+                        </div>
+                        {/* Mô tả */}
+                        <div>
+                          <label className={`block text-[11px] font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                            {t("workspace.roadmap.descriptionLabel")}
+                          </label>
+                          <textarea
+                            value={editDesc}
+                            onChange={(e) => setEditDesc(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); handleSaveEdit(item); }
+                              if (e.key === "Escape") setEditingId(null);
+                            }}
+                            disabled={editLoading}
+                            placeholder={t("workspace.roadmap.goalPlaceholder")}
+                            rows={2}
+                            className={`w-full text-sm rounded-lg border px-3 py-1.5 outline-none transition-all resize-none ${
+                              isDarkMode
+                                ? "bg-slate-900 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
+                                : "bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400"
+                            }`}
+                          />
+                        </div>
+                        {/* Nút lưu / hủy */}
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <Button size="sm" onClick={() => handleSaveEdit(item)} disabled={editLoading}
+                            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-7 px-3 text-xs transition-all active:scale-95">
+                            {editLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Check className="w-3.5 h-3.5 mr-1" />}
+                            {t("workspace.roadmap.save") || "Save"}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} disabled={editLoading}
+                            className={`rounded-lg h-7 px-3 text-xs ${isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-500 hover:text-gray-700"}`}>
+                            <X className="w-3.5 h-3.5 mr-1" />
+                            {t("workspace.roadmap.cancel")}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              /* --- Chế độ xem bình thường --- */
               return (
                 <div
                   key={`${item.id}-${index}`}
-                  onClick={canDrill && !isRenaming ? () => drillDown(item) : undefined}
+                  onClick={canDrill ? () => drillDown(item) : undefined}
                   className={`rounded-xl px-4 py-3 flex items-center gap-3 transition-all group ${
                     canDrill ? "cursor-pointer" : ""
                   } ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}
@@ -712,32 +822,15 @@ function RoadmapListView({
                     <Icon className={`w-4 h-4 ${color}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    {isRenaming ? (
-                      <input
-                        autoFocus
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") { /* TODO: gọi API rename */ setRenamingId(null); }
-                          if (e.key === "Escape") setRenamingId(null);
-                        }}
-                        onBlur={() => setRenamingId(null)}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`w-full text-sm font-medium bg-transparent outline-none border-b ${
-                          isDarkMode ? "border-blue-400 text-white" : "border-blue-500 text-gray-900"
-                        }`}
-                      />
-                    ) : (
-                      <>
-                        <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                          {item.name}
-                        </p>
-                        <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                          {getSubtitle(item)}
-                        </p>
-                      </>
+                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                      {item.name}
+                    </p>
+                    {getSubtitle(item) && (
+                      <p className={`text-xs mt-0.5 line-clamp-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                        {getSubtitle(item)}
+                      </p>
                     )}
-                    {item.createdAt && !isRenaming && (
+                    {item.createdAt && (
                       <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -747,9 +840,9 @@ function RoadmapListView({
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    {/* Nút đổi tên */}
+                    {/* Nút chỉnh sửa */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); setRenamingId(item.id); setRenameValue(item.name || ""); }}
+                      onClick={(e) => { e.stopPropagation(); setEditingId(item.id); setEditTitle(item.name || ""); setEditDesc(item.description || ""); }}
                       className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${
                         isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"
                       }`}

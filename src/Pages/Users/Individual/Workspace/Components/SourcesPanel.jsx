@@ -5,10 +5,11 @@ import SourceDetailView from "./SourceDetailView";
 
 // Lấy icon theo loại tài liệu
 function getSourceIcon(type) {
-  if (type === "pdf") return <FileText className="w-4 h-4 text-red-500" />;
-  if (type === "image") return <Image className="w-4 h-4 text-green-500" />;
-  if (type === "video") return <Film className="w-4 h-4 text-purple-500" />;
-  if (type === "url") return <Link2 className="w-4 h-4 text-blue-500" />;
+  if (type?.toLowerCase().includes("pdf")) return <FileText className="w-4 h-4 text-red-500" />;
+  if (type?.toLowerCase().includes("doc")) return <FileText className="w-4 h-4 text-blue-600" />;
+  if (type?.toLowerCase().includes("image")) return <Image className="w-4 h-4 text-green-500" />;
+  if (type?.toLowerCase().includes("video")) return <Film className="w-4 h-4 text-purple-500" />;
+  if (type?.toLowerCase() === "url") return <Link2 className="w-4 h-4 text-blue-500" />;
   return <FileText className="w-4 h-4 text-gray-500" />;
 }
 
