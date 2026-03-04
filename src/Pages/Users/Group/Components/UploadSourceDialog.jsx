@@ -133,7 +133,7 @@ function UploadSourceDialog({ open, onOpenChange, isDarkMode, onUploadFiles, onA
               <p className={`text-xs mt-2 ${isDarkMode ? "text-slate-600" : "text-gray-400"}`}>
                 {t("workspace.upload.supportedFormats")}
               </p>
-              <input ref={fileInputRef} type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.mp4,.webm" className="hidden" onChange={handleFileSelect} />
+              <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.mp4,.webm" className="hidden" onChange={handleFileSelect} />
             </div>
 
             {/* Danh sách file đã chọn */}
