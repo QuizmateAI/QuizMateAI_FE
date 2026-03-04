@@ -4,13 +4,12 @@ import { useTranslation } from "react-i18next";
 
 // Helper lấy icon theo loại tài liệu
 function getDetailIcon(type, className = "w-5 h-5") {
-  const map = {
-    pdf: <FileText className={`${className} text-red-500`} />,
-    image: <Image className={`${className} text-green-500`} />,
-    video: <Film className={`${className} text-purple-500`} />,
-    url: <Link2 className={`${className} text-blue-500`} />,
-  };
-  return map[type] || <FileText className={`${className} text-gray-500`} />;
+  if (type?.toLowerCase().includes("pdf")) return <FileText className={`${className} text-red-500`} />;
+  if (type?.toLowerCase().includes("doc")) return <FileText className={`${className} text-blue-600`} />;
+  if (type?.toLowerCase().includes("image")) return <Image className={`${className} text-green-500`} />;
+  if (type?.toLowerCase().includes("video")) return <Film className={`${className} text-purple-500`} />;
+  if (type?.toLowerCase() === "url") return <Link2 className={`${className} text-blue-500`} />;
+  return <FileText className={`${className} text-gray-500`} />;
 }
 
 // Hiển thị chi tiết tài liệu inline trong khu vực học tập

@@ -943,7 +943,9 @@
       "description": "Description",
       "doubleClickToRename": "Double-click to rename",
       "noMockTestYet": "No mock test created yet.",
-      "noPostLearningYet": "No post-learning created yet."
+      "noPostLearningYet": "No post-learning created yet.",
+      "save": "Save",
+      "descriptionLabel": "Description"
     },
     "mockTest": {
       "title": "Mock Test",
