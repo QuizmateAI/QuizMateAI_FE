@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { register, checkUsername, sendOTP, verifyOTP } from '@/api/Authentication';
+import { register, sendOTP, verifyOTP } from '@/api/Authentication';
 
 // Regex theo BE: username phải chứa cả chữ và số, cho phép . _ @ -
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;

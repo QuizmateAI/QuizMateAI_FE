@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from "@/Components/ui/button";
 import { Globe, Sun, Moon } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import LogoLight from "@/assets/LightMode_Logo.png";
-import LogoDark from "@/assets/DarkMode_Logo.png";
+import LogoLight from "@/assets/LightMode_Logo.webp";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 
 const Navbar = () => {
   const navigate = useNavigate();

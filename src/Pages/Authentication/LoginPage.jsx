@@ -5,9 +5,8 @@ import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { FloatingInput, FloatingPasswordInput } from "@/Components/ui/floating-input";
 import { ChevronLeft, Globe, Sun, Moon, Loader2 } from 'lucide-react';
-import { FcGoogle } from "react-icons/fc";
-import LogoLight from "@/assets/LightMode_Logo.png";
-import LogoDark from "@/assets/DarkMode_Logo.png";
+import LogoLight from "@/assets/LightMode_Logo.webp";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { GoogleLogin } from '@react-oauth/google'; // Import GoogleLogin component
 import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
 import { useLogin } from './Login';
@@ -158,9 +157,9 @@ const LoginPageContent = () => {
                 </p>
 
                 <div className="relative flex items-center py-1">
-                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
                   <span className="flex-shrink mx-4 text-gray-400 dark:text-slate-500 text-sm">{t('auth.orLoginWith')}</span>
-                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+                  <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
                 </div>
 
                 {/* Google Login Button */}
@@ -301,9 +300,9 @@ const LoginPageContent = () => {
 
               {/* Progress Indicator */}
               <div className="flex justify-center items-center gap-2 mt-8">
-                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'email' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`}></div>
-                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'otp' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`}></div>
-                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'newPassword' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`}></div>
+                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'email' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
+                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'otp' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
+                <div className={`w-3 h-3 rounded-full transition-colors ${forgotPasswordHook.forgotPasswordStep === 'newPassword' ? 'bg-[#0455BF] dark:bg-blue-500' : 'bg-gray-300 dark:bg-slate-700'}`} />
               </div>
             </div>
           )}
@@ -471,9 +470,9 @@ const LoginPageContent = () => {
 
                   {/* Divider */}
                   <div className="relative flex items-center py-2">
-                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
                     <span className="flex-shrink mx-4 text-gray-400 dark:text-slate-500 text-sm">{t('auth.orRegisterWith')}</span>
-                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800"></div>
+                    <div className="flex-grow border-t border-gray-200 dark:border-slate-800" />
                   </div>
 
                   {/* Social Login Buttons - Register View */}
@@ -524,8 +523,8 @@ const LoginPageContent = () => {
 
                   {/* Progress Indicator */}
                   <div className="flex justify-center items-center gap-2 mt-4">
-                    <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-slate-700 transition-colors"></div>
-                    <div className="w-3 h-3 rounded-full bg-[#0455BF] dark:bg-blue-500 transition-colors"></div>
+                    <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-slate-700 transition-colors" />
+                    <div className="w-3 h-3 rounded-full bg-[#0455BF] dark:bg-blue-500 transition-colors" />
                   </div>
                 </form>
               )}
@@ -542,7 +541,7 @@ const LoginPageContent = () => {
               className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
             />
           </div>
-          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 dark:bg-blue-900/30 rounded-full blur-3xl -z-0"></div>
+          <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 dark:bg-blue-900/30 rounded-full blur-3xl -z-0" />
         </div>
       </main>
     </div>

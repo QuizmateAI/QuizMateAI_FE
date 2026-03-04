@@ -5,7 +5,7 @@ import {
   PanelLeftClose, LogOut, Shield, CreditCard, FolderTree
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import LogoDark from "@/assets/DarkMode_Logo.png";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 

@@ -1,38 +1,55 @@
-import { useState } from 'react'
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HeroSection from './Pages/LandingPage/LandingPage';
-import LoginPage from './Pages/Authentication/LoginPage';
-import RegisterPage from './Pages/Authentication/RegisterPage';
-import ForgotPasswordPage from './Pages/Authentication/ForgotPasswordPage';
-import HomePage from './Pages/Users/Home/HomePage';
-import AdminLayout from './Pages/Admin/AdminLayout';
-import UserManagement from './Pages/Admin/UserManagement';
-import GroupManagement from './Pages/Admin/GroupManagement';
-import SubscriptionManagement from './Pages/Admin/SubscriptionManagement';
-import SuperAdminLayout from './Pages/SuperAdmin/SuperAdminLayout';
-import AdminManagement from './Pages/SuperAdmin/AdminManagement';
-import UserDetailPage from './Pages/SuperAdmin/UserDetailPage';
-import GroupDetailPage from './Pages/SuperAdmin/GroupDetailPage';
-import TopicManagement from './Pages/SuperAdmin/TopicManagement';
-import WorkspacePage from './Pages/Users/Individual/Workspace/WorkspacePage';
-import GroupWorkspacePage from './Pages/Users/Group/GroupWorkspacePage';
-import GroupManagementPage from './Pages/Users/Group/Group_leader/GroupManagementPage';
-import ProfilePage from './Pages/Users/Profile/ProfilePage';
-import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute'; // Import bảo vệ route
+import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
-import './i18n'; // Import i18n configuration
-import './App.css'
+import './i18n';
+import './App.css';
+
+// ── Lazy-loaded route components (code splitting) ──
+const LandingPage = lazy(() => import('./Pages/LandingPage/LandingPage'));
+const LoginPage = lazy(() => import('./Pages/Authentication/LoginPage'));
+const RegisterPage = lazy(() => import('./Pages/Authentication/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./Pages/Authentication/ForgotPasswordPage'));
+const HomePage = lazy(() => import('./Pages/Users/Home/HomePage'));
+const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
+const WorkspacePage = lazy(() => import('./Pages/Users/Individual/Workspace/WorkspacePage'));
+const GroupWorkspacePage = lazy(() => import('./Pages/Users/Group/GroupWorkspacePage'));
+const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/GroupManagementPage'));
+
+// Admin
+const AdminLayout = lazy(() => import('./Pages/Admin/AdminLayout'));
+const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
+const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
+const SubscriptionManagement = lazy(() => import('./Pages/Admin/SubscriptionManagement'));
+
+// Super Admin
+const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'));
+const AdminManagement = lazy(() => import('./Pages/SuperAdmin/AdminManagement'));
+const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
+const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
+const TopicManagement = lazy(() => import('./Pages/SuperAdmin/TopicManagement'));
+
+// ── Loading fallback ──
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <p className="text-sm text-muted-foreground font-medium">Loading...</p>
+    </div>
+  </div>
+);
 
 function App() {
   return (
     <ToastProvider>
     <Router>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
 
         {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home
         page của role đó */}
         <Route element={<PublicRoute />}>
-        <Route path="/" element={<HeroSection />} />
+        <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -73,6 +90,7 @@ function App() {
           </Route>
         </Route>
       </Routes>
+      </Suspense>
     </Router>
     </ToastProvider>
   )

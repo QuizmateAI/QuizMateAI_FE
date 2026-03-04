@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, TrendingUp, Zap, CreditCard,
+  Users, Zap, CreditCard,
   RefreshCw, ArrowRight, Activity, Package,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';

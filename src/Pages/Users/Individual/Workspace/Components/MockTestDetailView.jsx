@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft, ClipboardList, Timer, BarChart3, Clock, Loader2, Edit3, Star, Trash2,
+  ArrowLeft, ClipboardList, Timer, BarChart3, Clock, Loader2, Edit3, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
