@@ -43,10 +43,11 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
     
-    // Trả về lỗi với message từ server hoặc message mặc định
+    // Trả về lỗi với message và code từ server
     const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại';
     return Promise.reject({
       statusCode: error.response?.status,
+      code: error.response?.data?.code,
       message: errorMessage,
       data: error.response?.data
     });
