@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, RefreshCw, FolderTree, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
+import { Badge } from '@/Components/ui/badge';
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/Components/ui/table';
 import AdminPagination from '@/Pages/Admin/components/AdminPagination';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTopic } from '@/hooks/useTopic';
