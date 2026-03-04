@@ -19,8 +19,9 @@ export const uploadMaterial = async (file, contextId, contextType = 'WORKSPACE')
   
   const response = await api.post(`/materials/upload?contextId=${contextId}&contextType=${contextType}`, formData, {
     headers: {
-      'Content-Type': 'multipart/form-data',
+      'Content-Type': undefined, // Để Axios tự set multipart boundary
     },
+    timeout: 120000, // 2 phút cho file lớn
   });
   return response;
 };
