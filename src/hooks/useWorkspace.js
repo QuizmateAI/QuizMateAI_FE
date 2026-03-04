@@ -127,12 +127,17 @@ export function useWorkspace() {
   // Cập nhật workspace
   const editWorkspace = useCallback(async (workspaceId, data) => {
     const res = await updateWorkspaceAPI(workspaceId, data);
+    const updatedWorkspace = res.data || {};
     // Cập nhật workspace trong danh sách local
     setWorkspaces((prev) =>
       normalizeWorkspaceList(prev).map((ws) => (ws.workspaceId === workspaceId ? updatedWorkspace : ws))
     );
+    // Cập nhật cả currentWorkspace nếu đó là workspace được chỉnh sửa
+    if (currentWorkspace?.workspaceId === workspaceId) {
+      setCurrentWorkspace(updatedWorkspace);
+    }
     return updatedWorkspace;
-  }, []);
+  }, [currentWorkspace?.workspaceId]);
 
   // Xóa workspace
   const removeWorkspace = useCallback(async (workspaceId) => {

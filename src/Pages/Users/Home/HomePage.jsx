@@ -367,9 +367,6 @@ function HomePage() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         workspace={selectedWorkspace}
-        topics={topics}
-        topicsLoading={topicsLoading}
-        onFetchTopics={fetchTopics}
         onEdit={handleEdit}
         isDarkMode={isDarkMode}
       />
