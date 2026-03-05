@@ -90,6 +90,14 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onD
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
           </div>
+        ) : flashcards.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <CreditCard className={`w-12 h-12 mb-3 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
+            <p className={`text-sm mb-3 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.flashcard.noFlashcards")}</p>
+            <Button onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2">
+              <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.flashcard.createFirstFlashcard")}</span>
+            </Button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
