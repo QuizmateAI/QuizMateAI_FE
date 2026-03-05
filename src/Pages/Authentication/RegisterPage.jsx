@@ -6,6 +6,7 @@ import { Checkbox } from "@/Components/ui/checkbox";
 import { FloatingInput, FloatingPasswordInput } from "@/Components/ui/floating-input";
 import { ChevronLeft } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
+import Illustration from "@/assets/QuizmateAI_PIC.png";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -162,7 +163,7 @@ const RegisterPage = () => {
         <div className="hidden md:flex justify-end relative">
           <div className="relative z-10 w-[550px] h-[750px] bg-gray-100 rounded-[30px] overflow-hidden shadow-xl flex items-center justify-center transition-all duration-500">
             <img 
-              src="/Rectangle20.png" 
+              src={Illustration} 
               alt="Register illustration" 
               className="w-full h-full object-cover"
             />

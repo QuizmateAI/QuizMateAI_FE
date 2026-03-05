@@ -8,6 +8,7 @@ import { FcGoogle } from "react-icons/fc";
 import { AiFillApple } from "react-icons/ai";
 import { validateForgotPasswordForm, submitForgotPasswordRequest } from './ForgotPassword';
 import LogoLight from "@/assets/LightMode_Logo.webp";
+import Illustration from "@/assets/QuizmateAI_PIC.png";
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -179,7 +180,7 @@ const ForgotPasswordPage = () => {
         <div className="hidden md:flex justify-end relative">
           <div className="relative z-10 w-[550px] h-[750px] bg-gray-100 rounded-[30px] overflow-hidden shadow-xl flex items-center justify-center transition-all duration-500">
             <img 
-              src="/Rectangle20.png" 
+              src={Illustration} 
               alt="Forgot Password illustration" 
               className="w-full h-full object-cover"
             />
