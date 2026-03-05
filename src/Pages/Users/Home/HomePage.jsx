@@ -14,45 +14,40 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
+import { useTopicsForCreate } from '@/hooks/useTopicsForCreate';
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState('workspace');
   const [viewMode, setViewMode] = useState('grid');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDialogMode, setCreateDialogMode] = useState('workspace');
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Hook quản lý workspace: CRUD + topics
+  // Prefetch cả workspace VÀ groups ngay khi load trang → chuyển tab instant (<1s)
   const {
     workspaces,
-    topics,
     loading,
-    topicsLoading,
     pagination,
-    fetchTopics,
     createWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,
     changePageSize,
-  } = useWorkspace();
+  } = useWorkspace({ enabled: true });
 
-  // Hook quản lý group: CRUD + members
   const {
     groups,
-    topics: groupTopics,
     loading: groupLoading,
-    topicsLoading: groupTopicsLoading,
-    fetchTopics: fetchGroupTopics,
     createGroup,
-  } = useGroup();
+  } = useGroup({ enabled: true });
 
-  // State cho các dialog
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [createDialogMode, setCreateDialogMode] = useState('workspace');
+  // Topics cho CreateNewDialog - chỉ fetch khi mở dialog (cache 5 phút)
+  const { topics, topicsLoading } = useTopicsForCreate(createDialogOpen);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
@@ -194,7 +189,7 @@ function HomePage() {
         <div className="w-[130px]  flex items-center justify-center cursor-pointer" 
         // onClick={() => navigate('/')}
         >
-                   <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+                   <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} fetchPriority="high" />
                  </div>
         
         <div className="flex items-center gap-2">
@@ -355,9 +350,8 @@ function HomePage() {
       <CreateNewDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        topics={topics.length > 0 ? topics : groupTopics}
-        topicsLoading={topicsLoading || groupTopicsLoading}
-        onFetchTopics={fetchTopics}
+        topics={topics}
+        topicsLoading={topicsLoading}
         onCreateWorkspace={handleCreate}
         onCreateGroup={handleCreateGroup}
         isDarkMode={isDarkMode}
