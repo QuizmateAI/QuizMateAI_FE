@@ -25,6 +25,7 @@
     "react-dom": "^19.2.0",
     "react-i18next": "^16.5.4",
     "react-icons": "^5.5.0",
+    "react-quizlet-flashcard": "^4.0.22",
     "react-router-dom": "^7.13.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7"
