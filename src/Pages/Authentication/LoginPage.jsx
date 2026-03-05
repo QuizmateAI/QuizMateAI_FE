@@ -12,6 +12,7 @@ import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
 import { useLogin } from './Login';
 import { useRegister } from './Register';
 import { useForgotPassword } from './ForgotPassword';
+import Illustration from "@/assets/QuizmateAI_PIC.png";
 
 
 const LoginPageContent = () => {
@@ -534,9 +535,9 @@ const LoginPageContent = () => {
 
         {/* Right Side: Decorative Image */}
         <div className="hidden md:flex justify-end relative">
-          <div className="relative z-10 w-[750px] h-[600px] bg-gray-100 dark:bg-slate-900 rounded-[30px] overflow-hidden shadow-xl dark:shadow-blue-900/50 flex items-center justify-center transition-all duration-500 border dark:border-slate-800">
+          <div className="relative z-10 w-[750px] h-[585px] bg-gray-100 dark:bg-slate-900 rounded-[30px] overflow-hidden shadow-xl dark:shadow-blue-900/50 flex items-center justify-center transition-all duration-500 border dark:border-slate-800">
             <img
-              src="/path-to-your-phone-hand-image.png"
+              src={Illustration}
               alt="Login illustration"
               className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
             />
