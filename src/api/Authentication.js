@@ -1,4 +1,6 @@
 import api from './api';
+import { setCachedProfile, setCachedSubscription, clearUserCache } from '@/Utils/userCache';
+import { queryClient } from '@/queryClient';
 
 // ======================= AUTH API SERVICES =======================
 
@@ -22,6 +24,29 @@ export const register = async (userData) => {
 };
 
 /**
+ * Lưu profile + subscription + groups từ login response vào cache (chuyển tab instant)
+ */
+function saveLoginDataToCache(data) {
+  if (data?.user) {
+    const profile = {
+      email: data.user.email || data.email || '',
+      username: data.user.username || data.username || '',
+      fullName: data.user.fullName || data.user.username || '',
+      avatarUrl: data.user.avatar || data.user.avatarUrl || '',
+      birthday: data.user.birthday || null,
+    };
+    setCachedProfile(profile);
+  }
+  if (data?.subscription != null) {
+    setCachedSubscription(data.subscription);
+  }
+  // Groups từ login → React Query cache → tab Nhóm load instant (<1s)
+  if (Array.isArray(data?.groups) && data.groups.length >= 0) {
+    queryClient.setQueryData(['groups'], data.groups);
+  }
+}
+
+/**
  * Đăng nhập tài khoản
  * @param {Object} credentials - Thông tin đăng nhập
  * @param {string} credentials.username - Tên đăng nhập
@@ -38,6 +63,8 @@ export const login = async (credentials) => {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+      // Cache profile + subscription từ BE (lần load sau chỉ verify token)
+      saveLoginDataToCache(response.data);
     }
     
     return response;
@@ -75,6 +102,7 @@ export const googleLogin = async (idToken) => {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+      saveLoginDataToCache(response.data);
     }
     
     return response;
@@ -128,12 +156,13 @@ export const resetPassword = async (email, newPassword) => {
 };
 
 /**
- * Đăng xuất - Xóa token và thông tin user khỏi localStorage
+ * Đăng xuất - Xóa token, thông tin user và cache khỏi localStorage
  */
 export const logout = () => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
+  clearUserCache();
 };
 
 /**

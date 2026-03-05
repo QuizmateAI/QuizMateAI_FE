@@ -17,6 +17,7 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [topicId, setTopicId] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +29,7 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
 
   // Tải topics khi mở dialog
   useEffect(() => {
-    if (open && topics.length === 0) {
+    if (open && topics.length === 0 && onFetchTopics) {
       onFetchTopics();
     }
   }, [open, topics.length, onFetchTopics]);
@@ -37,6 +38,7 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
   useEffect(() => {
     if (!open) {
       setTitle('');
+      setDescription('');
       setTopicId('');
       setSubjectId('');
       setErrors({});
@@ -49,10 +51,9 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
     setSubjectId('');
   }, [topicId]);
 
-  // Kiểm tra dữ liệu hợp lệ
+  // Kiểm tra dữ liệu hợp lệ - title không bắt buộc
   const validate = () => {
     const newErrors = {};
-    if (!title.trim()) newErrors.title = t('home.workspace.titleRequired');
     if (!topicId) newErrors.topicId = t('home.workspace.topicRequired');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -67,7 +68,8 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
       await onCreate({
         topicId: Number(topicId),
         ...(subjectId ? { subjectId: Number(subjectId) } : {}),
-        title: title.trim(),
+        title: title.trim() || null,
+        description: description.trim() || null,
       });
       onOpenChange(false);
     } catch {
@@ -106,20 +108,33 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {/* Tên workspace */}
+          {/* Tên workspace (không bắt buộc) */}
           <div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.workspace.titleLabel')}
+              {t('home.workspace.titleLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('home.workspace.titlePlaceholder')}
-              className={`${inputBase} ${errors.title ? 'border-red-500' : ''}`}
+              className={inputBase}
               autoFocus
             />
-            {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+          </div>
+
+          {/* Mô tả (không bắt buộc) */}
+          <div>
+            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+              {t('home.workspace.descriptionLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('home.workspace.descriptionPlaceholder')}
+              rows={2}
+              className={`${inputBase} resize-none`}
+            />
           </div>
 
           {/* Choose Topic */}

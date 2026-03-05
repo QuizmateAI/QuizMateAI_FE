@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { logout } from '@/api/Authentication';
 
 // Menu items - giống Admin: Users, Groups + thêm Admin Accounts (RBAC)
 const menuItems = [
@@ -31,9 +32,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
   const { isDarkMode } = useDarkMode();
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 

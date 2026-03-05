@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Globe, Sun, Moon } from 'lucide-react';
 import AdminSidebar from './components/AdminSidebar';
-import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 
 function AdminLayoutContent() {
@@ -83,11 +83,9 @@ function AdminLayoutContent() {
 
 function AdminLayout() {
   return (
-    <DarkModeProvider>
-      <AdminPermissionsProvider>
-        <AdminLayoutContent />
-      </AdminPermissionsProvider>
-    </DarkModeProvider>
+    <AdminPermissionsProvider>
+      <AdminLayoutContent />
+    </AdminPermissionsProvider>
   );
 }
 export default AdminLayout;

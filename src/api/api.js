@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearUserCache } from '@/Utils/userCache';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://api.quizmateai.io.vn';
 const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(baseURL);
@@ -39,17 +40,21 @@ api.interceptors.response.use(
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      // Có thể redirect về trang login ở đây
+      clearUserCache();
       window.location.href = '/login';
     }
     
-    // Trả về lỗi với message và code từ server
-    const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại';
+    // Trả về lỗi - ưu tiên chi tiết validation (data.errors) nếu có
+    const data = error.response?.data;
+    const validationErrors = data?.data;
+    const errorMessage = data?.message || (validationErrors && typeof validationErrors === 'object'
+      ? Object.values(validationErrors).join(', ')
+      : null) || 'Có lỗi xảy ra, vui lòng thử lại';
     return Promise.reject({
       statusCode: error.response?.status,
-      code: error.response?.data?.code,
+      code: data?.code,
       message: errorMessage,
-      data: error.response?.data
+      data: data
     });
   }
 );
