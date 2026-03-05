@@ -10,6 +10,7 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
+import { logout } from '@/api/Authentication';
 
 const ALL_MENU_ITEMS = [
   { icon: Users, labelKey: 'sidebar.users', path: '/admin/users', alsoMatch: '/admin', requiredPerm: 'user:read', matchPrefix: true },
@@ -35,9 +36,7 @@ function AdminSidebar({ collapsed, onToggle }) {
   );
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 

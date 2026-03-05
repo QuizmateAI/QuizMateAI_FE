@@ -11,12 +11,13 @@ import {
 import { Button } from '@/Components/ui/button';
 import { Loader2 } from 'lucide-react';
 
-// Dialog chỉnh sửa workspace - chỉ cho phép sửa tên workspace
+// Dialog chỉnh sửa workspace - sửa tên và mô tả (title không bắt buộc)
 function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -24,17 +25,16 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
   useEffect(() => {
     if (open && workspace) {
       setTitle(workspace.title || '');
+      setDescription(workspace.description || '');
       setErrors({});
       setSubmitting(false);
     }
   }, [open, workspace]);
 
-  // Kiểm tra dữ liệu hợp lệ
+  // Kiểm tra dữ liệu hợp lệ - title không bắt buộc
   const validate = () => {
-    const newErrors = {};
-    if (!title.trim()) newErrors.title = t('home.workspace.titleRequired');
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e) => {
@@ -44,7 +44,8 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
     setSubmitting(true);
     try {
       await onEdit(workspace.workspaceId, {
-        title: title.trim(),
+        title: title.trim() || null,
+        description: description.trim() || null,
       });
       onOpenChange(false);
     } catch {
@@ -79,21 +80,34 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {/* Tên workspace */}
+          {/* Tên workspace (không bắt buộc) */}
           <div>
             <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.workspace.titleLabel')} <span className="text-red-500">*</span>
+              {t('home.workspace.titleLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('home.workspace.titlePlaceholder')}
-              className={`${inputBase} ${errors.title ? 'border-red-500' : ''}`}
+              className={inputBase}
               autoFocus
               maxLength={255}
             />
-            {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
+          </div>
+
+          {/* Mô tả (không bắt buộc) */}
+          <div>
+            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+              {t('home.workspace.descriptionLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('home.workspace.descriptionPlaceholder')}
+              rows={2}
+              className={`${inputBase} resize-none`}
+            />
           </div>
 
           <DialogFooter className="pt-2">

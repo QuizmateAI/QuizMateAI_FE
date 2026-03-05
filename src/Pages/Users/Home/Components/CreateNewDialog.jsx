@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/context/ToastContext';
 import {
   Dialog,
   DialogContent,
@@ -17,13 +18,13 @@ function CreateNewDialog({
   onOpenChange,
   topics,
   topicsLoading,
-  onFetchTopics,
   onCreateWorkspace,
   onCreateGroup,
   isDarkMode,
   initialMode = 'workspace',
 }) {
   const { t, i18n } = useTranslation();
+  const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   // Chế độ: 'workspace' | 'group'
@@ -35,6 +36,7 @@ function CreateNewDialog({
 
   // Workspace fields
   const [wsTitle, setWsTitle] = useState('');
+  const [wsDescription, setWsDescription] = useState('');
 
   // Group fields
   const [groupName, setGroupName] = useState('');
@@ -54,17 +56,11 @@ function CreateNewDialog({
     }
   }, [open, initialMode]);
 
-  // Tải topics khi mở dialog
-  useEffect(() => {
-    if (open && topics.length === 0) {
-      onFetchTopics();
-    }
-  }, [open, topics.length, onFetchTopics]);
-
   // Reset toàn bộ form khi đóng dialog
   useEffect(() => {
     if (!open) {
       setWsTitle('');
+      setWsDescription('');
       setGroupName('');
       setDescription('');
       setTopicId('');
@@ -89,7 +85,7 @@ function CreateNewDialog({
     const newErrors = {};
 
     if (mode === 'workspace') {
-      if (!wsTitle.trim()) newErrors.title = t('home.workspace.titleRequired');
+      // Title không bắt buộc - có thể tạo workspace không có tiêu đề
     } else {
       if (!groupName.trim()) newErrors.groupName = t('home.group.nameRequired');
       if (!topicId) newErrors.topicId = t('home.group.topicRequired');
@@ -107,7 +103,8 @@ function CreateNewDialog({
     try {
       if (mode === 'workspace') {
         await onCreateWorkspace({
-          title: wsTitle.trim(),
+          title: wsTitle.trim() || '',
+          description: wsDescription.trim() || '',
         });
       } else {
         await onCreateGroup({
@@ -118,8 +115,8 @@ function CreateNewDialog({
         });
       }
       onOpenChange(false);
-    } catch {
-      // Lỗi được xử lý ở component cha
+    } catch (err) {
+      showError(err?.message || t('home.workspace.createError') || 'Không thể tạo workspace');
     } finally {
       setSubmitting(false);
     }
@@ -217,22 +214,35 @@ function CreateNewDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {/* Form workspace: Tên workspace */}
+          {/* Form workspace: Tên workspace (không bắt buộc) + Mô tả */}
           {mode === 'workspace' && (
-            <div>
-              <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                {t('home.workspace.titleLabel')}
-              </label>
-              <input
-                type="text"
-                value={wsTitle}
-                onChange={(e) => setWsTitle(e.target.value)}
-                placeholder={t('home.workspace.titlePlaceholder')}
-                className={`${inputBase} ${errors.title ? 'border-red-500' : ''}`}
-                autoFocus
-              />
-              {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
-            </div>
+            <>
+              <div>
+                <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                  {t('home.workspace.titleLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
+                </label>
+                <input
+                  type="text"
+                  value={wsTitle}
+                  onChange={(e) => setWsTitle(e.target.value)}
+                  placeholder={t('home.workspace.titlePlaceholder')}
+                  className={inputBase}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
+                  {t('home.workspace.descriptionLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
+                </label>
+                <textarea
+                  value={wsDescription}
+                  onChange={(e) => setWsDescription(e.target.value)}
+                  placeholder={t('home.workspace.descriptionPlaceholder')}
+                  rows={2}
+                  className={`${inputBase} resize-none`}
+                />
+              </div>
+            </>
           )}
 
           {/* Form group: Tên nhóm + Mô tả */}

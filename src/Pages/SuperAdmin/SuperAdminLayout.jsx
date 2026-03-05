@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Globe, Sun, Moon } from 'lucide-react';
 import SuperAdminSidebar from './Components/SuperAdminSidebar';
-import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
 
 function SuperAdminLayoutContent() {
@@ -82,11 +82,9 @@ function SuperAdminLayoutContent() {
 
 function SuperAdminLayout() {
   return (
-    <DarkModeProvider>
-      <AdminPermissionsProvider>
-        <SuperAdminLayoutContent />
-      </AdminPermissionsProvider>
-    </DarkModeProvider>
+    <AdminPermissionsProvider>
+      <SuperAdminLayoutContent />
+    </AdminPermissionsProvider>
   );
 }
 export default SuperAdminLayout;
