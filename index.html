@@ -2,11 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/webp" href="/logo-light.webp" id="favicon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>QuizMate AI - Chinh phục kiến thức cùng AI</title>
     <meta name="description" content="QuizMate AI - Nền tảng học tập thông minh sử dụng AI để tạo quiz, flashcard và roadmap học tập cá nhân hóa." />
     <meta name="theme-color" content="#2563EB" />
+
+    <!-- Favicon theo theme browser -->
+    <script>
+      (function() {
+        var favicon = document.getElementById('favicon');
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        function update() { favicon.href = mq.matches ? '/logo-dark.webp' : '/logo-light.webp'; }
+        update();
+        mq.addEventListener('change', update);
+      })();
+    </script>
 
     <!-- Preconnect to Google Fonts for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
