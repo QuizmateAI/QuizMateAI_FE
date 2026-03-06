@@ -32,41 +32,41 @@ export const deleteQuiz = async (quizId) => {
   return response;
 };
 
-// ==================== QUIZ SESSION ====================
+// ==================== QUIZ SECTION ====================
 
-// Lấy toàn bộ session thuộc một quiz
-export const getSessionsByQuiz = async (quizId) => {
-  const response = await api.get(`/quiz-sessions/byQuiz/${quizId}`);
+// Lấy toàn bộ section thuộc một quiz
+export const getSectionsByQuiz = async (quizId) => {
+  const response = await api.get(`/quiz-sections/byQuiz/${quizId}`);
   return response;
 };
 
-// Tạo session cho quiz (Bước 2)
-export const createQuizSession = async (data) => {
-  const response = await api.post('/quiz-sessions/create', data);
+// Tạo section cho quiz (Bước 2)
+export const createQuizSection = async (data) => {
+  const response = await api.post('/quiz-sections/create', data);
   return response;
 };
 
-// Cập nhật quiz session
-export const updateQuizSession = async (sessionId, data) => {
-  const response = await api.put(`/quiz-sessions/${sessionId}`, data);
+// Cập nhật quiz section
+export const updateQuizSection = async (sectionId, data) => {
+  const response = await api.put(`/quiz-sections/${sectionId}`, data);
   return response;
 };
 
-// Xóa quiz session
-export const deleteQuizSession = async (sessionId) => {
-  const response = await api.delete(`/quiz-sessions/${sessionId}`);
+// Xóa quiz section
+export const deleteQuizSection = async (sectionId) => {
+  const response = await api.delete(`/quiz-sections/${sectionId}`);
   return response;
 };
 
 // ==================== QUESTION ====================
 
-// Lấy toàn bộ câu hỏi thuộc một session
-export const getQuestionsBySession = async (sessionId) => {
-  const response = await api.get(`/questions/bySession/${sessionId}`);
+// Lấy toàn bộ câu hỏi thuộc một section
+export const getQuestionsBySection = async (sectionId) => {
+  const response = await api.get(`/questions/bySection/${sectionId}`);
   return response;
 };
 
-// Tạo câu hỏi cho session (Bước 3)
+// Tạo câu hỏi cho section (Bước 3)
 export const createQuestion = async (data) => {
   const response = await api.post('/questions/create', data);
   return response;
@@ -146,7 +146,7 @@ const DIFFICULTY_MAP = {
 /**
  * Tạo quiz hoàn chỉnh theo flow multi-step:
  * 1. Tạo Quiz → quizId
- * 2. Tạo Session → sessionId
+ * 2. Tạo Section → sectionId
  * 3. Tạo từng Question → questionId
  * 4. Tạo Answer cho từng Question
  * 5. Cập nhật quiz sang ACTIVE
@@ -177,16 +177,16 @@ export const createFullQuiz = async ({
   const quiz = quizRes.data;
   const quizId = quiz.quizId;
 
-  // Bước 2: Tạo session gốc (ROOT)
-  const sessionRes = await createQuizSession({
+  // Bước 2: Tạo section gốc (ROOT)
+  const sectionRes = await createQuizSection({
     quizId,
-    parentSessionId: null,
-    sessionType: 'ROOT',
+    parentSectionId: null,
+    sectionType: 'ROOT',
     content: title,
     scorePerQuestion: 0,
   });
-  const session = sessionRes.data;
-  const sessionId = session.sessionId;
+  const section = sectionRes.data;
+  const sectionId = section.sectionId;
 
   // Bước 3 & 4: Tạo từng câu hỏi và đáp án
   for (const q of questions) {
@@ -194,7 +194,7 @@ export const createFullQuiz = async ({
     const difficulty = DIFFICULTY_MAP[q.difficulty] || DIFFICULTY_MAP[overallDifficulty] || 'MEDIUM';
 
     const questionRes = await createQuestion({
-      quizSessionId: sessionId,
+      quizSectionId: sectionId,
       questionTypeId,
       bloomId: q.bloomId || 1,
       duration: q.duration || 0,

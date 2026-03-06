@@ -3,7 +3,7 @@ import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, Save, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
-  getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion,
   updateQuiz, updateQuestion, updateAnswer, deleteQuestion, deleteAnswer,
   createQuestion, createAnswer, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
@@ -48,30 +48,30 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
   );
   const [status, setStatus] = useState(quiz?.status || "ACTIVE");
 
-  // State session và questions — lưu sessionId gốc để liên kết
-  const [sessionId, setSessionId] = useState(null);
+  // State section và questions — lưu sectionId gốc để liên kết
+  const [sectionId, setSectionId] = useState(null);
   const [questions, setQuestions] = useState([]);
   // Track các question/answer đã xóa để gọi API delete
   const [deletedQuestionIds, setDeletedQuestionIds] = useState([]);
   const [deletedAnswerIds, setDeletedAnswerIds] = useState([]);
 
-  // Tải dữ liệu quiz hiện có: sessions → questions → answers
+  // Tải dữ liệu quiz hiện có: sections → questions → answers
   const loadExistingData = useCallback(async () => {
     if (!quiz?.quizId) return;
     setLoading(true);
     try {
-      // Lấy session gốc (ROOT)
-      const sessRes = await getSessionsByQuiz(quiz.quizId);
-      const sessionList = sessRes.data || [];
-      const rootSession = sessionList.find((s) => s.sessionType === "ROOT") || sessionList[0];
-      if (!rootSession) {
+      // Lấy section gốc (ROOT)
+      const sectRes = await getSectionsByQuiz(quiz.quizId);
+      const sectionList = sectRes.data || [];
+      const rootSection = sectionList.find((s) => s.sectionType === "ROOT") || sectionList[0];
+      if (!rootSection) {
         setLoading(false);
         return;
       }
-      setSessionId(rootSession.sessionId);
+      setSectionId(rootSection.sectionId);
 
       // Lấy questions
-      const qRes = await getQuestionsBySession(rootSession.sessionId);
+      const qRes = await getQuestionsBySection(rootSection.sectionId);
       const questionList = qRes.data || [];
 
       // Lấy answers cho mỗi question và chuyển đổi sang format frontend
@@ -218,7 +218,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         if (q.isNew) {
           // Tạo question mới
           const qRes = await createQuestion({
-            quizSessionId: sessionId,
+            quizSectionId: sectionId,
             questionTypeId,
             bloomId: q.bloomId || 1,
             duration: q.duration || 0,

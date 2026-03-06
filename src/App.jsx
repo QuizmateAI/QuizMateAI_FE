@@ -22,6 +22,10 @@ const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
 const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
 const SubscriptionManagement = lazy(() => import('./Pages/Admin/SubscriptionManagement'));
 
+// Payment
+const PaymentPage = lazy(() => import('./Pages/Payment/PaymentPage'));
+const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
+
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'));
 const AdminManagement = lazy(() => import('./Pages/SuperAdmin/AdminManagement'));
@@ -57,6 +61,8 @@ function App() {
 
         {/* Route cần đăng nhập (User) - Super Admin, Admin không được vào */}
         <Route element={<ProtectedRoute allowedRoles={['USER']} />}>
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/payment/result" element={<PaymentResultPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />

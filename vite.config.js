@@ -70,6 +70,9 @@ export default defineConfig({
     cssCodeSplit: true,
   },
   server: {
+    allowedHosts: [
+      'nondetonating-jules-energetically.ngrok-free.dev'
+    ],
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'unsafe-none',

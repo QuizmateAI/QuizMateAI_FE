@@ -46,13 +46,13 @@ const ERROR_CODES = {
 
   // ========== QUIZ ==========
   1024: 'error.quizNotFound',
-  1025: 'error.quizSessionNotFound',
+  1025: 'error.quizSectionNotFound',
   1026: 'error.questionNotFound',
   1027: 'error.answerNotFound',
   1028: 'error.questionTypeNotFound',
   1029: 'error.bloomNotFound',
-  1030: 'error.invalidSessionParent',
-  1031: 'error.invalidSessionType',
+  1030: 'error.invalidSectionParent',
+  1031: 'error.invalidSectionType',
   1068: 'error.quizNotInGroup',
   1083: 'error.quizNotActive',
   1084: 'error.quizUpdateLockedAfterAttempt',
