@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
 import UploadSourceDialog from "@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog";
+import CreateWorkspaceInfoDialog from "@/Pages/Users/Individual/Workspace/Components/CreateWorkspaceInfoDialog";
 import { Globe, Moon, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -15,12 +16,17 @@ import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/M
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
+	const navigate = useNavigate();
 	const { t, i18n } = useTranslation();
 	const { isDarkMode, toggleDarkMode } = useDarkMode();
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const settingsRef = useRef(null);
 
-	const { currentWorkspace, fetchWorkspaceDetail } = useWorkspace();
+	// Chế độ tạo mới: workspaceId === 'new'
+	const isCreating = workspaceId === 'new';
+	const [createDialogOpen, setCreateDialogOpen] = useState(isCreating);
+
+	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace, createWorkspace } = useWorkspace();
 
 	// State quản lý tài liệu (sources) — mock data, sẽ kết nối API sau
 	const [sources, setSources] = useState([]);
@@ -29,8 +35,8 @@ function WorkspacePage() {
 	const [isLeftResizing, setIsLeftResizing] = useState(false);
 	const [isRightResizing, setIsRightResizing] = useState(false);
 
-	// State quản lý dialog upload — hiện upload dialog mặc định khi vào workspace lần đầu
-	const [uploadDialogOpen, setUploadDialogOpen] = useState(true);
+	// State quản lý dialog upload — không mở khi đang tạo mới
+	const [uploadDialogOpen, setUploadDialogOpen] = useState(!isCreating);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
 
@@ -38,8 +44,11 @@ function WorkspacePage() {
 	const [leftWidth, setLeftWidth] = useState(320);
 	const [rightWidth, setRightWidth] = useState(320);
 
-	// Trạng thái hiển thị nội dung chính (null = chưa chọn hoạt động)
-	const [activeView, setActiveView] = useState(null);
+	// Trạng thái hiển thị nội dung chính — khôi phục từ sessionStorage khi reload
+	const [activeView, setActiveView] = useState(() => {
+		if (!workspaceId) return null;
+		return sessionStorage.getItem(`workspace_${workspaceId}_activeView`) || null;
+	});
 	// State lưu quiz đang được xem chi tiết hoặc chỉnh sửa
 	const [selectedQuiz, setSelectedQuiz] = useState(null);
 	// State lưu flashcard đang được xem chi tiết
@@ -54,6 +63,16 @@ function WorkspacePage() {
 
 	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : leftWidth;
 	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : rightWidth;
+
+	// Lưu activeView vào sessionStorage mỗi khi thay đổi
+	useEffect(() => {
+		if (!workspaceId) return;
+		if (activeView) {
+			sessionStorage.setItem(`workspace_${workspaceId}_activeView`, activeView);
+		} else {
+			sessionStorage.removeItem(`workspace_${workspaceId}_activeView`);
+		}
+	}, [activeView, workspaceId]);
 
 	const currentLang = i18n.language;
 	const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
@@ -84,13 +103,30 @@ function WorkspacePage() {
         }
     }, [workspaceId]);
 
-	// Lấy thông tin workspace từ API
+	// Lấy thông tin workspace từ API (bỏ qua khi đang tạo mới)
 	useEffect(() => {
-		if (workspaceId) {
+		if (workspaceId && !isCreating) {
 			fetchWorkspaceDetail(workspaceId).catch(() => {});
             fetchSources();
 		}
-	}, [workspaceId, fetchWorkspaceDetail, fetchSources]);
+	}, [workspaceId, isCreating, fetchWorkspaceDetail, fetchSources]);
+
+	// Xử lý tạo workspace mới từ dialog
+	const handleCreateWorkspace = useCallback(async (data) => {
+		const newWorkspace = await createWorkspace(data);
+		if (newWorkspace?.workspaceId) {
+			setCreateDialogOpen(false);
+			navigate(`/workspace/${newWorkspace.workspaceId}`, { replace: true });
+		}
+	}, [createWorkspace, navigate]);
+
+	// Khi đóng dialog tạo mà chưa submit → quay về trang chủ
+	const handleCreateDialogChange = useCallback((open) => {
+		setCreateDialogOpen(open);
+		if (!open && isCreating) {
+			navigate('/home');
+		}
+	}, [isCreating, navigate]);
 
 	// Đóng settings khi click ra ngoài
 	useEffect(() => {
@@ -425,8 +461,12 @@ function WorkspacePage() {
 			<WorkspaceHeader
 				settingsMenu={settingsMenu}
 				isDarkMode={isDarkMode}
-				workspaceTitle={currentWorkspace?.title}
+				workspaceTitle={currentWorkspace?.displayTitle || currentWorkspace?.title}
 				workspaceSubtitle={currentWorkspace?.topic?.title || currentWorkspace?.subject?.title}
+				workspaceDescription={currentWorkspace?.description}
+				onEditWorkspace={async (data) => {
+					await editWorkspace(Number(workspaceId), data);
+				}}
 			/>
 			<div className="flex-1 min-h-0">
 				<div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
@@ -522,6 +562,16 @@ function WorkspacePage() {
 				isDarkMode={isDarkMode}
 				onUploadFiles={handleUploadFiles}
 			/>
+
+			{/* Dialog tạo workspace mới */}
+			{isCreating && (
+				<CreateWorkspaceInfoDialog
+					open={createDialogOpen}
+					onOpenChange={handleCreateDialogChange}
+					onCreate={handleCreateWorkspace}
+					isDarkMode={isDarkMode}
+				/>
+			)}
 
 
 		</div>

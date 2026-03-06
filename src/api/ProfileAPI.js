@@ -1,10 +1,14 @@
 import api from "./api";
+import { getCachedProfile, setCachedProfile, clearUserCache } from "@/Utils/userCache";
 
 function getStoredToken() {
-  // Logic nghiệp vụ: ưu tiên token hiện tại, fallback key JWT cũ để tương thích.
   return localStorage.getItem("accessToken") || localStorage.getItem("jwt_token") || "";
 }
 
+/**
+ * Lấy profile user - dùng cache trước, fetch khi hết hạn (5 phút)
+ * Lần load thứ 2 ~500ms thay vì gọi API
+ */
 async function getUserProfile() {
   const token = getStoredToken();
 
@@ -12,29 +16,34 @@ async function getUserProfile() {
     throw new Error("Thiếu token đăng nhập");
   }
 
+  // Cache trước - trả về ngay nếu còn valid
+  const cached = getCachedProfile();
+  if (cached) {
+    return cached;
+  }
+
   try {
     const hasAccessToken = !!localStorage.getItem("accessToken");
 
-    // Nếu interceptor đã thêm accessToken thì gọi không cần header thủ công.
-    // Nếu dùng fallback (jwt_token) thì đính kèm header ở đây.
     const response = hasAccessToken
       ? await api.get("/user/profile")
       : await api.get("/user/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-    // `api` interceptor có thể trả về `response.data` hoặc toàn bộ response.
     const userProfile = response?.data || response || {};
 
-    return {
+    const profile = {
       email: userProfile.email || "",
       username: userProfile.username || "",
       fullName: userProfile.fullName || userProfile.username || "",
       avatarUrl: userProfile.avatar || userProfile.avatarUrl || "",
       birthday: userProfile.birthday || null,
     };
+
+    setCachedProfile(profile);
+    return profile;
   } catch (error) {
-    // Re-throw để caller có thể xử lý (giữ nguyên thông điệp lỗi từ server nếu có)
     throw error;
   }
 }
@@ -60,6 +69,7 @@ async function updateUserProfile(profileData) {
       avatar: profileData.avatar,
     });
 
+    clearUserCache(); // Invalidate cache sau khi cập nhật
     return response?.data || response;
   } catch (error) {
     throw error;
@@ -115,7 +125,7 @@ async function uploadAvatar(file) {
       },
     });
 
-    // Server trả về URL avatar trong response.data
+    clearUserCache(); // Invalidate cache sau khi đổi avatar
     return response?.data || response;
   } catch (error) {
     throw error;

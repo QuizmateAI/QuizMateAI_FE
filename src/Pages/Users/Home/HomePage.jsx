@@ -6,7 +6,6 @@ import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserWorkspace from "@/Pages/Users/Home/Components/UserWorkspace";
 import UserGroup from "@/Pages/Users/Home/Components/UserGroup";
-import CreateNewDialog from "@/Pages/Users/Home/Components/CreateNewDialog";
 import EditWorkspaceDialog from "@/Pages/Users/Home/Components/EditWorkspaceDialog";
 import DeleteWorkspaceDialog from "@/Pages/Users/Home/Components/DeleteWorkspaceDialog";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
@@ -25,34 +24,23 @@ function HomePage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Hook quản lý workspace: CRUD + topics
+  // Prefetch cả workspace VÀ groups ngay khi load trang → chuyển tab instant (<1s)
   const {
     workspaces,
-    topics,
     loading,
-    topicsLoading,
     pagination,
-    fetchTopics,
     createWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,
     changePageSize,
-  } = useWorkspace();
+  } = useWorkspace({ enabled: true });
 
-  // Hook quản lý group: CRUD + members
   const {
     groups,
-    topics: groupTopics,
     loading: groupLoading,
-    topicsLoading: groupTopicsLoading,
-    fetchTopics: fetchGroupTopics,
-    createGroup,
-  } = useGroup();
+  } = useGroup({ enabled: true });
 
-  // State cho các dialog
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [createDialogMode, setCreateDialogMode] = useState('workspace');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
@@ -65,16 +53,14 @@ function HomePage() {
     i18n.changeLanguage(newLang);
   };
 
-  // Mở dialog tạo workspace mới (mặc định tab workspace)
+  // Nhảy thẳng vào trang workspace mới (hiển thị form trên trang đó)
   const handleOpenCreate = () => {
-    setCreateDialogMode('workspace');
-    setCreateDialogOpen(true);
+    navigate('/workspace/new');
   };
 
-  // Mở dialog tạo nhóm mới (mặc định tab group)
+  // Nhảy thẳng vào trang group workspace mới
   const handleOpenCreateGroup = () => {
-    setCreateDialogMode('group');
-    setCreateDialogOpen(true);
+    navigate('/group-workspace/new');
   };
 
   // Mở dialog sửa workspace
@@ -89,14 +75,6 @@ function HomePage() {
     setDeleteDialogOpen(true);
   };
 
-  // Xử lý tạo workspace
-  const handleCreate = async (data) => {
-    const newWorkspace = await createWorkspace(data);
-    if (newWorkspace?.workspaceId) {
-      navigate(`/workspace/${newWorkspace.workspaceId}`);
-    }
-  };
-
   // Xử lý cập nhật workspace
   const handleEdit = async (workspaceId, data) => {
     await editWorkspace(workspaceId, data);
@@ -107,18 +85,10 @@ function HomePage() {
     await removeWorkspace(workspaceId);
   };
 
-  // Xử lý tạo nhóm
-  const handleCreateGroup = async (data) => {
-    await createGroup(data);
-  };
-
-  // Mở dialog tạo workspace nếu được gọi từ GroupWorkspace
+  // Nếu được gọi từ GroupWorkspace với yêu cầu tạo workspace → nhảy sang trang tạo
   useEffect(() => {
     if (location.state?.openCreateDialog) {
-      setCreateDialogMode('workspace');
-      setCreateDialogOpen(true);
-      // Xóa state sau khi đã xử lý
-      navigate(location.pathname, { replace: true, state: {} });
+      navigate('/workspace/new', { replace: true });
     }
   }, [location.state, navigate]);
 
@@ -194,7 +164,7 @@ function HomePage() {
         <div className="w-[130px]  flex items-center justify-center cursor-pointer" 
         // onClick={() => navigate('/')}
         >
-                   <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+                   <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} fetchPriority="high" />
                  </div>
         
         <div className="flex items-center gap-2">
@@ -352,17 +322,6 @@ function HomePage() {
 </div>
 
       {/* Dialogs */}
-      <CreateNewDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        topics={topics.length > 0 ? topics : groupTopics}
-        topicsLoading={topicsLoading || groupTopicsLoading}
-        onFetchTopics={fetchTopics}
-        onCreateWorkspace={handleCreate}
-        onCreateGroup={handleCreateGroup}
-        isDarkMode={isDarkMode}
-        initialMode={createDialogMode}
-      />
       <EditWorkspaceDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}

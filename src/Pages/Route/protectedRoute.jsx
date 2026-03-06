@@ -9,7 +9,7 @@ const getUser = () => {
     if (!userStr) return null;
     try {
         return JSON.parse(userStr);
-    } catch (e) {
+    } catch {
         return null;
     }
 };

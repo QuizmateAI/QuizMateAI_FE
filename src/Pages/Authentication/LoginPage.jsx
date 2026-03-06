@@ -8,7 +8,7 @@ import { ChevronLeft, Globe, Sun, Moon, Loader2 } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { GoogleLogin } from '@react-oauth/google'; // Import GoogleLogin component
-import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLogin } from './Login';
 import { useRegister } from './Register';
 import { useForgotPassword } from './ForgotPassword';
@@ -549,12 +549,6 @@ const LoginPageContent = () => {
   );
 };
 
-const LoginPage = () => {
-  return (
-    <DarkModeProvider>
-      <LoginPageContent />
-    </DarkModeProvider>
-  )
-}
+const LoginPage = () => <LoginPageContent />;
 
 export default LoginPage;

@@ -3,7 +3,7 @@ import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, ClipboardList, ArrowLeft, Save, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
-  getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion,
   updateQuiz, updateQuestion, updateAnswer, deleteQuestion, deleteAnswer,
   createQuestion, createAnswer, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
@@ -49,27 +49,27 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
   );
   const [status, setStatus] = useState(quiz?.status || "ACTIVE");
 
-  // State session và questions
-  const [sessionId, setSessionId] = useState(null);
+  // State section và questions
+  const [sectionId, setSectionId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [deletedQuestionIds, setDeletedQuestionIds] = useState([]);
   const [deletedAnswerIds, setDeletedAnswerIds] = useState([]);
 
-  // Tải dữ liệu mock test hiện có: sessions → questions → answers
+  // Tải dữ liệu mock test hiện có: sections → questions → answers
   const loadExistingData = useCallback(async () => {
     if (!quiz?.quizId) return;
     setLoading(true);
     try {
-      const sessRes = await getSessionsByQuiz(quiz.quizId);
-      const sessionList = sessRes.data || [];
-      const rootSession = sessionList.find((s) => s.sessionType === "ROOT") || sessionList[0];
-      if (!rootSession) {
+      const sectRes = await getSectionsByQuiz(quiz.quizId);
+      const sectionList = sectRes.data || [];
+      const rootSection = sectionList.find((s) => s.sectionType === "ROOT") || sectionList[0];
+      if (!rootSection) {
         setLoading(false);
         return;
       }
-      setSessionId(rootSession.sessionId);
+      setSectionId(rootSection.sectionId);
 
-      const qRes = await getQuestionsBySession(rootSession.sessionId);
+      const qRes = await getQuestionsBySection(rootSection.sectionId);
       const questionList = qRes.data || [];
 
       const formattedQuestions = [];
@@ -212,7 +212,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
 
         if (q.isNew) {
           const qRes = await createQuestion({
-            quizSessionId: sessionId,
+            quizSectionId: sectionId,
             questionTypeId,
             bloomId: q.bloomId || 1,
             duration: q.duration || 0,

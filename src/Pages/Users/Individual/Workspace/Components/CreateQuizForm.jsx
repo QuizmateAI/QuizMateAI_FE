@@ -389,7 +389,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           return;
         }
 
-        // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → session → questions → answers)
+        // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → section → questions → answers)
         const result = await createFullQuiz({
           contextType: selectedContextType,
           contextId: Number(selectedContextId),
