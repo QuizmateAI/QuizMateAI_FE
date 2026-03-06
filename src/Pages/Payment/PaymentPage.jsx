@@ -1,0 +1,210 @@
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useDarkMode } from '@/hooks/useDarkMode';
+import { useTranslation } from 'react-i18next';
+import { useRef, useState, useEffect } from 'react';
+import { ArrowLeft, Globe, Moon, Settings, Sun, CreditCard, Loader2, AlertCircle } from 'lucide-react';
+import { Button } from '@/Components/ui/button';
+import DarkLogo from '@/assets/DarkMode_Logo.webp';
+import LightLogo from '@/assets/LightMode_Logo.webp';
+import PlanInfoCard from './components/PlanInfoCard';
+import PaymentSidebar from './components/PaymentSidebar';
+import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
+import { getPlanById } from '@/api/PaymentAPI';
+
+export default function PaymentPage() {
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const currentLang = i18n.language;
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
+  const [plan, setPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const toggleLanguage = () => {
+    const newLang = currentLang === 'vi' ? 'en' : 'vi';
+    i18n.changeLanguage(newLang);
+    localStorage.setItem('app_language', newLang);
+  };
+
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+    const handleClickOutside = (event) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSettingsOpen]);
+
+  const planId = searchParams.get('planId');
+  const groupId = searchParams.get('groupId');
+
+  useEffect(() => {
+    if (!planId) return;
+    let cancelled = false;
+    getPlanById(planId)
+      .then((res) => {
+        if (!cancelled) { setPlan(res.data); setLoading(false); }
+      })
+      .catch(() => {
+        if (!cancelled) { setError(t('payment.fetchError')); setLoading(false); }
+      });
+    return () => { cancelled = true; };
+  }, [planId, t]);
+
+  const noPlanId = !planId;
+
+  return (
+    <div className={`min-h-screen ${fontClass} transition-colors ${
+      isDarkMode
+        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-50'
+        : 'bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 text-slate-900'
+    }`}>
+      {/* Header */}
+      <header className={`sticky top-0 z-30 backdrop-blur-xl border-b ${
+        isDarkMode
+          ? 'bg-slate-900/80 border-slate-800'
+          : 'bg-white/80 border-slate-200'
+      }`}>
+        <div className="max-w-7xl mx-20 px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+           
+            <img
+              src={isDarkMode ? DarkLogo : LightLogo}
+              alt="QuizMateAI"
+              className="h-[120px] w-[120px] object-contain hidden sm:block"
+            />
+             <button
+              type="button"
+              onClick={() => navigate('/profile', { state: { tab: 'subscription' } })}
+              className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-xl transition-colors cursor-pointer ${
+                isDarkMode
+                  ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {t('payment.backToPlans')}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div ref={settingsRef} className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSettingsOpen((prev) => !prev)}
+                className={`flex items-center gap-2 rounded-full ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
+                aria-expanded={isSettingsOpen}
+                aria-haspopup="menu"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="text-sm hidden sm:inline">{t('common.settings')}</span>
+              </Button>
+
+              {isSettingsOpen && (
+                <div
+                  role="menu"
+                  className={`absolute right-0 mt-2 w-56 rounded-xl border shadow-lg overflow-hidden transition-colors duration-300 ${
+                    isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-gray-200 text-gray-800'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={toggleLanguage}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors cursor-pointer ${
+                      isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`flex items-center gap-2 ${fontClass}`}>
+                      <Globe className="w-4 h-4" />
+                      {t('common.language')}
+                    </span>
+                    <span className={`text-xs font-semibold ${fontClass}`}>
+                      {currentLang === 'vi' ? 'VI' : 'EN'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleDarkMode}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors cursor-pointer ${
+                      isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`flex items-center gap-2 ${fontClass}`}>
+                      {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                      {t('common.theme')}
+                    </span>
+                    <span className={`text-xs font-semibold ${fontClass}`}>
+                      {isDarkMode ? t('common.dark') : t('common.light')}
+                    </span>
+                  </button>
+                  <div className={`h-px w-full ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`} />
+                  <button
+                    type="button"
+                    onClick={() => { setIsSettingsOpen(false); navigate('/profile', { state: { tab: 'subscription' } }); }}
+                    className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors cursor-pointer ${
+                      isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className={`flex items-center gap-2 ${fontClass}`}>
+                      <CreditCard className="w-4 h-4" />
+                      {t('common.subscription')}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <UserProfilePopover isDarkMode={isDarkMode} />
+          </div>
+        </div>
+      </header>
+
+      {/* Two-column layout */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {noPlanId ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
+            <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('payment.noPlanId')}</p>
+            <Button variant="outline" onClick={() => navigate('/profile', { state: { tab: 'subscription' } })}
+              className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
+              <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
+            </Button>
+          </div>
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-3">
+            <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+            <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('payment.processing')}</span>
+          </div>
+        ) : error || !plan ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
+            <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{error || t('payment.fetchError')}</p>
+            <Button variant="outline" onClick={() => navigate('/profile', { state: { tab: 'subscription' } })}
+              className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
+              <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1 min-w-0">
+              <PlanInfoCard plan={plan} />
+            </div>
+            <div className="w-full lg:w-[400px] shrink-0">
+              <div className="lg:sticky lg:top-24">
+                <PaymentSidebar plan={plan} groupId={groupId} />
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

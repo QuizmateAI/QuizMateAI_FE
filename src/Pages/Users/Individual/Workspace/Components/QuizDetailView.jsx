@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {
-  getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
 
 // Map loại câu hỏi frontend sang questionTypeId backend
@@ -43,35 +43,35 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [loading, setLoading] = useState(true);
-  const [sessions, setSessions] = useState([]);
-  const [questionsMap, setQuestionsMap] = useState({}); // sessionId -> questions[]
+  const [sections, setSections] = useState([]);
+  const [questionsMap, setQuestionsMap] = useState({}); // sectionId -> questions[]
   const [answersMap, setAnswersMap] = useState({}); // questionId -> answers[]
-  const [expandedSessions, setExpandedSessions] = useState({});
+  const [expandedSections, setExpandedSections] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [starringId, setStarringId] = useState(null);
 
-  // Lấy toàn bộ dữ liệu quiz chi tiết: sessions → questions → answers
+  // Lấy toàn bộ dữ liệu quiz chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {
     if (!quiz?.quizId) return;
     setLoading(true);
     try {
-      // Bước 1: Lấy sessions
-      const sessRes = await getSessionsByQuiz(quiz.quizId);
-      const sessionList = sessRes.data || [];
-      setSessions(sessionList);
+      // Bước 1: Lấy sections
+      const sectRes = await getSectionsByQuiz(quiz.quizId);
+      const sectionList = sectRes.data || [];
+      setSections(sectionList);
 
-      // Tự động mở rộng session đầu tiên
-      if (sessionList.length > 0) {
-        setExpandedSessions({ [sessionList[0].sessionId]: true });
+      // Tự động mở rộng section đầu tiên
+      if (sectionList.length > 0) {
+        setExpandedSections({ [sectionList[0].sectionId]: true });
       }
 
-      // Bước 2: Lấy questions cho mỗi session
+      // Bước 2: Lấy questions cho mỗi section
       const qMap = {};
       const aMap = {};
-      for (const session of sessionList) {
-        const qRes = await getQuestionsBySession(session.sessionId);
+      for (const section of sectionList) {
+        const qRes = await getQuestionsBySection(section.sectionId);
         const questions = qRes.data || [];
-        qMap[session.sessionId] = questions;
+        qMap[section.sectionId] = questions;
 
         // Bước 3: Lấy answers cho mỗi question
         for (const question of questions) {
@@ -92,9 +92,9 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
     fetchFullDetail();
   }, [fetchFullDetail]);
 
-  // Toggle mở rộng/thu gọn session
-  const toggleSession = (sessionId) => {
-    setExpandedSessions((prev) => ({ ...prev, [sessionId]: !prev[sessionId] }));
+  // Toggle mở rộng/thu gọn section
+  const toggleSection = (sectionId) => {
+    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
   };
 
   // Toggle mở rộng/thu gọn câu hỏi (hiển thị answers)
@@ -103,7 +103,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
   };
 
   // Đánh dấu/bỏ dấu sao câu hỏi
-  const handleToggleStar = async (questionId, sessionId) => {
+  const handleToggleStar = async (questionId, sectionId) => {
     if (starringId) return;
     setStarringId(questionId);
     try {
@@ -112,7 +112,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
       const newStarValue = res?.data?.isStarred;
       setQuestionsMap((prev) => ({
         ...prev,
-        [sessionId]: prev[sessionId]?.map((q) => {
+        [sectionId]: prev[sectionId]?.map((q) => {
           if (q.questionId !== questionId) return q;
           return { ...q, isStarred: newStarValue !== undefined ? newStarValue : !q.isStarred };
         }),
@@ -193,33 +193,33 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
           </div>
         </div>
 
-        {/* Danh sách sessions + questions */}
+        {/* Danh sách sections + questions */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail")}</p>
           </div>
-        ) : sessions.length === 0 ? (
+        ) : sections.length === 0 ? (
           <div className={`text-center py-8 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.quiz.detail.noSessions")}
+            {t("workspace.quiz.detail.noSections", "No sections available")}
           </div>
         ) : (
-          sessions.map((session, sIdx) => {
-            const isExpanded = expandedSessions[session.sessionId];
-            const questions = questionsMap[session.sessionId] || [];
+          sections.map((section, sIdx) => {
+            const isExpanded = expandedSections[section.sectionId];
+            const questions = questionsMap[section.sectionId] || [];
 
             return (
-              <div key={session.sessionId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
-                {/* Session header */}
+              <div key={section.sectionId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
+                {/* Section header */}
                 <button
-                  onClick={() => toggleSession(session.sessionId)}
+                  onClick={() => toggleSection(section.sectionId)}
                   className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${isDarkMode ? "bg-slate-800/30 hover:bg-slate-800/60" : "bg-slate-100/50 hover:bg-slate-100"}`}
                 >
                   <div className="flex items-center gap-2">
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     <BookOpen className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-500"}`} />
                     <span className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
-                      {t("workspace.quiz.detail.session")} {sIdx + 1}
+                      {t("workspace.quiz.detail.section", "Section")} {sIdx + 1}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-200 text-gray-500"}`}>
                       {questions.length} {t("workspace.quiz.detail.questions")}
@@ -227,7 +227,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
                   </div>
                 </button>
 
-                {/* Danh sách câu hỏi của session */}
+                {/* Danh sách câu hỏi của section */}
                 {isExpanded && (
                   <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-slate-200"}`}>
                     {questions.length === 0 ? (
@@ -252,7 +252,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
                                   <p className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{question.content}</p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
-                                      onClick={() => handleToggleStar(question.questionId, session.sessionId)}
+                                      onClick={() => handleToggleStar(question.questionId, section.sectionId)}
                                       disabled={starringId === question.questionId}
                                       className={`p-1 rounded transition-all ${question.isStarred
                                         ? "text-yellow-500"

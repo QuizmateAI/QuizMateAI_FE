@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {
-  getSessionsByQuiz, getQuestionsBySession, getAnswersByQuestion,
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion,
   toggleStarQuestion, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
 
@@ -27,39 +27,39 @@ function formatDate(dateStr) {
 
 /**
  * Component hiển thị chi tiết Mock Test — giao diện tím (purple) để phân biệt với Quiz (xanh dương)
- * Cấu trúc giống QuizDetailView: sessions → questions → answers
+ * Cấu trúc giống QuizDetailView: sections → questions → answers
  */
 function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [loading, setLoading] = useState(true);
-  const [sessions, setSessions] = useState([]);
+  const [sections, setSections] = useState([]);
   const [questionsMap, setQuestionsMap] = useState({});
   const [answersMap, setAnswersMap] = useState({});
-  const [expandedSessions, setExpandedSessions] = useState({});
+  const [expandedSections, setExpandedSections] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [starringId, setStarringId] = useState(null);
 
-  // Tải toàn bộ dữ liệu chi tiết: sessions → questions → answers
+  // Tải toàn bộ dữ liệu chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {
     if (!quiz?.quizId) return;
     setLoading(true);
     try {
-      const sessRes = await getSessionsByQuiz(quiz.quizId);
-      const sessionList = sessRes.data || [];
-      setSessions(sessionList);
+      const sectRes = await getSectionsByQuiz(quiz.quizId);
+      const sectionList = sectRes.data || [];
+      setSections(sectionList);
 
-      if (sessionList.length > 0) {
-        setExpandedSessions({ [sessionList[0].sessionId]: true });
+      if (sectionList.length > 0) {
+        setExpandedSections({ [sectionList[0].sectionId]: true });
       }
 
       const qMap = {};
       const aMap = {};
-      for (const session of sessionList) {
-        const qRes = await getQuestionsBySession(session.sessionId);
+      for (const section of sectionList) {
+        const qRes = await getQuestionsBySection(section.sectionId);
         const questions = qRes.data || [];
-        qMap[session.sessionId] = questions;
+        qMap[section.sectionId] = questions;
 
         for (const question of questions) {
           const aRes = await getAnswersByQuestion(question.questionId);
@@ -79,15 +79,15 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
     fetchFullDetail();
   }, [fetchFullDetail]);
 
-  const toggleSession = (sessionId) => {
-    setExpandedSessions((prev) => ({ ...prev, [sessionId]: !prev[sessionId] }));
+  const toggleSection = (sectionId) => {
+    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
   };
 
   const toggleQuestion = (questionId) => {
     setExpandedQuestions((prev) => ({ ...prev, [questionId]: !prev[questionId] }));
   };
 
-  const handleToggleStar = async (questionId, sessionId) => {
+  const handleToggleStar = async (questionId, sectionId) => {
     if (starringId) return;
     setStarringId(questionId);
     try {
@@ -95,7 +95,7 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
       const newStarValue = res?.data?.isStarred;
       setQuestionsMap((prev) => ({
         ...prev,
-        [sessionId]: prev[sessionId]?.map((q) => {
+        [sectionId]: prev[sectionId]?.map((q) => {
           if (q.questionId !== questionId) return q;
           return { ...q, isStarred: newStarValue !== undefined ? newStarValue : !q.isStarred };
         }),
@@ -175,33 +175,33 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
           </div>
         </div>
 
-        {/* Danh sách sessions + questions */}
+        {/* Danh sách sections + questions */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-purple-500" : "text-purple-400"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail")}</p>
           </div>
-        ) : sessions.length === 0 ? (
+        ) : sections.length === 0 ? (
           <div className={`text-center py-8 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.quiz.detail.noSessions")}
+            {t("workspace.quiz.detail.noSections", "No sections available")}
           </div>
         ) : (
-          sessions.map((session, sIdx) => {
-            const isExpanded = expandedSessions[session.sessionId];
-            const questions = questionsMap[session.sessionId] || [];
+          sections.map((section, sIdx) => {
+            const isExpanded = expandedSections[section.sectionId];
+            const questions = questionsMap[section.sectionId] || [];
 
             return (
-              <div key={session.sessionId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-purple-900/40" : "border-purple-200"}`}>
-                {/* Session header — nền tím nhạt */}
+              <div key={section.sectionId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-purple-900/40" : "border-purple-200"}`}>
+                {/* Section header — nền tím nhạt */}
                 <button
-                  onClick={() => toggleSession(session.sessionId)}
+                  onClick={() => toggleSection(section.sectionId)}
                   className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${isDarkMode ? "bg-purple-950/20 hover:bg-purple-950/40" : "bg-purple-50/50 hover:bg-purple-100/50"}`}
                 >
                   <div className="flex items-center gap-2">
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     <BookOpen className={`w-4 h-4 ${isDarkMode ? "text-purple-400" : "text-purple-500"}`} />
                     <span className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
-                      {t("workspace.quiz.detail.session")} {sIdx + 1}
+                      {t("workspace.quiz.detail.section", "Section")} {sIdx + 1}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-purple-900/50 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
                       {questions.length} {t("workspace.quiz.detail.questions")}
@@ -234,7 +234,7 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
                                   <p className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{question.content}</p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
-                                      onClick={() => handleToggleStar(question.questionId, session.sessionId)}
+                                      onClick={() => handleToggleStar(question.questionId, section.sectionId)}
                                       disabled={starringId === question.questionId}
                                       className={`p-1 rounded transition-all ${question.isStarred
                                         ? "text-yellow-500"

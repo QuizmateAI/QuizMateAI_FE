@@ -7,10 +7,12 @@ import ChatPanel from './Components/ChatPanel';
 import StudioPanel from './Components/StudioPanel';
 import UploadSourceDialog from './Components/UploadSourceDialog';
 import InviteMemberDialog from './Group_leader/InviteMemberDialog';
+import CreateGroupInfoDialog from './Components/CreateGroupInfoDialog';
 import { Globe, Moon, Settings, Sun, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useGroup } from '@/hooks/useGroup';
+import { useTopicsForCreate } from '@/hooks/useTopicsForCreate';
 import { createRoadmap, createPhase, createKnowledge } from '@/api/RoadmapAPI';
 
 // Trang workspace dành cho nhóm - bố cục 3 cột giống WorkspacePage
@@ -21,7 +23,12 @@ function GroupWorkspacePage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(true);
+
+  // Chế độ tạo mới: groupId === 'new'
+  const isCreating = groupId === 'new';
+  const [createDialogOpen, setCreateDialogOpen] = useState(isCreating);
+
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(!isCreating);
   const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
   const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
   const [activeView, setActiveView] = useState(null);
@@ -48,18 +55,39 @@ function GroupWorkspacePage() {
   const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : leftWidth;
   const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : rightWidth;
 
-  const { groups, inviteMember } = useGroup();
+  const { groups, inviteMember, createGroup } = useGroup();
+
+  // Topics cho CreateGroupInfoDialog - chỉ fetch khi đang tạo mới
+  const { topics, topicsLoading } = useTopicsForCreate(isCreating);
 
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
   // Tìm thông tin nhóm hiện tại từ danh sách
-  const currentGroup = groups.find((g) => String(g.groupId) === String(groupId));
+  const currentGroup = isCreating ? null : groups.find((g) => String(g.groupId) === String(groupId));
 
   // Xử lý mời thành viên
   const handleInvite = useCallback(async (email) => {
     await inviteMember(groupId, email);
   }, [groupId, inviteMember]);
+
+  // Xử lý tạo group mới từ dialog
+  const handleCreateGroup = useCallback(async (data) => {
+    const newGroup = await createGroup(data);
+    const newGroupId = newGroup?.groupId;
+    if (newGroupId) {
+      setCreateDialogOpen(false);
+      navigate(`/group-workspace/${newGroupId}`, { replace: true });
+    }
+  }, [createGroup, navigate]);
+
+  // Khi đóng dialog tạo mà chưa submit → quay về trang chủ
+  const handleCreateDialogChange = useCallback((open) => {
+    setCreateDialogOpen(open);
+    if (!open && isCreating) {
+      navigate('/home');
+    }
+  }, [isCreating, navigate]);
 
   // Xử lý upload file tài liệu
   const handleUploadFiles = useCallback(async (files) => {
@@ -515,6 +543,18 @@ function GroupWorkspacePage() {
         onInvite={handleInvite}
         isDarkMode={isDarkMode}
       />
+
+      {/* Dialog tạo group mới */}
+      {isCreating && (
+        <CreateGroupInfoDialog
+          open={createDialogOpen}
+          onOpenChange={handleCreateDialogChange}
+          topics={topics}
+          topicsLoading={topicsLoading}
+          onCreate={handleCreateGroup}
+          isDarkMode={isDarkMode}
+        />
+      )}
     </div>
   );
 }
