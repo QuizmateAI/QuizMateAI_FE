@@ -4,6 +4,8 @@ import {
   ArrowLeft, CreditCard, Plus, Trash2, Edit3, Save, X, Loader2, ToggleLeft, ToggleRight
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { FlashcardArray } from "react-quizlet-flashcard";
+import "react-quizlet-flashcard/dist/index.css";
 import {
   getFlashcardDetail, updateFlashcardSetName, updateFlashcardSetStatus,
   addFlashcardItem, updateFlashcardItem, deleteFlashcardItem
@@ -257,41 +259,61 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack }) {
         </div>
       </div>
 
-      {/* Form thêm item mới */}
-      {showAddForm && (
-        <div className={`px-4 py-3 border-b space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                {t("workspace.flashcard.frontContent")}
-              </label>
-              <textarea value={newFront} onChange={(e) => setNewFront(e.target.value)} className={`${inputCls} min-h-[60px] resize-none`}
-                placeholder={t("workspace.flashcard.frontContentPlaceholder")} />
+      {/* Nội dung có thể cuộn */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Form thêm item mới */}
+        {showAddForm && (
+          <div className={`px-4 py-3 border-b space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
+                  {t("workspace.flashcard.frontContent")}
+                </label>
+                <textarea value={newFront} onChange={(e) => setNewFront(e.target.value)} className={`${inputCls} min-h-[60px] resize-none`}
+                  placeholder={t("workspace.flashcard.frontContentPlaceholder")} />
+              </div>
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
+                  {t("workspace.flashcard.backContent")}
+                </label>
+                <textarea value={newBack} onChange={(e) => setNewBack(e.target.value)} className={`${inputCls} min-h-[60px] resize-none`}
+                  placeholder={t("workspace.flashcard.backContentPlaceholder")} />
+              </div>
             </div>
-            <div>
-              <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                {t("workspace.flashcard.backContent")}
-              </label>
-              <textarea value={newBack} onChange={(e) => setNewBack(e.target.value)} className={`${inputCls} min-h-[60px] resize-none`}
-                placeholder={t("workspace.flashcard.backContentPlaceholder")} />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setShowAddForm(false); setNewFront(""); setNewBack(""); }}
+                className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
+                {t("workspace.flashcard.cancel")}
+              </Button>
+              <Button size="sm" onClick={handleAddItem} disabled={addingSaving || !newFront.trim() || !newBack.trim()}
+                className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs h-8">
+                {addingSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
+                {t("workspace.flashcard.addItem")}
+              </Button>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => { setShowAddForm(false); setNewFront(""); setNewBack(""); }}
-              className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-              {t("workspace.flashcard.cancel")}
-            </Button>
-            <Button size="sm" onClick={handleAddItem} disabled={addingSaving || !newFront.trim() || !newBack.trim()}
-              className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs h-8">
-              {addingSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
-              {t("workspace.flashcard.addItem")}
-            </Button>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Danh sách items */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {/* Flip card preview */}
+        {items.length > 0 && (
+          <div className={`px-4 py-8 border-b flex flex-col items-center ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+            <p className={`text-xs font-semibold mb-6 self-start w-full ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+              {t("workspace.flashcard.flipPreview")}
+            </p>
+            <div className="w-full flex justify-center pb-2">
+              <FlashcardArray 
+                deck={items.map((item, idx) => ({
+                  id: item.flashcardItemId || idx,
+                  front: { html: <div className={`flex items-center justify-center p-6 h-full text-center text-lg ${isDarkMode ? "text-slate-100" : "text-slate-800"}`}>{item.frontContent}</div> },
+                  back: { html: <div className={`flex items-center justify-center p-6 h-full text-center text-lg ${isDarkMode ? "text-slate-100" : "text-slate-800"}`}>{item.backContent}</div> },
+                }))} 
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Danh sách items */}
+        <div className="px-4 py-4">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <CreditCard className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
@@ -388,6 +410,7 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack }) {
             })}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

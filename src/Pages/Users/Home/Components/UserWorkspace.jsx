@@ -1,8 +1,33 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical, Plus, Pencil, Trash2, Loader2, FolderOpen, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Pagination from "./Pagination";
+
+const DEFAULT_UNTITLED = "Không gian không có tiêu đề";
+
+// Bổ sung displayTitle cho workspace không có tiêu đề: đầu tiên = "Không gian không có tiêu đề", thứ 2 = "(1)", thứ 3 = "(2)"...
+function enrichWorkspacesWithDisplayTitle(workspaces) {
+  const list = Array.isArray(workspaces) ? [...workspaces] : [];
+  const untitled = list.filter((ws) => {
+    const t = ws.title;
+    return !t || (typeof t === "string" && t.trim() === "") || t === DEFAULT_UNTITLED;
+  });
+  untitled.sort((a, b) => {
+    const da = new Date(a.createdAt || 0).getTime();
+    const db = new Date(b.createdAt || 0).getTime();
+    if (da !== db) return da - db;
+    return (a.workspaceId || 0) - (b.workspaceId || 0);
+  });
+  const displayTitleMap = {};
+  untitled.forEach((ws, idx) => {
+    displayTitleMap[ws.workspaceId] = idx === 0 ? DEFAULT_UNTITLED : `${DEFAULT_UNTITLED} (${idx})`;
+  });
+  return list.map((ws) => ({
+    ...ws,
+    displayTitle: displayTitleMap[ws.workspaceId] ?? ws.displayTitle ?? ws.title ?? DEFAULT_UNTITLED,
+  }));
+}
 
 // Hiển thị ngày tạo workspace theo locale
 function formatDate(dateAt, locale = "vi-VN") {
@@ -25,8 +50,8 @@ function getCardColor(index, isDark) {
   return isDark ? c.dark : c.light;
 }
 
-// Menu dropdown cho mỗi workspace card
-function WorkspaceMenu({ onEdit, onDelete, isDarkMode }) {
+// Menu dropdown cho mỗi workspace card - memo để tránh re-render không cần thiết
+const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, isDarkMode }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -75,26 +100,74 @@ function WorkspaceMenu({ onEdit, onDelete, isDarkMode }) {
       )}
     </div>
   );
-}
+});
+
+// Card workspace - memo để tối ưu render khi list thay đổi
+const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit, onDelete, locale }) {
+  const navigate = useNavigate();
+  const cardBg = getCardColor(idx, isDarkMode);
+  return (
+    <div
+      onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+      className={`${cardBg} rounded-xl h-56 p-5 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between relative group border ${
+        isDarkMode ? "border-slate-800" : "border-gray-200"
+      } overflow-hidden`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="text-3xl shrink-0">📝</div>
+        <WorkspaceMenu isDarkMode={isDarkMode} onEdit={() => onEdit(ws)} onDelete={() => onDelete(ws)} />
+      </div>
+      <div className="flex-1 min-w-0 mt-2">
+        <h3 className={`font-medium text-base line-clamp-2 leading-snug ${isDarkMode ? "text-white" : "text-[#1F1F1F]"}`}>
+          {ws.displayTitle ?? ws.title ?? 'Không gian không có tiêu đề'}
+        </h3>
+        <p className={`text-xs mt-1 line-clamp-2 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
+          {ws.description || ws.topic?.title || '—'}
+        </p>
+        <div className={`text-xs mt-1 flex items-center gap-2 ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+          <span className="truncate">{ws.subject?.title}</span>
+        </div>
+      </div>
+      <div className={`flex items-center justify-between text-sm mt-3 pt-3 border-t ${
+        isDarkMode ? "text-slate-400 border-slate-700/50" : "text-gray-600 border-gray-200/50"
+      }`}>
+        <span className="text-xs truncate">{formatDate(ws.createdAt, locale)}</span>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${
+          ws.status === "ACTIVE"
+            ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-100 text-green-700"
+            : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
+        }`}>
+          {ws.status}
+        </span>
+      </div>
+    </div>
+  );
+});
 
 function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, onPageChange, onPageSizeChange, onOpenCreate, onOpenEdit, onOpenDelete }) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
-  const workspaceList = Array.isArray(workspaces) ? workspaces : [];
   const [searchQuery, setSearchQuery] = useState("");
 
-  const isList = viewMode === "list";
-  // Sắp xếp theo ngày tạo mới nhất - đảm bảo workspaces là mảng hợp lệ
-  const allSorted = Array.isArray(workspaces) 
-    ? [...workspaces].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    : [];
+  // Bổ sung displayTitle cho workspace không có tiêu đề (đánh số 1, 2, 3...)
+  const enrichedWorkspaces = useMemo(() => enrichWorkspacesWithDisplayTitle(workspaces), [workspaces]);
+  const workspaceList = enrichedWorkspaces;
 
-  // Lọc theo từ khóa tìm kiếm
+  const isList = viewMode === "list";
+  // Sắp xếp theo ngày tạo mới nhất
+  const allSorted = useMemo(
+    () => [...enrichedWorkspaces].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [enrichedWorkspaces]
+  );
+
+  // Lọc theo từ khóa tìm kiếm (dùng displayTitle cho workspace không có tiêu đề)
+  const getDisplayTitle = (ws) => ws.displayTitle ?? ws.title ?? DEFAULT_UNTITLED;
   const sorted = searchQuery.trim()
     ? allSorted.filter((ws) =>
-        ws.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getDisplayTitle(ws).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ws.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ws.topic?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ws.subject?.title?.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -182,9 +255,9 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-lg">📝</span>
-                      <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.title}</span>
+                      <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.displayTitle ?? ws.title ?? 'Không gian không có tiêu đề'}</span>
                     </div>
-                    <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.topic?.title || "—"}</span>
+                    <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.description || ws.topic?.title || "—"}</span>
                     <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.subject?.title || "—"}</span>
                     <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(ws.createdAt, locale)}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full w-fit ${
@@ -248,52 +321,17 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
             </div>
           )}
 
-          {sorted.map((ws, idx) => {
-            const cardBg = getCardColor(idx, isDarkMode);
-            return (
-              <div
-                key={ws.workspaceId}
-                onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
-                className={`${cardBg} rounded-xl h-56 p-5 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between relative group border ${
-                  isDarkMode ? "border-slate-800" : "border-gray-200"
-                } overflow-hidden`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="text-3xl shrink-0">📝</div>
-                  <WorkspaceMenu
-                    isDarkMode={isDarkMode}
-                    onEdit={() => onOpenEdit(ws)}
-                    onDelete={() => onOpenDelete(ws)}
-                  />
-                </div>
-
-                <div className="flex-1 min-w-0 mt-2">
-                  <h3 className={`font-medium text-base line-clamp-2 leading-snug ${isDarkMode ? "text-white" : "text-[#1F1F1F]"}`}>
-                    {ws.title}
-                  </h3>
-                  <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                    {ws.topic?.title}
-                  </p>
-                  <div className={`text-xs mt-1 flex items-center gap-2 ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
-                    <span className="truncate">{ws.subject?.title}</span>
-                  </div>
-                </div>
-
-                <div className={`flex items-center justify-between text-sm mt-3 pt-3 border-t ${
-                  isDarkMode ? "text-slate-400 border-slate-700/50" : "text-gray-600 border-gray-200/50"
-                }`}>
-                  <span className="text-xs truncate">{formatDate(ws.createdAt, locale)}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    ws.status === "ACTIVE"
-                      ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-100 text-green-700"
-                      : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
-                  }`}>
-                    {ws.status}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+          {sorted.map((ws, idx) => (
+            <WorkspaceCard
+              key={ws.workspaceId}
+              ws={ws}
+              idx={idx}
+              isDarkMode={isDarkMode}
+              onEdit={onOpenEdit}
+              onDelete={onOpenDelete}
+              locale={locale}
+            />
+          ))}
           </div>
 
           {/* Pagination cho grid view */}

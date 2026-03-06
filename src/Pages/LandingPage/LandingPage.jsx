@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Thêm useState, useEffect
 import { ArrowUp } from 'lucide-react'; // Thêm icon ArrowUp
-import { DarkModeProvider, useDarkMode } from '@/hooks/useDarkMode';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
 import FeaturesSection from './components/FeaturesSection';
@@ -61,13 +61,7 @@ const LandingPageContent = () => {
   );
 };
 
-// Component chính wrap với DarkModeProvider
-const LandingPage = () => {
-  return (
-    <DarkModeProvider>
-      <LandingPageContent />
-    </DarkModeProvider>
-  );
-};
+// DarkModeProvider đã wrap ở main.jsx - không cần wrap lại
+const LandingPage = () => <LandingPageContent />;
 
 export default LandingPage;

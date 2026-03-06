@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getWorkspacesByUser,
   createWorkspace as createWorkspaceAPI,
   updateWorkspace as updateWorkspaceAPI,
   deleteWorkspace as deleteWorkspaceAPI,
   getWorkspaceById,
-  getAllTopics,
 } from '@/api/WorkspaceAPI';
 
 function normalizeWorkspaceList(payload) {
@@ -17,71 +17,48 @@ function normalizeWorkspaceList(payload) {
   return [];
 }
 
-// Hook quản lý toàn bộ logic workspace: CRUD + topics
-export function useWorkspace() {
-  const [workspaces, setWorkspaces] = useState([]);
-  const [topics, setTopics] = useState([]);
-  const [currentWorkspace, setCurrentWorkspace] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [topicsLoading, setTopicsLoading] = useState(false);
-  const [workspaceDetailLoading, setWorkspaceDetailLoading] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // Paging state
-  const [pagination, setPagination] = useState({
-    page: 0,
-    size: 10,
-    totalPages: 0,
-    totalElements: 0,
-  });
+const WORKSPACES_QUERY_KEY = ['workspaces'];
 
-  // Lấy danh sách workspace của user (có hỗ trợ phân trang)
-  const fetchWorkspaces = useCallback(async (page = 0, size = 10) => {
-    setLoading(true);
-    setError(null);
-    try {
+// Hook quản lý toàn bộ logic workspace: CRUD (dùng React Query cho fetch)
+export function useWorkspace(options = {}) {
+  const { enabled = true } = options;
+  const queryClient = useQueryClient();
+  const [currentWorkspace, setCurrentWorkspace] = useState(null);
+  const [workspaceDetailLoading, setWorkspaceDetailLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+
+  const { data, isLoading: loading, error: queryError, refetch } = useQuery({
+    queryKey: [...WORKSPACES_QUERY_KEY, page, size],
+    queryFn: async () => {
       const res = await getWorkspacesByUser(page, size);
       const responseData = res.data || {};
-      
-      // Xử lý cấu trúc response có thể là paginated hoặc array thuần
       if (Array.isArray(responseData)) {
-        // Trường hợp BE trả về mảng trực tiếp (không có paging)
-        setWorkspaces(responseData);
-        setPagination({ page: 0, size: responseData.length, totalPages: 1, totalElements: responseData.length });
-      } else if (responseData.content && Array.isArray(responseData.content)) {
-        // Trường hợp BE trả về object có paging (Spring Page format)
-        setWorkspaces(responseData.content);
-        setPagination({
-          page: responseData.number || 0,
-          size: responseData.size || size,
-          totalPages: responseData.totalPages || 0,
-          totalElements: responseData.totalElements || 0,
-        });
-      } else {
-        // Fallback: set empty array
-        setWorkspaces([]);
-        setPagination({ page: 0, size: size, totalPages: 0, totalElements: 0 });
+        return { workspaces: responseData, pagination: { page: 0, size: responseData.length, totalPages: 1, totalElements: responseData.length } };
       }
-    } catch (err) {
-      setError(err.message || 'Không thể tải danh sách workspace');
-      console.error('Lỗi khi lấy danh sách workspace:', err);
-      setWorkspaces([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      if (responseData.content && Array.isArray(responseData.content)) {
+        return {
+          workspaces: responseData.content,
+          pagination: {
+            page: responseData.number || 0,
+            size: responseData.size || size,
+            totalPages: responseData.totalPages || 0,
+            totalElements: responseData.totalElements || 0,
+          },
+        };
+      }
+      return { workspaces: [], pagination: { page: 0, size, totalPages: 0, totalElements: 0 } };
+    },
+    enabled,
+  });
 
-  // Lấy danh sách topics (kèm subjects)
-  const fetchTopics = useCallback(async () => {
-    setTopicsLoading(true);
-    try {
-      const res = await getAllTopics(0, 100);
-      setTopics(res.data?.content || []);
-    } catch (err) {
-      console.error('Lỗi khi lấy danh sách topics:', err);
-    } finally {
-      setTopicsLoading(false);
-    }
+  const workspaces = data?.workspaces ?? [];
+  const pagination = data?.pagination ?? { page: 0, size: 10, totalPages: 0, totalElements: 0 };
+  const error = queryError?.message || null;
+
+  const fetchWorkspaces = useCallback((newPage = 0, newSize = 10) => {
+    setPage(newPage);
+    setSize(newSize);
   }, []);
 
   // Lấy chi tiết workspace theo id
@@ -106,62 +83,57 @@ export function useWorkspace() {
     }
   }, []);
 
-  // Thay đổi trang
-  const changePage = useCallback(async (newPage) => {
-    await fetchWorkspaces(newPage, pagination.size);
-  }, [fetchWorkspaces, pagination.size]);
+  // Thay đổi trang (useQuery tự refetch khi key thay đổi)
+  const changePage = useCallback((newPage) => {
+    setPage(newPage);
+  }, []);
 
   // Thay đổi kích thước trang
-  const changePageSize = useCallback(async (newSize) => {
-    await fetchWorkspaces(0, newSize);
-  }, [fetchWorkspaces]);
+  const changePageSize = useCallback((newSize) => {
+    setSize(newSize);
+    setPage(0);
+  }, []);
 
   // Tạo workspace mới
   const createWorkspace = useCallback(async (data) => {
     const res = await createWorkspaceAPI(data);
-    // Tải lại danh sách sau khi tạo mới
-    await fetchWorkspaces(pagination.page, pagination.size);
+    await queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
     return res.data;
-  }, [fetchWorkspaces, pagination.page, pagination.size]);
+  }, [queryClient]);
 
   // Cập nhật workspace
   const editWorkspace = useCallback(async (workspaceId, data) => {
     const res = await updateWorkspaceAPI(workspaceId, data);
     const updatedWorkspace = res.data || {};
-    // Cập nhật workspace trong danh sách local
-    setWorkspaces((prev) =>
-      normalizeWorkspaceList(prev).map((ws) => (ws.workspaceId === workspaceId ? updatedWorkspace : ws))
-    );
-    // Cập nhật cả currentWorkspace nếu đó là workspace được chỉnh sửa
+    queryClient.setQueryData([...WORKSPACES_QUERY_KEY, page, size], (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        workspaces: normalizeWorkspaceList(old.workspaces).map((ws) =>
+          ws.workspaceId === workspaceId ? updatedWorkspace : ws
+        ),
+      };
+    });
     if (currentWorkspace?.workspaceId === workspaceId) {
       setCurrentWorkspace(updatedWorkspace);
     }
     return updatedWorkspace;
-  }, [currentWorkspace?.workspaceId]);
+  }, [currentWorkspace?.workspaceId, queryClient, page, size]);
 
   // Xóa workspace
   const removeWorkspace = useCallback(async (workspaceId) => {
     await deleteWorkspaceAPI(workspaceId);
-    // Tải lại danh sách sau khi xóa
-    await fetchWorkspaces(pagination.page, pagination.size);
-  }, [fetchWorkspaces, pagination.page, pagination.size]);
-
-  // Tải dữ liệu khi mount
-  useEffect(() => {
-    fetchWorkspaces();
-  }, [fetchWorkspaces]);
+    await queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
+  }, [queryClient]);
 
   return {
     workspaces,
-    topics,
     currentWorkspace,
     loading,
-    topicsLoading,
     workspaceDetailLoading,
     error,
     pagination,
     fetchWorkspaces,
-    fetchTopics,
     fetchWorkspaceDetail,
     createWorkspace,
     editWorkspace,
