@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useGroup } from '@/hooks/useGroup';
 import { useTopicsForCreate } from '@/hooks/useTopicsForCreate';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { createRoadmap, createPhase, createKnowledge } from '@/api/RoadmapAPI';
 
 // Trang workspace dành cho nhóm - bố cục 3 cột giống WorkspacePage
@@ -28,7 +29,8 @@ function GroupWorkspacePage() {
   const isCreating = groupId === 'new';
   const [createDialogOpen, setCreateDialogOpen] = useState(isCreating);
 
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(!isCreating);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [hasCheckedInitialSources, setHasCheckedInitialSources] = useState(false);
   const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
   const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
   const [activeView, setActiveView] = useState(null);
@@ -66,6 +68,45 @@ function GroupWorkspacePage() {
   // Tìm thông tin nhóm hiện tại từ danh sách
   const currentGroup = isCreating ? null : groups.find((g) => String(g.groupId) === String(groupId));
 
+  // WebSocket để nhận realtime updates cho tài liệu
+  const { isConnected: wsConnected } = useWebSocket({
+    groupId: !isCreating ? groupId : null,
+    enabled: !isCreating && !!groupId && groupId !== 'new',
+    onMaterialUploaded: (data) => {
+      console.log('📤 Realtime: Material uploaded', data);
+      // Reload danh sách tài liệu - TODO: Replace with API call
+      // fetchGroupSources();
+    },
+    onMaterialDeleted: (data) => {
+      console.log('🗑️ Realtime: Material deleted', data);
+      // Reload danh sách tài liệu - TODO: Replace with API call
+      // fetchGroupSources();
+    },
+    onMaterialUpdated: (data) => {
+      console.log('🔄 Realtime: Material updated', data);
+      // Reload danh sách tài liệu - TODO: Replace with API call
+      // fetchGroupSources();
+    },
+  });
+
+  // Tự động mở popup upload CHỈ KHI group workspace chưa có tài liệu (lần đầu tiên)
+  useEffect(() => {
+    if (isCreating || hasCheckedInitialSources) return;
+    
+    // Chỉ check sau khi đã có groupId
+    if (!groupId || groupId === 'new') return;
+    
+    // Đợi một chút để đảm bảo data đã load
+    const timer = setTimeout(() => {
+      if (sources.length === 0) {
+        setUploadDialogOpen(true);
+      }
+      setHasCheckedInitialSources(true);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [groupId, isCreating, sources.length, hasCheckedInitialSources]);
+
   // Xử lý mời thành viên
   const handleInvite = useCallback(async (email) => {
     await inviteMember(groupId, email);
@@ -89,9 +130,13 @@ function GroupWorkspacePage() {
     }
   }, [isCreating, navigate]);
 
-  // Xử lý upload file tài liệu
+  // Xử lý upload file tài liệu - SONG SONG
   const handleUploadFiles = useCallback(async (files) => {
-    // TODO: Gọi API upload thật cho workspace nhóm
+    // TODO: Thay mock bằng API upload thật, chạy song song
+    // const uploadPromises = files.map(file => uploadMaterialToGroup(file, groupId));
+    // await Promise.all(uploadPromises);
+    
+    // Mock implementation (tạm thời)
     const newSources = files.map((file, index) => ({
       id: `src-${Date.now()}-${index}`,
       name: file.name,
@@ -101,9 +146,19 @@ function GroupWorkspacePage() {
     setSources((prev) => [...prev, ...newSources]);
   }, []);
 
-  // Xóa tài liệu khỏi workspace nhóm
+  // Xóa tài liệu đơn lẻ khỏi workspace nhóm
   const handleRemoveSource = useCallback((sourceId) => {
     setSources((prev) => prev.filter((source) => source.id !== sourceId));
+  }, []);
+
+  // Xóa nhiều tài liệu cùng lúc - SONG SONG
+  const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
+    // TODO: Thay mock bằng API delete thật, chạy song song
+    // const deletePromises = sourceIds.map(id => deleteMaterialFromGroup(id, groupId));
+    // await Promise.all(deletePromises);
+    
+    // Mock implementation (tạm thời)
+    setSources((prev) => prev.filter((source) => !sourceIds.includes(source.id)));
   }, []);
 
   // Xử lý hành động từ studio panel — hiển thị form inline trong ChatPanel
@@ -443,6 +498,7 @@ function GroupWorkspacePage() {
         settingsMenu={<div className="flex items-center gap-2">{manageGroupButton}{settingsMenu}</div>} 
         isDarkMode={isDarkMode}
         onOpenInvite={() => setInviteDialogOpen(true)}
+        wsConnected={wsConnected}
       />
       <div className="flex-1 min-h-0">
         <div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
@@ -458,6 +514,7 @@ function GroupWorkspacePage() {
                 sources={sources}
                 onAddSource={() => setUploadDialogOpen(true)}
                 onRemoveSource={handleRemoveSource}
+                onRemoveMultiple={handleRemoveMultipleSources}
                 isCollapsed={isSourcesCollapsed}
                 onToggleCollapse={() => setIsSourcesCollapsed((prev) => !prev)}
               />
