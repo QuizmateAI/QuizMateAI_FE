@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import PaymentMethods from './PaymentMethods';
 
-export default function PaymentSidebar({ plan, groupId }) {
+export default function PaymentSidebar({ plan, groupId, needGroupSelect = false }) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
 
@@ -64,7 +64,14 @@ export default function PaymentSidebar({ plan, groupId }) {
         </div>
 
         {/* Payment methods */}
-        <PaymentMethods planId={plan.planId} planType={plan.type} groupId={groupId} />
+        {needGroupSelect ? (
+          <div className={`flex items-center gap-3 p-4 rounded-xl ${isDarkMode ? 'bg-amber-950/30 text-amber-300' : 'bg-amber-50 text-amber-700'}`}>
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm">{t('payment.selectGroupFirst')}</p>
+          </div>
+        ) : (
+          <PaymentMethods planId={plan.planId} planType={plan.type} groupId={groupId} />
+        )}
 
         {/* Security note */}
         <div className={`flex items-center justify-center gap-1.5 mt-5 text-xs ${

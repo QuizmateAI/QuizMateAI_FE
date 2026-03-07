@@ -1,17 +1,37 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
-import { CheckCircle2, XCircle, ArrowLeft, Home, ReceiptText } from 'lucide-react';
-import DarkLogo from '@/assets/DarkMode_Logo.webp';
-import LightLogo from '@/assets/LightMode_Logo.webp';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { CheckCircle2, XCircle, ArrowLeft, Home, ReceiptText, Settings, Globe, Moon, Sun, CreditCard } from 'lucide-react';
+import { Button } from '@/Components/ui/button';
+import LogoLight from '@/assets/LightMode_Logo.webp';
+import LogoDark from '@/assets/DarkMode_Logo.webp';
+import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
 
 export default function PaymentResultPage() {
-  const { isDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { t, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
+  const currentLang = i18n.language;
+  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+
+  const toggleLanguage = () => {
+    i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
+  };
+
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+    const handleClickOutside = (e) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSettingsOpen]);
 
   const resultCode = Number(searchParams.get('resultCode'));
   const isSuccess = resultCode === 0;
@@ -34,8 +54,8 @@ export default function PaymentResultPage() {
   const formattedTime = useMemo(() => {
     if (!details.responseTime) return '';
     const date = new Date(Number(details.responseTime));
-    return date.toLocaleString(i18n.language === 'vi' ? 'vi-VN' : 'en-US');
-  }, [details.responseTime, i18n.language]);
+    return date.toLocaleString(currentLang === 'vi' ? 'vi-VN' : 'en-US');
+  }, [details.responseTime, currentLang]);
 
   const infoRows = useMemo(() => [
     { label: t('paymentResult.orderId'), value: details.orderId },
@@ -47,11 +67,56 @@ export default function PaymentResultPage() {
   ], [t, details, formattedAmount, formattedTime]);
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 sm:p-6 ${fontClass} transition-colors ${
+    <div className={`min-h-screen ${fontClass} transition-colors ${
       isDarkMode
         ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-50'
         : 'bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 text-slate-900'
     }`}>
+      {/* Header - giống HomePage */}
+      <header className={`fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 sm:px-20 h-14 transition-colors duration-300 ${
+        isDarkMode ? 'bg-slate-950/90 backdrop-blur-sm' : 'bg-white/90 backdrop-blur-sm'
+      }`}>
+        <div className="w-[130px] flex items-center justify-center cursor-pointer" onClick={() => navigate('/home')}>
+          <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} fetchPriority="high" />
+        </div>
+        <div className="flex items-center gap-2">
+          <div ref={settingsRef} className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSettingsOpen((prev) => !prev)}
+              className={`flex items-center gap-2 rounded-full ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
+              aria-expanded={isSettingsOpen}
+              aria-haspopup="menu"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="text-sm hidden sm:inline">{t('common.settings')}</span>
+            </Button>
+            {isSettingsOpen ? (
+              <div role="menu" className={`absolute right-0 mt-2 w-56 rounded-xl border shadow-lg overflow-hidden transition-colors duration-300 ${
+                isDarkMode ? 'bg-slate-950 border-slate-800 text-slate-100' : 'bg-white border-gray-200 text-gray-800'
+              }`}>
+                <button type="button" onClick={toggleLanguage} className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}>
+                  <span className={`flex items-center gap-2 ${fontClass}`}><Globe className="w-4 h-4" />{t('common.language')}</span>
+                  <span className={`text-xs font-semibold ${fontClass}`}>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+                </button>
+                <button type="button" onClick={toggleDarkMode} className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}>
+                  <span className={`flex items-center gap-2 ${fontClass}`}>{isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}{t('common.theme')}</span>
+                  <span className={`text-xs font-semibold ${fontClass}`}>{isDarkMode ? t('common.dark') : t('common.light')}</span>
+                </button>
+                <div className={`h-px w-full ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`} />
+                <button type="button" onClick={() => { setIsSettingsOpen(false); navigate('/profile', { state: { tab: 'subscription' } }); }} className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors ${isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}>
+                  <span className={`flex items-center gap-2 ${fontClass}`}><CreditCard className="w-4 h-4" />{t('common.subscription')}</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <UserProfilePopover isDarkMode={isDarkMode} />
+        </div>
+      </header>
+
+      {/* Main content - centered card */}
+      <div className="flex items-center justify-center min-h-screen pt-14 p-4 sm:p-6">
       <div className={`w-full max-w-lg rounded-3xl overflow-hidden transition-colors ${
         isDarkMode
           ? 'bg-slate-900 ring-1 ring-slate-700/50 shadow-2xl shadow-blue-900/20'
@@ -64,15 +129,6 @@ export default function PaymentResultPage() {
         }`} />
 
         <div className="p-6 sm:p-8">
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
-            <img
-              src={isDarkMode ? DarkLogo : LightLogo}
-              alt="QuizMateAI"
-              className="h-10 w-auto"
-            />
-          </div>
-
           {/* Status icon + message */}
           <div className="flex flex-col items-center text-center mb-8">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 ${
@@ -90,9 +146,9 @@ export default function PaymentResultPage() {
             }`}>
               {isSuccess ? t('paymentResult.successTitle') : t('paymentResult.failTitle')}
             </h1>
-            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            {/* <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {details.message || (isSuccess ? t('paymentResult.successDesc') : t('paymentResult.failDesc'))}
-            </p>
+            </p> */}
           </div>
 
           {/* Transaction details */}
@@ -147,6 +203,7 @@ export default function PaymentResultPage() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
