@@ -6,13 +6,15 @@ import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
+import WebSocketStatus from "@/Components/features/WebSocketStatus";
 
 // Header cho Group Workspace - hiển thị tên nhóm và các hành động đặc thù
 function GroupWorkspaceHeader({ 
   groupName = "", 
   settingsMenu = null, 
   isDarkMode = false,
-  onOpenInvite = () => {} 
+  onOpenInvite = () => {},
+  wsConnected = false,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -41,6 +43,7 @@ function GroupWorkspaceHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          <WebSocketStatus isConnected={wsConnected} isDarkMode={isDarkMode} compact />
 
           <Button
             onClick={onOpenInvite}

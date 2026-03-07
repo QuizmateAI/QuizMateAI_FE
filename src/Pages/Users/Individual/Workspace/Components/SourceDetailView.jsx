@@ -2,6 +2,20 @@ import React from "react";
 import { ArrowLeft, FileText, Image, Film, Link2, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+// Format MIME type thành tên file type ngắn gọn
+function formatFileType(type) {
+  if (!type) return "FILE";
+  const lower = type.toLowerCase();
+  if (lower.includes("pdf")) return "PDF";
+  if (lower.includes("wordprocessingml") || lower.includes("msword")) return "DOCX";
+  if (lower.includes("spreadsheetml") || lower.includes("excel")) return "XLSX";
+  if (lower.includes("presentationml") || lower.includes("powerpoint")) return "PPTX";
+  if (lower.includes("image")) return "IMAGE";
+  if (lower.includes("video")) return "VIDEO";
+  if (lower === "url") return "URL";
+  return "FILE";
+}
+
 // Helper lấy icon theo loại tài liệu
 function getDetailIcon(type, className = "w-5 h-5") {
   if (type?.toLowerCase().includes("pdf")) return <FileText className={`${className} text-red-500`} />;
@@ -45,7 +59,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack }) {
                 {source.name}
               </p>
               <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {source.type?.toUpperCase()} {source.size ? `• ${source.size}` : ""}
+                {formatFileType(source.type)} {source.size ? `• ${source.size}` : ""}
               </p>
             </div>
             <button className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`}>
