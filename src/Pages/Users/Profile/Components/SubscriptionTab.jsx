@@ -37,7 +37,13 @@ export default function SubscriptionTab() {
   }, [planType, t]);
 
   const handleUpgrade = useCallback(
-    (plan) => navigate(`/payment?planId=${plan.planId}`),
+    (plan) => {
+      // Gói GROUP → PaymentPage sẽ yêu cầu chọn nhóm
+      const url = plan.type === "GROUP"
+        ? `/payment?planId=${plan.planId}&planType=GROUP`
+        : `/payment?planId=${plan.planId}`;
+      navigate(url);
+    },
     [navigate],
   );
 
