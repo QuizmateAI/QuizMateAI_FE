@@ -438,6 +438,7 @@ function GroupWorkspacePage() {
   return (
     <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode ? 'bg-slate-950' : 'bg-[#F7FBFF]'}`}>
       <GroupWorkspaceHeader 
+        groupId={groupId}
         groupName={currentGroup?.groupName}
         settingsMenu={<div className="flex items-center gap-2">{manageGroupButton}{settingsMenu}</div>} 
         isDarkMode={isDarkMode}
