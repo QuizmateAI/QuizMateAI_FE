@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Button } from "@/Components/ui/button";
-import { Pencil, Plus, Settings, Share2 } from "lucide-react";
+import { Pencil, Plus, Settings, Share2, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import WebSocketStatus from "@/Components/features/WebSocketStatus";
+import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ function WorkspaceHeader({
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const openEditDialog = () => {
     setEditTitle(workspaceTitle || "");
@@ -90,11 +92,22 @@ function WorkspaceHeader({
 
         <div className="flex items-center gap-2">
           <WebSocketStatus isConnected={wsConnected} isDarkMode={isDarkMode} compact />
-          <Button className={`rounded-full text-white h-9 px-4 flex items-center gap-2 ${
+    
+          {/* <Button className={`rounded-full text-white h-9 px-4 flex items-center gap-2 ${
             isDarkMode ? "bg-blue-600 hover:bg-blue-500" : "bg-[#2563EB] hover:bg-gray-800"
           }`}>
             <Plus className="w-4 h-4" />
             <span className={fontClass}>{t("workspace.header.create")}</span>
+          </Button> */}
+          <Button
+            onClick={() => setUpgradeOpen(true)}
+            variant="outline"
+            className={`rounded-full h-9 px-4 flex items-center gap-2 ${
+              isDarkMode ? "border-slate-700 text-amber-400 hover:bg-slate-800" : "border-gray-200 text-amber-600 hover:bg-amber-50"
+            }`}
+          >
+            <Zap className="w-4 h-4" />
+            <span className={fontClass}>{t("upgradePlan.upgradeBtn")}</span>
           </Button>
           <Button
             variant="outline"
@@ -175,6 +188,12 @@ function WorkspaceHeader({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UpgradePlanDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        planType="INDIVIDUAL"
+      />
     </header>
   );
 }
