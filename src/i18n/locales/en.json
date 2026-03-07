@@ -105,7 +105,8 @@
     "dark": "Dark",
     "refresh": "Refresh",
     "subscription": "Subscription Plans",
-    "optional": "optional"
+    "optional": "optional",
+    "cancel": "Close"
   },
   "rbac": {
     "title": "RBAC System",
@@ -1359,6 +1360,9 @@
     "momoError": "Unable to create MoMo payment. Please try again.",
     "noPlanId": "No plan selected. Please go back and choose a plan.",
     "fetchError": "Unable to load plan information. Please try again.",
+    "selectGroup": "Select a group",
+    "selectGroupDesc": "Choose a group you lead to apply this subscription plan.",
+    "selectGroupFirst": "Please select a group on the left before proceeding to payment.",
     "limitKeys": {
       "maxWorkspace": "Max Workspaces",
       "maxMaterialPerWorkspace": "Materials / Workspace",
@@ -1401,5 +1405,13 @@
     "time": "Time",
     "backToPlans": "Back to plans",
     "goHome": "Go to Home"
+  },
+  "upgradePlan": {
+    "title": "Upgrade Subscription",
+    "individualDesc": "Choose an individual plan that fits your needs",
+    "groupDesc": "Choose a group plan to upgrade your team",
+    "selectGroup": "Select a group to apply",
+    "noLeaderGroups": "You are not a leader of any group.",
+    "upgradeBtn": "Upgrade"
   }
 }

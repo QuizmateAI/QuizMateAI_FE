@@ -2,7 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Globe, Moon, Settings, Sun, CreditCard, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Globe, Moon, Settings, Sun, CreditCard, Loader2, AlertCircle, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import DarkLogo from '@/assets/DarkMode_Logo.webp';
 import LightLogo from '@/assets/LightMode_Logo.webp';
@@ -10,6 +10,7 @@ import PlanInfoCard from './components/PlanInfoCard';
 import PaymentSidebar from './components/PaymentSidebar';
 import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
 import { getPlanById } from '@/api/PaymentAPI';
+import { useGroup } from '@/hooks/useGroup';
 
 export default function PaymentPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -24,6 +25,10 @@ export default function PaymentPage() {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+
+  const { groups } = useGroup({ enabled: true });
+  const leaderGroups = groups.filter((g) => g.memberRole === 'LEADER');
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
@@ -43,7 +48,8 @@ export default function PaymentPage() {
   }, [isSettingsOpen]);
 
   const planId = searchParams.get('planId');
-  const groupId = searchParams.get('groupId');
+  const groupId = searchParams.get('groupId') || selectedGroupId;
+  const planTypeParam = searchParams.get('planType');
 
   useEffect(() => {
     if (!planId) return;
@@ -59,6 +65,10 @@ export default function PaymentPage() {
   }, [planId, t]);
 
   const noPlanId = !planId;
+  const isGroupPlan = plan?.type === 'GROUP' || planTypeParam === 'GROUP';
+  const needGroupSelect = isGroupPlan && !searchParams.get('groupId');
+
+  const selectedGroup = groups.find((g) => String(g.groupId) === String(groupId));
 
   return (
     <div className={`min-h-screen ${fontClass} transition-colors ${
@@ -196,10 +206,77 @@ export default function PaymentPage() {
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1 min-w-0">
               <PlanInfoCard plan={plan} />
+
+              {/* Group selector — khi mua gói GROUP mà chưa chọn nhóm */}
+              {needGroupSelect && (
+                <div className={`mt-6 rounded-2xl p-6 ${
+                  isDarkMode ? 'bg-slate-900 ring-1 ring-slate-700/50' : 'bg-white ring-1 ring-slate-200 shadow-lg shadow-slate-300/30'
+                }`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Users className={`w-5 h-5 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+                    <h3 className={`text-sm font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                      {t('payment.selectGroup')}
+                    </h3>
+                  </div>
+                  <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {t('payment.selectGroupDesc')}
+                  </p>
+                  {leaderGroups.length === 0 ? (
+                    <p className={`text-sm py-4 text-center ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {t('upgradePlan.noLeaderGroups')}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {leaderGroups.map((g) => (
+                        <button
+                          key={g.groupId}
+                          type="button"
+                          onClick={() => setSelectedGroupId((prev) => prev === g.groupId ? null : g.groupId)}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer ${
+                            selectedGroupId === g.groupId
+                              ? isDarkMode
+                                ? 'bg-blue-600/20 border-blue-500 border ring-1 ring-blue-500/30'
+                                : 'bg-blue-50 border-blue-300 border ring-1 ring-blue-200'
+                              : isDarkMode
+                                ? 'bg-slate-800 border border-slate-700 hover:border-slate-600'
+                                : 'bg-slate-50 border border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <Users className={`w-4 h-4 flex-shrink-0 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+                          <span className="flex-1 text-left truncate font-medium">{g.groupName}</span>
+                          <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {g.memberCount || 0} {t('home.labels.membersUnit')}
+                          </span>
+                          {selectedGroupId === g.groupId && (
+                            <ChevronRight className={`w-4 h-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Hiển thị nhóm đã chọn */}
+              {isGroupPlan && groupId && selectedGroup && (
+                <div className={`mt-6 rounded-2xl p-4 flex items-center gap-3 ${
+                  isDarkMode ? 'bg-slate-800/60 ring-1 ring-slate-700' : 'bg-blue-50 ring-1 ring-blue-200'
+                }`}>
+                  <Users className={`w-5 h-5 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                      {selectedGroup.groupName}
+                    </p>
+                    <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {selectedGroup.memberCount || 0} {t('home.labels.membersUnit')}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="w-full lg:w-[400px] shrink-0">
               <div className="lg:sticky lg:top-24">
-                <PaymentSidebar plan={plan} groupId={groupId} />
+                <PaymentSidebar plan={plan} groupId={groupId} needGroupSelect={needGroupSelect && !selectedGroupId} />
               </div>
             </div>
           </div>

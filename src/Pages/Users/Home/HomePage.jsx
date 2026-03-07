@@ -45,6 +45,7 @@ function HomePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
 
+
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
@@ -304,13 +305,13 @@ function HomePage() {
             </Button> */}
 
             {/* Create Button */}
-            <Button
+            {/* <Button
               onClick={handleOpenCreate}
               className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#6682bd] text-white rounded-full h-9 px-4"
             >
               <Plus className="w-4 h-4" />
               <span className={`text-sm font-medium ${fontClass}`}>{t('home.actions.create')}</span>
-            </Button>
+            </Button> */}
           </div>
         </div>
 

@@ -105,7 +105,8 @@
     "dark": "Tối",
     "refresh": "Làm mới",
     "subscription": "Gói đăng ký",
-    "optional": "tùy chọn"
+    "optional": "tùy chọn",
+    "cancel": "Đóng"
   },
   "rbac": {
     "title": "Phân quyền RBAC",
@@ -1359,6 +1360,9 @@
     "momoError": "Không thể tạo thanh toán MoMo. Vui lòng thử lại.",
     "noPlanId": "Chưa chọn gói. Vui lòng quay lại và chọn gói đăng ký.",
     "fetchError": "Không thể tải thông tin gói. Vui lòng thử lại.",
+    "selectGroup": "Chọn nhóm áp dụng",
+    "selectGroupDesc": "Chọn nhóm mà bạn là trưởng nhóm để áp dụng gói đăng ký này.",
+    "selectGroupFirst": "Vui lòng chọn nhóm bên trái trước khi thanh toán.",
     "limitKeys": {
       "maxWorkspace": "Workspace tối đa",
       "maxMaterialPerWorkspace": "Tài liệu / Workspace",
@@ -1401,5 +1405,13 @@
     "time": "Thời gian",
     "backToPlans": "Quay lại gói đăng ký",
     "goHome": "Về trang chủ"
+  },
+  "upgradePlan": {
+    "title": "Nâng cấp gói đăng ký",
+    "individualDesc": "Chọn gói cá nhân phù hợp với nhu cầu của bạn",
+    "groupDesc": "Chọn gói nhóm để nâng cấp cho nhóm của bạn",
+    "selectGroup": "Chọn nhóm áp dụng",
+    "noLeaderGroups": "Bạn chưa là trưởng nhóm của nhóm nào.",
+    "upgradeBtn": "Nâng cấp"
   }
 }
