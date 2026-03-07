@@ -2,15 +2,28 @@
 import { ArrowLeft, FileText, Image, Film, Link2, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+// Format MIME type thành tên file type ngắn gọn
+function formatFileType(type) {
+  if (!type) return "FILE";
+  const lower = type.toLowerCase();
+  if (lower.includes("pdf")) return "PDF";
+  if (lower.includes("wordprocessingml") || lower.includes("msword")) return "DOCX";
+  if (lower.includes("spreadsheetml") || lower.includes("excel")) return "XLSX";
+  if (lower.includes("presentationml") || lower.includes("powerpoint")) return "PPTX";
+  if (lower.includes("image")) return "IMAGE";
+  if (lower.includes("video")) return "VIDEO";
+  if (lower === "url") return "URL";
+  return "FILE";
+}
+
 // Helper lấy icon theo loại tài liệu
 function getDetailIcon(type, className = "w-5 h-5") {
-  const map = {
-    pdf: <FileText className={`${className} text-red-500`} />,
-    image: <Image className={`${className} text-green-500`} />,
-    video: <Film className={`${className} text-purple-500`} />,
-    url: <Link2 className={`${className} text-blue-500`} />,
-  };
-  return map[type] || <FileText className={`${className} text-gray-500`} />;
+  if (type?.toLowerCase().includes("pdf")) return <FileText className={`${className} text-red-500`} />;
+  if (type?.toLowerCase().includes("doc")) return <FileText className={`${className} text-blue-600`} />;
+  if (type?.toLowerCase().includes("image")) return <Image className={`${className} text-green-500`} />;
+  if (type?.toLowerCase().includes("video")) return <Film className={`${className} text-purple-500`} />;
+  if (type?.toLowerCase() === "url") return <Link2 className={`${className} text-blue-500`} />;
+  return <FileText className={`${className} text-gray-500`} />;
 }
 
 // Hiển thị chi tiết tài liệu inline trong khu vực học tập
@@ -46,7 +59,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack }) {
                 {source.name}
               </p>
               <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {source.type?.toUpperCase()} {source.size ? `• ${source.size}` : ""}
+                {formatFileType(source.type)} {source.size ? `• ${source.size}` : ""}
               </p>
             </div>
             <button className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`}>

@@ -1,7 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen } from "lucide-react";
+import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SourceDetailView from "./SourceDetailView";
+
+// Format MIME type thành tên file type ngắn gọn
+function formatFileType(type) {
+  if (!type) return "FILE";
+  const lower = type.toLowerCase();
+  if (lower.includes("pdf")) return "PDF";
+  if (lower.includes("wordprocessingml") || lower.includes("msword")) return "DOCX";
+  if (lower.includes("spreadsheetml") || lower.includes("excel")) return "XLSX";
+  if (lower.includes("presentationml") || lower.includes("powerpoint")) return "PPTX";
+  if (lower.includes("image")) return "IMAGE";
+  if (lower.includes("video")) return "VIDEO";
+  if (lower === "url") return "URL";
+  return "FILE";
+}
 
 // Lấy icon theo loại tài liệu
 function getSourceIcon(type) {
@@ -14,7 +28,7 @@ function getSourceIcon(type) {
 }
 
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
-function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, isCollapsed = false, onToggleCollapse }) {
+function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, isCollapsed = false, onToggleCollapse }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [search, setSearch] = useState("");
@@ -36,8 +50,14 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
   const selectAll = () => setSelectedIds(filtered.map((s) => s.id));
   const deselectAll = () => setSelectedIds([]);
 
-  const handleRemoveSelected = () => {
-    selectedIds.forEach((id) => onRemoveSource?.(id));
+  const handleRemoveSelected = async () => {
+    // Ưu tiên dùng onRemoveMultiple để xóa song song (nhanh hơn)
+    if (onRemoveMultiple) {
+      await onRemoveMultiple(selectedIds);
+    } else {
+      // Fallback: gọi onRemoveSource từng cái (tuần tự)
+      selectedIds.forEach((id) => onRemoveSource?.(id));
+    }
     setSelectedIds([]);
   };
 
@@ -237,11 +257,25 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
 
                   {/* Nội dung tài liệu — click để xem chi tiết */}
                   <div className="min-w-0 flex-1 flex items-center gap-2.5 cursor-pointer" onClick={() => setViewingSource(source)}>
-                    {getSourceIcon(source.type)}
+                    {/* Icon trạng thái: ERROR (chấm than), PROCESSING (spinner), hoặc icon file thông thường */}
+                    {source.status?.toUpperCase() === "ERROR" ? (
+                      <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                    ) : source.status?.toUpperCase() === "PROCESSING" ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
+                    ) : (
+                      getSourceIcon(source.type)
+                    )}
                     <div className="min-w-0 flex-1 text-left">
                       <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{source.name}</p>
                       <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                        {source.type?.toUpperCase()} {source.size ? `• ${source.size}` : ""}
+                        {formatFileType(source.type)} 
+                        {source.status?.toUpperCase() === "ERROR" ? (
+                          <span className="text-red-500 ml-1">• Lỗi tải lên</span>
+                        ) : source.status?.toUpperCase() === "PROCESSING" ? (
+                          <span className="text-blue-500 ml-1">• Đang tải lên...</span>
+                        ) : (
+                          source.size && <span>• {source.size}</span>
+                        )}
                       </p>
                     </div>
                   </div>

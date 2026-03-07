@@ -542,6 +542,8 @@
     }
   },
   "workspace": {
+    "wsConnected": "Kết nối realtime",
+    "wsDisconnected": "Không kết nối",
     "header": {
       "title": "Workspace chưa đặt tên",
       "create": "Tạo mới",

@@ -542,6 +542,8 @@
     }
   },
   "workspace": {
+    "wsConnected": "Live updates",
+    "wsDisconnected": "Disconnected",
     "header": {
       "title": "Untitled workspace",
       "create": "Create",

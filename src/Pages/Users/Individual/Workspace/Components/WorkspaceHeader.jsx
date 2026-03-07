@@ -6,6 +6,7 @@ import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
+import WebSocketStatus from "@/Components/features/WebSocketStatus";
 import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
 import {
   Dialog,
@@ -24,6 +25,7 @@ function WorkspaceHeader({
   workspaceSubtitle = "",
   workspaceDescription = "",
   onEditWorkspace,
+  wsConnected = false,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -89,6 +91,8 @@ function WorkspaceHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          <WebSocketStatus isConnected={wsConnected} isDarkMode={isDarkMode} compact />
+    
           {/* <Button className={`rounded-full text-white h-9 px-4 flex items-center gap-2 ${
             isDarkMode ? "bg-blue-600 hover:bg-blue-500" : "bg-[#2563EB] hover:bg-gray-800"
           }`}>
