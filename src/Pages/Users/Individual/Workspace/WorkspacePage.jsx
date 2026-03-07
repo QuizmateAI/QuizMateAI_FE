@@ -11,6 +11,7 @@ import { Globe, Moon, Settings, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
 
@@ -35,8 +36,9 @@ function WorkspacePage() {
 	const [isLeftResizing, setIsLeftResizing] = useState(false);
 	const [isRightResizing, setIsRightResizing] = useState(false);
 
-	// State quản lý dialog upload — không mở khi đang tạo mới
-	const [uploadDialogOpen, setUploadDialogOpen] = useState(!isCreating);
+	// State quản lý dialog upload — chỉ mở khi workspace chưa có tài liệu (kiểm tra sau khi fetch)
+	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+	const [hasCheckedInitialSources, setHasCheckedInitialSources] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
 
@@ -82,13 +84,37 @@ function WorkspacePage() {
 		i18n.changeLanguage(newLang);
 	};
 
+	// WebSocket để nhận realtime updates cho tài liệu
+	const { isConnected: wsConnected } = useWebSocket({
+		workspaceId: !isCreating ? workspaceId : null,
+		enabled: !isCreating && !!workspaceId,
+		onMaterialUploaded: (data) => {
+			console.log("📤 [WorkspacePage] Material uploaded via WebSocket:", data);
+			console.log("   Status:", data.status);
+			console.log("   Material ID:", data.materialId);
+			fetchSources(); // Reload danh sách tài liệu
+		},
+		onMaterialDeleted: (data) => {
+			console.log("🗑️ [WorkspacePage] Material deleted via WebSocket:", data);
+			fetchSources(); // Reload danh sách tài liệu
+		},
+		onMaterialUpdated: (data) => {
+			console.log("🔄 [WorkspacePage] Material updated via WebSocket:", data);
+			console.log("   Status:", data.status);
+			console.log("   Material ID:", data.materialId);
+			fetchSources(); // Reload danh sách tài liệu
+		},
+	});
+
 	// Fetch materials list
     const fetchSources = useCallback(async () => {
         if (!workspaceId) return;
         try {
+            console.log("🔄 [fetchSources] Fetching materials for workspace:", workspaceId);
             const data = await getMaterialsByWorkspace(workspaceId);
+            console.log("📥 [fetchSources] Received materials:", data);
             if (Array.isArray(data)) {
-                setSources(data.map(item => ({
+                const mappedSources = data.map(item => ({
                     id: item.materialId,
                     name: item.title,
                     type: item.materialType,
@@ -96,10 +122,16 @@ function WorkspacePage() {
                     uploadedAt: item.uploadedAt,
                     // map other fields
                     ...item
-                })));
+                }));
+                console.log("✅ [fetchSources] Mapped sources:", mappedSources);
+                console.log("   Total:", mappedSources.length);
+                mappedSources.forEach((src, idx) => {
+                    console.log(`   [${idx}] ${src.name} - Status: ${src.status}`);
+                });
+                setSources(mappedSources);
             }
         } catch (err) {
-            console.error("Failed to fetch materials:", err);
+            console.error("❌ [fetchSources] Failed to fetch materials:", err);
         }
     }, [workspaceId]);
 
@@ -110,6 +142,24 @@ function WorkspacePage() {
             fetchSources();
 		}
 	}, [workspaceId, isCreating, fetchWorkspaceDetail, fetchSources]);
+
+	// Tự động mở popup upload CHỈ KHI workspace chưa có tài liệu (lần đầu tiên)
+	useEffect(() => {
+		if (isCreating || hasCheckedInitialSources) return;
+		
+		// Chỉ check sau khi đã fetch sources (workspaceId có giá trị)
+		if (!workspaceId) return;
+		
+		// Đợi một chút để đảm bảo fetch sources đã hoàn tất
+		const timer = setTimeout(() => {
+			if (sources.length === 0) {
+				setUploadDialogOpen(true);
+			}
+			setHasCheckedInitialSources(true);
+		}, 500);
+		
+		return () => clearTimeout(timer);
+	}, [workspaceId, isCreating, sources.length, hasCheckedInitialSources]);
 
 	// Xử lý tạo workspace mới từ dialog
 	const handleCreateWorkspace = useCallback(async (data) => {
@@ -140,26 +190,38 @@ function WorkspacePage() {
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, [isSettingsOpen]);
 
-	// Xử lý upload file tài liệu
+	// Xử lý upload file tài liệu - SONG SONG để tăng tốc
 	const handleUploadFiles = useCallback(async (files) => {
         try {
-            for (const file of files) {
-                await uploadMaterial(file, workspaceId, "WORKSPACE");
-            }
-            // Refresh list after upload
+            // Upload tất cả files song song thay vì tuần tự
+            const uploadPromises = files.map(file => uploadMaterial(file, workspaceId, "WORKSPACE"));
+            await Promise.all(uploadPromises);
+            // Refresh list after all uploads complete
             fetchSources();
         } catch (error) {
             console.error("Failed to upload files:", error);
         }
 	}, [workspaceId, fetchSources]);
 
-	// Xóa tài liệu
+	// Xóa tài liệu đơn lẻ
 	const handleRemoveSource = useCallback(async (sourceId) => {
         try {
             await deleteMaterial(sourceId, "WORKSPACE");
             fetchSources();
         } catch (error) {
             console.error("Failed to delete material:", error);
+        }
+	}, [fetchSources]);
+
+	// Xóa nhiều tài liệu cùng lúc - SONG SONG
+	const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
+        try {
+            // Xóa tất cả files song song thay vì tuần tự
+            const deletePromises = sourceIds.map(id => deleteMaterial(id, "WORKSPACE"));
+            await Promise.all(deletePromises);
+            fetchSources();
+        } catch (error) {
+            console.error("Failed to delete materials:", error);
         }
 	}, [fetchSources]);
 
@@ -467,6 +529,7 @@ function WorkspacePage() {
 				onEditWorkspace={async (data) => {
 					await editWorkspace(Number(workspaceId), data);
 				}}
+				wsConnected={wsConnected}
 			/>
 			<div className="flex-1 min-h-0">
 				<div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
@@ -481,8 +544,7 @@ function WorkspacePage() {
 								isDarkMode={isDarkMode}
 								sources={sources}
 								onAddSource={() => setUploadDialogOpen(true)}
-								onRemoveSource={handleRemoveSource}
-								isCollapsed={isSourcesCollapsed}
+								onRemoveSource={handleRemoveSource}							onRemoveMultiple={handleRemoveMultipleSources}								isCollapsed={isSourcesCollapsed}
 								onToggleCollapse={() => setIsSourcesCollapsed((prev) => !prev)}
 
 							/>
