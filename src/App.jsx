@@ -62,6 +62,7 @@ function App() {
         {/* Route cần đăng nhập (User) - Super Admin, Admin không được vào */}
         <Route element={<ProtectedRoute allowedRoles={['USER']} />}>
           <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/api/momo/return" element={<PaymentResultPage />} />
           <Route path="/payment/result" element={<PaymentResultPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/home" element={<HomePage />} />
