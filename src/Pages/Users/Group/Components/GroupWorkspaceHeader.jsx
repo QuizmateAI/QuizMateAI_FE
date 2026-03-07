@@ -1,14 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/Components/ui/button";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
+import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
 
 // Header cho Group Workspace - hiển thị tên nhóm và các hành động đặc thù
 function GroupWorkspaceHeader({ 
+  groupId = null,
   groupName = "", 
   settingsMenu = null, 
   isDarkMode = false,
@@ -17,10 +19,12 @@ function GroupWorkspaceHeader({
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const navigate = useNavigate();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
  
 
   return (
+    <>
     <header className={`w-full h-16 border-b transition-colors duration-300 ${isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"}`}>
       <div className="max-w-[1740px] mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -41,6 +45,16 @@ function GroupWorkspaceHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setUpgradeOpen(true)}
+            variant="outline"
+            className={`rounded-full h-9 px-4 flex items-center gap-2 ${
+              isDarkMode ? "border-slate-700 text-amber-400 hover:bg-slate-800" : "border-gray-200 text-amber-600 hover:bg-amber-50"
+            }`}
+          >
+            <Zap className="w-4 h-4" />
+            <span className={fontClass}>{t("upgradePlan.upgradeBtn")}</span>
+          </Button>
 
           <Button
             onClick={onOpenInvite}
@@ -57,6 +71,14 @@ function GroupWorkspaceHeader({
         </div>
       </div>
     </header>
+
+    <UpgradePlanDialog
+      open={upgradeOpen}
+      onOpenChange={setUpgradeOpen}
+      planType="GROUP"
+      preSelectedGroupId={groupId}
+    />
+    </>
   );
 }
 

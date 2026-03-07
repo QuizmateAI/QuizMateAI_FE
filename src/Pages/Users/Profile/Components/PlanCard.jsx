@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 const formatPrice = (price) =>
   new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
 
-export default function PlanCard({ plan, highlight, onUpgrade }) {
+export default function PlanCard({ plan, highlight, onUpgrade, disabled = false }) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
 
@@ -82,12 +82,15 @@ export default function PlanCard({ plan, highlight, onUpgrade }) {
 
         <Button
           onClick={() => onUpgrade(plan)}
+          disabled={disabled}
           className={`w-full mt-4 rounded-full transition-all active:scale-95 cursor-pointer ${
-            highlight
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
-              : isDarkMode
-                ? "bg-slate-700 hover:bg-slate-600 text-slate-200"
-                : "bg-slate-800 hover:bg-slate-900 text-white"
+            disabled
+              ? "opacity-50 cursor-not-allowed"
+              : highlight
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : isDarkMode
+                  ? "bg-slate-700 hover:bg-slate-600 text-slate-200"
+                  : "bg-slate-800 hover:bg-slate-900 text-white"
           }`}
         >
           {t("profile.subscription.upgrade")}
