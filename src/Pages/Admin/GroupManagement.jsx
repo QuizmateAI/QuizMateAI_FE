@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -177,9 +178,8 @@ function GroupManagement() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20">
-                      <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-500" />
-                      <p className="mt-2 text-slate-400">{t('groupPage.loading')}</p>
+                    <TableCell colSpan={7} className="text-center py-4">
+                      <ListSpinner variant="table" />
                     </TableCell>
                   </TableRow>
                 ) : filteredGroups.length > 0 ? (

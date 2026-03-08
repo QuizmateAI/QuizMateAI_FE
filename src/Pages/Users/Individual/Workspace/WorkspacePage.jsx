@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
@@ -14,10 +14,11 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
+import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
-	const navigate = useNavigate();
+	const navigate = useNavigateWithLoading();
 	const { t, i18n } = useTranslation();
 	const { isDarkMode, toggleDarkMode } = useDarkMode();
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);

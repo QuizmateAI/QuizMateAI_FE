@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/Components/ui/table';
 import { Badge } from '@/Components/ui/badge';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import {
   Dialog,
   DialogContent,
@@ -217,8 +218,8 @@ function RbacManagement() {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-12">
-                          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-500" />
+                        <TableCell colSpan={3} className="text-center py-4">
+                          <ListSpinner variant="table" />
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -352,8 +353,8 @@ function RbacManagement() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-500" />
+                      <TableCell colSpan={6} className="text-center py-4">
+                        <ListSpinner variant="table" />
                       </TableCell>
                     </TableRow>
                   ) : auditLogs.length === 0 ? (

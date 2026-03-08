@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
+import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
+import LoadingSpinner from '@/Components/ui/LoadingSpinner';
 import './i18n';
 import './App.css';
 
@@ -33,21 +35,12 @@ const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
 const TopicManagement = lazy(() => import('./Pages/SuperAdmin/TopicManagement'));
 
-// ── Loading fallback ──
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-background">
-    <div className="flex flex-col items-center gap-4">
-      <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-muted-foreground font-medium">Loading...</p>
-    </div>
-  </div>
-);
-
 function App() {
   return (
     <ToastProvider>
     <Router>
-      <Suspense fallback={<PageLoader />}>
+      <NavigationLoadingProvider>
+      <Suspense fallback={<LoadingSpinner />}>
       <Routes>
 
         {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home
@@ -97,6 +90,7 @@ function App() {
         </Route>
       </Routes>
       </Suspense>
+      </NavigationLoadingProvider>
     </Router>
     </ToastProvider>
   )

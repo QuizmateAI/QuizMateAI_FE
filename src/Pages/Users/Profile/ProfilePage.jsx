@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   Camera, User, Mail, Calendar, Lock, Loader2, Check, X, Eye, EyeOff,
   Settings, Globe, Moon, Sun, LogOut, Shield, Zap, Award, TrendingUp,
   BookOpen, Clock, Star, Edit3, CreditCard
 } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import LoadingSpinner from "@/Components/ui/LoadingSpinner";
 import { getUserProfile, updateUserProfile, changePassword, uploadAvatar } from "@/api/ProfileAPI";
 import { logout } from "@/api/Authentication";
 import { Button } from "@/Components/ui/button";
@@ -14,6 +15,7 @@ import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
+import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 import {
   Dialog,
   DialogContent,
@@ -126,7 +128,7 @@ const SkillRadarChart = ({ skills, isDarkMode }) => {
 function ProfilePage() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const location = useLocation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language;
@@ -405,11 +407,7 @@ function ProfilePage() {
   );
 
   if (loading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? "bg-slate-950" : "bg-[#F7FBFF]"}`}>
-        <Loader2 className={`w-10 h-10 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (

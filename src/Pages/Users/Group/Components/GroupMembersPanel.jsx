@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import {
   Search,
   UserPlus,
@@ -167,9 +168,7 @@ function GroupMembersPanel({
       {/* Danh sách thành viên */}
       <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className={`w-5 h-5 animate-spin ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
-          </div>
+          <ListSpinner variant="inline" />
         ) : filteredMembers.length === 0 ? (
           <div className="text-center py-8">
             <p className={`text-sm ${isDarkMode ? 'text-slate-500' : 'text-gray-400'} ${fontClass}`}>

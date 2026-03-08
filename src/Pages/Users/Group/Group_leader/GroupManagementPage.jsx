@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useGroup } from '@/hooks/useGroup';
@@ -8,11 +8,12 @@ import GroupDashboardTab from './GroupDashboardTab';
 import GroupMembersTab from './GroupMembersTab';
 import GroupSettingsTab from './GroupSettingsTab';
 import InviteMemberDialog from './InviteMemberDialog';
+import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 
 // Trang quản lý nhóm: Dashboard + Thành viên + Cài đặt
 function GroupManagementPage() {
   const { groupId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();

@@ -5,6 +5,7 @@ import { useDarkMode } from "@/hooks/useDarkMode";
 import { getPurchasablePlans } from "@/api/PaymentAPI";
 import { Loader2, AlertCircle, Crown, Users, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import PlanCard from "@/Pages/Users/Profile/Components/PlanCard";
 
 /**
@@ -147,9 +148,7 @@ export default function UpgradePlanDialog({
 
         {/* Plan cards */}
         {loading ? (
-          <div className="flex flex-col items-center py-12 gap-3">
-            <Loader2 className={`w-7 h-7 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-          </div>
+          <ListSpinner variant="section" />
         ) : error ? (
           <div className="flex flex-col items-center py-12 gap-3">
             <AlertCircle className={`w-8 h-8 ${isDarkMode ? "text-red-400" : "text-red-500"}`} />

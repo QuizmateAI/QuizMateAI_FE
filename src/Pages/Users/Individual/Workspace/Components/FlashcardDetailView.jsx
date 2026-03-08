@@ -4,6 +4,7 @@ import {
   ArrowLeft, CreditCard, Plus, Trash2, Edit3, Save, X, Loader2, ToggleLeft, ToggleRight
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import { FlashcardArray } from "react-quizlet-flashcard";
 import "react-quizlet-flashcard/dist/index.css";
 import {
@@ -182,11 +183,7 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack }) {
   }`;
 
   if (loading) {
-    return (
-      <div className="flex flex-col h-full items-center justify-center">
-        <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-      </div>
-    );
+    return <ListSpinner variant="section" />;
   }
 
   if (!detail) {

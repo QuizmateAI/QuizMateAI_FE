@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
 import GroupWorkspaceHeader from './Components/GroupWorkspaceHeader';
 import SourcesPanel from './Components/SourcesPanel';
@@ -15,11 +15,12 @@ import { useGroup } from '@/hooks/useGroup';
 import { useTopicsForCreate } from '@/hooks/useTopicsForCreate';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { createRoadmap, createPhase, createKnowledge } from '@/api/RoadmapAPI';
+import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 
 // Trang workspace dành cho nhóm - bố cục 3 cột giống WorkspacePage
 function GroupWorkspacePage() {
   const { groupId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);

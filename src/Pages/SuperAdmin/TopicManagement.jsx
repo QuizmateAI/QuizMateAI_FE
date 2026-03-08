@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@/Components/ui/table';
 import AdminPagination from '@/Pages/Admin/components/AdminPagination';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTopic } from '@/hooks/useTopic';
 import { useToast } from '@/context/ToastContext';
@@ -278,8 +279,8 @@ function TopicManagement() {
                 <TableBody>
                   {topicsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-12">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-500" />
+                      <TableCell colSpan={3} className="text-center py-4">
+                        <ListSpinner variant="table" />
                       </TableCell>
                     </TableRow>
                   ) : filteredTopics.length === 0 ? (
@@ -410,8 +411,8 @@ function TopicManagement() {
                 <TableBody>
                   {topicsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-12">
-                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-500" />
+                      <TableCell colSpan={3} className="text-center py-4">
+                        <ListSpinner variant="table" />
                       </TableCell>
                     </TableRow>
                   ) : visibleFields.length === 0 ? (
