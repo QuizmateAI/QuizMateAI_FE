@@ -16,6 +16,7 @@ import {
   DialogDescription,
 } from "@/Components/ui/dialog";
 import { Label } from "@/Components/ui/label";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/Components/ui/card";
 import {
   Table,
@@ -352,8 +353,8 @@ function AdminManagement() {
                 )}
                 {isLoading && (
                    <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
-                      Loading...
+                    <TableCell colSpan={7} className="text-center py-4">
+                      <ListSpinner variant="table" />
                     </TableCell>
                   </TableRow>
                 )}
@@ -438,7 +439,7 @@ function AdminManagement() {
                     </div>
 
                     {isRbacLoading ? (
-                      <div className="py-12 text-center text-slate-400 text-sm">Đang tải...</div>
+                      <ListSpinner variant="inline" />
                     ) : (
                       <div className="space-y-4">
                         {PERM_CATEGORIES.map((cat) => {

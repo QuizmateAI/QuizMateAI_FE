@@ -5,6 +5,7 @@ import { Crown, Shield, Loader2, AlertCircle } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { getPurchasablePlans } from "@/api/PaymentAPI";
 import { Badge } from "@/Components/ui/badge";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import PlanCard from "./PlanCard";
 
@@ -99,9 +100,7 @@ export default function SubscriptionTab() {
 
       {/* Plan cards */}
       {loading ? (
-        <div className="flex flex-col items-center py-16 gap-3">
-          <Loader2 className={`w-7 h-7 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-        </div>
+        <ListSpinner variant="section" />
       ) : error ? (
         <div className="flex flex-col items-center py-16 gap-3">
           <AlertCircle className={`w-8 h-8 ${isDarkMode ? "text-red-400" : "text-red-500"}`} />

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useRef, useState, useEffect } from 'react';
 import { ArrowLeft, Globe, Moon, Settings, Sun, CreditCard, Loader2, AlertCircle, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import DarkLogo from '@/assets/DarkMode_Logo.webp';
 import LightLogo from '@/assets/LightMode_Logo.webp';
 import PlanInfoCard from './components/PlanInfoCard';
@@ -189,10 +190,7 @@ export default function PaymentPage() {
             </Button>
           </div>
         ) : loading ? (
-          <div className="flex flex-col items-center justify-center py-32 gap-3">
-            <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-            <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('payment.processing')}</span>
-          </div>
+          <ListSpinner variant="section" className="py-32" />
         ) : error || !plan ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />

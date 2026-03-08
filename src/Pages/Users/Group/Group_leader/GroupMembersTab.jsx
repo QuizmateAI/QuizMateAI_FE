@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import {
   Search,
   UserPlus,
@@ -215,9 +216,7 @@ function GroupMembersTab({
 
         {/* Loading */}
         {membersLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className={`w-6 h-6 animate-spin ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`} />
-          </div>
+          <ListSpinner variant="section" />
         ) : filteredMembers.length === 0 ? (
           <div className="text-center py-12">
             <Users className={`w-10 h-10 mx-auto mb-2 ${isDarkMode ? 'text-slate-700' : 'text-gray-300'}`} />

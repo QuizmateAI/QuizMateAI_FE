@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
 import { getQuizzesByUser, deleteQuiz } from "@/api/QuizAPI";
 
 // Hàm format ngày giờ ngắn gọn
@@ -36,12 +38,14 @@ const STATUS_FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT", "COMPLETED"];
 
 function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, quizId: null, mode: null });
 
   // Lấy danh sách quiz từ API (theo user hiện tại)
   const fetchQuizzes = useCallback(async () => {
@@ -181,6 +185,24 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
                       {t(`workspace.quiz.statusLabels.${quiz.status}`)}
                     </span>
+                    {quiz.status === "ACTIVE" && (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'practice' }); }}
+                          className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-blue-950/30 text-blue-400" : "hover:bg-blue-50 text-blue-600"}`}
+                          title={t("workspace.quiz.practice", "Practice")}
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'exam' }); }}
+                          className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-emerald-950/30 text-emerald-400" : "hover:bg-emerald-50 text-emerald-600"}`}
+                          title={t("workspace.quiz.exam", "Exam")}
+                        >
+                          <ClipboardCheck className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={(e) => handleDeleteQuiz(e, quiz.quizId)}
                       disabled={deletingId === quiz.quizId}
@@ -196,6 +218,26 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
           </div>
         )}
       </div>
+
+      {/* Confirm dialog */}
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, quizId: null, mode: null })}>
+        <DialogContent className={isDarkMode ? "bg-slate-800 border-slate-700 text-white" : ""}>
+          <DialogHeader>
+            <DialogTitle>{confirmDialog.mode === 'practice' ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}</DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
+              {confirmDialog.mode === 'practice'
+                ? t("workspace.quiz.confirmPractice", "Are you sure you want to start this quiz in Practice mode? You can review answers as you go.")
+                : t("workspace.quiz.confirmExam", "Are you sure you want to start this quiz in Exam mode? Timer will begin immediately.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmDialog({ open: false, quizId: null, mode: null })}>{t("common.cancel", "Cancel")}</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
+              {t("common.confirm", "Confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

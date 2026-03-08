@@ -1,0 +1,67 @@
+import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/Components/ui/button';
+import HourglassLoader from './HourglassLoader';
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+export default function QuestionNavPanel({ questions, answers, timeLeft, onJumpToQuestion, onSave, onSubmit }) {
+  const answeredCount = useMemo(
+    () => questions.filter(q => (answers[q.id] || []).length > 0).length,
+    [questions, answers],
+  );
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md shadow-slate-900/10 dark:shadow-blue-900/50 border border-slate-200 dark:border-slate-700 sticky top-4">
+      {/* Timer */}
+      <div className="flex flex-col items-center mb-4">
+        <HourglassLoader size="3.5em" />
+        <div className={cn(
+          'text-2xl font-bold font-mono mt-2',
+          timeLeft <= 60 ? 'text-red-500 dark:text-red-400 animate-pulse' : 'text-slate-800 dark:text-slate-100',
+        )}>
+          {formatTime(timeLeft)}
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          {answeredCount}/{questions.length} answered
+        </p>
+      </div>
+
+      {/* Question grid */}
+      <div className="grid grid-cols-5 gap-2 mb-4">
+        {questions.map((q, idx) => {
+          const isAnswered = (answers[q.id] || []).length > 0;
+          return (
+            <button
+              key={q.id}
+              type="button"
+              onClick={() => onJumpToQuestion(idx)}
+              className={cn(
+                'w-full aspect-square rounded-lg text-sm font-semibold transition-all flex items-center justify-center',
+                isAnswered
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600',
+              )}
+            >
+              {idx + 1}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Actions */}
+      <div className="space-y-2">
+        <Button onClick={onSave} variant="outline" className="w-full min-w-[100px]">
+          💾 Save Progress
+        </Button>
+        <Button onClick={onSubmit} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
+          📤 Submit Exam
+        </Button>
+      </div>
+    </div>
+  );
+}

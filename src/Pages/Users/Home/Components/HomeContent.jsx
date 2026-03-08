@@ -1,8 +1,9 @@
-
+﻿
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { MoreVertical, Pencil, Trash2, Loader2, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import ListSpinner from "@/Components/ui/ListSpinner";
+import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 
 // Hiển thị ngày tạo workspace theo locale
 function formatDate(dateAt, locale = "vi-VN") {
@@ -72,7 +73,7 @@ function CardMenu({ onEdit, onDelete, isDarkMode }) {
 }
 
 function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, onOpenDelete }) {
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
@@ -96,9 +97,7 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-          </div>
+          <ListSpinner variant="section" />
         ) : recentWorkspaces.length === 0 ? (
           <div className={`flex flex-col items-center justify-center py-16 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
             <FolderOpen className="w-12 h-12 mb-3 opacity-40" />

@@ -9,6 +9,7 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import {
   getGroupDetail,
   getGroupSubscription,
@@ -109,8 +110,8 @@ function GroupDetailPage() {
 
   if (loading || !group) {
     return (
-      <div className={`flex items-center justify-center min-h-[400px] ${fontClass}`}>
-        <RefreshCw className="w-10 h-10 animate-spin text-blue-500" />
+      <div className={`min-h-[400px] ${fontClass}`}>
+        <ListSpinner variant="section" />
       </div>
     );
   }
