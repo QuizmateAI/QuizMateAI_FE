@@ -56,7 +56,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
       q.belongToName?.toLowerCase().includes(searchQuery.toLowerCase())
     );
     return items;
-  }, [searchQuery, filterType]);
+  }, [searchQuery, filterType, allQuizzes]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -136,6 +136,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
                       </>
                     )}
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? bs.dark : bs.light}`}>{quiz.belongToName}</span>
+                  </div>
                 </div>
               );
             })}

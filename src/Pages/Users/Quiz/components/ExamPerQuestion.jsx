@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useReducer, useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import QuestionCard from './QuestionCard';
@@ -12,13 +12,32 @@ function formatTime(s) {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
+function makeReducer(questions) {
+  return (state, action) => {
+    switch (action.type) {
+      case 'NEXT': {
+        const next = state.currentIndex + 1;
+        return { currentIndex: next, timeLeft: questions[next]?.timeLimit || 0 };
+      }
+      case 'TICK':
+        return { ...state, timeLeft: Math.max(0, state.timeLeft - 1) };
+      default:
+        return state;
+    }
+  };
+}
+
 export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onSubmit, attemptId, fontClass }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(quiz.questions[0]?.timeLimit || 0);
+  const [state, dispatch] = useReducer(
+    makeReducer(quiz.questions),
+    { currentIndex: 0, timeLeft: quiz.questions[0]?.timeLimit || 0 },
+  );
   const [isFinished, setIsFinished] = useState(false);
-  const handledTimeUpRef = useRef(false);
+  // Track which question index has already been handled on timeout
+  const handledTimeUpForIndexRef = useRef(-1);
   const submittingRef = useRef(false);
 
+  const { currentIndex, timeLeft } = state;
   const currentQuestion = quiz.questions[currentIndex];
   const total = quiz.questions.length;
 
@@ -37,23 +56,19 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onSubmi
     }
   }, [attemptId, currentQuestion, answers]);
 
-  // Reset timer on question change
-  useEffect(() => {
-    handledTimeUpRef.current = false;
-    setTimeLeft(currentQuestion?.timeLimit || 0);
-  }, [currentIndex, currentQuestion?.timeLimit]);
-
-  // Countdown
+  // Countdown — dispatch TICK every second
   useEffect(() => {
     if (timeLeft <= 0 || isFinished) return;
-    const timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+    const timer = setTimeout(() => dispatch({ type: 'TICK' }), 1000);
     return () => clearTimeout(timer);
   }, [timeLeft, isFinished]);
 
-  // Auto-advance when time expires
+  // Auto-advance when time expires (fire once per question via index tracking)
   useEffect(() => {
-    if (timeLeft > 0 || isFinished || !currentQuestion?.timeLimit || handledTimeUpRef.current) return;
-    handledTimeUpRef.current = true;
+    if (timeLeft > 0 || isFinished || !currentQuestion?.timeLimit) return;
+    if (handledTimeUpForIndexRef.current === currentIndex) return;
+    handledTimeUpForIndexRef.current = currentIndex;
+
     const timeout = setTimeout(async () => {
       await saveCurrentQuestion();
       if (currentIndex >= total - 1) {
@@ -63,7 +78,7 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onSubmi
           onSubmit?.();
         }
       } else {
-        setCurrentIndex(i => i + 1);
+        dispatch({ type: 'NEXT' });
       }
     }, 800);
     return () => clearTimeout(timeout);
@@ -79,7 +94,7 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onSubmi
       }
       return;
     }
-    setCurrentIndex(i => i + 1);
+    dispatch({ type: 'NEXT' });
   }, [currentIndex, total, onSubmit, saveCurrentQuestion]);
 
   if (isFinished) return null;

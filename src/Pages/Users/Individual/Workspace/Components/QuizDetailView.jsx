@@ -11,13 +11,6 @@ import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
 
-// Map loại câu hỏi frontend sang questionTypeId backend
-const QUESTION_TYPE_MAP = {
-  multipleChoice: 1, multipleSelect: 2, shortAnswer: 3, trueFalse: 4, fillBlank: 5,
-};
-const DIFFICULTY_MAP = { easy: "EASY", medium: "MEDIUM", hard: "HARD" };
-const REVERSE_DIFFICULTY = { EASY: "easy", MEDIUM: "medium", HARD: "hard" };
-
 // Cấu hình màu badge trạng thái quiz
 const STATUS_STYLES = {
   ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
@@ -40,7 +33,7 @@ function formatDate(dateStr) {
 }
 
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
-function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKSPACE", contextId }) {
+function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contextType = "WORKSPACE", contextId: _contextId }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
