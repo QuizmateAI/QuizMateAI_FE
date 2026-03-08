@@ -27,6 +27,13 @@ function getSourceIcon(type) {
   return <FileText className="w-4 h-4 text-gray-500" />;
 }
 
+function getSourceDisplayIcon(source) {
+  const status = source?.status?.toUpperCase();
+  if (status === "ERROR") return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />;
+  if (status === "PROCESSING") return <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />;
+  return getSourceIcon(source?.type);
+}
+
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
 function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, isCollapsed = false, onToggleCollapse }) {
   const { t, i18n } = useTranslation();
@@ -129,7 +136,7 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                 isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-50 hover:bg-gray-100"
               }`}
             >
-              {getSourceIcon(source.type)}
+              {getSourceDisplayIcon(source)}
             </button>
           ))}
         </div>
@@ -258,13 +265,7 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                   {/* Nội dung tài liệu — click để xem chi tiết */}
                   <div className="min-w-0 flex-1 flex items-center gap-2.5 cursor-pointer" onClick={() => setViewingSource(source)}>
                     {/* Icon trạng thái: ERROR (chấm than), PROCESSING (spinner), hoặc icon file thông thường */}
-                    {source.status?.toUpperCase() === "ERROR" ? (
-                      <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                    ) : source.status?.toUpperCase() === "PROCESSING" ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />
-                    ) : (
-                      getSourceIcon(source.type)
-                    )}
+                    {getSourceDisplayIcon(source)}
                     <div className="min-w-0 flex-1 text-left">
                       <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{source.name}</p>
                       <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
