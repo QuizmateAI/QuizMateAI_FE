@@ -36,7 +36,7 @@ const INTENT_STYLES = {
 // Bộ lọc theo trạng thái
 const STATUS_FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT", "COMPLETED"];
 
-function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WORKSPACE", contextId }) {
+function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _contextType = "WORKSPACE", contextId: _contextId }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
