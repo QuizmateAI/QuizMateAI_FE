@@ -116,6 +116,38 @@ export const deleteAnswer = async (answerId) => {
   return response;
 };
 
+// ==================== QUIZ FULL & ATTEMPT ====================
+
+// Lấy đầy đủ quiz kèm section, question và answer
+export const getQuizFull = async (quizId) => {
+  const response = await api.get(`/quiz/${quizId}/full`);
+  return response;
+};
+
+// Tạo attempt mới hoặc trả lại attempt chưa hoàn thành
+export const startQuizAttempt = async (quizId, { isCompanionMode = false, isPracticeMode = true } = {}) => {
+  const response = await api.post(`/quiz-attempts/start/${quizId}?isCompanionMode=${isCompanionMode}&isPracticeMode=${isPracticeMode}`);
+  return response;
+};
+
+// Lưu danh sách câu trả lời (upsert theo attempt + question)
+export const saveAttemptAnswers = async (attemptId, answers) => {
+  const response = await api.put(`/quiz-attempts/${attemptId}/saveAnswer`, answers);
+  return response;
+};
+
+// Lấy kết quả chi tiết của attempt
+export const getAttemptResult = async (attemptId) => {
+  const response = await api.get(`/quiz-attempts/${attemptId}/result`);
+  return response;
+};
+
+// Nộp bài — đóng attempt và trả về kết quả
+export const submitAttempt = async (attemptId) => {
+  const response = await api.post(`/quiz-attempts/${attemptId}/submit`);
+  return response;
+};
+
 // ==================== HELPER: Tạo quiz hoàn chỉnh (multi-step) ====================
 
 // Map loại câu hỏi từ frontend sang questionTypeId backend

@@ -24,6 +24,11 @@ const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
 const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
 const SubscriptionManagement = lazy(() => import('./Pages/Admin/SubscriptionManagement'));
 
+// Quiz
+const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
+const ExamQuizPage = lazy(() => import('./Pages/Users/Quiz/ExamQuizPage'));
+const QuizResultPage = lazy(() => import('./Pages/Users/Quiz/QuizResultPage'));
+
 // Payment
 const PaymentPage = lazy(() => import('./Pages/Payment/PaymentPage'));
 const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
@@ -61,6 +66,9 @@ function App() {
           <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
           <Route path="/group-workspace/:groupId" element={<GroupWorkspacePage />} />
           <Route path="/group-manage/:groupId" element={<GroupManagementPage />} />
+          <Route path="/quiz/practice/:quizId" element={<PracticeQuizPage />} />
+          <Route path="/quiz/exam/:quizId" element={<ExamQuizPage />} />
+          <Route path="/quiz/result/:attemptId" element={<QuizResultPage />} />
         </Route>
 
          {/* Route dành riêng cho Super Admin */}

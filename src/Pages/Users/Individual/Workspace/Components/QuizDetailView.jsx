@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star,
-  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2
+  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
 import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
@@ -40,6 +42,7 @@ function formatDate(dateStr) {
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
 function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [loading, setLoading] = useState(true);
@@ -49,6 +52,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
   const [expandedSections, setExpandedSections] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [starringId, setStarringId] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, mode: null });
 
   // Lấy toàn bộ dữ liệu quiz chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {
@@ -140,10 +144,26 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
             <p className={`text-base font-medium truncate max-w-[300px] ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{quiz?.title}</p>
           </div>
         </div>
-        <Button onClick={() => onEdit?.(quiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
-          <Edit3 className="w-4 h-4" />
-          <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {quiz?.status === "ACTIVE" && (
+            <>
+              <Button onClick={() => setConfirmDialog({ open: true, mode: 'practice' })} variant="outline"
+                className={`rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-blue-400 hover:bg-blue-950/30" : "border-blue-200 text-blue-600 hover:bg-blue-50"}`}>
+                <Play className="w-4 h-4" />
+                <span className="text-sm">{t("workspace.quiz.practice", "Practice")}</span>
+              </Button>
+              <Button onClick={() => setConfirmDialog({ open: true, mode: 'exam' })} variant="outline"
+                className={`rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-emerald-400 hover:bg-emerald-950/30" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
+                <ClipboardCheck className="w-4 h-4" />
+                <span className="text-sm">{t("workspace.quiz.exam", "Exam")}</span>
+              </Button>
+            </>
+          )}
+          <Button onClick={() => onEdit?.(quiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
+            <Edit3 className="w-4 h-4" />
+            <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
+          </Button>
+        </div>
       </div>
 
       {/* Nội dung chi tiết */}
@@ -338,6 +358,26 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType = "WORKS
           })
         )}
       </div>
+
+      {/* Confirm dialog */}
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, mode: null })}>
+        <DialogContent className={isDarkMode ? "bg-slate-800 border-slate-700 text-white" : ""}>
+          <DialogHeader>
+            <DialogTitle>{confirmDialog.mode === 'practice' ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}</DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
+              {confirmDialog.mode === 'practice'
+                ? t("workspace.quiz.confirmPractice", "Are you sure you want to start this quiz in Practice mode? You can review answers as you go.")
+                : t("workspace.quiz.confirmExam", "Are you sure you want to start this quiz in Exam mode? Timer will begin immediately.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmDialog({ open: false, mode: null })}>{t("common.cancel", "Cancel")}</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${quiz?.quizId}`); setConfirmDialog({ open: false, mode: null }); }}>
+              {t("common.confirm", "Confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
