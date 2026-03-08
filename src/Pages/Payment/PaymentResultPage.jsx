@@ -33,8 +33,9 @@ export default function PaymentResultPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isSettingsOpen]);
 
-  const resultCode = Number(searchParams.get('resultCode'));
-  const isSuccess = resultCode === 0;
+  const status = searchParams.get('status');
+  const resultCode = searchParams.get('resultCode') || '';
+  const isSuccess = status === 'success' || resultCode === '0' || resultCode === '00';
 
   const details = useMemo(() => ({
     orderId: searchParams.get('orderId') || '',

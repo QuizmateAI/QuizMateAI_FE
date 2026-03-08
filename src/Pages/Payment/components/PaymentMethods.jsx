@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { Loader2 } from 'lucide-react';
-import { createMomoPayment } from '@/api/PaymentAPI';
+import { createMomoPayment, createVnPayPayment } from '@/api/PaymentAPI';
 import MomoLogo from '@/assets/MOMO-Logo.png';
 import VnpayLogo from '@/assets/Logo-VNPAY-QR-1.webp';
 
@@ -24,19 +24,27 @@ export default function PaymentMethods({ planId, planType, groupId }) {
     setError('');
 
     try {
+      const gId = planType === 'GROUP' ? groupId : null;
+
       if (selected === 'momo') {
-        const momoGroupId = planType === 'GROUP' ? groupId : null;
-        const res = await createMomoPayment(planId, momoGroupId);
+        const res = await createMomoPayment(planId, gId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         if (payUrl) {
           window.location.href = payUrl;
           return;
         }
         setError(t('payment.momoError'));
+      } else if (selected === 'vnpay') {
+        const res = await createVnPayPayment(planId, gId);
+        const payUrl = res?.data?.payUrl || res?.payUrl;
+        if (payUrl) {
+          window.location.href = payUrl;
+          return;
+        }
+        setError(t('payment.vnpayError', t('payment.momoError')));
       }
-      // TODO: handle vnpay
     } catch {
-      setError(t('payment.momoError'));
+      setError(t('payment.paymentError', t('payment.momoError')));
     } finally {
       setLoading(false);
     }

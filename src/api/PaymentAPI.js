@@ -12,3 +12,10 @@ export const createMomoPayment = (planId, groupId = null) => {
   const params = groupId ? { groupId } : {};
   return api.post(`/momo/create/${planId}`, null, { params });
 };
+
+export const createVnPayPayment = (planId, groupId = null) => {
+  const params = groupId ? { groupId } : {};
+  return api.post(`/vnpay/create/${planId}`, null, { params });
+};
+
+
