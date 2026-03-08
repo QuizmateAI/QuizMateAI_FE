@@ -37,9 +37,8 @@ function WorkspacePage() {
 	const [isLeftResizing, setIsLeftResizing] = useState(false);
 	const [isRightResizing, setIsRightResizing] = useState(false);
 
-	// State quản lý dialog upload — chỉ mở khi workspace chưa có tài liệu (kiểm tra sau khi fetch)
+	// State quản lý dialog upload — chỉ mở khi workspace chưa có tài liệu sau lần fetch đầu tiên
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-	const [hasCheckedInitialSources, setHasCheckedInitialSources] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
 
@@ -108,59 +107,49 @@ function WorkspacePage() {
 	});
 
 	// Fetch materials list
-    const fetchSources = useCallback(async () => {
-        if (!workspaceId) return;
-        try {
-            console.log("🔄 [fetchSources] Fetching materials for workspace:", workspaceId);
-            const data = await getMaterialsByWorkspace(workspaceId);
-            console.log("📥 [fetchSources] Received materials:", data);
-            if (Array.isArray(data)) {
-                const mappedSources = data.map(item => ({
-                    id: item.materialId,
-                    name: item.title,
-                    type: item.materialType,
-                    status: item.status,
-                    uploadedAt: item.uploadedAt,
-                    // map other fields
-                    ...item
-                }));
-                console.log("✅ [fetchSources] Mapped sources:", mappedSources);
-                console.log("   Total:", mappedSources.length);
-                mappedSources.forEach((src, idx) => {
-                    console.log(`   [${idx}] ${src.name} - Status: ${src.status}`);
-                });
-                setSources(mappedSources);
-            }
-        } catch (err) {
-            console.error("❌ [fetchSources] Failed to fetch materials:", err);
-        }
-    }, [workspaceId]);
+	const fetchSources = useCallback(async () => {
+		if (!workspaceId) return [];
+		try {
+			const data = await getMaterialsByWorkspace(workspaceId);
+			const mappedSources = Array.isArray(data)
+				? data.map((item) => ({
+					id: item.materialId,
+					name: item.title,
+					type: item.materialType,
+					status: item.status,
+					uploadedAt: item.uploadedAt,
+					...item,
+				}))
+				: [];
 
-	// Lấy thông tin workspace từ API (bỏ qua khi đang tạo mới)
-	useEffect(() => {
-		if (workspaceId && !isCreating) {
-			fetchWorkspaceDetail(workspaceId).catch(() => {});
-            fetchSources();
+			setSources(mappedSources);
+			return mappedSources;
+		} catch (err) {
+			console.error("❌ [fetchSources] Failed to fetch materials:", err);
+			return [];
 		}
-	}, [workspaceId, isCreating, fetchWorkspaceDetail, fetchSources]);
+	}, [workspaceId]);
 
-	// Tự động mở popup upload CHỈ KHI workspace chưa có tài liệu (lần đầu tiên)
+	// Lấy thông tin workspace từ API và quyết định mở popup upload theo lần fetch đầu tiên
 	useEffect(() => {
-		if (isCreating || hasCheckedInitialSources) return;
-		
-		// Chỉ check sau khi đã fetch sources (workspaceId có giá trị)
-		if (!workspaceId) return;
-		
-		// Đợi một chút để đảm bảo fetch sources đã hoàn tất
-		const timer = setTimeout(() => {
-			if (sources.length === 0) {
-				setUploadDialogOpen(true);
-			}
-			setHasCheckedInitialSources(true);
-		}, 500);
-		
-		return () => clearTimeout(timer);
-	}, [workspaceId, isCreating, sources.length, hasCheckedInitialSources]);
+		if (!workspaceId || isCreating) return;
+
+		let isMounted = true;
+		fetchWorkspaceDetail(workspaceId).catch(() => {});
+
+		const loadInitialSources = async () => {
+			const initialSources = await fetchSources();
+			if (!isMounted) return;
+
+			setUploadDialogOpen(initialSources.length === 0);
+		};
+
+		loadInitialSources();
+
+		return () => {
+			isMounted = false;
+		};
+	}, [workspaceId, isCreating, fetchWorkspaceDetail, fetchSources]);
 
 	// Xử lý tạo workspace mới từ dialog
 	const handleCreateWorkspace = useCallback(async (data) => {
