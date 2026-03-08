@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Play, ClipboardCheck } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
 
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
@@ -37,9 +39,11 @@ const FILTER_OPTIONS = ["all", "knowledge", "phase", "roadmap", "workspace", "gr
 
 function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, quizId: null, mode: null });
 
   // Gộp mock data với các item đã tạo từ form
   const allQuizzes = useMemo(() => [...MOCK_QUIZZES, ...createdItems], [createdItems]);
@@ -100,7 +104,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
             {filtered.map(quiz => {
               const bs = BELONG_STYLES[quiz.belongTo] || BELONG_STYLES.workspace;
               return (
-                <div key={quiz.id} className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
+                <div key={quiz.id} className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all group ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-blue-950/40" : "bg-blue-100"}`}>
                     <BadgeCheck className="w-4 h-4 text-blue-500" />
                   </div>
@@ -112,13 +116,52 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
                       {quiz.updatedAt && <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" />{t("workspace.listView.updatedAt")}: {formatShortDate(quiz.updatedAt)}</span>}
                     </div>
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? bs.dark : bs.light}`}>{quiz.belongToName}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {quiz.status === "ACTIVE" && (
+                      <>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.id, mode: 'practice' }); }}
+                          className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-blue-950/30 text-blue-400" : "hover:bg-blue-50 text-blue-600"}`}
+                          title={t("workspace.quiz.practice", "Practice")}
+                        >
+                          <Play className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.id, mode: 'exam' }); }}
+                          className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-emerald-950/30 text-emerald-400" : "hover:bg-emerald-50 text-emerald-600"}`}
+                          title={t("workspace.quiz.exam", "Exam")}
+                        >
+                          <ClipboardCheck className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${isDarkMode ? bs.dark : bs.light}`}>{quiz.belongToName}</span>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Confirm dialog */}
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, quizId: null, mode: null })}>
+        <DialogContent className={isDarkMode ? "bg-slate-800 border-slate-700 text-white" : ""}>
+          <DialogHeader>
+            <DialogTitle>{confirmDialog.mode === 'practice' ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}</DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
+              {confirmDialog.mode === 'practice'
+                ? t("workspace.quiz.confirmPractice", "Are you sure you want to start this quiz in Practice mode? You can review answers as you go.")
+                : t("workspace.quiz.confirmExam", "Are you sure you want to start this quiz in Exam mode? Timer will begin immediately.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmDialog({ open: false, quizId: null, mode: null })}>{t("common.cancel", "Cancel")}</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
+              {t("common.confirm", "Confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
