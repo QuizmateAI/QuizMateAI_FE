@@ -31,6 +31,17 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-router',
+      'react-router-dom',
+    ],
   },
   build: {
     // Enable minification with terser for better compression
