@@ -549,6 +549,4 @@ const LoginPageContent = () => {
   );
 };
 
-const LoginPage = () => <LoginPageContent />;
-
-export default LoginPage;
+export default LoginPageContent;
