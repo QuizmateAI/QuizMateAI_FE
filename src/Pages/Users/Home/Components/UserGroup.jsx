@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Users, Loader2, FolderOpen, Plus, ExternalLink, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import ListSpinner from "@/Components/ui/ListSpinner";
+import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 
 // Component hiển thị danh sách nhóm từ API
 function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const isList = viewMode === "list";
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -49,9 +50,7 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
         <div className="flex items-center justify-between mb-4">
           <h2 className={`text-xl font-medium transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>{t("home.sections.myGroups")}</h2>
         </div>
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className={`w-6 h-6 animate-spin ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
-        </div>
+        <ListSpinner variant="section" />
       </section>
     );
   }

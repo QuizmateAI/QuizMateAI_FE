@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { MoreVertical, Plus, Pencil, Trash2, Loader2, FolderOpen, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Pagination from "./Pagination";
+import ListSpinner from "@/Components/ui/ListSpinner";
+import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 
 const DEFAULT_UNTITLED = "Không gian không có tiêu đề";
 
@@ -104,7 +105,7 @@ const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, isDarkMode
 
 // Card workspace - memo để tối ưu render khi list thay đổi
 const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit, onDelete, locale }) {
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const cardBg = getCardColor(idx, isDarkMode);
   return (
     <div
@@ -145,7 +146,7 @@ const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit,
 });
 
 function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, onPageChange, onPageSizeChange, onOpenCreate, onOpenEdit, onOpenDelete }) {
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
@@ -183,9 +184,7 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
         <h2 className={`text-xl font-medium mb-4 transition-colors duration-300 ${isDarkMode ? "text-white" : "text-[#303030]"}`}>
           {t("home.sections.myWorkspaces")}
         </h2>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-        </div>
+        <ListSpinner variant="section" />
       </section>
     );
   }

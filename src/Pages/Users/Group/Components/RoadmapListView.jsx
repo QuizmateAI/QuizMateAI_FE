@@ -6,6 +6,7 @@ import {
   Pencil, GraduationCap, ClipboardList,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import {
   getRoadmapsByGroup,
   getRoadmapsByWorkspace,
@@ -642,10 +643,7 @@ function RoadmapListView({
         {depth === 2 && renderSpecialCard("postLearning")}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Loading...</p>
-          </div>
+          <ListSpinner variant="section" />
         ) : depth === 3 ? (
           /* ===== Depth 3: Quiz & Flashcard sections với CRUD local ===== */
           <div className="space-y-5">

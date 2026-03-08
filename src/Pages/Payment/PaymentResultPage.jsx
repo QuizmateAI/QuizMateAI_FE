@@ -1,4 +1,4 @@
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -7,12 +7,13 @@ import { Button } from '@/Components/ui/button';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
 import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
+import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 
 export default function PaymentResultPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { t, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
   const currentLang = i18n.language;

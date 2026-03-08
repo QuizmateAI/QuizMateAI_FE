@@ -7,7 +7,7 @@ import {
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
   Presentation, Bot, BarChart3, AlignLeft,
   BookOpenText, SlidersHorizontal, Layers,
-  Crown, Infinity,
+  Crown, Infinity as InfinityIcon,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -20,6 +20,7 @@ import {
 } from '@/Components/ui/dialog';
 import { Switch } from '@/Components/ui/switch';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import {
@@ -104,7 +105,6 @@ function SubscriptionManagement() {
   const [plans, setPlans] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,21 +119,32 @@ function SubscriptionManagement() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailPlan, setDetailPlan] = useState(null);
 
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setIsLoading(true);
+      try {
+        const res = await getAllPlans();
+        const data = res?.data ?? res;
+        setPlans(Array.isArray(data) ? data : []);
+      } catch (err) { const msg = err?.message || t('subscription.fetchError'); showError(msg); }
+      finally { setIsLoading(false); }
+    };
+    fetchPlans();
+  }, [t, showError]);
+
   const fetchPlans = async () => {
-    setIsLoading(true); setError('');
+    setIsLoading(true);
     try {
       const res = await getAllPlans();
       const data = res?.data ?? res;
       setPlans(Array.isArray(data) ? data : []);
-    } catch (err) { const msg = err?.message || t('subscription.fetchError'); setError(msg); showError(msg); }
+    } catch (err) { const msg = err?.message || t('subscription.fetchError'); showError(msg); }
     finally { setIsLoading(false); }
   };
 
-  useEffect(() => { fetchPlans(); }, []);
-
   const openCreateForm = () => {
     setEditingPlan(null); setFormData({ ...EMPTY_FORM }); setLimitData({ ...EMPTY_LIMIT }); setFeatureData({ ...EMPTY_FEATURE });
-    setIsFormOpen(true); setError('');
+    setIsFormOpen(true);
   };
 
   const openEditForm = (plan) => {
@@ -148,22 +159,21 @@ function SubscriptionManagement() {
     });
     setLimitData(plan.planLimit ? { ...EMPTY_LIMIT, ...plan.planLimit } : { ...EMPTY_LIMIT });
     setFeatureData(plan.planFeature ? { ...EMPTY_FEATURE, ...plan.planFeature } : { ...EMPTY_FEATURE });
-    setIsFormOpen(true); setError('');
+    setIsFormOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.planName.trim()) { const msg = t('subscription.nameRequired'); setError(msg); showError(msg); return; }
+    if (!formData.planName.trim()) { const msg = t('subscription.nameRequired'); showError(msg); return; }
     if (formData.isDefault) {
       const existingDefault = plans.find((p) => p.isDefault && (p.type || '').toUpperCase() === (formData.planType || '').toUpperCase());
       if (existingDefault && (!editingPlan || existingDefault.planId !== editingPlan.planId)) {
         const msg = t('subscription.defaultPlanExists', { type: formData.planType });
-        setError(msg);
         showError(msg);
         return;
       }
     }
-    setIsSubmitting(true); setError('');
+    setIsSubmitting(true);
     try {
       if (editingPlan) {
         await updatePlan(editingPlan.planId, {
@@ -187,7 +197,6 @@ function SubscriptionManagement() {
       if (rawMsg === 'Default plan already exists for this type' || rawMsg?.includes?.('Default plan already exists')) {
         msg = t('subscription.defaultPlanExists', { type: formData.planType });
       }
-      setError(msg);
       showError(msg);
     }
     finally { setIsSubmitting(false); }
@@ -195,7 +204,7 @@ function SubscriptionManagement() {
 
   const handleToggleStatus = async (plan) => {
     try { await togglePlanStatus(plan.planId); showSuccess(t('subscription.updateSuccess')); fetchPlans(); }
-    catch (err) { const msg = err?.message || t('subscription.submitError'); setError(msg); showError(msg); }
+    catch (err) { const msg = err?.message || t('subscription.submitError'); showError(msg); }
   };
 
   const confirmDelete = (plan) => { setDeletingPlan(plan); setIsDeleteOpen(true); };
@@ -211,7 +220,6 @@ function SubscriptionManagement() {
       const msg = (rawMsg === 'Plan is in use' || rawMsg?.includes?.('Plan is in use'))
         ? t('subscription.planInUse')
         : (rawMsg || t('subscription.deleteError'));
-      setError(msg);
       showError(msg);
     } finally {
       setIsDeleteOpen(false);
@@ -317,8 +325,8 @@ function SubscriptionManagement() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-20">
-                  <RefreshCw className="w-7 h-7 animate-spin mx-auto text-blue-500" /><p className="mt-3 text-slate-400 text-sm">{t('subscription.loading')}</p>
+                <TableRow><TableCell colSpan={7} className="text-center py-4">
+                  <ListSpinner variant="table" />
                 </TableCell></TableRow>
               ) : filteredPlans.length > 0 ? filteredPlans.map((plan) => (
                 <TableRow key={plan.planId} className={`border-b transition-colors cursor-pointer ${dk ? 'border-white/[0.04] hover:bg-white/[0.03]' : 'border-slate-50 hover:bg-blue-50/30'}`}>
