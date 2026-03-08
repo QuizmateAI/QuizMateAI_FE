@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { LogOut, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { getUserProfile } from "@/api/ProfileAPI";
 import { logout } from "@/api/Authentication";
+import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 
 function UserProfilePopover({ isDarkMode = false }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState({ email: "", fullName: "", avatarUrl: "" });

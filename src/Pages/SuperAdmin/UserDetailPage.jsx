@@ -9,6 +9,7 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import ListSpinner from '@/Components/ui/ListSpinner';
 import {
   getUserById,
   getWorkspacesByUserId,
@@ -211,8 +212,8 @@ function UserDetailPage() {
 
   if (loading || !user) {
     return (
-      <div className={`flex items-center justify-center min-h-[400px] ${fontClass}`}>
-        <RefreshCw className="w-10 h-10 animate-spin text-blue-500" />
+      <div className={`min-h-[400px] ${fontClass}`}>
+        <ListSpinner variant="section" />
       </div>
     );
   }
@@ -326,7 +327,7 @@ function UserDetailPage() {
                       <div className={`p-4 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
                         <p className="text-sm text-slate-500 mb-2">{t('userDetail.roadmaps')}</p>
                         {workspaceDetails[ws.workspaceId] === undefined ? (
-                          <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                          <ListSpinner variant="inline" />
                         ) : workspaceDetails[ws.workspaceId]?.length > 0 ? (
                           <ul className="space-y-1">
                             {workspaceDetails[ws.workspaceId].map((r) => (
@@ -382,7 +383,7 @@ function UserDetailPage() {
                     {expandedGroup === g.groupId && (
                       <div className={`p-4 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
                         {groupDetails[g.groupId] === undefined ? (
-                          <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+                          <ListSpinner variant="inline" />
                         ) : groupDetails[g.groupId] ? (
                           <GroupExpandContent group={groupDetails[g.groupId]} isDarkMode={isDarkMode} t={t} />
                         ) : (

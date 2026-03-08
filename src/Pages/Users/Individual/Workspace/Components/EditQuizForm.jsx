@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/Components/ui/button";
+import ListSpinner from "@/Components/ui/ListSpinner";
 import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, Save, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -296,12 +297,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
 
   if (loading) {
-    return (
-      <div className="flex flex-col h-full items-center justify-center gap-3">
-        <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>{t("workspace.quiz.edit.loading")}</p>
-      </div>
-    );
+    return <ListSpinner variant="section" />;
   }
 
   return (

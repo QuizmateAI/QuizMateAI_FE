@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Button } from "@/Components/ui/button";
-import { Globe, Grid3x3, List, Moon, Plus, Settings, Sun, CreditCard } from 'lucide-react';
+import { Globe, Grid3x3, List, Moon, Settings, Sun, CreditCard } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserWorkspace from "@/Pages/Users/Home/Components/UserWorkspace";
@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
+import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState('workspace');
@@ -21,7 +22,7 @@ function HomePage() {
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
-  const navigate = useNavigate();
+  const navigate = useNavigateWithLoading();
   const location = useLocation();
 
   // Prefetch cả workspace VÀ groups ngay khi load trang → chuyển tab instant (<1s)
@@ -29,7 +30,7 @@ function HomePage() {
     workspaces,
     loading,
     pagination,
-    createWorkspace,
+    // createWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,
