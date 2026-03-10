@@ -10,8 +10,7 @@
     "logout": "Đăng xuất",
     "adminAccounts": "Tài khoản Admin",
     "rbac": "Phân quyền RBAC",
-    "subscriptions": "Gói đăng ký",
-    "topics": "Chủ đề và lĩnh vực"
+    "subscriptions": "Gói đăng ký"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -105,8 +104,70 @@
     "dark": "Tối",
     "refresh": "Làm mới",
     "subscription": "Gói đăng ký",
+    "plan": "Gói",
     "optional": "tùy chọn",
+    "wallet": "Ví Credit",
     "cancel": "Đóng"
+  },
+  "plan": {
+    "title": "Gói của bạn",
+    "subtitle": "Gói có thể mua vĩnh viễn. Khi dùng các tính năng AI, bạn sẽ trừ dần Credit trong ví.",
+    "heroBadge": "Chọn gói & bắt đầu ngay",
+    "backToHome": "Về trang chủ",
+    "back": "Quay lại",
+    "types": { "individual": "Cá nhân", "group": "Nhóm" },
+    "badges": {
+      "permanent": "Mua vĩnh viễn",
+      "credits": "Tính theo Credit",
+      "transparent": "Minh bạch & rõ ràng"
+    },
+    "creditModel": {
+      "title": "Mô hình Credit cho AI",
+      "desc": "Bạn có thể sở hữu plan vĩnh viễn. Mỗi lần dùng AI sẽ tiêu hao Credit. Hết Credit thì chỉ cần nạp thêm để dùng tiếp.",
+      "cta": "Mở ví Credit"
+    },
+    "noPlans": "Chưa có plan nào cho danh mục này.",
+    "loadError": "Không thể tải danh sách plan. Vui lòng thử lại.",
+    "mostPopular": "PHỔ BIẾN NHẤT",
+    "durationDays": "{{count}} ngày",
+    "durationForever": "Vĩnh viễn",
+    "durationForeverShort": "Vĩnh viễn",
+    "upgrade": "Chọn plan",
+    "notes": {
+      "permanentTitle": "Plan có thể mua vĩnh viễn",
+      "permanentDesc": "Plan không nhất thiết phải gia hạn theo tháng. Một số plan được bán dạng vĩnh viễn tùy cấu hình hệ thống.",
+      "creditsTitle": "AI dùng theo Credit",
+      "creditsDesc": "Các tính năng AI (tạo quiz/flashcard/mock test/companion...) sẽ trừ Credit dựa trên mức sử dụng.",
+      "refundTitle": "Thanh toán an toàn",
+      "refundDesc": "Quy trình thanh toán được bảo mật. Bạn có thể xem lịch sử mua Credit trong ví."
+    }
+  },
+  "wallet": {
+    "title": "Quizmate Credit",
+    "subtitle": "Xem số dư, nạp thêm Credit và theo dõi lịch sử giao dịch.",
+    "badge": "WALLET",
+    "back": "Quay lại",
+    "balance": "Số dư hiện tại",
+    "creditsUnit": "Credit",
+    "hint": "Credit dùng để gọi các chức năng AI trong QuizMate.",
+    "buyTitle": "Mua thêm Credit",
+    "buySubtitle": "Chọn gói phù hợp để tiếp tục dùng AI.",
+    "bonus": "bonus",
+    "buyNow": "Mua ngay",
+    "packageHint": "Nạp nhanh — dùng được ngay",
+    "historyTitle": "Lịch sử giao dịch",
+    "historySubtitle": "Các lần nạp và sử dụng Credit gần đây.",
+    "noHistory": "Chưa có giao dịch nào.",
+    "toastAdded": "Đã cộng {{amount}} Credit vào ví (demo UI).",
+    "types": { "TOPUP": "Nạp", "USAGE": "Sử dụng" },
+    "status": { "SUCCESS": "Thành công", "PENDING": "Đang xử lý", "FAILED": "Thất bại" },
+    "table": {
+      "id": "Mã",
+      "time": "Thời gian",
+      "type": "Loại",
+      "amount": "Số lượng",
+      "status": "Trạng thái"
+    }
   },
   "rbac": {
     "title": "Phân quyền RBAC",
@@ -1229,6 +1290,7 @@
       "noPlans": "Không có gói nào cho danh mục này.",
       "loadError": "Không thể tải danh sách gói. Vui lòng thử lại.",
       "durationDays": "{{count}} ngày",
+      "durationForever": "Vĩnh viễn",
       "guaranteeTitle": "Đảm bảo hoàn tiền trong 30 ngày",
       "guaranteeDesc": "Dùng thử không rủi ro. Nếu không hài lòng, hoàn tiền toàn bộ trong 30 ngày.",
       "plans": {

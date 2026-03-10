@@ -10,8 +10,7 @@
     "logout": "Logout",
     "adminAccounts": "Admin Accounts",
     "rbac": "RBAC System",
-    "subscriptions": "Subscriptions",
-    "topics": "Topics & Fields"
+    "subscriptions": "Subscriptions"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -105,8 +104,70 @@
     "dark": "Dark",
     "refresh": "Refresh",
     "subscription": "Subscription Plans",
+    "plan": "Plan",
     "optional": "optional",
+    "wallet": "Credit Wallet",
     "cancel": "Close"
+  },
+  "plan": {
+    "title": "Your Plan",
+    "subtitle": "Plans can be purchased permanently. AI features consume Credits from your wallet.",
+    "heroBadge": "Pick a plan and start",
+    "backToHome": "Back to Home",
+    "back": "Back",
+    "types": { "individual": "Individual", "group": "Group" },
+    "badges": {
+      "permanent": "Permanent purchase",
+      "credits": "Credit-based AI usage",
+      "transparent": "Clear & transparent"
+    },
+    "creditModel": {
+      "title": "Credit model for AI",
+      "desc": "Own your plan permanently. Each AI action consumes Credits. When you run out, just top up to continue.",
+      "cta": "Open Credit Wallet"
+    },
+    "noPlans": "No plans available for this category.",
+    "loadError": "Unable to load plans. Please try again.",
+    "mostPopular": "MOST POPULAR",
+    "durationDays": "{{count}} days",
+    "durationForever": "Forever",
+    "durationForeverShort": "Forever",
+    "upgrade": "Choose plan",
+    "notes": {
+      "permanentTitle": "Plans can be permanent",
+      "permanentDesc": "Plans are not necessarily monthly. Some plans can be sold as permanent depending on system configuration.",
+      "creditsTitle": "AI is credit-based",
+      "creditsDesc": "AI features (quiz/flashcards/mock tests/companion...) consume Credits based on usage.",
+      "refundTitle": "Secure checkout",
+      "refundDesc": "Payments are secured. You can review your Credit purchase history in the wallet."
+    }
+  },
+  "wallet": {
+    "title": "Quizmate Credits",
+    "subtitle": "Check balance, buy more Credits, and view your transaction history.",
+    "badge": "WALLET",
+    "back": "Back",
+    "balance": "Current balance",
+    "creditsUnit": "Credits",
+    "hint": "Credits are used for AI-powered features in QuizMate.",
+    "buyTitle": "Buy more Credits",
+    "buySubtitle": "Pick a package to keep using AI features.",
+    "bonus": "bonus",
+    "buyNow": "Buy now",
+    "packageHint": "Instant top-up — ready to use",
+    "historyTitle": "Transaction history",
+    "historySubtitle": "Recent top-ups and credit usage.",
+    "noHistory": "No transactions yet.",
+    "toastAdded": "{{amount}} Credits added to wallet (UI demo).",
+    "types": { "TOPUP": "Top-up", "USAGE": "Usage" },
+    "status": { "SUCCESS": "Success", "PENDING": "Pending", "FAILED": "Failed" },
+    "table": {
+      "id": "ID",
+      "time": "Time",
+      "type": "Type",
+      "amount": "Amount",
+      "status": "Status"
+    }
   },
   "rbac": {
     "title": "RBAC System",
@@ -1229,6 +1290,7 @@
       "noPlans": "No plans available for this category.",
       "loadError": "Unable to load plans. Please try again.",
       "durationDays": "{{count}} days",
+      "durationForever": "Forever",
       "guaranteeTitle": "30-Day Money-Back Guarantee",
       "guaranteeDesc": "Try risk-free. If you're not satisfied, get a full refund within 30 days.",
       "plans": {

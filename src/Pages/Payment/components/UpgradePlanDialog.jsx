@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { getPurchasablePlans } from "@/api/PaymentAPI";
-import { Loader2, AlertCircle, Crown, Users, ChevronRight } from "lucide-react";
+import { AlertCircle, Crown, Users, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import PlanCard from "@/Pages/Users/Profile/Components/PlanCard";

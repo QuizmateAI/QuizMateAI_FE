@@ -26,7 +26,7 @@ import {
 } from "@/Components/ui/dialog";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
-import SubscriptionTab from "./Components/SubscriptionTab";
+import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
 
 // --- Custom Tab Components ---
 const Tabs = ({ children, className }) => <div className={className}>{children}</div>;
@@ -191,6 +191,11 @@ function ProfilePage() {
   // Xử lý chuyển tab từ trang khác (ví dụ: từ HomePage settings)
   useEffect(() => {
     if (location.state?.tab) {
+      // Subscription đã tách ra trang /plan
+      if (location.state.tab === "subscription") {
+        navigate("/plan", { replace: true });
+        return;
+      }
       setActiveTab(location.state.tab);
       // Xóa state sau khi đã xử lý
       navigate(location.pathname, { replace: true, state: {} });
@@ -378,18 +383,6 @@ function ProfilePage() {
             </span>
             <span className="text-xs font-semibold">{isDarkMode ? t("common.dark") : t("common.light")}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => { setIsSettingsOpen(false); setActiveTab("subscription"); }}
-            className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
-              isDarkMode ? "hover:bg-slate-800" : "hover:bg-gray-50"
-            }`}
-          >
-            <span className={`flex items-center gap-2 ${fontClass}`}>
-              <CreditCard className="w-4 h-4" />
-              {t("common.subscription")}
-            </span>
-          </button>
           <div className={`h-px w-full ${isDarkMode ? "bg-slate-700" : "bg-gray-100"}`} />
           <button
             type="button"
@@ -423,6 +416,32 @@ function ProfilePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/plan", { state: { from: "/profile" } })}
+              className={`h-10 px-4 rounded-full flex items-center gap-2 transition-colors ${
+                isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span className="text-sm hidden sm:inline">{t("common.plan")}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/wallet", { state: { from: "/profile" } })}
+              className={`h-10 px-4 rounded-full flex items-center gap-2 transition-colors ${
+                isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
+                isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
+              }`}>
+                <img src={QuizmateCreditIcon} alt="Quizmate Credit" className="w-6 h-6 rounded-full" />
+              </span>
+              <span className="text-sm hidden sm:inline">{t("common.wallet")}</span>
+            </Button>
             {settingsMenu}
             <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-white dark:ring-slate-800">
               {profile.avatarUrl ? (
@@ -549,13 +568,9 @@ function ProfilePage() {
             {/* Right Column: Tabs */}
             <div className="lg:col-span-8 xl:col-span-9">
               <Tabs className="w-full">
-                <TabsList isDarkMode={isDarkMode} className="grid w-full max-w-[500px] grid-cols-3">
+                <TabsList isDarkMode={isDarkMode} className="grid w-full max-w-[380px] grid-cols-2">
                   <TabsTrigger active={activeTab === "overview"} onClick={() => setActiveTab("overview")} isDarkMode={isDarkMode}>
                     {t("profile.tabs.overview")}
-                  </TabsTrigger>
-                  <TabsTrigger active={activeTab === "subscription"} onClick={() => setActiveTab("subscription")} isDarkMode={isDarkMode}>
-                    <CreditCard className="w-4 h-4 mr-1.5" />
-                    {t("profile.tabs.subscription")}
                   </TabsTrigger>
                   <TabsTrigger active={activeTab === "settings"} onClick={() => setActiveTab("settings")} isDarkMode={isDarkMode}>
                     {t("profile.tabs.settings")}
@@ -720,10 +735,6 @@ function ProfilePage() {
                   </Card>
                 </TabsContent>
 
-                {/* Subscription Tab */}
-                <TabsContent active={activeTab === "subscription"} className="space-y-6">
-                  <SubscriptionTab />
-                </TabsContent>
               </Tabs>
             </div>
           </div>
