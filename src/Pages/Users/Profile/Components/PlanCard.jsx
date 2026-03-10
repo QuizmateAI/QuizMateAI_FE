@@ -6,12 +6,24 @@ import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 
-const formatPrice = (price) =>
-  new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
+const isForeverDuration = (durationInDay) => {
+  const n = Number(durationInDay);
+  return Number.isFinite(n) && n >= 999999;
+};
 
-export default function PlanCard({ plan, highlight, onUpgrade, disabled = false }) {
-  const { t } = useTranslation();
+const formatVnd = (amount, locale) =>
+  new Intl.NumberFormat(locale, { style: "currency", currency: "VND" }).format(amount);
+
+export default function PlanCard({
+  plan,
+  highlight,
+  onUpgrade,
+  disabled = false,
+  dictionaryNamespace = "profile.subscription",
+}) {
+  const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const locale = i18n.language === "vi" ? "vi-VN" : "en-US";
 
   const limits = useMemo(
     () =>
@@ -42,7 +54,7 @@ export default function PlanCard({ plan, highlight, onUpgrade, disabled = false 
       {highlight && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <Badge className="bg-blue-600 text-white text-xs px-3 py-0.5">
-            {t("profile.subscription.mostPopular")}
+            {t(`${dictionaryNamespace}.mostPopular`)}
           </Badge>
         </div>
       )}
@@ -50,9 +62,11 @@ export default function PlanCard({ plan, highlight, onUpgrade, disabled = false 
       <CardHeader className={`text-center pb-2 ${highlight ? "pt-8" : ""}`}>
         <CardTitle className="text-lg">{plan.planName}</CardTitle>
         <div className="mt-2">
-          <span className="text-3xl font-bold">{formatPrice(plan.price)}</span>
+          <span className="text-3xl font-bold">{formatVnd(plan.price, locale)}</span>
           <span className={`text-sm ml-1 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-            / {t("profile.subscription.durationDays", { count: plan.durationInDay })}
+            / {isForeverDuration(plan.durationInDay)
+              ? t(`${dictionaryNamespace}.durationForever`)
+              : t(`${dictionaryNamespace}.durationDays`, { count: plan.durationInDay })}
           </span>
         </div>
       </CardHeader>
@@ -93,7 +107,7 @@ export default function PlanCard({ plan, highlight, onUpgrade, disabled = false 
                   : "bg-slate-800 hover:bg-slate-900 text-white"
           }`}
         >
-          {t("profile.subscription.upgrade")}
+          {t(`${dictionaryNamespace}.upgrade`)}
         </Button>
       </CardContent>
     </Card>
