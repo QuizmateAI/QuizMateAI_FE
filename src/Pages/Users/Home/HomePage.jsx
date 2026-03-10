@@ -170,12 +170,21 @@ function HomePage() {
                  </div>
         
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/plan')}
+            className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
+          >
+            <CreditCard className="w-4 h-4" />
+            <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
+          </Button>
           <div ref={settingsRef} className="relative">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsSettingsOpen((prev) => !prev)}
-              className={`flex items-center gap-2 rounded-full ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
+              className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
               aria-expanded={isSettingsOpen}
               aria-haspopup="menu"
             >
@@ -218,19 +227,6 @@ function HomePage() {
                   </span>
                   <span className={`text-xs font-semibold ${fontClass}`}>
                     {isDarkMode ? t('common.dark') : t('common.light')}
-                  </span>
-                </button>
-                <div className={`h-px w-full ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`} />
-                <button
-                  type="button"
-                  onClick={() => { setIsSettingsOpen(false); navigate('/profile', { state: { tab: 'subscription' } }); }}
-                  className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors ${
-                    isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <span className={`flex items-center gap-2 ${fontClass}`}>
-                    <CreditCard className="w-4 h-4" />
-                    {t('common.subscription')}
                   </span>
                 </button>
               </div>

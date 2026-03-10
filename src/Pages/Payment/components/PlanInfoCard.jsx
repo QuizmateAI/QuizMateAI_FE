@@ -8,6 +8,8 @@ export default function PlanInfoCard({ plan }) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
 
+  const isForever = Number(plan.durationInDay) >= 999999;
+
   const formattedPrice = useMemo(
     () => new Intl.NumberFormat('vi-VN').format(plan.price),
     [plan.price]
@@ -70,7 +72,7 @@ export default function PlanInfoCard({ plan }) {
             isDarkMode ? 'text-slate-400' : 'text-slate-500'
           }`}>
             <Calendar className="w-3.5 h-3.5" />
-            {plan.durationInDay} {t('payment.days')}
+            {isForever ? t('plan.durationForeverShort') : `${plan.durationInDay} ${t('payment.days')}`}
           </div>
         </div>
 
