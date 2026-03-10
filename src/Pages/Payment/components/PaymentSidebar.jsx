@@ -8,6 +8,8 @@ export default function PaymentSidebar({ plan, groupId, needGroupSelect = false 
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
 
+  const isForever = Number(plan.durationInDay) >= 999999;
+
   const formattedPrice = useMemo(
     () => new Intl.NumberFormat('vi-VN').format(plan.price),
     [plan.price]
@@ -46,7 +48,7 @@ export default function PaymentSidebar({ plan, groupId, needGroupSelect = false 
               {t('payment.duration')}
             </span>
             <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-              {plan.durationInDay} {t('payment.days')}
+              {isForever ? t('plan.durationForeverShort') : `${plan.durationInDay} ${t('payment.days')}`}
             </span>
           </div>
         </div>
