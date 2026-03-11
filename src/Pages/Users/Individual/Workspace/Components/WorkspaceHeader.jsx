@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/Components/ui/button";
-import { Pencil, Plus, Settings, Share2, Zap } from "lucide-react";
+import { Pencil, Settings, Share2, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";

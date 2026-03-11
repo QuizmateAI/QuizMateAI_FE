@@ -1,6 +1,6 @@
 ﻿
 import React, { useState, useRef, useEffect } from "react";
-import { MoreVertical, Pencil, Trash2, Loader2, FolderOpen } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";

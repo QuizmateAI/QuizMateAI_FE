@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback, memo, useMemo } from "react";
-import { MoreVertical, Plus, Pencil, Trash2, Loader2, FolderOpen, Search, X } from "lucide-react";
+import React, { useState, useRef, useEffect, memo, useMemo } from "react";
+import { MoreVertical, Plus, Pencil, Trash2, FolderOpen, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Pagination from "./Pagination";
 import ListSpinner from "@/Components/ui/ListSpinner";

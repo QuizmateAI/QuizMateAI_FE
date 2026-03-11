@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Crown, Shield, Loader2, AlertCircle } from "lucide-react";
+import { Crown, Shield, AlertCircle } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { getPurchasablePlans } from "@/api/PaymentAPI";
 import { Badge } from "@/Components/ui/badge";
