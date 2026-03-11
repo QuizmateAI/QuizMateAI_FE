@@ -15,12 +15,8 @@ import { queryClient } from '@/queryClient';
  * @returns {Promise} Response từ server
  */
 export const register = async (userData) => {
-  try {
-    const response = await api.post('/auth/register', userData);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.post('/auth/register', userData);
+  return response;
 };
 
 /**
@@ -54,23 +50,19 @@ function saveLoginDataToCache(data) {
  * @returns {Promise} Response chứa token và thông tin user
  */
 export const login = async (credentials) => {
-  try {
-    const response = await api.post('/auth/login', credentials);
-    
-    // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
-    if (response.statusCode === 200 || response.statusCode === 0) {
-      const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
-      // Cache profile + subscription từ BE (lần load sau chỉ verify token)
-      saveLoginDataToCache(response.data);
-    }
-    
-    return response;
-  } catch (error) {
-    throw error;
+  const response = await api.post('/auth/login', credentials);
+
+  // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
+  if (response.statusCode === 200 || response.statusCode === 0) {
+    const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+    // Cache profile + subscription từ BE (lần load sau chỉ verify token)
+    saveLoginDataToCache(response.data);
   }
+
+  return response;
 };
 
 /**
@@ -79,12 +71,8 @@ export const login = async (credentials) => {
  * @returns {Promise} Response chứa trạng thái khả dụng
  */
 export const checkUsername = async (username) => {
-  try {
-    const response = await api.get(`/auth/check-username?username=${encodeURIComponent(username)}`);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(`/auth/check-username?username=${encodeURIComponent(username)}`);
+  return response;
 };
 
 /**
@@ -93,22 +81,18 @@ export const checkUsername = async (username) => {
  * @returns {Promise} Response chứa token và thông tin user
  */
 export const googleLogin = async (idToken) => {
-  try {
-    const response = await api.post('/auth/google-login', { idToken });
-    
-    // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
-    if (response.statusCode === 200 || response.statusCode === 0) {
-      const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
-      saveLoginDataToCache(response.data);
-    }
-    
-    return response;
-  } catch (error) {
-    throw error;
+  const response = await api.post('/auth/google-login', { idToken });
+
+  // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
+  if (response.statusCode === 200 || response.statusCode === 0) {
+    const { accessToken, refreshToken, userID, username, role, email, authProvider } = response.data;
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
+    saveLoginDataToCache(response.data);
   }
+
+  return response;
 };
 
 /**
@@ -117,12 +101,8 @@ export const googleLogin = async (idToken) => {
  * @returns {Promise} Response xác nhận gửi OTP
  */
 export const sendOTP = async (email) => {
-  try {
-    const response = await api.post(`/auth/send-otp?email=${encodeURIComponent(email)}`);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.post(`/auth/send-otp?email=${encodeURIComponent(email)}`);
+  return response;
 };
 
 /**
@@ -132,12 +112,8 @@ export const sendOTP = async (email) => {
  * @returns {Promise} Response xác nhận OTP hợp lệ
  */
 export const verifyOTP = async (email, otp) => {
-  try {
-    const response = await api.post(`/auth/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.post(`/auth/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+  return response;
 };
 
 /**
@@ -147,12 +123,8 @@ export const verifyOTP = async (email, otp) => {
  * @returns {Promise} Response xác nhận đổi mật khẩu thành công
  */
 export const resetPassword = async (email, newPassword) => {
-  try {
-    const response = await api.post(`/auth/reset-password?email=${encodeURIComponent(email)}&newPassword=${encodeURIComponent(newPassword)}`);
-    return response;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.post(`/auth/reset-password?email=${encodeURIComponent(email)}&newPassword=${encodeURIComponent(newPassword)}`);
+  return response;
 };
 
 /**

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users, Loader2, FolderOpen, Plus, ExternalLink, Search, X } from "lucide-react";
+import { Users, FolderOpen, Plus, ExternalLink, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";

@@ -7,7 +7,7 @@ import {
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
   Presentation, Bot, BarChart3, AlignLeft,
   BookOpenText, SlidersHorizontal, Layers,
-  Crown, Infinity as InfinityIcon,
+  Crown,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -23,6 +23,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 import {
   getAllPlans, createPlan, updatePlan, deletePlan, togglePlanStatus,
 } from '@/api/ManagementSystemAPI';
@@ -99,6 +100,11 @@ function SubscriptionManagement() {
   const { permissions, loading: permLoading } = useAdminPermissions();
   const { showSuccess, showError } = useToast();
   const canWrite = !permLoading && permissions.has('subscription:write');
+  const getFriendlyError = (err, fallbackKey) => {
+    const mapped = getErrorMessage(t, err);
+    if (mapped && mapped !== 'error.unknown') return mapped;
+    return t(fallbackKey);
+  };
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const dk = isDarkMode;
 
@@ -126,7 +132,7 @@ function SubscriptionManagement() {
         const res = await getAllPlans();
         const data = res?.data ?? res;
         setPlans(Array.isArray(data) ? data : []);
-      } catch (err) { const msg = err?.message || t('subscription.fetchError'); showError(msg); }
+      } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
       finally { setIsLoading(false); }
     };
     fetchPlans();
@@ -138,7 +144,7 @@ function SubscriptionManagement() {
       const res = await getAllPlans();
       const data = res?.data ?? res;
       setPlans(Array.isArray(data) ? data : []);
-    } catch (err) { const msg = err?.message || t('subscription.fetchError'); showError(msg); }
+    } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
     finally { setIsLoading(false); }
   };
 
@@ -193,7 +199,7 @@ function SubscriptionManagement() {
       setIsFormOpen(false); fetchPlans();
     } catch (err) {
       const rawMsg = err?.message || '';
-      let msg = rawMsg || t('subscription.submitError');
+      let msg = getFriendlyError(err, 'subscription.submitError');
       if (rawMsg === 'Default plan already exists for this type' || rawMsg?.includes?.('Default plan already exists')) {
         msg = t('subscription.defaultPlanExists', { type: formData.planType });
       }
@@ -204,7 +210,7 @@ function SubscriptionManagement() {
 
   const handleToggleStatus = async (plan) => {
     try { await togglePlanStatus(plan.planId); showSuccess(t('subscription.updateSuccess')); fetchPlans(); }
-    catch (err) { const msg = err?.message || t('subscription.submitError'); showError(msg); }
+    catch (err) { showError(getFriendlyError(err, 'subscription.submitError')); }
   };
 
   const confirmDelete = (plan) => { setDeletingPlan(plan); setIsDeleteOpen(true); };
@@ -219,7 +225,7 @@ function SubscriptionManagement() {
       const rawMsg = err?.message || '';
       const msg = (rawMsg === 'Plan is in use' || rawMsg?.includes?.('Plan is in use'))
         ? t('subscription.planInUse')
-        : (rawMsg || t('subscription.deleteError'));
+        : getFriendlyError(err, 'subscription.deleteError');
       showError(msg);
     } finally {
       setIsDeleteOpen(false);

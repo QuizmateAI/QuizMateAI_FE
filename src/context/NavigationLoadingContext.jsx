@@ -17,8 +17,11 @@ export function NavigationLoadingProvider({ children }) {
   // Khi pathname thay đổi → trang mới đã render → tắt loading
   useEffect(() => {
     if (pendingRef.current) {
-      pendingRef.current = false;
-      setIsNavigating(false);
+      const timer = setTimeout(() => {
+        pendingRef.current = false;
+        setIsNavigating(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [location.pathname]);
 

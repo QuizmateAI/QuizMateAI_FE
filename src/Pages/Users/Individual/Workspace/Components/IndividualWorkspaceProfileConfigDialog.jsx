@@ -222,7 +222,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
           isDarkMode ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-900'
         }`}
       >
-        <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500`}></div>
+        <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500`} />
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className={`flex items-center gap-2 text-2xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
             {t('workspace.profileConfig.title')}

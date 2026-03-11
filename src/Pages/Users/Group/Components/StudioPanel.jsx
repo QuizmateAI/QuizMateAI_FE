@@ -51,7 +51,13 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
   const highlightKey = getActiveKey(activeView);
 
   useEffect(() => {
-    if (!isCollapsed) { setHoverTooltip(null); setCanShowTooltip(false); return; }
+    if (!isCollapsed) {
+      const resetTimer = setTimeout(() => {
+        setHoverTooltip(null);
+        setCanShowTooltip(false);
+      }, 0);
+      return () => clearTimeout(resetTimer);
+    }
     const timer = setTimeout(() => setCanShowTooltip(true), 180);
     return () => clearTimeout(timer);
   }, [isCollapsed]);

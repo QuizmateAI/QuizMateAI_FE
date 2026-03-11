@@ -1382,6 +1382,7 @@
   },
   "error": {
     "unknown": "An error occurred. Please try again.",
+    "internalServer": "The system is busy or unavailable. Please try again later.",
     "userNotExisted": "User does not exist.",
     "wrongPass": "Incorrect password.",
     "userExisted": "Username already exists.",
