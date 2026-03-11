@@ -8,6 +8,58 @@ import {
   getWorkspaceById,
 } from '@/api/WorkspaceAPI';
 
+const WORKSPACE_TITLE_PLACEHOLDERS = ['name null', 'group name null'];
+const WORKSPACE_DESCRIPTION_PLACEHOLDERS = ['description null', 'group description null'];
+
+function isPlaceholderWorkspaceTitle(value) {
+  if (typeof value !== 'string') return false;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return false;
+  if (WORKSPACE_TITLE_PLACEHOLDERS.includes(normalized)) return true;
+  return /^(name null|group name null)\s*(\(\d+\))?$/.test(normalized);
+}
+
+function normalizeText(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeWorkspace(workspace) {
+  if (!workspace || typeof workspace !== 'object') return workspace;
+
+  const title = normalizeText(workspace.title);
+  const name = normalizeText(workspace.name);
+  const displayTitle = normalizeText(workspace.displayTitle);
+
+  const firstValidTitle = [title, name, displayTitle].find((value) => value && !isPlaceholderWorkspaceTitle(value)) || null;
+
+  const normalizedTitle = firstValidTitle;
+
+  const normalizedDisplayTitle = (() => {
+    if (displayTitle && !isPlaceholderWorkspaceTitle(displayTitle)) return displayTitle;
+    if (normalizedTitle) return normalizedTitle;
+    return null;
+  })();
+
+  const rawDescription = normalizeText(workspace.description);
+  const normalizedDescription = rawDescription && WORKSPACE_DESCRIPTION_PLACEHOLDERS.includes(rawDescription.toLowerCase())
+    ? null
+    : rawDescription;
+
+  return {
+    ...workspace,
+    title: normalizedTitle,
+    name: normalizedTitle,
+    displayTitle: normalizedDisplayTitle,
+    description: normalizedDescription,
+  };
+}
+
+function normalizeWorkspaceArray(payload) {
+  return normalizeWorkspaceList(payload).map(normalizeWorkspace).filter(Boolean);
+}
+
 function normalizeWorkspaceList(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.content)) return payload.content;
@@ -34,11 +86,13 @@ export function useWorkspace(options = {}) {
       const res = await getWorkspacesByUser(page, size);
       const responseData = res.data || {};
       if (Array.isArray(responseData)) {
-        return { workspaces: responseData, pagination: { page: 0, size: responseData.length, totalPages: 1, totalElements: responseData.length } };
+        const normalized = normalizeWorkspaceArray(responseData);
+        return { workspaces: normalized, pagination: { page: 0, size: normalized.length, totalPages: 1, totalElements: normalized.length } };
       }
       if (responseData.content && Array.isArray(responseData.content)) {
+        const normalized = normalizeWorkspaceArray(responseData.content);
         return {
-          workspaces: responseData.content,
+          workspaces: normalized,
           pagination: {
             page: responseData.number || 0,
             size: responseData.size || size,
@@ -71,7 +125,7 @@ export function useWorkspace(options = {}) {
     setWorkspaceDetailLoading(true);
     try {
       const res = await getWorkspaceById(workspaceId);
-      const workspace = res.data || null;
+      const workspace = normalizeWorkspace(res.data || null);
       setCurrentWorkspace(workspace);
       return workspace;
     } catch (err) {
@@ -98,18 +152,18 @@ export function useWorkspace(options = {}) {
   const createWorkspace = useCallback(async (data) => {
     const res = await createWorkspaceAPI(data);
     await queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
-    return res.data;
+    return normalizeWorkspace(res.data);
   }, [queryClient]);
 
   // Cập nhật workspace
   const editWorkspace = useCallback(async (workspaceId, data) => {
     const res = await updateWorkspaceAPI(workspaceId, data);
-    const updatedWorkspace = res.data || {};
+    const updatedWorkspace = normalizeWorkspace(res.data || {});
     queryClient.setQueryData([...WORKSPACES_QUERY_KEY, page, size], (old) => {
       if (!old) return old;
       return {
         ...old,
-        workspaces: normalizeWorkspaceList(old.workspaces).map((ws) =>
+        workspaces: normalizeWorkspaceArray(old.workspaces).map((ws) =>
           ws.workspaceId === workspaceId ? updatedWorkspace : ws
         ),
       };

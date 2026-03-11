@@ -24,7 +24,7 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
   // Điền dữ liệu workspace vào form khi mở dialog
   useEffect(() => {
     if (open && workspace) {
-      setTitle(workspace.title || '');
+      setTitle(workspace.title || workspace.name || '');
       setDescription(workspace.description || '');
       setErrors({});
       setSubmitting(false);
@@ -44,7 +44,7 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
     setSubmitting(true);
     try {
       await onEdit(workspace.workspaceId, {
-        title: title.trim() || null,
+        name: title.trim() || null,
         description: description.trim() || null,
       });
       onOpenChange(false);

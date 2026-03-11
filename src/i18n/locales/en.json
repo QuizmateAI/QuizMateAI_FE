@@ -582,6 +582,8 @@
       "titleRequired": "Please enter a workspace name.",
       "topicRequired": "Please select a topic.",
       "subjectRequired": "Please select a subject.",
+      "untitledTitle": "Untitled workspace",
+      "noDescription": "No description",
       "noWorkspaces": "No workspaces yet",
       "noWorkspacesDesc": "Create your first workspace to get started!",
       "status": "Status",
@@ -793,6 +795,9 @@
       },
       "validation": {
         "nameRequired": "Please enter a quiz name.",
+        "contextRequired": "Please choose where to create the quiz.",
+        "correctAnswerRequired": "Question {{index}} has no correct answer selected.",
+        "correctAnswerRequiredInline": "No correct answer selected for this question.",
         "createFailed": "Failed to create quiz. Please try again.",
         "postLearningLimit": "This phase already has a Post-learning quiz. Only one is allowed per phase."
       },

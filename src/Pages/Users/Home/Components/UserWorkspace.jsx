@@ -5,14 +5,17 @@ import Pagination from "./Pagination";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 
-const DEFAULT_UNTITLED = "Không gian không có tiêu đề";
-
-// Bổ sung displayTitle cho workspace không có tiêu đề: đầu tiên = "Không gian không có tiêu đề", thứ 2 = "(1)", thứ 3 = "(2)"...
-function enrichWorkspacesWithDisplayTitle(workspaces) {
+// Bổ sung displayTitle cho workspace không có tiêu đề: đầu tiên = untitledTitle, thứ 2 = (1), thứ 3 = (2)...
+function enrichWorkspacesWithDisplayTitle(workspaces, untitledTitle) {
   const list = Array.isArray(workspaces) ? [...workspaces] : [];
+  const untitledCandidates = ["Untitled workspace", "Không gian không có tiêu đề", untitledTitle]
+    .filter(Boolean)
+    .map((value) => value.toLowerCase());
+
   const untitled = list.filter((ws) => {
-    const t = ws.title;
-    return !t || (typeof t === "string" && t.trim() === "") || t === DEFAULT_UNTITLED;
+    const t = ws.title || ws.name;
+    if (!t || (typeof t === "string" && t.trim() === "")) return true;
+    return typeof t === "string" && untitledCandidates.includes(t.trim().toLowerCase());
   });
   untitled.sort((a, b) => {
     const da = new Date(a.createdAt || 0).getTime();
@@ -22,11 +25,11 @@ function enrichWorkspacesWithDisplayTitle(workspaces) {
   });
   const displayTitleMap = {};
   untitled.forEach((ws, idx) => {
-    displayTitleMap[ws.workspaceId] = idx === 0 ? DEFAULT_UNTITLED : `${DEFAULT_UNTITLED} (${idx})`;
+    displayTitleMap[ws.workspaceId] = idx === 0 ? untitledTitle : `${untitledTitle} (${idx})`;
   });
   return list.map((ws) => ({
     ...ws,
-    displayTitle: displayTitleMap[ws.workspaceId] ?? ws.displayTitle ?? ws.title ?? DEFAULT_UNTITLED,
+    displayTitle: displayTitleMap[ws.workspaceId] ?? ws.displayTitle ?? ws.title ?? ws.name ?? untitledTitle,
   }));
 }
 
@@ -104,7 +107,7 @@ const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, isDarkMode
 });
 
 // Card workspace - memo để tối ưu render khi list thay đổi
-const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit, onDelete, locale }) {
+const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit, onDelete, locale, untitledTitle, noDescription }) {
   const navigate = useNavigateWithLoading();
   const cardBg = getCardColor(idx, isDarkMode);
   return (
@@ -120,10 +123,10 @@ const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit,
       </div>
       <div className="flex-1 min-w-0 mt-2">
         <h3 className={`font-medium text-base line-clamp-2 leading-snug ${isDarkMode ? "text-white" : "text-[#1F1F1F]"}`}>
-          {ws.displayTitle ?? ws.title ?? 'Không gian không có tiêu đề'}
+          {ws.displayTitle ?? ws.title ?? ws.name ?? untitledTitle}
         </h3>
         <p className={`text-xs mt-1 line-clamp-2 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-          {ws.description || ws.topic?.title || '—'}
+          {ws.description || noDescription}
         </p>
         <div className={`text-xs mt-1 flex items-center gap-2 ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
           <span className="truncate">{ws.subject?.title}</span>
@@ -150,10 +153,15 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
+  const untitledTitle = t("home.workspace.untitledTitle");
+  const noDescription = t("home.workspace.noDescription");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Bổ sung displayTitle cho workspace không có tiêu đề (đánh số 1, 2, 3...)
-  const enrichedWorkspaces = useMemo(() => enrichWorkspacesWithDisplayTitle(workspaces), [workspaces]);
+  const enrichedWorkspaces = useMemo(
+    () => enrichWorkspacesWithDisplayTitle(workspaces, untitledTitle),
+    [workspaces, untitledTitle]
+  );
   const workspaceList = enrichedWorkspaces;
 
   const isList = viewMode === "list";
@@ -164,7 +172,7 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
   );
 
   // Lọc theo từ khóa tìm kiếm (dùng displayTitle cho workspace không có tiêu đề)
-  const getDisplayTitle = (ws) => ws.displayTitle ?? ws.title ?? DEFAULT_UNTITLED;
+  const getDisplayTitle = (ws) => ws.displayTitle ?? ws.title ?? ws.name ?? untitledTitle;
   const sorted = searchQuery.trim()
     ? allSorted.filter((ws) =>
         getDisplayTitle(ws).toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -253,9 +261,9 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-lg">📝</span>
-                      <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.displayTitle ?? ws.title ?? 'Không gian không có tiêu đề'}</span>
+                      <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.displayTitle ?? ws.title ?? ws.name ?? untitledTitle}</span>
                     </div>
-                    <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.description || "—"}</span>
+                    <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.description || noDescription}</span>
                     <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(ws.createdAt, locale)}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full w-fit ${
                       ws.status === "ACTIVE"
@@ -327,6 +335,8 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
               onEdit={onOpenEdit}
               onDelete={onOpenDelete}
               locale={locale}
+              untitledTitle={untitledTitle}
+              noDescription={noDescription}
             />
           ))}
           </div>
