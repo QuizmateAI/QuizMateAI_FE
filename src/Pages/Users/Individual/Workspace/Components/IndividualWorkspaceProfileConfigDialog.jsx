@@ -155,14 +155,14 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
   const validate = () => {
     const newErrors = {};
     if (schemeMode === 'system') {
-      if (!domainId) newErrors.domainId = 'Vui lòng chọn Lĩnh vực học (Domain)';
-      if (!programId) newErrors.programId = 'Vui lòng chọn Chương trình (Program)';
-      if (!schemeId) newErrors.schemeId = 'Vui lòng chọn Lộ trình/Nguyên tắc (Scheme)';
-      if (!requireAiAssessment && !currentLevelId) newErrors.currentLevelId = 'Vui lòng chọn Trình độ hiện tại';
+      if (!domainId) newErrors.domainId = t('workspace.profileConfig.errDomain');
+      if (!programId) newErrors.programId = t('workspace.profileConfig.errProgram');
+      if (!schemeId) newErrors.schemeId = t('workspace.profileConfig.errScheme');
+      if (!requireAiAssessment && !currentLevelId) newErrors.currentLevelId = t('workspace.profileConfig.errCurrentLevel');
     } else {
-      if (!customSchemeName.trim()) newErrors.customSchemeName = 'Vui lòng nhập tên Lộ trình tuỳ chỉnh';
-      if (!customSchemeDescription.trim()) newErrors.customSchemeDescription = 'Vui lòng nhập mô tả Lộ trình tuỳ chỉnh';
-      if (!requireAiAssessment && !customCurrentLevel.trim()) newErrors.customCurrentLevel = 'Vui lòng nhập Trình độ hiện tại';
+      if (!customSchemeName.trim()) newErrors.customSchemeName = t('workspace.profileConfig.errCustomSchemeName');
+      if (!customSchemeDescription.trim()) newErrors.customSchemeDescription = t('workspace.profileConfig.errCustomSchemeDesc');
+      if (!requireAiAssessment && !customCurrentLevel.trim()) newErrors.customCurrentLevel = t('workspace.profileConfig.errCustomCurrentLevel');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -198,7 +198,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
   };
 
   const handleAiAssessClick = () => {
-    showInfo('Hệ thống AI đang được nâng cấp để tạo bài kiểm tra năng lực (Pre-learning). Vui lòng thử lại sau!');
+    showInfo(t('workspace.profileConfig.aiUpgradeInfo'));
   };
 
   const inputBase = `w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-all duration-300 shadow-sm focus:ring-2 focus:ring-blue-500/20 ${
@@ -225,13 +225,13 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
         <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500`}></div>
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className={`flex items-center gap-2 text-2xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            Thiết lập thông tin không gian
-            {isReadOnly && <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">Đã cập nhật</span>}
+            {t('workspace.profileConfig.title')}
+            {isReadOnly && <span className="text-sm font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">{t('workspace.profileConfig.updated')}</span>}
           </DialogTitle>
           <DialogDescription className={`text-[15px] pt-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
             {isReadOnly 
-              ? 'Tóm tắt các thông tin cấu hình chuyên sâu hiện tại của không gian học tập này.' 
-              : 'Cấu hình các thông tin chuyên sâu (Lĩnh vực, Chương trình, Mục tiêu) để hệ thống cá nhân hóa tốt nhất cho bạn.'}
+              ? t('workspace.profileConfig.readOnlyDesc') 
+              : t('workspace.profileConfig.editDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -239,7 +239,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-2">
             {loadingConfig && (
               <div className="flex items-center gap-2 text-sm text-blue-500 font-medium bg-blue-500/10 p-3 rounded-lg mb-4">
-                <Loader2 className="w-4 h-4 animate-spin" /> Đang tải dữ liệu cấu hình...
+                <Loader2 className="w-4 h-4 animate-spin" /> {t('workspace.profileConfig.loadingConfig')}
               </div>
             )}
             
@@ -257,7 +257,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                         : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
-                    Theo hệ thống
+                    {t('workspace.profileConfig.modeSystem')}
                   </button>
                   <button
                     type="button"
@@ -268,7 +268,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                         : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
-                    Tự định nghĩa
+                    {t('workspace.profileConfig.modeCustom')}
                   </button>
                 </div>
 
@@ -278,7 +278,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                       {/* Domain */}
                       <div>
                         <label className={labelBase}>
-                          Lĩnh vực học tập <span className="text-red-500">*</span>
+                          {t('workspace.profileConfig.domainLabel')} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <select
@@ -292,7 +292,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                         }}
                             className={`${selectBase} ${errors.domainId ? 'border-red-500 focus:ring-red-500/20' : ''}`}
                           >
-                            <option value="">Chọn Lĩnh vực...</option>
+                            <option value="">{t('workspace.profileConfig.domainPlaceholder')}</option>
                             {domains.map((d) => (
                               <option key={d.domainId} value={d.domainId}>{d.name}</option>
                             ))}
@@ -305,7 +305,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                       {/* Program */}
                       <div>
                         <label className={labelBase}>
-                          Chương trình học <span className="text-red-500">*</span>
+                          {t('workspace.profileConfig.programLabel')} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <select
@@ -319,7 +319,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                             className={`${selectBase} ${errors.programId ? 'border-red-500' : ''} ${!domainId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
                             disabled={!domainId}
                           >
-                            <option value="">Chọn Chương trình...</option>
+                            <option value="">{t('workspace.profileConfig.programPlaceholder')}</option>
                             {programs.map((p) => (
                               <option key={p.programId} value={p.programId}>{p.name}</option>
                             ))}
@@ -333,7 +333,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                     {/* Scheme */}
                     <div>
                       <label className={labelBase}>
-                        Khung đánh giá (Scheme) <span className="text-red-500">*</span>
+                        {t('workspace.profileConfig.schemeLabel')} <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <select
@@ -346,7 +346,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                           className={`${selectBase} ${errors.schemeId ? 'border-red-500' : ''} ${!programId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
                           disabled={!programId}
                         >
-                          <option value="">Chọn Scheme...</option>
+                          <option value="">{t('workspace.profileConfig.schemePlaceholder')}</option>
                           {schemes.map((s) => (
                             <option key={s.schemeId} value={s.schemeId}>{s.name}</option>
                           ))}
@@ -360,25 +360,25 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                   <div className="space-y-4">
                     <div>
                       <label className={labelBase}>
-                        Tên Lộ trình<span className="text-red-500">*</span>
+                        {t('workspace.profileConfig.customSchemeNameLabel')}<span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={customSchemeName}
                         onChange={(e) => setCustomSchemeName(e.target.value)}
-                        placeholder="Ví dụ: Luyện thi IELTS mục tiêu 7.5..."
+                        placeholder={t('workspace.profileConfig.customSchemeNamePlaceholder')}
                         className={`${inputBase} ${errors.customSchemeName ? 'border-red-500 focus:ring-red-500/20' : ''}`}
                       />
                       {errors.customSchemeName && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.customSchemeName}</p>}
                     </div>
                     <div>
                       <label className={labelBase}>
-                        Mô tả chi tiết <span className="text-red-500">*</span>
+                        {t('workspace.profileConfig.customSchemeDescLabel')} <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         value={customSchemeDescription}
                         onChange={(e) => setCustomSchemeDescription(e.target.value)}
-                        placeholder="Mô tả các yêu cầu, điểm yếu/mạnh để AI lập lộ trình phù hợp..."
+                        placeholder={t('workspace.profileConfig.customSchemeDescPlaceholder')}
                         rows={2}
                         className={`${inputBase} resize-none ${errors.customSchemeDescription ? 'border-red-500 focus:ring-red-500/20' : ''}`}
                       />
@@ -392,7 +392,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
                       <label className="text-sm font-semibold text-slate-700 dark:text-slate-200 block">
-                        Trình độ hiện tại <span className="text-red-500">*</span>
+                        {t('workspace.profileConfig.currentLevelLabel')} <span className="text-red-500">*</span>
                       </label>
                     </div>
                     
@@ -405,7 +405,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                             className={`${selectBase} ${errors.currentLevelId ? 'border-red-500' : ''} ${(!schemeId || requireAiAssessment) ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
                             disabled={!schemeId || requireAiAssessment}
                           >
-                            <option value="">Chọn trình độ...</option>
+                            <option value="">{t('workspace.profileConfig.currentLevelPlaceholder')}</option>
                             {levels.map((l) => (
                               <option key={l.levelId} value={l.levelId}>{l.name}</option>
                             ))}
@@ -430,9 +430,9 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                           <div className="flex flex-col gap-0.5 text-slate-700 dark:text-slate-300 text-[13px] font-medium transition-all">
                             <div className="flex items-center gap-1.5">
                               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                              <span>Bài test đánh giá năng lực AI lập tức</span>
+                              <span>{t('workspace.profileConfig.aiAssessCheckbox')}</span>
                             </div>
-                            <span className="text-[11px] text-slate-500 font-normal">Sẽ làm bài moke-test để xác định trình độ</span>
+                            <span className="text-[11px] text-slate-500 font-normal">{t('workspace.profileConfig.aiAssessCheckboxDesc')}</span>
                           </div>
                         </label>
                       </div>
@@ -442,7 +442,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                           type="text"
                           value={customCurrentLevel}
                           onChange={(e) => setCustomCurrentLevel(e.target.value)}
-                          placeholder="VD: 5.0 IELTS..."
+                          placeholder={t('workspace.profileConfig.customCurrentLevelPlaceholder')}
                           className={`${inputBase} ${errors.customCurrentLevel ? 'border-red-500' : ''}`}
                           disabled={requireAiAssessment}
                         />
@@ -464,9 +464,9 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                           <div className="flex flex-col gap-0.5 text-slate-700 dark:text-slate-300 text-[13px] font-medium transition-all">
                             <div className="flex items-center gap-1.5">
                               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                              <span>Bài test đánh giá năng lực AI lập tức</span>
+                              <span>{t('workspace.profileConfig.aiAssessCheckbox')}</span>
                             </div>
-                            <span className="text-[11px] text-slate-500 font-normal">Sẽ làm bài moke-test để xác định trình độ</span>
+                            <span className="text-[11px] text-slate-500 font-normal">{t('workspace.profileConfig.aiAssessCheckboxDesc')}</span>
                           </div>
                         </label>
                       </div>
@@ -476,7 +476,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                   {/* Target Level */}
                   <div>
                     <label className={labelBase}>
-                      Mục tiêu cần đạt <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ml-1">(Tùy chọn)</span>
+                      {t('workspace.profileConfig.targetLevelLabel')} <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ml-1">{t('workspace.profileConfig.optional')}</span>
                     </label>
                     {schemeMode === 'system' ? (
                       <div className="relative">
@@ -486,7 +486,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                           className={`${selectBase} ${!schemeId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
                           disabled={!schemeId}
                         >
-                          <option value="">Không xác định</option>
+                          <option value="">{t('workspace.profileConfig.targetLevelPlaceholder')}</option>
                           {levels.map((l) => (
                             <option key={l.levelId} value={l.levelId}>{l.name}</option>
                           ))}
@@ -498,7 +498,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                         type="text"
                         value={customTargetLevel}
                         onChange={(e) => setCustomTargetLevel(e.target.value)}
-                        placeholder="VD: Thành thạo, 7.5 IELTS..."
+                        placeholder={t('workspace.profileConfig.customTargetLevelPlaceholder')}
                         className={inputBase}
                       />
                     )}
@@ -512,25 +512,25 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className={labelBase}>
-                      Điểm mạnh <span className="text-xs font-normal text-slate-500 ml-1">(Tùy chọn)</span>
+                      {t('workspace.profileConfig.strongAreasLabel')} <span className="text-xs font-normal text-slate-500 ml-1">{t('workspace.profileConfig.optional')}</span>
                     </label>
                     <input
                       type="text"
                       value={strongAreas}
                       onChange={(e) => setStrongAreas(e.target.value)}
-                      placeholder="VD: Giao tiếp..."
+                      placeholder={t('workspace.profileConfig.strongAreasPlaceholder')}
                       className={inputBase}
                     />
                   </div>
                   <div>
                     <label className={labelBase}>
-                      Điểm yếu <span className="text-xs font-normal text-slate-500 ml-1">(Tùy chọn)</span>
+                      {t('workspace.profileConfig.weakAreasLabel')} <span className="text-xs font-normal text-slate-500 ml-1">{t('workspace.profileConfig.optional')}</span>
                     </label>
                     <input
                       type="text"
                       value={weakAreas}
                       onChange={(e) => setWeakAreas(e.target.value)}
-                      placeholder="VD: Ngữ pháp..."
+                      placeholder={t('workspace.profileConfig.weakAreasPlaceholder')}
                       className={inputBase}
                     />
                   </div>
@@ -539,7 +539,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                 
                 <div>
                   <label className={labelBase}>
-                    Ngôn ngữ <span className="text-red-500">*</span>
+                    {t('workspace.profileConfig.languageLabel')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <select
@@ -547,8 +547,8 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                       onChange={(e) => setPreferredLanguage(e.target.value)}
                       className={selectBase}
                     >
-                      <option value="vi">Tiếng Việt</option>
-                      <option value="en">English (Tiếng Anh)</option>
+                      <option value="vi">{t('workspace.profileConfig.langVi')}</option>
+                      <option value="en">{t('workspace.profileConfig.langEn')}</option>
                     </select>
                     <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
                   </div>
@@ -556,12 +556,12 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                 
                 <div>
                   <label className={labelBase}>
-                    Mục tiêu cá nhân<span className="text-red-500">*</span>
+                    {t('workspace.profileConfig.learningGoalLabel')}<span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={learningGoal}
                     onChange={(e) => setLearningGoal(e.target.value)}
-                    placeholder="Ví dụ: Đạt điểm cao trong kỳ thi sắp tới, hiểu rõ phần ngữ pháp Tiếng Anh..."
+                    placeholder={t('workspace.profileConfig.learningGoalPlaceholder')}
                     rows={4}
                     className={`${inputBase} resize-none`}
                   />
@@ -578,7 +578,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
               onClick={() => onOpenChange(false)}
               className={`rounded-xl px-5 py-2.5 h-auto text-sm font-semibold transition-all ${isDarkMode ? 'text-slate-300 hover:text-white hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}`}
             >
-              {isReadOnly ? 'Đóng' : 'Bỏ qua'}
+              {isReadOnly ? t('workspace.profileConfig.closeBtn') : t('workspace.profileConfig.cancelBtn')}
             </Button>
             {!isReadOnly && (
               <Button
@@ -589,10 +589,10 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Đang lưu...
+                    {t('workspace.profileConfig.saving')}
                   </>
                 ) : (
-                  'Hoàn thành thiết lập'
+                  t('workspace.profileConfig.submitBtn')
                 )}
               </Button>
             )}
