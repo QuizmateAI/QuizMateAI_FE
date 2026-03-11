@@ -112,7 +112,7 @@ function UserDetailPage() {
       const res = await getUserById(userId);
       setUser(res?.data ?? res);
     } catch (err) {
-      setError(err?.message || 'Không thể tải thông tin user');
+      setError(err?.message || t('userDetail.loadError'));
     }
   };
 
