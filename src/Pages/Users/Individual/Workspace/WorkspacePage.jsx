@@ -201,12 +201,12 @@ function WorkspacePage() {
 
 			if (data.requireAiAssessment) {
 				setIsPendingAiAssessment(true);
-				showInfo("Bài kiểm tra năng lực (Pre-learning) đang được khởi tạo. Vui lòng chờ thông báo hoàn tất!");
+				showInfo(t("workspace.prelearning.initInfo"));
 				
 				// Build payload cho Mock Test
 				// Tận dụng context hiện tại của Workspace để gọi AI
 				generateMockTest({
-					title: "Bài kiểm tra Đánh giá Năng lực Đầu vào (Pre-learning)",
+				title: t("workspace.prelearning.assessmentTitle"),
 					contextId: workspaceId,
 					contextType: "WORKSPACE", // workspace context type
 					durationInMinute: 30, // Default 30 minutes
@@ -222,15 +222,15 @@ function WorkspacePage() {
 					language: data.preferredLanguage || "vi",
 					sessionConfigs: [
 						{
-							name: "Phần 1: Đánh giá Năng lực",
-							description: data.customSchemeDescription || "Đánh giá các kỹ năng cơ bản dựa trên mục tiêu hiện tại",
+							name: t("workspace.prelearning.sessionName"),
+							description: data.customSchemeDescription || t("workspace.prelearning.sessionDesc"),
 							numQuestions: 15,
 							scorePerQuestion: 1.0
 						}
 					]
 				}).catch(err => {
 					console.error("Lỗi khi tạo AI Pre-learning Quiz", err);
-					showError("Không thể tạo bài kiểm tra năng lực lúc này. Vui lòng thử lại sau.");
+					showError(t("workspace.prelearning.createError"));
 					setIsPendingAiAssessment(false);
 				});
 
@@ -352,7 +352,7 @@ function WorkspacePage() {
 
 	// Xử lý xóa flashcard — gọi API xóa flashcard set
 	const handleDeleteFlashcard = useCallback(async (flashcard) => {
-		if (!window.confirm("Bạn có chắc muốn xóa bộ flashcard này?")) return;
+		if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
 		try {
 			const { deleteFlashcardSet } = await import("@/api/FlashcardAPI");
 			await deleteFlashcardSet(flashcard.flashcardSetId);
@@ -565,7 +565,7 @@ function WorkspacePage() {
 					>
 						<span className={`flex items-center gap-2 ${fontClass}`}>
 							<UserCircle className="w-4 h-4" />
-							Hồ sơ không gian học tập
+							{t("workspace.settingsMenu.workspaceProfile")}
 						</span>
 					</button>
 					<button
@@ -606,7 +606,7 @@ function WorkspacePage() {
 	// Xử lý nút click để mở Upload Dialog — Phải check config trước
 	const handleUploadClickSafe = useCallback(() => {
 		if (isPendingAiAssessment) {
-			showError("Vui lòng hoàn thành bài kiểm tra năng lực (Pre-learning) trước khi tải lên tài liệu mới.");
+			showError(t("workspace.prelearning.uploadBlockedError"));
 			return;
 		}
 		if (!isProfileConfigured) {
