@@ -1,32 +1,39 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
 import UploadSourceDialog from "@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog";
-import CreateWorkspaceInfoDialog from "@/Pages/Users/Individual/Workspace/Components/CreateWorkspaceInfoDialog";
-import { Globe, Moon, Settings, Sun } from "lucide-react";
+import IndividualWorkspaceProfileConfigDialog from "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog";
+import { Globe, Moon, Settings, Sun, UserCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { configureIndividualWorkspaceProfile, getIndividualWorkspaceProfile } from "@/api/WorkspaceAPI";
+import { generateMockTest } from "@/api/AIAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
+import { useToast } from "@/context/ToastContext";
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
+	const location = useLocation();
 	const navigate = useNavigateWithLoading();
 	const { t, i18n } = useTranslation();
 	const { isDarkMode, toggleDarkMode } = useDarkMode();
+	const { showError, showInfo } = useToast();
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const settingsRef = useRef(null);
 
-	// Chế độ tạo mới: workspaceId === 'new'
-	const isCreating = workspaceId === 'new';
-	const [createDialogOpen, setCreateDialogOpen] = useState(isCreating);
+	const openProfileConfig = location.state?.openProfileConfig || false;
+	const [profileConfigOpen, setProfileConfigOpen] = useState(openProfileConfig);
+	const [isProfileConfigured, setIsProfileConfigured] = useState(false);
+	const [workspaceProfile, setWorkspaceProfile] = useState(null);
+	const [isPendingAiAssessment, setIsPendingAiAssessment] = useState(false); // State to track pending AI test
 
 	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace, createWorkspace } = useWorkspace();
 
@@ -86,8 +93,8 @@ function WorkspacePage() {
 
 	// WebSocket để nhận realtime updates cho tài liệu
 	const { isConnected: wsConnected } = useWebSocket({
-		workspaceId: !isCreating ? workspaceId : null,
-		enabled: !isCreating && !!workspaceId,
+		workspaceId: workspaceId,
+		enabled: !!workspaceId,
 		onMaterialUploaded: (data) => {
 			console.log("📤 [WorkspacePage] Material uploaded via WebSocket:", data);
 			console.log("   Status:", data.status);
@@ -130,43 +137,116 @@ function WorkspacePage() {
 		}
 	}, [workspaceId]);
 
-	// Lấy thông tin workspace từ API và quyết định mở popup upload theo lần fetch đầu tiên
+	// Fetch workspace, initial sources, và kiểm tra profile
 	useEffect(() => {
-		if (!workspaceId || isCreating) return;
+		if (!workspaceId) return;
 
 		let isMounted = true;
 		fetchWorkspaceDetail(workspaceId).catch(() => {});
 
-		const loadInitialSources = async () => {
-			const initialSources = await fetchSources();
-			if (!isMounted) return;
+		const loadInitialData = async () => {
+			try {
+				const [initialSources, profileRes] = await Promise.all([
+					fetchSources(),
+					getIndividualWorkspaceProfile(workspaceId).catch(() => null)
+				]);
 
-			setUploadDialogOpen(initialSources.length === 0);
+				if (!isMounted) return;
+
+				// Kiểm tra xem profile đã được config hay chưa:
+				// Theo logic backend: cần có domain, program, scheme (bất kỳ) HOẶC customScheme
+				const profileData = profileRes?.data?.data || profileRes?.data || null;
+				const isConfigured = profileData && (
+					profileData.domainId ||
+					profileData.programId ||
+					profileData.schemeId ||
+					(profileData.customSchemeName && profileData.customSchemeDescription)
+				);
+
+				setIsProfileConfigured(isConfigured);
+				setWorkspaceProfile(profileData);
+
+				// Nếu chưa cấu hình profile, ta không mở upload dialog
+				// Nếu đã cấu hình rồi và tài nguyên rỗng, thì mở
+				if (isConfigured && initialSources.length === 0 && !profileConfigOpen) {
+					setUploadDialogOpen(true);
+				}
+			} catch (error) {
+				console.error("Failed to load initial workspace data", error);
+			}
 		};
 
-		loadInitialSources();
+		loadInitialData();
 
 		return () => {
 			isMounted = false;
 		};
-	}, [workspaceId, isCreating, fetchWorkspaceDetail, fetchSources]);
+	}, [workspaceId, fetchSources, profileConfigOpen, fetchWorkspaceDetail]);
 
-	// Xử lý tạo workspace mới từ dialog
-	const handleCreateWorkspace = useCallback(async (data) => {
-		const newWorkspace = await createWorkspace(data);
-		if (newWorkspace?.workspaceId) {
-			setCreateDialogOpen(false);
-			navigate(`/workspace/${newWorkspace.workspaceId}`, { replace: true });
+	// Xử lý đóng profile config dialog (kể cả khi bấm Bỏ qua)
+	const handleProfileConfigChange = useCallback((open) => {
+		setProfileConfigOpen(open);
+		if (!open && location.state?.openProfileConfig) {
+			navigate(`/workspace/${workspaceId}`, { replace: true });
 		}
-	}, [createWorkspace, navigate]);
+	}, [location.state, navigate, workspaceId]);
 
-	// Khi đóng dialog tạo mà chưa submit → quay về trang chủ
-	const handleCreateDialogChange = useCallback((open) => {
-		setCreateDialogOpen(open);
-		if (!open && isCreating) {
-			navigate('/home');
+	// Xử lý lưu cấu hình IndividualWorkspaceProfile
+	const handleSaveProfileConfig = useCallback(async (data) => {
+		try {
+			await configureIndividualWorkspaceProfile(workspaceId, data);
+			setProfileConfigOpen(false);
+			setIsProfileConfigured(true); // Đánh dấu là đã cấu hình
+			fetchWorkspaceDetail(workspaceId);
+
+			if (data.requireAiAssessment) {
+				setIsPendingAiAssessment(true);
+				showInfo("Bài kiểm tra năng lực (Pre-learning) đang được khởi tạo. Vui lòng chờ thông báo hoàn tất!");
+				
+				// Build payload cho Mock Test
+				// Tận dụng context hiện tại của Workspace để gọi AI
+				generateMockTest({
+					title: "Bài kiểm tra Đánh giá Năng lực Đầu vào (Pre-learning)",
+					contextId: workspaceId,
+					contextType: "WORKSPACE", // workspace context type
+					durationInMinute: 30, // Default 30 minutes
+					timerMode: true,
+					totalQuestion: 15,
+					overallDifficulty: "MEDIUM",
+					prompt: `Tạo bài kiểm tra đầu vào dựa trên cấu hình Workspace: 
+						${data.customSchemeName ? 'Tên lộ trình: ' + data.customSchemeName : ''}
+						${data.customSchemeDescription ? 'Mục tiêu lộ trình: ' + data.customSchemeDescription : ''}
+						${data.learningGoal ? 'Mục tiêu cá nhân: ' + data.learningGoal : ''}
+						${data.strongAreas ? 'Điểm mạnh: ' + data.strongAreas : ''}
+						${data.weakAreas ? 'Điểm yếu cần cải thiện: ' + data.weakAreas : ''}`,
+					language: data.preferredLanguage || "vi",
+					sessionConfigs: [
+						{
+							name: "Phần 1: Đánh giá Năng lực",
+							description: data.customSchemeDescription || "Đánh giá các kỹ năng cơ bản dựa trên mục tiêu hiện tại",
+							numQuestions: 15,
+							scorePerQuestion: 1.0
+						}
+					]
+				}).catch(err => {
+					console.error("Lỗi khi tạo AI Pre-learning Quiz", err);
+					showError("Không thể tạo bài kiểm tra năng lực lúc này. Vui lòng thử lại sau.");
+					setIsPendingAiAssessment(false);
+				});
+
+			} else {
+				// Sau khi cấu hình xong, nếu chưa có nguồn nào thì mở upload
+				if (sources.length === 0) {
+					setUploadDialogOpen(true);
+				}
+			}
+
+			// Xóa state để không mở lại khi reload
+			navigate(`/workspace/${workspaceId}`, { replace: true });
+		} catch (error) {
+			console.error("Failed to config profile:", error);
 		}
-	}, [isCreating, navigate]);
+	}, [workspaceId, fetchWorkspaceDetail, navigate, sources]);
 
 	// Đóng settings khi click ra ngoài
 	useEffect(() => {
@@ -475,6 +555,21 @@ function WorkspacePage() {
 				>
 					<button
 						type="button"
+						onClick={() => {
+							setIsSettingsOpen(false);
+							setProfileConfigOpen(true);
+						}}
+						className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
+							isDarkMode ? "hover:bg-slate-900 border-b border-slate-800" : "hover:bg-gray-50 border-b border-gray-100"
+						}`}
+					>
+						<span className={`flex items-center gap-2 ${fontClass}`}>
+							<UserCircle className="w-4 h-4" />
+							Hồ sơ không gian học tập
+						</span>
+					</button>
+					<button
+						type="button"
 						onClick={toggleLanguage}
 						className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
 							isDarkMode ? "hover:bg-slate-900" : "hover:bg-gray-50"
@@ -508,6 +603,21 @@ function WorkspacePage() {
 		</div>
 	);
 
+	// Xử lý nút click để mở Upload Dialog — Phải check config trước
+	const handleUploadClickSafe = useCallback(() => {
+		if (isPendingAiAssessment) {
+			showError("Vui lòng hoàn thành bài kiểm tra năng lực (Pre-learning) trước khi tải lên tài liệu mới.");
+			return;
+		}
+		if (!isProfileConfigured) {
+			// Profile chưa cấu hình đủ, yêu cầu cập nhật Profile trước
+			setProfileConfigOpen(true);
+		} else {
+			// Profile hợp lệ, cho phép upload
+			setUploadDialogOpen(true);
+		}
+	}, [isProfileConfigured, isPendingAiAssessment, showError]);
+
 	return (
 		<div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-[#F7FBFF]"}`}>
 			<WorkspaceHeader
@@ -533,7 +643,7 @@ function WorkspacePage() {
 							<SourcesPanel
 								isDarkMode={isDarkMode}
 								sources={sources}
-								onAddSource={() => setUploadDialogOpen(true)}
+								onAddSource={handleUploadClickSafe}
 								onRemoveSource={handleRemoveSource}							onRemoveMultiple={handleRemoveMultipleSources}								isCollapsed={isSourcesCollapsed}
 								onToggleCollapse={() => setIsSourcesCollapsed((prev) => !prev)}
 
@@ -557,7 +667,7 @@ function WorkspacePage() {
 								sources={sources}
 								activeView={activeView}
 								createdItems={createdItems}
-								onUploadClick={() => setUploadDialogOpen(true)}
+								onUploadClick={handleUploadClickSafe}
 								onChangeView={handleStudioAction}
 								onCreateQuiz={handleCreateQuiz}
 								onCreateFlashcard={handleCreateFlashcard}
@@ -615,15 +725,13 @@ function WorkspacePage() {
 				onUploadFiles={handleUploadFiles}
 			/>
 
-			{/* Dialog tạo workspace mới */}
-			{isCreating && (
-				<CreateWorkspaceInfoDialog
-					open={createDialogOpen}
-					onOpenChange={handleCreateDialogChange}
-					onCreate={handleCreateWorkspace}
-					isDarkMode={isDarkMode}
-				/>
-			)}
+			<IndividualWorkspaceProfileConfigDialog
+				initialData={workspaceProfile}
+				open={profileConfigOpen}
+				onOpenChange={handleProfileConfigChange}
+				onSave={handleSaveProfileConfig}
+				isDarkMode={isDarkMode}
+			/>
 
 
 		</div>
