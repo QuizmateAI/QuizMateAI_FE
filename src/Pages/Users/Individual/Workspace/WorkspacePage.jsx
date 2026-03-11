@@ -623,9 +623,10 @@ function WorkspacePage() {
 			<WorkspaceHeader
 				settingsMenu={settingsMenu}
 				isDarkMode={isDarkMode}
-				workspaceTitle={currentWorkspace?.displayTitle || currentWorkspace?.title}
+				workspaceTitle={currentWorkspace?.displayTitle || currentWorkspace?.title || currentWorkspace?.name || ""}
+				workspaceName={currentWorkspace?.title || currentWorkspace?.name || ""}
 				workspaceSubtitle={currentWorkspace?.topic?.title || currentWorkspace?.subject?.title}
-				workspaceDescription={currentWorkspace?.description}
+				workspaceDescription={currentWorkspace?.description || ""}
 				onEditWorkspace={async (data) => {
 					await editWorkspace(Number(workspaceId), data);
 				}}

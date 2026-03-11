@@ -68,7 +68,7 @@ function CreateWorkspaceDialog({ open, onOpenChange, topics, topicsLoading, onFe
       await onCreate({
         topicId: Number(topicId),
         ...(subjectId ? { subjectId: Number(subjectId) } : {}),
-        title: title.trim() || null,
+        name: title.trim() || null,
         description: description.trim() || null,
       });
       onOpenChange(false);

@@ -582,6 +582,8 @@
       "titleRequired": "Vui lòng nhập tên workspace.",
       "topicRequired": "Vui lòng chọn chủ đề.",
       "subjectRequired": "Vui lòng chọn môn học.",
+      "untitledTitle": "Không gian không có tiêu đề",
+      "noDescription": "Không có mô tả",
       "noWorkspaces": "Chưa có workspace",
       "noWorkspacesDesc": "Tạo workspace đầu tiên để bắt đầu!",
       "status": "Trạng thái",
@@ -606,7 +608,7 @@
     "wsConnected": "Kết nối realtime",
     "wsDisconnected": "Không kết nối",
     "header": {
-      "title": "Workspace chưa đặt tên",
+      "title": "Không gian không có tiêu đề",
       "create": "Tạo mới",
       "share": "Chia sẻ",
       "settings": "Cài đặt",
@@ -793,6 +795,9 @@
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
+        "contextRequired": "Vui lòng chọn vị trí tạo quiz.",
+        "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
+        "correctAnswerRequiredInline": "Chưa chọn đáp án đúng cho câu này.",
         "createFailed": "Tạo quiz thất bại. Vui lòng thử lại.",
         "postLearningLimit": "Giai đoạn này đã có bài Post-learning. Mỗi giai đoạn chỉ được phép có một bài."
       },
