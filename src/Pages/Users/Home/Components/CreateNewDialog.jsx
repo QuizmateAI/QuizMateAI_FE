@@ -103,7 +103,7 @@ function CreateNewDialog({
     try {
       if (mode === 'workspace') {
         await onCreateWorkspace({
-          title: wsTitle.trim() || '',
+          name: wsTitle.trim() || '',
           description: wsDescription.trim() || '',
         });
       } else {
