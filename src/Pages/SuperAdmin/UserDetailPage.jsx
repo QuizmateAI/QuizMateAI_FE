@@ -313,7 +313,7 @@ function UserDetailPage() {
                       <div className="flex items-center gap-3">
                         <FolderKanban className="w-5 h-5 text-blue-500" />
                         <div>
-                          <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{ws.title}</p>
+                          <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{ws.displayTitle || ws.title || ws.name || t('home.workspace.untitledTitle')}</p>
                           <p className="text-sm text-slate-500">{ws.subject?.title} • {ws.status}</p>
                         </div>
                       </div>

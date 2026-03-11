@@ -8,13 +8,25 @@ export const getWorkspacesByUser = async (page = 0, size = 10) => {
 
 // Tạo workspace mới
 export const createWorkspace = async (data) => {
-  const response = await api.post('/workSpace/create', data);
+  const payload = { ...(data || {}) };
+  if (payload.title !== undefined && payload.name === undefined) {
+    payload.name = payload.title;
+  }
+  delete payload.title;
+
+  const response = await api.post('/workSpace/create', payload);
   return response;
 };
 
 // Cập nhật thông tin workspace
 export const updateWorkspace = async (workspaceId, data) => {
-  const response = await api.put(`/workSpace/${workspaceId}`, data);
+  const payload = { ...(data || {}) };
+  if (payload.title !== undefined && payload.name === undefined) {
+    payload.name = payload.title;
+  }
+  delete payload.title;
+
+  const response = await api.put(`/workSpace/${workspaceId}`, payload);
   return response;
 };
 
