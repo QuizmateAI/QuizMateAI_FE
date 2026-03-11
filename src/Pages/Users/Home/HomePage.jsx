@@ -14,6 +14,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
+import { useToast } from '@/context/ToastContext';
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState('workspace');
@@ -24,13 +25,14 @@ function HomePage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigateWithLoading();
   const location = useLocation();
+  const { showError, showSuccess } = useToast();
 
   // Prefetch cả workspace VÀ groups ngay khi load trang → chuyển tab instant (<1s)
   const {
     workspaces,
     loading,
     pagination,
-    // createWorkspace,
+    createWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,
@@ -55,9 +57,18 @@ function HomePage() {
     i18n.changeLanguage(newLang);
   };
 
-  // Nhảy thẳng vào trang workspace mới (hiển thị form trên trang đó)
-  const handleOpenCreate = () => {
-    navigate('/workspace/new');
+  // Nhảy thẳng vào trang workspace mới (bỏ qua dialog, tạo trực tiếp)
+  const handleOpenCreate = async () => {
+    try {
+      showSuccess(t('home.workspace.creating') || 'Đang tạo workspace...');
+      const newWorkspace = await createWorkspace({ title: null, description: null });
+      if (newWorkspace?.workspaceId) {
+        showSuccess(t('home.workspace.createSuccess') || 'Tạo workspace thành công!');
+        navigate(`/workspace/${newWorkspace.workspaceId}`, { state: { openProfileConfig: true } });
+      }
+    } catch (err) {
+      showError(err?.message || t('home.workspace.createError') || 'Không thể tạo workspace');
+    }
   };
 
   // Nhảy thẳng vào trang group workspace mới

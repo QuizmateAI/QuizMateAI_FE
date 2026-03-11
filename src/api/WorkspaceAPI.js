@@ -41,3 +41,15 @@ export const getAllTopics = async (page = 0, size = 100) => {
   const response = await api.get(`/topic/all?page=${page}&size=${size}`);
   return response;
 };
+
+// Cấu hình Individual Workspace Profile
+export const configureIndividualWorkspaceProfile = async (workspaceId, data) => {
+  const response = await api.put(`/workspace-profile/individual/${workspaceId}/config`, data);
+  return response;
+};
+
+// Lấy Profile Cá nhân của Workspace
+export const getIndividualWorkspaceProfile = async (workspaceId) => {
+  const response = await api.get(`/workspace-profile/individual/${workspaceId}`);
+  return response;
+};
