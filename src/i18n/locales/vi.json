@@ -844,7 +844,14 @@
       "pdf": "PDF",
       "image": "Hình ảnh",
       "video": "Video",
-      "url": "Đường dẫn"
+      "url": "Đường dẫn",
+      "sourceGuide": "Hướng dẫn về nguồn",
+      "previewTitle": "Xem trước tài liệu",
+      "loadingContent": "Đang tải nội dung...",
+      "loadingSummary": "Đang tải tóm tắt...",
+      "noContent": "Không có nội dung để hiển thị.",
+      "noSummary": "Chưa có tóm tắt AI cho tài liệu này.",
+      "loadError": "Không thể tải nội dung."
     },
     "chat": {
       "title": "Khu vực học tập",
