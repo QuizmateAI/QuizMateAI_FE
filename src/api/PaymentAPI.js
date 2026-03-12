@@ -18,4 +18,9 @@ export const createVnPayPayment = (planId, groupId = null) => {
   return api.post(`/vnpay/create/${planId}`, null, { params });
 };
 
+// Credit wallet payments
+export const createMomoCreditPayment = (creditPackageId, workspaceId = null) => {
+  const params = workspaceId ? { workspaceId } : {};
+  return api.post(`/momo/create-credit/${creditPackageId}`, null, { params });
+};
 

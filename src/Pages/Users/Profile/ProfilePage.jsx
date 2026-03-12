@@ -9,6 +9,7 @@ import {
 import { useDarkMode } from "@/hooks/useDarkMode";
 import LoadingSpinner from "@/Components/ui/LoadingSpinner";
 import { getUserProfile, updateUserProfile, changePassword, uploadAvatar } from "@/api/ProfileAPI";
+import { getMyWallet } from "@/api/ManagementSystemAPI";
 import { logout } from "@/api/Authentication";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -168,6 +169,10 @@ function ProfilePage() {
   // State cho thông báo
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  // Ví Credit
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [loadingWallet, setLoadingWallet] = useState(true);
+
   // Mock data cho analytics
   const skills = [
     { name: "Logic", value: 80 },
@@ -186,6 +191,7 @@ function ProfilePage() {
   // Load profile data khi component mount
   useEffect(() => {
     loadProfile();
+    loadWallet();
   }, []);
 
   // Xử lý chuyển tab từ trang khác (ví dụ: từ HomePage settings)
@@ -224,6 +230,19 @@ function ProfilePage() {
       showMessage("error", error.message || t("profile.loadError"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadWallet = async () => {
+    try {
+      setLoadingWallet(true);
+      const res = await getMyWallet();
+      const data = res?.data ?? res;
+      setWalletBalance(typeof data?.balance === "number" ? data.balance : 0);
+    } catch {
+      setWalletBalance(0);
+    } finally {
+      setLoadingWallet(false);
     }
   };
 
@@ -522,6 +541,67 @@ function ProfilePage() {
                     </div>
                     <div className={`h-2 w-full overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
                       <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: "82%" }} />
+                    </div>
+                  </div>
+
+                  {/* Credit Wallet summary */}
+                  <div className="w-full px-4 mb-4">
+                    <div
+                      className={`flex items-center justify-between rounded-2xl px-4 py-3 border ${
+                        isDarkMode
+                          ? "bg-slate-950/60 border-slate-800"
+                          : "bg-slate-50 border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`inline-flex items-center justify-center rounded-2xl ring-1 ring-inset ${
+                            isDarkMode
+                              ? "bg-blue-500/10 ring-blue-400/25"
+                              : "bg-blue-600/10 ring-blue-600/20"
+                          }`}
+                        >
+                          <img
+                            src={QuizmateCreditIcon}
+                            alt="Quizmate Credit"
+                            className="w-8 h-8 rounded-2xl"
+                          />
+                        </span>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide">
+                            {t("common.wallet")}
+                          </p>
+                          <p
+                            className={`text-xs ${
+                              isDarkMode ? "text-slate-400" : "text-slate-500"
+                            }`}
+                          >
+                            {t("wallet.balance")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-extrabold tabular-nums">
+                          {loadingWallet
+                            ? "..."
+                            : new Intl.NumberFormat(
+                                currentLang === "vi" ? "vi-VN" : "en-US"
+                              ).format(walletBalance ?? 0)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate("/wallet", { state: { from: "/profile" } })
+                          }
+                          className={`mt-1 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full cursor-pointer ${
+                            isDarkMode
+                              ? "bg-blue-600/20 text-blue-200"
+                              : "bg-blue-50 text-blue-700"
+                          }`}
+                        >
+                          {t("wallet.buyTitle")}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
