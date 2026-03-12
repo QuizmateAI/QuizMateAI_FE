@@ -72,7 +72,7 @@ function SuperAdminLayoutContent() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-0">
+        <main className="flex-1 overflow-y-auto p-0 pt-4 min-h-0">
           <Outlet />
         </main>
       </div>

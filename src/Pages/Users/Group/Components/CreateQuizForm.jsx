@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -438,8 +438,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
         // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → session → questions → answers)
         const result = await createFullQuiz({
-          contextType: selectedContextType,
-          contextId: Number(selectedContextId),
+          workspaceId: selectedContextType === 'WORKSPACE' ? selectedContextId : null,
+          roadmapId: selectedContextType === 'ROADMAP' ? selectedContextId : null,
+          phaseId: selectedContextType === 'PHASE' ? selectedContextId : null,
+          knowledgeId: selectedContextType === 'KNOWLEDGE' ? selectedContextId : null,
           title: name,
           duration,
           quizIntent,

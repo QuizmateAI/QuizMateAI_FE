@@ -439,8 +439,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
         // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → section → questions → answers)
         const result = await createFullQuiz({
-          contextType: selectedContextType,
-          contextId: Number(selectedContextId),
+          workspaceId: null,
+          roadmapId: null,
+          phaseId: null,
+          knowledgeId: Number(selectedContextId),
           title: name,
           duration,
           quizIntent,

@@ -183,8 +183,10 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
 
       // Bước 1: Cập nhật thông tin quiz chung — contextType luôn là ROADMAP
       await updateQuiz(quiz.quizId, {
-        contextType: "ROADMAP",
-        contextId: Number(quiz.roadmapId || contextId),
+        workspaceId: contextType === 'WORKSPACE' ? Number(contextId) : null,
+        roadmapId: Number(quiz.roadmapId || contextId),
+        phaseId: null,
+        knowledgeId: null,
         title: name,
         duration,
         quizIntent: "REVIEW",

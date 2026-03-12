@@ -21,8 +21,8 @@ import {
   updatePhase,
   updateKnowledge,
 } from "@/api/RoadmapAPI";
-import { getQuizzesByContext, deleteQuiz as deleteQuizAPI } from "@/api/QuizAPI";
-import { getFlashcardsByContext, deleteFlashcardSet } from "@/api/FlashcardAPI";
+import { getQuizzesByScope, deleteQuiz as deleteQuizAPI } from "@/api/QuizAPI";
+import { getFlashcardsByScope, deleteFlashcardSet } from "@/api/FlashcardAPI";
 
 /* ==================== Helpers ==================== */
 function formatShortDate(dateStr) {
@@ -144,7 +144,7 @@ function RoadmapListView({
   /* ==================== FETCH đặc biệt (MockTest, PostLearning, Quiz, Flashcard) — API thật ==================== */
   const fetchMockTests = useCallback(async (roadmapId) => {
     try {
-      const res = await getQuizzesByContext("ROADMAP", roadmapId);
+      const res = await getQuizzesByScope("ROADMAP", roadmapId);
       const data = res.data || [];
       setMockTests(data.map((q) => ({
         id: q.quizId, name: q.title, status: q.status, createdAt: q.createdAt,
@@ -155,7 +155,7 @@ function RoadmapListView({
 
   const fetchPostLearnings = useCallback(async (phaseId) => {
     try {
-      const res = await getQuizzesByContext("PHASE", phaseId);
+      const res = await getQuizzesByScope("PHASE", phaseId);
       const data = res.data || [];
       setPostLearnings(data.map((q) => ({
         id: q.quizId, name: q.title, status: q.status, createdAt: q.createdAt,
@@ -167,8 +167,8 @@ function RoadmapListView({
   const fetchQuizzesAndFlashcards = useCallback(async (knowledgeId) => {
     try {
       const [qRes, fRes] = await Promise.all([
-        getQuizzesByContext("KNOWLEDGE", knowledgeId),
-        getFlashcardsByContext("KNOWLEDGE", knowledgeId),
+        getQuizzesByScope("KNOWLEDGE", knowledgeId),
+        getFlashcardsByScope("KNOWLEDGE", knowledgeId),
       ]);
       const qData = qRes.data || [];
       const fData = fRes.data || [];
