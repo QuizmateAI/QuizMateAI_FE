@@ -844,7 +844,14 @@
       "pdf": "PDF",
       "image": "Image",
       "video": "Video",
-      "url": "URL"
+      "url": "URL",
+      "sourceGuide": "Source guide",
+      "previewTitle": "Document preview",
+      "loadingContent": "Loading content...",
+      "loadingSummary": "Loading summary...",
+      "noContent": "No content to display.",
+      "noSummary": "No AI summary available for this document yet.",
+      "loadError": "Failed to load content."
     },
     "chat": {
       "title": "Learning Area",

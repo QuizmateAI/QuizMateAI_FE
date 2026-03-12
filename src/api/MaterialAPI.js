@@ -12,13 +12,31 @@ export const deleteMaterial = async (materialId) => {
   return response;
 };
 
+// Lấy extracted text từ materialId
+export const getExtractedText = async (materialId) => {
+  const response = await api.get(`/materials/${materialId}/extracted-text`);
+  return response;
+};
+
+// Lấy extracted summary từ materialId
+export const getExtractedSummary = async (materialId) => {
+  const response = await api.get(`/materials/${materialId}/extracted-summary`);
+  return response;
+};
+
 // Upload tài liệu
 export const uploadMaterial = async (file, workspaceId) => {
+  if (!workspaceId) {
+    throw new Error('workspaceID is required to upload material');
+  }
+
   const formData = new FormData();
   formData.append('file', file);
   
-  // Backend expects request param name: workspaceID
-  const response = await api.post(`/materials/upload?workspaceID=${workspaceId}`, formData, {
+  const response = await api.post('/materials/upload', formData, {
+    params: {
+      workspaceID: Number(workspaceId),
+    },
     headers: {
       'Content-Type': undefined, // Để Axios tự set multipart boundary
     },

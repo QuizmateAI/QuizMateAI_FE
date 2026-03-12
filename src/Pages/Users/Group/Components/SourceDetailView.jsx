@@ -68,7 +68,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack }) {
           </div>
 
           {/* Placeholder nội dung — TODO: Tích hợp API hiển thị nội dung thật */}
-          <div className={`rounded-xl border p-10 text-center ${isDarkMode ? "border-slate-800 bg-slate-800/20" : "border-gray-200 bg-white"}`}>
+          <div className={`rounded-xl p-10 text-center ${isDarkMode ? "border-slate-800 bg-slate-800/20" : "border-gray-200 bg-white"}`}>
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
               {getDetailIcon(source.type, "w-8 h-8")}
             </div>
@@ -81,6 +81,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack }) {
           </div>
         </div>
       </div>
+      
     </div>
   );
 }
