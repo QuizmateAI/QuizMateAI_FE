@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -94,6 +94,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [tab, setTab] = useState("manual");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [questionValidationErrors, setQuestionValidationErrors] = useState({});
 
   // Quiz luôn ở context KNOWLEDGE — không cần chọn
   const selectedContextType = FIXED_CONTEXT_TYPE;
@@ -368,6 +369,42 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     document.getElementById(`quiz-q-${idx}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  const isQuestionMissingCorrectAnswer = (q) => {
+    if (q.type === "multipleChoice" || q.type === "multipleSelect") {
+      return !(q.answers || []).some((ans) => ans.correct);
+    }
+    if (q.type === "trueFalse") {
+      return q.correctAnswer !== "true" && q.correctAnswer !== "false";
+    }
+    if (q.type === "fillBlank" || q.type === "shortAnswer") {
+      return !String(q.correctAnswer || "").trim();
+    }
+    return false;
+  };
+
+  const buildCorrectAnswerErrorMap = (quizQuestions) => {
+    return quizQuestions.reduce((acc, q, idx) => {
+      if (isQuestionMissingCorrectAnswer(q)) {
+        acc[idx] = t("workspace.quiz.validation.correctAnswerRequiredInline");
+      }
+      return acc;
+    }, {});
+  };
+
+  useEffect(() => {
+    if (!Object.keys(questionValidationErrors).length) return;
+    setQuestionValidationErrors(buildCorrectAnswerErrorMap(questions));
+  }, [questions]);
+
+  const findQuestionMissingCorrectAnswer = (quizQuestions) => {
+    const errorMap = buildCorrectAnswerErrorMap(quizQuestions);
+    const firstInvalid = Object.keys(errorMap)[0];
+    return {
+      errorMap,
+      firstInvalidIndex: firstInvalid === undefined ? -1 : Number(firstInvalid),
+    };
+  };
+
   // Xử lý submit — gọi API tạo quiz hoàn chỉnh (multi-step)
   const handleSubmit = async (quizStatus = "ACTIVE") => {
     setSubmitting(true);
@@ -388,10 +425,23 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           return;
         }
 
+        const { errorMap, firstInvalidIndex } = findQuestionMissingCorrectAnswer(questions);
+        if (firstInvalidIndex !== -1) {
+          setQuestionValidationErrors(errorMap);
+          setError(t("workspace.quiz.validation.correctAnswerRequired", { index: firstInvalidIndex + 1 }));
+          scrollToQuestion(firstInvalidIndex);
+          setSubmitting(false);
+          return;
+        }
+
+        setQuestionValidationErrors({});
+
         // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → session → questions → answers)
         const result = await createFullQuiz({
-          contextType: selectedContextType,
-          contextId: Number(selectedContextId),
+          workspaceId: selectedContextType === 'WORKSPACE' ? selectedContextId : null,
+          roadmapId: selectedContextType === 'ROADMAP' ? selectedContextId : null,
+          phaseId: selectedContextType === 'PHASE' ? selectedContextId : null,
+          knowledgeId: selectedContextType === 'KNOWLEDGE' ? selectedContextId : null,
           title: name,
           duration,
           quizIntent,
@@ -759,8 +809,12 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                 </div>
               )}
 
-              {questions.map((q, qIdx) => (
-                <div key={qIdx} id={`quiz-q-${qIdx}`} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
+              {questions.map((q, qIdx) => {
+                const questionError = questionValidationErrors[qIdx];
+                return (
+                <div key={qIdx} id={`quiz-q-${qIdx}`} className={`rounded-lg border p-3 space-y-2 ${questionError
+                  ? (isDarkMode ? "border-red-600/70 bg-red-950/10" : "border-red-300 bg-red-50/60")
+                  : (isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50")}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>#{qIdx + 1}</span>
@@ -880,8 +934,14 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
                         onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)} />
                     </div>
                   )}
+
+                  {questionError && (
+                    <div className={`text-xs px-2 py-1 rounded-md ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-100 text-red-700"}`}>
+                      {questionError}
+                    </div>
+                  )}
                 </div>
-              ))}
+              );})}
               <Button variant="outline" onClick={addQuestion} className={`w-full ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
                 <Plus className="w-4 h-4 mr-2" /> {t("workspace.quiz.addQuestion")}
               </Button>

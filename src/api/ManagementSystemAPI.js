@@ -108,39 +108,39 @@ export const getGroupLogs = async (groupId) => {
   return response;
 };
 
-// Plan APIs — maps to PlanController (/api/plan/...)
+// Plan APIs — maps to PlanCatalogController (/api/plan-catalog/...)
 export const getAllPlans = async () => {
-  const response = await api.get('/plan/all');
+  const response = await api.get('/plan-catalog/all');
   return response;
 };
 
 export const getPlanById = async (planId) => {
-  const response = await api.get(`/plan/${planId}`);
+  const response = await api.get(`/plan-catalog/${planId}`);
   return response;
 };
 
 export const createPlan = async (data) => {
-  const response = await api.post('/plan/create', data);
+  const response = await api.post('/plan-catalog/create', data);
   return response;
 };
 
 export const updatePlan = async (planId, data) => {
-  const response = await api.put(`/plan/${planId}`, data);
+  const response = await api.put(`/plan-catalog/${planId}`, data);
   return response;
 };
 
 export const deletePlan = async (planId) => {
-  const response = await api.delete(`/plan/${planId}`);
+  const response = await api.delete(`/plan-catalog/${planId}`);
   return response;
 };
 
 export const togglePlanStatus = async (planId) => {
-  const response = await api.patch(`/plan/${planId}/toggle-status`);
+  const response = await api.patch(`/plan-catalog/${planId}/toggle-status`);
   return response;
 };
 
 export const getPlansByStatus = async (status) => {
-  const response = await api.get(`/plan/status/${status}`);
+  const response = await api.get(`/plan-catalog/status/${status}`);
   return response;
 };
 

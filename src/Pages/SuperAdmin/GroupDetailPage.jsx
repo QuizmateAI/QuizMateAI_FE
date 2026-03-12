@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft, UsersRound, RefreshCw, LayoutDashboard, Users, ListChecks,
+  ArrowLeft, UsersRound, LayoutDashboard, Users, ListChecks,
   Activity, CreditCard, User,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -93,19 +93,26 @@ function GroupDetailPage() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    setError('');
-    fetchGroup().finally(() => setLoading(false));
+    const timer = setTimeout(() => {
+      setLoading(true);
+      setError('');
+      fetchGroup().finally(() => setLoading(false));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [groupId]);
 
   useEffect(() => {
     if (!group) return;
-    if (activeTab === 'overview') {
-      fetchSubscription();
-      fetchRoadmaps();
-    } else if (activeTab === 'content') fetchRoadmaps();
-    else if (activeTab === 'logs') fetchLogs();
-    else if (activeTab === 'subscription') fetchSubscription();
+    const timer = setTimeout(() => {
+      if (activeTab === 'overview') {
+        fetchSubscription();
+        fetchRoadmaps();
+      } else if (activeTab === 'content') fetchRoadmaps();
+      else if (activeTab === 'logs') fetchLogs();
+      else if (activeTab === 'subscription') fetchSubscription();
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [activeTab, group]);
 
   if (loading || !group) {

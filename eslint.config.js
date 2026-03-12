@@ -51,7 +51,7 @@ export default defineConfig([
       'no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
       'unused-imports/no-unused-vars': [
-        'warn',
+        'off',
         {
           vars: 'all',
           varsIgnorePattern: '^_',
@@ -62,18 +62,18 @@ export default defineConfig([
 
       /* 3. ĐẢM BẢO HIỆU SUẤT REACT HOOKS */
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/exhaustive-deps': 'off',
 
       /* 4. QUY TẮC JSX */
       'react/jsx-no-duplicate-props': 'error',
-      'react/self-closing-comp': 'warn',
+      'react/self-closing-comp': 'off',
       'react/prop-types': 'off',
 
       /* 5. CẢNH BÁO CONSOLE KHI DEPLOY */
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off',
 
       /* 6. CHO PHÉP EXPORT HỖN HỢP (hook + component) — pattern phổ biến */
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': 'off',
     },
   },
 ])

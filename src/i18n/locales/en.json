@@ -11,7 +11,7 @@
     "adminAccounts": "Admin Accounts",
     "rbac": "RBAC System",
     "subscriptions": "Subscriptions",
-    "topics": "Topics & Fields"
+    "systemConfig": "Learning Config"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -93,6 +93,146 @@
       "fieldsCount": "Fields"
     }
   },
+  "systemConfig": {
+    "badge": "SYSTEM CONFIG",
+    "title": "Learning Configuration",
+    "removedTitle": "Learning configuration has been simplified",
+    "removedDesc": "Domain, Knowledge, Scheme, and Level have been removed. Users configure directly via document description, level, and goals in Workspace.",
+    "description": "Create and maintain domains, knowledge, schemes, and levels used across the platform.",
+    "searchPlaceholder": "Search by title, description, or status...",
+    "readDeniedTitle": "System configuration access is blocked",
+    "readDeniedDescription": "Your account does not currently have permission to view learning configuration.",
+    "writeDenied": "Read-only mode",
+    "entities": {
+      "domain": "Domain",
+      "knowledge": "Knowledge",
+      "scheme": "Scheme",
+      "level": "Level"
+    },
+    "panels": {
+      "domain": "Manage the highest-level learning categories.",
+      "knowledge": "Knowledge items belong to a domain and define the base level system.",
+      "scheme": "Schemes belong to a knowledge item and can refine its evaluation model.",
+      "level": "Levels belong to a scheme or directly to a knowledge item."
+    },
+    "filters": {
+      "domain": "Domain",
+      "knowledge": "Knowledge",
+      "scheme": "Scheme"
+    },
+    "context": {
+      "knowledge": "Showing knowledge for {{parent}}.",
+      "scheme": "Showing schemes for {{parent}}.",
+      "levelScheme": "Showing levels for scheme {{parent}}.",
+      "levelKnowledge": "Showing levels for knowledge {{parent}}."
+    },
+    "empty": {
+      "domain": "No domains found.",
+      "knowledge": "No knowledge found.",
+      "scheme": "No schemes found.",
+      "level": "No levels found."
+    },
+    "viewLevels": "View {{count}} levels",
+    "viewLevelsPopupTitle": "Level list",
+    "fields": {
+      "domain": "Domain",
+      "knowledge": "Knowledge",
+      "scheme": "Scheme",
+      "schemeOptional": "Scheme (optional)",
+      "parentType": "Parent type",
+      "title": "Title",
+      "status": "Status",
+      "description": "Description",
+      "levelSystemType": "Level system type",
+      "levelValue": "Level value",
+      "levelValues": "Score values",
+      "levelGroup": "Level group",
+      "sortOrder": "Sort order"
+    },
+    "placeholders": {
+      "selectDomain": "Select a domain",
+      "selectKnowledge": "Select knowledge",
+      "selectScheme": "Select a scheme",
+      "description": "Add extra context or usage notes..."
+    },
+    "parentTypes": {
+      "scheme": "Scheme",
+      "knowledge": "Knowledge"
+    },
+    "levelSystems": {
+      "SCORE_BASED": "Score based",
+      "THREE_LEVEL": "Three level"
+    },
+    "levelHints": {
+      "selectParent": "Choose a knowledge first to see which level model applies.",
+      "parentType": "This parent uses the {{type}} model.",
+      "scoreBased": "SCORE_BASED: Enter each score (e.g. 5.0) and press Enter to add to the list.",
+      "threeLevel": "THREE_LEVEL: Levels are auto-created (Beginner, Intermediate, Advanced). Edit if needed."
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "validation": {
+      "required": "This field is required."
+    },
+    "messages": {
+      "fetchError": "Failed to load system configuration.",
+      "created": "{{entity}} created successfully.",
+      "updated": "{{entity}} updated successfully.",
+      "deleted": "{{entity}} deleted successfully.",
+      "saveError": "Failed to save {{entity}}.",
+      "deleteError": "Failed to delete {{entity}}."
+    },
+    "wizard": {
+      "title": "Create step by step",
+      "action": "Create",
+      "description": "Follow Domain → Knowledge → Scheme → Level for logical flow.",
+      "step1": "Domain",
+      "step2": "Knowledge",
+      "step3": "Scheme",
+      "step4": "Level",
+      "step1Desc": "Create a new domain or select an existing one.",
+      "step2Desc": "Select domain and create knowledge. Level system type chosen here applies to scheme and level.",
+      "step3Desc": "Scheme is optional. LevelSystemType is inherited from Knowledge and cannot be changed.",
+      "step4Desc": "SCORE_BASED: enter scores. THREE_LEVEL: 3 default levels or custom 4-5 levels.",
+      "createNewDomain": "Create new domain",
+      "domainTitlePlaceholder": "Language, Science...",
+      "orSelectExisting": "Or select existing domain",
+      "step1CreateOrSelect": "Create a new domain or select an existing one.",
+      "levelSystemTypeHint": "Scheme will inherit this type. To change, go back to step 2.",
+      "knowledgeCreateNew": "Create new knowledge",
+      "knowledgeUpdateExisting": "Update existing knowledge",
+      "selectKnowledgeToUpdate": "Select knowledge to update",
+      "schemeCreateNew": "Create new scheme",
+      "schemeUpdateExisting": "Update existing scheme",
+      "selectSchemeToUpdate": "Select scheme to update",
+      "schemeLevelTypeInherited": "LevelSystemType inherited from Knowledge",
+      "skipScheme": "Skip Scheme (Level belongs directly to Knowledge)",
+      "threeLevelDefault": "3 default levels (Beginner, Intermediate, Advanced)",
+      "threeLevelCustom": "Custom 4 or 5 levels",
+      "customLevelCount": "Number of levels",
+      "customLevelNamesRequired": "Please enter names for all levels.",
+      "defaultLevelsPreview": "3 default levels will be created:",
+      "scoreListHint": "Enter each score (e.g. 5.0) and press Enter to add to the list.",
+      "scoreInputPlaceholder": "5.0 then Enter, 5.5 then Enter...",
+      "finish": "Finish"
+    },
+    "dialogs": {
+      "createTitle": "Create {{entity}}",
+      "editTitle": "Edit {{entity}}",
+      "createDescription": "Fill in the required fields to add a new item.",
+      "editDescription": "Update the item details and save your changes.",
+      "createAction": "Create",
+      "updateAction": "Save changes",
+      "saving": "Saving...",
+      "deleteTitle": "Delete {{entity}}",
+      "deleteDescription": "This will permanently remove {{entity}} {{name}}.",
+      "deleteDescriptionDomainCascade": "Deleting Domain {{name}} will permanently remove the Domain and all Knowledge, Scheme, and Level inside it. This cannot be undone. Are you sure?",
+      "deleteAction": "Delete",
+      "deleting": "Deleting..."
+    }
+  },
   "header": {
     "systemTitle": "QuizMate AI System",
     "version": "Version 2026.1.0"
@@ -104,9 +244,73 @@
     "light": "Light",
     "dark": "Dark",
     "refresh": "Refresh",
+    "back": "Back",
+    "next": "Next",
     "subscription": "Subscription Plans",
+    "plan": "Plan",
     "optional": "optional",
+    "wallet": "Credit Wallet",
     "cancel": "Close"
+  },
+  "plan": {
+    "title": "Your Plan",
+    "subtitle": "Plans can be purchased permanently. AI features consume Credits from your wallet.",
+    "heroBadge": "Pick a plan and start",
+    "backToHome": "Back to Home",
+    "back": "Back",
+    "types": { "individual": "Individual", "group": "Group" },
+    "badges": {
+      "permanent": "Permanent purchase",
+      "credits": "Credit-based AI usage",
+      "transparent": "Clear & transparent"
+    },
+    "creditModel": {
+      "title": "Credit model for AI",
+      "desc": "Own your plan permanently. Each AI action consumes Credits. When you run out, just top up to continue.",
+      "cta": "Open Credit Wallet"
+    },
+    "noPlans": "No plans available for this category.",
+    "loadError": "Unable to load plans. Please try again.",
+    "mostPopular": "MOST POPULAR",
+    "durationDays": "{{count}} days",
+    "durationForever": "Forever",
+    "durationForeverShort": "Forever",
+    "upgrade": "Choose plan",
+    "notes": {
+      "permanentTitle": "Plans can be permanent",
+      "permanentDesc": "Plans are not necessarily monthly. Some plans can be sold as permanent depending on system configuration.",
+      "creditsTitle": "AI is credit-based",
+      "creditsDesc": "AI features (quiz/flashcards/mock tests/companion...) consume Credits based on usage.",
+      "refundTitle": "Secure checkout",
+      "refundDesc": "Payments are secured. You can review your Credit purchase history in the wallet."
+    }
+  },
+  "wallet": {
+    "title": "Quizmate Credits",
+    "subtitle": "Check balance, buy more Credits, and view your transaction history.",
+    "badge": "WALLET",
+    "back": "Back",
+    "balance": "Current balance",
+    "creditsUnit": "Credits",
+    "hint": "Credits are used for AI-powered features in QuizMate.",
+    "buyTitle": "Buy more Credits",
+    "buySubtitle": "Pick a package to keep using AI features.",
+    "bonus": "bonus",
+    "buyNow": "Buy now",
+    "packageHint": "Instant top-up — ready to use",
+    "historyTitle": "Transaction history",
+    "historySubtitle": "Recent top-ups and credit usage.",
+    "noHistory": "No transactions yet.",
+    "toastAdded": "{{amount}} Credits added to wallet (UI demo).",
+    "types": { "TOPUP": "Top-up", "USAGE": "Usage" },
+    "status": { "SUCCESS": "Success", "PENDING": "Pending", "FAILED": "Failed" },
+    "table": {
+      "id": "ID",
+      "time": "Time",
+      "type": "Type",
+      "amount": "Amount",
+      "status": "Status"
+    }
   },
   "rbac": {
     "title": "RBAC System",
@@ -521,6 +725,8 @@
       "titleRequired": "Please enter a workspace name.",
       "topicRequired": "Please select a topic.",
       "subjectRequired": "Please select a subject.",
+      "untitledTitle": "Untitled workspace",
+      "noDescription": "No description",
       "noWorkspaces": "No workspaces yet",
       "noWorkspacesDesc": "Create your first workspace to get started!",
       "status": "Status",
@@ -552,6 +758,77 @@
       "groupSubtitle": "Group Workspace",
       "createWorkspace": "Create new workspace",
       "invite": "Invite"
+    },
+    "settingsMenu": {
+      "workspaceProfile": "Workspace profile"
+    },
+    "prelearning": {
+      "initInfo": "Pre-learning assessment is being created. Please wait for the completion notification!",
+      "assessmentTitle": "Pre-learning Competency Assessment",
+      "sessionName": "Part 1: Competency Assessment",
+      "sessionDesc": "Evaluate basic skills based on current objectives",
+      "createError": "Unable to create the competency assessment right now. Please try again later.",
+      "uploadBlockedError": "Please complete the Pre-learning assessment before uploading new documents."
+    },
+    "confirmDeleteFlashcard": "Are you sure you want to delete this flashcard set?",
+    "profileConfig": {
+      "title": "Workspace profile setup",
+      "updated": "Updated",
+      "readOnlyDesc": "Summary of current advanced configuration for this learning workspace.",
+      "editDesc": "Configure document description, level, goals and strengths/weaknesses so the system can personalize your learning.",
+      "loadingConfig": "Loading configuration data...",
+      "aiUpgradeInfo": "The AI system is being upgraded to create competency assessments (Pre-learning). Please try again later!",
+      "modeSystem": "System",
+      "modeCustom": "Custom",
+      "domainLabel": "Learning domain",
+      "domainPlaceholder": "Select domain...",
+      "programLabel": "Study program",
+      "programPlaceholder": "Select program...",
+      "knowledgeLabel": "Knowledge",
+      "knowledgePlaceholder": "Select knowledge...",
+      "schemeLabel": "Assessment framework (Scheme)",
+      "schemePlaceholder": "Select scheme...",
+      "customSchemeNameLabel": "Pathway name",
+      "customSchemeNamePlaceholder": "E.g.: IELTS 7.5 preparation...",
+      "customSchemeDescLabel": "Detailed description",
+      "customSchemeDescPlaceholder": "Describe your requirements, weaknesses/strengths so AI can create a suitable pathway...",
+      "documentDescriptionLabel": "Document description",
+      "documentDescriptionPlaceholder": "Describe your learning materials and topics...",
+      "currentLevelLabel": "Current level",
+      "currentLevelPlaceholder": "E.g.: B1 level, IELTS 5.0, Beginner...",
+      "aiAssessCheckbox": "Instant AI competency assessment",
+      "aiAssessCheckboxDesc": "Take a test to determine your level",
+      "customCurrentLevelPlaceholder": "E.g.: IELTS 5.0...",
+      "targetLevelLabel": "Target level",
+      "optional": "(Optional)",
+      "targetLevelPlaceholder": "Not specified",
+      "customTargetLevelPlaceholder": "E.g.: Proficient, IELTS 7.5...",
+      "strongAreasLabel": "Strengths",
+      "strongAreasPlaceholder": "E.g.: Communication...",
+      "weakAreasLabel": "Weaknesses",
+      "weakAreasPlaceholder": "E.g.: Grammar...",
+      "languageLabel": "Language",
+      "langVi": "Vietnamese",
+      "langEn": "English",
+      "learningGoalLabel": "Personal goal",
+      "learningGoalPlaceholder": "E.g.: Score high on the upcoming exam, master English grammar...",
+      "closeBtn": "Close",
+      "cancelBtn": "Cancel",
+      "saving": "Saving...",
+      "submitBtn": "Complete setup",
+      "errDomain": "Please select a learning domain",
+      "errProgram": "Please select a study program",
+      "errKnowledge": "Please select knowledge",
+      "errScheme": "Please select a scheme",
+      "errCurrentLevel": "Please select your current level",
+      "errTargetLevelHigher": "Target level must be higher than current level",
+      "errCustomSchemeName": "Please enter a custom pathway name",
+      "errCustomSchemeDesc": "Please enter a custom pathway description",
+      "errCustomCurrentLevel": "Please enter your current level",
+      "errLearningGoal": "Please enter your learning goal",
+      "targetExamDateLabel": "Target exam date",
+      "showMore": "More options",
+      "showLess": "Show less"
     },
     "sources": {
       "title": "Sources",
@@ -732,6 +1009,9 @@
       },
       "validation": {
         "nameRequired": "Please enter a quiz name.",
+        "contextRequired": "Please choose where to create the quiz.",
+        "correctAnswerRequired": "Question {{index}} has no correct answer selected.",
+        "correctAnswerRequiredInline": "No correct answer selected for this question.",
         "createFailed": "Failed to create quiz. Please try again.",
         "postLearningLimit": "This phase already has a Post-learning quiz. Only one is allowed per phase."
       },
@@ -1105,7 +1385,8 @@
     "status": "Status",
     "endDate": "End Date",
     "price": "Price",
-    "noDetail": "Cannot load detail."
+    "noDetail": "Cannot load detail.",
+    "loadError": "Unable to load user information"
   },
   "groupDetail": {
     "description": "Description",
@@ -1229,6 +1510,7 @@
       "noPlans": "No plans available for this category.",
       "loadError": "Unable to load plans. Please try again.",
       "durationDays": "{{count}} days",
+      "durationForever": "Forever",
       "guaranteeTitle": "30-Day Money-Back Guarantee",
       "guaranteeDesc": "Try risk-free. If you're not satisfied, get a full refund within 30 days.",
       "plans": {
@@ -1253,6 +1535,7 @@
   },
   "error": {
     "unknown": "An error occurred. Please try again.",
+    "internalServer": "The system is busy or unavailable. Please try again later.",
     "userNotExisted": "User does not exist.",
     "wrongPass": "Incorrect password.",
     "userExisted": "Username already exists.",

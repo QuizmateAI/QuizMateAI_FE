@@ -14,13 +14,17 @@ export function NavigationLoadingProvider({ children }) {
     setIsNavigating(true);
   }, []);
 
-  // Khi pathname thay đổi → trang mới đã render → tắt loading
+  // Khi location thay đổi (pathname hoặc key) → trang mới đã render → tắt loading
+  // Dùng location.key vì navigate cùng URL (replace state) không đổi pathname nhưng đổi key
   useEffect(() => {
     if (pendingRef.current) {
-      pendingRef.current = false;
-      setIsNavigating(false);
+      const timer = setTimeout(() => {
+        pendingRef.current = false;
+        setIsNavigating(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.key]);
 
   return (
     <NavigationLoadingContext.Provider value={{ startNavigation }}>

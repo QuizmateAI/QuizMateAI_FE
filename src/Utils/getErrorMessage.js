@@ -1,4 +1,4 @@
-import ERROR_CODES from '@/constants/errorCodes';
+import ERROR_CODES from '@/Constants/errorCodes';
 
 /**
  * Lấy i18n key tương ứng với error code từ BE.
@@ -24,11 +24,29 @@ export function getErrorInfo(error) {
  */
 export function getErrorMessage(t, error) {
   const { key, fallbackMessage } = getErrorInfo(error);
+  const rawMessage = String(fallbackMessage || '').trim();
+  const lowerMessage = rawMessage.toLowerCase();
+  const statusCode = Number(error?.statusCode || error?.data?.statusCode || error?.status || error?.data?.status);
 
   if (key) {
     const translated = t(key);
     // Nếu i18n trả về chính key (chưa có bản dịch) → dùng message gốc
     if (translated !== key) return translated;
+  }
+
+  // Chuẩn hóa các lỗi kỹ thuật phổ biến từ BE/HTTP về message thân thiện.
+  if (!Number.isNaN(statusCode) && statusCode >= 500) {
+    return t('error.internalServer');
+  }
+
+  if (
+    lowerMessage === 'internal server error' ||
+    lowerMessage.includes('internal server error') ||
+    lowerMessage.includes('failed to fetch') ||
+    lowerMessage.includes('network error') ||
+    lowerMessage.includes('timeout')
+  ) {
+    return t('error.internalServer');
   }
 
   return fallbackMessage;

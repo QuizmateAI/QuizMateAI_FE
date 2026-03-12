@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, ClipboardList, ArrowLeft, RefreshCw, Save, Rocket, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { createFullQuiz, getQuizzesByContext } from "@/api/QuizAPI";
+import { createFullQuiz, getQuizzesByScope } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getRoadmapsByGroup } from "@/api/RoadmapAPI";
 
 // Danh sách dạng câu hỏi và độ khó
@@ -76,7 +76,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
     if (!roadmapId) return;
     setCheckingRoadmap(true);
     try {
-      const res = await getQuizzesByContext("ROADMAP", Number(roadmapId));
+      const res = await getQuizzesByScope("ROADMAP", Number(roadmapId));
       const existing = res.data || [];
       setRoadmapHasMockTest(existing.length > 0);
     } catch (e) {
@@ -110,7 +110,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
 
         // Kiểm tra giới hạn: mỗi roadmap chỉ được 1 mock test
         try {
-          const existingRes = await getQuizzesByContext("ROADMAP", Number(selectedRoadmapId));
+          const existingRes = await getQuizzesByScope("ROADMAP", Number(selectedRoadmapId));
           const existing = existingRes.data || [];
           if (existing.length > 0) {
             setError(t("workspace.mockTest.validation.mockTestLimit"));
@@ -122,8 +122,10 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
         }
 
         const result = await createFullQuiz({
-          contextType: "ROADMAP",
-          contextId: Number(selectedRoadmapId),
+          workspaceId: contextType === 'WORKSPACE' ? contextId : null,
+          roadmapId: Number(selectedRoadmapId),
+          phaseId: null,
+          knowledgeId: null,
           title: name,
           duration,
           quizIntent: "REVIEW",

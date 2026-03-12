@@ -18,6 +18,7 @@ import ListSpinner from '@/Components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTopic } from '@/hooks/useTopic';
 import { useToast } from '@/context/ToastContext';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 const PAGE_SIZE = 10;
 
@@ -25,6 +26,11 @@ function TopicManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
+  const getFriendlyError = (err, fallbackKey) => {
+    const mapped = getErrorMessage(t, err);
+    if (mapped && mapped !== 'error.unknown') return mapped;
+    return t(fallbackKey);
+  };
   const { topics, topicsLoading, fetchTopics, createTopic, createField } = useTopic();
   const [newTopicTitle, setNewTopicTitle] = useState('');
   const [newTopicCode, setNewTopicCode] = useState('');
@@ -135,7 +141,7 @@ function TopicManagement() {
       setNewTopicCode('');
       showSuccess(t('topicManagement.topicCreated'));
     } catch (err) {
-      const msg = err?.message || t('topicManagement.topicCreateError');
+      const msg = getFriendlyError(err, 'topicManagement.topicCreateError');
       setError(msg);
       showError(msg);
     } finally {
@@ -168,7 +174,7 @@ function TopicManagement() {
       setNewFieldCode('');
       showSuccess(t('topicManagement.fieldCreated'));
     } catch (err) {
-      const msg = err?.message || t('topicManagement.fieldCreateError');
+      const msg = getFriendlyError(err, 'topicManagement.fieldCreateError');
       setError(msg);
       showError(msg);
     } finally {
