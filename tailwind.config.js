@@ -1,3 +1,5 @@
+import tailwindcssAnimate from "tailwindcss-animate";
+
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ["class"],
@@ -59,7 +61,22 @@ export default {
   				'5': 'hsl(var(--chart-5))'
   			}
   		}
+      ,
+      keyframes: {
+        floaty: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+      },
+      animation: {
+        floaty: "floaty 7s ease-in-out infinite",
+        shimmer: "shimmer 2.5s ease-in-out infinite",
+      },
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 }

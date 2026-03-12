@@ -1,8 +1,11 @@
 import path from "path"
+import { fileURLToPath } from "url"
 import react from "@vitejs/plugin-react"
 import eslint from "vite-plugin-eslint"
 import { compression } from "vite-plugin-compression2"
-import { defineConfig } from "vite"
+import { defineConfig } from "vitest/config"
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [
@@ -27,6 +30,13 @@ export default defineConfig({
       exclude: [/\.(br)$/, /\.(gz)$/],
     }),
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    // Đảm bảo Vitest xử lý tốt các tệp JSX
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

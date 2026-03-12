@@ -25,12 +25,15 @@ import {
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAllUsers, updateUserStatus } from '@/api/ManagementSystemAPI';
 import AdminPagination from './components/AdminPagination';
+import { useToast } from '@/context/ToastContext';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 function UserManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const { showError, showSuccess } = useToast();
   const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState([]);
@@ -44,6 +47,11 @@ function UserManagement() {
   });
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const getFriendlyError = (err, fallbackText) => {
+    const mapped = getErrorMessage(t, err);
+    if (mapped && mapped !== 'error.unknown') return mapped;
+    return fallbackText;
+  };
 
   // Lấy danh sách người dùng từ API (có hỗ trợ phân trang)
   const fetchUsers = async (page = 0, size = 10) => {
@@ -70,7 +78,9 @@ function UserManagement() {
         setPagination({ page: 0, size: size, totalPages: 0, totalElements: 0 });
       }
     } catch (err) {
-      setError(err?.message || 'Không thể tải danh sách người dùng');
+      const msg = getFriendlyError(err, 'Không thể tải danh sách người dùng');
+      setError(msg);
+      showError(msg);
       console.error('Lỗi khi lấy danh sách users:', err);
       setUsers([]);
     } finally {
@@ -102,9 +112,14 @@ function UserManagement() {
         )
       );
     } catch (err) {
-      setError(err?.message || 'Không thể cập nhật trạng thái');
+      const msg = getFriendlyError(err, 'Không thể cập nhật trạng thái');
+      setError(msg);
+      showError(msg);
       console.error('Lỗi khi cập nhật status:', err);
+      return;
     }
+
+    showSuccess('Cập nhật trạng thái người dùng thành công');
   };
 
   // Lọc users theo search term

@@ -58,7 +58,7 @@ function DeleteWorkspaceDialog({ open, onOpenChange, workspace, onDelete, isDark
         {workspace && (
           <div className={`rounded-lg p-3 mt-2 ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-gray-50 border border-gray-200'}`}>
             <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {t('home.workspace.confirmDeleteName')}: <span className="text-red-500">{workspace.title}</span>
+              {t('home.workspace.confirmDeleteName')}: <span className="text-red-500">{workspace.displayTitle ?? workspace.title ?? workspace.name ?? t('home.workspace.untitledTitle')}</span>
             </p>
             {workspace.topic && (
               <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>

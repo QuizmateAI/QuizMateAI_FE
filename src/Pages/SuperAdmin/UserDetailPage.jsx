@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft, User, RefreshCw, LayoutDashboard, FolderKanban, UsersRound,
+  ArrowLeft, User, LayoutDashboard, FolderKanban, UsersRound,
   ListChecks, Activity, CreditCard, ChevronDown, ChevronRight, User as UserIcon,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -112,7 +112,7 @@ function UserDetailPage() {
       const res = await getUserById(userId);
       setUser(res?.data ?? res);
     } catch (err) {
-      setError(err?.message || 'Không thể tải thông tin user');
+      setError(err?.message || t('userDetail.loadError'));
     }
   };
 
@@ -185,29 +185,39 @@ function UserDetailPage() {
   };
 
   useEffect(() => {
-    setLoading(true);
-    setError('');
-    fetchUser().finally(() => setLoading(false));
+    const timer = setTimeout(() => {
+      setLoading(true);
+      setError('');
+      fetchUser().finally(() => setLoading(false));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [userId]);
 
   useEffect(() => {
     if (!user) return;
-    if (activeTab === 'overview') {
-      fetchWorkspaces();
-      fetchGroups();
-      fetchSubscription();
-    } else if (activeTab === 'workspaces') fetchWorkspaces();
-    else if (activeTab === 'groups') fetchGroups();
-    else if (activeTab === 'logs') fetchLogs();
-    else if (activeTab === 'subscription') fetchSubscription();
+    const timer = setTimeout(() => {
+      if (activeTab === 'overview') {
+        fetchWorkspaces();
+        fetchGroups();
+        fetchSubscription();
+      } else if (activeTab === 'workspaces') fetchWorkspaces();
+      else if (activeTab === 'groups') fetchGroups();
+      else if (activeTab === 'logs') fetchLogs();
+      else if (activeTab === 'subscription') fetchSubscription();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [activeTab, user]);
 
   useEffect(() => {
-    if (expandedWorkspace) fetchWorkspaceRoadmaps(expandedWorkspace);
+    if (!expandedWorkspace) return;
+    const timer = setTimeout(() => fetchWorkspaceRoadmaps(expandedWorkspace), 0);
+    return () => clearTimeout(timer);
   }, [expandedWorkspace]);
 
   useEffect(() => {
-    if (expandedGroup) fetchGroupDetail(expandedGroup);
+    if (!expandedGroup) return;
+    const timer = setTimeout(() => fetchGroupDetail(expandedGroup), 0);
+    return () => clearTimeout(timer);
   }, [expandedGroup]);
 
   if (loading || !user) {
@@ -313,7 +323,7 @@ function UserDetailPage() {
                       <div className="flex items-center gap-3">
                         <FolderKanban className="w-5 h-5 text-blue-500" />
                         <div>
-                          <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{ws.title}</p>
+                          <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{ws.displayTitle || ws.title || ws.name || t('home.workspace.untitledTitle')}</p>
                           <p className="text-sm text-slate-500">{ws.subject?.title} • {ws.status}</p>
                         </div>
                       </div>

@@ -37,6 +37,7 @@ import {
 } from '@/api/ManagementSystemAPI';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 const ADMIN_ALLOWED_CODES = [
   'user:read', 'user:status_update',
@@ -66,6 +67,12 @@ function AdminManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
+  const getFriendlyError = (err, fallbackKey, fallbackText) => {
+    const mapped = getErrorMessage(t, err);
+    if (mapped && mapped !== 'error.unknown') return mapped;
+    if (fallbackKey) return t(fallbackKey);
+    return fallbackText;
+  };
   
   // State definitions
   const [searchTerm, setSearchTerm] = useState('');
@@ -102,7 +109,7 @@ function AdminManagement() {
       const list = Array.isArray(pageData?.content) ? pageData.content : (Array.isArray(pageData) ? pageData : []);
       setAdmins(list.filter((u) => u.role === 'ADMIN'));
     } catch (err) {
-      setError(err?.message || 'Không thể tải danh sách admin');
+      setError(getFriendlyError(err, null, 'Không thể tải danh sách admin'));
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +146,7 @@ function AdminManagement() {
       setFormData({ username: '', email: '', password: '', confirmPassword: '', fullName: '' });
       fetchAdmins();
     } catch (err) {
-      const msg = err?.message || t('adminManagement.form.error');
+      const msg = getFriendlyError(err, 'adminManagement.form.error');
       setError(msg);
       showError(msg);
     } finally {
@@ -196,7 +203,7 @@ function AdminManagement() {
       await syncUserPermissions(selectedAdmin.id, userPermissions);
       showSuccess(t('adminManagement.syncSuccess'));
     } catch (err) {
-      const msg = err?.message || t('adminManagement.syncError');
+      const msg = getFriendlyError(err, 'adminManagement.syncError');
       setError(msg);
       showError(msg);
     } finally {

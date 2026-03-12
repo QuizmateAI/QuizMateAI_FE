@@ -30,6 +30,7 @@ import {
 } from '@/api/ManagementSystemAPI';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 const ROLES = ['USER', 'ADMIN', 'SUPER_ADMIN'];
 
@@ -37,6 +38,12 @@ function RbacManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
+  const getFriendlyError = (err, fallbackText, fallbackKey) => {
+    const mapped = getErrorMessage(t, err);
+    if (mapped && mapped !== 'error.unknown') return mapped;
+    if (fallbackKey) return t(fallbackKey);
+    return fallbackText;
+  };
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [activeTab, setActiveTab] = useState('permissions'); // permissions | audit
@@ -61,7 +68,7 @@ function RbacManagement() {
       const data = res?.data ?? res;
       setPermissions(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err?.message || 'Không thể tải danh sách quyền');
+      setError(getFriendlyError(err, 'Không thể tải danh sách quyền'));
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +82,7 @@ function RbacManagement() {
       const data = res?.data ?? res;
       setAuditLogs(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err?.message || 'Không thể tải nhật ký kiểm toán');
+      setError(getFriendlyError(err, 'Không thể tải nhật ký kiểm toán'));
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +133,7 @@ function RbacManagement() {
       showSuccess(t('rbac.syncSuccess'));
       setUserPermissions(await (await getUserPermissions(selectedUser.id)).data);
     } catch (err) {
-      const msg = err?.message || t('rbac.syncError');
+      const msg = getFriendlyError(err, null, 'rbac.syncError');
       setError(msg);
       showError(msg);
     } finally {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { getPurchasablePlans } from "@/api/PaymentAPI";
-import { Loader2, AlertCircle, Crown, Users, ChevronRight } from "lucide-react";
+import { AlertCircle, Crown, Users, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import PlanCard from "@/Pages/Users/Profile/Components/PlanCard";
@@ -41,21 +41,33 @@ export default function UpgradePlanDialog({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    getPurchasablePlans(planType)
-      .then((res) => {
-        if (!cancelled) { setPlans(res.data ?? []); setLoading(false); }
-      })
-      .catch(() => {
-        if (!cancelled) { setError(t("profile.subscription.loadError")); setLoading(false); }
-      });
-    return () => { cancelled = true; };
+    const prepTimer = setTimeout(() => {
+      if (!cancelled) {
+        setLoading(true);
+        setError(null);
+
+        getPurchasablePlans(planType)
+          .then((res) => {
+            if (!cancelled) { setPlans(res.data ?? []); setLoading(false); }
+          })
+          .catch(() => {
+            if (!cancelled) { setError(t("profile.subscription.loadError")); setLoading(false); }
+          });
+      }
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(prepTimer);
+    };
   }, [open, planType, t]);
 
   // Reset group selection khi mở / đổi type
   useEffect(() => {
-    setSelectedGroupId(preSelectedGroupId);
+    const timer = setTimeout(() => {
+      setSelectedGroupId(preSelectedGroupId);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, [open, preSelectedGroupId]);
 
   const leaderGroups = useMemo(

@@ -2,7 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useTranslation } from 'react-i18next';
 import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, Globe, Moon, Settings, Sun, CreditCard, Loader2, AlertCircle, Users, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Globe, Moon, Settings, Sun, CreditCard, AlertCircle, Users, ChevronRight } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import DarkLogo from '@/assets/DarkMode_Logo.webp';
@@ -93,7 +93,7 @@ export default function PaymentPage() {
             />
              <button
               type="button"
-              onClick={() => navigate('/profile', { state: { tab: 'subscription' } })}
+              onClick={() => navigate('/plan')}
               className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-xl transition-colors cursor-pointer ${
                 isDarkMode
                   ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
@@ -106,12 +106,21 @@ export default function PaymentPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/plan')}
+              className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
+            </Button>
             <div ref={settingsRef} className="relative">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsSettingsOpen((prev) => !prev)}
-                className={`flex items-center gap-2 rounded-full ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
+                className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
                 aria-expanded={isSettingsOpen}
                 aria-haspopup="menu"
               >
@@ -156,19 +165,6 @@ export default function PaymentPage() {
                       {isDarkMode ? t('common.dark') : t('common.light')}
                     </span>
                   </button>
-                  <div className={`h-px w-full ${isDarkMode ? 'bg-slate-800' : 'bg-gray-100'}`} />
-                  <button
-                    type="button"
-                    onClick={() => { setIsSettingsOpen(false); navigate('/profile', { state: { tab: 'subscription' } }); }}
-                    className={`w-full flex items-center gap-2 px-4 py-3 text-sm transition-colors cursor-pointer ${
-                      isDarkMode ? 'hover:bg-slate-900' : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className={`flex items-center gap-2 ${fontClass}`}>
-                      <CreditCard className="w-4 h-4" />
-                      {t('common.subscription')}
-                    </span>
-                  </button>
                 </div>
               )}
             </div>
@@ -184,7 +180,7 @@ export default function PaymentPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
             <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('payment.noPlanId')}</p>
-            <Button variant="outline" onClick={() => navigate('/profile', { state: { tab: 'subscription' } })}
+            <Button variant="outline" onClick={() => navigate('/plan')}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
               <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
             </Button>
@@ -195,7 +191,7 @@ export default function PaymentPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
             <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{error || t('payment.fetchError')}</p>
-            <Button variant="outline" onClick={() => navigate('/profile', { state: { tab: 'subscription' } })}
+            <Button variant="outline" onClick={() => navigate('/plan')}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
               <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
             </Button>

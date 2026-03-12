@@ -14,6 +14,8 @@ const RegisterPage = lazy(() => import('./Pages/Authentication/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./Pages/Authentication/ForgotPasswordPage'));
 const HomePage = lazy(() => import('./Pages/Users/Home/HomePage'));
 const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
+const PlanPage = lazy(() => import('./Pages/Users/Plan/PlanPage'));
+const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
 const WorkspacePage = lazy(() => import('./Pages/Users/Individual/Workspace/WorkspacePage'));
 const GroupWorkspacePage = lazy(() => import('./Pages/Users/Group/GroupWorkspacePage'));
 const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/GroupManagementPage'));
@@ -23,6 +25,7 @@ const AdminLayout = lazy(() => import('./Pages/Admin/AdminLayout'));
 const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
 const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
 const SubscriptionManagement = lazy(() => import('./Pages/Admin/SubscriptionManagement'));
+const SystemConfigManagement = lazy(() => import('./Pages/Admin/SystemConfigManagement'));
 
 // Quiz
 const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
@@ -38,7 +41,6 @@ const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'
 const AdminManagement = lazy(() => import('./Pages/SuperAdmin/AdminManagement'));
 const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
-const TopicManagement = lazy(() => import('./Pages/SuperAdmin/TopicManagement'));
 
 function App() {
   return (
@@ -62,6 +64,8 @@ function App() {
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/payment/result" element={<PaymentResultPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/plan" element={<PlanPage />} />
+          <Route path="/wallet" element={<WalletPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
           <Route path="/group-workspace/:groupId" element={<GroupWorkspacePage />} />
@@ -81,7 +85,7 @@ function App() {
             <Route path="groups/:groupId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
-            <Route path="topics" element={<TopicManagement />} />
+            <Route path="system-config" element={<SystemConfigManagement />} />
           </Route>
         </Route>
 
@@ -94,6 +98,7 @@ function App() {
             <Route path="groups/:groupId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
+            <Route path="system-config" element={<SystemConfigManagement />} />
           </Route>
         </Route>
       </Routes>

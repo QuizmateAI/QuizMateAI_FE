@@ -292,7 +292,7 @@ export function useWebSocket({
   }, []);
 
   return {
-    client: stompClientRef.current,
+    clientRef: stompClientRef,
     isConnected,
     lastMessage,
     send,

@@ -1,6 +1,6 @@
 ﻿
 import React, { useState, useRef, useEffect } from "react";
-import { MoreVertical, Pencil, Trash2, Loader2, FolderOpen } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
@@ -77,6 +77,8 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const locale = i18n.language === "en" ? "en-US" : "vi-VN";
+  const untitledTitle = t("home.workspace.untitledTitle");
+  const noDescription = t("home.workspace.noDescription");
   const workspaceList = Array.isArray(workspaces) ? workspaces : [];
 
   const isList = viewMode === "list";
@@ -126,9 +128,9 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-lg">📝</span>
-                    <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.title}</span>
+                    <span className={`truncate font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>{ws.displayTitle ?? ws.title ?? ws.name ?? untitledTitle}</span>
                   </div>
-                  <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.description || "—"}</span>
+                  <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.description || noDescription}</span>
                   <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(ws.createdAt, locale)}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full w-fit ${
                     ws.status === "ACTIVE"
@@ -159,9 +161,9 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
 
                   <div className="flex-1 min-w-0 mt-2">
                     <h3 className={`font-medium text-base line-clamp-2 leading-snug ${isDarkMode ? "text-white" : "text-[#1F1F1F]"}`}>
-                      {ws.title}
+                      {ws.displayTitle ?? ws.title ?? ws.name ?? untitledTitle}
                     </h3>
-                    <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.topic?.title}</p>
+                    <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.description || noDescription}</p>
                     <div className={`text-xs mt-1 flex items-center gap-2 ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
                       <span className="truncate">{ws.subject?.title}</span>
                     </div>

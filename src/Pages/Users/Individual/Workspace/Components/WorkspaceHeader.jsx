@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/Components/ui/button";
-import { Pencil, Plus, Settings, Share2, Zap } from "lucide-react";
+import { Pencil, Settings, Share2, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -22,6 +22,7 @@ function WorkspaceHeader({
   settingsMenu = null,
   isDarkMode = false,
   workspaceTitle = "",
+  workspaceName = "",
   workspaceSubtitle = "",
   workspaceDescription = "",
   onEditWorkspace,
@@ -38,7 +39,7 @@ function WorkspaceHeader({
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const openEditDialog = () => {
-    setEditTitle(workspaceTitle || "");
+    setEditTitle(workspaceName || workspaceTitle || "");
     setEditDescription(workspaceDescription || "");
     setEditOpen(true);
   };
@@ -47,7 +48,7 @@ function WorkspaceHeader({
     if (!onEditWorkspace) return;
     setSaving(true);
     try {
-      await onEditWorkspace({ title: editTitle, description: editDescription });
+      await onEditWorkspace({ name: editTitle, description: editDescription });
       setEditOpen(false);
     } catch {
       // error handled by parent

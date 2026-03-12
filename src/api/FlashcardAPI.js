@@ -1,9 +1,15 @@
 import api from './api';
 
-// Lấy danh sách flashcard set theo contextType và contextId
-export const getFlashcardsByContext = async (contextType, contextId) => {
-  const response = await api.get(`/flashcards/getByContext/${contextType}/${contextId}`);
-  return response;
+// Lấy danh sách flashcard set theo contextType và scopeId
+export const getFlashcardsByScope = async (contextType, scopeId) => {
+  let url = '';
+  if (contextType === 'WORKSPACE') url = `/flashcards/getByWorkspace/${scopeId}`;
+  else if (contextType === 'ROADMAP') url = `/flashcards/getByRoadmap/${scopeId}`;
+  else if (contextType === 'PHASE') url = `/flashcards/getByPhase/${scopeId}`;
+  else if (contextType === 'KNOWLEDGE') url = `/flashcards/getByKnowledge/${scopeId}`;
+  
+  if (url) return await api.get(url);
+  throw new Error('Invalid contextType');
 };
 
 // Lấy danh sách flashcard set của user đang đăng nhập

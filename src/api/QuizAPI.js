@@ -2,10 +2,16 @@ import api from './api';
 
 // ==================== QUIZ ====================
 
-// Lấy danh sách quiz theo contextType và contextId
-export const getQuizzesByContext = async (contextType, contextId) => {
-  const response = await api.get(`/quiz/getByContext/${contextType}/${contextId}`);
-  return response;
+// Lấy danh sách quiz theo contextType và scopeId
+export const getQuizzesByScope = async (contextType, scopeId) => {
+  let url = '';
+  if (contextType === 'WORKSPACE') url = `/quiz/getByWorkspace/${scopeId}`;
+  else if (contextType === 'ROADMAP') url = `/quiz/getByRoadmap/${scopeId}`;
+  else if (contextType === 'PHASE') url = `/quiz/getByPhase/${scopeId}`;
+  else if (contextType === 'KNOWLEDGE') url = `/quiz/getByKnowledge/${scopeId}`;
+  
+  if (url) return await api.get(url);
+  throw new Error('Invalid contextType');
 };
 
 // Lấy danh sách quiz của user đang đăng nhập
@@ -184,8 +190,10 @@ const DIFFICULTY_MAP = {
  * 5. Cập nhật quiz sang ACTIVE
  */
 export const createFullQuiz = async ({
-  contextType,
-  contextId,
+  workspaceId,
+  roadmapId,
+  phaseId,
+  knowledgeId,
   title,
   duration,
   quizIntent = 'PRE_LEARNING',
@@ -198,8 +206,10 @@ export const createFullQuiz = async ({
 }) => {
   // Bước 1: Tạo quiz
   const quizRes = await createQuiz({
-    contextType,
-    contextId,
+    workspaceId,
+    roadmapId,
+    phaseId,
+    knowledgeId,
     title,
     duration,
     quizIntent,
@@ -262,8 +272,10 @@ export const createFullQuiz = async ({
 
   // Bước 5: Cập nhật quiz với status (ACTIVE hoặc DRAFT), passScore và maxAttempt
   const updatedQuiz = await updateQuiz(quizId, {
-    contextType,
-    contextId,
+    workspaceId,
+    roadmapId,
+    phaseId,
+    knowledgeId,
     quizIntent,
     duration,
     status,

@@ -24,12 +24,15 @@ import {
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAllGroups } from '@/api/ManagementSystemAPI';
 import AdminPagination from './components/AdminPagination';
+import { useToast } from '@/context/ToastContext';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 function GroupManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const { showError } = useToast();
   const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [groups, setGroups] = useState([]);
@@ -43,6 +46,11 @@ function GroupManagement() {
   });
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const getFriendlyError = (err, fallbackText) => {
+    const mapped = getErrorMessage(t, err);
+    if (mapped && mapped !== 'error.unknown') return mapped;
+    return fallbackText;
+  };
 
   // Lấy danh sách nhóm từ API (có hỗ trợ phân trang)
   const fetchGroups = async (page = 0, size = 10) => {
@@ -69,7 +77,9 @@ function GroupManagement() {
         setPagination({ page: 0, size: size, totalPages: 0, totalElements: 0 });
       }
     } catch (err) {
-      setError(err?.message || 'Không thể tải danh sách nhóm');
+      const msg = getFriendlyError(err, 'Không thể tải danh sách nhóm');
+      setError(msg);
+      showError(msg);
       console.error('Lỗi khi lấy danh sách groups:', err);
       setGroups([]);
     } finally {
