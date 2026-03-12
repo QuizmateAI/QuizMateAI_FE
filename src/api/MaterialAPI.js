@@ -17,7 +17,8 @@ export const uploadMaterial = async (file, workspaceId) => {
   const formData = new FormData();
   formData.append('file', file);
   
-  const response = await api.post(`/materials/upload?workspaceId=${workspaceId}`, formData, {
+  // Backend expects request param name: workspaceID
+  const response = await api.post(`/materials/upload?workspaceID=${workspaceId}`, formData, {
     headers: {
       'Content-Type': undefined, // Để Axios tự set multipart boundary
     },
