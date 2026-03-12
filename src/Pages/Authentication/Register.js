@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { register, sendOTP, verifyOTP } from '@/api/Authentication';
+import { useEffect, useRef, useState } from 'react';
+import { checkEmail, checkUsername, register, sendOTP, verifyOTP } from '@/api/Authentication';
+import { waitForOtpStatus } from '@/lib/authOtpSocket';
 
 // Regex theo BE: username phải chứa cả chữ và số, cho phép . _ @ -
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;
@@ -7,6 +8,32 @@ const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;
 const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
 // Regex email
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const AVAILABILITY_DEBOUNCE_MS = 500;
+
+function getUsernameValidationMessage(username, t) {
+  if (!username) {
+    return t('validation.usernameRequired');
+  }
+  if (username.length < 3 || username.length > 50) {
+    return t('validation.usernameLength');
+  }
+  if (!USERNAME_REGEX.test(username)) {
+    return t('validation.usernameFormat');
+  }
+
+  return '';
+}
+
+function getEmailValidationMessage(email, t) {
+  if (!email) {
+    return t('validation.emailRequired');
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return t('validation.emailInvalid');
+  }
+
+  return '';
+}
 
 export const useRegister = (setView, t) => {
   const [formData, setFormData] = useState({
@@ -26,15 +53,115 @@ export const useRegister = (setView, t) => {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
+  const [availabilityStatus, setAvailabilityStatus] = useState({
+    username: { checking: false, available: null, message: '' },
+    email: { checking: false, available: null, message: '' }
+  });
+  const availabilityRequestRef = useRef({ username: 0, email: 0 });
+
+  const setAvailabilityFieldState = (field, nextState) => {
+    setAvailabilityStatus(prev => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        ...nextState,
+      }
+    }));
+  };
+
+  const clearFieldError = (field) => {
+    setFieldErrors(prev => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      return { ...prev, [field]: undefined };
+    });
+  };
+
+  const runAvailabilityCheck = async (field, value) => {
+    const requestId = availabilityRequestRef.current[field] + 1;
+    availabilityRequestRef.current[field] = requestId;
+
+    setAvailabilityFieldState(field, {
+      checking: true,
+      available: null,
+      message: t('auth.checkingAvailability') || 'Đang kiểm tra...',
+    });
+
+    try {
+      const response = field === 'username'
+        ? await checkUsername(value)
+        : await checkEmail(value);
+
+      if (availabilityRequestRef.current[field] !== requestId) {
+        return null;
+      }
+
+      const isAvailable = response?.data === true;
+      const successMessageByField = field === 'username'
+        ? (t('auth.usernameAvailable') || 'Username khả dụng')
+        : (t('auth.emailAvailable') || 'Email khả dụng');
+      const errorMessageByField = field === 'username'
+        ? (t('auth.usernameExists') || 'Username đã được sử dụng')
+        : (t('auth.emailExists') || 'Email đã được sử dụng');
+
+      setAvailabilityFieldState(field, {
+        checking: false,
+        available: isAvailable,
+        message: isAvailable ? successMessageByField : errorMessageByField,
+      });
+
+      if (isAvailable) {
+        clearFieldError(field);
+      } else {
+        setFieldErrors(prev => ({ ...prev, [field]: errorMessageByField }));
+      }
+
+      return isAvailable;
+    } catch {
+      if (availabilityRequestRef.current[field] !== requestId) {
+        return null;
+      }
+
+      setAvailabilityFieldState(field, {
+        checking: false,
+        available: null,
+        message: '',
+      });
+
+      return null;
+    }
+  };
+
+  const requestOtpWithSocket = async (email, successKey, fallbackSuccessMessage) => {
+    const otpStatus = await waitForOtpStatus(email, () => sendOTP(email));
+
+    if (!otpStatus?.success) {
+      throw new Error(otpStatus?.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
+    }
+
+    setSuccessMessage(t(successKey) || fallbackSuccessMessage);
+  };
 
   const handleChange = (field) => (e) => {
+    const nextValue = e.target.value;
+
     setFormData(prev => ({
       ...prev,
-      [field]: e.target.value
+      [field]: nextValue
     }));
     setError('');
     if (fieldErrors[field]) {
       setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+
+    if (field === 'username' || field === 'email') {
+      setAvailabilityFieldState(field, {
+        checking: false,
+        available: null,
+        message: '',
+      });
     }
   };
 
@@ -60,19 +187,15 @@ export const useRegister = (setView, t) => {
     }
 
     // Username validation
-    if (!trimmed.username) {
-      errors.username = t('validation.usernameRequired');
-    } else if (trimmed.username.length < 3 || trimmed.username.length > 50) {
-      errors.username = t('validation.usernameLength');
-    } else if (!USERNAME_REGEX.test(trimmed.username)) {
-      errors.username = t('validation.usernameFormat');
+    const usernameError = getUsernameValidationMessage(trimmed.username, t);
+    if (usernameError) {
+      errors.username = usernameError;
     }
 
     // Email validation
-    if (!trimmed.email) {
-      errors.email = t('validation.emailRequired');
-    } else if (!EMAIL_REGEX.test(trimmed.email)) {
-      errors.email = t('validation.emailInvalid');
+    const emailError = getEmailValidationMessage(trimmed.email, t);
+    if (emailError) {
+      errors.email = emailError;
     }
 
     // Password validation
@@ -92,6 +215,78 @@ export const useRegister = (setView, t) => {
     }
 
     return { isValid: Object.keys(errors).length === 0, errors };
+  };
+
+  useEffect(() => {
+    if (registerStep !== 'form') {
+      return undefined;
+    }
+
+    const trimmedUsername = formData.username.trim();
+    const usernameError = getUsernameValidationMessage(trimmedUsername, t);
+
+    if (!trimmedUsername || usernameError) {
+      setAvailabilityFieldState('username', {
+        checking: false,
+        available: null,
+        message: '',
+      });
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      void runAvailabilityCheck('username', trimmedUsername);
+    }, AVAILABILITY_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.username, registerStep, t]);
+
+  useEffect(() => {
+    if (registerStep !== 'form') {
+      return undefined;
+    }
+
+    const trimmedEmail = formData.email.trim();
+    const emailError = getEmailValidationMessage(trimmedEmail, t);
+
+    if (!trimmedEmail || emailError) {
+      setAvailabilityFieldState('email', {
+        checking: false,
+        available: null,
+        message: '',
+      });
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => {
+      void runAvailabilityCheck('email', trimmedEmail);
+    }, AVAILABILITY_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.email, registerStep, t]);
+
+  const validateAvailabilityBeforeSubmit = async (trimmedData) => {
+    const [usernameAvailable, emailAvailable] = await Promise.all([
+      runAvailabilityCheck('username', trimmedData.username),
+      runAvailabilityCheck('email', trimmedData.email),
+    ]);
+
+    const nextErrors = {};
+
+    if (usernameAvailable === false) {
+      nextErrors.username = t('auth.usernameExists') || 'Username đã được sử dụng';
+    }
+
+    if (emailAvailable === false) {
+      nextErrors.email = t('auth.emailExists') || 'Email đã được sử dụng';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(prev => ({ ...prev, ...nextErrors }));
+      return false;
+    }
+
+    return true;
   };
 
   // Bước 1: Validate form và gửi OTP đến email
@@ -124,12 +319,17 @@ export const useRegister = (setView, t) => {
     setIsLoading(true);
     
     try {
-      // Gửi OTP đến email để xác thực trước khi đăng ký
-      const response = await sendOTP(trimmedData.email);
-      if (response.statusCode === 200 || response.statusCode === 0) {
-        setSuccessMessage(t('auth.registerOtpSent') || 'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra.');
-        setRegisterStep('otp');
+      const isAvailabilityValid = await validateAvailabilityBeforeSubmit(trimmedData);
+      if (!isAvailabilityValid) {
+        return;
       }
+
+      await requestOtpWithSocket(
+        trimmedData.email,
+        'auth.registerOtpSent',
+        'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra.'
+      );
+      setRegisterStep('otp');
     } catch (err) {
       setError(err.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
     } finally {
@@ -187,10 +387,11 @@ export const useRegister = (setView, t) => {
     setIsLoading(true);
     
     try {
-      const response = await sendOTP(formData.email);
-      if (response.statusCode === 200 || response.statusCode === 0) {
-        setSuccessMessage(t('auth.otpSent') || 'Mã OTP đã được gửi lại đến email của bạn');
-      }
+      await requestOtpWithSocket(
+        formData.email.trim(),
+        'auth.otpSent',
+        'Mã OTP đã được gửi lại đến email của bạn'
+      );
     } catch (err) {
       setError(err.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
     } finally {
@@ -213,6 +414,10 @@ export const useRegister = (setView, t) => {
     setError('');
     setFieldErrors({});
     setSuccessMessage('');
+    setAvailabilityStatus({
+      username: { checking: false, available: null, message: '' },
+      email: { checking: false, available: null, message: '' }
+    });
   };
 
   return {
@@ -230,6 +435,7 @@ export const useRegister = (setView, t) => {
     error,
     setError,
     fieldErrors,
+    availabilityStatus,
     successMessage,
     setSuccessMessage,
     handleChange,

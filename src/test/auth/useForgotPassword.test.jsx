@@ -2,11 +2,16 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useForgotPassword, validateForgotPasswordForm } from '@/Pages/Authentication/ForgotPassword';
 import { sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
+import { waitForOtpStatus } from '@/lib/authOtpSocket';
 
 vi.mock('@/api/Authentication', () => ({
   sendOTP: vi.fn(),
   verifyOTP: vi.fn(),
   resetPassword: vi.fn(),
+}));
+
+vi.mock('@/lib/authOtpSocket', () => ({
+  waitForOtpStatus: vi.fn(),
 }));
 
 describe('Authentication - useForgotPassword (TC_AUTH_05)', () => {
@@ -19,7 +24,11 @@ describe('Authentication - useForgotPassword (TC_AUTH_05)', () => {
   });
 
   it('TC_AUTH_05: sends reset OTP request successfully', async () => {
-    sendOTP.mockResolvedValue({ statusCode: 200 });
+    sendOTP.mockResolvedValue({ statusCode: 202 });
+    waitForOtpStatus.mockImplementation(async (_email, sendOtpRequest) => {
+      await sendOtpRequest();
+      return { success: true, message: 'OTP đã được gửi thành công' };
+    });
 
     const { result } = renderHook(() => useForgotPassword(setView, t));
 
@@ -32,6 +41,7 @@ describe('Authentication - useForgotPassword (TC_AUTH_05)', () => {
     });
 
     expect(sendOTP).toHaveBeenCalledWith('user@example.com');
+    expect(waitForOtpStatus).toHaveBeenCalledWith('user@example.com', expect.any(Function));
     expect(result.current.forgotPasswordStep).toBe('otp');
     expect(result.current.successMessage).toBe('auth.otpSent');
   });

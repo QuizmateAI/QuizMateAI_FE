@@ -34,6 +34,11 @@ function getSourceDisplayIcon(source) {
   return getSourceIcon(source?.type);
 }
 
+function canOpenSourceDetail(source) {
+  const status = source?.status?.toUpperCase();
+  return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED", "ERROR"].includes(status);
+}
+
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
 function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, isCollapsed = false, onToggleCollapse }) {
   const { t, i18n } = useTranslation();
@@ -128,6 +133,7 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
               key={source.id}
               type="button"
               onClick={() => {
+                if (!canOpenSourceDetail(source)) return;
                 setHoverTooltip(null);
                 setViewingSource(source);
                 onToggleCollapse();
@@ -135,8 +141,11 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
               onMouseEnter={(event) => showTooltip(event, source.name)}
               onMouseLeave={() => setHoverTooltip(null)}
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-50 hover:bg-gray-100"
+                canOpenSourceDetail(source)
+                  ? isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-50 hover:bg-gray-100"
+                  : isDarkMode ? "bg-slate-800/70 text-slate-500 cursor-not-allowed" : "bg-gray-50 text-gray-400 cursor-not-allowed"
               }`}
+              title={!canOpenSourceDetail(source) ? "Tài liệu đang được xử lý, vui lòng đợi." : undefined}
             >
               {getSourceDisplayIcon(source)}
             </button>
@@ -265,7 +274,14 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                   </div>
 
                   {/* Nội dung tài liệu — click để xem chi tiết */}
-                  <div className="min-w-0 flex-1 flex items-center gap-2.5 cursor-pointer" onClick={() => setViewingSource(source)}>
+                  <div
+                    className={`min-w-0 flex-1 flex items-center gap-2.5 ${canOpenSourceDetail(source) ? "cursor-pointer" : "cursor-not-allowed opacity-80"}`}
+                    onClick={() => {
+                      if (!canOpenSourceDetail(source)) return;
+                      setViewingSource(source);
+                    }}
+                    title={!canOpenSourceDetail(source) ? "Tài liệu đang được xử lý, vui lòng đợi." : undefined}
+                  >
                     {/* Icon trạng thái: ERROR (chấm than), PROCESSING (spinner), hoặc icon file thông thường */}
                     {getSourceDisplayIcon(source)}
                     <div className="min-w-0 flex-1 text-left">
