@@ -7,17 +7,17 @@ export const getMaterialsByWorkspace = async (workspaceId) => {
 };
 
 // Xóa tài liệu
-export const deleteMaterial = async (materialId, contextType = 'WORKSPACE') => {
-  const response = await api.delete(`/materials/${materialId}?contextType=${contextType}`);
+export const deleteMaterial = async (materialId) => {
+  const response = await api.delete(`/materials/${materialId}`);
   return response;
 };
 
 // Upload tài liệu
-export const uploadMaterial = async (file, contextId, contextType = 'WORKSPACE') => {
+export const uploadMaterial = async (file, workspaceId) => {
   const formData = new FormData();
   formData.append('file', file);
   
-  const response = await api.post(`/materials/upload?contextId=${contextId}&contextType=${contextType}`, formData, {
+  const response = await api.post(`/materials/upload?workspaceId=${workspaceId}`, formData, {
     headers: {
       'Content-Type': undefined, // Để Axios tự set multipart boundary
     },

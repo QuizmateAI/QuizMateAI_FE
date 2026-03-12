@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import { Search, X, GraduationCap, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
-import { getQuizzesByContext, deleteQuiz } from "@/api/QuizAPI";
+import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap } from "@/api/RoadmapAPI";
 
 // Hàm format ngày giờ ngắn gọn
@@ -25,7 +25,7 @@ const STATUS_STYLE = {
 
 /**
  * PostLearningListView — hiển thị danh sách Post-learning (quiz với contextType=PHASE)
- * Tải roadmaps → phases → cho mỗi phase gọi getQuizzesByContext("PHASE", phaseId)
+ * Tải roadmaps → phases → cho mỗi phase gọi getQuizzesByScope("PHASE", phaseId)
  */
 function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLearning, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
@@ -69,7 +69,7 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
       const allPostLearnings = [];
       for (const ph of allPhases) {
         try {
-          const quizRes = await getQuizzesByContext("PHASE", ph.phaseId);
+          const quizRes = await getQuizzesByScope("PHASE", ph.phaseId);
           const quizzes = quizRes.data || [];
           quizzes.forEach(q => {
             allPostLearnings.push({
