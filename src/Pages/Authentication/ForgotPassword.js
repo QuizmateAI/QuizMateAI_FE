@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
+import { waitForOtpStatus } from '@/lib/authOtpSocket';
 
 // Xác thực định dạng email
 export const validateEmail = (email) => {
@@ -20,6 +21,16 @@ export const useForgotPassword = (setView, t) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  const requestOtpWithSocket = async (email, successKey, fallbackSuccessMessage) => {
+    const otpStatus = await waitForOtpStatus(email, () => sendOTP(email));
+
+    if (!otpStatus?.success) {
+      throw new Error(otpStatus?.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
+    }
+
+    setSuccessMessage(t(successKey) || fallbackSuccessMessage);
+  };
 
   const handleForgotPasswordChange = (field) => (e) => {
     setForgotPasswordData(prev => ({ ...prev, [field]: e.target.value }));
@@ -42,11 +53,8 @@ export const useForgotPassword = (setView, t) => {
     setIsLoading(true);
     
     try {
-      const response = await sendOTP(trimmedEmail);
-      if (response.statusCode === 200 || response.statusCode === 0) {
-        setSuccessMessage(t('auth.otpSent') || 'Mã OTP đã được gửi đến email của bạn');
-        setForgotPasswordStep('otp');
-      }
+      await requestOtpWithSocket(trimmedEmail, 'auth.otpSent', 'Mã OTP đã được gửi đến email của bạn');
+      setForgotPasswordStep('otp');
     } catch (err) {
       setError(err.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
     } finally {
