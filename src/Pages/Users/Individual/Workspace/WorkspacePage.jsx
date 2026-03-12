@@ -153,14 +153,9 @@ function WorkspacePage() {
 				if (!isMounted) return;
 
 				// Kiểm tra xem profile đã được config hay chưa:
-				// Theo logic backend: cần có domain, program, scheme (bất kỳ) HOẶC customScheme
+				// Hiện tại: chỉ cần có learningGoal (bắt buộc) là coi như đã cấu hình
 				const profileData = profileRes?.data?.data || profileRes?.data || null;
-				const isConfigured = profileData && (
-					profileData.domainId ||
-					profileData.knowledgeId ||
-					profileData.schemeId ||
-					(profileData.customSchemeName && profileData.customSchemeDescription)
-				);
+				const isConfigured = !!(profileData?.learningGoal && String(profileData.learningGoal).trim());
 
 				setIsProfileConfigured(isConfigured);
 				setWorkspaceProfile(profileData);
@@ -228,7 +223,7 @@ function WorkspacePage() {
 						${data.learningGoal ? 'Mục tiêu cá nhân: ' + data.learningGoal : ''}
 						${data.strongAreas ? 'Điểm mạnh: ' + data.strongAreas : ''}
 						${data.weakAreas ? 'Điểm yếu cần cải thiện: ' + data.weakAreas : ''}`,
-					language: data.preferredLanguage || "vi",
+					language: "vi",
 					sessionConfigs: [
 						{
 							name: t("workspace.prelearning.sessionName"),
