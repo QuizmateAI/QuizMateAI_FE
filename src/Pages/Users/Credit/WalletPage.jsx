@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -21,6 +21,13 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import { useToast } from "@/context/ToastContext";
+import { getErrorMessage } from "@/Utils/getErrorMessage";
+import {
+  getMyWallet,
+  getPurchaseableCreditPackages,
+  getUserPayments,
+} from "@/api/ManagementSystemAPI";
+import { createMomoCreditPayment } from "@/api/PaymentAPI";
 
 function formatNumber(n, locale) {
   return new Intl.NumberFormat(locale).format(n);
@@ -43,7 +50,7 @@ export default function WalletPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
-  const { showSuccess } = useToast();
+  const { showSuccess, showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language;
 
@@ -52,19 +59,18 @@ export default function WalletPage() {
     i18n.changeLanguage(newLang);
   };
 
-  // UI-first: fallback mock data. When BE endpoints are ready, replace with real API calls.
-  const [balance, setBalance] = useState(1200);
-  const [transactions, setTransactions] = useState(() => ([
-    { id: "TXN-10021", time: "2026-03-09T10:12:00.000Z", amount: 500, type: "TOPUP", method: "MoMo", status: "SUCCESS" },
-    { id: "TXN-10010", time: "2026-03-07T08:42:00.000Z", amount: 1000, type: "TOPUP", method: "VNPAY", status: "SUCCESS" },
-    { id: "TXN-09991", time: "2026-03-05T09:05:00.000Z", amount: -300, type: "USAGE", method: "AI", status: "SUCCESS" },
-  ]));
+  const [balance, setBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(true);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
+  const [isLoadingPackages, setIsLoadingPackages] = useState(true);
+  const [buyingPackageId, setBuyingPackageId] = useState(null);
 
-  const packages = useMemo(() => ([
-    { credits: 500, price: 49000, bonus: 0 },
-    { credits: 1200, price: 99000, bonus: 50 },
-    { credits: 3000, price: 199000, bonus: 200 },
-  ]), []);
+  const getFriendlyError = (err) => {
+    const mapped = getErrorMessage(t, err);
+    return mapped && mapped !== "error.unknown" ? mapped : t("error.unknown");
+  };
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
@@ -77,15 +83,83 @@ export default function WalletPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSettingsOpen]);
 
-  const buyCredits = (pkg) => {
-    // Placeholder action for now (UI only)
-    const gained = pkg.credits + (pkg.bonus || 0);
-    setBalance((b) => b + gained);
-    setTransactions((prev) => ([
-      { id: `TXN-${Math.floor(10000 + Math.random() * 90000)}`, time: new Date().toISOString(), amount: gained, type: "TOPUP", method: "UI", status: "SUCCESS" },
-      ...prev,
-    ]));
-    showSuccess(t("wallet.toastAdded", { amount: gained }));
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchWalletData = async () => {
+      setIsLoadingWallet(true);
+      setIsLoadingTransactions(true);
+      setIsLoadingPackages(true);
+      try {
+        const [walletRes, packagesRes, paymentsRes] = await Promise.all([
+          getMyWallet(),
+          getPurchaseableCreditPackages(),
+          getUserPayments(0, 10),
+        ]);
+
+        if (cancelled) return;
+
+        const walletData = walletRes?.data ?? walletRes;
+        setBalance(walletData?.balance ?? 0);
+
+        const pkgData = packagesRes?.data ?? packagesRes;
+        setPackages(Array.isArray(pkgData) ? pkgData : []);
+
+        const page = paymentsRes?.data ?? paymentsRes;
+        const content = page?.content ?? [];
+        const mappedTx = Array.isArray(content)
+          ? content.map((p) => {
+              const statusRaw = (p.paymentStatus || "").toUpperCase();
+              let status = "PENDING";
+              if (statusRaw === "COMPLETED") status = "SUCCESS";
+              else if (statusRaw === "FAILED" || statusRaw === "CANCELLED") status = "FAILED";
+
+              return {
+                id: p.orderId || `PAY-${p.paymentId}`,
+                time: p.paidAt || p.expiresAt,
+                amount: p.amount ?? 0,
+                type: "TOPUP",
+                status,
+              };
+            })
+          : [];
+        setTransactions(mappedTx);
+      } catch (err) {
+        if (!cancelled) {
+          showError(getFriendlyError(err));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingWallet(false);
+          setIsLoadingTransactions(false);
+          setIsLoadingPackages(false);
+        }
+      }
+    };
+
+    fetchWalletData();
+    return () => {
+      cancelled = true;
+    };
+  }, [showError, t]);
+
+  const buyCredits = async (pkg) => {
+    if (!pkg?.creditPackageId) return;
+    try {
+      setBuyingPackageId(pkg.creditPackageId);
+      const res = await createMomoCreditPayment(pkg.creditPackageId);
+      const data = res?.data ?? res;
+      const payUrl = data?.payUrl;
+      if (payUrl) {
+        window.location.href = payUrl;
+      } else {
+        showError(t("error.unknown"));
+      }
+    } catch (err) {
+      showError(getFriendlyError(err));
+    } finally {
+      setBuyingPackageId(null);
+    }
   };
 
   const backTo = location.state?.from || "/plan";
@@ -172,8 +246,8 @@ export default function WalletPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Back */}
-        <div className="mb-5">
+        {/* Back button bình thường, cuộn cùng nội dung */}
+        <div className="mb-4">
           <button
             type="button"
             onClick={() => navigate(backTo, { replace: true })}
@@ -249,12 +323,22 @@ export default function WalletPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {packages.map((pkg) => (
+              {isLoadingPackages && packages.length === 0 && (
+                <p className={isDarkMode ? "text-slate-400 text-sm" : "text-slate-600 text-sm"}>
+                  ...
+                </p>
+              )}
+              {packages.map((pkg) => {
+                const base = pkg.baseCredit ?? 0;
+                const bonus = pkg.bonusCredit ?? 0;
+                const totalCredits = base + bonus;
+                return (
                 <button
-                  key={pkg.credits}
+                  key={pkg.creditPackageId ?? totalCredits}
                   type="button"
                   onClick={() => buyCredits(pkg)}
-                  className={`w-full text-left rounded-2xl p-4 ring-1 ring-inset transition-all active:scale-[0.99] cursor-pointer ${
+                  disabled={buyingPackageId === pkg.creditPackageId}
+                  className={`w-full text-left rounded-2xl p-4 ring-1 ring-inset transition-all active:scale-[0.99] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed ${
                     isDarkMode
                       ? "bg-slate-950/30 ring-slate-700/60 hover:bg-slate-800/60"
                       : "bg-white ring-slate-200 hover:bg-slate-50"
@@ -263,12 +347,12 @@ export default function WalletPage() {
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-bold">
-                        {formatNumber(pkg.credits, currentLang === "vi" ? "vi-VN" : "en-US")} {t("wallet.creditsUnit")}
-                        {pkg.bonus ? (
+                        {formatNumber(totalCredits, currentLang === "vi" ? "vi-VN" : "en-US")} {t("wallet.creditsUnit")}
+                        {bonus ? (
                           <span className={`ml-2 text-xs font-semibold ${
                             isDarkMode ? "text-emerald-400" : "text-emerald-700"
                           }`}>
-                            +{formatNumber(pkg.bonus, currentLang === "vi" ? "vi-VN" : "en-US")} {t("wallet.bonus")}
+                            +{formatNumber(bonus, currentLang === "vi" ? "vi-VN" : "en-US")} {t("wallet.bonus")}
                           </span>
                         ) : null}
                       </p>
@@ -278,17 +362,17 @@ export default function WalletPage() {
                     </div>
                     <div className="text-right">
                       <p className={`text-sm font-extrabold ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                        {formatVnd(pkg.price, currentLang === "vi" ? "vi-VN" : "en-US")}
+                        {formatVnd(pkg.price ?? 0, currentLang === "vi" ? "vi-VN" : "en-US")}
                       </p>
                       <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${
                         isDarkMode ? "bg-blue-600/15 text-blue-300" : "bg-blue-50 text-blue-700"
                       }`}>
-                        {t("wallet.buyNow")}
+                        {buyingPackageId === pkg.creditPackageId ? t("payment.processing") : t("wallet.buyNow")}
                       </span>
                     </div>
                   </div>
                 </button>
-              ))}
+              );})}
             </CardContent>
           </Card>
         </div>
@@ -319,7 +403,14 @@ export default function WalletPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.length === 0 ? (
+                  {isLoadingTransactions && (
+                    <TableRow>
+                      <TableCell colSpan={5} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                        ...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!isLoadingTransactions && transactions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                         {t("wallet.noHistory")}

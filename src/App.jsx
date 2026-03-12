@@ -25,7 +25,7 @@ const AdminLayout = lazy(() => import('./Pages/Admin/AdminLayout'));
 const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
 const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
 const SubscriptionManagement = lazy(() => import('./Pages/Admin/SubscriptionManagement'));
-const SystemConfigManagement = lazy(() => import('./Pages/Admin/SystemConfigManagement'));
+const CreditPackageManagement = lazy(() => import('./Pages/Admin/CreditPackageManagement'));
 
 // Quiz
 const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
@@ -85,7 +85,7 @@ function App() {
             <Route path="groups/:groupId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
-            <Route path="system-config" element={<SystemConfigManagement />} />
+            <Route path="credit" element={<CreditPackageManagement />} />
           </Route>
         </Route>
 
@@ -98,7 +98,7 @@ function App() {
             <Route path="groups/:groupId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
             <Route path="subscriptions" element={<SubscriptionManagement />} />
-            <Route path="system-config" element={<SystemConfigManagement />} />
+            <Route path="credit" element={<CreditPackageManagement />} />
           </Route>
         </Route>
       </Routes>
