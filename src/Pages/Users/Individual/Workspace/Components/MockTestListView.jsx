@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import { Search, X, ClipboardList, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
-import { getQuizzesByContext, deleteQuiz } from "@/api/QuizAPI";
+import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getRoadmapsByGroup } from "@/api/RoadmapAPI";
 
 // Hàm format ngày giờ ngắn gọn
@@ -25,7 +25,7 @@ const STATUS_STYLE = {
 
 /**
  * MockTestListView — hiển thị danh sách Mock Test (quiz với contextType=ROADMAP)
- * Tải roadmaps → cho mỗi roadmap gọi getQuizzesByContext("ROADMAP", roadmapId)
+ * Tải roadmaps → cho mỗi roadmap gọi getQuizzesByScope("ROADMAP", roadmapId)
  */
 function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
@@ -53,7 +53,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
       for (const rm of roadmaps) {
         const rmId = rm.roadmapId || rm.id;
         try {
-          const quizRes = await getQuizzesByContext("ROADMAP", rmId);
+          const quizRes = await getQuizzesByScope("ROADMAP", rmId);
           const quizzes = quizRes.data || [];
           // Gắn tên roadmap vào mỗi mock test
           quizzes.forEach(q => {
