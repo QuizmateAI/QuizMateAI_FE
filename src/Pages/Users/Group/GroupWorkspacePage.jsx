@@ -582,6 +582,9 @@ function GroupWorkspacePage() {
                 onAddSource={() => setUploadDialogOpen(true)}
                 onRemoveSource={handleRemoveSource}
                 onRemoveMultiple={handleRemoveMultipleSources}
+                onSourceUpdated={(updatedSource) => {
+                  setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
+                }}
                 isCollapsed={isSourcesCollapsed}
                 onToggleCollapse={() => setIsSourcesCollapsed((prev) => !prev)}
               />
