@@ -16,6 +16,8 @@ import { useTopicsForCreate } from '@/hooks/useTopicsForCreate';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { createRoadmap, createPhase, createKnowledge } from '@/api/RoadmapAPI';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
+import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from '@/api/MaterialAPI';
+import { useToast } from '@/context/ToastContext';
 
 // Trang workspace dành cho nhóm - bố cục 3 cột giống WorkspacePage
 function GroupWorkspacePage() {
@@ -23,6 +25,7 @@ function GroupWorkspacePage() {
   const navigate = useNavigateWithLoading();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { showError, showInfo } = useToast();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
@@ -75,20 +78,41 @@ function GroupWorkspacePage() {
     enabled: !isCreating && !!groupId && groupId !== 'new',
     onMaterialUploaded: (data) => {
       console.log('📤 Realtime: Material uploaded', data);
-      // Reload danh sách tài liệu - TODO: Replace with API call
-      // fetchGroupSources();
+      fetchSources();
     },
     onMaterialDeleted: (data) => {
       console.log('🗑️ Realtime: Material deleted', data);
-      // Reload danh sách tài liệu - TODO: Replace with API call
-      // fetchGroupSources();
+      fetchSources();
     },
     onMaterialUpdated: (data) => {
       console.log('🔄 Realtime: Material updated', data);
-      // Reload danh sách tài liệu - TODO: Replace with API call
-      // fetchGroupSources();
+      fetchSources();
     },
   });
+
+  // Fetch materials list
+  const fetchSources = useCallback(async () => {
+    if (!groupId || isCreating) return [];
+    try {
+      const data = await getMaterialsByWorkspace(groupId);
+      const mappedSources = Array.isArray(data)
+        ? data.map((item) => ({
+          id: item.materialId,
+          name: item.title,
+          type: item.materialType,
+          status: item.status,
+          uploadedAt: item.uploadedAt,
+          ...item,
+        }))
+        : [];
+
+      setSources(mappedSources);
+      return mappedSources;
+    } catch (err) {
+      console.error("❌ [fetchSources] Failed to fetch materials:", err);
+      return [];
+    }
+  }, [groupId, isCreating]);
 
   // Tự động mở popup upload CHỈ KHI group workspace chưa có tài liệu (lần đầu tiên)
   useEffect(() => {
@@ -99,14 +123,12 @@ function GroupWorkspacePage() {
     
     // Đợi một chút để đảm bảo data đã load
     const timer = setTimeout(() => {
-      if (sources.length === 0) {
-        setUploadDialogOpen(true);
-      }
+      fetchSources();
       setHasCheckedInitialSources(true);
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [groupId, isCreating, sources.length, hasCheckedInitialSources]);
+  }, [groupId, isCreating, hasCheckedInitialSources, fetchSources]);
 
   // Xử lý mời thành viên
   const handleInvite = useCallback(async (email) => {
@@ -131,36 +153,80 @@ function GroupWorkspacePage() {
     }
   }, [isCreating, navigate]);
 
-  // Xử lý upload file tài liệu - SONG SONG
+  // Xử lý upload file tài liệu - song song
   const handleUploadFiles = useCallback(async (files) => {
-    // TODO: Thay mock bằng API upload thật, chạy song song
-    // const uploadPromises = files.map(file => uploadMaterialToGroup(file, groupId));
-    // await Promise.all(uploadPromises);
-    
-    // Mock implementation (tạm thời)
-    const newSources = files.map((file, index) => ({
-      id: `src-${Date.now()}-${index}`,
-      name: file.name,
-      type: file.type?.includes('pdf') ? 'pdf' : file.type?.includes('image') ? 'image' : file.type?.includes('video') ? 'video' : 'file',
-      size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-    }));
-    setSources((prev) => [...prev, ...newSources]);
-  }, []);
+    if (!groupId || isCreating) {
+      showError('Không thể upload: groupId không hợp lệ');
+      return;
+    }
+
+    try {
+      // Upload all files in parallel
+      const uploadPromises = files.map((file) =>
+        uploadMaterial(file, groupId)
+          .then((res) => {
+            const material = res?.data?.data || res?.data || res;
+            return {
+              id: material.materialId,
+              name: material.title,
+              type: material.materialType,
+              status: material.status || 'PROCESSING',
+              uploadedAt: material.uploadedAt,
+              ...material,
+            };
+          })
+          .catch((err) => {
+            console.error('Upload failed for', file.name, err);
+            return null;
+          })
+      );
+
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter((r) => r !== null);
+
+      if (successfulUploads.length > 0) {
+        setSources((prev) => [...prev, ...successfulUploads]);
+        showInfo(`Uploaded ${successfulUploads.length} file(s) successfully`);
+      } else {
+        showError('All uploads failed');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      showError('Upload failed: ' + (err?.message || 'Unknown error'));
+    }
+  }, [groupId, isCreating, showError, showInfo]);
 
   // Xóa tài liệu đơn lẻ khỏi workspace nhóm
   const handleRemoveSource = useCallback((sourceId) => {
-    setSources((prev) => prev.filter((source) => source.id !== sourceId));
-  }, []);
+    try {
+      deleteMaterial(sourceId);
+      setSources((prev) => prev.filter((source) => source.id !== sourceId));
+      showInfo('Material deleted');
+    } catch (err) {
+      console.error('Delete failed:', err);
+      showError('Delete failed: ' + (err?.message || 'Unknown error'));
+    }
+  }, [showError, showInfo]);
 
-  // Xóa nhiều tài liệu cùng lúc - SONG SONG
+  // Xóa nhiều tài liệu cùng lúc - song song
   const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
-    // TODO: Thay mock bằng API delete thật, chạy song song
-    // const deletePromises = sourceIds.map(id => deleteMaterialFromGroup(id, groupId));
-    // await Promise.all(deletePromises);
-    
-    // Mock implementation (tạm thời)
-    setSources((prev) => prev.filter((source) => !sourceIds.includes(source.id)));
-  }, []);
+    try {
+      // Delete all materials in parallel
+      const deletePromises = sourceIds.map((id) =>
+        deleteMaterial(id).catch((err) => {
+          console.error('Delete failed for', id, err);
+          return null;
+        })
+      );
+
+      await Promise.all(deletePromises);
+      setSources((prev) => prev.filter((source) => !sourceIds.includes(source.id)));
+      showInfo(`Deleted ${sourceIds.length} material(s)`);
+    } catch (err) {
+      console.error('Bulk delete error:', err);
+      showError('Delete failed: ' + (err?.message || 'Unknown error'));
+    }
+  }, [showError, showInfo]);
 
   // Xử lý hành động từ studio panel — hiển thị form inline trong ChatPanel
   const handleStudioAction = useCallback((actionKey) => {
