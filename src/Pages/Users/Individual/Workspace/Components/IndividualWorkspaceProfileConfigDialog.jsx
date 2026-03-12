@@ -15,8 +15,11 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
-  const [documentDescription, setDocumentDescription] = useState('');
+  // Align fields with backend entity: customDomain, customKnowledge, customCurrentLevel, customTargetLevel
+  const [customDomain, setCustomDomain] = useState('');
+  const [customKnowledge, setCustomKnowledge] = useState('');
   const [currentLevel, setCurrentLevel] = useState('');
+  const [targetLevel, setTargetLevel] = useState('');
   const [learningGoal, setLearningGoal] = useState('');
   const [weakAreas, setWeakAreas] = useState('');
   const [strongAreas, setStrongAreas] = useState('');
@@ -32,14 +35,18 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
 
   const resetForm = () => {
     if (initialData) {
-      setDocumentDescription(initialData.documentDescription || '');
-      setCurrentLevel(initialData.currentLevel || '');
+      setCustomDomain(initialData.customDomain || '');
+      setCustomKnowledge(initialData.customKnowledge || '');
+      setCurrentLevel(initialData.customCurrentLevel || '');
+      setTargetLevel(initialData.customTargetLevel || '');
       setLearningGoal(initialData.learningGoal || '');
       setWeakAreas(initialData.weakAreas || '');
       setStrongAreas(initialData.strongAreas || '');
     } else {
-      setDocumentDescription('');
+      setCustomDomain('');
+      setCustomKnowledge('');
       setCurrentLevel('');
+      setTargetLevel('');
       setLearningGoal('');
       setWeakAreas('');
       setStrongAreas('');
@@ -62,8 +69,10 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
     setSubmitting(true);
     try {
       const payload = {
-        documentDescription: documentDescription.trim() || null,
-        currentLevel: currentLevel.trim() || null,
+        customDomain: customDomain.trim() || null,
+        customKnowledge: customKnowledge.trim() || null,
+        customCurrentLevel: currentLevel.trim() || null,
+        customTargetLevel: targetLevel.trim() || null,
         learningGoal: learningGoal.trim() || null,
         weakAreas: weakAreas.trim() || null,
         strongAreas: strongAreas.trim() || null,
@@ -111,12 +120,25 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <div className="flex items-center justify-between">
+                      <label className={labelBase}>{t('workspace.profileConfig.domainLabel')}</label>
+                      <span className={hintBase}>{t('workspace.profileConfig.optional')}</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={customDomain}
+                      onChange={(e) => setCustomDomain(e.target.value)}
+                      placeholder={t('workspace.profileConfig.domainPlaceholder')}
+                      className={inputBase}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between">
                       <label className={labelBase}>{t('workspace.profileConfig.documentDescriptionLabel')}</label>
                       <span className={hintBase}>{t('workspace.profileConfig.optional')}</span>
                     </div>
                     <textarea
-                      value={documentDescription}
-                      onChange={(e) => setDocumentDescription(e.target.value)}
+                      value={customKnowledge}
+                      onChange={(e) => setCustomKnowledge(e.target.value)}
                       placeholder={t('workspace.profileConfig.documentDescriptionPlaceholder')}
                       rows={3}
                       className={`${inputBase} resize-none`}
@@ -126,22 +148,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
               </div>
 
               <div className={sectionBase}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                </div>
-
-                <div className="mt-4">
-                  <label className={labelBase}>{t('workspace.profileConfig.learningGoalLabel')} <span className="text-red-500">*</span></label>
-                  <textarea
-                    value={learningGoal}
-                    onChange={(e) => setLearningGoal(e.target.value)}
-                    placeholder={t('workspace.profileConfig.learningGoalPlaceholder')}
-                    rows={3}
-                    className={`${inputBase} resize-none ${errors.learningGoal ? 'border-red-500 focus:ring-red-500/20' : ''}`}
-                  />
-                  {errors.learningGoal && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.learningGoal}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-0">
                   <div>
                     <div className="flex items-center justify-between">
                       <label className={labelBase}>{t('workspace.profileConfig.strongAreasLabel')}</label>
@@ -170,18 +177,45 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <div className="flex items-center justify-between">
-                    <label className={labelBase}>{t('workspace.profileConfig.currentLevelLabel')}</label>
-                    <span className={hintBase}>{t('workspace.profileConfig.optional')}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className={labelBase}>{t('workspace.profileConfig.currentLevelLabel')}</label>
+                      <span className={hintBase}>{t('workspace.profileConfig.optional')}</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={currentLevel}
+                      onChange={(e) => setCurrentLevel(e.target.value)}
+                      placeholder={t('workspace.profileConfig.currentLevelPlaceholder')}
+                      className={inputBase}
+                    />
                   </div>
-                  <input
-                    type="text"
-                    value={currentLevel}
-                    onChange={(e) => setCurrentLevel(e.target.value)}
-                    placeholder={t('workspace.profileConfig.currentLevelPlaceholder')}
-                    className={inputBase}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className={labelBase}>{t('workspace.profileConfig.targetLevelLabel')}</label>
+                      <span className={hintBase}>{t('workspace.profileConfig.optional')}</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={targetLevel}
+                      onChange={(e) => setTargetLevel(e.target.value)}
+                      placeholder={t('workspace.profileConfig.customTargetLevelPlaceholder')}
+                      className={inputBase}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <label className={labelBase}>{t('workspace.profileConfig.learningGoalLabel')} <span className="text-red-500">*</span></label>
+                  <textarea
+                    value={learningGoal}
+                    onChange={(e) => setLearningGoal(e.target.value)}
+                    placeholder={t('workspace.profileConfig.learningGoalPlaceholder')}
+                    rows={3}
+                    className={`${inputBase} resize-none ${errors.learningGoal ? 'border-red-500 focus:ring-red-500/20' : ''}`}
                   />
+                  {errors.learningGoal && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.learningGoal}</p>}
                 </div>
               </div>
             </div>
