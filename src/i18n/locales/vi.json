@@ -11,7 +11,7 @@
     "adminAccounts": "Tài khoản Admin",
     "rbac": "Phân quyền RBAC",
     "subscriptions": "Gói đăng ký",
-    "systemConfig": "Cấu hình lĩnh vực"
+    "creditPackages": "Gói Credit"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",

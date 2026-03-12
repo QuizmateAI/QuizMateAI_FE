@@ -2,8 +2,8 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Users, UsersRound,
-  CreditCard, LogOut, SlidersHorizontal,
-  PanelLeftClose
+  CreditCard, LogOut,
+  PanelLeftClose, Coins
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -16,7 +16,7 @@ const ALL_MENU_ITEMS = [
   { icon: Users, labelKey: 'sidebar.users', path: '/admin/users', alsoMatch: '/admin', requiredPerm: 'user:read', matchPrefix: true },
   { icon: UsersRound, labelKey: 'sidebar.groups', path: '/admin/groups', requiredPerm: 'group:read_all', matchPrefix: true },
   { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/admin/subscriptions', requiredPerm: 'subscription:read' },
-  { icon: SlidersHorizontal, labelKey: 'sidebar.systemConfig', path: '/admin/system-config', requiredPerm: 'system-settings:read' },
+  { icon: Coins, labelKey: 'sidebar.creditPackages', path: '/admin/credit', requiredPerm: 'credit-package:read' },
 ];
 
 const isActive = (item, pathname) => {

@@ -149,8 +149,51 @@ export const getPurchasablePlans = async (type) => {
   return response;
 };
 
+// Credit Package APIs — maps to CreditPackageController (/api/credit-package/...)
+export const getAllCreditPackages = async () => {
+  const response = await api.get('/credit-package/all');
+  return response;
+};
+
+export const getCreditPackageById = async (id) => {
+  const response = await api.get(`/credit-package/${id}`);
+  return response;
+};
+
+export const createCreditPackage = async (data) => {
+  const response = await api.post('/credit-package/create', data);
+  return response;
+};
+
+export const updateCreditPackage = async (id, data) => {
+  const response = await api.put(`/credit-package/${id}`, data);
+  return response;
+};
+
+export const updateCreditPackageStatus = async (id, data) => {
+  const response = await api.patch(`/credit-package/${id}/status`, data);
+  return response;
+};
+
+export const deleteCreditPackage = async (id) => {
+  const response = await api.delete(`/credit-package/${id}`);
+  return response;
+};
+
+// Public purchaseable credit packages for wallet (ACTIVE only)
+export const getPurchaseableCreditPackages = async () => {
+  const response = await api.get('/credit-package/purchaseable');
+  return response;
+};
+
 // Payment APIs — maps to PaymentController (/api/payment/...)
-export const getUserPayments = async () => {
-  const response = await api.get('/payment/user');
+export const getUserPayments = async (page = 0, size = 10) => {
+  const response = await api.get(`/payment/user?page=${page}&size=${size}`);
+  return response;
+};
+
+// Credit Wallet APIs — maps to CreditWalletController (/api/credit-wallet/...)
+export const getMyWallet = async () => {
+  const response = await api.get('/credit-wallet/me');
   return response;
 };
