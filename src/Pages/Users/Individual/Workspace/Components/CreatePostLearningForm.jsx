@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, GraduationCap, ArrowLeft, RefreshCw, Save, Rocket, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { createFullQuiz, getQuizzesByContext } from "@/api/QuizAPI";
+import { createFullQuiz, getQuizzesByScope } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap } from "@/api/RoadmapAPI";
 
 // Danh sách dạng câu hỏi và độ khó
@@ -98,7 +98,7 @@ function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBa
     if (!phaseId) return;
     setCheckingPhase(true);
     try {
-      const res = await getQuizzesByContext("PHASE", Number(phaseId));
+      const res = await getQuizzesByScope("PHASE", Number(phaseId));
       const existing = res.data || [];
       setPhaseHasPostLearning(existing.length > 0);
     } catch (e) {
@@ -132,7 +132,7 @@ function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBa
 
         // Kiểm tra giới hạn: mỗi phase chỉ được 1 post-learning
         try {
-          const existingRes = await getQuizzesByContext("PHASE", Number(selectedPhaseId));
+          const existingRes = await getQuizzesByScope("PHASE", Number(selectedPhaseId));
           const existing = existingRes.data || [];
           if (existing.length > 0) {
             setError(t("workspace.quiz.validation.postLearningLimit"));
@@ -144,8 +144,10 @@ function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBa
         }
 
         const result = await createFullQuiz({
-          contextType: "PHASE",
-          contextId: Number(selectedPhaseId),
+          workspaceId: contextType === 'WORKSPACE' ? contextId : null,
+          roadmapId: null,
+          phaseId: Number(selectedPhaseId),
+          knowledgeId: null,
           title: name,
           duration,
           quizIntent: "POST_LEARNING",

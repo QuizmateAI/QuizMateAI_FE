@@ -10,7 +10,8 @@
     "logout": "Đăng xuất",
     "adminAccounts": "Tài khoản Admin",
     "rbac": "Phân quyền RBAC",
-    "subscriptions": "Gói đăng ký"
+    "subscriptions": "Gói đăng ký",
+    "systemConfig": "Cấu hình lĩnh vực"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -92,6 +93,142 @@
       "fieldsCount": "Số lĩnh vực"
     }
   },
+  "systemConfig": {
+    "badge": "SYSTEM CONFIG",
+    "title": "Cấu hình học tập",
+    "description": "Tạo và quản lý Domain, Knowledge, Scheme và Level dùng trên toàn hệ thống.",
+    "searchPlaceholder": "Tìm theo tiêu đề, mô tả hoặc trạng thái...",
+    "readDeniedTitle": "Bạn không có quyền xem cấu hình học tập",
+    "readDeniedDescription": "Tài khoản hiện tại chưa được cấp quyền truy cập màn hình cấu hình học tập.",
+    "writeDenied": "Chế độ chỉ xem",
+    "entities": {
+      "domain": "Lĩnh vực",
+      "knowledge": "Kiến thức",
+      "scheme": "Khung đánh giá",
+      "level": "Cấp độ"
+    },
+    "panels": {
+      "domain": "Quản lý các nhóm lĩnh vực học tập cấp cao nhất.",
+      "knowledge": "Kiến thức thuộc về một lĩnh vực và xác định hệ thống cấp độ gốc.",
+      "scheme": "Khung đánh giá thuộc về một kiến thức và có thể tinh chỉnh cách đánh giá.",
+      "level": "Cấp độ có thể thuộc về khung đánh giá hoặc trực tiếp thuộc kiến thức."
+    },
+    "filters": {
+      "domain": "Lĩnh vực",
+      "knowledge": "Kiến thức",
+      "scheme": "Khung đánh giá"
+    },
+    "context": {
+      "knowledge": "Đang hiển thị kiến thức của {{parent}}.",
+      "scheme": "Đang hiển thị khung đánh giá của {{parent}}.",
+      "levelScheme": "Đang hiển thị cấp độ của khung {{parent}}.",
+      "levelKnowledge": "Đang hiển thị cấp độ của kiến thức {{parent}}."
+    },
+    "empty": {
+      "domain": "Chưa có lĩnh vực nào.",
+      "knowledge": "Chưa có kiến thức nào.",
+      "scheme": "Chưa có khung đánh giá nào.",
+      "level": "Chưa có cấp độ nào."
+    },
+    "fields": {
+      "domain": "Lĩnh vực",
+      "knowledge": "Kiến thức",
+      "scheme": "Khung đánh giá",
+      "schemeOptional": "Khung đánh giá (tùy chọn)",
+      "parentType": "Loại cha",
+      "title": "Tiêu đề",
+      "status": "Trạng thái",
+      "description": "Mô tả",
+      "levelSystemType": "Hệ thống level",
+      "levelValue": "Giá trị level",
+      "levelValues": "Điểm số",
+      "levelGroup": "Nhóm level",
+      "sortOrder": "Thứ tự"
+    },
+    "placeholders": {
+      "selectDomain": "Chọn lĩnh vực",
+      "selectKnowledge": "Chọn kiến thức",
+      "selectScheme": "Chọn khung đánh giá",
+      "description": "Thêm mô tả hoặc ghi chú sử dụng..."
+    },
+    "parentTypes": {
+      "scheme": "Khung đánh giá",
+      "knowledge": "Kiến thức"
+    },
+    "levelSystems": {
+      "SCORE_BASED": "Theo điểm số",
+      "THREE_LEVEL": "Ba cấp độ"
+    },
+    "levelHints": {
+      "selectParent": "Hãy chọn knowledge trước để biết loại level áp dụng.",
+      "parentType": "Parent này đang dùng mô hình {{type}}.",
+      "scoreBased": "SCORE_BASED: Nhập từng điểm (vd: 5.0) rồi nhấn Enter để thêm vào danh sách.",
+      "threeLevel": "THREE_LEVEL: Level được tạo sẵn (Sơ cấp, Trung cấp, Cao cấp). Chỉ cần chỉnh sửa nếu cần."
+    },
+    "status": {
+      "ACTIVE": "Đang hoạt động",
+      "INACTIVE": "Ngừng hoạt động"
+    },
+    "validation": {
+      "required": "Trường này là bắt buộc."
+    },
+    "messages": {
+      "fetchError": "Không thể tải cấu hình học tập.",
+      "created": "Tạo {{entity}} thành công.",
+      "updated": "Cập nhật {{entity}} thành công.",
+      "deleted": "Xóa {{entity}} thành công.",
+      "saveError": "Không thể lưu {{entity}}.",
+      "deleteError": "Không thể xóa {{entity}}."
+    },
+    "wizard": {
+      "title": "Tạo mới theo từng bước",
+      "action": "Tạo mới",
+      "description": "Làm theo thứ tự Domain → Knowledge → Scheme → Level để đảm bảo logic.",
+      "step1": "Lĩnh vực",
+      "step2": "Kiến thức",
+      "step3": "Khung đánh giá",
+      "step4": "Cấp độ",
+      "step1Desc": "Tạo domain mới hoặc chọn domain có sẵn.",
+      "step2Desc": "Chọn domain và tạo knowledge. Hệ thống level chọn ở đây sẽ áp dụng cho scheme và level.",
+      "step3Desc": "Scheme tùy chọn. LevelSystemType kế thừa từ Knowledge, không thể thay đổi.",
+      "step4Desc": "SCORE_BASED: nhập điểm. THREE_LEVEL: 3 level mặc định hoặc tùy chỉnh 4-5 level.",
+      "createNewDomain": "Tạo domain mới",
+      "domainTitlePlaceholder": "Ngôn ngữ, Khoa học...",
+      "orSelectExisting": "Hoặc chọn domain có sẵn",
+      "step1CreateOrSelect": "Tạo domain mới hoặc chọn domain có sẵn.",
+      "levelSystemTypeHint": "Scheme sẽ kế thừa loại này. Muốn đổi phải quay lại bước 2.",
+      "knowledgeCreateNew": "Tạo knowledge mới",
+      "knowledgeUpdateExisting": "Cập nhật knowledge có sẵn",
+      "selectKnowledgeToUpdate": "Chọn knowledge cần cập nhật",
+      "schemeCreateNew": "Tạo scheme mới",
+      "schemeUpdateExisting": "Cập nhật scheme có sẵn",
+      "selectSchemeToUpdate": "Chọn scheme cần cập nhật",
+      "schemeLevelTypeInherited": "LevelSystemType kế thừa từ Knowledge",
+      "skipScheme": "Bỏ qua Scheme (Level thuộc trực tiếp Knowledge)",
+      "threeLevelDefault": "3 level mặc định (Sơ cấp, Trung cấp, Cao cấp)",
+      "threeLevelCustom": "Tùy chỉnh 4 hoặc 5 level",
+      "customLevelCount": "Số level",
+      "customLevelNamesRequired": "Vui lòng nhập tên cho tất cả level.",
+      "defaultLevelsPreview": "3 level mặc định sẽ được tạo:",
+      "scoreListHint": "Nhập từng điểm (vd: 5.0) rồi nhấn Enter để thêm vào danh sách.",
+      "scoreInputPlaceholder": "5.0 rồi Enter, 5.5 rồi Enter...",
+      "finish": "Hoàn tất"
+    },
+    "dialogs": {
+      "createTitle": "Tạo {{entity}}",
+      "editTitle": "Cập nhật {{entity}}",
+      "createDescription": "Nhập các thông tin cần thiết để tạo mới.",
+      "editDescription": "Chỉnh sửa thông tin và lưu thay đổi.",
+      "createAction": "Tạo mới",
+      "updateAction": "Lưu thay đổi",
+      "saving": "Đang lưu...",
+      "deleteTitle": "Xóa {{entity}}",
+      "deleteDescription": "Thao tác này sẽ xóa vĩnh viễn {{entity}} {{name}}.",
+      "deleteDescriptionDomainCascade": "Xóa Domain {{name}} sẽ xóa vĩnh viễn Domain và tất cả Knowledge, Scheme, Level bên trong. Thao tác không thể hoàn tác. Bạn có chắc chắn?",
+      "deleteAction": "Xóa",
+      "deleting": "Đang xóa..."
+    }
+  },
   "header": {
     "systemTitle": "Hệ thống QuizMate AI",
     "version": "Phiên bản 2026.1.0"
@@ -103,6 +240,8 @@
     "light": "Sáng",
     "dark": "Tối",
     "refresh": "Làm mới",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
     "subscription": "Gói đăng ký",
     "plan": "Gói",
     "optional": "tùy chọn",
@@ -641,6 +780,8 @@
       "domainPlaceholder": "Chọn Lĩnh vực...",
       "programLabel": "Chương trình học",
       "programPlaceholder": "Chọn Chương trình...",
+      "knowledgeLabel": "Knowledge",
+      "knowledgePlaceholder": "Chọn knowledge...",
       "schemeLabel": "Khung đánh giá (Scheme)",
       "schemePlaceholder": "Chọn Scheme...",
       "customSchemeNameLabel": "Tên Lộ trình",
@@ -671,8 +812,10 @@
       "submitBtn": "Hoàn thành thiết lập",
       "errDomain": "Vui lòng chọn Lĩnh vực học (Domain)",
       "errProgram": "Vui lòng chọn Chương trình (Program)",
+      "errKnowledge": "Vui lòng chọn Knowledge",
       "errScheme": "Vui lòng chọn Lộ trình/Nguyên tắc (Scheme)",
       "errCurrentLevel": "Vui lòng chọn Trình độ hiện tại",
+      "errTargetLevelHigher": "Mục tiêu cần cao hơn trình độ hiện tại",
       "errCustomSchemeName": "Vui lòng nhập tên Lộ trình tuỳ chỉnh",
       "errCustomSchemeDesc": "Vui lòng nhập mô tả Lộ trình tuỳ chỉnh",
       "errCustomCurrentLevel": "Vui lòng nhập Trình độ hiện tại"

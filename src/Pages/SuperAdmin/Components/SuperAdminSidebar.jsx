@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Users, UsersRound,
-  PanelLeftClose, LogOut, Shield, CreditCard
+  PanelLeftClose, LogOut, Shield, CreditCard, SlidersHorizontal
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -15,6 +15,7 @@ const menuItems = [
   { icon: Users, labelKey: 'sidebar.users', path: '/super-admin/users', alsoMatch: '/super-admin', matchPrefix: true },
   { icon: UsersRound, labelKey: 'sidebar.groups', path: '/super-admin/groups', matchPrefix: true },
   { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/super-admin/subscriptions' },
+  { icon: SlidersHorizontal, labelKey: 'sidebar.systemConfig', path: '/super-admin/system-config' },
   { icon: Shield, labelKey: 'sidebar.adminAccounts', path: '/super-admin/admins' },
 ];
 

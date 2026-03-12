@@ -188,8 +188,10 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
 
       // Bước 1: Cập nhật thông tin quiz chung
       await updateQuiz(quiz.quizId, {
-        contextType,
-        contextId: Number(contextId),
+        workspaceId: contextType === 'WORKSPACE' ? Number(contextId) : null,
+        roadmapId: contextType === 'ROADMAP' ? Number(contextId) : null,
+        phaseId: contextType === 'PHASE' ? Number(contextId) : null,
+        knowledgeId: contextType === 'KNOWLEDGE' ? Number(contextId) : null,
         title: name,
         duration,
         quizIntent,

@@ -10,28 +10,26 @@ import {
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { Loader2, ChevronDown, Sparkles } from 'lucide-react';
-import { useToast } from '@/context/ToastContext';
 import {
   getActiveDomains,
-  getProgramsByDomainId,
-  getSchemesByProgramId,
+  getKnowledgeByDomainId,
+  getSchemesByKnowledgeId,
   getLevelsBySchemeId,
 } from '@/api/SystemConfigAPI';
 
 function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, isDarkMode, initialData, isReadOnly }) {
   const { t, i18n } = useTranslation();
-  const { showInfo } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [domains, setDomains] = useState([]);
-  const [programs, setPrograms] = useState([]);
+  const [knowledges, setKnowledges] = useState([]);
   const [schemes, setSchemes] = useState([]);
   const [levels, setLevels] = useState([]);
 
   // Form states
   const [schemeMode, setSchemeMode] = useState('system'); // 'system' or 'custom'
   const [domainId, setDomainId] = useState('');
-  const [programId, setProgramId] = useState('');
+  const [knowledgeId, setKnowledgeId] = useState('');
   const [schemeId, setSchemeId] = useState('');
   const [customSchemeName, setCustomSchemeName] = useState('');
   const [customSchemeDescription, setCustomSchemeDescription] = useState('');
@@ -60,25 +58,73 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
   }, [open, initialData]);
 
   useEffect(() => {
-    if (domainId) loadPrograms(domainId);
-    else setPrograms([]);
+    if (domainId) loadKnowledges(domainId);
+    else setKnowledges([]);
   }, [domainId]);
 
   useEffect(() => {
-    if (programId) loadSchemes(programId);
+    if (knowledgeId) loadSchemes(knowledgeId);
     else setSchemes([]);
-  }, [programId]);
+  }, [knowledgeId]);
 
   useEffect(() => {
     if (schemeId) loadLevels(schemeId);
     else setLevels([]);
   }, [schemeId]);
 
+  // Sync currentLevelId/targetLevelId when levels load with legacy numeric ids (convert to composite for multi-value)
+  useEffect(() => {
+    if (!levels.length) return;
+    const opts = levels.flatMap((l) => {
+      const list = l.levelValuesList?.length ? l.levelValuesList : (l.levelValues ? l.levelValues.split(',').map((v) => v.trim()).filter(Boolean) : []);
+      if (list.length > 1) return list.map((val) => ({ levelId: l.levelId, label: val, value: `${l.levelId}::${val}` }));
+      return [{ levelId: l.levelId, label: l.levelGroup || l.levelValues || (list[0] || '-'), value: l.levelId }];
+    });
+    const syncCurrent = (val, setter) => {
+      if (!val) return;
+      const str = String(val);
+      if (str.includes('::')) return;
+      const match = opts.find((o) => String(o.levelId) === str);
+      if (match && match.value !== val) setter(match.value);
+    };
+    const syncTarget = (val, setter) => {
+      if (!val) return;
+      const str = String(val);
+      if (str.includes('::')) return;
+      const match = opts.find((o) => String(o.levelId) === str);
+      if (!match || match.value === val) return;
+      const targetOpts = opts.filter((o) => {
+        const curOpt = opts.find((x) => (String(currentLevelId).includes('::') ? x.value : String(x.levelId)) === currentLevelId) || opts.find((x) => String(x.levelId) === String(currentLevelId));
+        if (!curOpt) return true;
+        const curNum = parseFloat(curOpt.label);
+        const isNum = !Number.isNaN(curNum);
+        return isNum ? parseFloat(o.label) > curNum : opts.indexOf(o) > opts.indexOf(curOpt);
+      });
+      const validMatch = targetOpts.find((o) => String(o.levelId) === str);
+      if (validMatch) setter(validMatch.value);
+      else setter(match.value);
+    };
+    syncCurrent(currentLevelId, setCurrentLevelId);
+    syncTarget(targetLevelId, setTargetLevelId);
+  }, [levels, currentLevelId, targetLevelId]);
+
+  // Reset target when it's no longer valid (e.g. current changed to higher value)
+  // Chỉ chạy khi đã load levels để tránh xóa targetLevelId khi đang load
+  useEffect(() => {
+    if (!targetLevelId || allOpts.length === 0) return;
+    const valid = getTargetLevelOptions().some((o) => optValue(o) === targetLevelId)
+      || allOpts.some((o) => String(o.levelId) === String(targetLevelId));
+    if (!valid) {
+      setTargetLevelId('');
+      setErrors((prev) => ({ ...prev, targetLevelId: null }));
+    }
+  }, [currentLevelId]);
+
   const resetForm = () => {
     if (initialData) {
-      setSchemeMode(initialData.domainId || initialData.programId || initialData.schemeId ? 'system' : 'custom');
+      setSchemeMode(initialData.domainId || initialData.knowledgeId || initialData.schemeId ? 'system' : 'custom');
       setDomainId(initialData.domainId ? String(initialData.domainId) : '');
-      setProgramId(initialData.programId ? String(initialData.programId) : '');
+      setKnowledgeId(initialData.knowledgeId ? String(initialData.knowledgeId) : '');
       setSchemeId(initialData.schemeId ? String(initialData.schemeId) : '');
       setCustomSchemeName(initialData.customSchemeName || '');
       setCustomSchemeDescription(initialData.customSchemeDescription || '');
@@ -95,7 +141,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
     } else {
       setSchemeMode('system');
       setDomainId('');
-      setProgramId('');
+      setKnowledgeId('');
       setSchemeId('');
       setCustomSchemeName('');
       setCustomSchemeDescription('');
@@ -125,18 +171,18 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
     }
   };
 
-  const loadPrograms = async (dId) => {
+  const loadKnowledges = async (dId) => {
     try {
-      const res = await getProgramsByDomainId(dId);
-      setPrograms(res.data || []);
+      const res = await getKnowledgeByDomainId(dId);
+      setKnowledges(res.data || []);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const loadSchemes = async (pId) => {
+  const loadSchemes = async (kId) => {
     try {
-      const res = await getSchemesByProgramId(pId);
+      const res = await getSchemesByKnowledgeId(kId);
       setSchemes(res.data || []);
     } catch (e) {
       console.error(e);
@@ -152,13 +198,50 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
     }
   };
 
+  // Flatten levels into dropdown options: SCORE_BASED with multiple values → one option per value (vertical list)
+  const getLevelOptions = () => {
+    const opts = [];
+    let idx = 0;
+    levels.forEach((l) => {
+      const list = l.levelValuesList?.length ? l.levelValuesList : (l.levelValues ? l.levelValues.split(',').map((v) => v.trim()).filter(Boolean) : []);
+      if (list.length > 1) {
+        list.forEach((val) => opts.push({ levelId: l.levelId, label: val, index: idx++ }));
+      } else {
+        opts.push({ levelId: l.levelId, label: l.levelGroup || l.levelValues || (list[0] || '-'), index: idx++ });
+      }
+    });
+    return opts;
+  };
+
+  const parseLevelId = (val) => (val && String(val).includes('::') ? Number(String(val).split('::')[0]) : val ? Number(val) : null);
+  const allOpts = getLevelOptions();
+  const optValue = (opt) => (opt.label && allOpts.filter((o) => o.levelId === opt.levelId).length > 1 ? `${opt.levelId}::${opt.label}` : opt.levelId);
+
+  // Target level: only options higher than current (numeric compare or index for THREE_LEVEL)
+  const getTargetLevelOptions = (currentVal = currentLevelId) => {
+    if (!currentVal) return allOpts;
+    const currentOpt = allOpts.find((o) => optValue(o) === currentVal) || allOpts.find((o) => String(o.levelId) === String(currentVal));
+    if (!currentOpt) return allOpts;
+    const currentNum = parseFloat(currentOpt.label);
+    const isNumeric = !Number.isNaN(currentNum);
+    return allOpts.filter((o) => {
+      if (isNumeric) return parseFloat(o.label) > currentNum;
+      return o.index > currentOpt.index;
+    });
+  };
+
   const validate = () => {
     const newErrors = {};
     if (schemeMode === 'system') {
       if (!domainId) newErrors.domainId = t('workspace.profileConfig.errDomain');
-      if (!programId) newErrors.programId = t('workspace.profileConfig.errProgram');
+      if (!knowledgeId) newErrors.knowledgeId = t('workspace.profileConfig.errKnowledge');
       if (!schemeId) newErrors.schemeId = t('workspace.profileConfig.errScheme');
       if (!requireAiAssessment && !currentLevelId) newErrors.currentLevelId = t('workspace.profileConfig.errCurrentLevel');
+      if (targetLevelId) {
+        const targetOpts = getTargetLevelOptions();
+        const valid = targetOpts.some((o) => optValue(o) === targetLevelId);
+        if (!valid) newErrors.targetLevelId = t('workspace.profileConfig.errTargetLevelHigher');
+      }
     } else {
       if (!customSchemeName.trim()) newErrors.customSchemeName = t('workspace.profileConfig.errCustomSchemeName');
       if (!customSchemeDescription.trim()) newErrors.customSchemeDescription = t('workspace.profileConfig.errCustomSchemeDesc');
@@ -173,9 +256,9 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await onSave({
+      const payload = {
         domainId: schemeMode === 'system' && domainId ? Number(domainId) : null,
-        programId: schemeMode === 'system' && programId ? Number(programId) : null,
+        knowledgeId: schemeMode === 'system' && knowledgeId ? Number(knowledgeId) : null,
         schemeId: schemeMode === 'system' && schemeId ? Number(schemeId) : null,
         customSchemeName: schemeMode === 'custom' ? customSchemeName.trim() : null,
         customSchemeDescription: schemeMode === 'custom' ? customSchemeDescription.trim() : null,
@@ -183,14 +266,15 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
         strongAreas: strongAreas.trim() || null,
         weakAreas: weakAreas.trim() || null,
         preferredLanguage: preferredLanguage,
-        currentLevelId: schemeMode === 'system' && currentLevelId ? Number(currentLevelId) : null,
-        targetLevelId: schemeMode === 'system' && targetLevelId ? Number(targetLevelId) : null,
+        currentLevelId: schemeMode === 'system' && currentLevelId ? parseLevelId(currentLevelId) : null,
+        targetLevelId: schemeMode === 'system' && targetLevelId ? (parseLevelId(targetLevelId) ?? null) : null,
         customCurrentLevel: schemeMode === 'custom' ? customCurrentLevel.trim() : null,
         customTargetLevel: schemeMode === 'custom' ? customTargetLevel.trim() : null,
         targetExamDate: targetExamDate || null,
         requireAiAssessment: requireAiAssessment
-      });
-    } catch (err) {
+      };
+      await onSave(payload);
+    } catch {
       // Bỏ qua lỗi, parent handle
     } finally {
       setSubmitting(false);
@@ -198,7 +282,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
   };
 
   const handleAiAssessClick = () => {
-    showInfo(t('workspace.profileConfig.aiUpgradeInfo'));
+    console.info(t('workspace.profileConfig.aiUpgradeInfo'));
   };
 
   const inputBase = `w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-all duration-300 shadow-sm focus:ring-2 focus:ring-blue-500/20 ${
@@ -230,7 +314,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
           </DialogTitle>
           <DialogDescription className={`text-[15px] pt-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
             {isReadOnly 
-              ? t('workspace.profileConfig.readOnlyDesc') 
+              ? t('workspace.profileConfig.readOnlyDesc')
               : t('workspace.profileConfig.editDesc')}
           </DialogDescription>
         </DialogHeader>
@@ -285,7 +369,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                             value={domainId}
                             onChange={(e) => {
                           setDomainId(e.target.value);
-                          setProgramId('');
+                          setKnowledgeId('');
                           setSchemeId('');
                           setCurrentLevelId('');
                           setTargetLevelId('');
@@ -294,7 +378,7 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                           >
                             <option value="">{t('workspace.profileConfig.domainPlaceholder')}</option>
                             {domains.map((d) => (
-                              <option key={d.domainId} value={d.domainId}>{d.name}</option>
+                              <option key={d.domainId} value={d.domainId}>{d.title || d.name}</option>
                             ))}
                           </select>
                           <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
@@ -302,31 +386,31 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                         {errors.domainId && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.domainId}</p>}
                       </div>
 
-                      {/* Program */}
+                      {/* Knowledge */}
                       <div>
                         <label className={labelBase}>
-                          {t('workspace.profileConfig.programLabel')} <span className="text-red-500">*</span>
+                          {t('workspace.profileConfig.knowledgeLabel')} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <select
-                            value={programId}
+                            value={knowledgeId}
                             onChange={(e) => {
-                          setProgramId(e.target.value);
+                          setKnowledgeId(e.target.value);
                           setSchemeId('');
                           setCurrentLevelId('');
                           setTargetLevelId('');
                         }}
-                            className={`${selectBase} ${errors.programId ? 'border-red-500' : ''} ${!domainId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
+                            className={`${selectBase} ${errors.knowledgeId ? 'border-red-500' : ''} ${!domainId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
                             disabled={!domainId}
                           >
-                            <option value="">{t('workspace.profileConfig.programPlaceholder')}</option>
-                            {programs.map((p) => (
-                              <option key={p.programId} value={p.programId}>{p.name}</option>
+                            <option value="">{t('workspace.profileConfig.knowledgePlaceholder')}</option>
+                            {knowledges.map((k) => (
+                              <option key={k.knowledgeId} value={k.knowledgeId}>{k.title || k.name}</option>
                             ))}
                           </select>
                           <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
                         </div>
-                        {errors.programId && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.programId}</p>}
+                        {errors.knowledgeId && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.knowledgeId}</p>}
                       </div>
                     </div>
 
@@ -343,12 +427,12 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                           setCurrentLevelId('');
                           setTargetLevelId('');
                         }}
-                          className={`${selectBase} ${errors.schemeId ? 'border-red-500' : ''} ${!programId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
-                          disabled={!programId}
+                          className={`${selectBase} ${errors.schemeId ? 'border-red-500' : ''} ${!knowledgeId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
+                          disabled={!knowledgeId}
                         >
                           <option value="">{t('workspace.profileConfig.schemePlaceholder')}</option>
                           {schemes.map((s) => (
-                            <option key={s.schemeId} value={s.schemeId}>{s.name}</option>
+                            <option key={s.schemeId} value={s.schemeId}>{s.title || s.name}</option>
                           ))}
                         </select>
                         <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
@@ -401,13 +485,21 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                         <div className="relative">
                           <select
                             value={currentLevelId}
-                            onChange={(e) => setCurrentLevelId(e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCurrentLevelId(val);
+                              const targetOpts = getTargetLevelOptions(val);
+                              if (targetLevelId && !targetOpts.some((o) => optValue(o) === targetLevelId)) {
+                                setTargetLevelId('');
+                                setErrors((prev) => ({ ...prev, targetLevelId: null }));
+                              }
+                            }}
                             className={`${selectBase} ${errors.currentLevelId ? 'border-red-500' : ''} ${(!schemeId || requireAiAssessment) ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
                             disabled={!schemeId || requireAiAssessment}
                           >
                             <option value="">{t('workspace.profileConfig.currentLevelPlaceholder')}</option>
-                            {levels.map((l) => (
-                              <option key={l.levelId} value={l.levelId}>{l.name}</option>
+                            {allOpts.map((opt, idx) => (
+                              <option key={`${opt.levelId}-${opt.label}-${idx}`} value={optValue(opt)}>{opt.label}</option>
                             ))}
                           </select>
                           <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
@@ -481,17 +573,27 @@ function IndividualWorkspaceProfileConfigDialog({ open, onOpenChange, onSave, is
                     {schemeMode === 'system' ? (
                       <div className="relative">
                         <select
-                          value={targetLevelId}
-                          onChange={(e) => setTargetLevelId(e.target.value)}
-                          className={`${selectBase} ${!schemeId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
+                          value={(() => {
+                            const targetOpts = getTargetLevelOptions();
+                            if (targetOpts.some((o) => optValue(o) === targetLevelId)) return targetLevelId;
+                            if (targetLevelId && targetOpts.some((o) => String(o.levelId) === String(targetLevelId)))
+                              return optValue(targetOpts.find((o) => String(o.levelId) === String(targetLevelId)));
+                            return '';
+                          })()}
+                          onChange={(e) => {
+                            setTargetLevelId(e.target.value);
+                            setErrors((prev) => ({ ...prev, targetLevelId: null }));
+                          }}
+                          className={`${selectBase} ${errors.targetLevelId ? 'border-red-500' : ''} ${!schemeId ? 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800' : ''}`}
                           disabled={!schemeId}
                         >
                           <option value="">{t('workspace.profileConfig.targetLevelPlaceholder')}</option>
-                          {levels.map((l) => (
-                            <option key={l.levelId} value={l.levelId}>{l.name}</option>
+                          {getTargetLevelOptions().map((opt, idx) => (
+                            <option key={`${opt.levelId}-${opt.label}-${idx}`} value={optValue(opt)}>{opt.label}</option>
                           ))}
                         </select>
                         <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
+                        {errors.targetLevelId && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.targetLevelId}</p>}
                       </div>
                     ) : (
                       <input

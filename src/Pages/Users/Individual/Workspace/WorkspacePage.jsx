@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
@@ -16,13 +16,12 @@ import { generateMockTest } from "@/api/AIAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
-import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 import { useToast } from "@/context/ToastContext";
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
 	const location = useLocation();
-	const navigate = useNavigateWithLoading();
+	const navigate = useNavigate();
 	const { t, i18n } = useTranslation();
 	const { isDarkMode, toggleDarkMode } = useDarkMode();
 	const { showError, showInfo } = useToast();
@@ -158,7 +157,7 @@ function WorkspacePage() {
 				const profileData = profileRes?.data?.data || profileRes?.data || null;
 				const isConfigured = profileData && (
 					profileData.domainId ||
-					profileData.programId ||
+					profileData.knowledgeId ||
 					profileData.schemeId ||
 					(profileData.customSchemeName && profileData.customSchemeDescription)
 				);
@@ -183,10 +182,18 @@ function WorkspacePage() {
 		};
 	}, [workspaceId, fetchSources, profileConfigOpen, fetchWorkspaceDetail]);
 
-	// Xử lý đóng profile config dialog (kể cả khi bấm Bỏ qua)
+	// Xử lý đóng/mở profile config dialog
 	const handleProfileConfigChange = useCallback((open) => {
 		setProfileConfigOpen(open);
-		if (!open && location.state?.openProfileConfig) {
+		if (open) {
+			// Refetch profile khi mở để luôn có dữ liệu mới nhất (bao gồm targetLevelId)
+			getIndividualWorkspaceProfile(workspaceId)
+				.then((res) => {
+					const profileData = res?.data?.data || res?.data || res;
+					if (profileData) setWorkspaceProfile(profileData);
+				})
+				.catch(() => {});
+		} else if (location.state?.openProfileConfig) {
 			navigate(`/workspace/${workspaceId}`, { replace: true });
 		}
 	}, [location.state, navigate, workspaceId]);
@@ -194,7 +201,9 @@ function WorkspacePage() {
 	// Xử lý lưu cấu hình IndividualWorkspaceProfile
 	const handleSaveProfileConfig = useCallback(async (data) => {
 		try {
-			await configureIndividualWorkspaceProfile(workspaceId, data);
+			const res = await configureIndividualWorkspaceProfile(workspaceId, data);
+			const savedProfile = res?.data?.data || res?.data || res;
+			if (savedProfile) setWorkspaceProfile(savedProfile);
 			setProfileConfigOpen(false);
 			setIsProfileConfigured(true); // Đánh dấu là đã cấu hình
 			fetchWorkspaceDetail(workspaceId);
@@ -241,7 +250,7 @@ function WorkspacePage() {
 				}
 			}
 
-			// Xóa state để không mở lại khi reload
+			// Xóa state để không mở lại khi reload (dùng navigate để tránh loading vô hạn khi cùng URL)
 			navigate(`/workspace/${workspaceId}`, { replace: true });
 		} catch (error) {
 			console.error("Failed to config profile:", error);
@@ -264,7 +273,7 @@ function WorkspacePage() {
 	const handleUploadFiles = useCallback(async (files) => {
         try {
             // Upload tất cả files song song thay vì tuần tự
-            const uploadPromises = files.map(file => uploadMaterial(file, workspaceId, "WORKSPACE"));
+            const uploadPromises = files.map(file => uploadMaterial(file, workspaceId));
             await Promise.all(uploadPromises);
             // Refresh list after all uploads complete
             fetchSources();
@@ -276,7 +285,7 @@ function WorkspacePage() {
 	// Xóa tài liệu đơn lẻ
 	const handleRemoveSource = useCallback(async (sourceId) => {
         try {
-            await deleteMaterial(sourceId, "WORKSPACE");
+            await deleteMaterial(sourceId);
             fetchSources();
         } catch (error) {
             console.error("Failed to delete material:", error);
@@ -287,7 +296,7 @@ function WorkspacePage() {
 	const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
         try {
             // Xóa tất cả files song song thay vì tuần tự
-            const deletePromises = sourceIds.map(id => deleteMaterial(id, "WORKSPACE"));
+            const deletePromises = sourceIds.map(id => deleteMaterial(id));
             await Promise.all(deletePromises);
             fetchSources();
         } catch (error) {
