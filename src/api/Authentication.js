@@ -76,6 +76,16 @@ export const checkUsername = async (username) => {
 };
 
 /**
+ * Kiểm tra email có khả dụng không
+ * @param {string} email - Email cần kiểm tra
+ * @returns {Promise} Response chứa trạng thái khả dụng
+ */
+export const checkEmail = async (email) => {
+  const response = await api.get(`/auth/check-email?email=${encodeURIComponent(email)}`);
+  return response;
+};
+
+/**
  * Đăng nhập bằng Google
  * @param {string} idToken - Google Credential/Access Token
  * @returns {Promise} Response chứa token và thông tin user

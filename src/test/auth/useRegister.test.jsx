@@ -1,12 +1,19 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useRegister } from '@/Pages/Authentication/Register';
-import { sendOTP, verifyOTP, register } from '@/api/Authentication';
+import { checkEmail, checkUsername, sendOTP, verifyOTP, register } from '@/api/Authentication';
+import { waitForOtpStatus } from '@/lib/authOtpSocket';
 
 vi.mock('@/api/Authentication', () => ({
+  checkEmail: vi.fn(),
+  checkUsername: vi.fn(),
   sendOTP: vi.fn(),
   verifyOTP: vi.fn(),
   register: vi.fn(),
+}));
+
+vi.mock('@/lib/authOtpSocket', () => ({
+  waitForOtpStatus: vi.fn(),
 }));
 
 describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
@@ -27,6 +34,8 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
   beforeEach(() => {
     setView = vi.fn();
     vi.clearAllMocks();
+    checkUsername.mockResolvedValue({ statusCode: 200, data: true });
+    checkEmail.mockResolvedValue({ statusCode: 200, data: true });
   });
 
   afterEach(() => {
@@ -49,6 +58,8 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
     });
 
     expect(sendOTP).not.toHaveBeenCalled();
+    expect(checkUsername).not.toHaveBeenCalled();
+    expect(checkEmail).not.toHaveBeenCalled();
     expect(result.current.fieldErrors.fullname).toBe('validation.fullnameRequired');
     expect(result.current.fieldErrors.username).toBe('validation.usernameLength');
     expect(result.current.fieldErrors.email).toBe('validation.emailInvalid');
@@ -57,7 +68,11 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
   });
 
   it('TC_AUTH_03: sends OTP and moves to OTP step for valid registration form', async () => {
-    sendOTP.mockResolvedValue({ statusCode: 200 });
+    sendOTP.mockResolvedValue({ statusCode: 202 });
+    waitForOtpStatus.mockImplementation(async (_email, sendOtpRequest) => {
+      await sendOtpRequest();
+      return { success: true, message: 'OTP đã được gửi thành công' };
+    });
 
     const { result } = renderHook(() => useRegister(setView, t));
     fillValidForm(result);
@@ -67,8 +82,28 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
     });
 
     expect(sendOTP).toHaveBeenCalledWith('user@example.com');
+    expect(waitForOtpStatus).toHaveBeenCalledWith('user@example.com', expect.any(Function));
+    expect(checkUsername).toHaveBeenCalledWith('user123');
+    expect(checkEmail).toHaveBeenCalledWith('user@example.com');
     expect(result.current.registerStep).toBe('otp');
     expect(result.current.successMessage).toBe('auth.registerOtpSent');
+  });
+
+  it('blocks OTP sending when username or email already exists', async () => {
+    checkUsername.mockResolvedValue({ statusCode: 200, data: false });
+    checkEmail.mockResolvedValue({ statusCode: 200, data: false });
+
+    const { result } = renderHook(() => useRegister(setView, t));
+    fillValidForm(result);
+
+    await act(async () => {
+      await result.current.handleRegisterSubmit({ preventDefault: vi.fn() });
+    });
+
+    expect(sendOTP).not.toHaveBeenCalled();
+    expect(result.current.fieldErrors.username).toBe('auth.usernameExists');
+    expect(result.current.fieldErrors.email).toBe('auth.emailExists');
+    expect(result.current.registerStep).toBe('form');
   });
 
   it('completes OTP verification and registration then returns to login', async () => {

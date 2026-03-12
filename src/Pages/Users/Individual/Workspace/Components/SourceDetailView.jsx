@@ -8,7 +8,7 @@ const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 function sanitizeExtractedText(text) {
   if (!text) return "";
   return text
-    .replace(/\[Phân tích ảnh:[\s\S]*?\]/g, "")
+    .replace(/\[Phân tích ảnh[\s\S]*?\]/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -104,7 +104,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack }) {
 
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   const fetchContent = useCallback(async () => {
     if (!source?.id) return;

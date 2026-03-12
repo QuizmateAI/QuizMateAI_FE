@@ -384,6 +384,11 @@ const LoginPageContent = () => {
                     {registerHook.fieldErrors?.username && (
                       <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.username}</p>
                     )}
+                    {!registerHook.fieldErrors?.username && registerHook.availabilityStatus?.username?.message && (
+                      <p className={`text-xs mt-1 ml-1 ${registerHook.availabilityStatus.username.available ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
+                        {registerHook.availabilityStatus.username.message}
+                      </p>
+                    )}
                   </div>
 
                   {/* Email */}
@@ -397,6 +402,11 @@ const LoginPageContent = () => {
                     />
                     {registerHook.fieldErrors?.email && (
                       <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.email}</p>
+                    )}
+                    {!registerHook.fieldErrors?.email && registerHook.availabilityStatus?.email?.message && (
+                      <p className={`text-xs mt-1 ml-1 ${registerHook.availabilityStatus.email.available ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
+                        {registerHook.availabilityStatus.email.message}
+                      </p>
                     )}
                   </div>
 
@@ -447,7 +457,7 @@ const LoginPageContent = () => {
                   {/* Submit Button - Gửi OTP */}
                   <Button
                     type="submit"
-                    disabled={registerHook.isLoading}
+                    disabled={registerHook.isLoading || registerHook.availabilityStatus?.username?.checking || registerHook.availabilityStatus?.email?.checking}
                     className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
                   >
                     {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.createAccount')}
