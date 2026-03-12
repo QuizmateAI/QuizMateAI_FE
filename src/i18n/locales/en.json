@@ -96,6 +96,8 @@
   "systemConfig": {
     "badge": "SYSTEM CONFIG",
     "title": "Learning Configuration",
+    "removedTitle": "Learning configuration has been simplified",
+    "removedDesc": "Domain, Knowledge, Scheme, and Level have been removed. Users configure directly via document description, level, and goals in Workspace.",
     "description": "Create and maintain domains, knowledge, schemes, and levels used across the platform.",
     "searchPlaceholder": "Search by title, description, or status...",
     "readDeniedTitle": "System configuration access is blocked",
@@ -130,6 +132,8 @@
       "scheme": "No schemes found.",
       "level": "No levels found."
     },
+    "viewLevels": "View {{count}} levels",
+    "viewLevelsPopupTitle": "Level list",
     "fields": {
       "domain": "Domain",
       "knowledge": "Knowledge",
@@ -771,7 +775,7 @@
       "title": "Workspace profile setup",
       "updated": "Updated",
       "readOnlyDesc": "Summary of current advanced configuration for this learning workspace.",
-      "editDesc": "Configure advanced info (Domain, Program, Goals) so the system can personalize your learning experience.",
+      "editDesc": "Configure document description, level, goals and strengths/weaknesses so the system can personalize your learning.",
       "loadingConfig": "Loading configuration data...",
       "aiUpgradeInfo": "The AI system is being upgraded to create competency assessments (Pre-learning). Please try again later!",
       "modeSystem": "System",
@@ -788,8 +792,10 @@
       "customSchemeNamePlaceholder": "E.g.: IELTS 7.5 preparation...",
       "customSchemeDescLabel": "Detailed description",
       "customSchemeDescPlaceholder": "Describe your requirements, weaknesses/strengths so AI can create a suitable pathway...",
+      "documentDescriptionLabel": "Document description",
+      "documentDescriptionPlaceholder": "Describe your learning materials and topics...",
       "currentLevelLabel": "Current level",
-      "currentLevelPlaceholder": "Select level...",
+      "currentLevelPlaceholder": "E.g.: B1 level, IELTS 5.0, Beginner...",
       "aiAssessCheckbox": "Instant AI competency assessment",
       "aiAssessCheckboxDesc": "Take a test to determine your level",
       "customCurrentLevelPlaceholder": "E.g.: IELTS 5.0...",
@@ -818,7 +824,11 @@
       "errTargetLevelHigher": "Target level must be higher than current level",
       "errCustomSchemeName": "Please enter a custom pathway name",
       "errCustomSchemeDesc": "Please enter a custom pathway description",
-      "errCustomCurrentLevel": "Please enter your current level"
+      "errCustomCurrentLevel": "Please enter your current level",
+      "errLearningGoal": "Please enter your learning goal",
+      "targetExamDateLabel": "Target exam date",
+      "showMore": "More options",
+      "showLess": "Show less"
     },
     "sources": {
       "title": "Sources",

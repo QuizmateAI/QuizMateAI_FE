@@ -96,6 +96,8 @@
   "systemConfig": {
     "badge": "SYSTEM CONFIG",
     "title": "Cấu hình học tập",
+    "removedTitle": "Cấu hình học tập đã được đơn giản hóa",
+    "removedDesc": "Domain, Knowledge, Scheme, Level đã được loại bỏ. Người dùng cấu hình trực tiếp qua mô tả tài liệu, trình độ và mục tiêu trong Workspace.",
     "description": "Tạo và quản lý Domain, Knowledge, Scheme và Level dùng trên toàn hệ thống.",
     "searchPlaceholder": "Tìm theo tiêu đề, mô tả hoặc trạng thái...",
     "readDeniedTitle": "Bạn không có quyền xem cấu hình học tập",
@@ -130,6 +132,8 @@
       "scheme": "Chưa có khung đánh giá nào.",
       "level": "Chưa có cấp độ nào."
     },
+    "viewLevels": "Xem {{count}} cấp độ",
+    "viewLevelsPopupTitle": "Danh sách cấp độ",
     "fields": {
       "domain": "Lĩnh vực",
       "knowledge": "Kiến thức",
@@ -771,7 +775,7 @@
       "title": "Thiết lập thông tin không gian",
       "updated": "Đã cập nhật",
       "readOnlyDesc": "Tóm tắt các thông tin cấu hình chuyên sâu hiện tại của không gian học tập này.",
-      "editDesc": "Cấu hình các thông tin chuyên sâu (Lĩnh vực, Chương trình, Mục tiêu) để hệ thống cá nhân hóa tốt nhất cho bạn.",
+      "editDesc": "Cấu hình mô tả tài liệu, trình độ, mục tiêu và điểm mạnh/yếu để hệ thống cá nhân hóa tốt nhất cho bạn.",
       "loadingConfig": "Đang tải dữ liệu cấu hình...",
       "aiUpgradeInfo": "Hệ thống AI đang được nâng cấp để tạo bài kiểm tra năng lực (Pre-learning). Vui lòng thử lại sau!",
       "modeSystem": "Theo hệ thống",
@@ -788,8 +792,10 @@
       "customSchemeNamePlaceholder": "Ví dụ: Luyện thi IELTS mục tiêu 7.5...",
       "customSchemeDescLabel": "Mô tả chi tiết",
       "customSchemeDescPlaceholder": "Mô tả các yêu cầu, điểm yếu/mạnh để AI lập lộ trình phù hợp...",
+      "documentDescriptionLabel": "Mô tả tài liệu",
+      "documentDescriptionPlaceholder": "Mô tả nội dung tài liệu, chủ đề học tập của bạn...",
       "currentLevelLabel": "Trình độ hiện tại",
-      "currentLevelPlaceholder": "Chọn trình độ...",
+      "currentLevelPlaceholder": "VD: Trình độ B1, IELTS 5.0, Sơ cấp...",
       "aiAssessCheckbox": "Bài test đánh giá năng lực AI lập tức",
       "aiAssessCheckboxDesc": "Sẽ làm bài kiểm tra để xác định trình độ",
       "customCurrentLevelPlaceholder": "VD: 5.0 IELTS...",
@@ -818,7 +824,11 @@
       "errTargetLevelHigher": "Mục tiêu cần cao hơn trình độ hiện tại",
       "errCustomSchemeName": "Vui lòng nhập tên Lộ trình tuỳ chỉnh",
       "errCustomSchemeDesc": "Vui lòng nhập mô tả Lộ trình tuỳ chỉnh",
-      "errCustomCurrentLevel": "Vui lòng nhập Trình độ hiện tại"
+      "errCustomCurrentLevel": "Vui lòng nhập Trình độ hiện tại",
+      "errLearningGoal": "Vui lòng nhập mục tiêu học tập",
+      "targetExamDateLabel": "Ngày thi mục tiêu",
+      "showMore": "Thêm tùy chọn",
+      "showLess": "Thu gọn"
     },
     "sources": {
       "title": "Tài liệu",
