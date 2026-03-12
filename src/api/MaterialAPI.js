@@ -24,6 +24,22 @@ export const getExtractedSummary = async (materialId) => {
   return response;
 };
 
+// Lấy chi tiết moderation report từ materialId
+export const getModerationReportDetail = async (materialId) => {
+  const response = await api.get(`/materials/${materialId}/moderation-report/detail`);
+  return response;
+};
+
+// Duyệt tài liệu bị cảnh báo
+export const reviewMaterial = async (materialId, isApproved) => {
+  const response = await api.post(`/materials/${materialId}/review`, null, {
+    params: {
+      isApproved,
+    },
+  });
+  return response;
+};
+
 // Upload tài liệu
 export const uploadMaterial = async (file, workspaceId) => {
   if (!workspaceId) {

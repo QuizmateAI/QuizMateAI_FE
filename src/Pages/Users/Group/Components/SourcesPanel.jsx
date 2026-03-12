@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle } from "lucide-react";
+import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import SourceDetailView from "./SourceDetailView";
 
@@ -30,6 +30,8 @@ function getSourceIcon(type) {
 function getSourceDisplayIcon(source) {
   const status = source?.status?.toUpperCase();
   if (status === "ERROR") return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />;
+  if (status === "WARN" || status === "WARNED") return <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />;
+  if (status === "REJECT" || status === "REJECTED") return <Ban className="w-4 h-4 text-red-600 shrink-0" />;
   if (status === "PROCESSING") return <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />;
   return getSourceIcon(source?.type);
 }
@@ -39,8 +41,14 @@ function canOpenSourceDetail(source) {
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED", "ERROR"].includes(status);
 }
 
+// Kiểm tra có thể tick chọn tài liệu không - REJECT thì không cho chọn
+function canSelectSource(source) {
+  const status = source?.status?.toUpperCase();
+  return status !== "REJECT" && status !== "REJECTED";
+}
+
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
-function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, isCollapsed = false, onToggleCollapse }) {
+function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, onSourceUpdated, isCollapsed = false, onToggleCollapse }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [search, setSearch] = useState("");
@@ -59,7 +67,7 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
     );
   };
 
-  const selectAll = () => setSelectedIds(filtered.map((s) => s.id));
+  const selectAll = () => setSelectedIds(filtered.filter(s => canSelectSource(s)).map((s) => s.id));
   const deselectAll = () => setSelectedIds([]);
 
   const handleRemoveSelected = async () => {
@@ -170,6 +178,10 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
         <SourceDetailView
           isDarkMode={isDarkMode}
           source={viewingSource}
+          onSourceUpdated={(updatedSource) => {
+            setViewingSource(updatedSource);
+            onSourceUpdated?.(updatedSource);
+          }}
           onBack={() => setViewingSource(null)}
         />
       </aside>
@@ -256,6 +268,8 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
           <div className="space-y-1">
             {filtered.map((source) => {
               const isSelected = selectedIds.includes(source.id);
+              const isRejected = ["REJECT", "REJECTED"].includes(source.status?.toUpperCase());
+              const isWarned = ["WARN", "WARNED"].includes(source.status?.toUpperCase());
               return (
                 <div
                   key={source.id}
@@ -266,10 +280,16 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                   } ${!isSelected ? "border border-transparent" : ""}`}
                 >
                   {/* Checkbox — click riêng để chọn/bỏ chọn */}
-                  <div className="shrink-0 cursor-pointer" onClick={() => toggleSelect(source.id)}>
-                    {isSelected
-                      ? <CheckSquare className="w-4 h-4 text-blue-500" />
-                      : <Square className={`w-4 h-4 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
+                  <div 
+                    className={`shrink-0 ${canSelectSource(source) ? "cursor-pointer" : "cursor-not-allowed"}`}
+                    onClick={() => canSelectSource(source) && toggleSelect(source.id)}
+                    title={isRejected ? "Không thể chọn tài liệu này" : undefined}
+                  >
+                    {isRejected
+                      ? <Square className={`w-4 h-4 ${isDarkMode ? "text-red-800" : "text-red-300"} opacity-50`} />
+                      : isSelected
+                        ? <CheckSquare className="w-4 h-4 text-blue-500" />
+                        : <Square className={`w-4 h-4 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
                     }
                   </div>
 
@@ -280,24 +300,59 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                       if (!canOpenSourceDetail(source)) return;
                       setViewingSource(source);
                     }}
-                    title={!canOpenSourceDetail(source) ? "Tài liệu đang được xử lý, vui lòng đợi." : undefined}
+                    title={!canOpenSourceDetail(source) ? (source.status?.toUpperCase() === "REJECT" ? "Tài liệu không liên quan đến học tập" : "Tài liệu đang được xử lý, vui lòng đợi.") : undefined}
                   >
-                    {/* Icon trạng thái: ERROR (chấm than), PROCESSING (spinner), hoặc icon file thông thường */}
+                    {/* Icon trạng thái: ERROR (chấm than), WARN (chấm than vàng), REJECT (ban), PROCESSING (spinner), hoặc icon file thông thường */}
                     {getSourceDisplayIcon(source)}
                     <div className="min-w-0 flex-1 text-left">
                       <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{source.name}</p>
-                      <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                        {formatFileType(source.type)} 
-                        {source.status?.toUpperCase() === "ERROR" ? (
-                          <span className="text-red-500 ml-1">• Lỗi tải lên</span>
-                        ) : source.status?.toUpperCase() === "PROCESSING" ? (
-                          <span className="text-blue-500 ml-1">• Đang tải lên...</span>
-                        ) : (
-                          source.size && <span>• {source.size}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatFileType(source.type)}</span>
+                        {source.status?.toUpperCase() === "ERROR" && (
+                          <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-red-950/60 text-red-400" : "bg-red-100 text-red-600"}`}>
+                            Lỗi tải lên
+                          </span>
                         )}
-                      </p>
+                        {(source.status?.toUpperCase() === "WARN" || source.status?.toUpperCase() === "WARNED") && (
+                          <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-amber-950/60 text-amber-400" : "bg-amber-100 text-amber-700"}`}>
+                            ⚠ Nội dung cảnh báo
+                          </span>
+                        )}
+                        {(source.status?.toUpperCase() === "REJECT" || source.status?.toUpperCase() === "REJECTED") && (
+                          <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-red-950/60 text-red-400" : "bg-red-100 text-red-700"}`}>
+                            Không liên quan
+                          </span>
+                        )}
+                        {source.status?.toUpperCase() === "PROCESSING" && (
+                          <span className={`inline-flex items-center text-xs ${isDarkMode ? "text-blue-400" : "text-blue-500"}`}>
+                            Đang tải lên...
+                          </span>
+                        )}
+                        {!source.status || ["ACTIVE"].includes(source.status?.toUpperCase()) ? (
+                          source.size && <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{source.size}</span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
+
+                  {isRejected && onRemoveSource && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRemoveSource(source.id);
+                      }}
+                      className={`shrink-0 min-w-8 h-8 px-2 rounded-lg flex items-center justify-center transition-colors ${
+                        isDarkMode
+                          ? "text-red-400 hover:bg-red-950/40"
+                          : "text-red-600 hover:bg-red-50"
+                      }`}
+                      title="Xóa tài liệu bị từ chối"
+                      aria-label={`Xóa ${source.name}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               );
             })}
