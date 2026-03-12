@@ -851,7 +851,18 @@
       "loadingSummary": "Loading summary...",
       "noContent": "No content to display.",
       "noSummary": "No AI summary available for this document yet.",
-      "loadError": "Failed to load content."
+      "loadError": "Failed to load content.",
+      "renameDialogTitle": "Rename {{name}}?",
+      "renameLabel": "Source name",
+      "renameSuccess": "Document renamed successfully!",
+      "deleteDialogTitle": "Delete document?",
+      "deleteDialogDesc": "Are you sure you want to delete '{{name}}'? This action cannot be undone.",
+      "deleteMultipleDesc": "Are you sure you want to delete {{count}} selected documents? This action cannot be undone.",
+      "deleteConfirmBtn": "Delete",
+      "cancelBtn": "Cancel",
+      "saveBtn": "Save",
+      "menuRename": "Rename",
+      "menuDelete": "Delete"
     },
     "chat": {
       "title": "Learning Area",

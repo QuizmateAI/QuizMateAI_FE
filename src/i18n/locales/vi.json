@@ -851,7 +851,18 @@
       "loadingSummary": "Đang tải tóm tắt...",
       "noContent": "Không có nội dung để hiển thị.",
       "noSummary": "Chưa có tóm tắt AI cho tài liệu này.",
-      "loadError": "Không thể tải nội dung."
+      "loadError": "Không thể tải nội dung.",
+      "renameDialogTitle": "Đổi tên {{name}}?",
+      "renameLabel": "Tên nguồn",
+      "renameSuccess": "Đổi tên tài liệu thành công!",
+      "deleteDialogTitle": "Xóa tài liệu?",
+      "deleteDialogDesc": "Bạn có chắc muốn xóa '{{name}}'? Hành động này không thể hoàn tác.",
+      "deleteMultipleDesc": "Bạn có chắc muốn xóa {{count}} tài liệu đã chọn? Hành động này không thể hoàn tác.",
+      "deleteConfirmBtn": "Xóa",
+      "cancelBtn": "Hủy",
+      "saveBtn": "Lưu",
+      "menuRename": "Đổi tên",
+      "menuDelete": "Xóa"
     },
     "chat": {
       "title": "Khu vực học tập",
