@@ -40,6 +40,12 @@ export const reviewMaterial = async (materialId, isApproved) => {
   return response;
 };
 
+// Đổi tên tài liệu
+export const renameMaterial = async (materialId, title) => {
+  const response = await api.put('/materials/rename-title', { materialId, title });
+  return response;
+};
+
 // Upload tài liệu
 export const uploadMaterial = async (file, workspaceId) => {
   if (!workspaceId) {

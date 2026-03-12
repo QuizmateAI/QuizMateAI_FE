@@ -7,7 +7,7 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import WebSocketStatus from "@/Components/features/WebSocketStatus";
-import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
+// import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
 
 // Header cho Group Workspace - hiển thị tên nhóm và các hành động đặc thù
 function GroupWorkspaceHeader({ 
@@ -21,7 +21,7 @@ function GroupWorkspaceHeader({
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const navigate = useNavigate();
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  // const [upgradeOpen, setUpgradeOpen] = useState(false);
 
  
 
@@ -48,7 +48,7 @@ function GroupWorkspaceHeader({
 
         <div className="flex items-center gap-2">
           <WebSocketStatus isConnected={wsConnected} isDarkMode={isDarkMode} compact />
-          <Button
+          {/* <Button
             onClick={() => setUpgradeOpen(true)}
             variant="outline"
             className={`rounded-full h-9 px-4 flex items-center gap-2 ${
@@ -57,7 +57,7 @@ function GroupWorkspaceHeader({
           >
             <Zap className="w-4 h-4" />
             <span className={fontClass}>{t("upgradePlan.upgradeBtn")}</span>
-          </Button>
+          </Button> */}
 
           <Button
             onClick={onOpenInvite}
@@ -75,12 +75,12 @@ function GroupWorkspaceHeader({
       </div>
     </header>
 
-    <UpgradePlanDialog
+    {/* <UpgradePlanDialog
       open={upgradeOpen}
       onOpenChange={setUpgradeOpen}
       planType="GROUP"
       preSelectedGroupId={groupId}
-    />
+    /> */}
     </>
   );
 }
