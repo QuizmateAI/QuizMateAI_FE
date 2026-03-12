@@ -2,6 +2,25 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
+function normalizeStatus(status) {
+  if (!status) return status;
+  const upper = String(status).toUpperCase();
+  if (upper === "WARNED") return "WARN";
+  if (upper === "REJECTED") return "REJECT";
+  return upper;
+}
+
+function normalizeMaterialPayload(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+
+  const normalizedStatus = normalizeStatus(payload.status || payload.final_status);
+  return {
+    ...payload,
+    ...(normalizedStatus ? { status: normalizedStatus } : {}),
+    ...(payload.final_status ? { final_status: normalizeStatus(payload.final_status) } : {}),
+  };
+}
+
 /**
  * Hook quản lý WebSocket connection cho realtime updates (STOMP over SockJS)
  * @param {Object} options - WebSocket options
@@ -111,7 +130,7 @@ export function useWebSocket({
               
               // Nếu progress COMPLETED, xử lý như material update
               if (response.status === 'COMPLETED' && response.data) {
-                const materialData = response.data;
+                const materialData = normalizeMaterialPayload(response.data);
                 console.log("✅ Progress COMPLETED - Material data:", materialData);
                 console.log("   Material ID:", materialData.materialId);
                 console.log("   Material status:", materialData.status);
@@ -124,8 +143,16 @@ export function useWebSocket({
                 } else if (materialData.status === 'ERROR') {
                   console.log("❌ Material upload failed");
                   setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
-                  callbackRefs.current.onMaterialUpdated?.(materialData);
-                } else if (materialData.status === 'PROCESSING') {
+                  callbackRefs.current.onMaterialUpdated?.(materialData);              
+                } else if (materialData.status === 'WARN' || materialData.status === 'WARNED') {
+                console.log("⚠️ Material content not appropriate for current level");
+                setLastMessage({ type: "material:updated", data: { ...materialData, status: 'WARN' }, timestamp: Date.now() });
+                callbackRefs.current.onMaterialUpdated?.({ ...materialData, status: 'WARN' });
+              } else if (materialData.status === 'REJECT' || materialData.status === 'REJECTED') {
+                console.log("🚫 Material content not related to learning - rejected");
+                setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
+                callbackRefs.current.onMaterialUpdated?.(materialData);                
+              } else if (materialData.status === 'PROCESSING') {
                   console.log("⏳ Material still processing");
                   setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
                   callbackRefs.current.onMaterialUpdated?.(materialData);
@@ -137,11 +164,12 @@ export function useWebSocket({
 
                 // Nhiều luồng BE gửi tiến trình qua /user/queue/progress thay vì /topic/*.
                 // Nếu screen không truyền onProgress, vẫn kích hoạt onMaterialUpdated để reload list realtime.
-                if (response.status === 'ERROR' || response.status === 'REJECTED' || response.status === 'PROCESSING') {
+                const normalizedResponseStatus = normalizeStatus(response.status || response.final_status);
+                if (['ERROR', 'REJECT', 'PROCESSING', 'WARN'].includes(normalizedResponseStatus)) {
                   const fallbackMaterial =
                     typeof response.data === 'object' && response.data !== null
-                      ? response.data
-                      : { status: response.status, message: response.data };
+                      ? normalizeMaterialPayload({ ...response.data, status: normalizedResponseStatus })
+                      : { status: normalizedResponseStatus, message: response.data };
                   console.log("🔄 Triggering fallback onMaterialUpdated from progress channel", fallbackMaterial);
                   callbackRefs.current.onMaterialUpdated?.(fallbackMaterial);
                 }
@@ -160,7 +188,7 @@ export function useWebSocket({
             (message) => {
               try {
                 console.log("📨 Raw WebSocket message received:", message.body);
-                const data = JSON.parse(message.body);
+                const data = normalizeMaterialPayload(JSON.parse(message.body));
                 console.log("📤 Workspace material update (parsed):", data);
                 console.log("   - Type:", data.type);
                 console.log("   - Status:", data.status);
@@ -176,7 +204,7 @@ export function useWebSocket({
                   console.log("🗑️ Triggering onMaterialDeleted callback");
                   setLastMessage({ type: "material:deleted", data, timestamp: Date.now() });
                   callbackRefs.current.onMaterialDeleted?.(data);
-                } else if (data.type === "UPDATED" || data.status === "UPDATED" || data.status === "PROCESSING" || data.status === "ERROR") {
+                } else if (data.type === "UPDATED" || ["UPDATED", "PROCESSING", "ERROR", "WARN", "REJECT"].includes(data.status)) {
                   console.log("🔄 Triggering onMaterialUpdated callback");
                   setLastMessage({ type: "material:updated", data, timestamp: Date.now() });
                   callbackRefs.current.onMaterialUpdated?.(data);
@@ -198,7 +226,7 @@ export function useWebSocket({
             (message) => {
               try {
                 console.log("📨 Raw WebSocket message received (GROUP):", message.body);
-                const data = JSON.parse(message.body);
+                const data = normalizeMaterialPayload(JSON.parse(message.body));
                 console.log("📤 Group material update (parsed):", data);
                 console.log("   - Type:", data.type);
                 console.log("   - Status:", data.status);
@@ -213,7 +241,7 @@ export function useWebSocket({
                   console.log("🗑️ Triggering onMaterialDeleted callback (GROUP)");
                   setLastMessage({ type: "material:deleted", data, timestamp: Date.now() });
                   callbackRefs.current.onMaterialDeleted?.(data);
-                } else if (data.type === "UPDATED" || data.status === "UPDATED" || data.status === "PROCESSING" || data.status === "ERROR") {
+                } else if (data.type === "UPDATED" || ["UPDATED", "PROCESSING", "ERROR", "WARN", "REJECT"].includes(data.status)) {
                   console.log("🔄 Triggering onMaterialUpdated callback (GROUP)");
                   setLastMessage({ type: "material:updated", data, timestamp: Date.now() });
                   callbackRefs.current.onMaterialUpdated?.(data);
