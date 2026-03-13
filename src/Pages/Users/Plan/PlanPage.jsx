@@ -10,6 +10,8 @@ import {
   Sparkles,
   Sun,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { Button } from "@/Components/ui/button";
@@ -21,7 +23,39 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import PlanCard from "@/Pages/Users/Profile/Components/PlanCard";
-import { getPurchasablePlans } from "@/api/PaymentAPI";
+import { getActiveUserPlans, getActiveGroupPlan } from "@/api/ManagementSystemAPI";
+
+/** Map PlanCatalogResponse (+ entitlement) sang format PlanCard và payment cần */
+function mapPlanCatalogToCard(plan) {
+  const e = plan.entitlement ?? {};
+  const type = plan.planScope === "USER" ? "INDIVIDUAL" : "GROUP";
+  return {
+    planId: plan.planCatalogId,
+    planName: plan.displayName,
+    price: plan.price ?? 0,
+    type,
+    durationInDay: 999999,
+    planLimit: {
+      maxWorkspace: e.maxIndividualWorkspace,
+      maxMaterialPerWorkspace: e.maxMaterialInWorkspace,
+    },
+    planFeature: {
+      processPdf: e.canProcessPdf,
+      processWord: e.canProcessWord,
+      processSlide: e.canProcessSlide,
+      processExcel: e.canProcessExcel,
+      processText: e.canProcessText,
+      processImage: e.canProcessImage,
+      processVideo: e.canProcessVideo,
+      processAudio: e.canProcessAudio,
+      hasAiCompanionMode: e.hasAiCompanionMode,
+      hasAiContentStructuring: e.hasWorkspaceAnalytics,
+      hasPersonalizedLearningAnalytic: e.hasWorkspaceAnalytics,
+      hasAiTextReadingAndSummarization: e.hasAiSummaryAndTextReading,
+      hasAdvancedAiConfiguration: e.hasAdvanceQuizConfig,
+    },
+  };
+}
 
 function useSettingsMenu({ fontClass, isDarkMode, toggleDarkMode, toggleLanguage }) {
   const { t, i18n } = useTranslation();
@@ -111,6 +145,53 @@ export default function PlanPage() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const carouselRef = useRef(null);
+  const [canGoPrev, setCanGoPrev] = useState(false);
+  const [canGoNext, setCanGoNext] = useState(false);
+
+  const updateCarouselButtons = useCallback(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanGoPrev(scrollLeft > 8);
+    setCanGoNext(scrollLeft < scrollWidth - clientWidth - 8);
+  }, []);
+
+  const goPrev = useCallback(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const step = el.clientWidth;
+    el.scrollTo({ left: Math.max(0, el.scrollLeft - step), behavior: "smooth" });
+  }, []);
+
+  const goNext = useCallback(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const step = el.clientWidth;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    el.scrollTo({ left: Math.min(maxScroll, el.scrollLeft + step), behavior: "smooth" });
+  }, []);
+
+  const goNextOrLoop = useCallback(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll <= 0) return;
+    if (scrollLeft >= maxScroll - 8) {
+      el.scrollTo({ left: 0, behavior: "smooth" });
+    } else {
+      el.scrollTo({ left: Math.min(maxScroll, scrollLeft + clientWidth), behavior: "smooth" });
+    }
+  }, []);
+
+  const [autoPlayPaused, setAutoPlayPaused] = useState(false);
+
+  useEffect(() => {
+    if (plans.length <= 3 || autoPlayPaused) return;
+    const interval = setInterval(goNextOrLoop, 4000);
+    return () => clearInterval(interval);
+  }, [plans.length, autoPlayPaused, goNextOrLoop]);
 
   const switchPlanType = (type) => {
     setPlanType(type);
@@ -120,15 +201,36 @@ export default function PlanPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getPurchasablePlans(planType)
-      .then((res) => {
-        if (!cancelled) { setPlans(res.data ?? []); setLoading(false); }
+    const fetch = planType === "GROUP"
+      ? getActiveGroupPlan().then((res) => {
+          const data = res?.data;
+          return data ? [data] : [];
+        })
+      : getActiveUserPlans().then((res) => {
+          const data = res?.data ?? res;
+          return Array.isArray(data) ? data : [];
+        });
+    fetch
+      .then((list) => {
+        if (!cancelled) {
+          setPlans(list.map(mapPlanCatalogToCard));
+          setLoading(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) { setError(t("plan.loadError")); setLoading(false); }
+        if (!cancelled) {
+          setError(t("plan.loadError"));
+          setLoading(false);
+        }
       });
     return () => { cancelled = true; };
   }, [planType, t]);
+
+  useEffect(() => {
+    if (plans.length === 0) return;
+    const t = setTimeout(updateCarouselButtons, 100);
+    return () => clearTimeout(t);
+  }, [plans.length, updateCarouselButtons]);
 
   const heroBadges = useMemo(
     () => ([
@@ -324,7 +426,7 @@ export default function PlanPage() {
           </div>
         </div>
 
-        {/* Plan grid */}
+        {/* Plan carousel (horizontal scroll) */}
         {loading ? (
           <ListSpinner variant="section" className="py-16" />
         ) : error ? (
@@ -337,22 +439,66 @@ export default function PlanPage() {
             {t("plan.noPlans")}
           </p>
         ) : (
-          <div className={`grid gap-6 animate-in fade-in duration-500 ${
-            plans.length === 1
-              ? "grid-cols-1 max-w-md mx-auto"
-              : plans.length === 2
-                ? "grid-cols-1 md:grid-cols-2"
-                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-          }`}>
-            {plans.map((plan, idx) => (
-              <PlanCard
-                key={plan.planId}
-                plan={plan}
-                highlight={idx === 0 && plans.length > 1}
-                onUpgrade={handleUpgrade}
-                dictionaryNamespace="plan"
-              />
-            ))}
+          <div
+            className="relative max-w-[min(100%,1008px)] mx-auto"
+            onMouseEnter={() => setAutoPlayPaused(true)}
+            onMouseLeave={() => setAutoPlayPaused(false)}
+          >
+            <div className={`flex items-center mb-4 ${plans.length <= 1 ? "justify-center" : "gap-3"}`}>
+              {plans.length > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={goPrev}
+                  disabled={!canGoPrev}
+                  className={`shrink-0 rounded-full h-10 w-10 cursor-pointer ${
+                    isDarkMode ? "border-slate-600 hover:bg-slate-800 text-slate-300" : "border-slate-300 hover:bg-slate-100"
+                  }`}
+                  aria-label={t("common.back")}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Button>
+              )}
+              <div
+                ref={carouselRef}
+                onScroll={updateCarouselButtons}
+                className={`flex flex-1 min-w-0 gap-6 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory pb-4 pt-2 ${
+                  plans.length <= 1 ? "justify-center" : ""
+                }`}
+                style={{ scrollbarWidth: "thin" }}
+              >
+                {plans.map((plan, idx) => (
+                  <div
+                    key={plan.planId}
+                    className={`snap-start flex-shrink-0 ${plans.length <= 1 ? "min-w-[280px] max-w-[380px]" : "min-w-0"}`}
+                    style={plans.length <= 1 ? undefined : { flexBasis: "calc((100% - 48px) / 3)" }}
+                  >
+                    <PlanCard
+                      plan={plan}
+                      highlight={idx === 0}
+                      onUpgrade={handleUpgrade}
+                      dictionaryNamespace="plan"
+                    />
+                  </div>
+                ))}
+              </div>
+              {plans.length > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={goNext}
+                  disabled={!canGoNext}
+                  className={`shrink-0 rounded-full h-10 w-10 cursor-pointer ${
+                    isDarkMode ? "border-slate-600 hover:bg-slate-800 text-slate-300" : "border-slate-300 hover:bg-slate-100"
+                  }`}
+                  aria-label="Next"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
