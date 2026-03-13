@@ -57,12 +57,23 @@ function canDeleteSource(source) {
 }
 
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
-function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, onSourceUpdated, isCollapsed = false, onToggleCollapse }) {
+function SourcesPanel({ 
+  isDarkMode = false, 
+  sources = [], 
+  onAddSource, 
+  onRemoveSource, 
+  onRemoveMultiple, 
+  onSourceUpdated, 
+  isCollapsed = false, 
+  onToggleCollapse,
+  selectedIds: propSelectedIds,
+  onSelectionChange
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const { showSuccess, showError } = useToast();
   const [search, setSearch] = useState("");
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [internalSelectedIds, setInternalSelectedIds] = useState([]);
   const [viewingSource, setViewingSource] = useState(null);
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
@@ -76,18 +87,34 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
   const [deleteMultipleDialog, setDeleteMultipleDialog] = useState(false);
   const [deleteMultipleLoading, setDeleteMultipleLoading] = useState(false);
 
+  // Use prop if provided, else use internal state
+  const selectedIds = propSelectedIds !== undefined ? propSelectedIds : internalSelectedIds;
+
+  const handleSelectionChange = (newIds) => {
+    if (onSelectionChange) {
+      onSelectionChange(newIds);
+    } else {
+      setInternalSelectedIds(newIds);
+    }
+  };
+
   const filtered = sources.filter((s) =>
     s.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    const newIds = selectedIds.includes(id) 
+      ? selectedIds.filter((x) => x !== id) 
+      : [...selectedIds, id];
+    handleSelectionChange(newIds);
   };
 
-  const selectAll = () => setSelectedIds(filtered.filter(s => canSelectSource(s)).map((s) => s.id));
-  const deselectAll = () => setSelectedIds([]);
+  const selectAll = () => {
+    const newIds = filtered.filter(s => canSelectSource(s)).map((s) => s.id);
+    handleSelectionChange(newIds);
+  };
+
+  const deselectAll = () => handleSelectionChange([]);
 
   const handleRemoveSelected = async () => {
     setDeleteMultipleDialog(true);
@@ -143,6 +170,7 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
     } finally {
       setDeleteLoading(false);
     }
+    handleSelectionChange([]); // Clear selection after delete
   };
 
   useEffect(() => {
