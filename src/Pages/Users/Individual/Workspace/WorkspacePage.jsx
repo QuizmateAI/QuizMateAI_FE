@@ -38,6 +38,7 @@ function WorkspacePage() {
 
 	// State quản lý tài liệu (sources) — mock data, sẽ kết nối API sau
 	const [sources, setSources] = useState([]);
+	const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
 	const [createdItems, setCreatedItems] = useState([]);
 	const [accessHistory, setAccessHistory] = useState([]);
 	const [isLeftResizing, setIsLeftResizing] = useState(false);
@@ -649,7 +650,10 @@ function WorkspacePage() {
 								isDarkMode={isDarkMode}
 								sources={sources}
 								onAddSource={handleUploadClickSafe}
-								onRemoveSource={handleRemoveSource}							onRemoveMultiple={handleRemoveMultipleSources}
+								onRemoveSource={handleRemoveSource}
+								onRemoveMultiple={handleRemoveMultipleSources}
+                                selectedIds={selectedSourceIds}
+                                onSelectionChange={setSelectedSourceIds}
 								onSourceUpdated={(updatedSource) => {
 									setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
 								}}								isCollapsed={isSourcesCollapsed}
@@ -673,6 +677,7 @@ function WorkspacePage() {
 							<ChatPanel
 								isDarkMode={isDarkMode}
 								sources={sources}
+                                selectedSourceIds={selectedSourceIds}
 								activeView={activeView}
 								createdItems={createdItems}
 								onUploadClick={handleUploadClickSafe}

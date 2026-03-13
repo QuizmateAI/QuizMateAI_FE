@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/Components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz } from "@/api/QuizAPI";
 import { getRoadmapsByGroup, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmap, createPhase, createKnowledge } from "@/api/RoadmapAPI";
+import { getMaterialsByWorkspace } from "@/api/MaterialAPI";
+import { generateAIQuiz, getQuestionTypes, getDifficultyDefinitions, getBloomSkills } from "@/api/AIAPI";
+import { getWorkspacesByUser } from "@/api/WorkspaceAPI";
 import QuickCreateDialog from "@/Pages/Users/Individual/Workspace/Components/QuickCreateDialog";
 
 // Danh sách dạng câu hỏi và độ khó
@@ -30,6 +33,29 @@ const SCORING_STRATEGIES = {
 
 // Trọng số mặc định — lấy từ strategy "balanced"
 const DIFFICULTY_WEIGHTS = SCORING_STRATEGIES.balanced;
+
+const AI_OUTPUT_LANGUAGES = ["Vietnamese"];
+
+const sumRatios = (items = []) =>
+  items.reduce((sum, item) => sum + (Number(item?.ratio) || 0), 0);
+
+const normalizeItemRatios = (items = [], idKey) =>
+  items
+    .map((item) => ({
+      [idKey]: Number(item?.[idKey]),
+      ratio: Math.max(0, Number(item?.ratio) || 0),
+    }))
+    .filter((item) => Number.isFinite(item[idKey]));
+
+const getDominantDifficulty = ({ easy = 0, medium = 0, hard = 0 } = {}) => {
+  const candidates = [
+    { key: "EASY", value: Number(easy) || 0 },
+    { key: "MEDIUM", value: Number(medium) || 0 },
+    { key: "HARD", value: Number(hard) || 0 },
+  ];
+  candidates.sort((a, b) => b.value - a.value);
+  return candidates[0]?.key || "MEDIUM";
+};
 
 // Auto-distribute points logic (nhận thêm tham số strategy)
 const autoDistributePoints = (currentQuestions, totalQuizScore, strategy = "balanced") => {
@@ -265,10 +291,144 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
   // State cho tab AI
   const [aiName, setAiName] = useState("");
-  const [aiDifficulty, setAiDifficulty] = useState("medium");
-  const [aiTotalQuestions, setAiTotalQuestions] = useState(20);
-  const [aiDuration, setAiDuration] = useState(30);
+  // const [aiDifficulty, setAiDifficulty] = useState("medium"); // replaced by proper difficulty handling
+  const [aiTotalQuestions, setAiTotalQuestions] = useState(10);
+  const [aiDuration, setAiDuration] = useState(15);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiQuizIntent, setAiQuizIntent] = useState("REVIEW");
+  const [aiTimerMode, setAiTimerMode] = useState(true);
+
+  // AI Configuration States
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [materials, setMaterials] = useState([]);
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState([]);
+  const [difficultyDefs, setDifficultyDefs] = useState([]);
+  const [selectedDifficultyId, setSelectedDifficultyId] = useState(""); // ID or "CUSTOM"
+  const [customDifficulty, setCustomDifficulty] = useState({ easy: 30, medium: 40, hard: 30 });
+  const [qTypes, setQTypes] = useState([]);
+  const [selectedQTypes, setSelectedQTypes] = useState([]); // { questionTypeId, ratio }
+  const [bloomSkills, setBloomSkills] = useState([]);
+  const [selectedBloomSkills, setSelectedBloomSkills] = useState([]); // { bloomId, ratio }
+  const [workspaceId, setWorkspaceId] = useState(null);
+  const [questionTypeUnit, setQuestionTypeUnit] = useState(false); // false: %, true: count
+  const [bloomUnit, setBloomUnit] = useState(false); // false: %, true: count
+  const [questionUnit, setQuestionUnit] = useState(false); // false: %, true: count
+  const [aiOutputLanguage, setAiOutputLanguage] = useState("English");
+
+  // Fetch metadata on AI tab active
+  useEffect(() => {
+    if (tab === "ai") {
+      const fetchData = async () => {
+        setLoadingMetadata(true);
+        try {
+          const resolveList = (res) => {
+            if (Array.isArray(res)) return res;
+            if (Array.isArray(res?.data)) return res.data;
+            if (Array.isArray(res?.content)) return res.content;
+            if (Array.isArray(res?.data?.content)) return res.data.content;
+            return [];
+          };
+
+          // 1. Get Workspace ID
+          let wsId = null;
+          if (defaultContextType === "WORKSPACE" || defaultContextType === "GROUP") {
+            wsId = Number(defaultContextId);
+          } else {
+            // Fetch users workspaces and pick first
+            const wsRes = await getWorkspacesByUser(0, 5);
+            const workspaces = resolveList(wsRes);
+            if (workspaces.length > 0) {
+              wsId = workspaces[0].workspaceId;
+            }
+          }
+          setWorkspaceId(wsId);
+
+          if (wsId) {
+            // 2. Fetch Materials
+            const matRes = await getMaterialsByWorkspace(wsId);
+            setMaterials(resolveList(matRes));
+          }
+
+          // 3. Fetch Metadata
+          const [qTypeRes, diffRes, bloomRes] = await Promise.all([
+            getQuestionTypes(),
+            getDifficultyDefinitions(),
+            getBloomSkills()
+          ]);
+          const qTypeData = resolveList(qTypeRes);
+          const diffData = resolveList(diffRes);
+          const bloomData = resolveList(bloomRes);
+
+          setQTypes(qTypeData);
+          setDifficultyDefs(diffData);
+          setBloomSkills(bloomData);
+          
+          if (diffData.length > 0) {
+            // Default to first difficulty (normally EASY or MEDIUM) or one that is not CUSTOM
+             const defaultDiff = diffData.find(d => d.difficultyName === "EASY") || diffData[0];
+             setSelectedDifficultyId(defaultDiff.id);
+          }
+          
+          if (qTypeData.length > 0) {
+             // Select all by default or first few? Let's select Single Choice by default
+             const singleChoice = qTypeData.find(q => q.questionType === "SINGLE_CHOICE");
+             if (singleChoice) setSelectedQTypes([{ questionTypeId: singleChoice.questionTypeId, ratio: 100 }]);
+          }
+
+          if (bloomData.length > 0) {
+             // Default bloom
+             const remember = bloomData.find(b => b.bloomName === "REMEMBER");
+             if (remember) setSelectedBloomSkills([{ bloomId: remember.bloomId, ratio: 100 }]);
+          }
+
+        } catch (e) {
+          console.error("Failed to load AI config data", e);
+        } finally {
+          setLoadingMetadata(false);
+        }
+      };
+      
+      fetchData();
+    }
+  }, [tab, defaultContextType, defaultContextId]);
+
+  const handleDifficultyChange = (e) => {
+    const val = e.target.value;
+    if (val === "CUSTOM") {
+      setSelectedDifficultyId("CUSTOM");
+      setCustomDifficulty({ easy: 33, medium: 33, hard: 34 });
+    } else {
+      setSelectedDifficultyId(Number(val));
+    }
+  };
+
+  const handleToggleMaterial = (id) => {
+    setSelectedMaterialIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleToggleQType = (id) => {
+    setSelectedQTypes(prev => {
+      const exists = prev.find(x => x.questionTypeId === id);
+      if (exists) return prev.filter(x => x.questionTypeId !== id);
+      return [...prev, { questionTypeId: id, ratio: 0 }];
+    });
+  };
+
+  const handleQTypeRatioChange = (id, ratio) => {
+    setSelectedQTypes(prev => prev.map(x => x.questionTypeId === id ? { ...x, ratio: Number(ratio) } : x));
+  };
+
+  const handleToggleBloom = (id) => {
+    setSelectedBloomSkills(prev => {
+      const exists = prev.find(x => x.bloomId === id);
+      if (exists) return prev.filter(x => x.bloomId !== id);
+      return [...prev, { bloomId: id, ratio: 0 }];
+    });
+  };
+
+  const handleBloomRatioChange = (id, ratio) => {
+    setSelectedBloomSkills(prev => prev.map(x => x.bloomId === id ? { ...x, ratio: Number(ratio) } : x));
+  };
 
   // Wrapper recalculate với maxScore + strategy hiện tại
   const recalculate = (qs) => calculateScores(qs, maxScore, selectedStrategy);
@@ -456,16 +616,116 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
         // Thông báo component cha quiz đã được tạo thành công
         await onCreateQuiz?.({ quizId: result.quizId, title: result.title, ...result });
       } else {
-        // Tab AI — vẫn gọi callback component cha (chưa có API AI)
-        const data = {
-          mode: "ai",
-          name: aiName,
-          difficulty: aiDifficulty,
-          totalQuestions: aiTotalQuestions,
-          duration: aiDuration,
+        // Tab AI — gọi API tạo quiz AI
+        if (!aiName.trim()) {
+           setError(t("workspace.quiz.validation.nameRequired"));
+           setSubmitting(false);
+           return;
+        }
+        if (!Number.isFinite(aiTotalQuestions) || aiTotalQuestions <= 0) {
+           setError(t("workspace.quiz.aiConfig.totalQuestions"));
+           setSubmitting(false);
+           return;
+        }
+        if (selectedMaterialIds.length === 0 && !aiPrompt.trim()) {
+           setError(t("Please select at least one material or provide a prompt."));
+           setSubmitting(false);
+           return;
+        }
+        if (!workspaceId) {
+            setError("Workspace ID not found.");
+            setSubmitting(false);
+            return;
+        }
+
+        const selectedDifficulty = difficultyDefs.find((d) => d.id === selectedDifficultyId);
+        const difficultyRatios = selectedDifficultyId === "CUSTOM"
+          ? {
+              easy: Math.max(0, Number(customDifficulty.easy) || 0),
+              medium: Math.max(0, Number(customDifficulty.medium) || 0),
+              hard: Math.max(0, Number(customDifficulty.hard) || 0),
+            }
+          : {
+              easy: Math.max(0, Number(selectedDifficulty?.easyRatio) || 0),
+              medium: Math.max(0, Number(selectedDifficulty?.mediumRatio) || 0),
+              hard: Math.max(0, Number(selectedDifficulty?.hardRatio) || 0),
+            };
+
+        const totalDifficulty = difficultyRatios.easy + difficultyRatios.medium + difficultyRatios.hard;
+        const totalQuestionType = sumRatios(selectedQTypes);
+        const totalBloom = sumRatios(selectedBloomSkills);
+        const difficultyLimit = questionUnit ? aiTotalQuestions : 100;
+        const questionTypeLimit = questionTypeUnit ? aiTotalQuestions : 100;
+        const bloomLimit = bloomUnit ? aiTotalQuestions : 100;
+
+        if (totalDifficulty > difficultyLimit) {
+          setError(
+            questionUnit
+              ? `Difficulty count (${totalDifficulty}) must be <= totalQuestion (${aiTotalQuestions}).`
+              : `Difficulty ratio (${totalDifficulty}%) must be <= 100%.`
+          );
+          setSubmitting(false);
+          return;
+        }
+
+        if (selectedQTypes.length > 0 && totalQuestionType > questionTypeLimit) {
+          setError(
+            questionTypeUnit
+              ? `Question type count (${totalQuestionType}) must be <= totalQuestion (${aiTotalQuestions}).`
+              : `Question type ratio (${totalQuestionType}%) must be <= 100%.`
+          );
+          setSubmitting(false);
+          return;
+        }
+
+        if (selectedBloomSkills.length > 0 && totalBloom > bloomLimit) {
+          setError(
+            bloomUnit
+              ? `Bloom count (${totalBloom}) must be <= totalQuestion (${aiTotalQuestions}).`
+              : `Bloom ratio (${totalBloom}%) must be <= 100%.`
+          );
+          setSubmitting(false);
+          return;
+        }
+
+        const normalizedQTypes = normalizeItemRatios(selectedQTypes, "questionTypeId");
+        const normalizedBloomSkills = normalizeItemRatios(selectedBloomSkills, "bloomId");
+        const overallDifficultyEnum =
+          selectedDifficultyId === "CUSTOM"
+            ? getDominantDifficulty(difficultyRatios)
+            : String(selectedDifficulty?.difficultyName || "MEDIUM").toUpperCase();
+
+        // Construct AI Payload
+        const payload = {
+          title: aiName,
+          materialIds: selectedMaterialIds,
+          overallDifficulty: overallDifficultyEnum,
+          durationInMinute: aiDuration,
+          durationInSecond: 0,
+          roadmapId: null,
+          phaseId: null,
+          knowledgeId: null,
+          workspaceId: workspaceId,
+          totalQuestion: aiTotalQuestions,
           prompt: aiPrompt,
+          outputLanguage: aiOutputLanguage,
+          questionTypeUnit,
+          questionTypes: normalizedQTypes,
+          bloomUnit,
+          bloomSkills: normalizedBloomSkills,
+          quizIntent: aiQuizIntent || "REVIEW",
+          questionUnit,
+          easyRatio: difficultyRatios.easy,
+          mediumRatio: difficultyRatios.medium,
+          hardRatio: difficultyRatios.hard,
+          timerMode: aiTimerMode
         };
-        await onCreateQuiz?.(data);
+        
+        const result = await generateAIQuiz(payload);
+        // Assuming result returns quizId or similar. The user mock response showed "quizId": 1
+        console.log("AI Quiz Created", result);
+        
+        await onCreateQuiz?.(result.data || result);
       }
     } catch (err) {
       console.error("Lỗi khi tạo quiz:", err);
@@ -474,6 +734,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       setSubmitting(false);
     }
   };
+
 
   const inputCls = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
     isDarkMode ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
@@ -948,33 +1209,209 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <div>
-              <label className={labelCls}>{t("workspace.quiz.name")}</label>
-              <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
+          <div className="space-y-5 pb-4">
+             {/* 1. Basic Info */}
+            <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+               <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                  <FileText className="w-4 h-4 text-blue-500"/> {t("General Info")}
+               </h3>
+               <div className="space-y-3">
+                  <div>
+                    <label className={labelCls}>{t("workspace.quiz.name")}</label>
+                    <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>{t("Prompt (Optional)")}</label>
+                    <textarea className={`${inputCls} min-h-[60px] resize-none`} placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")} value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>{t("workspace.quiz.intent")}</label>
+                      <select className={selectCls} value={aiQuizIntent} onChange={(e) => setAiQuizIntent(e.target.value)}>
+                        {QUIZ_INTENTS.map((intent) => (
+                          <option key={intent} value={intent}>{t(`workspace.quiz.intentLabels.${intent}`)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Output Language</label>
+                      <select className={selectCls} value={aiOutputLanguage} onChange={(e) => setAiOutputLanguage(e.target.value)}>
+                        {AI_OUTPUT_LANGUAGES.map((lang) => (
+                          <option key={lang} value={lang}>{lang}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>{t("workspace.quiz.difficulty")}</label>
-                <select className={selectCls} value={aiDifficulty} onChange={(e) => setAiDifficulty(e.target.value)}>
-                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>{t("workspace.quiz.aiConfig.totalQuestions")}</label>
-                <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
-              </div>
+
+            {/* 2. Materials Selection */}
+            <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+               <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                  <CheckSquare className="w-4 h-4 text-green-500"/> {t("Select Materials")}
+               </h3>
+               {loadingMetadata ? (
+                 <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="w-3 h-3 animate-spin"/> {t("Loading materials...")}</div>
+               ) : materials.length > 0 ? (
+                 <div className="max-h-40 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    {materials.map(mat => (
+                      <label key={mat.id || mat.materialId} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${selectedMaterialIds.includes(mat.id || mat.materialId) 
+                        ? (isDarkMode ? "bg-blue-900/20 border-blue-500/50" : "bg-blue-50 border-blue-200") 
+                        : (isDarkMode ? "border-slate-800 hover:bg-slate-800" : "border-gray-200 hover:bg-gray-50")}`}>
+                        <input type="checkbox" checked={selectedMaterialIds.includes(mat.id || mat.materialId)} onChange={() => handleToggleMaterial(mat.id || mat.materialId)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4" />
+                        <div className="flex-1 min-w-0">
+                           <p className={`text-xs font-medium truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{mat.fileName || mat.title || "Untitled"}</p>
+                           <p className="text-[10px] text-slate-500 truncate">{mat.description || t("No description")}</p>
+                        </div>
+                      </label>
+                    ))}
+                 </div>
+               ) : (
+                 <p className="text-xs text-slate-500 italic">{t("No materials found in this workspace.")}</p>
+               )}
             </div>
-            <div>
-              <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
-              <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
-            </div>
-            <div>
-              <label className={labelCls}>{t("workspace.quiz.aiConfig.additionalPrompt")}</label>
-              <textarea className={`${inputCls} min-h-[80px] resize-none`} placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")} value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
-            </div>
+
+             {/* 3. Difficulty Configuration */}
+             <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+               <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                  <Sliders className="w-4 h-4 text-amber-500"/> {t("Difficulty Level")}
+               </h3>
+               <select className={selectCls} value={selectedDifficultyId} onChange={handleDifficultyChange}>
+                  {difficultyDefs.map(d => (
+                    <option key={d.id} value={d.id}>{d.difficultyName} ({d.easyRatio}-{d.mediumRatio}-{d.hardRatio})</option>
+                  ))}
+                  <option value="CUSTOM">{t("Custom (Self-config)")}</option>
+               </select>
+
+               {selectedDifficultyId === "CUSTOM" && (
+                 <div className="mt-3 grid grid-cols-3 gap-2">
+                    {["easy", "medium", "hard"].map(level => (
+                      <div key={level}>
+                        <label className={`text-[10px] uppercase font-bold mb-1 block ${isDarkMode?"text-slate-500":"text-gray-500"}`}>
+                          {level} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})
+                        </label>
+                        <input type="number" className={inputCls} value={customDifficulty[level]} 
+                          onChange={e => setCustomDifficulty(prev => ({...prev, [level]: Number(e.target.value)}))} />
+                      </div>
+                    ))}
+                 </div>
+               )}
+               <div className="mt-3 flex items-center gap-2">
+                 <input
+                   id="difficulty-unit-toggle"
+                   type="checkbox"
+                   checked={questionUnit}
+                   onChange={(e) => setQuestionUnit(e.target.checked)}
+                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                 />
+                 <label htmlFor="difficulty-unit-toggle" className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
+                   {t("workspace.quiz.aiConfig.difficultyUnitByCount")}
+                 </label>
+               </div>
+             </div>
+
+             {/* 4. Question Types & Bloom Skills */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Question Types */}
+                <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+                   <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                      <Sparkles className="w-4 h-4 text-purple-500"/> {t("Question Types")}
+                   </h3>
+                   <div className="mb-2 flex items-center gap-2">
+                     <input
+                       id="qtype-unit-toggle"
+                       type="checkbox"
+                       checked={questionTypeUnit}
+                       onChange={(e) => setQuestionTypeUnit(e.target.checked)}
+                       className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                     />
+                     <label htmlFor="qtype-unit-toggle" className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
+                       {t("workspace.quiz.aiConfig.questionTypeUnitByCount")}
+                     </label>
+                   </div>
+                   <div className="space-y-2">
+                      {qTypes.map(qt => {
+                        const isSelected = selectedQTypes.some(x => x.questionTypeId === qt.questionTypeId);
+                        const currentRatio = selectedQTypes.find(x => x.questionTypeId === qt.questionTypeId)?.ratio || 0;
+                        return (
+                          <div key={qt.questionTypeId} className={`flex items-center gap-2 text-xs ${isDarkMode?"text-slate-300":"text-gray-700"}`}>
+                             <input type="checkbox" checked={isSelected} onChange={() => handleToggleQType(qt.questionTypeId)} className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                             <span className="flex-1 truncate" title={qt.description}>{qt.questionType}</span>
+                             {isSelected && (
+                               <div className="flex items-center gap-1">
+                                  <input type="number" className={`w-12 p-1 text-center border rounded ${isDarkMode?"bg-slate-800 border-slate-700":"bg-white border-gray-200"}`} 
+                                    value={currentRatio} onChange={e => handleQTypeRatioChange(qt.questionTypeId, e.target.value)} placeholder="%" />
+                                  <span>{questionTypeUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
+                               </div>
+                             )}
+                          </div>
+                      )})}
+                   </div>
+                </div>
+
+                {/* Bloom Skills */}
+                 <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+                   <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                      <BrainCircuit className="w-4 h-4 text-teal-500"/> {t("Bloom Skills")}
+                   </h3>
+                   <div className="mb-2 flex items-center gap-2">
+                     <input
+                       id="bloom-unit-toggle"
+                       type="checkbox"
+                       checked={bloomUnit}
+                       onChange={(e) => setBloomUnit(e.target.checked)}
+                       className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                     />
+                     <label htmlFor="bloom-unit-toggle" className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
+                       {t("workspace.quiz.aiConfig.bloomUnitByCount")}
+                     </label>
+                   </div>
+                   <div className="space-y-2">
+                      {bloomSkills.map(bs => {
+                        const isSelected = selectedBloomSkills.some(x => x.bloomId === bs.bloomId);
+                        const currentRatio = selectedBloomSkills.find(x => x.bloomId === bs.bloomId)?.ratio || 0;
+                        return (
+                          <div key={bs.bloomId} className={`flex items-center gap-2 text-xs ${isDarkMode?"text-slate-300":"text-gray-700"}`}>
+                             <input type="checkbox" checked={isSelected} onChange={() => handleToggleBloom(bs.bloomId)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                             <span className="flex-1 truncate" title={bs.description}>{bs.bloomName}</span>
+                             {isSelected && (
+                               <div className="flex items-center gap-1">
+                                  <input type="number" className={`w-12 p-1 text-center border rounded ${isDarkMode?"bg-slate-800 border-slate-700":"bg-white border-gray-200"}`} 
+                                    value={currentRatio} onChange={e => handleBloomRatioChange(bs.bloomId, e.target.value)} placeholder="%" />
+                                  <span>{bloomUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
+                               </div>
+                             )}
+                          </div>
+                      )})}
+                   </div>
+                </div>
+             </div>
+
+             {/* 5. Settings */}
+             <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+                <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                  <Sliders className="w-4 h-4 text-gray-500"/> {t("Settings")}
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                   <div>
+                     <label className={labelCls}>{t("Total Questions")}</label>
+                     <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
+                   </div>
+                   {aiTimerMode && (
+                     <div>
+                       <label className={labelCls}>{t("Time (Minutes)")}</label>
+                       <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
+                     </div>
+                   )}
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                   <input type="checkbox" checked={aiTimerMode} onChange={(e) => setAiTimerMode(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                   <span className={`text-xs ${isDarkMode?"text-slate-400":"text-gray-600"}`}>{t("Enable Timer Mode")}</span>
+                </div>
+             </div>
           </div>
         )}
+
       </div>
 
       {/* Nút hành động cố định dưới cùng */}
