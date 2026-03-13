@@ -276,6 +276,8 @@
     "durationForever": "Forever",
     "durationForeverShort": "Forever",
     "upgrade": "Choose plan",
+    "thanhToan": "Payment",
+    "defaultPlan": "Default plan",
     "notes": {
       "permanentTitle": "Plans can be permanent",
       "permanentDesc": "Plans are not necessarily monthly. Some plans can be sold as permanent depending on system configuration.",
@@ -1606,6 +1608,7 @@
     "paymentNotFound": "Payment not found.",
     "planNotActive": "Plan is not activated.",
     "planNameExisted": "Plan name already exists.",
+    "planDisplayNameExisted": "A plan with this display name already exists. Please choose a different name.",
     "userInactive": "Account has been locked.",
     "forbidden": "Access denied.",
     "permissionNotFound": "Permission not found.",
