@@ -1,7 +1,8 @@
 import api from './api';
 
+/** Lấy thông tin plan theo ID (planCatalogId) — dùng cho trang thanh toán */
 export const getPlanById = (planId) => {
-  return api.get(`/plan/${planId}`);
+  return api.get(`/plan-catalog/${planId}`);
 };
 
 export const getPurchasablePlans = (type) => {

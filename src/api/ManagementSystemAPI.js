@@ -120,11 +120,13 @@ export const getPlanById = async (planId) => {
 };
 
 export const createPlan = async (data) => {
+  // data phải khớp PlanCatalogCreateRequest (code, displayName, planScope, planLevel, price, description, entitlement)
   const response = await api.post('/plan-catalog/create', data);
   return response;
 };
 
 export const updatePlan = async (planId, data) => {
+  // data phải khớp PlanCatalogUpdateRequest (displayName, price, description, entitlement)
   const response = await api.put(`/plan-catalog/${planId}`, data);
   return response;
 };
@@ -134,13 +136,20 @@ export const deletePlan = async (planId) => {
   return response;
 };
 
-export const togglePlanStatus = async (planId) => {
-  const response = await api.patch(`/plan-catalog/${planId}/toggle-status`);
+export const updatePlanStatus = async (planId, status) => {
+  // Gọi vào @PatchMapping("/{id}/status") với body PlanCatalogStatusUpdateRequest { status }
+  const response = await api.patch(`/plan-catalog/${planId}/status`, { status });
   return response;
 };
 
-export const getPlansByStatus = async (status) => {
-  const response = await api.get(`/plan-catalog/status/${status}`);
+/** Plans mua được cho user: dùng PlanCatalogController active/user và active/group */
+export const getActiveUserPlans = async () => {
+  const response = await api.get('/plan-catalog/active/user');
+  return response;
+};
+
+export const getActiveGroupPlan = async () => {
+  const response = await api.get('/plan-catalog/active/group');
   return response;
 };
 

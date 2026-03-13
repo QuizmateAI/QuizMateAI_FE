@@ -1,0 +1,171 @@
+/* Pay button with icon animation - From Uiverse.io by fthisilak, adapted */
+.pay-btn {
+  position: relative;
+  padding: 12px 24px;
+  font-size: 16px;
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  width: 100%;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.pay-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pay-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+.pay-btn.pay-btn--highlight {
+  background: #2563eb;
+}
+
+.pay-btn.pay-btn--highlight:not(:disabled):hover {
+  box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+}
+
+/* Dark theme: slate + blue accent, hòa với giao diện tối */
+.pay-btn--dark {
+  background: rgba(30, 41, 59, 0.9);
+  color: rgb(248, 250, 252);
+  border: 1px solid rgba(71, 85, 105, 0.6);
+}
+
+.pay-btn--dark:not(:disabled):hover {
+  background: rgba(51, 65, 85, 0.95);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.pay-btn--dark .icon {
+  color: rgb(96, 165, 250);
+}
+
+.pay-btn--dark.pay-btn--highlight {
+  background: rgba(37, 99, 235, 0.85);
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.pay-btn--dark.pay-btn--highlight:not(:disabled):hover {
+  background: rgba(59, 130, 246, 0.9);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.icon-container {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+
+.pay-btn .icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  color: #22c55e;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.pay-btn .default-icon {
+  opacity: 1;
+  visibility: visible;
+}
+
+.pay-btn:not(:disabled):hover .icon {
+  animation: none;
+}
+
+.pay-btn:not(:disabled):hover .wallet-icon {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.pay-btn:not(:disabled):hover .card-icon {
+  animation: pay-iconRotate 2.5s infinite;
+  animation-delay: 0s;
+}
+
+.pay-btn:not(:disabled):hover .payment-icon {
+  animation: pay-iconRotate 2.5s infinite;
+  animation-delay: 0.5s;
+}
+
+.pay-btn:not(:disabled):hover .dollar-icon {
+  animation: pay-iconRotate 2.5s infinite;
+  animation-delay: 1s;
+}
+
+.pay-btn:not(:disabled):hover .check-icon {
+  animation: pay-iconRotate 2.5s infinite;
+  animation-delay: 1.5s;
+}
+
+.pay-btn:not(:disabled):active .icon {
+  animation: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.pay-btn:not(:disabled):active .check-icon {
+  animation: pay-checkmarkAppear 0.6s ease forwards;
+  visibility: visible;
+}
+
+@keyframes pay-iconRotate {
+  0% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.5);
+  }
+  5% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+  15% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+  20% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.5);
+  }
+}
+
+@keyframes pay-checkmarkAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-45deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
