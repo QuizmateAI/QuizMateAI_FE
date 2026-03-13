@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
+  LayoutDashboard,
   Users, UsersRound,
   CreditCard, LogOut,
   PanelLeftClose, Coins
@@ -13,10 +14,42 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { logout } from '@/api/Authentication';
 
 const ALL_MENU_ITEMS = [
-  { icon: Users, labelKey: 'sidebar.users', path: '/admin/users', alsoMatch: '/admin', requiredPerm: 'user:read', matchPrefix: true },
-  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/admin/groups', requiredPerm: 'group:read_all', matchPrefix: true },
-  { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/admin/subscriptions', requiredPerm: 'subscription:read' },
-  { icon: Coins, labelKey: 'sidebar.creditPackages', path: '/admin/credit', requiredPerm: 'credit-package:read' },
+  {
+    icon: LayoutDashboard,
+    labelKey: 'sidebar.dashboard',
+    path: '/admin',
+    alsoMatch: '/admin',
+    matchPrefix: false,
+  },
+  {
+    icon: Users,
+    labelKey: 'sidebar.users',
+    path: '/admin/users',
+    alsoMatch: '/admin/users',
+    requiredPerm: 'user:read',
+    matchPrefix: true,
+  },
+  {
+    icon: UsersRound,
+    labelKey: 'sidebar.groups',
+    path: '/admin/groups',
+    requiredPerm: 'group:read_all',
+    matchPrefix: true,
+  },
+  {
+    icon: CreditCard,
+    labelKey: 'sidebar.subscriptions',
+    path: '/admin/plan',
+    requiredPerm: 'subscription:read',
+    matchPrefix: true,
+  },
+  {
+    icon: Coins,
+    labelKey: 'sidebar.creditPackages',
+    path: '/admin/credit',
+    requiredPerm: 'credit-package:read',
+    matchPrefix: true,
+  },
 ];
 
 const isActive = (item, pathname) => {

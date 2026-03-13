@@ -1,6 +1,9 @@
 ﻿import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban } from "lucide-react";
+import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Dialog, DialogContent } from "@/Components/ui/dialog";
+import { renameMaterial } from "@/api/MaterialAPI";
+import { useToast } from "@/context/ToastContext";
 import SourceDetailView from "./SourceDetailView";
 
 // Format MIME type thành tên file type ngắn gọn
@@ -41,21 +44,31 @@ function canOpenSourceDetail(source) {
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED", "ERROR"].includes(status);
 }
 
-// Kiểm tra có thể tick chọn tài liệu không - REJECT thì không cho chọn
+// Kiểm tra có thể tick chọn tài liệu không - REJECT và đang loading thì không cho chọn
 function canSelectSource(source) {
   const status = source?.status?.toUpperCase();
-  return status !== "REJECT" && status !== "REJECTED";
+  return !["REJECT", "REJECTED", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
 function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, onSourceUpdated, isCollapsed = false, onToggleCollapse }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const { showSuccess, showError } = useToast();
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingSource, setViewingSource] = useState(null);
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
+  const [hoveredId, setHoveredId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [renameDialog, setRenameDialog] = useState(null); // { id, name }
+  const [renameInput, setRenameInput] = useState("");
+  const [renameLoading, setRenameLoading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(null); // { id, name }
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteMultipleDialog, setDeleteMultipleDialog] = useState(false);
+  const [deleteMultipleLoading, setDeleteMultipleLoading] = useState(false);
 
   const filtered = sources.filter((s) =>
     s.name?.toLowerCase().includes(search.toLowerCase())
@@ -71,14 +84,59 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
   const deselectAll = () => setSelectedIds([]);
 
   const handleRemoveSelected = async () => {
-    // Ưu tiên dùng onRemoveMultiple để xóa song song (nhanh hơn)
-    if (onRemoveMultiple) {
-      await onRemoveMultiple(selectedIds);
-    } else {
-      // Fallback: gọi onRemoveSource từng cái (tuần tự)
-      selectedIds.forEach((id) => onRemoveSource?.(id));
+    setDeleteMultipleDialog(true);
+  };
+
+  const handleRemoveSelectedConfirm = async () => {
+    setDeleteMultipleLoading(true);
+    try {
+      if (onRemoveMultiple) {
+        await onRemoveMultiple(selectedIds);
+      } else {
+        selectedIds.forEach((id) => onRemoveSource?.(id));
+      }
+      setSelectedIds([]);
+      setDeleteMultipleDialog(false);
+    } finally {
+      setDeleteMultipleLoading(false);
     }
-    setSelectedIds([]);
+  };
+
+  const openRenameDialog = (source) => {
+    setOpenMenuId(null);
+    setRenameDialog({ id: source.id, name: source.name });
+    setRenameInput(source.name);
+  };
+
+  const openDeleteDialog = (source) => {
+    setOpenMenuId(null);
+    setDeleteDialog({ id: source.id, name: source.name });
+  };
+
+  const handleRenameSubmit = async () => {
+    if (!renameDialog || !renameInput.trim()) return;
+    setRenameLoading(true);
+    try {
+      const res = await renameMaterial(renameDialog.id, renameInput.trim());
+      onSourceUpdated?.({ ...res.data, id: res.data.materialId ?? renameDialog.id, name: res.data.title ?? renameInput.trim() });
+      showSuccess(t("workspace.sources.renameSuccess"));
+      setRenameDialog(null);
+    } catch {
+      showError(t("workspace.sources.loadError"));
+    } finally {
+      setRenameLoading(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog) return;
+    setDeleteLoading(true);
+    try {
+      await onRemoveSource?.(deleteDialog.id);
+      setDeleteDialog(null);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -269,7 +327,9 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
             {filtered.map((source) => {
               const isSelected = selectedIds.includes(source.id);
               const isRejected = ["REJECT", "REJECTED"].includes(source.status?.toUpperCase());
-              const isWarned = ["WARN", "WARNED"].includes(source.status?.toUpperCase());
+              const isWarn = ["WARN", "WARNED"].includes(source.status?.toUpperCase());
+              const isMenuOpen = openMenuId === source.id;
+              const showActions = hoveredId === source.id || isMenuOpen;
               return (
                 <div
                   key={source.id}
@@ -278,6 +338,8 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                       ? isDarkMode ? "bg-blue-950/40 border border-blue-800" : "bg-blue-50 border border-blue-200"
                       : isDarkMode ? "hover:bg-slate-800" : "hover:bg-gray-50"
                   } ${!isSelected ? "border border-transparent" : ""}`}
+                  onMouseEnter={() => setHoveredId(source.id)}
+                  onMouseLeave={() => { if (!isMenuOpen) setHoveredId(null); }}
                 >
                   {/* Checkbox — click riêng để chọn/bỏ chọn */}
                   <div 
@@ -302,7 +364,7 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                     }}
                     title={!canOpenSourceDetail(source) ? (source.status?.toUpperCase() === "REJECT" ? "Tài liệu không liên quan đến học tập" : "Tài liệu đang được xử lý, vui lòng đợi.") : undefined}
                   >
-                    {/* Icon trạng thái: ERROR (chấm than), WARN (chấm than vàng), REJECT (ban), PROCESSING (spinner), hoặc icon file thông thường */}
+                    {/* Icon trạng thái */}
                     {getSourceDisplayIcon(source)}
                     <div className="min-w-0 flex-1 text-left">
                       <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{source.name}</p>
@@ -335,30 +397,181 @@ function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveS
                     </div>
                   </div>
 
-                  {isRejected && onRemoveSource && (
+                  {/* Hành động bên phải: REJECT/WARN → nút xóa trực tiếp; đang loading → không hiện gì; còn lại → nút 3 chấm khi hover */}
+                  {(isRejected || isWarn) ? (
                     <button
                       type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onRemoveSource(source.id);
-                      }}
-                      className={`shrink-0 min-w-8 h-8 px-2 rounded-lg flex items-center justify-center transition-colors ${
-                        isDarkMode
-                          ? "text-red-400 hover:bg-red-950/40"
-                          : "text-red-600 hover:bg-red-50"
+                      onClick={(e) => { e.stopPropagation(); openDeleteDialog(source); }}
+                      className={`shrink-0 w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+                        isDarkMode ? "text-red-400 hover:bg-red-950/40" : "text-red-500 hover:bg-red-50"
                       }`}
-                      title="Xóa tài liệu bị từ chối"
-                      aria-label={`Xóa ${source.name}`}
+                      title={t("workspace.sources.menuDelete")}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  )}
+                  ) : canDeleteSource(source) ? (
+                  /* Nút 3 chấm — hiện khi hover hoặc menu đang mở */
+                  <div className={`relative shrink-0 transition-opacity duration-150 ${showActions ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(isMenuOpen ? null : source.id);
+                      }}
+                      className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
+                        isDarkMode ? "text-slate-400 hover:bg-slate-700 hover:text-slate-200" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                      } ${isMenuOpen ? (isDarkMode ? "bg-slate-700 text-slate-200" : "bg-gray-100 text-gray-700") : ""}`}
+                      aria-label="Tùy chọn"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+
+                    {isMenuOpen && (
+                      <>
+                        {/* Overlay bắt click ngoài */}
+                        <div
+                          className="fixed inset-0 z-[110]"
+                          onClick={() => { setOpenMenuId(null); setHoveredId(null); }}
+                        />
+                        {/* Dropdown menu */}
+                        <div className={`absolute right-0 top-8 z-[120] w-36 rounded-lg shadow-lg border py-1 ${
+                          isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
+                        }`}>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openRenameDialog(source); }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                              isDarkMode ? "text-slate-200 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50"
+                            } ${fontClass}`}
+                          >
+                            {t("workspace.sources.menuRename")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openDeleteDialog(source); }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors text-red-500 ${
+                              isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"
+                            } ${fontClass}`}
+                          >
+                            {t("workspace.sources.menuDelete")}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  ) : null}
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Dialog đổi tên tài liệu */}
+      <Dialog open={!!renameDialog} onOpenChange={(open) => { if (!open) setRenameDialog(null); }}>
+        <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
+          <h2 className={`text-base font-semibold mb-4 ${fontClass}`}>
+            {t("workspace.sources.renameDialogTitle", { name: renameDialog?.name ?? "" })}
+          </h2>
+          <div className="space-y-1 mb-6">
+            <label className={`text-sm font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+              {t("workspace.sources.renameLabel")}<span className="text-red-500 ml-0.5">*</span>
+            </label>
+            <input
+              className={`w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
+                isDarkMode
+                  ? "bg-slate-800 border-slate-600 text-slate-100 focus:border-blue-500"
+                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
+              } ${fontClass}`}
+              value={renameInput}
+              onChange={(e) => setRenameInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleRenameSubmit(); }}
+              autoFocus
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setRenameDialog(null)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"
+              } ${fontClass}`}
+            >
+              {t("workspace.sources.cancelBtn")}
+            </button>
+            <button
+              type="button"
+              onClick={handleRenameSubmit}
+              disabled={renameLoading || !renameInput.trim()}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed ${fontClass}`}
+            >
+              {t("workspace.sources.saveBtn")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog xác nhận xóa nhiều tài liệu */}
+      <Dialog open={deleteMultipleDialog} onOpenChange={(open) => { if (!open) setDeleteMultipleDialog(false); }}>
+        <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
+          <h2 className={`text-base font-semibold mb-3 ${fontClass}`}>
+            {t("workspace.sources.deleteDialogTitle")}
+          </h2>
+          <p className={`text-sm mb-6 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+            {t("workspace.sources.deleteMultipleDesc", { count: selectedIds.length })}
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteMultipleDialog(false)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"
+              } ${fontClass}`}
+            >
+              {t("workspace.sources.cancelBtn")}
+            </button>
+            <button
+              type="button"
+              onClick={handleRemoveSelectedConfirm}
+              disabled={deleteMultipleLoading}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-red-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed ${fontClass}`}
+            >
+              {t("workspace.sources.deleteConfirmBtn")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog xác nhận xóa tài liệu */}
+      <Dialog open={!!deleteDialog} onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}>
+        <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
+          <h2 className={`text-base font-semibold mb-3 ${fontClass}`}>
+            {t("workspace.sources.deleteDialogTitle")}
+          </h2>
+          <p className={`text-sm mb-6 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+            {t("workspace.sources.deleteDialogDesc", { name: deleteDialog?.name ?? "" })}
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteDialog(null)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"
+              } ${fontClass}`}
+            >
+              {t("workspace.sources.cancelBtn")}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteConfirm}
+              disabled={deleteLoading}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-red-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed ${fontClass}`}
+            >
+              {t("workspace.sources.deleteConfirmBtn")}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }

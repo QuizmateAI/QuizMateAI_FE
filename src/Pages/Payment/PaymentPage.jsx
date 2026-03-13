@@ -13,6 +13,40 @@ import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
 import { getPlanById } from '@/api/PaymentAPI';
 import { useGroup } from '@/hooks/useGroup';
 
+/** Chuẩn hóa plan-catalog API response sang format PlanInfoCard / PaymentSidebar / PlanDetails */
+function mapPlanCatalogToPaymentPlan(raw) {
+  if (!raw) return null;
+  const e = raw.entitlement ?? {};
+  const type = raw.planScope === 'USER' ? 'INDIVIDUAL' : (raw.planScope === 'WORKSPACE' || raw.planScope === 'GROUP_WORKSPACE' || raw.planScope === 'GROUP' ? 'GROUP' : raw.planScope);
+  return {
+    planId: raw.planCatalogId,
+    planName: raw.displayName ?? raw.code,
+    price: raw.price ?? 0,
+    type,
+    status: raw.status ?? 'ACTIVE',
+    durationInDay: 999999,
+    planLimit: {
+      maxWorkspace: e.maxIndividualWorkspace,
+      maxMaterialPerWorkspace: e.maxMaterialInWorkspace,
+    },
+    planFeature: {
+      processPdf: e.canProcessPdf,
+      processWord: e.canProcessWord,
+      processSlide: e.canProcessSlide,
+      processExcel: e.canProcessExcel,
+      processText: e.canProcessText,
+      processImage: e.canProcessImage,
+      processVideo: e.canProcessVideo,
+      processAudio: e.canProcessAudio,
+      hasAiCompanionMode: e.hasAiCompanionMode,
+      hasAiContentStructuring: e.hasWorkspaceAnalytics,
+      hasPersonalizedLearningAnalytic: e.hasWorkspaceAnalytics,
+      hasAiTextReadingAndSummarization: e.hasAiSummaryAndTextReading,
+      hasAdvancedAiConfiguration: e.hasAdvanceQuizConfig,
+    },
+  };
+}
+
 export default function PaymentPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { t, i18n } = useTranslation();
@@ -57,7 +91,10 @@ export default function PaymentPage() {
     let cancelled = false;
     getPlanById(planId)
       .then((res) => {
-        if (!cancelled) { setPlan(res.data); setLoading(false); }
+        if (!cancelled) {
+          setPlan(mapPlanCatalogToPaymentPlan(res.data) ?? res.data);
+          setLoading(false);
+        }
       })
       .catch(() => {
         if (!cancelled) { setError(t('payment.fetchError')); setLoading(false); }

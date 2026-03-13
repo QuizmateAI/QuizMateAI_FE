@@ -27,14 +27,14 @@ export default function PlanDetails({ plan }) {
   const { isDarkMode } = useDarkMode();
 
   const limits = useMemo(
-    () => Object.entries(plan.planLimit).filter(
-      ([k, v]) => v !== null && k !== 'planLimitId'
+    () => Object.entries(plan.planLimit ?? {}).filter(
+      ([k, v]) => v != null && k !== 'planLimitId'
     ),
     [plan.planLimit]
   );
 
   const features = useMemo(
-    () => Object.entries(plan.planFeature).filter(
+    () => Object.entries(plan.planFeature ?? {}).filter(
       ([k, v]) => v === true && k !== 'planFeatureId'
     ),
     [plan.planFeature]

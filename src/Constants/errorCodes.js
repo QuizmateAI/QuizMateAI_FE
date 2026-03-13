@@ -73,6 +73,7 @@ const ERROR_CODES = {
   1043: 'error.paymentNotFound',
   1044: 'error.planNotActive',
   1045: 'error.planNameExisted',
+  1046: 'error.planDisplayNameExisted',
 
   // ========== TRẠNG THÁI TÀI KHOẢN ==========
   1047: 'error.userInactive',

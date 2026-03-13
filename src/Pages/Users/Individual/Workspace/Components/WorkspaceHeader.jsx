@@ -7,7 +7,7 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import WebSocketStatus from "@/Components/features/WebSocketStatus";
-import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
+// import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
 import {
   Dialog,
   DialogContent,
@@ -36,7 +36,7 @@ function WorkspaceHeader({
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [saving, setSaving] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  // const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const openEditDialog = () => {
     setEditTitle(workspaceName || workspaceTitle || "");
@@ -100,7 +100,7 @@ function WorkspaceHeader({
             <Plus className="w-4 h-4" />
             <span className={fontClass}>{t("workspace.header.create")}</span>
           </Button> */}
-          <Button
+          {/* <Button
             onClick={() => setUpgradeOpen(true)}
             variant="outline"
             className={`rounded-full h-9 px-4 flex items-center gap-2 ${
@@ -109,7 +109,7 @@ function WorkspaceHeader({
           >
             <Zap className="w-4 h-4" />
             <span className={fontClass}>{t("upgradePlan.upgradeBtn")}</span>
-          </Button>
+          </Button> */}
           <Button
             variant="outline"
             className={`rounded-full h-9 px-4 flex items-center gap-2 ${
@@ -190,11 +190,11 @@ function WorkspaceHeader({
         </DialogContent>
       </Dialog>
 
-      <UpgradePlanDialog
+      {/* <UpgradePlanDialog
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
         planType="INDIVIDUAL"
-      />
+      /> */}
     </header>
   );
 }

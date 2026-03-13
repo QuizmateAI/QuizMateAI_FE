@@ -276,6 +276,8 @@
     "durationForever": "Forever",
     "durationForeverShort": "Forever",
     "upgrade": "Choose plan",
+    "thanhToan": "Payment",
+    "defaultPlan": "Default plan",
     "notes": {
       "permanentTitle": "Plans can be permanent",
       "permanentDesc": "Plans are not necessarily monthly. Some plans can be sold as permanent depending on system configuration.",
@@ -851,7 +853,18 @@
       "loadingSummary": "Loading summary...",
       "noContent": "No content to display.",
       "noSummary": "No AI summary available for this document yet.",
-      "loadError": "Failed to load content."
+      "loadError": "Failed to load content.",
+      "renameDialogTitle": "Rename {{name}}?",
+      "renameLabel": "Source name",
+      "renameSuccess": "Document renamed successfully!",
+      "deleteDialogTitle": "Delete document?",
+      "deleteDialogDesc": "Are you sure you want to delete '{{name}}'? This action cannot be undone.",
+      "deleteMultipleDesc": "Are you sure you want to delete {{count}} selected documents? This action cannot be undone.",
+      "deleteConfirmBtn": "Delete",
+      "cancelBtn": "Cancel",
+      "saveBtn": "Save",
+      "menuRename": "Rename",
+      "menuDelete": "Delete"
     },
     "chat": {
       "title": "Learning Area",
@@ -1629,6 +1642,7 @@
     "paymentNotFound": "Payment not found.",
     "planNotActive": "Plan is not activated.",
     "planNameExisted": "Plan name already exists.",
+    "planDisplayNameExisted": "A plan with this display name already exists. Please choose a different name.",
     "userInactive": "Account has been locked.",
     "forbidden": "Access denied.",
     "permissionNotFound": "Permission not found.",

@@ -4,3 +4,9 @@
   margin: 0;
   padding: 0;
 }
+
+/* Dark theme: select dropdown options (Plan scope, etc.) */
+.plan-scope-select-dark option {
+  background: #1e293b;
+  color: #e2e8f0;
+}
