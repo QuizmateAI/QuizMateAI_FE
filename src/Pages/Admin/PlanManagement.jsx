@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Search, RefreshCw, Plus, Edit2, Trash2, Eye,
-  Package, Check, X, Clock, Zap,
+  Package, Check, X, Clock, Zap, Coins,
   ToggleLeft, ToggleRight, Users, User,
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
   Presentation, Bot, BarChart3, AlignLeft,
@@ -25,81 +25,62 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import {
-  getAllPlans, createPlan, updatePlan, deletePlan, togglePlanStatus,
+  getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus,
 } from '@/api/ManagementSystemAPI';
 
-const EMPTY_LIMIT = {
-  maxWorkspace: 5,
-  maxMaterialPerWorkspace: 10,
-  maxMaterialInGroup: 10,
-  maxAiCreateQuizPerDay: 3,
-  maxAiCreateFlashcardPerDay: 3,
-  maxAiCreateMockTestPerDay: 1,
-  maxAiCompanionModePerDay: 5,
-  maxAiCreateItemPerFlashcard: 20,
-  maxAiCreateQuestionPerQuiz: 30,
-  maxMemberSlot: 5,
-};
-
-const EMPTY_FEATURE = {
-  processPdf: true,
-  processWord: false,
-  processSlide: false,
-  processExcel: false,
-  processText: false,
-  processImage: false,
-  processVideo: false,
-  processAudio: false,
-  hasAiCompanionMode: false,
-  hasAiContentStructuring: false,
-  hasPersonalizedLearningAnalytic: false,
-  hasAiTextReadingAndSummarization: false,
-  hasAdvancedAiConfiguration: false,
-};
-
+// Form mặc định cho PlanCatalog (khớp với PlanCatalogCreateRequest)
 const EMPTY_FORM = {
-  planName: '',
+  code: '',
+  displayName: '',
+  planScope: 'USER',
+  planLevel: '',
   price: '0',
-  planType: 'INDIVIDUAL',
-  durationInDay: '30',
-  isDefault: false,
+  description: '',
 };
 
-const FEATURE_META = {
-  processPdf:                          { label: 'PDF Processing',           icon: FileText,          color: 'text-red-400' },
-  processWord:                         { label: 'Word Processing',          icon: FileType,          color: 'text-blue-400' },
-  processSlide:                        { label: 'Slide Processing',         icon: Presentation,      color: 'text-orange-400' },
-  processExcel:                        { label: 'Excel Processing',         icon: FileSpreadsheet,   color: 'text-green-400' },
-  processText:                         { label: 'Text Processing',          icon: AlignLeft,         color: 'text-slate-400' },
-  processImage:                        { label: 'Image Processing',         icon: Image,             color: 'text-pink-400' },
-  processVideo:                        { label: 'Video Processing',         icon: Film,              color: 'text-rose-400' },
-  processAudio:                        { label: 'Audio Processing',         icon: Headphones,        color: 'text-purple-400' },
-  hasAiCompanionMode:                  { label: 'AI Companion Mode',        icon: Bot,               color: 'text-sky-400' },
-  hasAiContentStructuring:             { label: 'AI Content Structuring',   icon: Layers,            color: 'text-indigo-400' },
-  hasPersonalizedLearningAnalytic:     { label: 'Personalized Analytics',   icon: BarChart3,         color: 'text-emerald-400' },
-  hasAiTextReadingAndSummarization:    { label: 'AI Text Summarization',    icon: BookOpenText,      color: 'text-teal-400' },
-  hasAdvancedAiConfiguration:          { label: 'Advanced AI Config',       icon: SlidersHorizontal, color: 'text-amber-400' },
+// Entitlement mặc định (khớp với PlanEntitlementRequest)
+const EMPTY_ENTITLEMENT = {
+  maxIndividualWorkspace: 1,
+  maxMaterialInWorkspace: 10,
+  canProcessPdf: true,
+  canProcessWord: false,
+  canProcessSlide: false,
+  canProcessExcel: false,
+  canProcessText: false,
+  canProcessImage: false,
+  canProcessVideo: false,
+  canProcessAudio: false,
+  canBuyCredit: true,
+  bonusCreditOnPlanPurchase: 0,
+  hasAdvanceQuizConfig: false,
+  hasAiCompanionMode: false,
+  hasWorkspaceAnalytics: false,
+  hasAiSummaryAndTextReading: false,
 };
 
-const LIMIT_LABELS = {
-  maxWorkspace:                 'Max Workspaces',
-  maxMaterialPerWorkspace:      'Materials / Workspace',
-  maxMaterialInGroup:           'Materials / Group',
-  maxAiCreateQuizPerDay:        'AI Quiz / Day',
-  maxAiCreateFlashcardPerDay:   'AI Flashcard / Day',
-  maxAiCreateMockTestPerDay:    'AI Mock Test / Day',
-  maxAiCompanionModePerDay:     'AI Companion / Day',
-  maxAiCreateItemPerFlashcard:  'Items / Flashcard',
-  maxAiCreateQuestionPerQuiz:   'Questions / Quiz',
-  maxMemberSlot:                'Member Slots',
+const ENTITLEMENT_TOGGLES = {
+  canProcessPdf:          { label: 'PDF',              icon: FileText },
+  canProcessWord:         { label: 'Word',             icon: FileType },
+  canProcessSlide:        { label: 'Slide',            icon: Presentation },
+  canProcessExcel:        { label: 'Excel',            icon: FileSpreadsheet },
+  canProcessText:         { label: 'Text',             icon: AlignLeft },
+  canProcessImage:        { label: 'Image',            icon: Image },
+  canProcessVideo:        { label: 'Video',            icon: Film },
+  canProcessAudio:        { label: 'Audio',            icon: Headphones },
+  canBuyCredit:           { label: 'Buy Credit',       icon: Coins },
+  hasAdvanceQuizConfig:   { label: 'Advanced Quiz',    icon: SlidersHorizontal },
+  hasAiCompanionMode:     { label: 'AI Companion',     icon: Bot },
+  hasWorkspaceAnalytics:  { label: 'Analytics',        icon: BarChart3 },
+  hasAiSummaryAndTextReading: { label: 'AI Summary',   icon: BookOpenText },
 };
 
-function SubscriptionManagement() {
+function PlanManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { permissions, loading: permLoading } = useAdminPermissions();
   const { showSuccess, showError } = useToast();
-  const canWrite = !permLoading && permissions.has('subscription:write');
+  // Quyền ghi cho Plan sử dụng permission backend `plan:write`
+  const canWrite = !permLoading && permissions.has('plan:write');
   const getFriendlyError = (err, fallbackKey) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
@@ -116,8 +97,7 @@ function SubscriptionManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
-  const [limitData, setLimitData] = useState({ ...EMPTY_LIMIT });
-  const [featureData, setFeatureData] = useState({ ...EMPTY_FEATURE });
+  const [entitlement, setEntitlement] = useState({ ...EMPTY_ENTITLEMENT });
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingPlan, setDeletingPlan] = useState(null);
@@ -149,50 +129,60 @@ function SubscriptionManagement() {
   };
 
   const openCreateForm = () => {
-    setEditingPlan(null); setFormData({ ...EMPTY_FORM }); setLimitData({ ...EMPTY_LIMIT }); setFeatureData({ ...EMPTY_FEATURE });
+    setEditingPlan(null);
+    setFormData({ ...EMPTY_FORM });
+    setEntitlement({ ...EMPTY_ENTITLEMENT });
     setIsFormOpen(true);
   };
 
   const openEditForm = (plan) => {
     setEditingPlan(plan);
-    const isDef = plan.isDefault ?? false;
+    // Backend returns USER | WORKSPACE; normalize legacy GROUP_WORKSPACE for dropdown
+    const planScope = (plan.planScope === 'GROUP_WORKSPACE' || plan.planScope === 'WORKSPACE') ? 'WORKSPACE' : (plan.planScope || 'USER');
     setFormData({
-      planName: plan.planName || '',
-      price: isDef ? '0' : String(plan.price ?? '0'),
-      planType: plan.type || 'INDIVIDUAL',
-      durationInDay: isDef ? '999999' : String(plan.durationInDay ?? '30'),
-      isDefault: isDef,
+      code: plan.code || '',
+      displayName: plan.displayName || '',
+      planScope,
+      planLevel: plan.planLevel != null ? String(plan.planLevel) : '',
+      price: plan.price != null ? String(plan.price) : '0',
+      description: plan.description || '',
     });
-    setLimitData(plan.planLimit ? { ...EMPTY_LIMIT, ...plan.planLimit } : { ...EMPTY_LIMIT });
-    setFeatureData(plan.planFeature ? { ...EMPTY_FEATURE, ...plan.planFeature } : { ...EMPTY_FEATURE });
+    setEntitlement(plan.entitlement ? { ...EMPTY_ENTITLEMENT, ...plan.entitlement } : { ...EMPTY_ENTITLEMENT });
     setIsFormOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.planName.trim()) { const msg = t('subscription.nameRequired'); showError(msg); return; }
-    if (formData.isDefault) {
-      const existingDefault = plans.find((p) => p.isDefault && (p.type || '').toUpperCase() === (formData.planType || '').toUpperCase());
-      if (existingDefault && (!editingPlan || existingDefault.planId !== editingPlan.planId)) {
-        const msg = t('subscription.defaultPlanExists', { type: formData.planType });
-        showError(msg);
-        return;
-      }
-    }
+    if (!formData.code.trim()) { showError(t('subscription.nameRequired')); return; }
+    if (!formData.displayName.trim()) { showError(t('subscription.nameRequired')); return; }
     setIsSubmitting(true);
     try {
+      const payload = {
+        displayName: formData.displayName.trim(),
+        price: parseInt(formData.price, 10) || 0,
+        description: formData.description || '',
+        entitlement: {
+          ...entitlement,
+          maxIndividualWorkspace: entitlement.maxIndividualWorkspace != null ? parseInt(entitlement.maxIndividualWorkspace, 10) || 0 : 0,
+          maxMaterialInWorkspace: entitlement.maxMaterialInWorkspace != null ? parseInt(entitlement.maxMaterialInWorkspace, 10) || 0 : 0,
+          bonusCreditOnPlanPurchase: entitlement.bonusCreditOnPlanPurchase != null ? parseInt(entitlement.bonusCreditOnPlanPurchase, 10) || 0 : 0,
+        },
+      };
+
       if (editingPlan) {
-        await updatePlan(editingPlan.planId, {
-          planName: formData.planName.trim(), price: parseInt(formData.price) || 0, planType: formData.planType,
-          durationInDay: parseInt(formData.durationInDay) || 30, isDefault: formData.isDefault,
-          planLimitUpdateRequest: { ...limitData }, planFeatureUpdateRequest: { ...featureData },
-        });
+        await updatePlan(editingPlan.planCatalogId, payload);
         showSuccess(t('subscription.updateSuccess'));
       } else {
+        // Backend enum is USER | WORKSPACE only (normalize legacy GROUP_WORKSPACE)
+        const planScope = (formData.planScope === 'GROUP_WORKSPACE' || formData.planScope === 'WORKSPACE') ? 'WORKSPACE' : (formData.planScope || 'USER');
         await createPlan({
-          planName: formData.planName.trim(), price: parseInt(formData.price) || 0, planType: formData.planType,
-          durationInDay: parseInt(formData.durationInDay) || 30, isDefault: formData.isDefault,
-          planLimitCreateRequest: { ...limitData }, planFeatureCreateRequest: { ...featureData },
+          code: formData.code.trim(),
+          displayName: formData.displayName.trim(),
+          planScope,
+          planLevel: formData.planLevel ? parseInt(formData.planLevel, 10) || 0 : 0,
+          price: payload.price,
+          description: payload.description,
+          entitlement: payload.entitlement,
         });
         showSuccess(t('subscription.createSuccess'));
       }
@@ -209,7 +199,12 @@ function SubscriptionManagement() {
   };
 
   const handleToggleStatus = async (plan) => {
-    try { await togglePlanStatus(plan.planId); showSuccess(t('subscription.updateSuccess')); fetchPlans(); }
+    const nextStatus = isActive(plan.status) ? 'INACTIVE' : 'ACTIVE';
+    try {
+      await updatePlanStatus(plan.planCatalogId, nextStatus);
+      showSuccess(t('subscription.updateSuccess'));
+      fetchPlans();
+    }
     catch (err) { showError(getFriendlyError(err, 'subscription.submitError')); }
   };
 
@@ -218,7 +213,7 @@ function SubscriptionManagement() {
   const handleDelete = async () => {
     if (!deletingPlan) return; setIsSubmitting(true);
     try {
-      await deletePlan(deletingPlan.planId);
+      await deletePlan(deletingPlan.planCatalogId);
       showSuccess(t('subscription.deleteSuccess'));
       fetchPlans();
     } catch (err) {
@@ -234,12 +229,17 @@ function SubscriptionManagement() {
     }
   };
 
-  const filteredPlans = plans.filter((p) => (p.planName || '').toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredPlans = plans.filter((p) => {
+    const name = (p.displayName || '').toLowerCase();
+    const code = (p.code || '').toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return name.includes(term) || code.includes(term);
+  });
   const formatCurrency = (val) => (val == null || val === 0) ? t('subscription.free') : `${Number(val).toLocaleString()} VND`;
   const isActive = (s) => (s || '').toUpperCase() === 'ACTIVE';
 
-  const individualCount = plans.filter(p => p.type === 'INDIVIDUAL').length;
-  const groupCount = plans.filter(p => p.type === 'GROUP').length;
+  const userScopeCount = plans.filter(p => p.planScope === 'USER').length;
+  const workspaceScopeCount = plans.filter(p => p.planScope === 'WORKSPACE').length;
   const activeCount = plans.filter(p => isActive(p.status)).length;
 
   const inputCls = `mt-1.5 h-10 rounded-lg transition-colors duration-200 ${
@@ -247,9 +247,10 @@ function SubscriptionManagement() {
        : 'bg-white border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-blue-500/20'
   }`;
 
-  const selectCls = `mt-1.5 w-full h-10 rounded-lg border px-3 text-sm transition-colors duration-200 ${
-    dk ? 'bg-white/5 border-white/10 text-white focus:border-blue-500'
-       : 'bg-white border-slate-200 text-slate-900 focus:border-blue-500'
+  const selectCls = `mt-1.5 w-full h-10 rounded-lg border px-3 text-sm transition-colors duration-200 cursor-pointer ${
+    dk
+      ? 'bg-slate-800 border-slate-600 text-slate-100 pr-9 appearance-none bg-no-repeat bg-[length:1.25rem] bg-[right_0.5rem_center] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 plan-scope-select-dark'
+      : 'bg-white border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
   }`;
 
   const sectionCls = `rounded-xl border p-4 ${dk ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-50/80 border-slate-100'}`;
@@ -278,8 +279,8 @@ function SubscriptionManagement() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: t('subscription.stats.totalPlans'), value: plans.length, icon: Package, from: 'from-blue-500', to: 'to-blue-600', shadow: 'shadow-blue-500/20' },
-          { label: t('subscription.stats.individual'), value: individualCount, icon: User, from: 'from-cyan-500', to: 'to-teal-500', shadow: 'shadow-cyan-500/20' },
-          { label: t('subscription.stats.group'), value: groupCount, icon: Users, from: 'from-violet-500', to: 'to-purple-600', shadow: 'shadow-violet-500/20' },
+          { label: 'USER scope', value: userScopeCount, icon: User, from: 'from-cyan-500', to: 'to-teal-500', shadow: 'shadow-cyan-500/20' },
+          { label: 'Group workspace scope', value: workspaceScopeCount, icon: Users, from: 'from-violet-500', to: 'to-purple-600', shadow: 'shadow-violet-500/20' },
           { label: t('subscription.stats.activeSubs'), value: `${activeCount}/${plans.length}`, icon: Zap, from: 'from-amber-400', to: 'to-orange-500', shadow: 'shadow-amber-500/20' },
         ].map((s) => (
           <div key={s.label} className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] cursor-default ${
@@ -321,10 +322,11 @@ function SubscriptionManagement() {
             <TableHeader>
               <TableRow className={dk ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50/80 border-b border-slate-100'}>
                 <TableHead className="w-[50px] font-semibold text-xs uppercase tracking-wider text-slate-400">ID</TableHead>
+                <TableHead className="w-[140px] font-semibold text-xs uppercase tracking-wider text-slate-400">Code</TableHead>
                 <TableHead className="w-[220px] font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.name')}</TableHead>
+                <TableHead className="w-[90px] font-semibold text-xs uppercase tracking-wider text-slate-400">Scope</TableHead>
+                <TableHead className="w-[80px] font-semibold text-xs uppercase tracking-wider text-slate-400">Level</TableHead>
                 <TableHead className="w-[130px] font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.price')}</TableHead>
-                <TableHead className="w-[100px] font-semibold text-xs uppercase tracking-wider text-slate-400">Type</TableHead>
-                <TableHead className="w-[110px] font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.duration')}</TableHead>
                 <TableHead className="w-[90px] text-center font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.status')}</TableHead>
                 <TableHead className="w-[130px] text-right font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.actions')}</TableHead>
               </TableRow>
@@ -335,48 +337,41 @@ function SubscriptionManagement() {
                   <ListSpinner variant="table" />
                 </TableCell></TableRow>
               ) : filteredPlans.length > 0 ? filteredPlans.map((plan) => (
-                <TableRow key={plan.planId} className={`border-b transition-colors cursor-pointer ${dk ? 'border-white/[0.04] hover:bg-white/[0.03]' : 'border-slate-50 hover:bg-blue-50/30'}`}>
-                  <TableCell className="font-mono text-sm font-semibold text-blue-500">{plan.planId}</TableCell>
+                <TableRow key={plan.planCatalogId} className={`border-b transition-colors cursor-pointer ${dk ? 'border-white/[0.04] hover:bg-white/[0.03]' : 'border-slate-50 hover:bg-blue-50/30'}`}>
+                  <TableCell className="font-mono text-sm font-semibold text-blue-500">{plan.planCatalogId}</TableCell>
+                  <TableCell className="font-mono text-xs text-slate-400">{plan.code}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                        plan.type === 'GROUP'
+                        plan.planScope === 'WORKSPACE'
                           ? dk ? 'bg-violet-500/15' : 'bg-violet-100'
                           : dk ? 'bg-cyan-500/15' : 'bg-cyan-100'
                       }`}>
-                        {plan.type === 'GROUP'
+                        {plan.planScope === 'WORKSPACE'
                           ? <Users className={`w-4 h-4 ${dk ? 'text-violet-400' : 'text-violet-600'}`} />
                           : <User className={`w-4 h-4 ${dk ? 'text-cyan-400' : 'text-cyan-600'}`} />
                         }
                       </div>
                       <div>
-                        <p className={`font-semibold text-sm ${dk ? 'text-white' : 'text-slate-800'}`}>{plan.planName}</p>
-                        {plan.isDefault && (
-                          <div className="flex items-center gap-1 mt-0.5"><Crown className="w-3 h-3 text-amber-500" /><span className="text-[11px] text-amber-500 font-semibold">Default</span></div>
-                        )}
+                        <p className={`font-semibold text-sm ${dk ? 'text-white' : 'text-slate-800'}`}>{plan.displayName}</p>
+                        <p className="text-xs text-slate-400">{plan.description}</p>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100/10 text-slate-300">
+                      {plan.planScope === 'WORKSPACE' ? 'Group workspace' : plan.planScope}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`font-mono text-sm ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {plan.planLevel ?? '-'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <span className={`font-bold ${(plan.price ?? 0) === 0 ? 'text-emerald-500' : dk ? 'text-white' : 'text-slate-800'}`}>
                       {formatCurrency(plan.price)}
                     </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold ${
-                      plan.type === 'GROUP'
-                        ? dk ? 'bg-violet-500/15 text-violet-400' : 'bg-violet-100 text-violet-700'
-                        : dk ? 'bg-cyan-500/15 text-cyan-400' : 'bg-cyan-100 text-cyan-700'
-                    }`}>
-                      {plan.type}
-                    </span>
-                  </TableCell>
-                  <TableCell className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {plan.isDefault ? (
-                      <span className="flex items-center gap-1.5"><Infinity className="w-3.5 h-3.5" />{t('subscription.unlimited')}</span>
-                    ) : (
-                      <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{plan.durationInDay} {t('subscription.days')}</span>
-                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold ${
@@ -436,73 +431,147 @@ function SubscriptionManagement() {
               </p>
               <div className="space-y-4">
                 <div>
-                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.name')} *</Label>
-                  <Input required value={formData.planName} onChange={(e) => setFormData({ ...formData, planName: e.target.value })} placeholder="e.g. Pro, Elite..." className={inputCls} />
+                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Code *</Label>
+                  <Input
+                    required
+                    disabled={!!editingPlan}
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    placeholder="BASIC, PRO, GROUP_TEAM..."
+                    className={inputCls}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.price')} (VND)</Label>
-                    {formData.isDefault ? (
-                      <div className={`mt-1.5 h-10 rounded-lg border flex items-center gap-2 px-3 ${dk ? 'bg-white/5 border-white/10 text-emerald-400' : 'bg-slate-50 border-slate-200 text-emerald-600'}`}>
-                        <span className="font-medium">0</span>
-                      </div>
-                    ) : (
-                      <Input type="number" min="0" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" className={inputCls} />
-                    )}
+                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.name')} *</Label>
+                    <Input
+                      required
+                      value={formData.displayName}
+                      onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                      placeholder="Plan cho USER, Plan cho Group workspace..."
+                      className={inputCls}
+                    />
                   </div>
                   <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.duration')}</Label>
-                    {formData.isDefault ? (
-                      <div className={`mt-1.5 h-10 rounded-lg border flex items-center gap-2 px-3 ${dk ? 'bg-white/5 border-white/10 text-amber-400' : 'bg-slate-50 border-slate-200 text-amber-600'}`}>
-                        <Infinity className="w-5 h-5" />
-                        <span className="font-medium">{t('subscription.unlimited')}</span>
-                      </div>
-                    ) : (
-                      <Input type="number" min="1" value={formData.durationInDay} onChange={(e) => setFormData({ ...formData, durationInDay: e.target.value })} placeholder="30" className={inputCls} />
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Plan Type *</Label>
-                    <select value={formData.planType} onChange={(e) => setFormData({ ...formData, planType: e.target.value })} className={selectCls}>
-                      <option value="INDIVIDUAL">INDIVIDUAL</option>
-                      <option value="GROUP">GROUP</option>
+                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Scope *</Label>
+                    <select
+                      disabled={!!editingPlan}
+                      value={formData.planScope}
+                      onChange={(e) => setFormData({ ...formData, planScope: e.target.value })}
+                      className={selectCls}
+                      style={dk ? { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` } : undefined}
+                    >
+                      <option value="USER">USER</option>
+                      <option value="WORKSPACE">Group workspace</option>
                     </select>
                   </div>
-                  <div className="flex items-end pb-1">
-                    <label className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${dk ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
-                      <Switch checked={formData.isDefault} onCheckedChange={(val) => setFormData({ ...formData, isDefault: val, price: val ? '0' : formData.price, durationInDay: val ? '999999' : '30' })} />
-                      <span className={`text-sm font-medium ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Default Plan</span>
-                    </label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Level</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      disabled={!!editingPlan}
+                      value={formData.planLevel}
+                      onChange={(e) => setFormData({ ...formData, planLevel: e.target.value })}
+                      placeholder="0, 1, 2..."
+                      className={inputCls}
+                    />
                   </div>
+                  <div>
+                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.price')} (VND)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="0"
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Description</Label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Mô tả ngắn về Plan..."
+                    className={inputCls}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Limits */}
+            {/* Entitlement: limits & features */}
             <div className={sectionCls}>
               <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                Limits & Quotas
+                Entitlement & Limits
               </p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                {Object.entries(LIMIT_LABELS).map(([key, label]) => (
-                  <div key={key}>
-                    <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{label}</Label>
-                    <Input type="number" min="0" value={limitData[key] ?? ''} onChange={(e) => setLimitData({ ...limitData, [key]: parseInt(e.target.value) || 0 })} className={`${inputCls} h-9`} />
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max individual workspace</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={entitlement.maxIndividualWorkspace ?? ''}
+                    onChange={(e) => setEntitlement({ ...entitlement, maxIndividualWorkspace: e.target.value })}
+                    className={`${inputCls} h-9`}
+                  />
+                </div>
+                <div>
+                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max material / workspace</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={entitlement.maxMaterialInWorkspace ?? ''}
+                    onChange={(e) => setEntitlement({ ...entitlement, maxMaterialInWorkspace: e.target.value })}
+                    className={`${inputCls} h-9`}
+                  />
+                </div>
+                <div>
+                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Bonus Credit on purchase</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={entitlement.bonusCreditOnPlanPurchase ?? ''}
+                    onChange={(e) => setEntitlement({ ...entitlement, bonusCreditOnPlanPurchase: e.target.value })}
+                    className={`${inputCls} h-9`}
+                  />
+                </div>
               </div>
-            </div>
-
-            {/* Features */}
-            <div className={sectionCls}>
-              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>
-                Features
-              </p>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const next = { ...entitlement };
+                    Object.keys(ENTITLEMENT_TOGGLES).forEach((k) => { next[k] = true; });
+                    setEntitlement(next);
+                  }}
+                  className={`rounded-lg cursor-pointer text-xs ${dk ? 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' : 'border-emerald-600/50 text-emerald-600 hover:bg-emerald-50'}`}
+                >
+                  Bật hết
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const next = { ...entitlement };
+                    Object.keys(ENTITLEMENT_TOGGLES).forEach((k) => { next[k] = false; });
+                    setEntitlement(next);
+                  }}
+                  className={`rounded-lg cursor-pointer text-xs ${dk ? 'border-slate-600 text-slate-400 hover:bg-white/5' : 'border-slate-300 text-slate-500 hover:bg-slate-50'}`}
+                >
+                  Tắt hết
+                </Button>
+              </div>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(FEATURE_META).map(([key, meta]) => {
-                  const checked = featureData[key] ?? false;
+                {Object.entries(ENTITLEMENT_TOGGLES).map(([key, meta]) => {
+                  const checked = entitlement[key] ?? false;
+                  const Icon = meta.icon;
                   return (
                     <label
                       key={key}
@@ -512,8 +581,11 @@ function SubscriptionManagement() {
                           : dk ? 'hover:bg-white/[0.03]' : 'hover:bg-slate-50'
                       }`}
                     >
-                      <Switch checked={checked} onCheckedChange={(val) => setFeatureData({ ...featureData, [key]: val })} />
-                      <meta.icon className={`w-4 h-4 flex-shrink-0 ${checked ? meta.color : dk ? 'text-slate-600' : 'text-slate-300'}`} />
+                      <Switch
+                        checked={checked}
+                        onCheckedChange={(val) => setEntitlement({ ...entitlement, [key]: val })}
+                      />
+                      <Icon className={`w-4 h-4 flex-shrink-0 ${checked ? 'text-blue-400' : dk ? 'text-slate-600' : 'text-slate-300'}`} />
                       <span className={`text-sm font-medium transition-colors ${
                         checked
                           ? dk ? 'text-white' : 'text-slate-800'
@@ -542,7 +614,7 @@ function SubscriptionManagement() {
         <DialogContent hideClose className={`max-w-md ${dk ? 'bg-[#0f1629] border-white/[0.08]' : ''}`} onPointerDownOutside={(e) => isSubmitting && e.preventDefault()} onInteractOutside={(e) => isSubmitting && e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className={dk ? 'text-white' : ''}>{t('subscription.confirmDelete')}</DialogTitle>
-            <DialogDescription>{t('subscription.confirmDeleteDesc', { name: deletingPlan?.planName })}</DialogDescription>
+            <DialogDescription>{t('subscription.confirmDeleteDesc', { name: deletingPlan?.displayName })}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsDeleteOpen(false)} className={`cursor-pointer ${dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>{t('auth.cancel')}</Button>
@@ -561,14 +633,14 @@ function SubscriptionManagement() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                      detailPlan.type === 'GROUP'
+                      detailPlan.planScope === 'WORKSPACE'
                         ? 'bg-gradient-to-br from-violet-500 to-purple-600' : 'bg-gradient-to-br from-cyan-500 to-blue-600'
                     } shadow-lg`}>
-                      {detailPlan.type === 'GROUP' ? <Users className="w-5 h-5 text-white" /> : <User className="w-5 h-5 text-white" />}
+                      {detailPlan.planScope === 'WORKSPACE' ? <Users className="w-5 h-5 text-white" /> : <User className="w-5 h-5 text-white" />}
                     </div>
                     <div>
-                      <h3 className={`text-lg font-bold ${dk ? 'text-white' : 'text-slate-900'}`}>{detailPlan.planName}</h3>
-                      <p className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{detailPlan.type} Plan</p>
+                      <h3 className={`text-lg font-bold ${dk ? 'text-white' : 'text-slate-900'}`}>{detailPlan.displayName}</h3>
+                      <p className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{detailPlan.planScope === 'WORKSPACE' ? 'Group workspace' : detailPlan.planScope} Plan</p>
                     </div>
                   </div>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
@@ -587,8 +659,8 @@ function SubscriptionManagement() {
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: t('subscription.table.price'), value: formatCurrency(detailPlan.price), color: dk ? 'text-emerald-400' : 'text-emerald-600' },
-                    { label: 'Type', value: detailPlan.type, color: dk ? 'text-blue-400' : 'text-blue-600' },
-                    { label: t('subscription.table.duration'), value: detailPlan.isDefault ? t('subscription.unlimited') : `${detailPlan.durationInDay} ${t('subscription.days')}`, color: dk ? 'text-amber-400' : 'text-amber-600' },
+                    { label: 'Scope', value: detailPlan.planScope === 'WORKSPACE' ? 'Group workspace' : detailPlan.planScope, color: dk ? 'text-blue-400' : 'text-blue-600' },
+                    { label: 'Level', value: detailPlan.planLevel ?? '-', color: dk ? 'text-amber-400' : 'text-amber-600' },
                   ].map((item) => (
                     <div key={item.label} className={`p-3.5 rounded-xl text-center ${dk ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-slate-50 border border-slate-100'}`}>
                       <p className={`text-[11px] font-semibold uppercase tracking-wider ${dk ? 'text-slate-500' : 'text-slate-400'}`}>{item.label}</p>
@@ -597,39 +669,37 @@ function SubscriptionManagement() {
                   ))}
                 </div>
 
-                {/* Limits */}
-                {detailPlan.planLimit && (
+                {/* Entitlement & features */}
+                {detailPlan.entitlement && (
                   <div className={sectionCls}>
-                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>Limits & Quotas</p>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                      {Object.entries(LIMIT_LABELS).map(([key, label]) => (
-                        <div key={key} className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'} last:border-0`}>
-                          <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{label}</span>
-                          <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.planLimit[key] ?? '—'}</span>
-                        </div>
-                      ))}
+                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>Entitlement</p>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-4">
+                      <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
+                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max individual workspace</span>
+                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.maxIndividualWorkspace ?? '—'}</span>
+                      </div>
+                      <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
+                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max material / workspace</span>
+                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.maxMaterialInWorkspace ?? '—'}</span>
+                      </div>
+                      <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
+                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Bonus Credit</span>
+                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.bonusCreditOnPlanPurchase ?? 0}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Features */}
-                {detailPlan.planFeature && (
-                  <div className={sectionCls}>
                     <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>Features</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(FEATURE_META).map(([key, meta]) => {
-                        const enabled = detailPlan.planFeature[key];
+                      {Object.entries(ENTITLEMENT_TOGGLES).map(([key, meta]) => {
+                        const enabled = detailPlan.entitlement[key];
+                        const Icon = meta.icon;
                         return (
                           <div key={key} className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${
                             enabled
                               ? dk ? 'bg-white/[0.04]' : 'bg-emerald-50/80'
                               : dk ? 'opacity-40' : 'opacity-40'
                           }`}>
-                            {enabled
-                              ? <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                              : <X className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                            }
-                            <meta.icon className={`w-4 h-4 flex-shrink-0 ${enabled ? meta.color : dk ? 'text-slate-600' : 'text-slate-300'}`} />
+                            {enabled ? <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" /> : <X className="w-4 h-4 text-slate-400 flex-shrink-0" />}
+                            <Icon className={`w-4 h-4 flex-shrink-0 ${enabled ? 'text-blue-400' : dk ? 'text-slate-600' : 'text-slate-300'}`} />
                             <span className={`text-sm font-medium ${
                               enabled ? dk ? 'text-white' : 'text-slate-700' : dk ? 'text-slate-600 line-through' : 'text-slate-400 line-through'
                             }`}>{meta.label}</span>
@@ -648,4 +718,4 @@ function SubscriptionManagement() {
   );
 }
 
-export default SubscriptionManagement;
+export default PlanManagement;

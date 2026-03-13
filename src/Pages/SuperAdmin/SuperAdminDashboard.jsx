@@ -105,7 +105,7 @@ function SuperAdminDashboard() {
       title: t('sidebar.subscriptions'),
       desc: t('subscription.desc'),
       icon: CreditCard,
-      path: '/super-admin/subscriptions',
+      path: '/super-admin/plan',
       color: 'text-violet-600 dark:text-violet-400',
       bgColor: 'bg-violet-100 dark:bg-violet-900/30',
     },

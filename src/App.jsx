@@ -24,7 +24,7 @@ const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/
 const AdminLayout = lazy(() => import('./Pages/Admin/AdminLayout'));
 const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
 const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
-const SubscriptionManagement = lazy(() => import('./Pages/Admin/SubscriptionManagement'));
+const PlanManagement = lazy(() => import('./Pages/Admin/PlanManagement'));
 const CreditPackageManagement = lazy(() => import('./Pages/Admin/CreditPackageManagement'));
 
 // Quiz
@@ -35,6 +35,7 @@ const QuizResultPage = lazy(() => import('./Pages/Users/Quiz/QuizResultPage'));
 // Payment
 const PaymentPage = lazy(() => import('./Pages/Payment/PaymentPage'));
 const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
+const VnPayReturnRedirect = lazy(() => import('./Pages/Payment/VnPayReturnRedirect'));
 
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'));
@@ -52,6 +53,9 @@ function App() {
 
         {/* Route cho khách (Chưa đăng nhập) - Đã đăng nhập sẽ bị đẩy về Home
         page của role đó */}
+        {/* VNPay return: nếu request trúng frontend thay vì backend thì redirect sang backend */}
+        <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
+
         <Route element={<PublicRoute />}>
         <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -84,7 +88,7 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="groups/:groupId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
-            <Route path="subscriptions" element={<SubscriptionManagement />} />
+              <Route path="plan" element={<PlanManagement />} />
             <Route path="credit" element={<CreditPackageManagement />} />
           </Route>
         </Route>
@@ -97,7 +101,7 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="groups/:groupId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
-            <Route path="subscriptions" element={<SubscriptionManagement />} />
+              <Route path="plan" element={<PlanManagement />} />
             <Route path="credit" element={<CreditPackageManagement />} />
           </Route>
         </Route>
