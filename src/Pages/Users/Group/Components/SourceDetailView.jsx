@@ -242,6 +242,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [moderationReport, setModerationReport] = useState(null);
   const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationDetailOpen, setModerationDetailOpen] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
@@ -250,6 +251,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
     setCurrentSource(source);
     setReviewError("");
     setReviewMessage("");
+    setModerationDetailOpen(false);
   }, [source]);
 
   const fetchContent = useCallback(async () => {
@@ -345,6 +347,15 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
   );
   const suitablePercentText = useMemo(() => formatSuitablePercent(moderationInfo?.suitablePercent), [moderationInfo?.suitablePercent]);
   const showWarnReviewActions = moderationInfo?.type === "WARN" && ["WARN", "WARNED"].includes(String(currentSource?.status || "").toUpperCase());
+  const hasModerationDetails = Boolean(
+    moderationInfo?.reason ||
+    moderationInfo?.suggestion ||
+    moderationInfo?.detectedTopic ||
+    suitablePercentText ||
+    moderationInfo?.targetLevelRequired ||
+    moderationInfo?.currentLevelDetected ||
+    moderationNodeFindings.length > 0
+  );
 
   // Render summary with bold markdown **text**
   const renderSummary = (text) => {
@@ -395,46 +406,66 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                     Đang tải báo cáo kiểm duyệt...
                   </span>
                 </div>
-              ) : moderationInfo?.reason ? (
-                <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                  <span className="font-semibold">Lý do: </span>
-                  {moderationInfo.reason}
-                </p>
               ) : null}
-              {moderationInfo?.type === "WARN" && moderationInfo?.suggestion && (
-                <p className={`text-xs leading-relaxed mt-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                  <span className="font-semibold">Gợi ý: </span>
-                  {moderationInfo.suggestion}
-                </p>
-              )}
-              {moderationInfo?.type === "REJECT" && moderationInfo?.detectedTopic && (
-                <p className={`text-xs leading-relaxed mt-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                  <span className="font-semibold">Chủ đề phát hiện của tài liệu: </span>
-                  {moderationInfo.detectedTopic}
-                </p>
-              )}
-              {moderationInfo?.type === "WARN" && suitablePercentText && (
-                <p className={`text-xs leading-relaxed mt-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                  <span className="font-semibold">Phần trăm nội dung phù hợp: </span>
-                  {suitablePercentText}
-                </p>
-              )}
-              {moderationInfo?.type === "WARN" && moderationInfo?.currentLevelDetected && moderationInfo?.targetLevelRequired && (
-                <p className={`text-xs leading-relaxed mt-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                  <span className="font-semibold">Mức hiện tại của tài liệu: </span>
-                  {moderationInfo.currentLevelDetected}
-                  <span className="font-semibold"> | Mức yêu cầu: </span>
-                  {moderationInfo.targetLevelRequired}
-                </p>
-              )}
-              {moderationNodeFindings.length > 0 && (
-                <div className="mt-2 space-y-1.5">
-                  {moderationNodeFindings.map((item) => (
-                    <p key={item.key} className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                      <span className="font-semibold">{item.label} ({item.level}): </span>
-                      {item.reason}
-                    </p>
-                  ))}
+              {!moderationLoading && hasModerationDetails && (
+                <div className="mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setModerationDetailOpen((prev) => !prev)}
+                    className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${
+                      isDarkMode ? "text-slate-200 hover:bg-white/5" : "text-gray-700 hover:bg-black/5"
+                    } ${fontClass}`}
+                  >
+                    <span>Chi tiết kiểm duyệt</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform ${moderationDetailOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {moderationDetailOpen && (
+                    <div className="mt-1.5 space-y-1.5">
+                      {moderationInfo?.reason && (
+                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                          <span className="font-semibold">Lý do: </span>
+                          {moderationInfo.reason}
+                        </p>
+                      )}
+                      {moderationInfo?.type === "WARN" && moderationInfo?.suggestion && (
+                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+                          <span className="font-semibold">Gợi ý: </span>
+                          {moderationInfo.suggestion}
+                        </p>
+                      )}
+                      {moderationInfo?.type === "REJECT" && moderationInfo?.detectedTopic && (
+                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+                          <span className="font-semibold">Chủ đề phát hiện của tài liệu: </span>
+                          {moderationInfo.detectedTopic}
+                        </p>
+                      )}
+                      {moderationInfo?.type === "WARN" && suitablePercentText && (
+                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+                          <span className="font-semibold">Phần trăm nội dung phù hợp: </span>
+                          {suitablePercentText}
+                        </p>
+                      )}
+                      {moderationInfo?.type === "WARN" && moderationInfo?.currentLevelDetected && moderationInfo?.targetLevelRequired && (
+                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+                          <span className="font-semibold">Mức hiện tại của tài liệu: </span>
+                          {moderationInfo.currentLevelDetected}
+                          <span className="font-semibold"> | Mức yêu cầu: </span>
+                          {moderationInfo.targetLevelRequired}
+                        </p>
+                      )}
+                      {moderationNodeFindings.length > 0 && (
+                        <div className="space-y-1.5">
+                          {moderationNodeFindings.map((item) => (
+                            <p key={item.key} className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+                              <span className="font-semibold">{item.label} ({item.level}): </span>
+                              {item.reason}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {showWarnReviewActions && (

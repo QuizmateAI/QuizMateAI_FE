@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
+  LayoutDashboard,
   Users, UsersRound,
   PanelLeftClose, LogOut, Shield, CreditCard, Coins
 } from 'lucide-react';
@@ -10,13 +11,46 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { logout } from '@/api/Authentication';
 
-// Menu items - giống Admin: Users, Groups + thêm Admin Accounts (RBAC)
+// Menu items cho Super Admin: Dashboard, Users, Groups, Subscriptions, Credit, Admin Accounts/RBAC
 const menuItems = [
-  { icon: Users, labelKey: 'sidebar.users', path: '/super-admin/users', alsoMatch: '/super-admin', matchPrefix: true },
-  { icon: UsersRound, labelKey: 'sidebar.groups', path: '/super-admin/groups', matchPrefix: true },
-  { icon: CreditCard, labelKey: 'sidebar.subscriptions', path: '/super-admin/subscriptions' },
-  { icon: Coins, labelKey: 'sidebar.creditPackages', path: '/super-admin/credit' },
-  { icon: Shield, labelKey: 'sidebar.adminAccounts', path: '/super-admin/admins' },
+  {
+    icon: LayoutDashboard,
+    labelKey: 'sidebar.dashboard',
+    path: '/super-admin',
+    alsoMatch: '/super-admin',
+    matchPrefix: false,
+  },
+  {
+    icon: Users,
+    labelKey: 'sidebar.users',
+    path: '/super-admin/users',
+    alsoMatch: '/super-admin/users',
+    matchPrefix: true,
+  },
+  {
+    icon: UsersRound,
+    labelKey: 'sidebar.groups',
+    path: '/super-admin/groups',
+    matchPrefix: true,
+  },
+  {
+    icon: CreditCard,
+    labelKey: 'sidebar.subscriptions',
+    path: '/super-admin/plan',
+    matchPrefix: true,
+  },
+  {
+    icon: Coins,
+    labelKey: 'sidebar.creditPackages',
+    path: '/super-admin/credit',
+    matchPrefix: true,
+  },
+  {
+    icon: Shield,
+    labelKey: 'sidebar.adminAccounts',
+    path: '/super-admin/admins',
+    matchPrefix: true,
+  },
 ];
 
 const isActive = (item, pathname) => {
