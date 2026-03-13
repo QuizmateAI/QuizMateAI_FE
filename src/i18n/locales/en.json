@@ -1019,7 +1019,8 @@
         "ACTIVE": "Active",
         "DRAFT": "Draft",
         "COMPLETED": "Completed",
-        "INACTIVE": "Inactive"
+          "INACTIVE": "Inactive",
+          "PROCESSING": "Processing"
       },
       "statusFilter": {
         "all": "All",
