@@ -1019,7 +1019,8 @@
         "ACTIVE": "Đang hoạt động",
         "DRAFT": "Bản nháp",
         "COMPLETED": "Đã hoàn thành",
-        "INACTIVE": "Không hoạt động"
+          "INACTIVE": "Không hoạt động",
+          "PROCESSING": "Đang xử lý"
       },
       "statusFilter": {
         "all": "Tất cả",
