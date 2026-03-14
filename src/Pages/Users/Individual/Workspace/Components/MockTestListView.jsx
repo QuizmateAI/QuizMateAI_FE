@@ -4,6 +4,7 @@ import { Button } from "@/Components/ui/button";
 import { Search, X, ClipboardList, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getRoadmapsByGroup } from "@/api/RoadmapAPI";
+import { useToast } from "@/context/ToastContext";
 
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
@@ -29,6 +30,7 @@ const STATUS_STYLE = {
  */
 function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
+  const { showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [mockTests, setMockTests] = useState([]);
@@ -90,10 +92,11 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
       setMockTests(prev => prev.filter(q => q.quizId !== quizId));
     } catch (err) {
       console.error("Lỗi xóa mock test:", err);
+      showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
     } finally {
       setDeletingId(null);
     }
-  }, [deletingId]);
+  }, [deletingId, showError, t]);
 
   // Lọc theo tìm kiếm
   const filtered = useMemo(() => {
@@ -195,9 +198,9 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
                     {mt.roadmapName}
                   </span>
                   {/* Nút xóa */}
-                  <button onClick={(e) => handleDelete(e, mt.quizId)}
+                  <button onClick={(e) => handleDelete(e, mt.quizId ?? mt.id)}
                     className={`p-1.5 rounded-lg transition-all active:scale-95 ${isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"}`}>
-                    {deletingId === mt.quizId ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                    {deletingId === (mt.quizId ?? mt.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
                   </button>
                 </div>
               );

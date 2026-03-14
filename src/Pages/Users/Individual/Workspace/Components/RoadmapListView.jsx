@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import { useToast } from "@/context/ToastContext";
 import {
   getRoadmapsByGroup,
   getRoadmapsByWorkspace,
@@ -62,6 +63,7 @@ function RoadmapListView({
   onViewFlashcard,
 }) {
   const { t, i18n } = useTranslation();
+  const { showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -212,6 +214,8 @@ function RoadmapListView({
     );
   }, [currentItems, searchQuery]);
 
+  const resolveQuizId = (item) => item?.quizId ?? item?.id ?? null;
+
   const drillDown = async (item) => {
     if (depth === 0) {
       setPath((p) => [...p, { id: item.id, name: item.name, data: item }]);
@@ -275,14 +279,21 @@ function RoadmapListView({
       } else if (depth === 3) {
         // Xóa quiz hoặc flashcard — gọi API thật
         if (item.itemType === "quiz") {
-          await deleteQuizAPI(item.id);
-          setQuizzes((prev) => prev.filter((q) => q.id !== item.id));
+          const quizId = resolveQuizId(item);
+          if (!quizId) {
+            showError(t("workspace.quiz.deleteFail", "Không thể xác định quiz để xóa"));
+            return;
+          }
+          await deleteQuizAPI(quizId);
+          setQuizzes((prev) => prev.filter((q) => (q.quizId ?? q.id) !== quizId));
         } else if (item.itemType === "flashcard") {
           await deleteFlashcardSet(item.id);
           setFlashcards((prev) => prev.filter((f) => f.id !== item.id));
         }
       }
-    } catch { /* bỏ qua */ }
+    } catch (err) {
+      showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
+    }
     finally { setDeletingId(null); }
   };
 
@@ -399,19 +410,29 @@ function RoadmapListView({
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
-                      setDeletingId(entity.id);
+                      const quizId = resolveQuizId(entity);
+                      setDeletingId(quizId ?? entity.id);
                       try {
-                        await deleteQuizAPI(entity.id);
-                        if (isMock) setMockTests((prev) => prev.filter((m) => m.id !== entity.id));
-                        else setPostLearnings((prev) => prev.filter((p) => p.id !== entity.id));
-                      } catch { /* bỏ qua */ }
+                        if (!quizId) {
+                          showError(t("workspace.quiz.deleteFail", "Không thể xác định quiz để xóa"));
+                          return;
+                        }
+                        await deleteQuizAPI(quizId);
+                        if (isMock) {
+                          setMockTests((prev) => prev.filter((m) => (m.quizId ?? m.id) !== quizId));
+                        } else {
+                          setPostLearnings((prev) => prev.filter((p) => (p.quizId ?? p.id) !== quizId));
+                        }
+                      } catch (err) {
+                        showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
+                      }
                       finally { setDeletingId(null); }
                     }}
                     className={`p-1.5 rounded-lg transition-all ${
                       isDarkMode ? "hover:bg-red-950/50 text-red-400" : "hover:bg-red-50 text-red-500"
                     }`}
                   >
-                    {deletingId === entity.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {deletingId === (resolveQuizId(entity) ?? entity.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   </button>
                 </div>
               </div>

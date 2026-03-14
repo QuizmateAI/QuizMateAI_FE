@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal } from "lucide-react";
+import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal, Download, PenLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
 import { renameMaterial } from "@/api/MaterialAPI";
@@ -44,10 +44,10 @@ function canOpenSourceDetail(source) {
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED", "ERROR"].includes(status);
 }
 
-// Kiểm tra có thể tick chọn tài liệu không - REJECT và đang loading thì không cho chọn
+// Kiểm tra có thể tick chọn tài liệu không - REJECT, ERROR và đang loading thì không cho chọn
 function canSelectSource(source) {
   const status = source?.status?.toUpperCase();
-  return !["REJECT", "REJECTED", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
+  return !["REJECT", "REJECTED", "ERROR", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
 // Kiểm tra có thể xóa tài liệu không - đang loading thì không cho xóa
@@ -128,7 +128,7 @@ function SourcesPanel({
       } else {
         selectedIds.forEach((id) => onRemoveSource?.(id));
       }
-      setSelectedIds([]);
+      handleSelectionChange([]);
       setDeleteMultipleDialog(false);
     } finally {
       setDeleteMultipleLoading(false);
@@ -144,6 +144,32 @@ function SourcesPanel({
   const openDeleteDialog = (source) => {
     setOpenMenuId(null);
     setDeleteDialog({ id: source.id, name: source.name });
+  };
+
+  const handleDownloadSource = async (source) => {
+    if (!source?.storageURL) {
+      showError(t("workspace.sources.loadError"));
+      return;
+    }
+
+    setOpenMenuId(null);
+
+    try {
+      const response = await fetch(source.storageURL);
+      if (!response.ok) throw new Error("Failed to fetch file");
+
+      const blob = await response.blob();
+      const objectURL = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectURL;
+      link.download = source.name || "material";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectURL);
+    } catch {
+      showError(t("workspace.sources.loadError"));
+    }
   };
 
   const handleRenameSubmit = async () => {
@@ -362,6 +388,8 @@ function SourcesPanel({
               const isSelected = selectedIds.includes(source.id);
               const isRejected = ["REJECT", "REJECTED"].includes(source.status?.toUpperCase());
               const isWarn = ["WARN", "WARNED"].includes(source.status?.toUpperCase());
+              const isError = source.status?.toUpperCase() === "ERROR";
+              const isActive = source.status?.toUpperCase() === "ACTIVE";
               const isMenuOpen = openMenuId === source.id;
               const showActions = hoveredId === source.id || isMenuOpen;
               return (
@@ -432,7 +460,7 @@ function SourcesPanel({
                   </div>
 
                   {/* Hành động bên phải: REJECT/WARN → nút xóa trực tiếp; đang loading → không hiện gì; còn lại → nút 3 chấm khi hover */}
-                  {(isRejected || isWarn) ? (
+                  {(isRejected || isWarn || isError) ? (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openDeleteDialog(source); }}
@@ -469,6 +497,18 @@ function SourcesPanel({
                         <div className={`absolute right-0 top-8 z-[120] w-36 rounded-lg shadow-lg border py-1 ${
                           isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
                         }`}>
+                          {isActive && source.storageURL && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleDownloadSource(source); }}
+                              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                isDarkMode ? "text-slate-200 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50"
+                              } ${fontClass}`}
+                            >
+                              <Download className="w-4 h-4" />
+                              {t("workspace.sources.menuDownload")}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); openRenameDialog(source); }}
@@ -476,6 +516,7 @@ function SourcesPanel({
                               isDarkMode ? "text-slate-200 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50"
                             } ${fontClass}`}
                           >
+                            <PenLine className="w-4 h-4" />
                             {t("workspace.sources.menuRename")}
                           </button>
                           <button
@@ -485,6 +526,7 @@ function SourcesPanel({
                               isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"
                             } ${fontClass}`}
                           >
+                            <Trash2 className="w-4 h-4" />
                             {t("workspace.sources.menuDelete")}
                           </button>
                         </div>
