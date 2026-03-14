@@ -258,7 +258,10 @@
     "heroBadge": "Pick a plan and start",
     "backToHome": "Back to Home",
     "back": "Back",
-    "types": { "individual": "Individual", "group": "Group" },
+    "types": {
+      "individual": "Individual",
+      "group": "Group"
+    },
     "badges": {
       "permanent": "Permanent purchase",
       "credits": "Credit-based AI usage",
@@ -304,8 +307,15 @@
     "historySubtitle": "Recent top-ups and credit usage.",
     "noHistory": "No transactions yet.",
     "toastAdded": "{{amount}} Credits added to wallet (UI demo).",
-    "types": { "TOPUP": "Top-up", "USAGE": "Usage" },
-    "status": { "SUCCESS": "Success", "PENDING": "Pending", "FAILED": "Failed" },
+    "types": {
+      "TOPUP": "Top-up",
+      "USAGE": "Usage"
+    },
+    "status": {
+      "SUCCESS": "Success",
+      "PENDING": "Pending",
+      "FAILED": "Failed"
+    },
     "table": {
       "id": "ID",
       "time": "Time",
@@ -790,63 +800,210 @@
     },
     "confirmDeleteFlashcard": "Are you sure you want to delete this flashcard set?",
     "profileConfig": {
-      "title": "Workspace profile setup",
+      "badge": "WORKSPACE PROFILE",
+      "title": "Set up your workspace learning profile",
       "updated": "Updated",
-      "readOnlyDesc": "Summary of current advanced configuration for this learning workspace.",
-      "editDesc": "Configure document description, level, goals and strengths/weaknesses so the system can personalize your learning.",
-      "loadingConfig": "Loading configuration data...",
-      "aiUpgradeInfo": "The AI system is being upgraded to create competency assessments (Pre-learning). Please try again later!",
-      "modeSystem": "System",
-      "modeCustom": "Custom",
-      "domainLabel": "Learning domain",
-      "domainPlaceholder": "Describe your overall learning domain...",
-      "programLabel": "Study program",
-      "programPlaceholder": "Select program...",
-      "knowledgeLabel": "Knowledge",
-      "knowledgePlaceholder": "Select knowledge...",
-      "schemeLabel": "Assessment framework (Scheme)",
-      "schemePlaceholder": "Select scheme...",
-      "customSchemeNameLabel": "Pathway name",
-      "customSchemeNamePlaceholder": "E.g.: IELTS 7.5 preparation...",
-      "customSchemeDescLabel": "Detailed description",
-      "customSchemeDescPlaceholder": "Describe your requirements, weaknesses/strengths so AI can create a suitable pathway...",
-      "documentDescriptionLabel": "knowledge description",
-      "documentDescriptionPlaceholder": "Describe your specific learning materials and knowledge topics...",
-      "currentLevelLabel": "Current level",
-      "currentLevelPlaceholder": "E.g.: B1 level, IELTS 5.0, Beginner...",
-      "aiAssessCheckbox": "Instant AI competency assessment",
-      "aiAssessCheckboxDesc": "Take a test to determine your level",
-      "customCurrentLevelPlaceholder": "E.g.: IELTS 5.0...",
-      "targetLevelLabel": "Target level",
-      "optional": "(Optional)",
-      "targetLevelPlaceholder": "Not specified",
-      "customTargetLevelPlaceholder": "E.g.: Proficient, IELTS 7.5...",
-      "strongAreasLabel": "Strengths",
-      "strongAreasPlaceholder": "E.g.: Communication...",
-      "weakAreasLabel": "Weaknesses",
-      "weakAreasPlaceholder": "E.g.: Grammar...",
-      "languageLabel": "Language",
-      "langVi": "Vietnamese",
-      "langEn": "English",
-      "learningGoalLabel": "Personal goal",
-      "learningGoalPlaceholder": "E.g.: Score high on the upcoming exam, master English grammar...",
-      "closeBtn": "Close",
-      "cancelBtn": "Cancel",
-      "saving": "Saving...",
-      "submitBtn": "Complete setup",
-      "errDomain": "Please select a learning domain",
-      "errProgram": "Please select a study program",
-      "errKnowledge": "Please select knowledge",
-      "errScheme": "Please select a scheme",
-      "errCurrentLevel": "Please select your current level",
-      "errTargetLevelHigher": "Target level must be higher than current level",
-      "errCustomSchemeName": "Please enter a custom pathway name",
-      "errCustomSchemeDesc": "Please enter a custom pathway description",
-      "errCustomCurrentLevel": "Please enter your current level",
-      "errLearningGoal": "Please enter your learning goal",
-      "targetExamDateLabel": "Target exam date",
-      "showMore": "More options",
-      "showLess": "Show less"
+      "readOnlyDesc": "Review the learning profile, goals, and roadmap settings currently stored for this workspace.",
+      "editDesc": "Move step by step to define your learning intent, knowledge focus, goals, and roadmap or mock-test setup.",
+      "loadingConfig": "Loading configuration...",
+      "footerHint": "Step {{current}} / {{total}}",
+      "common": {
+        "yes": "Yes",
+        "no": "No"
+      },
+      "actions": {
+        "close": "Close",
+        "cancel": "Cancel",
+        "previous": "Back",
+        "next": "Continue",
+        "finish": "Finish",
+        "saving": "Saving...",
+        "generateTemplate": "Generate template preview",
+        "customTargetScore": "Custom score"
+      },
+      "steps": {
+        "1": {
+          "title": "Step 1",
+          "description": "Choose the workspace intent and let AI assess the knowledge area."
+        },
+        "2": {
+          "title": "Step 2",
+          "description": "Add your current level, goals, and mock-test details if needed."
+        },
+        "3": {
+          "title": "Step 3",
+          "description": "Configure the roadmap, focus areas, and your final target."
+        }
+      },
+      "purpose": {
+        "STUDY_NEW": {
+          "title": "Study new",
+          "description": "Start a new topic and build a foundational roadmap from scratch."
+        },
+        "REVIEW": {
+          "title": "Review",
+          "description": "Reinforce what you already studied, choose focus areas, and optionally add a roadmap."
+        },
+        "MOCK_TEST": {
+          "title": "Mock test",
+          "description": "Prepare for a target exam with template setup, target score, and expected exam date."
+        }
+      },
+      "aiStatus": {
+        "idle": {
+          "title": "Enter a knowledge topic to start AI analysis",
+          "description": "The system will infer the best-fit domain from the knowledge topic you enter."
+        },
+        "loading": {
+          "title": "AI is analyzing your knowledge input",
+          "description": "The system is inferring the most relevant field and preparing domain suggestions."
+        },
+        "success": {
+          "title": "AI has inferred the most relevant domain",
+          "description": "Confirm the suggested domain to continue to the next step."
+        }
+      },
+      "stepOne": {
+        "title": "Choose the right workspace intent",
+        "description": "Your choice here changes the fields, recommendations, and configuration flow in the next steps.",
+        "knowledgeTitle": "Your knowledge topic and AI-inferred domain",
+        "knowledgeDescription": "Describe what you want to learn. AI will infer the most relevant domain and suggest a field for you to confirm.",
+        "knowledgeSuggestionTitle": "Suggested domains",
+        "selectDomainTag": "Choose this domain",
+        "selectedDomainTag": "Selected",
+        "primaryDomainLockedHint": "Only selectable from AI suggestions",
+        "domainReason": {
+          "closest": "This matches the signal \"{{signal}}\" inside \"{{knowledge}}\", so it is the closest domain to what you entered.",
+          "group": "The signal \"{{signal}}\" belongs to the same knowledge cluster as \"{{domain}}\", so this domain still stays very close to your input.",
+          "context": "\"{{domain}}\" sits in the same learning context as \"{{knowledge}}\", which helps AI expand in the right direction."
+        },
+        "knowledgeNudgeTitle": "This knowledge input is still too broad",
+        "knowledgeNudgeDescription": "Add more detail about scope, materials, or target skills so the AI can narrow its recommendations.",
+        "roadmapQuestion": "Do you want AI to generate a roadmap as well?",
+        "roadmapDescription": "This option only appears for review and mock-test flows.",
+        "enableRoadmap": "Yes, include a roadmap",
+        "skipRoadmap": "No roadmap, keep only the remaining setup"
+      },
+      "stepTwo": {
+        "title": "Describe your current state",
+        "description": "Add enough context so the final recommendations match your real level and destination.",
+        "mockTestTitle": "Set the exam and mock-test template",
+        "mockTestDescription": "Choose a public or private exam, then define the prompt and template settings for AI.",
+        "noPublicExam": "No public exams match your current search.",
+        "templateTitle": "Template prompt",
+        "templateDescription": "Describe your preferred mock-test structure, then generate a UI preview right inside this step."
+      },
+      "stepThree": {
+        "summaryTitle": "Quick summary before finishing",
+        "summaryDescription": "Review the main goal so the roadmap and final recommendations stay aligned with this workspace.",
+        "improvementTitle": "AI-recommended improvement areas",
+        "improvementDescription": "Choose one or more areas for AI to prioritize in the roadmap, review plan, or mock test.",
+        "roadmapTitle": "Roadmap setup",
+        "roadmapDescription": "Choose how AI adapts, how fast the roadmap moves, and the daily workload.",
+        "noRoadmapTitle": "Roadmap generation is turned off",
+        "noRoadmapDescription": "The wizard will still save your goals, focus areas, and mock-test information.",
+        "mockGoalTitle": "Target score and exam date",
+        "mockGoalDescription": "Select an AI-recommended score for a public exam or enter a custom target for a private one."
+      },
+      "fields": {
+        "workspacePurpose": "Workspace purpose",
+        "knowledgeInput": "Knowledge you want to learn",
+        "knowledgeDescription": "Detailed knowledge description",
+        "primaryDomain": "Primary domain",
+        "currentLevel": "Current level",
+        "learningGoal": "Learning goal",
+        "strongAreas": "Strengths",
+        "weakAreas": "Weaknesses",
+        "mockExamMode": "Exam type",
+        "publicExamSearch": "Find a public exam",
+        "privateExamName": "Private exam name",
+        "templatePrompt": "Template prompt",
+        "templateNotes": "Extra setup or notes",
+        "templateFormat": "Template format",
+        "templateDurationMinutes": "Exam duration (minutes)",
+        "templateQuestionCount": "Question count",
+        "adaptationMode": "Adaptation mode",
+        "roadmapSpeedMode": "Roadmap speed mode",
+        "estimatedTotalDays": "Estimated total days",
+        "recommendedMinutesPerDay": "Recommended minutes per day",
+        "targetScore": "Target score",
+        "customTargetScore": "Custom target score",
+        "targetScoreScale": "Score scale",
+        "expectedExamDate": "Expected exam date"
+      },
+      "placeholders": {
+        "knowledgeInput": "Examples: IELTS Writing task 2, advanced React hooks, introductory probability...",
+        "knowledgeDescription": "Describe the scope, materials, chapters, or exact skills you want AI to understand better...",
+        "primaryDomain": "The main domain will be filled from the AI suggestion you choose...",
+        "currentLevel": "Examples: IELTS 5.5, comfortable with basic React, grade 11 math...",
+        "learningGoal": "Examples: Reach IELTS 7.0 in three months, master probability for the final exam...",
+        "strongAreas": "Examples: fast reading, strong memory, solid coding fundamentals...",
+        "weakAreas": "Examples: grammar, time management, higher-order questions...",
+        "publicExamSearch": "Search by exam name such as IELTS, TOEIC, JLPT...",
+        "privateExamName": "Type your private exam name or custom format...",
+        "templatePrompt": "Example: Create a mock exam focused on reading and writing, with rising difficulty and common-error review...",
+        "templateNotes": "Example: prioritize scenario-based questions, stay close to the official format, avoid trick questions...",
+        "customTargetScore": "Examples: 7.5, 850, Level 5...",
+        "targetScoreScale": "Examples: Band 0-9, score / 100, level 1-6..."
+      },
+      "mockExamMode": {
+        "PUBLIC": "Public exam",
+        "PRIVATE": "Private exam"
+      },
+      "templateFormat": {
+        "FULL_EXAM": "Full exam",
+        "SECTION_BASED": "Section-based",
+        "PRACTICE_SET": "Focused practice set"
+      },
+      "adaptationMode": {
+        "FLEXIBLE": {
+          "title": "Flexible",
+          "description": "Adjust the pace according to your real schedule and current energy."
+        },
+        "BALANCED": {
+          "title": "Fixed",
+          "description": "Keep the study plan steady, follow the roadmap closely, and limit pace changes."
+        },
+        "INTENSIVE": {
+          "title": "Intensive",
+          "description": "Move faster with a higher workload and denser checkpoints."
+        }
+      },
+      "roadmapSpeedMode": {
+        "SLOW": {
+          "title": "Slow and steady",
+          "description": "Best when you want depth and only have limited time each day."
+        },
+        "STANDARD": {
+          "title": "Standard",
+          "description": "A balanced default pace for most learners."
+        },
+        "FAST": {
+          "title": "Fast",
+          "description": "Accelerate toward a close deadline or upcoming exam."
+        }
+      },
+      "validation": {
+        "purposeRequired": "Please choose a workspace purpose.",
+        "knowledgeRequired": "Please enter a knowledge topic for AI analysis.",
+        "waitForAi": "Please wait for AI to finish analyzing your knowledge.",
+        "domainRequired": "Please confirm the domain inferred by AI.",
+        "knowledgeOptionRequired": "Please choose one main knowledge option from the AI suggestions.",
+        "knowledgeDescriptionRequired": "Please provide more detail about this knowledge topic.",
+        "currentLevelRequired": "Please enter your current level.",
+        "learningGoalRequired": "Please enter your learning goal.",
+        "mockExamModeRequired": "Please choose the exam type.",
+        "publicExamRequired": "Please choose a public exam.",
+        "privateExamRequired": "Please enter the private exam name.",
+        "improvementFocusRequired": "Please choose at least one improvement area.",
+        "adaptationModeRequired": "Please choose an adaptation mode.",
+        "roadmapSpeedModeRequired": "Please choose a roadmap speed mode.",
+        "estimatedTotalDaysRequired": "Please enter a total number of days greater than 0.",
+        "recommendedMinutesRequired": "Please enter a daily study time greater than 0.",
+        "targetScoreRequired": "Please choose or enter a target score.",
+        "targetScoreScaleRequired": "Please enter the scoring scale for the private exam.",
+        "expectedExamDateRequired": "Please choose the expected exam date."
+      }
     },
     "sources": {
       "title": "Sources",
@@ -1592,9 +1749,15 @@
       "guaranteeTitle": "30-Day Money-Back Guarantee",
       "guaranteeDesc": "Try risk-free. If you're not satisfied, get a full refund within 30 days.",
       "plans": {
-        "free": { "name": "Free" },
-        "pro": { "name": "Professional" },
-        "elite": { "name": "Elite" }
+        "free": {
+          "name": "Free"
+        },
+        "pro": {
+          "name": "Professional"
+        },
+        "elite": {
+          "name": "Elite"
+        }
       },
       "features": {
         "fiveRoadmaps": "5 AI Roadmaps / month",
