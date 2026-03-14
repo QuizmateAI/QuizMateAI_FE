@@ -890,6 +890,7 @@
         "mockGoalDescription": "Select an AI-recommended score for a public exam or enter a custom target for a private one."
       },
       "fields": {
+        "workspacePurpose": "Workspace purpose",
         "knowledgeInput": "Knowledge you want to learn",
         "knowledgeDescription": "Detailed knowledge description",
         "primaryDomain": "Primary domain",
@@ -897,6 +898,7 @@
         "learningGoal": "Learning goal",
         "strongAreas": "Strengths",
         "weakAreas": "Weaknesses",
+        "mockExamMode": "Exam type",
         "publicExamSearch": "Find a public exam",
         "privateExamName": "Private exam name",
         "templatePrompt": "Template prompt",

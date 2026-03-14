@@ -801,13 +801,13 @@
         "next": "Tiếp tục",
         "finish": "Hoàn thành",
         "saving": "Đang lưu...",
-        "generateTemplate": "Tạo xem trước template",
+        "generateTemplate": "Tạo xem trước bản mẫu thi thử",
         "customTargetScore": "Tự nhập điểm"
       },
       "steps": {
         "1": {
           "title": "Bước 1",
-          "description": "Chọn mục đích sử dụng workspace và để AI đánh giá knowledge."
+          "description": "Chọn mục đích sử dụng không gian và để Quizmate AI đánh giá kiến thức."
         },
         "2": {
           "title": "Bước 2",
@@ -815,80 +815,81 @@
         },
         "3": {
           "title": "Bước 3",
-          "description": "Thiết lập roadmap, phần cần cải thiện và mục tiêu cuối cùng."
+          "description": "Thiết lập lộ trình, phần cần cải thiện và mục tiêu cuối cùng."
         }
       },
       "purpose": {
         "STUDY_NEW": {
           "title": "Học mới",
-          "description": "Bắt đầu một chủ đề mới và xây dựng roadmap nền tảng từ đầu."
+          "description": "Bắt đầu một chủ đề mới và xây dựng lộ trình nền tảng từ đầu."
         },
         "REVIEW": {
           "title": "Ôn tập",
-          "description": "Củng cố phần đã học, chọn điểm cần cải thiện và có thể thêm roadmap nếu cần."
+          "description": "Củng cố phần đã học, chọn điểm cần cải thiện và có thể thêm lộ trình nếu cần."
         },
         "MOCK_TEST": {
           "title": "Mock test",
-          "description": "Luyện theo kỳ thi mục tiêu với template đề, điểm mục tiêu và ngày thi dự kiến."
+          "description": "Luyện theo kỳ thi mục tiêu với bản mẫu đề, điểm mục tiêu và ngày thi dự kiến."
         }
       },
       "aiStatus": {
         "idle": {
-          "title": "Nhập kiến thức để AI bắt đầu phân tích",
+          "title": "Nhập kiến thức để Quizmate AI bắt đầu phân tích",
           "description": "Hệ thống sẽ suy ra lĩnh vực phù hợp từ kiến thức bạn nhập ngay khi bắt đầu phân tích."
         },
         "loading": {
-          "title": "AI đang phân tích kiến thức",
+          "title": "Quizmate AI đang phân tích kiến thức",
           "description": "Hệ thống đang suy ra lĩnh vực phù hợp nhất và chuẩn bị gợi ý lĩnh vực cho bạn."
         },
         "success": {
           "title": "AI đã suy ra lĩnh vực phù hợp",
-          "description": "Xác nhận lĩnh vực AI đề xuất để tiếp tục sang bước tiếp theo."
+          "description": "Xác nhận lĩnh vực Quizmate AI đề xuất để tiếp tục sang bước tiếp theo."
         }
       },
       "stepOne": {
         "title": "Chọn đúng mục đích sử dụng không gian học tập",
         "description": "Mục đích bạn chọn sẽ quyết định các trường thông tin, gợi ý và cấu hình ở những bước sau.",
         "knowledgeTitle": "Nhập kiến thức bạn muốn học",
-        "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. AI sẽ suy ra lĩnh vực phù hợp với bạn.",
-        "knowledgeSuggestionTitle": "Lĩnh vực AI đề xuất",
+        "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. Quizmate AI sẽ suy ra lĩnh vực phù hợp với bạn.",
+        "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
         "selectDomainTag": "Chọn lĩnh vực này",
         "selectedDomainTag": "Đã chọn",
-        "primaryDomainLockedHint": "Chỉ chọn từ gợi ý AI",
+        "primaryDomainLockedHint": "Chỉ chọn từ gợi ý Quizmate AI",
         "domainReason": {
           "closest": "Khớp trực tiếp với tín hiệu \"{{signal}}\" trong kiến thức \"{{knowledge}}\", nên đây là domain sát nhất với nội dung bạn đang học.",
           "group": "Tín hiệu \"{{signal}}\" thuộc cùng nhóm với lĩnh vực v \"{{lĩnh vực}}\", nên lựa chọn này vẫn bám rất gần với kiến thức bạn nhập.",
           "context": "Domain \"{{domain}}\" nằm trong cùng bối cảnh học tập với \"{{knowledge}}\", phù hợp để AI mở rộng đúng hướng hơn."
         },
         "knowledgeNudgeTitle": "Knowledge này vẫn còn khá chung chung",
-        "knowledgeNudgeDescription": "Hãy mô tả rõ hơn phạm vi, tài liệu hoặc kỹ năng mục tiêu để AI gợi ý chính xác hơn.",
-        "roadmapQuestion": "Bạn có muốn AI tạo lộ trình (Roadmap) không?",
+        "knowledgeNudgeDescription": "Hãy mô tả rõ hơn phạm vi, tài liệu hoặc kỹ năng mục tiêu để Quizmate AI gợi ý chính xác hơn.",
+        "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
         "roadmapDescription": "Tùy chọn này chỉ xuất hiện với luồng ôn tập và mock test.",
-        "enableRoadmap": "Có, tạo roadmap kèm theo",
-        "skipRoadmap": "Không cần roadmap, chỉ cấu hình các phần còn lại"
+        "enableRoadmap": "Có, tạo lộ trình kèm theo",
+        "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại"
       },
       "stepTwo": {
         "title": "Mô tả trạng thái hiện tại của bạn",
         "description": "Điền đủ bối cảnh để các gợi ý ở bước cuối sát hơn với năng lực hiện tại và mục tiêu của bạn.",
-        "mockTestTitle": "Thiết lập kỳ thi và template mock test",
-        "mockTestDescription": "Chọn kỳ thi public hoặc private, sau đó nhập prompt và thông số để AI dựng template đề.",
-        "noPublicExam": "Không tìm thấy kỳ thi public phù hợp với từ khóa hiện tại.",
-        "templateTitle": "Prompt tạo template",
+        "mockTestTitle": "Thiết lập kỳ thi và bản mẫu mock test",
+        "mockTestDescription": "Chọn kỳ thi công khai hoặc riêng tư, sau đó nhập prompt và thông số để Quizmate AI dựng template đề.",
+        "noPublicExam": "Không tìm thấy kỳ thi công khai phù hợp với từ khóa hiện tại.",
+        "templateTitle": "Prompt tạo bản mẫu",
         "templateDescription": "Bạn có thể mô tả yêu cầu riêng rồi tạo preview template ngay trong giao diện này."
       },
       "stepThree": {
         "summaryTitle": "Tóm tắt nhanh trước khi hoàn thành",
-        "summaryDescription": "Kiểm tra lại mục tiêu chính để đảm bảo roadmap và gợi ý cuối cùng bám sát workspace này.",
-        "improvementTitle": "AI gợi ý phần cần cải thiện",
-        "improvementDescription": "Chọn một hoặc nhiều phần để AI ưu tiên trong roadmap, kế hoạch ôn tập hoặc mock test.",
-        "roadmapTitle": "Thiết lập roadmap",
-        "roadmapDescription": "Chọn cách AI thích ứng, tốc độ học và khối lượng học mỗi ngày.",
+        "summaryDescription": "Kiểm tra lại mục tiêu chính để đảm bảo lộ trình và gợi ý cuối cùng bám sát không gian này.",
+        "improvementTitle": "Quizmate AI gợi ý phần cần cải thiện",
+        "improvementDescription": "Chọn một hoặc nhiều phần để Quizmate AI ưu tiên trong lộ trình, kế hoạch ôn tập hoặc mock test.",
+        "roadmapTitle": "Thiết lập lộ trình",
+        "roadmapDescription": "Chọn cách Quizmate AI thích ứng, tốc độ học và khối lượng học mỗi ngày.",
         "noRoadmapTitle": "Bạn đã chọn không tạo roadmap",
         "noRoadmapDescription": "Wizard vẫn lưu mục tiêu, phần cần cải thiện và thông tin mock test của bạn.",
         "mockGoalTitle": "Mục tiêu điểm số và ngày thi",
-        "mockGoalDescription": "Chọn điểm mục tiêu AI gợi ý cho kỳ thi public hoặc tự nhập nếu đây là kỳ thi private."
+        "mockGoalDescription": "Chọn điểm mục tiêu AI gợi ý cho kỳ thi public hoặc tự nhập nếu đây là kỳ thi riêng tư."
       },
       "fields": {
+        "workspacePurpose": "Mục đích sử dụng",
         "knowledgeInput": "Kiến thức bạn muốn học",
         "knowledgeDescription": "Mô tả chi tiết knowledge",
         "primaryDomain": "Lĩnh vực chính",
@@ -896,11 +897,12 @@
         "learningGoal": "Mục tiêu học tập",
         "strongAreas": "Điểm mạnh",
         "weakAreas": "Điểm yếu",
-        "publicExamSearch": "Tìm kỳ thi public",
-        "privateExamName": "Tên kỳ thi private",
-        "templatePrompt": "Prompt cho template",
+        "mockExamMode": "Loại kỳ thi",
+        "publicExamSearch": "Tìm kỳ thi công khai",
+        "privateExamName": "Tên kỳ thi riêng tư",
+        "templatePrompt": "Prompt cho bản mẫu thi thử",
         "templateNotes": "Thiết lập hoặc ghi chú thêm",
-        "templateFormat": "Định dạng template",
+        "templateFormat": "Định dạng mẫu",
         "templateDurationMinutes": "Thời lượng đề (phút)",
         "templateQuestionCount": "Số câu hỏi",
         "adaptationMode": "Chế độ thích ứng",
@@ -928,8 +930,8 @@
         "targetScoreScale": "VD: Band 0-9, điểm / 100, level 1-6..."
       },
       "mockExamMode": {
-        "PUBLIC": "Kỳ thi public",
-        "PRIVATE": "Kỳ thi private"
+        "PUBLIC": "Kỳ thi công khai",
+        "PRIVATE": "Kỳ thi riêng tư"
       },
       "templateFormat": {
         "FULL_EXAM": "Đề đầy đủ",
@@ -961,14 +963,12 @@
         },
         "FAST": {
           "title": "Nhanh",
-          "description": "Tăng tốc để bám sát deadline hoặc kỳ thi đang đến gần."
+          "description": "Tăng tốc để bám sát thời hạn hoặc kỳ thi đang đến gần."
         }
       },
       "validation": {
         "purposeRequired": "Vui lòng chọn mục đích sử dụng workspace.",
-        "knowledgeRequired": "Vui lòng nhập knowledge để AI phân tích.",
-        "waitForAi": "Vui lòng chờ AI phân tích xong knowledge.",
-        "domainRequired": "Vui lòng xác nhận lĩnh vực AI đã suy ra.",
+        "knowledgeRequired": "Vui lòng nhập kiến thức.",
         "knowledgeOptionRequired": "Vui lòng chọn một knowledge chính từ gợi ý AI.",
         "knowledgeDescriptionRequired": "Vui lòng mô tả rõ hơn knowledge đang học.",
         "currentLevelRequired": "Vui lòng nhập trình độ hiện tại.",

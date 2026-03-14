@@ -18,11 +18,15 @@ import { PUBLIC_EXAMS, TEMPLATE_FORMAT_OPTIONS } from './mockProfileWizardData';
 function FieldBlock({
   label,
   error,
+  required = false,
   children,
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold">{label}</label>
+      <label className="mb-2 block text-sm font-semibold">
+        {label}
+        {required ? <span className="ml-1 text-red-500">*</span> : null}
+      </label>
       {children}
       {error ? <p className="mt-2 text-sm font-medium text-red-400">{error}</p> : null}
     </div>
@@ -82,7 +86,7 @@ function WorkspaceProfileStepTwo({
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <FieldBlock label={t('workspace.profileConfig.fields.currentLevel')} error={errors.currentLevel}>
+          <FieldBlock label={t('workspace.profileConfig.fields.currentLevel')} error={errors.currentLevel} required>
             <input
               type="text"
               value={values.currentLevel}
@@ -93,7 +97,7 @@ function WorkspaceProfileStepTwo({
             />
           </FieldBlock>
 
-          <FieldBlock label={t('workspace.profileConfig.fields.learningGoal')} error={errors.learningGoal}>
+          <FieldBlock label={t('workspace.profileConfig.fields.learningGoal')} error={errors.learningGoal} required>
             <textarea
               rows={3}
               value={values.learningGoal}
@@ -151,35 +155,40 @@ function WorkspaceProfileStepTwo({
                 </p>
               </div>
             </div>
+            <div>
+              <p className="mb-2 text-sm font-semibold">
+                {t('workspace.profileConfig.fields.mockExamMode')}
+                <span className="ml-1 text-red-500">*</span>
+              </p>
+              <div
+                className={cn(
+                  'inline-flex rounded-full border p-1',
+                  isDarkMode ? 'border-slate-700 bg-slate-900/70' : 'border-slate-200 bg-slate-50'
+                )}
+              >
+                {['PUBLIC', 'PRIVATE'].map((mode) => {
+                  const active = values.mockExamMode === mode;
 
-            <div
-              className={cn(
-                'inline-flex rounded-full border p-1',
-                isDarkMode ? 'border-slate-700 bg-slate-900/70' : 'border-slate-200 bg-slate-50'
-              )}
-            >
-              {['PUBLIC', 'PRIVATE'].map((mode) => {
-                const active = values.mockExamMode === mode;
-
-                return (
-                  <button
-                    key={mode}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => onMockExamModeChange(mode)}
-                    className={cn(
-                      'rounded-full px-4 py-2 text-sm font-semibold transition-all',
-                      active
-                        ? isDarkMode
-                          ? 'bg-white text-slate-950'
-                          : 'bg-slate-900 text-white'
-                        : mutedClass
-                    )}
-                  >
-                    {t(`workspace.profileConfig.mockExamMode.${mode}`)}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onMockExamModeChange(mode)}
+                      className={cn(
+                        'rounded-full px-4 py-2 text-sm font-semibold transition-all',
+                        active
+                          ? isDarkMode
+                            ? 'bg-white text-slate-950'
+                            : 'bg-slate-900 text-white'
+                          : mutedClass
+                      )}
+                    >
+                      {t(`workspace.profileConfig.mockExamMode.${mode}`)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -187,7 +196,7 @@ function WorkspaceProfileStepTwo({
 
           {values.mockExamMode === 'PUBLIC' ? (
             <div className="mt-6 space-y-4">
-              <FieldBlock label={t('workspace.profileConfig.fields.publicExamSearch')} error={errors.mockExamCatalogId}>
+              <FieldBlock label={t('workspace.profileConfig.fields.publicExamSearch')} error={errors.mockExamCatalogId} required>
                 <div className="relative">
                   <Search className={cn('pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2', mutedClass)} />
                   <input
@@ -282,7 +291,7 @@ function WorkspaceProfileStepTwo({
             </div>
           ) : (
             <div className="mt-6">
-              <FieldBlock label={t('workspace.profileConfig.fields.privateExamName')} error={errors.mockExamName}>
+              <FieldBlock label={t('workspace.profileConfig.fields.privateExamName')} error={errors.mockExamName} required>
                 <input
                   type="text"
                   value={values.mockExamName}

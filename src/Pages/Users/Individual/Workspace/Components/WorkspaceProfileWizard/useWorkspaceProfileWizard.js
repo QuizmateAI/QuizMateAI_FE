@@ -391,8 +391,6 @@ export function useWorkspaceProfileWizard({ open, initialData, onSave, t, isRead
     if (targetStep === 1) {
       if (!values.workspacePurpose) nextErrors.workspacePurpose = t('workspace.profileConfig.validation.purposeRequired');
       if (!values.knowledgeInput.trim()) nextErrors.knowledgeInput = t('workspace.profileConfig.validation.knowledgeRequired');
-      if (analysisStatus !== 'success') nextErrors.inferredDomain = t('workspace.profileConfig.validation.waitForAi');
-      if (!values.inferredDomain) nextErrors.inferredDomain = t('workspace.profileConfig.validation.domainRequired');
       if (needsKnowledgeDescription && !values.knowledgeDescription.trim()) {
         nextErrors.knowledgeDescription = t('workspace.profileConfig.validation.knowledgeDescriptionRequired');
       }

@@ -77,6 +77,10 @@ const DOMAIN_OPTION_THEMES = [
   },
 ];
 
+function RequiredAsterisk() {
+  return <span className="ml-1 text-red-500">*</span>;
+}
+
 function WorkspaceProfileStepOne({
   t,
   isDarkMode,
@@ -123,7 +127,14 @@ function WorkspaceProfileStepOne({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-2.5 lg:grid-cols-3">
+        <div className="mt-5">
+          <p className="mb-2 text-sm font-semibold">
+            {t('workspace.profileConfig.fields.workspacePurpose')}
+            <RequiredAsterisk />
+          </p>
+        </div>
+
+        <div className="grid gap-2.5 lg:grid-cols-3">
           {Object.entries(PURPOSE_META).map(([purpose, meta]) => {
             const Icon = meta.icon;
             const active = values.workspacePurpose === purpose;
@@ -194,6 +205,10 @@ function WorkspaceProfileStepOne({
 
         <div className="mt-5 space-y-4">
           <div>
+            <label className="mb-2 block text-sm font-semibold">
+              {t('workspace.profileConfig.fields.knowledgeInput')}
+              <RequiredAsterisk />
+            </label>
             <textarea
               rows={3}
               disabled={disabled}
@@ -212,7 +227,10 @@ function WorkspaceProfileStepOne({
                 isDarkMode ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
               )}
             >
-              <p className="mb-3 text-sm font-semibold">{t('workspace.profileConfig.stepOne.knowledgeSuggestionTitle')}</p>
+              <p className="mb-3 text-sm font-semibold">
+                {t('workspace.profileConfig.stepOne.knowledgeSuggestionTitle')}
+                <RequiredAsterisk />
+              </p>
               <div className="space-y-3">
                 {domainOptions.map((option, index) => {
                   const active = values.inferredDomain === option.label;
@@ -288,7 +306,10 @@ function WorkspaceProfileStepOne({
           {values.inferredDomain ? (
             <div>
               <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">{t('workspace.profileConfig.fields.primaryDomain')}</p>
+                <p className="text-sm font-semibold">
+                  {t('workspace.profileConfig.fields.primaryDomain')}
+                  <RequiredAsterisk />
+                </p>
                 <span className={cn('text-xs font-medium', mutedClass)}>
                   {t('workspace.profileConfig.stepOne.primaryDomainLockedHint')}
                 </span>
@@ -351,7 +372,10 @@ function WorkspaceProfileStepOne({
           </div>
 
           <div className="mt-4">
-            <label className="mb-2 block text-sm font-semibold">{t('workspace.profileConfig.fields.knowledgeDescription')}</label>
+            <label className="mb-2 block text-sm font-semibold">
+              {t('workspace.profileConfig.fields.knowledgeDescription')}
+              <RequiredAsterisk />
+            </label>
             <textarea
               rows={4}
               disabled={disabled}
