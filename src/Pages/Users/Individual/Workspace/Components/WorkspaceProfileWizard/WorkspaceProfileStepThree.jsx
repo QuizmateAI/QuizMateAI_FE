@@ -17,11 +17,15 @@ import { ADAPTATION_MODE_OPTIONS, ROADMAP_SPEED_OPTIONS } from './mockProfileWiz
 function FieldBlock({
   label,
   error,
+  required = false,
   children,
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold">{label}</label>
+      <label className="mb-2 block text-sm font-semibold">
+        {label}
+        {required ? <span className="ml-1 text-red-500">*</span> : null}
+      </label>
       {children}
       {error ? <p className="mt-2 text-sm font-medium text-red-400">{error}</p> : null}
     </div>
@@ -121,7 +125,10 @@ function WorkspaceProfileStepThree({
               {improvementStatus === 'loading' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
             </div>
             <div>
-              <h3 className="text-lg font-semibold">{t('workspace.profileConfig.stepThree.improvementTitle')}</h3>
+              <h3 className="text-lg font-semibold">
+                {t('workspace.profileConfig.stepThree.improvementTitle')}
+                <span className="ml-1 text-red-500">*</span>
+              </h3>
               <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
                 {t('workspace.profileConfig.stepThree.improvementDescription')}
               </p>
@@ -177,7 +184,7 @@ function WorkspaceProfileStepThree({
           </div>
 
           <div className="mt-6 grid gap-4">
-            <FieldBlock label={t('workspace.profileConfig.fields.adaptationMode')} error={errors.adaptationMode}>
+            <FieldBlock label={t('workspace.profileConfig.fields.adaptationMode')} error={errors.adaptationMode} required>
               <div className="grid gap-3 md:grid-cols-2">
                 {ADAPTATION_MODE_OPTIONS.map((item) => {
                   const active = values.adaptationMode === item.value;
@@ -212,7 +219,7 @@ function WorkspaceProfileStepThree({
               </div>
             </FieldBlock>
 
-            <FieldBlock label={t('workspace.profileConfig.fields.roadmapSpeedMode')} error={errors.roadmapSpeedMode}>
+            <FieldBlock label={t('workspace.profileConfig.fields.roadmapSpeedMode')} error={errors.roadmapSpeedMode} required>
               <div className="grid gap-3 md:grid-cols-3">
                 {ROADMAP_SPEED_OPTIONS.map((item) => {
                   const active = values.roadmapSpeedMode === item.value;
@@ -250,7 +257,7 @@ function WorkspaceProfileStepThree({
             </FieldBlock>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <FieldBlock label={t('workspace.profileConfig.fields.estimatedTotalDays')} error={errors.estimatedTotalDays}>
+              <FieldBlock label={t('workspace.profileConfig.fields.estimatedTotalDays')} error={errors.estimatedTotalDays} required>
                 <div className="relative">
                   <Clock3 className={cn('pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2', mutedClass)} />
                   <input
@@ -264,7 +271,7 @@ function WorkspaceProfileStepThree({
                 </div>
               </FieldBlock>
 
-              <FieldBlock label={t('workspace.profileConfig.fields.recommendedMinutesPerDay')} error={errors.recommendedMinutesPerDay}>
+              <FieldBlock label={t('workspace.profileConfig.fields.recommendedMinutesPerDay')} error={errors.recommendedMinutesPerDay} required>
                 <div className="relative">
                   <TimerReset className={cn('pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2', mutedClass)} />
                   <input
@@ -311,7 +318,7 @@ function WorkspaceProfileStepThree({
 
           {values.mockExamMode === 'PUBLIC' ? (
             <div className="mt-6">
-              <FieldBlock label={t('workspace.profileConfig.fields.targetScore')} error={errors.targetScore}>
+              <FieldBlock label={t('workspace.profileConfig.fields.targetScore')} error={errors.targetScore} required>
                 <div className="flex flex-wrap gap-2">
                   {targetScoreSuggestions.map((score) => {
                     const active = values.targetScore === score && !useCustomTargetScore;
@@ -358,7 +365,7 @@ function WorkspaceProfileStepThree({
 
                 {useCustomTargetScore ? (
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <FieldBlock label={t('workspace.profileConfig.fields.customTargetScore')} error={errors.targetScore}>
+                    <FieldBlock label={t('workspace.profileConfig.fields.customTargetScore')} error={errors.targetScore} required>
                       <input
                         type="text"
                         value={values.targetScore}
@@ -382,7 +389,7 @@ function WorkspaceProfileStepThree({
             </div>
           ) : (
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <FieldBlock label={t('workspace.profileConfig.fields.targetScore')} error={errors.targetScore}>
+              <FieldBlock label={t('workspace.profileConfig.fields.targetScore')} error={errors.targetScore} required>
                 <input
                   type="text"
                   value={values.targetScore}
@@ -393,7 +400,7 @@ function WorkspaceProfileStepThree({
                 />
               </FieldBlock>
 
-              <FieldBlock label={t('workspace.profileConfig.fields.targetScoreScale')} error={errors.targetScoreScale}>
+              <FieldBlock label={t('workspace.profileConfig.fields.targetScoreScale')} error={errors.targetScoreScale} required>
                 <input
                   type="text"
                   value={values.targetScoreScale}
@@ -407,7 +414,7 @@ function WorkspaceProfileStepThree({
           )}
 
           <div className="mt-4">
-            <FieldBlock label={t('workspace.profileConfig.fields.expectedExamDate')} error={errors.expectedExamDate}>
+            <FieldBlock label={t('workspace.profileConfig.fields.expectedExamDate')} error={errors.expectedExamDate} required>
               <div className="relative">
                 <CalendarClock className={cn('pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2', mutedClass)} />
                 <input
