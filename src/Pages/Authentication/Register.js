@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { checkEmail, checkUsername, register, sendOTP, verifyOTP } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
+import { getEmailViolationKey } from '@/Utils/emailValidation';
 
 // Regex theo BE: username phải chứa cả chữ và số, cho phép . _ @ -
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;
 // Regex theo BE: password phải chứa cả chữ và số
 const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
-// Regex email
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const AVAILABILITY_DEBOUNCE_MS = 500;
 
 function getUsernameValidationMessage(username, t) {
@@ -25,13 +24,10 @@ function getUsernameValidationMessage(username, t) {
 }
 
 function getEmailValidationMessage(email, t) {
-  if (!email) {
-    return t('validation.emailRequired');
+  const violationKey = getEmailViolationKey(email);
+  if (violationKey) {
+    return t(`validation.${violationKey}`);
   }
-  if (!EMAIL_REGEX.test(email)) {
-    return t('validation.emailInvalid');
-  }
-
   return '';
 }
 
@@ -225,12 +221,22 @@ export const useRegister = (setView, t) => {
     const trimmedUsername = formData.username.trim();
     const usernameError = getUsernameValidationMessage(trimmedUsername, t);
 
-    if (!trimmedUsername || usernameError) {
+    if (!trimmedUsername) {
       setAvailabilityFieldState('username', {
         checking: false,
         available: null,
         message: '',
       });
+      return undefined;
+    }
+
+    if (usernameError) {
+      setAvailabilityFieldState('username', {
+        checking: false,
+        available: false,
+        message: usernameError,
+      });
+      clearFieldError('username');
       return undefined;
     }
 
@@ -249,12 +255,22 @@ export const useRegister = (setView, t) => {
     const trimmedEmail = formData.email.trim();
     const emailError = getEmailValidationMessage(trimmedEmail, t);
 
-    if (!trimmedEmail || emailError) {
+    if (!trimmedEmail) {
       setAvailabilityFieldState('email', {
         checking: false,
         available: null,
         message: '',
       });
+      return undefined;
+    }
+
+    if (emailError) {
+      setAvailabilityFieldState('email', {
+        checking: false,
+        available: false,
+        message: emailError,
+      });
+      clearFieldError('email');
       return undefined;
     }
 

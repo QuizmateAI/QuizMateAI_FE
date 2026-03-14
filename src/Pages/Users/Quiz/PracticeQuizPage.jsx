@@ -5,15 +5,19 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import { Switch } from '@/Components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
 import QuestionCard from './components/QuestionCard';
 import { useQuizProgress } from './hooks/useQuizProgress';
-import { getQuizFull, startQuizAttempt, submitAttempt } from '@/api/QuizAPI';
+import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
 import { normalizeQuizData } from './utils/quizTransform';
+import { useToast } from '@/context/ToastContext';
+import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 
 export default function PracticeQuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
+  const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [quiz, setQuiz] = useState(null);
@@ -23,6 +27,7 @@ export default function PracticeQuizPage() {
   const [trackProgress, setTrackProgress] = useState(true);
   const [showResult, setShowResult] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [confirmStartOpen, setConfirmStartOpen] = useState(false);
 
   const { answers, currentIndex, selectAnswer, goNext, goBack, initFromSaved } = useQuizProgress(attemptId);
 
@@ -45,20 +50,38 @@ export default function PracticeQuizPage() {
 
   const handleStart = useCallback(async () => {
     try {
-      const res = await startQuizAttempt(quizId, { isPracticeMode: true });
+      let res;
+      try {
+        res = await startQuizAttempt(quizId, { isPracticeMode: true });
+      } catch (startErr) {
+        const message = String(startErr?.message || '').toLowerCase();
+        const notActiveStatus = startErr?.data?.statusCode;
+        const shouldActivateAndRetry = message.includes('chưa được kích hoạt') || notActiveStatus === 1083;
+
+        if (!shouldActivateAndRetry) {
+          throw startErr;
+        }
+
+        await updateQuiz(Number(quizId), { status: 'ACTIVE' });
+        res = await startQuizAttempt(quizId, { isPracticeMode: true });
+      }
+
       const attempt = res.data;
       setAttemptId(attempt.attemptId);
+      markQuizAttempted(quizId);
       if (attempt.savedAnswers?.length) initFromSaved(attempt.savedAnswers);
       setIsStarted(true);
     } catch (err) {
       console.error('Failed to start attempt:', err);
+      showError(err?.message || 'Failed to start quiz attempt');
     }
-  }, [quizId, initFromSaved]);
+  }, [quizId, initFromSaved, showError]);
 
   const handleSubmit = useCallback(async () => {
     if (!attemptId) return;
     try {
       await submitAttempt(attemptId);
+      markQuizCompleted(quizId);
       navigate(`/quiz/result/${attemptId}`, { state: { quizId }, replace: true });
     } catch (err) {
       console.error('Failed to submit:', err);
@@ -104,10 +127,36 @@ export default function PracticeQuizPage() {
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Track Progress</span>
             <Switch checked={trackProgress} onCheckedChange={setTrackProgress} />
           </div>
-          <Button onClick={handleStart} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
+          <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
+            Starting this quiz will create an attempt and may lock future edits/deletion.
+          </p>
+          <Button onClick={() => setConfirmStartOpen(true)} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
             Start Quiz
           </Button>
         </div>
+
+        <Dialog open={confirmStartOpen} onOpenChange={setConfirmStartOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Start Practice Quiz?</DialogTitle>
+              <DialogDescription>
+                A new attempt will be created as soon as you continue.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmStartOpen(false)}>Cancel</Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={async () => {
+                  setConfirmStartOpen(false);
+                  await handleStart();
+                }}
+              >
+                Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

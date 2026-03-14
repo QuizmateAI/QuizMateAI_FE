@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck
@@ -8,8 +8,10 @@ import {
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
 import {
-  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, updateQuiz
 } from "@/api/QuizAPI";
+import { useToast } from "@/context/ToastContext";
+import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 
 // Cấu hình màu badge trạng thái quiz
 const STATUS_STYLES = {
@@ -35,6 +37,8 @@ function formatDate(dateStr) {
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
 function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contextType = "WORKSPACE", contextId: _contextId }) {
   const { t, i18n } = useTranslation();
+  const { showSuccess, showError } = useToast();
+  const location = useLocation();
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
@@ -45,7 +49,14 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const [expandedSections, setExpandedSections] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [starringId, setStarringId] = useState(null);
+  const [activating, setActivating] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(quiz?.status || "DRAFT");
   const [confirmDialog, setConfirmDialog] = useState({ open: false, mode: null });
+  const canViewAnswers = hasQuizCompleted(quiz?.quizId);
+
+  useEffect(() => {
+    setCurrentStatus(quiz?.status || "DRAFT");
+  }, [quiz?.status]);
 
   // Lấy toàn bộ dữ liệu quiz chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {
@@ -70,10 +81,12 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
         const questions = qRes.data || [];
         qMap[section.sectionId] = questions;
 
-        // Bước 3: Lấy answers cho mỗi question
-        for (const question of questions) {
-          const aRes = await getAnswersByQuestion(question.questionId);
-          aMap[question.questionId] = aRes.data || [];
+        // Chỉ lấy đáp án sau khi user đã hoàn thành bài để tránh lộ đáp án sớm.
+        if (canViewAnswers) {
+          for (const question of questions) {
+            const aRes = await getAnswersByQuestion(question.questionId);
+            aMap[question.questionId] = aRes.data || [];
+          }
         }
       }
       setQuestionsMap(qMap);
@@ -83,7 +96,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     } finally {
       setLoading(false);
     }
-  }, [quiz?.quizId]);
+  }, [quiz?.quizId, canViewAnswers]);
 
   useEffect(() => {
     fetchFullDetail();
@@ -121,7 +134,24 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     }
   };
 
-  const ss = STATUS_STYLES[quiz?.status] || STATUS_STYLES.DRAFT;
+  const handleActivateQuiz = async () => {
+    if (!quiz?.quizId || activating) return;
+    setActivating(true);
+    try {
+      const res = await updateQuiz(quiz.quizId, { status: "ACTIVE" });
+      const nextStatus = res?.data?.status || "ACTIVE";
+      setCurrentStatus(nextStatus);
+      showSuccess(t("workspace.quiz.activateSuccess", "Kích hoạt quiz thành công"));
+    } catch (err) {
+      showError(err?.message || t("workspace.quiz.activateFail", "Kích hoạt quiz thất bại"));
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  const isActiveQuiz = currentStatus === "ACTIVE";
+  const canActivate = currentStatus === "DRAFT" || currentStatus === "INACTIVE";
+  const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
   const is = INTENT_STYLES[quiz?.quizIntent] || {};
 
   return (
@@ -138,7 +168,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {quiz?.status === "ACTIVE" && (
+          {isActiveQuiz && (
             <>
               <Button onClick={() => setConfirmDialog({ open: true, mode: 'practice' })} variant="outline"
                 className={`rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-blue-400 hover:bg-blue-950/30" : "border-blue-200 text-blue-600 hover:bg-blue-50"}`}>
@@ -152,10 +182,24 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
               </Button>
             </>
           )}
-          <Button onClick={() => onEdit?.(quiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
-            <Edit3 className="w-4 h-4" />
-            <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
-          </Button>
+          {!isActiveQuiz && (
+            <>
+              <Button onClick={() => onEdit?.(quiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
+                <Edit3 className="w-4 h-4" />
+                <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
+              </Button>
+              {canActivate && (
+                <Button
+                  onClick={handleActivateQuiz}
+                  disabled={activating}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"
+                >
+                  {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  <span className="text-sm">{t("workspace.quiz.activate", "Kích hoạt")}</span>
+                </Button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -172,7 +216,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                 </span>
               )}
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
-                {t(`workspace.quiz.statusLabels.${quiz?.status}`)}
+                {t(`workspace.quiz.statusLabels.${currentStatus}`)}
               </span>
             </div>
           </div>
@@ -308,33 +352,41 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                                 {/* Answers — hiển thị khi mở rộng */}
                                 {isQExpanded && (
                                   <div className="mt-3 space-y-1.5">
-                                    {answers.map((ans, aIdx) => (
-                                      <div key={ans.answerId} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                                        ans.isCorrect
-                                          ? isDarkMode ? "bg-emerald-950/30 border border-emerald-800/50" : "bg-emerald-50 border border-emerald-200"
-                                          : isDarkMode ? "bg-slate-800/50" : "bg-gray-50"
-                                      }`}>
-                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                          ans.isCorrect
-                                            ? isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
-                                            : isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-200 text-gray-500"
-                                        }`}>
-                                          {String.fromCharCode(65 + aIdx)}
-                                        </span>
-                                        <span className={`flex-1 ${
-                                          ans.isCorrect
-                                            ? isDarkMode ? "text-emerald-300" : "text-emerald-700"
-                                            : isDarkMode ? "text-slate-300" : "text-gray-700"
-                                        }`}>{ans.content}</span>
-                                        {ans.isCorrect && <CheckCircle2 className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />}
+                                    {!canViewAnswers ? (
+                                      <div className={`px-3 py-2 rounded-lg text-xs ${isDarkMode ? "bg-slate-800/60 text-slate-400" : "bg-gray-100 text-gray-600"}`}>
+                                        {t("workspace.quiz.answerLocked", "Hoàn thành bài quiz để xem đáp án và giải thích.")}
                                       </div>
-                                    ))}
+                                    ) : (
+                                      <>
+                                        {answers.map((ans, aIdx) => (
+                                          <div key={ans.answerId} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                                            ans.isCorrect
+                                              ? isDarkMode ? "bg-emerald-950/30 border border-emerald-800/50" : "bg-emerald-50 border border-emerald-200"
+                                              : isDarkMode ? "bg-slate-800/50" : "bg-gray-50"
+                                          }`}>
+                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                              ans.isCorrect
+                                                ? isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
+                                                : isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-200 text-gray-500"
+                                            }`}>
+                                              {String.fromCharCode(65 + aIdx)}
+                                            </span>
+                                            <span className={`flex-1 ${
+                                              ans.isCorrect
+                                                ? isDarkMode ? "text-emerald-300" : "text-emerald-700"
+                                                : isDarkMode ? "text-slate-300" : "text-gray-700"
+                                            }`}>{ans.content}</span>
+                                            {ans.isCorrect && <CheckCircle2 className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />}
+                                          </div>
+                                        ))}
 
-                                    {/* Giải thích */}
-                                    {question.explanation && (
-                                      <div className={`mt-2 px-3 py-2 rounded-lg text-xs italic ${isDarkMode ? "bg-amber-950/20 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                                        <span className="font-semibold not-italic">{t("workspace.quiz.explanation")}:</span> {question.explanation}
-                                      </div>
+                                        {/* Giải thích */}
+                                        {question.explanation && (
+                                          <div className={`mt-2 px-3 py-2 rounded-lg text-xs italic ${isDarkMode ? "bg-amber-950/20 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                                            <span className="font-semibold not-italic">{t("workspace.quiz.explanation")}:</span> {question.explanation}
+                                          </div>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 )}
@@ -365,7 +417,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setConfirmDialog({ open: false, mode: null })}>{t("common.cancel", "Cancel")}</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${quiz?.quizId}`); setConfirmDialog({ open: false, mode: null }); }}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${quiz?.quizId}`, { state: { returnToQuizPath: location.pathname } }); setConfirmDialog({ open: false, mode: null }); }}>
               {t("common.confirm", "Confirm")}
             </Button>
           </DialogFooter>

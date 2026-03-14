@@ -1,20 +1,25 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
 import QuestionCard from './components/QuestionCard';
 import QuestionNavPanel from './components/QuestionNavPanel';
 import ExamPerQuestion from './components/ExamPerQuestion';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
-import { getQuizFull, startQuizAttempt, submitAttempt } from '@/api/QuizAPI';
+import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
 import { normalizeQuizData } from './utils/quizTransform';
+import { useToast } from '@/context/ToastContext';
+import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 
 export default function ExamQuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { i18n } = useTranslation();
+  const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [quiz, setQuiz] = useState(null);
@@ -24,8 +29,12 @@ export default function ExamQuizPage() {
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
+  const examLockNotifiedRef = useRef(false);
+
+  const returnToQuizPath = location.state?.returnToQuizPath || '/home';
 
   const { saveManually } = useQuizAutoSave(attemptId, answers, { enabled: isStarted && !isSubmitted });
 
@@ -57,9 +66,25 @@ export default function ExamQuizPage() {
 
   const handleStart = useCallback(async () => {
     try {
-      const res = await startQuizAttempt(quizId, { isPracticeMode: false });
+      let res;
+      try {
+        res = await startQuizAttempt(quizId, { isPracticeMode: false });
+      } catch (startErr) {
+        const message = String(startErr?.message || '').toLowerCase();
+        const notActiveStatus = startErr?.data?.statusCode;
+        const shouldActivateAndRetry = message.includes('chưa được kích hoạt') || notActiveStatus === 1083;
+
+        if (!shouldActivateAndRetry) {
+          throw startErr;
+        }
+
+        await updateQuiz(Number(quizId), { status: 'ACTIVE' });
+        res = await startQuizAttempt(quizId, { isPracticeMode: false });
+      }
+
       const attempt = res.data;
       setAttemptId(attempt.attemptId);
+      markQuizAttempted(quizId);
       if (attempt.savedAnswers?.length) {
         const map = {};
         for (const sa of attempt.savedAnswers) {
@@ -70,8 +95,9 @@ export default function ExamQuizPage() {
       setIsStarted(true);
     } catch (err) {
       console.error('Failed to start attempt:', err);
+      showError(err?.message || 'Failed to start exam attempt');
     }
-  }, [quizId]);
+  }, [quizId, showError]);
 
   const handleSubmit = useCallback(async () => {
     if (submittingRef.current) return;
@@ -81,13 +107,44 @@ export default function ExamQuizPage() {
     if (attemptId) {
       try {
         await submitAttempt(attemptId);
-        navigate(`/quiz/result/${attemptId}`, { state: { quizId }, replace: true });
+        markQuizCompleted(quizId);
+        navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
       } catch (err) {
         console.error('Failed to submit:', err);
         submittingRef.current = false;
       }
     }
-  }, [saveManually, attemptId, navigate, quizId]);
+  }, [saveManually, attemptId, navigate, quizId, returnToQuizPath]);
+
+  // Lock browser back/forward while exam is ongoing.
+  useEffect(() => {
+    if (!isStarted || isSubmitted) return;
+
+    const onPopState = () => {
+      window.history.pushState(null, '', window.location.href);
+      if (!examLockNotifiedRef.current) {
+        showError('Đang trong bài thi, không thể quay lại hoặc chuyển trang.');
+        examLockNotifiedRef.current = true;
+        setTimeout(() => {
+          examLockNotifiedRef.current = false;
+        }, 1500);
+      }
+    };
+
+    const onBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('beforeunload', onBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [isStarted, isSubmitted, showError]);
 
   // Countdown for TOTAL timer mode
   useEffect(() => {
@@ -128,10 +185,36 @@ export default function ExamQuizPage() {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{quiz.title}</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-2">{info} • Exam Mode</p>
           {quiz.maxAttempt && <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Max attempts: {quiz.maxAttempt}</p>}
-          <Button onClick={handleStart} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
+          <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
+            Starting this exam will create an attempt and may lock future edits/deletion.
+          </p>
+          <Button onClick={() => setConfirmStartOpen(true)} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
             Start Exam
           </Button>
         </div>
+
+        <Dialog open={confirmStartOpen} onOpenChange={setConfirmStartOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Start Exam?</DialogTitle>
+              <DialogDescription>
+                A new attempt will be created as soon as you continue.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmStartOpen(false)}>Cancel</Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={async () => {
+                  setConfirmStartOpen(false);
+                  await handleStart();
+                }}
+              >
+                Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

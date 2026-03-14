@@ -105,6 +105,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   // Quiz luôn ở context KNOWLEDGE — không cần chọn
   const selectedContextType = FIXED_CONTEXT_TYPE;
   const [selectedContextId, setSelectedContextId] = useState("");
+  const [attachToRoadmap, setAttachToRoadmap] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
 
   // Dữ liệu cascade dropdown: roadmap → phase → knowledge (từ group hiện tại)
@@ -710,11 +711,13 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
         }
 
         // Validate phải chọn knowledge
-        if (!selectedContextId) {
+        if (attachToRoadmap && !selectedContextId) {
           setError(t("workspace.quiz.validation.contextRequired"));
           setSubmitting(false);
           return;
         }
+
+        const targetKnowledgeId = attachToRoadmap ? selectedContextId : null;
 
         const { errorMap, firstInvalidIndex } = findQuestionMissingCorrectAnswer(questions);
         if (firstInvalidIndex !== -1) {
@@ -729,10 +732,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
         // Gọi API tạo quiz hoàn chỉnh (multi-step: quiz → session → questions → answers)
         const result = await createFullQuiz({
-          workspaceId: selectedContextType === 'WORKSPACE' ? selectedContextId : null,
-          roadmapId: selectedContextType === 'ROADMAP' ? selectedContextId : null,
-          phaseId: selectedContextType === 'PHASE' ? selectedContextId : null,
-          knowledgeId: selectedContextType === 'KNOWLEDGE' ? selectedContextId : null,
+          workspaceId: null,
+          roadmapId: null,
+          phaseId: null,
+          knowledgeId: selectedContextType === 'KNOWLEDGE' ? targetKnowledgeId : null,
           title: name,
           duration,
           quizIntent,
@@ -873,10 +876,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
         </p>
 
         {/* Tab chọn chế độ */}
-        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
+        {/* <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
           <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("workspace.quiz.tabManual")}</button>
           <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("workspace.quiz.tabAI")}</button>
-        </div>
+        </div> */}
 
         {tab === "manual" ? (
           <ManualQuizTab
@@ -888,6 +891,8 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             selectCls={selectCls}
             name={name}
             setName={setName}
+            attachToRoadmap={attachToRoadmap}
+            setAttachToRoadmap={setAttachToRoadmap}
             selectedRoadmapId={selectedRoadmapId}
             handleRoadmapSelect={handleRoadmapSelect}
             contextLoading={contextLoading}
