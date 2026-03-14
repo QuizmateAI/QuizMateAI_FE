@@ -62,7 +62,7 @@ describe('Authentication - useRegister (TC_AUTH_03, TC_AUTH_04)', () => {
     expect(checkEmail).not.toHaveBeenCalled();
     expect(result.current.fieldErrors.fullname).toBe('validation.fullnameRequired');
     expect(result.current.fieldErrors.username).toBe('validation.usernameLength');
-    expect(result.current.fieldErrors.email).toBe('validation.emailInvalid');
+    expect(result.current.fieldErrors.email).toBe('validation.emailAtSymbol');
     expect(result.current.fieldErrors.password).toBe('validation.passwordLength');
     expect(result.current.fieldErrors.confirmPassword).toBe('validation.passwordMismatch');
   });

@@ -54,7 +54,22 @@ describe('Authentication - useForgotPassword (TC_AUTH_05)', () => {
 
     expect(validateForgotPasswordForm('not-an-email')).toEqual({
       isValid: false,
-      errors: { email: 'Vui lòng nhập email hợp lệ (ví dụ: user@domain.com)' },
+      errors: { email: 'Email phải chứa đúng một ký tự @' },
+    });
+
+    expect(validateForgotPasswordForm('user..name@example.com')).toEqual({
+      isValid: false,
+      errors: { email: 'Email không được chứa hai dấu chấm liên tiếp' },
+    });
+
+    expect(validateForgotPasswordForm('user@-example.com')).toEqual({
+      isValid: false,
+      errors: { email: 'Tên miền email không hợp lệ' },
+    });
+
+    expect(validateForgotPasswordForm('user @example.com')).toEqual({
+      isValid: false,
+      errors: { email: 'Email không được chứa khoảng trắng' },
     });
 
     expect(validateForgotPasswordForm('valid@example.com').isValid).toBe(true);

@@ -20,6 +20,7 @@ export default function QuizResultPage() {
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
+  const returnToQuizPath = location.state?.returnToQuizPath;
 
   useEffect(() => {
     (async () => {
@@ -54,12 +55,16 @@ export default function QuizResultPage() {
   }, [result]);
 
   const handleBack = useCallback(() => {
-    if (quizId) {
-      navigate(-1);
-    } else {
-      navigate('/');
+    if (returnToQuizPath) {
+      navigate(returnToQuizPath, { replace: true });
+      return;
     }
-  }, [navigate, quizId]);
+    if (quizId) {
+      navigate('/home', { replace: true });
+      return;
+    }
+    navigate('/');
+  }, [navigate, quizId, returnToQuizPath]);
 
   if (loading) {
     return (

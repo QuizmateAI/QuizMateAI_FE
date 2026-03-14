@@ -115,6 +115,50 @@ export const sendOTP = async (email) => {
   return response;
 };
 
+const OTP_FAILURE_MESSAGE_PATTERNS = [
+  /khong hop le/i,
+  /không hợp lệ/i,
+  /invalid/i,
+  /khong dung/i,
+  /không đúng/i,
+  /incorrect/i,
+  /het han/i,
+  /hết hạn/i,
+  /expired/i,
+  /that bai/i,
+  /thất bại/i,
+  /fail/i,
+];
+
+const isOtpVerifySuccess = (response) => {
+  if (!response || typeof response !== 'object') {
+    return false;
+  }
+
+  const hasSuccessStatus = response.statusCode === 200 || response.statusCode === 0;
+  if (!hasSuccessStatus) {
+    return false;
+  }
+
+  const payload = response.data;
+  if (typeof payload === 'boolean' && payload === false) {
+    return false;
+  }
+
+  if (payload && typeof payload === 'object') {
+    if (payload.success === false || payload.valid === false || payload.isValid === false) {
+      return false;
+    }
+  }
+
+  const message = typeof response.message === 'string' ? response.message.trim() : '';
+  if (message && OTP_FAILURE_MESSAGE_PATTERNS.some((pattern) => pattern.test(message))) {
+    return false;
+  }
+
+  return true;
+};
+
 /**
  * Xác thực mã OTP
  * @param {string} email - Email đã nhận OTP
@@ -123,6 +167,17 @@ export const sendOTP = async (email) => {
  */
 export const verifyOTP = async (email, otp) => {
   const response = await api.post(`/auth/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+
+  if (!isOtpVerifySuccess(response)) {
+    const fallbackMessage = 'Xác thực OTP thất bại, mã không đúng hoặc đã hết hạn';
+    throw {
+      statusCode: response?.statusCode ?? 400,
+      code: response?.code,
+      message: response?.message || fallbackMessage,
+      data: response,
+    };
+  }
+
   return response;
 };
 
