@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+﻿import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
@@ -12,11 +12,9 @@ import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { configureIndividualWorkspaceProfile, getIndividualWorkspaceProfile } from "@/api/WorkspaceAPI";
-import { generateMockTest } from "@/api/AIAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
-import { useToast } from "@/context/ToastContext";
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
@@ -24,7 +22,6 @@ function WorkspacePage() {
 	const navigate = useNavigate();
 	const { t, i18n } = useTranslation();
 	const { isDarkMode, toggleDarkMode } = useDarkMode();
-	const { showError, showInfo } = useToast();
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const settingsRef = useRef(null);
 
@@ -32,11 +29,10 @@ function WorkspacePage() {
 	const [profileConfigOpen, setProfileConfigOpen] = useState(openProfileConfig);
 	const [isProfileConfigured, setIsProfileConfigured] = useState(false);
 	const [workspaceProfile, setWorkspaceProfile] = useState(null);
-	const [isPendingAiAssessment, setIsPendingAiAssessment] = useState(false); // State to track pending AI test
 
-	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace, createWorkspace } = useWorkspace();
+	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace } = useWorkspace();
 
-	// State quản lý tài liệu (sources) — mock data, sẽ kết nối API sau
+	// State quáº£n lÃ½ tÃ i liá»‡u (sources) â€” mock data, sáº½ káº¿t ná»‘i API sau
 	const [sources, setSources] = useState([]);
 	const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
 	const [createdItems, setCreatedItems] = useState([]);
@@ -44,28 +40,28 @@ function WorkspacePage() {
 	const [isLeftResizing, setIsLeftResizing] = useState(false);
 	const [isRightResizing, setIsRightResizing] = useState(false);
 
-	// State quản lý dialog upload — chỉ mở khi workspace chưa có tài liệu sau lần fetch đầu tiên
+	// State quáº£n lÃ½ dialog upload â€” chá»‰ má»Ÿ khi workspace chÆ°a cÃ³ tÃ i liá»‡u sau láº§n fetch Ä‘áº§u tiÃªn
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
 
-	// State quản lý kích thước panel (px) — kéo thả để thay đổi
+	// State quáº£n lÃ½ kÃ­ch thÆ°á»›c panel (px) â€” kÃ©o tháº£ Ä‘á»ƒ thay Ä‘á»•i
 	const [leftWidth, setLeftWidth] = useState(320);
 	const [rightWidth, setRightWidth] = useState(320);
 
-	// Trạng thái hiển thị nội dung chính — khôi phục từ sessionStorage khi reload
+	// Tráº¡ng thÃ¡i hiá»ƒn thá»‹ ná»™i dung chÃ­nh â€” khÃ´i phá»¥c tá»« sessionStorage khi reload
 	const [activeView, setActiveView] = useState(() => {
 		if (!workspaceId) return null;
 		return sessionStorage.getItem(`workspace_${workspaceId}_activeView`) || null;
 	});
-	// State lưu quiz đang được xem chi tiết hoặc chỉnh sửa
+	// State lÆ°u quiz Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
 	const [selectedQuiz, setSelectedQuiz] = useState(null);
-	// State lưu flashcard đang được xem chi tiết
+	// State lÆ°u flashcard Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t
 	const [selectedFlashcard, setSelectedFlashcard] = useState(null);
-	// State lưu mock test đang được xem chi tiết hoặc chỉnh sửa
+	// State lÆ°u mock test Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
 	const [selectedMockTest, setSelectedMockTest] = useState(null);
 
-	// Hằng số kích thước panel
+	// Háº±ng sá»‘ kÃ­ch thÆ°á»›c panel
 	const COLLAPSED_WIDTH = 56;
 	const MIN_WIDTH = 240;
 	const MAX_WIDTH = 500;
@@ -73,7 +69,7 @@ function WorkspacePage() {
 	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : leftWidth;
 	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : rightWidth;
 
-	// Lưu activeView vào sessionStorage mỗi khi thay đổi
+	// LÆ°u activeView vÃ o sessionStorage má»—i khi thay Ä‘á»•i
 	useEffect(() => {
 		if (!workspaceId) return;
 		if (activeView) {
@@ -91,25 +87,25 @@ function WorkspacePage() {
 		i18n.changeLanguage(newLang);
 	};
 
-	// WebSocket để nhận realtime updates cho tài liệu
+	// WebSocket Ä‘á»ƒ nháº­n realtime updates cho tÃ i liá»‡u
 	const { isConnected: wsConnected } = useWebSocket({
 		workspaceId: workspaceId,
 		enabled: !!workspaceId,
 		onMaterialUploaded: (data) => {
-			console.log("📤 [WorkspacePage] Material uploaded via WebSocket:", data);
+			console.log("ðŸ“¤ [WorkspacePage] Material uploaded via WebSocket:", data);
 			console.log("   Status:", data.status);
 			console.log("   Material ID:", data.materialId);
-			fetchSources(); // Reload danh sách tài liệu
+			fetchSources(); // Reload danh sÃ¡ch tÃ i liá»‡u
 		},
 		onMaterialDeleted: (data) => {
-			console.log("🗑️ [WorkspacePage] Material deleted via WebSocket:", data);
-			fetchSources(); // Reload danh sách tài liệu
+			console.log("ðŸ—‘ï¸ [WorkspacePage] Material deleted via WebSocket:", data);
+			fetchSources(); // Reload danh sÃ¡ch tÃ i liá»‡u
 		},
 		onMaterialUpdated: (data) => {
-			console.log("🔄 [WorkspacePage] Material updated via WebSocket:", data);
+			console.log("ðŸ”„ [WorkspacePage] Material updated via WebSocket:", data);
 			console.log("   Status:", data.status);
 			console.log("   Material ID:", data.materialId);
-			fetchSources(); // Reload danh sách tài liệu
+			fetchSources(); // Reload danh sÃ¡ch tÃ i liá»‡u
 		},
 	});
 
@@ -132,12 +128,12 @@ function WorkspacePage() {
 			setSources(mappedSources);
 			return mappedSources;
 		} catch (err) {
-			console.error("❌ [fetchSources] Failed to fetch materials:", err);
+			console.error("âŒ [fetchSources] Failed to fetch materials:", err);
 			return [];
 		}
 	}, [workspaceId]);
 
-	// Fetch workspace, initial sources, và kiểm tra profile
+	// Fetch workspace, initial sources, vÃ  kiá»ƒm tra profile
 	useEffect(() => {
 		if (!workspaceId) return;
 
@@ -153,16 +149,16 @@ function WorkspacePage() {
 
 				if (!isMounted) return;
 
-				// Kiểm tra xem profile đã được config hay chưa:
-				// Hiện tại: chỉ cần có learningGoal (bắt buộc) là coi như đã cấu hình
+				// Kiá»ƒm tra xem profile Ä‘Ã£ Ä‘Æ°á»£c config hay chÆ°a:
+				// Hiá»‡n táº¡i: chá»‰ cáº§n cÃ³ learningGoal (báº¯t buá»™c) lÃ  coi nhÆ° Ä‘Ã£ cáº¥u hÃ¬nh
 				const profileData = profileRes?.data?.data || profileRes?.data || null;
 				const isConfigured = !!(profileData?.learningGoal && String(profileData.learningGoal).trim());
 
 				setIsProfileConfigured(isConfigured);
 				setWorkspaceProfile(profileData);
 
-				// Nếu chưa cấu hình profile, ta không mở upload dialog
-				// Nếu đã cấu hình rồi và tài nguyên rỗng, thì mở
+				// Náº¿u chÆ°a cáº¥u hÃ¬nh profile, ta khÃ´ng má»Ÿ upload dialog
+				// Náº¿u Ä‘Ã£ cáº¥u hÃ¬nh rá»“i vÃ  tÃ i nguyÃªn rá»—ng, thÃ¬ má»Ÿ
 				if (isConfigured && initialSources.length === 0 && !profileConfigOpen) {
 					setUploadDialogOpen(true);
 				}
@@ -178,11 +174,11 @@ function WorkspacePage() {
 		};
 	}, [workspaceId, fetchSources, profileConfigOpen, fetchWorkspaceDetail]);
 
-	// Xử lý đóng/mở profile config dialog
+	// Xá»­ lÃ½ Ä‘Ã³ng/má»Ÿ profile config dialog
 	const handleProfileConfigChange = useCallback((open) => {
 		setProfileConfigOpen(open);
 		if (open) {
-			// Refetch profile khi mở để luôn có dữ liệu mới nhất (bao gồm targetLevelId)
+			// Refetch profile khi má»Ÿ Ä‘á»ƒ luÃ´n cÃ³ dá»¯ liá»‡u má»›i nháº¥t (bao gá»“m targetLevelId)
 			getIndividualWorkspaceProfile(workspaceId)
 				.then((res) => {
 					const profileData = res?.data?.data || res?.data || res;
@@ -194,66 +190,28 @@ function WorkspacePage() {
 		}
 	}, [location.state, navigate, workspaceId]);
 
-	// Xử lý lưu cấu hình IndividualWorkspaceProfile
+	// Xá»­ lÃ½ lÆ°u cáº¥u hÃ¬nh IndividualWorkspaceProfile
 	const handleSaveProfileConfig = useCallback(async (data) => {
 		try {
 			const res = await configureIndividualWorkspaceProfile(workspaceId, data);
 			const savedProfile = res?.data?.data || res?.data || res;
 			if (savedProfile) setWorkspaceProfile(savedProfile);
 			setProfileConfigOpen(false);
-			setIsProfileConfigured(true); // Đánh dấu là đã cấu hình
+			setIsProfileConfigured(true); // ÄÃ¡nh dáº¥u lÃ  Ä‘Ã£ cáº¥u hÃ¬nh
 			fetchWorkspaceDetail(workspaceId);
 
-			if (data.requireAiAssessment) {
-				setIsPendingAiAssessment(true);
-				showInfo(t("workspace.prelearning.initInfo"));
-				
-				// Build payload cho Mock Test
-				// Tận dụng context hiện tại của Workspace để gọi AI
-				generateMockTest({
-				title: t("workspace.prelearning.assessmentTitle"),
-					contextId: workspaceId,
-					contextType: "WORKSPACE", // workspace context type
-					durationInMinute: 30, // Default 30 minutes
-					timerMode: true,
-					totalQuestion: 15,
-					overallDifficulty: "MEDIUM",
-					prompt: `Tạo bài kiểm tra đầu vào dựa trên cấu hình Workspace: 
-						${data.customSchemeName ? 'Tên lộ trình: ' + data.customSchemeName : ''}
-						${data.customSchemeDescription ? 'Mục tiêu lộ trình: ' + data.customSchemeDescription : ''}
-						${data.learningGoal ? 'Mục tiêu cá nhân: ' + data.learningGoal : ''}
-						${data.strongAreas ? 'Điểm mạnh: ' + data.strongAreas : ''}
-						${data.weakAreas ? 'Điểm yếu cần cải thiện: ' + data.weakAreas : ''}`,
-					language: "vi",
-					sessionConfigs: [
-						{
-							name: t("workspace.prelearning.sessionName"),
-							description: data.customSchemeDescription || t("workspace.prelearning.sessionDesc"),
-							numQuestions: 15,
-							scorePerQuestion: 1.0
-						}
-					]
-				}).catch(err => {
-					console.error("Lỗi khi tạo AI Pre-learning Quiz", err);
-					showError(t("workspace.prelearning.createError"));
-					setIsPendingAiAssessment(false);
-				});
-
-			} else {
-				// Sau khi cấu hình xong, nếu chưa có nguồn nào thì mở upload
-				if (sources.length === 0) {
-					setUploadDialogOpen(true);
-				}
+			if (sources.length === 0) {
+				setUploadDialogOpen(true);
 			}
 
-			// Xóa state để không mở lại khi reload (dùng navigate để tránh loading vô hạn khi cùng URL)
+			// XÃ³a state Ä‘á»ƒ khÃ´ng má»Ÿ láº¡i khi reload (dÃ¹ng navigate Ä‘á»ƒ trÃ¡nh loading vÃ´ háº¡n khi cÃ¹ng URL)
 			navigate(`/workspace/${workspaceId}`, { replace: true });
 		} catch (error) {
 			console.error("Failed to config profile:", error);
 		}
 	}, [workspaceId, fetchWorkspaceDetail, navigate, sources]);
 
-	// Đóng settings khi click ra ngoài
+	// ÄÃ³ng settings khi click ra ngoÃ i
 	useEffect(() => {
 		if (!isSettingsOpen) return;
 		const handleClickOutside = (event) => {
@@ -265,10 +223,10 @@ function WorkspacePage() {
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, [isSettingsOpen]);
 
-	// Xử lý upload file tài liệu - SONG SONG để tăng tốc
+	// Xá»­ lÃ½ upload file tÃ i liá»‡u - SONG SONG Ä‘á»ƒ tÄƒng tá»‘c
 	const handleUploadFiles = useCallback(async (files) => {
         try {
-            // Upload tất cả files song song thay vì tuần tự
+            // Upload táº¥t cáº£ files song song thay vÃ¬ tuáº§n tá»±
             const uploadPromises = files.map(file => uploadMaterial(file, workspaceId));
             await Promise.all(uploadPromises);
             // Refresh list after all uploads complete
@@ -278,7 +236,7 @@ function WorkspacePage() {
         }
 	}, [workspaceId, fetchSources]);
 
-	// Xóa tài liệu đơn lẻ
+	// XÃ³a tÃ i liá»‡u Ä‘Æ¡n láº»
 	const handleRemoveSource = useCallback(async (sourceId) => {
         try {
             await deleteMaterial(sourceId);
@@ -288,10 +246,10 @@ function WorkspacePage() {
         }
 	}, [fetchSources]);
 
-	// Xóa nhiều tài liệu cùng lúc - SONG SONG
+	// XÃ³a nhiá»u tÃ i liá»‡u cÃ¹ng lÃºc - SONG SONG
 	const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
         try {
-            // Xóa tất cả files song song thay vì tuần tự
+            // XÃ³a táº¥t cáº£ files song song thay vÃ¬ tuáº§n tá»±
             const deletePromises = sourceIds.map(id => deleteMaterial(id));
             await Promise.all(deletePromises);
             fetchSources();
@@ -300,9 +258,9 @@ function WorkspacePage() {
         }
 	}, [fetchSources]);
 
-	// Xử lý action từ Studio Panel — hiển thị form inline trong ChatPanel
+	// Xá»­ lÃ½ action tá»« Studio Panel â€” hiá»ƒn thá»‹ form inline trong ChatPanel
 	const handleStudioAction = useCallback((actionKey) => {
-		// Ghi lịch sử truy cập khi người dùng mở list view
+		// Ghi lá»‹ch sá»­ truy cáº­p khi ngÆ°á»i dÃ¹ng má»Ÿ list view
 		const viewTypeMap = { roadmap: "Roadmap", quiz: "Quiz", flashcard: "Flashcard", mockTest: "MockTest" };
 		if (viewTypeMap[actionKey]) {
 			addAccessHistory(viewTypeMap[actionKey], viewTypeMap[actionKey], actionKey);
@@ -310,65 +268,65 @@ function WorkspacePage() {
 		setActiveView(actionKey);
 	}, []);
 
-	// Hàm thêm vào lịch sử truy cập — ghi nhận mỗi lần truy cập list view
+	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€” ghi nháº­n má»—i láº§n truy cáº­p list view
 	const addAccessHistory = useCallback((name, type, actionKey) => {
 		setAccessHistory((prev) => {
-			// Xóa trùng nếu đã có item cùng actionKey
+			// XÃ³a trÃ¹ng náº¿u Ä‘Ã£ cÃ³ item cÃ¹ng actionKey
 			const filtered = prev.filter((item) => item.actionKey !== actionKey);
 			return [{ name, type, actionKey, accessedAt: new Date().toISOString() }, ...filtered].slice(0, 20);
 		});
 	}, []);
 
-	// Xử lý tạo quiz — callback khi CreateQuizForm hoàn tất API multi-step
+	// Xá»­ lÃ½ táº¡o quiz â€” callback khi CreateQuizForm hoÃ n táº¥t API multi-step
 	const handleCreateQuiz = useCallback(async (data) => {
-		// Quiz đã được tạo xong từ CreateQuizForm → chuyển về list view
+		// Quiz Ä‘Ã£ Ä‘Æ°á»£c táº¡o xong tá»« CreateQuizForm â†’ chuyá»ƒn vá» list view
 		setActiveView("quiz");
 	}, []);
 
-	// Xử lý xem chi tiết quiz — khi click vào quiz trong danh sách
+	// Xá»­ lÃ½ xem chi tiáº¿t quiz â€” khi click vÃ o quiz trong danh sÃ¡ch
 	const handleViewQuiz = useCallback((quiz) => {
 		setSelectedQuiz(quiz);
 		setActiveView("quizDetail");
 	}, []);
 
-	// Xử lý chuyển sang chỉnh sửa quiz — từ detail view
+	// Xá»­ lÃ½ chuyá»ƒn sang chá»‰nh sá»­a quiz â€” tá»« detail view
 	const handleEditQuiz = useCallback((quiz) => {
 		setSelectedQuiz(quiz);
 		setActiveView("editQuiz");
 	}, []);
 
-	// Xử lý lưu quiz sau khi chỉnh sửa — quay về detail view
+	// Xá»­ lÃ½ lÆ°u quiz sau khi chá»‰nh sá»­a â€” quay vá» detail view
 	const handleSaveQuiz = useCallback((updatedQuiz) => {
 		setSelectedQuiz((prev) => ({ ...prev, ...updatedQuiz }));
 		setActiveView("quizDetail");
 	}, []);
 
-	// Xử lý tạo flashcard — callback từ CreateFlashcardForm (API đã gọi xong)
+	// Xá»­ lÃ½ táº¡o flashcard â€” callback tá»« CreateFlashcardForm (API Ä‘Ã£ gá»i xong)
 	const handleCreateFlashcard = useCallback(async () => {
-		// Chuyển về list view để reload danh sách
+		// Chuyá»ƒn vá» list view Ä‘á»ƒ reload danh sÃ¡ch
 		setActiveView("flashcard");
 	}, []);
 
-	// Xử lý xem chi tiết flashcard — khi click vào flashcard trong danh sách
+	// Xá»­ lÃ½ xem chi tiáº¿t flashcard â€” khi click vÃ o flashcard trong danh sÃ¡ch
 	const handleViewFlashcard = useCallback((flashcard) => {
 		setSelectedFlashcard(flashcard);
 		setActiveView("flashcardDetail");
 	}, []);
 
-	// Xử lý xóa flashcard — gọi API xóa flashcard set
+	// Xá»­ lÃ½ xÃ³a flashcard â€” gá»i API xÃ³a flashcard set
 	const handleDeleteFlashcard = useCallback(async (flashcard) => {
 		if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
 		try {
 			const { deleteFlashcardSet } = await import("@/api/FlashcardAPI");
 			await deleteFlashcardSet(flashcard.flashcardSetId);
-			// Quay về list view để reload danh sách
+			// Quay vá» list view Ä‘á»ƒ reload danh sÃ¡ch
 			setActiveView("flashcard");
 		} catch (err) {
-			console.error("Xóa flashcard thất bại:", err);
+			console.error("XÃ³a flashcard tháº¥t báº¡i:", err);
 		}
 	}, []);
 
-	// Xử lý tạo roadmap — gọi API tạo roadmap cho workspace cá nhân
+	// Xá»­ lÃ½ táº¡o roadmap â€” gá»i API táº¡o roadmap cho workspace cÃ¡ nhÃ¢n
 	const handleCreateRoadmap = useCallback(async (data) => {
 		try {
 			const roadmapRes = await createRoadmapForWorkspace({
@@ -380,7 +338,7 @@ function WorkspacePage() {
 			const createdRoadmap = roadmapRes.data?.data || roadmapRes.data || {};
 			const roadmapId = createdRoadmap.roadmapId || createdRoadmap.id;
 			if (!roadmapId) {
-				throw new Error("Không lấy được roadmapId sau khi tạo roadmap.");
+				throw new Error("KhÃ´ng láº¥y Ä‘Æ°á»£c roadmapId sau khi táº¡o roadmap.");
 			}
 
 			const serverPhases = [];
@@ -442,13 +400,13 @@ function WorkspacePage() {
 			}]);
 			setActiveView("roadmap");
 		} catch (err) {
-			// Lỗi tạo roadmap — log để debug
-			console.error("Tạo roadmap thất bại:", err);
+			// Lá»—i táº¡o roadmap â€” log Ä‘á»ƒ debug
+			console.error("Táº¡o roadmap tháº¥t báº¡i:", err);
 			throw err;
 		}
 	}, [workspaceId]);
 
-	// Quay về list view tương ứng khi bấm nút Back trong form tạo
+	// Quay vá» list view tÆ°Æ¡ng á»©ng khi báº¥m nÃºt Back trong form táº¡o
 	const handleBackFromForm = useCallback(() => {
 		const formToList = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", quizDetail: "quiz", editQuiz: "quizDetail", flashcardDetail: "flashcard", createMockTest: "mockTest", mockTestDetail: "mockTest", editMockTest: "mockTestDetail" };
 		const nextView = formToList[activeView] || null;
@@ -464,30 +422,30 @@ function WorkspacePage() {
 		setActiveView(nextView);
 	}, [activeView]);
 
-	// Xử lý tạo mock test — quay về list sau khi tạo thành công
+	// Xá»­ lÃ½ táº¡o mock test â€” quay vá» list sau khi táº¡o thÃ nh cÃ´ng
 	const handleCreateMockTest = useCallback(async () => {
 		setActiveView("mockTest");
 	}, []);
 
-	// Xử lý xem chi tiết mock test
+	// Xá»­ lÃ½ xem chi tiáº¿t mock test
 	const handleViewMockTest = useCallback((mt) => {
 		setSelectedMockTest(mt);
 		setActiveView("mockTestDetail");
 	}, []);
 
-	// Xử lý chỉnh sửa mock test
+	// Xá»­ lÃ½ chá»‰nh sá»­a mock test
 	const handleEditMockTest = useCallback((mt) => {
 		setSelectedMockTest(mt);
 		setActiveView("editMockTest");
 	}, []);
 
-	// Xử lý lưu mock test sau khi chỉnh sửa
+	// Xá»­ lÃ½ lÆ°u mock test sau khi chá»‰nh sá»­a
 	const handleSaveMockTest = useCallback((updatedMt) => {
 		setSelectedMockTest((prev) => ({ ...prev, ...updatedMt }));
 		setActiveView("mockTestDetail");
 	}, []);
 
-	// Kéo thả thay đổi kích thước panel trái (Sources)
+	// KÃ©o tháº£ thay Ä‘á»•i kÃ­ch thÆ°á»›c panel trÃ¡i (Sources)
 	const handleLeftResize = useCallback((e) => {
 		if (isSourcesCollapsed) return;
 		e.preventDefault();
@@ -510,7 +468,7 @@ function WorkspacePage() {
 		document.addEventListener("mouseup", onUp);
 	}, [leftWidth, isSourcesCollapsed]);
 
-	// Kéo thả thay đổi kích thước panel phải (Studio)
+	// KÃ©o tháº£ thay Ä‘á»•i kÃ­ch thÆ°á»›c panel pháº£i (Studio)
 	const handleRightResize = useCallback((e) => {
 		if (isStudioCollapsed) return;
 		e.preventDefault();
@@ -608,20 +566,16 @@ function WorkspacePage() {
 		</div>
 	);
 
-	// Xử lý nút click để mở Upload Dialog — Phải check config trước
+	// Xá»­ lÃ½ nÃºt click Ä‘á»ƒ má»Ÿ Upload Dialog â€” Pháº£i check config trÆ°á»›c
 	const handleUploadClickSafe = useCallback(() => {
-		if (isPendingAiAssessment) {
-			showError(t("workspace.prelearning.uploadBlockedError"));
-			return;
-		}
 		if (!isProfileConfigured) {
-			// Profile chưa cấu hình đủ, yêu cầu cập nhật Profile trước
+			// Profile chÆ°a cáº¥u hÃ¬nh Ä‘á»§, yÃªu cáº§u cáº­p nháº­t Profile trÆ°á»›c
 			setProfileConfigOpen(true);
 		} else {
-			// Profile hợp lệ, cho phép upload
+			// Profile há»£p lá»‡, cho phÃ©p upload
 			setUploadDialogOpen(true);
 		}
-	}, [isProfileConfigured, isPendingAiAssessment, showError]);
+	}, [isProfileConfigured]);
 
 	return (
 		<div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-[#F7FBFF]"}`}>
@@ -639,9 +593,9 @@ function WorkspacePage() {
 			/>
 			<div className="flex-1 min-h-0">
 				<div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
-					{/* Layout flex với resize handles — kéo thả để thay đổi kích thước */}
+					{/* Layout flex vá»›i resize handles â€” kÃ©o tháº£ Ä‘á»ƒ thay Ä‘á»•i kÃ­ch thÆ°á»›c */}
 					<div className="flex h-full">
-						{/* Panel nguồn tài liệu (trái) */}
+						{/* Panel nguá»“n tÃ i liá»‡u (trÃ¡i) */}
 						<div
 							style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
 							className={`shrink-0 h-full ${isLeftResizing ? "" : "transition-[width,min-width] duration-300 ease-in-out"}`}
@@ -662,7 +616,7 @@ function WorkspacePage() {
 							/>
 						</div>
 
-						{/* Resize handle trái */}
+						{/* Resize handle trÃ¡i */}
 						<div
 							className={`shrink-0 flex items-center justify-center ${isLeftResizing ? "" : "transition-all duration-300 ease-in-out"} ${isSourcesCollapsed ? "w-2" : "w-4 cursor-col-resize group"}`}
 							onMouseDown={isSourcesCollapsed ? undefined : handleLeftResize}
@@ -672,7 +626,7 @@ function WorkspacePage() {
 							)}
 						</div>
 
-						{/* Panel khu vực học tập (giữa) */}
+						{/* Panel khu vá»±c há»c táº­p (giá»¯a) */}
 						<div className="flex-1 min-w-0 h-full">
 							<ChatPanel
 								isDarkMode={isDarkMode}
@@ -702,7 +656,7 @@ function WorkspacePage() {
 							/>
 						</div>
 
-						{/* Resize handle phải */}
+						{/* Resize handle pháº£i */}
 						<div
 							className={`shrink-0 flex items-center justify-center ${isRightResizing ? "" : "transition-all duration-300 ease-in-out"} ${isStudioCollapsed ? "w-2" : "w-4 cursor-col-resize group"}`}
 							onMouseDown={isStudioCollapsed ? undefined : handleRightResize}
@@ -712,7 +666,7 @@ function WorkspacePage() {
 							)}
 						</div>
 
-						{/* Panel Studio (phải) */}
+						{/* Panel Studio (pháº£i) */}
 						<div
 							style={{ width: effectiveRightWidth, minWidth: effectiveRightWidth }}
 							className={`shrink-0 h-full ${isRightResizing ? "" : "transition-[width,min-width] duration-300 ease-in-out"}`}
@@ -730,7 +684,7 @@ function WorkspacePage() {
 				</div>
 			</div>
 
-			{/* Dialog tải tài liệu */}
+			{/* Dialog táº£i tÃ i liá»‡u */}
 			<UploadSourceDialog
 				open={uploadDialogOpen}
 				onOpenChange={setUploadDialogOpen}
@@ -752,3 +706,4 @@ function WorkspacePage() {
 }
 
 export default WorkspacePage;
+
