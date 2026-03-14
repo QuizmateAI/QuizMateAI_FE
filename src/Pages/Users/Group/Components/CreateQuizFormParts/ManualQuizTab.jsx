@@ -11,6 +11,8 @@ function ManualQuizTab({
   selectCls,
   name,
   setName,
+  attachToRoadmap,
+  setAttachToRoadmap,
   selectedRoadmapId,
   handleRoadmapSelect,
   contextLoading,
@@ -72,6 +74,46 @@ function ManualQuizTab({
         <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
       </div>
 
+      <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+              {t("workspace.quiz.contextSelector.attachPrompt")}
+            </p>
+            <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+              {attachToRoadmap
+                ? t("workspace.quiz.contextSelector.attachHintYes")
+                : t("workspace.quiz.contextSelector.attachHintNo")}
+            </p>
+          </div>
+          <div className={`inline-flex rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-white border border-gray-200"}`}>
+            <button
+              type="button"
+              onClick={() => setAttachToRoadmap(true)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                attachToRoadmap
+                  ? isDarkMode ? "bg-blue-600 text-white" : "bg-blue-600 text-white"
+                  : isDarkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-600 hover:bg-gray-100"
+              } ${fontClass}`}
+            >
+              {t("workspace.quiz.contextSelector.attachYes")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAttachToRoadmap(false)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                !attachToRoadmap
+                  ? isDarkMode ? "bg-blue-600 text-white" : "bg-blue-600 text-white"
+                  : isDarkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-600 hover:bg-gray-100"
+              } ${fontClass}`}
+            >
+              {t("workspace.quiz.contextSelector.attachNo")}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {attachToRoadmap && (
       <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-blue-200 bg-blue-50/30"}`}>
         <div className="flex items-center gap-2 mb-1">
           <MapPin className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
@@ -147,6 +189,7 @@ function ManualQuizTab({
           </div>
         )}
       </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div>

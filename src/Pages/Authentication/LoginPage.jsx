@@ -381,11 +381,14 @@ const LoginPageContent = () => {
                       value={registerHook.formData.username}
                       onChange={registerHook.handleChange('username')}
                     />
-                    {registerHook.fieldErrors?.username && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.username}</p>
-                    )}
-                    {!registerHook.fieldErrors?.username && registerHook.availabilityStatus?.username?.message && (
-                      <p className={`text-xs mt-1 ml-1 ${registerHook.availabilityStatus.username.available ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
+                    {registerHook.availabilityStatus?.username?.message && (
+                      <p className={`text-xs mt-1 ml-1 ${
+                        registerHook.availabilityStatus.username.available === true
+                          ? 'text-green-600 dark:text-green-400'
+                          : registerHook.availabilityStatus.username.available === false
+                            ? 'text-red-500 dark:text-red-400'
+                            : 'text-gray-500 dark:text-slate-400'
+                      }`}>
                         {registerHook.availabilityStatus.username.message}
                       </p>
                     )}
@@ -400,11 +403,14 @@ const LoginPageContent = () => {
                       value={registerHook.formData.email}
                       onChange={registerHook.handleChange('email')}
                     />
-                    {registerHook.fieldErrors?.email && (
-                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.email}</p>
-                    )}
-                    {!registerHook.fieldErrors?.email && registerHook.availabilityStatus?.email?.message && (
-                      <p className={`text-xs mt-1 ml-1 ${registerHook.availabilityStatus.email.available ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
+                    {registerHook.availabilityStatus?.email?.message && (
+                      <p className={`text-xs mt-1 ml-1 ${
+                        registerHook.availabilityStatus.email.available === true
+                          ? 'text-green-600 dark:text-green-400'
+                          : registerHook.availabilityStatus.email.available === false
+                            ? 'text-red-500 dark:text-red-400'
+                            : 'text-gray-500 dark:text-slate-400'
+                      }`}>
                         {registerHook.availabilityStatus.email.message}
                       </p>
                     )}
