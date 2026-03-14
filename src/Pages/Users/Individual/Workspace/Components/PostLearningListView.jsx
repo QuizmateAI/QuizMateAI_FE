@@ -4,6 +4,7 @@ import { Button } from "@/Components/ui/button";
 import { Search, X, GraduationCap, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap } from "@/api/RoadmapAPI";
+import { useToast } from "@/context/ToastContext";
 
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
@@ -29,6 +30,7 @@ const STATUS_STYLE = {
  */
 function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLearning, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
+  const { showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [postLearnings, setPostLearnings] = useState([]);
@@ -111,10 +113,11 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
       setPostLearnings(prev => prev.filter(q => q.quizId !== quizId));
     } catch (err) {
       console.error("Lỗi xóa post-learning:", err);
+      showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
     } finally {
       setDeletingId(null);
     }
-  }, [deletingId]);
+  }, [deletingId, showError, t]);
 
   // Lọc theo tìm kiếm
   const filtered = useMemo(() => {
@@ -222,9 +225,9 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
                     </span>
                   </div>
                   {/* Nút xóa */}
-                  <button onClick={(e) => handleDelete(e, pl.quizId)}
+                  <button onClick={(e) => handleDelete(e, pl.quizId ?? pl.id)}
                     className={`p-1.5 rounded-lg transition-all active:scale-95 ${isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"}`}>
-                    {deletingId === pl.quizId ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                    {deletingId === (pl.quizId ?? pl.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
                   </button>
                 </div>
               );

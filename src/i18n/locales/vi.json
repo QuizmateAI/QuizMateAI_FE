@@ -465,7 +465,16 @@
     "verifyAndRegister": "Xác thực & Đăng ký",
     "verifyEmailTitle": "Xác thực Email",
     "backToRegisterForm": "Quay lại",
-    "registerSuccess": "Đăng ký thành công! Vui lòng đăng nhập."
+    "registerSuccess": "Đăng ký thành công! Vui lòng đăng nhập.",
+    "checkingAvailability": "Đang kiểm tra...",
+    "usernameAvailable": "Tên đăng nhập khả dụng",
+    "emailAvailable": "Email khả dụng",
+    "usernameExists": "Tên đăng nhập đã được sử dụng",
+    "emailExists": "Email đã được sử dụng",
+    "agreeToTermsRequired": "Vui lòng đồng ý với điều khoản sử dụng",
+    "sendOTPFailed": "Gửi OTP thất bại, vui lòng thử lại",
+    "validationFailed": "Dữ liệu nhập không hợp lệ",
+    "verifyOTPFailed": "Xác thực OTP thất bại, mã không đúng hoặc đã hết hạn"
   },
   "validation": {
     "fullnameRequired": "Họ và tên không được để trống",
@@ -474,6 +483,13 @@
     "usernameFormat": "Tên đăng nhập phải chứa cả chữ và số, có thể dùng các ký tự . _ @ -",
     "emailRequired": "Email không được để trống",
     "emailInvalid": "Email không hợp lệ",
+    "emailLength": "Email không được vượt quá 100 ký tự",
+    "emailNoSpaces": "Email không được chứa khoảng trắng",
+    "emailAtSymbol": "Email phải chứa đúng một ký tự @",
+    "emailLocalPartLength": "Phần trước @ không được vượt quá 64 ký tự",
+    "emailConsecutiveDots": "Email không được chứa hai dấu chấm liên tiếp",
+    "emailDotPosition": "Email không được bắt đầu hoặc kết thúc bằng dấu chấm",
+    "emailDomainFormat": "Tên miền email không hợp lệ",
     "passwordRequired": "Mật khẩu không được để trống",
     "passwordLength": "Mật khẩu phải nhiều hơn 8 ký tự",
     "passwordFormat": "Mật khẩu phải chứa cả chữ và số",
@@ -1018,6 +1034,7 @@
       "cancelBtn": "Hủy",
       "saveBtn": "Lưu",
       "menuRename": "Đổi tên",
+      "menuDownload": "Tải tài liệu",
       "menuDelete": "Xóa"
     },
     "chat": {
@@ -1174,7 +1191,8 @@
         "DRAFT": "Bản nháp",
         "COMPLETED": "Đã hoàn thành",
         "INACTIVE": "Không hoạt động",
-        "PROCESSING": "Đang xử lý"
+        "PROCESSING": "Đang xử lý",
+        "ERROR": "Lỗi"
       },
       "statusFilter": {
         "all": "Tất cả",
@@ -1201,6 +1219,11 @@
       },
       "contextSelector": {
         "title": "Vị trí tạo Quiz",
+        "attachPrompt": "Bạn có muốn tạo quiz vào lộ trình không?",
+        "attachYes": "Có",
+        "attachNo": "Không",
+        "attachHintYes": "Chọn roadmap, phase và knowledge để gắn quiz vào lộ trình học.",
+        "attachHintNo": "Quiz sẽ được tạo trực tiếp trong ngữ cảnh hiện tại.",
         "contextType": "Loại ngữ cảnh",
         "sourceType": "Nguồn",
         "selectWorkspace": "Chọn Workspace",

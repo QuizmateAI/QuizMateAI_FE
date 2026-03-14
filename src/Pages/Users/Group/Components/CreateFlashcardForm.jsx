@@ -22,6 +22,7 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
   // Context — luôn là KNOWLEDGE
   const selectedContextType = FIXED_CONTEXT_TYPE;
   const [selectedContextId, setSelectedContextId] = useState("");
+  const [attachToRoadmap, setAttachToRoadmap] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
 
   // Cascade data
@@ -157,10 +158,12 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
   // Submit
   const handleSubmit = async () => {
     const name = tab === "manual" ? deckName : aiDeckName;
-    if (!name.trim() || !selectedContextId) return;
+    const contextType = attachToRoadmap ? selectedContextType : defaultContextType;
+    const contextId = attachToRoadmap ? Number(selectedContextId) : Number(defaultContextId);
+    if (!name.trim() || !contextId) return;
     setSubmitting(true);
     try {
-      const setRes = await createFlashcardSet({ contextId: Number(selectedContextId), contextType: selectedContextType, flashcardSetName: name.trim() });
+      const setRes = await createFlashcardSet({ contextId, contextType, flashcardSetName: name.trim() });
       const createdSet = setRes.data || {};
       const setId = createdSet.flashcardSetId;
       if (tab === "manual" && cards.length > 0 && setId) {
@@ -201,7 +204,47 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
           {t("workspace.flashcard.createDesc")}
         </p>
 
+        <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+                {t("workspace.quiz.contextSelector.attachPrompt")}
+              </p>
+              <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                {attachToRoadmap
+                  ? t("workspace.quiz.contextSelector.attachHintYes")
+                  : t("workspace.quiz.contextSelector.attachHintNo")}
+              </p>
+            </div>
+            <div className={`inline-flex rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-white border border-gray-200"}`}>
+              <button
+                type="button"
+                onClick={() => setAttachToRoadmap(true)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  attachToRoadmap
+                    ? isDarkMode ? "bg-blue-600 text-white" : "bg-blue-600 text-white"
+                    : isDarkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-600 hover:bg-gray-100"
+                } ${fontClass}`}
+              >
+                {t("workspace.quiz.contextSelector.attachYes")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAttachToRoadmap(false)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  !attachToRoadmap
+                    ? isDarkMode ? "bg-blue-600 text-white" : "bg-blue-600 text-white"
+                    : isDarkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-600 hover:bg-gray-100"
+                } ${fontClass}`}
+              >
+                {t("workspace.quiz.contextSelector.attachNo")}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Context selector — KNOWLEDGE cascade with QuickCreate */}
+        {attachToRoadmap && (
         <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-blue-200 bg-blue-50/30"}`}>
           <div className="flex items-center gap-2 mb-1">
             <MapPin className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
@@ -268,6 +311,7 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
             </div>
           )}
         </div>
+        )}
 
         {/* Tabs */}
         <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
@@ -388,7 +432,7 @@ function CreateFlashcardForm({ isDarkMode = false, onCreateFlashcard, onBack, co
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
           {t("workspace.flashcard.cancel")}
         </Button>
-        <Button onClick={handleSubmit} disabled={submitting || !selectedContextId} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+        <Button onClick={handleSubmit} disabled={submitting || (attachToRoadmap && !selectedContextId)} className="bg-[#2563EB] hover:bg-blue-700 text-white">
           {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
           {tab === "manual"
             ? (submitting ? t("workspace.flashcard.creating") : t("workspace.flashcard.create"))

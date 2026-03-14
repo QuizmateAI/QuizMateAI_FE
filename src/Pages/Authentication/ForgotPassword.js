@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
+import { getEmailViolationKey, isEmailValid } from '@/Utils/emailValidation';
 
 // Xác thực định dạng email
 export const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  return isEmailValid(email);
 };
 
 export const useForgotPassword = (setView, t) => {
@@ -44,9 +44,10 @@ export const useForgotPassword = (setView, t) => {
     // Trim email trước khi gửi
     const trimmedEmail = forgotPasswordData.email.trim();
     setForgotPasswordData(prev => ({ ...prev, email: trimmedEmail }));
-    
-    if (!trimmedEmail) {
-      setError(t('validation.emailRequired') || 'Email không được để trống');
+
+    const emailViolationKey = getEmailViolationKey(trimmedEmail);
+    if (emailViolationKey) {
+      setError(t(`validation.${emailViolationKey}`) || t('validation.emailInvalid') || 'Email không hợp lệ');
       return;
     }
     
@@ -170,15 +171,20 @@ export const isEmailEmpty = (email) => {
 export const validateForgotPasswordForm = (email) => {
   const errors = {};
 
-  // Kiểm tra email rỗng
-  if (isEmailEmpty(email)) {
-    errors.email = 'Email là bắt buộc';
-  } else if (!validateEmail(email)) {
-    // Kiểm tra định dạng email
-    errors.email = 'Vui lòng nhập email hợp lệ (ví dụ: user@domain.com)';
-  } else if (email.length > 100) {
-    // Kiểm tra độ dài email
-    errors.email = 'Email không được vượt quá 100 ký tự';
+  const emailViolationKey = getEmailViolationKey(email);
+  if (emailViolationKey) {
+    const fallbackMessages = {
+      emailRequired: 'Email là bắt buộc',
+      emailLength: 'Email không được vượt quá 100 ký tự',
+      emailNoSpaces: 'Email không được chứa khoảng trắng',
+      emailAtSymbol: 'Email phải chứa đúng một ký tự @',
+      emailLocalPartLength: 'Phần trước @ không được vượt quá 64 ký tự',
+      emailConsecutiveDots: 'Email không được chứa hai dấu chấm liên tiếp',
+      emailDotPosition: 'Email không được bắt đầu hoặc kết thúc bằng dấu chấm',
+      emailDomainFormat: 'Tên miền email không hợp lệ',
+      emailInvalid: 'Vui lòng nhập email hợp lệ (ví dụ: user@domain.com)',
+    };
+    errors.email = fallbackMessages[emailViolationKey] || fallbackMessages.emailInvalid;
   }
 
   return {
