@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Plus, Search, Shield, RefreshCw,
   Users, Package, CreditCard, Banknote, FileText,
-  ClipboardList, Settings, UsersRound, ShieldCheck, Eye, Pencil,
+  ClipboardList, UsersRound, ShieldCheck, Eye, Pencil,
 } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
@@ -38,12 +38,16 @@ import {
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
+import {
+  filterRemovedLearningConfigPermissionCodes,
+  filterRemovedLearningConfigPermissions,
+} from '@/lib/learningConfigAdminFilters';
 
 const ADMIN_ALLOWED_CODES = [
   'user:read', 'user:status_update',
   'subscription:read', 'subscription:write',
   'payment:read', 'payment:write', 'material:moderate', 'audit:read',
-  'system-settings:read', 'group:read_all',
+  'group:read_all',
 ];
 
 const PERM_CATEGORIES = [
@@ -54,10 +58,8 @@ const PERM_CATEGORIES = [
   { prefix: 'payment:',           label: 'Payments',       icon: Banknote,      color: 'text-amber-400',   bg: 'from-amber-500 to-orange-500' },
   { prefix: 'material:',          label: 'Materials',      icon: FileText,      color: 'text-rose-400',    bg: 'from-rose-500 to-pink-600' },
   { prefix: 'audit:',             label: 'Audit',          icon: ClipboardList, color: 'text-indigo-400',  bg: 'from-indigo-500 to-blue-600' },
-  { prefix: 'system-settings:',   label: 'System',         icon: Settings,      color: 'text-slate-400',   bg: 'from-slate-500 to-slate-600' },
 ];
 
-const getPermCategory = (code) => PERM_CATEGORIES.find((c) => code.startsWith(c.prefix));
 const getPermAction = (code) => {
   const action = code.split(':')[1] || '';
   return action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -156,7 +158,7 @@ function AdminManagement() {
 
   const openRbacPopup = async (admin) => {
     setSelectedAdmin(admin);
-    setUserPermissions(admin?.permissions ? [...admin.permissions] : []);
+    setUserPermissions(filterRemovedLearningConfigPermissionCodes(admin?.permissions ? [...admin.permissions] : []));
     setIsRbacOpen(true);
     setIsRbacLoading(true);
     try {
@@ -166,15 +168,17 @@ function AdminManagement() {
       ]);
       const permPageData = permRes?.data ?? permRes;
       const allPerms = Array.isArray(permPageData?.content) ? permPageData.content : (Array.isArray(permPageData) ? permPageData : []);
-      const adminPerms = allPerms.filter((p) => ADMIN_ALLOWED_CODES.includes(p.code?.toLowerCase()));
+      const adminPerms = filterRemovedLearningConfigPermissions(allPerms).filter((p) =>
+        ADMIN_ALLOWED_CODES.includes(p.code?.toLowerCase())
+      );
       setPermissions(adminPerms);
 
       if (admin.role === 'ADMIN') {
         const up = userPermRes?.data ?? userPermRes;
-        setUserPermissions(Array.isArray(up) ? up.map((c) => String(c).toLowerCase()) : []);
+        setUserPermissions(filterRemovedLearningConfigPermissionCodes(Array.isArray(up) ? up : []));
       }
     } catch (err) {
-      setUserPermissions(admin?.permissions ? [...admin.permissions] : []);
+      setUserPermissions(filterRemovedLearningConfigPermissionCodes(admin?.permissions ? [...admin.permissions] : []));
     } finally {
       setIsRbacLoading(false);
     }
