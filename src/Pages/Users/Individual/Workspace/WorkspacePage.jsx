@@ -11,16 +11,43 @@ import { Globe, Moon, Settings, Sun, UserCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { configureIndividualWorkspaceProfile, getIndividualWorkspaceProfile } from "@/api/WorkspaceAPI";
+import {
+	getIndividualWorkspaceProfile,
+	saveIndividualWorkspaceBasicStep,
+	saveIndividualWorkspacePersonalInfoStep,
+	saveIndividualWorkspaceRoadmapConfigStep,
+	startIndividualWorkspaceMockTestPersonalInfoStep,
+} from "@/api/WorkspaceAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
+import { useToast } from "@/context/ToastContext";
+
+function isProfileOnboardingDone(profileData) {
+	return profileData?.profileStatus === "DONE" || profileData?.workspaceSetupStatus === "PROFILE_DONE";
+}
+
+function extractProfileData(response) {
+	return response?.data?.data || response?.data || response || null;
+}
+
+function translateOrFallback(t, key, fallback) {
+	const translated = t(key);
+	return translated === key ? fallback : translated;
+}
+
+function delay(ms) {
+	return new Promise((resolve) => {
+		globalThis.setTimeout(resolve, ms);
+	});
+}
 
 function WorkspacePage() {
 	const { workspaceId } = useParams();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { t, i18n } = useTranslation();
+	const { showError, showSuccess } = useToast();
 	const { isDarkMode, toggleDarkMode } = useDarkMode();
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 	const settingsRef = useRef(null);
@@ -152,7 +179,7 @@ function WorkspacePage() {
 				// Kiá»ƒm tra xem profile Ä‘Ã£ Ä‘Æ°á»£c config hay chÆ°a:
 				// Hiá»‡n táº¡i: chá»‰ cáº§n cÃ³ learningGoal (báº¯t buá»™c) lÃ  coi nhÆ° Ä‘Ã£ cáº¥u hÃ¬nh
 				const profileData = profileRes?.data?.data || profileRes?.data || null;
-				const isConfigured = !!(profileData?.learningGoal && String(profileData.learningGoal).trim());
+				const isConfigured = isProfileOnboardingDone(profileData);
 
 				setIsProfileConfigured(isConfigured);
 				setWorkspaceProfile(profileData);
@@ -191,25 +218,87 @@ function WorkspacePage() {
 	}, [location.state, navigate, workspaceId]);
 
 	// Xá»­ lÃ½ lÆ°u cáº¥u hÃ¬nh IndividualWorkspaceProfile
-	const handleSaveProfileConfig = useCallback(async (data) => {
+	const waitForMockTestPersonalInfoDone = useCallback(async () => {
+		for (let attempt = 0; attempt < 30; attempt += 1) {
+			const profileResponse = await getIndividualWorkspaceProfile(workspaceId);
+			const profileData = extractProfileData(profileResponse);
+
+			if (profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") {
+				return profileData;
+			}
+
+			await delay(1500);
+		}
+
+		throw new Error(
+			translateOrFallback(
+				t,
+				"workspace.profileConfig.validation.mockTestPending",
+				"Mock test va template dang duoc tao. Vui long thu lai sau it phut."
+			)
+		);
+	}, [workspaceId, t]);
+
+	const handleSaveProfileConfig = useCallback(async (currentStep, data) => {
 		try {
-			const res = await configureIndividualWorkspaceProfile(workspaceId, data);
-			const savedProfile = res?.data?.data || res?.data || res;
-			if (savedProfile) setWorkspaceProfile(savedProfile);
+			let savedProfile = null;
+
+			if (currentStep === 1) {
+				savedProfile = extractProfileData(await saveIndividualWorkspaceBasicStep(workspaceId, data));
+				if (savedProfile) {
+					setWorkspaceProfile(savedProfile);
+				}
+				return savedProfile;
+			}
+
+			if (currentStep === 2) {
+				if (data.workspacePurpose === "MOCK_TEST") {
+					await startIndividualWorkspaceMockTestPersonalInfoStep(workspaceId, data);
+					savedProfile = await waitForMockTestPersonalInfoDone();
+				} else {
+					savedProfile = extractProfileData(await saveIndividualWorkspacePersonalInfoStep(workspaceId, data));
+				}
+
+				if (savedProfile) {
+					setWorkspaceProfile(savedProfile);
+				}
+				return savedProfile;
+			}
+
+			savedProfile = extractProfileData(await saveIndividualWorkspaceRoadmapConfigStep(workspaceId, data));
+			if (savedProfile) {
+				setWorkspaceProfile(savedProfile);
+			}
 			setProfileConfigOpen(false);
-			setIsProfileConfigured(true); // ÄÃ¡nh dáº¥u lÃ  Ä‘Ã£ cáº¥u hÃ¬nh
+			setIsProfileConfigured(isProfileOnboardingDone(savedProfile));
 			fetchWorkspaceDetail(workspaceId);
 
 			if (sources.length === 0) {
 				setUploadDialogOpen(true);
 			}
 
-			// XÃ³a state Ä‘á»ƒ khÃ´ng má»Ÿ láº¡i khi reload (dÃ¹ng navigate Ä‘á»ƒ trÃ¡nh loading vÃ´ háº¡n khi cÃ¹ng URL)
+			showSuccess(
+				translateOrFallback(
+					t,
+					"workspace.profileConfig.messages.finishSuccess",
+					"Hoan thanh thiet lap workspace thanh cong."
+				)
+			);
 			navigate(`/workspace/${workspaceId}`, { replace: true });
+			return savedProfile;
 		} catch (error) {
 			console.error("Failed to config profile:", error);
+			showError(
+				error?.message
+				|| translateOrFallback(
+					t,
+					"workspace.profileConfig.messages.saveError",
+					"Khong the luu tien trinh thiet lap workspace."
+				)
+			);
+			throw error;
 		}
-	}, [workspaceId, fetchWorkspaceDetail, navigate, sources]);
+	}, [workspaceId, waitForMockTestPersonalInfoDone, fetchWorkspaceDetail, sources, showSuccess, t, navigate, showError]);
 
 	// ÄÃ³ng settings khi click ra ngoÃ i
 	useEffect(() => {
@@ -698,6 +787,7 @@ function WorkspacePage() {
 				onOpenChange={handleProfileConfigChange}
 				onSave={handleSaveProfileConfig}
 				isDarkMode={isDarkMode}
+				isReadOnly={isProfileOnboardingDone(workspaceProfile)}
 			/>
 
 

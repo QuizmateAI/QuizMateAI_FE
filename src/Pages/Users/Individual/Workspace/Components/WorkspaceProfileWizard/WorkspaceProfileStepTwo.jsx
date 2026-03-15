@@ -49,6 +49,8 @@ function WorkspaceProfileStepTwo({
   onPublicExamSelect,
   onGenerateTemplate,
 }) {
+  const learningGoalLabel = t(`workspace.profileConfig.fields.learningGoalByPurpose.${values.workspacePurpose}`);
+  const learningGoalPlaceholder = t(`workspace.profileConfig.placeholders.learningGoalByPurpose.${values.workspacePurpose}`);
   const inputClass = cn(
     'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all',
     isDarkMode
@@ -85,7 +87,7 @@ function WorkspaceProfileStepTwo({
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <div className="mt-6 space-y-4">
           <FieldBlock label={t('workspace.profileConfig.fields.currentLevel')} error={errors.currentLevel} required>
             <input
               type="text"
@@ -97,13 +99,13 @@ function WorkspaceProfileStepTwo({
             />
           </FieldBlock>
 
-          <FieldBlock label={t('workspace.profileConfig.fields.learningGoal')} error={errors.learningGoal} required>
+          <FieldBlock label={learningGoalLabel} error={errors.learningGoal} required>
             <textarea
               rows={3}
               value={values.learningGoal}
               disabled={disabled}
               onChange={(event) => onFieldChange('learningGoal', event.target.value)}
-              placeholder={t('workspace.profileConfig.placeholders.learningGoal')}
+              placeholder={learningGoalPlaceholder}
               className={inputClass}
             />
           </FieldBlock>
