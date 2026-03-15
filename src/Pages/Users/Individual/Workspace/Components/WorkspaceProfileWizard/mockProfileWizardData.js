@@ -307,6 +307,17 @@ export function getPublicExamById(examId) {
   return PUBLIC_EXAMS.find((exam) => exam.id === examId) || null;
 }
 
+export function getPublicExamByName(examName) {
+  const normalizedExamName = normalizeKeyword(examName);
+  if (!normalizedExamName) return null;
+
+  return (
+    PUBLIC_EXAMS.find((exam) => normalizeKeyword(exam.name) === normalizedExamName)
+    || PUBLIC_EXAMS.find((exam) => exam.alias.some((alias) => normalizedExamName.includes(normalizeKeyword(alias))))
+    || null
+  );
+}
+
 function collectFocusItems(rawText) {
   return rawText
     .split(/[,\n;/]+/)

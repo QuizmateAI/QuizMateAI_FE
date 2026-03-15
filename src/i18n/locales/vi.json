@@ -911,6 +911,11 @@
         "primaryDomain": "Lĩnh vực chính",
         "currentLevel": "Trình độ hiện tại",
         "learningGoal": "Mục tiêu học tập",
+        "learningGoalByPurpose": {
+          "STUDY_NEW": "Mục tiêu học tập",
+          "REVIEW": "Mục tiêu ôn tập",
+          "MOCK_TEST": "Mục tiêu luyện đề"
+        },
         "strongAreas": "Điểm mạnh",
         "weakAreas": "Điểm yếu",
         "mockExamMode": "Loại kỳ thi",
@@ -936,6 +941,11 @@
         "primaryDomain": "Lĩnh vực chính sẽ được điền theo lĩnh vực bạn chọn từ gợi ý AI...",
         "currentLevel": "VD: IELTS 5.5, đã biết React cơ bản, đang học lớp 11...",
         "learningGoal": "VD: Đạt 7.0 IELTS trong 3 tháng, nắm chắc phần xác suất để thi cuối kỳ...",
+        "learningGoalByPurpose": {
+          "STUDY_NEW": "VD: Xây nền tảng chắc từ đầu và hoàn thành một chủ đề mới có hệ thống...",
+          "REVIEW": "VD: Ôn lại phần dễ sai, vá lỗ hổng kiến thức và tự tin hơn trước kỳ kiểm tra...",
+          "MOCK_TEST": "VD: Luyện theo format đề thật, giữ nhịp làm bài ổn định và quen áp lực thời gian..."
+        },
         "strongAreas": "VD: đọc hiểu nhanh, ghi nhớ tốt, nền tảng coding khá...",
         "weakAreas": "VD: ngữ pháp, phân bổ thời gian, câu hỏi vận dụng cao...",
         "publicExamSearch": "Tìm theo tên kỳ thi như IELTS, TOEIC, JLPT...",

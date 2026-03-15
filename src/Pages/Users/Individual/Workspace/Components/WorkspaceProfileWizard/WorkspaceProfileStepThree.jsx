@@ -1,13 +1,9 @@
 import React from 'react';
 import {
-  CalendarClock,
   Clock3,
   Gauge,
   LayoutPanelTop,
-  Loader2,
   ShieldCheck,
-  Sparkles,
-  Target,
   TimerReset,
   TrendingUp,
 } from 'lucide-react';
@@ -51,14 +47,8 @@ function WorkspaceProfileStepThree({
   values,
   errors,
   selectedExam,
-  improvementStatus,
-  improvementOptions,
-  useCustomTargetScore,
   disabled = false,
   onFieldChange,
-  onToggleImprovement,
-  onTargetScoreSuggestion,
-  onEnableCustomTargetScore,
 }) {
   const inputClass = cn(
     'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all',
@@ -70,9 +60,7 @@ function WorkspaceProfileStepThree({
     ? 'border-white/10 bg-white/[0.04] text-white'
     : 'border-slate-200 bg-white text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
-  const showImprovement = values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST';
   const showRoadmap = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
-  const targetScoreSuggestions = selectedExam?.scoreSuggestions || [];
 
   return (
     <div className="space-y-6">
@@ -112,59 +100,6 @@ function WorkspaceProfileStepThree({
           </div>
         </div>
       </section>
-
-      {showImprovement ? (
-        <section className={cn('rounded-[28px] border p-5 sm:p-6', cardClass)}>
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                isDarkMode ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-600'
-              )}
-            >
-              {improvementStatus === 'loading' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">
-                {t('workspace.profileConfig.stepThree.improvementTitle')}
-                <span className="ml-1 text-red-500">*</span>
-              </h3>
-              <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
-                {t('workspace.profileConfig.stepThree.improvementDescription')}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            {improvementOptions.map((option) => {
-              const active = values.improvementFocus.includes(option);
-
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => onToggleImprovement(option)}
-                  className={cn(
-                    'rounded-full border px-4 py-2 text-sm transition-all',
-                    active
-                      ? isDarkMode
-                        ? 'border-transparent bg-amber-400 text-slate-950'
-                        : 'border-transparent bg-amber-500 text-white'
-                      : isDarkMode
-                        ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:border-amber-300/40'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-amber-300'
-                  )}
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-
-          {errors.improvementFocus ? <p className="mt-3 text-sm font-medium text-red-400">{errors.improvementFocus}</p> : null}
-        </section>
-      ) : null}
 
       {showRoadmap ? (
         <section className={cn('rounded-[28px] border p-5 sm:p-6', cardClass)}>
@@ -298,137 +233,6 @@ function WorkspaceProfileStepThree({
           <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{t('workspace.profileConfig.stepThree.noRoadmapDescription')}</p>
         </section>
       )}
-
-      {values.workspacePurpose === 'MOCK_TEST' ? (
-        <section className={cn('rounded-[28px] border p-5 sm:p-6', cardClass)}>
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                isDarkMode ? 'bg-fuchsia-500/15 text-fuchsia-300' : 'bg-fuchsia-50 text-fuchsia-600'
-              )}
-            >
-              <Target className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">{t('workspace.profileConfig.stepThree.mockGoalTitle')}</h3>
-              <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{t('workspace.profileConfig.stepThree.mockGoalDescription')}</p>
-            </div>
-          </div>
-
-          {values.mockExamMode === 'PUBLIC' ? (
-            <div className="mt-6">
-              <FieldBlock label={t('workspace.profileConfig.fields.targetScore')} error={errors.targetScore} required>
-                <div className="flex flex-wrap gap-2">
-                  {targetScoreSuggestions.map((score) => {
-                    const active = values.targetScore === score && !useCustomTargetScore;
-
-                    return (
-                      <button
-                        key={score}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => onTargetScoreSuggestion(score)}
-                        className={cn(
-                          'rounded-full border px-4 py-2 text-sm transition-all',
-                          active
-                            ? isDarkMode
-                              ? 'border-transparent bg-fuchsia-400 text-slate-950'
-                              : 'border-transparent bg-fuchsia-600 text-white'
-                            : isDarkMode
-                              ? 'border-slate-700 bg-slate-900/80 text-slate-200'
-                              : 'border-slate-200 bg-slate-50 text-slate-700'
-                        )}
-                      >
-                        {score}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={onEnableCustomTargetScore}
-                    className={cn(
-                      'rounded-full border px-4 py-2 text-sm transition-all',
-                      useCustomTargetScore
-                        ? isDarkMode
-                          ? 'border-transparent bg-slate-100 text-slate-950'
-                          : 'border-transparent bg-slate-900 text-white'
-                        : isDarkMode
-                          ? 'border-slate-700 bg-slate-900/80 text-slate-200'
-                          : 'border-slate-200 bg-slate-50 text-slate-700'
-                    )}
-                  >
-                    {t('workspace.profileConfig.actions.customTargetScore')}
-                  </button>
-                </div>
-
-                {useCustomTargetScore ? (
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <FieldBlock label={t('workspace.profileConfig.fields.customTargetScore')} error={errors.targetScore} required>
-                      <input
-                        type="text"
-                        value={values.targetScore}
-                        disabled={disabled}
-                        onChange={(event) => onFieldChange('targetScore', event.target.value)}
-                        placeholder={t('workspace.profileConfig.placeholders.customTargetScore')}
-                        className={inputClass}
-                      />
-                    </FieldBlock>
-
-                    <FieldBlock label={t('workspace.profileConfig.fields.targetScoreScale')}>
-                      <input type="text" value={selectedExam?.scoreScale || values.targetScoreScale} disabled className={inputClass} />
-                    </FieldBlock>
-                  </div>
-                ) : (
-                  <p className={cn('mt-3 text-xs leading-5', mutedClass)}>
-                    {selectedExam?.scoreScale}
-                  </p>
-                )}
-              </FieldBlock>
-            </div>
-          ) : (
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <FieldBlock label={t('workspace.profileConfig.fields.targetScore')} error={errors.targetScore} required>
-                <input
-                  type="text"
-                  value={values.targetScore}
-                  disabled={disabled}
-                  onChange={(event) => onFieldChange('targetScore', event.target.value)}
-                  placeholder={t('workspace.profileConfig.placeholders.customTargetScore')}
-                  className={inputClass}
-                />
-              </FieldBlock>
-
-              <FieldBlock label={t('workspace.profileConfig.fields.targetScoreScale')} error={errors.targetScoreScale} required>
-                <input
-                  type="text"
-                  value={values.targetScoreScale}
-                  disabled={disabled}
-                  onChange={(event) => onFieldChange('targetScoreScale', event.target.value)}
-                  placeholder={t('workspace.profileConfig.placeholders.targetScoreScale')}
-                  className={inputClass}
-                />
-              </FieldBlock>
-            </div>
-          )}
-
-          <div className="mt-4">
-            <FieldBlock label={t('workspace.profileConfig.fields.expectedExamDate')} error={errors.expectedExamDate} required>
-              <div className="relative">
-                <CalendarClock className={cn('pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2', mutedClass)} />
-                <input
-                  type="date"
-                  value={values.expectedExamDate}
-                  disabled={disabled}
-                  onChange={(event) => onFieldChange('expectedExamDate', event.target.value)}
-                  className={cn(inputClass, 'pl-11')}
-                />
-              </div>
-            </FieldBlock>
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

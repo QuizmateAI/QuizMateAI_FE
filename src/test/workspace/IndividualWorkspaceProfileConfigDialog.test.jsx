@@ -56,6 +56,10 @@ function getPrimaryDomainDisplay() {
   return screen.getByLabelText(i18n.t('workspace.profileConfig.fields.primaryDomain'));
 }
 
+function getLearningGoalPlaceholder(purpose) {
+  return i18n.t(`workspace.profileConfig.placeholders.learningGoalByPurpose.${purpose}`);
+}
+
 async function finishKnowledgeAnalysis(knowledgeText, expectedDomainText) {
   fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput')), {
     target: { value: knowledgeText },
@@ -90,7 +94,10 @@ async function moveToStepTwo({
     clickButtonByText(roadmapChoiceText);
   }
 
-  fireEvent.click(getFooterPrimaryButton());
+  await act(async () => {
+    fireEvent.click(getFooterPrimaryButton());
+    await Promise.resolve();
+  });
   expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
 }
 
@@ -107,7 +114,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
   });
 
   it('renders the STUDY_NEW fields on step 2 only', async () => {
-    renderDialog();
+    const { onSave } = renderDialog();
 
     expect(getPurposeButtons()).toHaveLength(3);
 
@@ -118,10 +125,20 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.learningGoal'))).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW'))).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas'))).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas'))).not.toBeInTheDocument();
     expect(screen.queryByText(i18n.t('workspace.profileConfig.stepTwo.mockTestTitle'))).not.toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenNthCalledWith(
+      1,
+      1,
+      expect.objectContaining({
+        workspacePurpose: 'STUDY_NEW',
+        knowledgeInput: 'React hooks nang cao',
+        inferredDomain: 'React',
+      })
+    );
   });
 
   it('shows the knowledge description nudge when the input is too generic', async () => {
@@ -134,19 +151,25 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
 
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepOne.knowledgeNudgeTitle'))).toBeInTheDocument();
 
-    fireEvent.click(getFooterPrimaryButton());
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+    });
     expect(screen.getByText(i18n.t('workspace.profileConfig.validation.knowledgeDescriptionRequired'))).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeDescription')), {
       target: { value: 'On tieng Anh giao tiep cho cong viec voi trong tam nghe noi.' },
     });
-    fireEvent.click(getFooterPrimaryButton());
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+    });
 
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
   });
 
   it('switches correctly between public and private exam UI for MOCK_TEST', async () => {
-    renderDialog();
+    const { onSave } = renderDialog();
 
     await moveToStepTwo({
       purposeText: i18n.t('workspace.profileConfig.purpose.MOCK_TEST.title'),
@@ -177,9 +200,31 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
         screen.getByText((content) => normalizeText(content).includes('ielts academic') && normalizeText(content).includes('template'))
       ).toBeInTheDocument();
     });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'IELTS 6.0' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('MOCK_TEST')), {
+      target: { value: 'On dinh writing va giu toc do lam bai.' },
+    });
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.improvementTitle'))).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.mockGoalTitle'))).not.toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({
+      workspacePurpose: 'MOCK_TEST',
+      mockExamMode: 'PUBLIC',
+      mockExamCatalogId: 'ielts',
+      currentLevel: 'IELTS 6.0',
+      learningGoal: 'On dinh writing va giu toc do lam bai.',
+    }));
   });
 
-  it('submits the new payload with legacy mirrors and hides roadmap setup when review skips roadmap', async () => {
+  it('saves each step separately and hides roadmap setup when review skips roadmap', async () => {
     const { onSave } = renderDialog();
 
     await moveToStepTwo({
@@ -192,7 +237,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
       target: { value: 'Mat goc xac suat' },
     });
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.learningGoal')), {
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW')), {
       target: { value: 'Thi cuoi ky dat toi thieu 8 diem' },
     });
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
@@ -201,28 +246,46 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
       target: { value: 'Cong thuc to hop, xac suat co dieu kien' },
     });
-    fireEvent.click(getFooterPrimaryButton());
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+    });
 
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.noRoadmapTitle'))).toBeInTheDocument();
     expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
 
     await act(async () => {
-      vi.advanceTimersByTime(800);
-    });
-
-    await act(async () => {
-      expect(findButtonByText('Cong thuc to hop')).toBeTruthy();
-    });
-
-    clickButtonByText('Cong thuc to hop');
-    fireEvent.click(getFooterPrimaryButton());
-
-    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
       await Promise.resolve();
     });
-    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledTimes(3);
 
-    expect(onSave).toHaveBeenCalledWith(
+    expect(onSave).toHaveBeenNthCalledWith(
+      1,
+      1,
+      expect.objectContaining({
+        workspacePurpose: 'REVIEW',
+        knowledgeInput: 'xac suat thong ke co ban',
+        inferredDomain: 'Probability & Statistics',
+        enableRoadmap: false,
+      })
+    );
+
+    expect(onSave).toHaveBeenNthCalledWith(
+      2,
+      2,
+      expect.objectContaining({
+        workspacePurpose: 'REVIEW',
+        currentLevel: 'Mat goc xac suat',
+        learningGoal: 'Thi cuoi ky dat toi thieu 8 diem',
+        strongAreas: 'Lam bai can than',
+        weakAreas: 'Cong thuc to hop, xac suat co dieu kien',
+      })
+    );
+
+    expect(onSave).toHaveBeenNthCalledWith(
+      3,
+      3,
       expect.objectContaining({
         workspacePurpose: 'REVIEW',
         knowledgeInput: 'xac suat thong ke co ban',
@@ -232,7 +295,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
         learningGoal: 'Thi cuoi ky dat toi thieu 8 diem',
         strongAreas: 'Lam bai can than',
         weakAreas: 'Cong thuc to hop, xac suat co dieu kien',
-        improvementFocus: expect.arrayContaining(['Cong thuc to hop']),
+        improvementFocus: [],
         adaptationMode: null,
         roadmapSpeedMode: null,
         estimatedTotalDays: null,
@@ -267,5 +330,23 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(getPrimaryDomainDisplay()).toHaveTextContent('JLPT N1');
     expect(screen.queryByRole('textbox', { name: i18n.t('workspace.profileConfig.fields.primaryDomain') })).not.toBeInTheDocument();
     expect(screen.getAllByText(i18n.t('workspace.profileConfig.stepOne.primaryDomainLockedHint')).length).toBeGreaterThan(0);
+  });
+
+  it('resumes at step 2 when the server already saved BASIC_DONE', async () => {
+    renderDialog({
+      initialData: {
+        profileStatus: 'BASIC_DONE',
+        learningMode: 'REVIEW',
+        knowledge: 'xac suat thong ke co ban',
+        domain: 'Probability & Statistics',
+        roadmapEnabled: false,
+      },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(700);
+    });
+
+    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
   });
 });

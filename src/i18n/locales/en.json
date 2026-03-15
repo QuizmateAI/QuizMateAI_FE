@@ -912,6 +912,11 @@
         "primaryDomain": "Primary domain",
         "currentLevel": "Current level",
         "learningGoal": "Learning goal",
+        "learningGoalByPurpose": {
+          "STUDY_NEW": "Learning goal",
+          "REVIEW": "Review goal",
+          "MOCK_TEST": "Mock-test goal"
+        },
         "strongAreas": "Strengths",
         "weakAreas": "Weaknesses",
         "mockExamMode": "Exam type",
@@ -937,6 +942,11 @@
         "primaryDomain": "The main domain will be filled from the AI suggestion you choose...",
         "currentLevel": "Examples: IELTS 5.5, comfortable with basic React, grade 11 math...",
         "learningGoal": "Examples: Reach IELTS 7.0 in three months, master probability for the final exam...",
+        "learningGoalByPurpose": {
+          "STUDY_NEW": "Example: Build a solid React foundation and complete a first practical project...",
+          "REVIEW": "Example: Review the weak chapters and recover enough confidence for the final exam...",
+          "MOCK_TEST": "Example: Practice under real exam pressure and stabilize performance before the test..."
+        },
         "strongAreas": "Examples: fast reading, strong memory, solid coding fundamentals...",
         "weakAreas": "Examples: grammar, time management, higher-order questions...",
         "publicExamSearch": "Search by exam name such as IELTS, TOEIC, JLPT...",
