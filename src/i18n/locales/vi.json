@@ -817,6 +817,9 @@
         "next": "Tiếp tục",
         "finish": "Hoàn thành",
         "saving": "Đang lưu...",
+        "uploadAndContinue": "Tải lên và tiếp tục",
+        "uploading": "Đang tải lên...",
+        "generatingTemplate": "Template đang được tạo...",
         "generateTemplate": "Tạo xem trước bản mẫu thi thử",
         "customTargetScore": "Tự nhập điểm"
       },
@@ -887,8 +890,14 @@
         "title": "Mô tả trạng thái hiện tại của bạn",
         "description": "Điền đủ bối cảnh để các gợi ý ở bước cuối sát hơn với năng lực hiện tại và mục tiêu của bạn.",
         "mockTestTitle": "Thiết lập kỳ thi và bản mẫu mock test",
-        "mockTestDescription": "Chọn kỳ thi công khai hoặc riêng tư, sau đó nhập prompt và thông số để Quizmate AI dựng template đề.",
+        "mockTestDescription": "Chọn kỳ thi công khai hoặc riêng tư. Với kỳ thi công khai, Quizmate AI sẽ hiển thị ngay template tham khảo theo format công khai của kỳ thi.",
         "noPublicExam": "Không tìm thấy kỳ thi công khai phù hợp với từ khóa hiện tại.",
+        "publicTemplateTitle": "Template công khai của kỳ thi",
+        "publicTemplateDescription": "Quizmate AI hiển thị sẵn cấu trúc công khai của kỳ thi để bạn xem bố cục thật trước khi tạo mock test.",
+        "supportNoticeTitle": "Giới hạn hỗ trợ hiện tại của Quizmate AI",
+        "supportNoticeDescription": "Quizmate AI hiện chỉ hỗ trợ tốt các phần trắc nghiệm. Các phần Writing và Listening hiện chưa được hỗ trợ đầy đủ, nên template bên dưới chủ yếu dùng để bạn tham khảo cấu trúc đề công khai.",
+        "supportedSection": "Được hỗ trợ",
+        "unsupportedSection": "Chưa hỗ trợ",
         "templateTitle": "Prompt tạo bản mẫu",
         "templateDescription": "Bạn có thể mô tả yêu cầu riêng rồi tạo preview template ngay trong giao diện này."
       },
@@ -903,6 +912,15 @@
         "noRoadmapDescription": "Wizard vẫn lưu mục tiêu, phần cần cải thiện và thông tin mock test của bạn.",
         "mockGoalTitle": "Mục tiêu điểm số và ngày thi",
         "mockGoalDescription": "Chọn điểm mục tiêu AI gợi ý cho kỳ thi public hoặc tự nhập nếu đây là kỳ thi riêng tư."
+      },
+      "messages": {
+        "mockTemplateGenerating": "Template đang được tạo. Hệ thống sẽ tự chuyển sang bước tiếp theo khi hoàn tất.",
+        "mockTemplateReady": "Template đã được tạo xong. Bạn có thể tiếp tục sang bước tiếp theo.",
+        "mockTemplateStatusError": "Không thể kiểm tra trạng thái tạo template lúc này. Vui lòng thử lại sau ít phút.",
+        "mockTemplateAwaitingBackend": "Đang chờ backend xác nhận hoàn tất template. Đã chờ {{seconds}} giây.",
+        "mockTemplateLongWait": "Backend vẫn đang xử lý template. Đã chờ {{seconds}} giây. Nếu quá lâu, hãy kiểm tra lại trạng thái.",
+        "mockTemplateAwaitingBackendShort": "Đang xác nhận",
+        "backgroundMockTestReady": "Mock test đã được tạo xong ở nền. Bạn có thể mở mục Mock test để xem ngay."
       },
       "fields": {
         "workspacePurpose": "Mục đích sử dụng",
@@ -964,6 +982,12 @@
         "SECTION_BASED": "Theo từng section",
         "PRACTICE_SET": "Bộ luyện tập trọng tâm"
       },
+      "publicTemplateMeta": {
+        "duration": "Thời lượng",
+        "questions": "Số câu / tác vụ",
+        "scoring": "Cách tính điểm",
+        "support": "Quizmate AI hỗ trợ"
+      },
       "adaptationMode": {
         "FLEXIBLE": {
           "title": "Linh hoạt",
@@ -999,6 +1023,8 @@
         "knowledgeDescriptionRequired": "Vui lòng mô tả rõ hơn knowledge đang học.",
         "currentLevelRequired": "Vui lòng nhập trình độ hiện tại.",
         "learningGoalRequired": "Vui lòng nhập mục tiêu học tập.",
+        "strongAreasRequired": "Vui lòng nhập điểm mạnh của bạn.",
+        "weakAreasRequired": "Vui lòng nhập điểm yếu của bạn.",
         "mockExamModeRequired": "Vui lòng chọn loại kỳ thi.",
         "publicExamRequired": "Vui lòng chọn một kỳ thi public.",
         "privateExamRequired": "Vui lòng nhập tên kỳ thi private.",

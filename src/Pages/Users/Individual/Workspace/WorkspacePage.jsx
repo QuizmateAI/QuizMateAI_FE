@@ -7,6 +7,7 @@ import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
 import UploadSourceDialog from "@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog";
 import IndividualWorkspaceProfileConfigDialog from "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog";
+import IndividualWorkspaceProfileOverviewDialog from "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog";
 import { Globe, Moon, Settings, Sun, UserCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -31,6 +32,36 @@ function extractProfileData(response) {
 	return response?.data?.data || response?.data || response || null;
 }
 
+function translateOrFallbackWithOptions(t, key, options, fallback) {
+	const translated = t(key, options);
+	return translated === key ? fallback : translated;
+}
+
+function getProfilePurpose(profileData) {
+	return profileData?.workspacePurpose || profileData?.learningMode || "";
+}
+
+function isMockTestGenerationInProgress(profileData) {
+	if (getProfilePurpose(profileData) !== "MOCK_TEST") return false;
+
+	const profileStatus = profileData?.profileStatus;
+	if (profileStatus === "PERSONAL_INFO_DONE" || profileStatus === "DONE") {
+		return false;
+	}
+
+	return Boolean(
+		profileData?.currentLevel
+		|| profileData?.learningGoal
+		|| profileData?.mockExamName
+		|| profileData?.examName
+		|| profileData?.templatePrompt
+	);
+}
+
+function shouldKeepProfileWizardClosed(profileData, storedMockTestGeneration) {
+	return isMockTestGenerationInProgress(profileData) && Boolean(storedMockTestGeneration?.shouldCloseAfterStart);
+}
+
 function translateOrFallback(t, key, fallback) {
 	const translated = t(key);
 	return translated === key ? fallback : translated;
@@ -53,11 +84,25 @@ function WorkspacePage() {
 	const settingsRef = useRef(null);
 
 	const openProfileConfig = location.state?.openProfileConfig || false;
-	const [profileConfigOpen, setProfileConfigOpen] = useState(openProfileConfig);
+	const [profileConfigOpen, setProfileConfigOpen] = useState(false);
+	const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
 	const [isProfileConfigured, setIsProfileConfigured] = useState(false);
 	const [workspaceProfile, setWorkspaceProfile] = useState(null);
+	const [mockTestGenerationState, setMockTestGenerationState] = useState("idle");
+	const [mockTestGenerationMessage, setMockTestGenerationMessage] = useState("");
+	const [mockTestGenerationProgress, setMockTestGenerationProgress] = useState(0);
+	const [mockTestGenerationStartedAt, setMockTestGenerationStartedAt] = useState(null);
+	const [mockTestGenerationElapsedSeconds, setMockTestGenerationElapsedSeconds] = useState(0);
 
 	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace } = useWorkspace();
+	const isMountedRef = useRef(true);
+	const mockTestPollingActiveRef = useRef(false);
+	const mockTestPollingRunRef = useRef(0);
+	const mockTestProgressTimerRef = useRef(null);
+	const mockTestElapsedTimerRef = useRef(null);
+	const mockTestAutoFinalizePayloadRef = useRef(null);
+	const mockTestShouldCloseAfterStartRef = useRef(false);
+	const mockTestGenerationStorageKey = workspaceId ? `workspace_${workspaceId}_mockTestGeneration` : null;
 
 	// State quáº£n lÃ½ tÃ i liá»‡u (sources) â€” mock data, sáº½ káº¿t ná»‘i API sau
 	const [sources, setSources] = useState([]);
@@ -108,6 +153,328 @@ function WorkspacePage() {
 
 	const currentLang = i18n.language;
 	const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
+
+	const getMockTestGeneratingMessage = useCallback(() => {
+		return translateOrFallback(
+			t,
+			"workspace.profileConfig.messages.mockTemplateGenerating",
+			"Template đang được tạo. Hệ thống sẽ tự chuyển sang bước tiếp theo khi hoàn tất."
+		);
+	}, [t]);
+
+	const getMockTestReadyMessage = useCallback(() => {
+		return translateOrFallback(
+			t,
+			"workspace.profileConfig.messages.mockTemplateReady",
+			"Template đã được tạo xong. Bạn có thể tiếp tục sang bước tiếp theo."
+		);
+	}, [t]);
+
+	const getMockTestStatusErrorMessage = useCallback(() => {
+		return translateOrFallback(
+			t,
+			"workspace.profileConfig.messages.mockTemplateStatusError",
+			"Không thể kiểm tra trạng thái tạo template lúc này. Vui lòng thử lại sau ít phút."
+		);
+	}, [t]);
+
+	const readStoredMockTestGeneration = useCallback(() => {
+		if (!mockTestGenerationStorageKey || typeof window === "undefined") return null;
+
+		try {
+			const rawValue = window.sessionStorage.getItem(mockTestGenerationStorageKey);
+			return rawValue ? JSON.parse(rawValue) : null;
+		} catch {
+			return null;
+		}
+	}, [mockTestGenerationStorageKey]);
+
+	const getMockTestAwaitingBackendMessage = useCallback((elapsedSeconds = 0) => {
+		const safeSeconds = Math.max(1, Number(elapsedSeconds) || 1);
+		return translateOrFallbackWithOptions(
+			t,
+			"workspace.profileConfig.messages.mockTemplateAwaitingBackend",
+			{ seconds: safeSeconds },
+			`Đang chờ backend xác nhận hoàn tất template. Đã chờ ${safeSeconds} giây.`
+		);
+	}, [t]);
+
+	const getMockTestLongWaitMessage = useCallback((elapsedSeconds = 0) => {
+		const safeSeconds = Math.max(1, Number(elapsedSeconds) || 1);
+		return translateOrFallbackWithOptions(
+			t,
+			"workspace.profileConfig.messages.mockTemplateLongWait",
+			{ seconds: safeSeconds },
+			`Backend vẫn đang xử lý template. Đã chờ ${safeSeconds} giây. Nếu quá lâu, hãy kiểm tra lại trạng thái.`
+		);
+	}, [t]);
+
+	const resetMockTestGenerationStatus = useCallback(() => {
+		mockTestPollingRunRef.current += 1;
+		mockTestPollingActiveRef.current = false;
+		mockTestShouldCloseAfterStartRef.current = false;
+		mockTestAutoFinalizePayloadRef.current = null;
+		if (mockTestProgressTimerRef.current) {
+			clearInterval(mockTestProgressTimerRef.current);
+			mockTestProgressTimerRef.current = null;
+		}
+		setMockTestGenerationState("idle");
+		setMockTestGenerationMessage("");
+		setMockTestGenerationProgress(0);
+		setMockTestGenerationStartedAt(null);
+		setMockTestGenerationElapsedSeconds(0);
+		if (mockTestGenerationStorageKey && typeof window !== "undefined") {
+			window.sessionStorage.removeItem(mockTestGenerationStorageKey);
+		}
+	}, [mockTestGenerationStorageKey]);
+
+	useEffect(() => {
+		if (mockTestGenerationState !== "pending") {
+			if (mockTestProgressTimerRef.current) {
+				clearInterval(mockTestProgressTimerRef.current);
+				mockTestProgressTimerRef.current = null;
+			}
+			if (mockTestGenerationState === "ready") {
+				setMockTestGenerationProgress(100);
+			}
+			return;
+		}
+
+		if (mockTestProgressTimerRef.current) {
+			clearInterval(mockTestProgressTimerRef.current);
+		}
+
+		setMockTestGenerationProgress((current) => (current > 0 ? current : 12));
+		mockTestProgressTimerRef.current = globalThis.setInterval(() => {
+			setMockTestGenerationProgress((current) => {
+				if (current >= 92) return current;
+				if (current < 40) return Math.min(92, current + 11);
+				if (current < 70) return Math.min(92, current + 7);
+				return Math.min(92, current + 3);
+			});
+		}, 450);
+
+		return () => {
+			if (mockTestProgressTimerRef.current) {
+				clearInterval(mockTestProgressTimerRef.current);
+				mockTestProgressTimerRef.current = null;
+			}
+		};
+	}, [mockTestGenerationState]);
+
+	useEffect(() => {
+		if (mockTestGenerationState !== "pending" || !mockTestGenerationStartedAt) {
+			if (mockTestElapsedTimerRef.current) {
+				clearInterval(mockTestElapsedTimerRef.current);
+				mockTestElapsedTimerRef.current = null;
+			}
+			return;
+		}
+
+		setMockTestGenerationElapsedSeconds(Math.max(0, Math.floor((Date.now() - mockTestGenerationStartedAt) / 1000)));
+		mockTestElapsedTimerRef.current = globalThis.setInterval(() => {
+			setMockTestGenerationElapsedSeconds(Math.max(0, Math.floor((Date.now() - mockTestGenerationStartedAt) / 1000)));
+		}, 1000);
+
+		return () => {
+			if (mockTestElapsedTimerRef.current) {
+				clearInterval(mockTestElapsedTimerRef.current);
+				mockTestElapsedTimerRef.current = null;
+			}
+		};
+	}, [mockTestGenerationStartedAt, mockTestGenerationState]);
+
+	useEffect(() => {
+		if (!mockTestGenerationStorageKey || typeof window === "undefined") return;
+
+		if (mockTestGenerationState === "idle") {
+			window.sessionStorage.removeItem(mockTestGenerationStorageKey);
+			return;
+		}
+
+		window.sessionStorage.setItem(
+			mockTestGenerationStorageKey,
+			JSON.stringify({
+				state: mockTestGenerationState,
+				message: mockTestGenerationMessage,
+				progress: mockTestGenerationProgress,
+				startedAt: mockTestGenerationStartedAt,
+				shouldCloseAfterStart: mockTestShouldCloseAfterStartRef.current,
+				autoFinalizePayload: mockTestAutoFinalizePayloadRef.current,
+			})
+		);
+	}, [
+		mockTestGenerationMessage,
+		mockTestGenerationProgress,
+		mockTestGenerationStartedAt,
+		mockTestGenerationState,
+		mockTestGenerationStorageKey,
+	]);
+
+	const finalizeBackgroundMockTestProfile = useCallback(async () => {
+		if (!workspaceId || !mockTestAutoFinalizePayloadRef.current) return null;
+
+		const finalizedProfile = extractProfileData(
+			await saveIndividualWorkspaceRoadmapConfigStep(workspaceId, mockTestAutoFinalizePayloadRef.current)
+		);
+
+		if (finalizedProfile) {
+			setWorkspaceProfile(finalizedProfile);
+			setIsProfileConfigured(isProfileOnboardingDone(finalizedProfile));
+		}
+
+		mockTestShouldCloseAfterStartRef.current = false;
+		mockTestAutoFinalizePayloadRef.current = null;
+		setMockTestGenerationProgress(100);
+		setProfileConfigOpen(false);
+		setProfileOverviewOpen(false);
+		fetchWorkspaceDetail(workspaceId).catch(() => {});
+		showSuccess(
+			translateOrFallback(
+				t,
+				"workspace.profileConfig.messages.backgroundMockTestReady",
+				"Mock test đã được tạo xong ở nền. Bạn có thể mở mục Mock test để xem ngay."
+			)
+		);
+		navigate(`/workspace/${workspaceId}`, { replace: true });
+		return finalizedProfile;
+	}, [workspaceId, fetchWorkspaceDetail, navigate, showSuccess, t]);
+
+	const startMockTestGenerationPolling = useCallback(async () => {
+		if (!workspaceId || mockTestPollingActiveRef.current) return;
+
+		const runId = mockTestPollingRunRef.current + 1;
+		mockTestPollingRunRef.current = runId;
+		mockTestPollingActiveRef.current = true;
+		let consecutiveFailures = 0;
+
+		try {
+			while (isMountedRef.current && mockTestPollingRunRef.current === runId) {
+				try {
+					const profileResponse = await getIndividualWorkspaceProfile(workspaceId);
+					if (!isMountedRef.current || mockTestPollingRunRef.current !== runId) {
+						return;
+					}
+
+					consecutiveFailures = 0;
+					const profileData = extractProfileData(profileResponse);
+
+					if (profileData) {
+						setWorkspaceProfile(profileData);
+						setIsProfileConfigured(isProfileOnboardingDone(profileData));
+					}
+
+					if (profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") {
+						setMockTestGenerationProgress(100);
+						setMockTestGenerationState("ready");
+						setMockTestGenerationMessage(getMockTestReadyMessage());
+
+						if (mockTestShouldCloseAfterStartRef.current && mockTestAutoFinalizePayloadRef.current) {
+							await finalizeBackgroundMockTestProfile();
+						}
+
+						fetchWorkspaceDetail(workspaceId).catch(() => {});
+						return;
+					}
+				} catch (error) {
+					consecutiveFailures += 1;
+
+					if (consecutiveFailures >= 3) {
+						console.error("Failed to poll mock test generation status:", error);
+						if (isMountedRef.current && mockTestPollingRunRef.current === runId) {
+							setMockTestGenerationState("error");
+							setMockTestGenerationMessage(error?.message || getMockTestStatusErrorMessage());
+						}
+						return;
+					}
+				}
+
+				await delay(1500);
+			}
+		} finally {
+			if (mockTestPollingRunRef.current === runId) {
+				mockTestPollingActiveRef.current = false;
+			}
+		}
+	}, [workspaceId, fetchWorkspaceDetail, finalizeBackgroundMockTestProfile, getMockTestReadyMessage, getMockTestStatusErrorMessage]);
+
+	useEffect(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+			mockTestPollingRunRef.current += 1;
+			mockTestPollingActiveRef.current = false;
+			if (mockTestProgressTimerRef.current) {
+				clearInterval(mockTestProgressTimerRef.current);
+				mockTestProgressTimerRef.current = null;
+			}
+			if (mockTestElapsedTimerRef.current) {
+				clearInterval(mockTestElapsedTimerRef.current);
+				mockTestElapsedTimerRef.current = null;
+			}
+		};
+	}, []);
+
+	useEffect(() => {
+		resetMockTestGenerationStatus();
+	}, [workspaceId, resetMockTestGenerationStatus]);
+
+	const isMockTestAwaitingBackend = mockTestGenerationState === "pending" && mockTestGenerationProgress >= 92;
+	const isMockTestTakingLongerThanExpected = isMockTestAwaitingBackend && mockTestGenerationElapsedSeconds >= 20;
+	const mockTestGenerationDisplayMessage = mockTestGenerationState === "pending"
+		? isMockTestTakingLongerThanExpected
+			? getMockTestLongWaitMessage(mockTestGenerationElapsedSeconds)
+			: isMockTestAwaitingBackend
+				? getMockTestAwaitingBackendMessage(mockTestGenerationElapsedSeconds)
+				: mockTestGenerationMessage
+		: mockTestGenerationMessage;
+	const mockTestGenerationDisplayLabel = mockTestGenerationState === "pending" && isMockTestAwaitingBackend
+		? translateOrFallback(
+			t,
+			"workspace.profileConfig.messages.mockTemplateAwaitingBackendShort",
+			"Đang xác nhận"
+		)
+		: `${Math.max(0, Math.min(100, Number(mockTestGenerationProgress) || 0))}%`;
+
+	const checkMockTestGenerationStatusNow = useCallback(async () => {
+		if (!workspaceId || mockTestGenerationState !== "pending") return;
+
+		try {
+			const profileResponse = await getIndividualWorkspaceProfile(workspaceId);
+			const profileData = extractProfileData(profileResponse);
+			if (profileData) {
+				setWorkspaceProfile(profileData);
+				setIsProfileConfigured(isProfileOnboardingDone(profileData));
+			}
+
+			if (profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") {
+				setMockTestGenerationProgress(100);
+				setMockTestGenerationState("ready");
+				setMockTestGenerationMessage(getMockTestReadyMessage());
+				if (mockTestShouldCloseAfterStartRef.current && mockTestAutoFinalizePayloadRef.current) {
+					await finalizeBackgroundMockTestProfile();
+				}
+				return;
+			}
+
+			if (mockTestGenerationProgress >= 92) {
+				setMockTestGenerationMessage(getMockTestAwaitingBackendMessage(mockTestGenerationElapsedSeconds));
+			}
+		} catch (error) {
+			console.error("Failed to manually check mock test status:", error);
+			setMockTestGenerationState("error");
+			setMockTestGenerationMessage(error?.message || getMockTestStatusErrorMessage());
+		}
+	}, [
+		finalizeBackgroundMockTestProfile,
+		getMockTestAwaitingBackendMessage,
+		getMockTestReadyMessage,
+		getMockTestStatusErrorMessage,
+		mockTestGenerationElapsedSeconds,
+		mockTestGenerationProgress,
+		mockTestGenerationState,
+		workspaceId,
+	]);
 
 	const toggleLanguage = () => {
 		const newLang = currentLang === "vi" ? "en" : "vi";
@@ -180,15 +547,56 @@ function WorkspacePage() {
 				// Hiá»‡n táº¡i: chá»‰ cáº§n cÃ³ learningGoal (báº¯t buá»™c) lÃ  coi nhÆ° Ä‘Ã£ cáº¥u hÃ¬nh
 				const profileData = profileRes?.data?.data || profileRes?.data || null;
 				const isConfigured = isProfileOnboardingDone(profileData);
+				const storedMockTestGeneration = readStoredMockTestGeneration();
 
 				setIsProfileConfigured(isConfigured);
 				setWorkspaceProfile(profileData);
 
-				// Náº¿u chÆ°a cáº¥u hÃ¬nh profile, ta khÃ´ng má»Ÿ upload dialog
-				// Náº¿u Ä‘Ã£ cáº¥u hÃ¬nh rá»“i vÃ  tÃ i nguyÃªn rá»—ng, thÃ¬ má»Ÿ
-				if (isConfigured && initialSources.length === 0 && !profileConfigOpen) {
-					setUploadDialogOpen(true);
+				if (isMockTestGenerationInProgress(profileData)) {
+					mockTestShouldCloseAfterStartRef.current = Boolean(storedMockTestGeneration?.shouldCloseAfterStart);
+					mockTestAutoFinalizePayloadRef.current = storedMockTestGeneration?.autoFinalizePayload || null;
+					setMockTestGenerationStartedAt(
+						Number(storedMockTestGeneration?.startedAt) || Date.now()
+					);
+					setMockTestGenerationState("pending");
+					setMockTestGenerationMessage(getMockTestGeneratingMessage());
+					setMockTestGenerationProgress(Number(storedMockTestGeneration?.progress) || 12);
+					startMockTestGenerationPolling();
+				} else if ((profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") && storedMockTestGeneration) {
+					mockTestShouldCloseAfterStartRef.current = Boolean(storedMockTestGeneration?.shouldCloseAfterStart);
+					mockTestAutoFinalizePayloadRef.current = storedMockTestGeneration?.autoFinalizePayload || null;
+					if (mockTestShouldCloseAfterStartRef.current && mockTestAutoFinalizePayloadRef.current) {
+						await finalizeBackgroundMockTestProfile();
+						return;
+					}
+					setMockTestGenerationState("ready");
+					setMockTestGenerationMessage(getMockTestReadyMessage());
+					setMockTestGenerationProgress(100);
+				} else {
+					resetMockTestGenerationStatus();
 				}
+
+				if (shouldKeepProfileWizardClosed(profileData, storedMockTestGeneration)) {
+					setProfileOverviewOpen(false);
+					setUploadDialogOpen(false);
+					setProfileConfigOpen(false);
+					return;
+				}
+
+				if (isConfigured) {
+					setProfileConfigOpen(false);
+					if (openProfileConfig) {
+						setProfileOverviewOpen(true);
+						setUploadDialogOpen(false);
+					} else if (initialSources.length === 0) {
+						setUploadDialogOpen(true);
+					}
+					return;
+				}
+
+				setProfileOverviewOpen(false);
+				setUploadDialogOpen(false);
+				setProfileConfigOpen(true);
 			} catch (error) {
 				console.error("Failed to load initial workspace data", error);
 			}
@@ -199,13 +607,74 @@ function WorkspacePage() {
 		return () => {
 			isMounted = false;
 		};
-	}, [workspaceId, fetchSources, profileConfigOpen, fetchWorkspaceDetail]);
+	}, [
+		workspaceId,
+		fetchSources,
+		fetchWorkspaceDetail,
+		finalizeBackgroundMockTestProfile,
+		getMockTestGeneratingMessage,
+		getMockTestReadyMessage,
+		openProfileConfig,
+		readStoredMockTestGeneration,
+		resetMockTestGenerationStatus,
+		startMockTestGenerationPolling,
+	]);
 
 	// Xá»­ lÃ½ Ä‘Ã³ng/má»Ÿ profile config dialog
 	const handleProfileConfigChange = useCallback((open) => {
 		setProfileConfigOpen(open);
 		if (open) {
 			// Refetch profile khi má»Ÿ Ä‘á»ƒ luÃ´n cÃ³ dá»¯ liá»‡u má»›i nháº¥t (bao gá»“m targetLevelId)
+			getIndividualWorkspaceProfile(workspaceId)
+				.then((res) => {
+					const profileData = res?.data?.data || res?.data || res;
+					const storedMockTestGeneration = readStoredMockTestGeneration();
+					if (!profileData) return;
+
+					setWorkspaceProfile(profileData);
+					if (isMockTestGenerationInProgress(profileData)) {
+						mockTestShouldCloseAfterStartRef.current = Boolean(storedMockTestGeneration?.shouldCloseAfterStart);
+						mockTestAutoFinalizePayloadRef.current = storedMockTestGeneration?.autoFinalizePayload || null;
+						setMockTestGenerationStartedAt(
+							Number(storedMockTestGeneration?.startedAt) || Date.now()
+						);
+						setMockTestGenerationState("pending");
+						setMockTestGenerationMessage(getMockTestGeneratingMessage());
+						setMockTestGenerationProgress(Number(storedMockTestGeneration?.progress) || 12);
+						startMockTestGenerationPolling();
+					} else if ((profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") && storedMockTestGeneration) {
+						mockTestShouldCloseAfterStartRef.current = Boolean(storedMockTestGeneration?.shouldCloseAfterStart);
+						mockTestAutoFinalizePayloadRef.current = storedMockTestGeneration?.autoFinalizePayload || null;
+						if (mockTestShouldCloseAfterStartRef.current && mockTestAutoFinalizePayloadRef.current) {
+							finalizeBackgroundMockTestProfile().catch(() => {});
+							return;
+						}
+						setMockTestGenerationState("ready");
+						setMockTestGenerationMessage(getMockTestReadyMessage());
+						setMockTestGenerationProgress(100);
+					} else {
+						resetMockTestGenerationStatus();
+					}
+				})
+				.catch(() => {});
+		} else if (location.state?.openProfileConfig) {
+			navigate(`/workspace/${workspaceId}`, { replace: true });
+		}
+	}, [
+		getMockTestGeneratingMessage,
+		getMockTestReadyMessage,
+		finalizeBackgroundMockTestProfile,
+		location.state,
+		navigate,
+		readStoredMockTestGeneration,
+		resetMockTestGenerationStatus,
+		startMockTestGenerationPolling,
+		workspaceId,
+	]);
+
+	const handleProfileOverviewChange = useCallback((open) => {
+		setProfileOverviewOpen(open);
+		if (open) {
 			getIndividualWorkspaceProfile(workspaceId)
 				.then((res) => {
 					const profileData = res?.data?.data || res?.data || res;
@@ -217,33 +686,14 @@ function WorkspacePage() {
 		}
 	}, [location.state, navigate, workspaceId]);
 
-	// Xá»­ lÃ½ lÆ°u cáº¥u hÃ¬nh IndividualWorkspaceProfile
-	const waitForMockTestPersonalInfoDone = useCallback(async () => {
-		for (let attempt = 0; attempt < 30; attempt += 1) {
-			const profileResponse = await getIndividualWorkspaceProfile(workspaceId);
-			const profileData = extractProfileData(profileResponse);
-
-			if (profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") {
-				return profileData;
-			}
-
-			await delay(1500);
-		}
-
-		throw new Error(
-			translateOrFallback(
-				t,
-				"workspace.profileConfig.validation.mockTestPending",
-				"Mock test va template dang duoc tao. Vui long thu lai sau it phut."
-			)
-		);
-	}, [workspaceId, t]);
-
 	const handleSaveProfileConfig = useCallback(async (currentStep, data) => {
 		try {
 			let savedProfile = null;
 
 			if (currentStep === 1) {
+				if (data.workspacePurpose !== "MOCK_TEST") {
+					resetMockTestGenerationStatus();
+				}
 				savedProfile = extractProfileData(await saveIndividualWorkspaceBasicStep(workspaceId, data));
 				if (savedProfile) {
 					setWorkspaceProfile(savedProfile);
@@ -254,8 +704,23 @@ function WorkspacePage() {
 			if (currentStep === 2) {
 				if (data.workspacePurpose === "MOCK_TEST") {
 					await startIndividualWorkspaceMockTestPersonalInfoStep(workspaceId, data);
-					savedProfile = await waitForMockTestPersonalInfoDone();
+					const shouldCloseAfterStart = !data.enableRoadmap;
+					mockTestShouldCloseAfterStartRef.current = shouldCloseAfterStart;
+					mockTestAutoFinalizePayloadRef.current = shouldCloseAfterStart ? data : null;
+					setMockTestGenerationStartedAt(Date.now());
+					setMockTestGenerationElapsedSeconds(0);
+					setMockTestGenerationProgress(12);
+					setMockTestGenerationState("pending");
+					setMockTestGenerationMessage(getMockTestGeneratingMessage());
+					startMockTestGenerationPolling();
+					if (shouldCloseAfterStart) {
+						setProfileConfigOpen(false);
+						setProfileOverviewOpen(false);
+						navigate(`/workspace/${workspaceId}`, { replace: true });
+					}
+					return { deferred: true, advanceToStep: shouldCloseAfterStart ? null : 3 };
 				} else {
+					resetMockTestGenerationStatus();
 					savedProfile = extractProfileData(await saveIndividualWorkspacePersonalInfoStep(workspaceId, data));
 				}
 
@@ -265,11 +730,13 @@ function WorkspacePage() {
 				return savedProfile;
 			}
 
+			resetMockTestGenerationStatus();
 			savedProfile = extractProfileData(await saveIndividualWorkspaceRoadmapConfigStep(workspaceId, data));
 			if (savedProfile) {
 				setWorkspaceProfile(savedProfile);
 			}
 			setProfileConfigOpen(false);
+			setProfileOverviewOpen(false);
 			setIsProfileConfigured(isProfileOnboardingDone(savedProfile));
 			fetchWorkspaceDetail(workspaceId);
 
@@ -298,7 +765,18 @@ function WorkspacePage() {
 			);
 			throw error;
 		}
-	}, [workspaceId, waitForMockTestPersonalInfoDone, fetchWorkspaceDetail, sources, showSuccess, t, navigate, showError]);
+	}, [
+		workspaceId,
+		resetMockTestGenerationStatus,
+		getMockTestGeneratingMessage,
+		startMockTestGenerationPolling,
+		fetchWorkspaceDetail,
+		sources,
+		showSuccess,
+		t,
+		navigate,
+		showError,
+	]);
 
 	// ÄÃ³ng settings khi click ra ngoÃ i
 	useEffect(() => {
@@ -315,13 +793,12 @@ function WorkspacePage() {
 	// Xá»­ lÃ½ upload file tÃ i liá»‡u - SONG SONG Ä‘á»ƒ tÄƒng tá»‘c
 	const handleUploadFiles = useCallback(async (files) => {
         try {
-            // Upload táº¥t cáº£ files song song thay vÃ¬ tuáº§n tá»±
-            const uploadPromises = files.map(file => uploadMaterial(file, workspaceId));
+            const uploadPromises = files.map((file) => uploadMaterial(file, workspaceId));
             await Promise.all(uploadPromises);
-            // Refresh list after all uploads complete
-            fetchSources();
+            return await fetchSources();
         } catch (error) {
             console.error("Failed to upload files:", error);
+            throw error;
         }
 	}, [workspaceId, fetchSources]);
 
@@ -609,7 +1086,14 @@ function WorkspacePage() {
 						type="button"
 						onClick={() => {
 							setIsSettingsOpen(false);
+							if (isProfileConfigured) {
+								setProfileOverviewOpen(true);
+								setProfileConfigOpen(false);
+								return;
+							}
+
 							setProfileConfigOpen(true);
+							setProfileOverviewOpen(false);
 						}}
 						className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
 							isDarkMode ? "hover:bg-slate-900 border-b border-slate-800" : "hover:bg-gray-50 border-b border-gray-100"
@@ -660,6 +1144,7 @@ function WorkspacePage() {
 		if (!isProfileConfigured) {
 			// Profile chÆ°a cáº¥u hÃ¬nh Ä‘á»§, yÃªu cáº§u cáº­p nháº­t Profile trÆ°á»›c
 			setProfileConfigOpen(true);
+			setProfileOverviewOpen(false);
 		} else {
 			// Profile há»£p lá»‡, cho phÃ©p upload
 			setUploadDialogOpen(true);
@@ -680,6 +1165,72 @@ function WorkspacePage() {
 				}}
 				wsConnected={wsConnected}
 			/>
+			{mockTestGenerationState !== "idle" ? (
+				<div className="px-4 pt-4">
+					<div className={`max-w-[1740px] mx-auto rounded-2xl border px-4 py-3 ${
+						mockTestGenerationState === "ready"
+							? isDarkMode
+								? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+								: "border-emerald-200 bg-emerald-50 text-emerald-800"
+							: isMockTestTakingLongerThanExpected
+								? isDarkMode
+									? "border-amber-400/20 bg-amber-500/10 text-amber-100"
+									: "border-amber-200 bg-amber-50 text-amber-800"
+							: mockTestGenerationState === "error"
+								? isDarkMode
+									? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+									: "border-rose-200 bg-rose-50 text-rose-800"
+								: isDarkMode
+									? "border-cyan-400/20 bg-cyan-500/10 text-cyan-100"
+									: "border-cyan-200 bg-cyan-50 text-cyan-800"
+					}`}>
+						<div className="flex flex-wrap items-center justify-between gap-3">
+							<div className="min-w-0 flex-1">
+								<p className={`text-sm font-semibold ${fontClass}`}>{mockTestGenerationDisplayMessage}</p>
+								<div className={`mt-2 h-2 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-900/70" : "bg-white/80"}`}>
+									<div
+										className={`h-full rounded-full transition-all duration-500 ${
+											mockTestGenerationState === "ready"
+												? "bg-emerald-500"
+												: isMockTestAwaitingBackend
+													? "bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#22d3ee)] bg-[length:200%_100%] animate-pulse"
+												: mockTestGenerationState === "error"
+													? "bg-rose-500"
+													: "bg-cyan-500"
+										}`}
+										style={{ width: `${Math.max(0, Math.min(100, Number(mockTestGenerationProgress) || 0))}%` }}
+									/>
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								<span className={`text-xs font-semibold ${fontClass}`}>{mockTestGenerationDisplayLabel}</span>
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => {
+										if (mockTestGenerationState === "ready") {
+											resetMockTestGenerationStatus();
+											handleStudioAction("mockTest");
+											return;
+										}
+
+										if (mockTestGenerationState === "pending") {
+											checkMockTestGenerationStatusNow();
+											return;
+										}
+
+										setProfileConfigOpen(true);
+										setProfileOverviewOpen(false);
+									}}
+									className={`rounded-full ${isDarkMode ? "border-white/10 bg-slate-950/40 text-white hover:bg-slate-900" : "border-white bg-white text-slate-700 hover:bg-slate-100"}`}
+								>
+									{mockTestGenerationState === "ready" ? "Mở Mock test" : mockTestGenerationState === "pending" ? "Kiểm tra lại ngay" : "Xem trạng thái"}
+								</Button>
+							</div>
+						</div>
+					</div>
+				</div>
+			) : null}
 			<div className="flex-1 min-h-0">
 				<div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
 					{/* Layout flex vá»›i resize handles â€” kÃ©o tháº£ Ä‘á»ƒ thay Ä‘á»•i kÃ­ch thÆ°á»›c */}
@@ -786,8 +1337,22 @@ function WorkspacePage() {
 				open={profileConfigOpen}
 				onOpenChange={handleProfileConfigChange}
 				onSave={handleSaveProfileConfig}
+				onUploadFiles={handleUploadFiles}
 				isDarkMode={isDarkMode}
-				isReadOnly={isProfileOnboardingDone(workspaceProfile)}
+				uploadedMaterials={sources}
+				workspaceId={workspaceId}
+				forceStartAtStepOne={openProfileConfig && !isProfileConfigured}
+				mockTestGenerationState={mockTestGenerationState}
+				mockTestGenerationMessage={mockTestGenerationDisplayMessage}
+				mockTestGenerationProgress={mockTestGenerationProgress}
+			/>
+
+			<IndividualWorkspaceProfileOverviewDialog
+				open={profileOverviewOpen}
+				onOpenChange={handleProfileOverviewChange}
+				isDarkMode={isDarkMode}
+				profile={workspaceProfile}
+				materials={sources}
 			/>
 
 

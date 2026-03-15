@@ -1,4 +1,8 @@
 import api from './api';
+import {
+  getPublicExamById,
+  getPublicExamTemplateConfig,
+} from '@/Pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/mockProfileWizardData';
 
 const QUESTION_TYPE_SINGLE_CHOICE_ID = 1;
 const MOCK_TEST_DIFFICULTY = 'MEDIUM';
@@ -63,8 +67,40 @@ function splitQuestionsAcrossSections(totalQuestions, sectionCount) {
     .filter((count) => count > 0);
 }
 
-function buildSectionConfigs(payload, examName) {
-  const totalQuestions = Math.max(1, Number(payload.templateQuestionCount) || 60);
+function extractLeadingNumber(value) {
+  const matched = `${value || ''}`.match(/\d+/);
+  return matched ? Number(matched[0]) : 0;
+}
+
+function buildSectionConfigs(payload, examName, selectedExam) {
+  const publicTemplateConfig =
+    payload.mockExamMode === 'PUBLIC' ? getPublicExamTemplateConfig(payload, selectedExam) : null;
+  const defaultQuestionCount =
+    Number(publicTemplateConfig?.defaults?.templateQuestionCount)
+    || Number(payload.templateQuestionCount)
+    || 60;
+
+  if (publicTemplateConfig?.sections?.some((section) => section.supported)) {
+    const supportedSections = publicTemplateConfig.sections.filter((section) => section.supported);
+    const explicitCounts = supportedSections.map((section) => extractLeadingNumber(section.questionLabel));
+    const hasExplicitCounts = explicitCounts.every((count) => count > 0);
+    const resolvedCounts = hasExplicitCounts
+      ? explicitCounts
+      : splitQuestionsAcrossSections(defaultQuestionCount, supportedSections.length);
+
+    return supportedSections.map((section, index) => ({
+      name: section.name,
+      description: section.detail,
+      numQuestions: Math.max(1, resolvedCounts[index] || 1),
+      questionTypes: [
+        {
+          questionTypeId: QUESTION_TYPE_SINGLE_CHOICE_ID,
+        },
+      ],
+    }));
+  }
+
+  const totalQuestions = Math.max(1, defaultQuestionCount);
   const focusLabel = trimToNull(payload.inferredDomain) || trimToNull(payload.knowledgeInput) || examName || 'Mock Test';
   const format = payload.templateFormat || 'FULL_EXAM';
 
@@ -116,6 +152,8 @@ function buildPersonalInfoStepRequest(payload) {
 
 function buildMockTestPersonalInfoRequest(payload) {
   const examName = trimToNull(payload.mockExamName) || trimToNull(payload.examName);
+  const selectedExam = payload.mockExamMode === 'PUBLIC' ? getPublicExamById(payload.mockExamCatalogId) : null;
+  const publicTemplateConfig = payload.mockExamMode === 'PUBLIC' ? getPublicExamTemplateConfig(payload, selectedExam) : null;
 
   return {
     currentLevel: trimToNull(payload.currentLevel) || trimToNull(payload.customCurrentLevel),
@@ -124,15 +162,25 @@ function buildMockTestPersonalInfoRequest(payload) {
     weakAreas: normalizeListField(payload.weakAreas),
     strongAreas: normalizeListField(payload.strongAreas),
     mockTestRequest: {
-      title: `${examName || trimToNull(payload.inferredDomain) || 'Mock Test'} Template`,
+      title: publicTemplateConfig?.title || `${examName || trimToNull(payload.inferredDomain) || 'Mock Test'} Template`,
       materialIds: [],
       overallDifficulty: MOCK_TEST_DIFFICULTY,
-      durationInMinute: Math.max(1, Number(payload.templateDurationMinutes) || 90),
+      durationInMinute: Math.max(
+        1,
+        Number(publicTemplateConfig?.defaults?.templateDurationMinutes)
+        || Number(payload.templateDurationMinutes)
+        || 90
+      ),
       durationInSecond: 0,
-      totalQuestion: Math.max(1, Number(payload.templateQuestionCount) || 60),
+      totalQuestion: Math.max(
+        1,
+        Number(publicTemplateConfig?.defaults?.templateQuestionCount)
+        || Number(payload.templateQuestionCount)
+        || 60
+      ),
       prompt: buildMockTestPrompt(payload),
       outputLanguage: resolveOutputLanguage(),
-      sectionConfigs: buildSectionConfigs(payload, examName),
+      sectionConfigs: buildSectionConfigs(payload, examName, selectedExam),
     },
   };
 }
@@ -209,9 +257,13 @@ export const updateWorkspace = async (workspaceId, data) => {
 };
 
 // Xóa workspace
-export const deleteWorkspace = async (workspaceId) => {
-  const response = await api.delete(`/workSpace/${workspaceId}`);
+export const deleteIndividualWorkspace = async (workspaceId) => {
+  const response = await api.delete(`/workSpace/individual/${workspaceId}`);
   return response;
+};
+
+export const deleteWorkspace = async (workspaceId) => {
+  return deleteIndividualWorkspace(workspaceId);
 };
 
 // Lấy chi tiết workspace
