@@ -117,14 +117,8 @@ function IndividualWorkspaceProfileConfigDialog({
         values={wizard.values}
         errors={wizard.errors}
         selectedExam={wizard.selectedExam}
-        improvementStatus={wizard.improvementStatus}
-        improvementOptions={wizard.improvementOptions}
-        useCustomTargetScore={wizard.useCustomTargetScore}
         disabled={isReadOnly}
         onFieldChange={wizard.updateField}
-        onToggleImprovement={wizard.toggleImprovementFocus}
-        onTargetScoreSuggestion={wizard.setTargetScoreSuggestion}
-        onEnableCustomTargetScore={wizard.enableCustomTargetScore}
       />
     );
   }
@@ -255,17 +249,21 @@ function IndividualWorkspaceProfileConfigDialog({
             isDarkMode ? 'border-slate-800 bg-[#020817]/90' : 'border-slate-200 bg-white/90'
           )}
         >
-          <div className={cn('text-xs leading-5', mutedClass)}>
-            {t('workspace.profileConfig.footerHint', {
-              current: wizard.step,
-              total: 3,
-            })}
+          <div className="space-y-1">
+            <div className={cn('text-xs leading-5', mutedClass)}>
+              {t('workspace.profileConfig.footerHint', {
+                current: wizard.step,
+                total: 3,
+              })}
+            </div>
+            {wizard.saveError ? <p className="text-xs font-medium text-red-400">{wizard.saveError}</p> : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button
               type="button"
               variant="ghost"
+              disabled={wizard.submitting}
               onClick={() => {
                 if (wizard.step === 1) {
                   onOpenChange(false);
@@ -286,10 +284,12 @@ function IndividualWorkspaceProfileConfigDialog({
             {!isReadOnly && wizard.step < 3 ? (
               <Button
                 type="button"
+                disabled={wizard.submitting}
                 onClick={wizard.nextStep}
                 className="rounded-full bg-cyan-600 px-6 text-white hover:bg-cyan-700"
               >
-                {t('workspace.profileConfig.actions.next')}
+                {wizard.submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {wizard.submitting ? t('workspace.profileConfig.actions.saving') : t('workspace.profileConfig.actions.next')}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             ) : null}
