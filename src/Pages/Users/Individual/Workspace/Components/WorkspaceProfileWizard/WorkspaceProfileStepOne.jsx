@@ -1,11 +1,14 @@
 import React from 'react';
 import {
+  AlertTriangle,
   BookMarked,
   BrainCircuit,
   CheckCircle2,
   ChevronRight,
   Compass,
   Layers3,
+  Loader2,
+  RefreshCw,
   Route,
   ScrollText,
 } from 'lucide-react';
@@ -77,6 +80,11 @@ const DOMAIN_OPTION_THEMES = [
   },
 ];
 
+function translateOrFallback(t, key, fallback) {
+  const translated = t(key);
+  return translated === key ? fallback : translated;
+}
+
 function RequiredAsterisk() {
   return <span className="ml-1 text-red-500">*</span>;
 }
@@ -89,10 +97,12 @@ function WorkspaceProfileStepOne({
   analysisStatus,
   domainOptions,
   needsKnowledgeDescription,
+  knowledgeAnalysis,
   disabled = false,
   onPurposeChange,
   onFieldChange,
   onDomainSelect,
+  onRetryAnalysis,
 }) {
   const surfaceClass = isDarkMode
     ? 'border-white/10 bg-white/[0.04] text-white'
@@ -219,6 +229,80 @@ function WorkspaceProfileStepOne({
             />
             {errors.knowledgeInput ? <p className="mt-2 text-sm font-medium text-red-400">{errors.knowledgeInput}</p> : null}
           </div>
+
+          {analysisStatus === 'loading' ? (
+            <div
+              className={cn(
+                'flex items-center gap-3 rounded-[24px] border px-4 py-3',
+                isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-200' : 'border-cyan-200 bg-cyan-50 text-cyan-700'
+              )}
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm font-medium">
+                {translateOrFallback(t, 'workspace.profileConfig.stepOne.analyzing', 'AI đang phân tích kiến thức...')}
+              </span>
+            </div>
+          ) : null}
+
+          {analysisStatus === 'error' ? (
+            <div
+              className={cn(
+                'flex items-center justify-between gap-3 rounded-[24px] border px-4 py-3',
+                isDarkMode ? 'border-rose-400/20 bg-rose-500/10 text-rose-200' : 'border-rose-200 bg-rose-50 text-rose-700'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span className="text-sm font-medium">
+                  {translateOrFallback(t, 'workspace.profileConfig.stepOne.analysisError', 'AI phân tích thất bại. Vui lòng thử lại.')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onRetryAnalysis}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all',
+                  isDarkMode ? 'bg-rose-500/20 hover:bg-rose-500/30' : 'bg-rose-100 hover:bg-rose-200'
+                )}
+              >
+                <RefreshCw className="h-3 w-3" />
+                {translateOrFallback(t, 'workspace.profileConfig.actions.retry', 'Thử lại')}
+              </button>
+            </div>
+          ) : null}
+
+          {analysisStatus === 'success' && knowledgeAnalysis?.warning && knowledgeAnalysis?.message ? (
+            <div
+              className={cn(
+                'rounded-[24px] border px-4 py-3',
+                knowledgeAnalysis.redFlag
+                  ? isDarkMode ? 'border-rose-400/20 bg-rose-500/10 text-rose-200' : 'border-rose-200 bg-rose-50 text-rose-700'
+                  : isDarkMode ? 'border-amber-400/20 bg-amber-500/10 text-amber-200' : 'border-amber-200 bg-amber-50 text-amber-700'
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-6">{knowledgeAnalysis.message}</p>
+                  {knowledgeAnalysis.advice ? (
+                    <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'opacity-80' : 'opacity-75')}>
+                      {knowledgeAnalysis.advice}
+                    </p>
+                  ) : null}
+                  {knowledgeAnalysis.quizConstraintWarnings?.length > 0 ? (
+                    <ul className="mt-2 space-y-1">
+                      {knowledgeAnalysis.quizConstraintWarnings.map((warn, idx) => (
+                        <li key={idx} className="flex items-start gap-2 text-xs leading-5">
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+                          {warn}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           {analysisStatus === 'success' ? (
             <div
