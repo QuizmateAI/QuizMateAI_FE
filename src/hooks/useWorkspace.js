@@ -4,7 +4,7 @@ import {
   getWorkspacesByUser,
   createWorkspace as createWorkspaceAPI,
   updateWorkspace as updateWorkspaceAPI,
-  deleteWorkspace as deleteWorkspaceAPI,
+  deleteIndividualWorkspace as deleteWorkspaceAPI,
   getWorkspaceById,
 } from '@/api/WorkspaceAPI';
 

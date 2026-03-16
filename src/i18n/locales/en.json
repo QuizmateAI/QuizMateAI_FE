@@ -818,6 +818,9 @@
         "next": "Continue",
         "finish": "Finish",
         "saving": "Saving...",
+        "uploadAndContinue": "Upload and continue",
+        "uploading": "Uploading...",
+        "generatingTemplate": "Generating template...",
         "generateTemplate": "Generate template preview",
         "customTargetScore": "Custom score"
       },
@@ -888,8 +891,14 @@
         "title": "Describe your current state",
         "description": "Add enough context so the final recommendations match your real level and destination.",
         "mockTestTitle": "Set the exam and mock-test template",
-        "mockTestDescription": "Choose a public or private exam, then define the prompt and template settings for AI.",
+        "mockTestDescription": "Choose a public or private exam. For public exams, Quizmate AI will show a ready-made reference template that follows the public exam structure.",
         "noPublicExam": "No public exams match your current search.",
+        "publicTemplateTitle": "Public exam template",
+        "publicTemplateDescription": "Quizmate AI shows the public exam structure right away so you can review the real layout before starting the mock test.",
+        "supportNoticeTitle": "Current Quizmate AI support limits",
+        "supportNoticeDescription": "Quizmate AI currently works best for multiple-choice sections. Writing and Listening are not fully supported yet, so the template below is mainly for understanding the public exam structure.",
+        "supportedSection": "Supported",
+        "unsupportedSection": "Not supported yet",
         "templateTitle": "Template prompt",
         "templateDescription": "Describe your preferred mock-test structure, then generate a UI preview right inside this step."
       },
@@ -904,6 +913,15 @@
         "noRoadmapDescription": "The wizard will still save your goals, focus areas, and mock-test information.",
         "mockGoalTitle": "Target score and exam date",
         "mockGoalDescription": "Select an AI-recommended score for a public exam or enter a custom target for a private one."
+      },
+      "messages": {
+        "mockTemplateGenerating": "The template is being generated. The wizard will move to the next step automatically when it is ready.",
+        "mockTemplateReady": "The template is ready. You can continue to the next step.",
+        "mockTemplateStatusError": "The template status could not be checked right now. Please try again in a few minutes.",
+        "mockTemplateAwaitingBackend": "Waiting for the backend to confirm the template is finished. {{seconds}} seconds elapsed.",
+        "mockTemplateLongWait": "The backend is still processing the template. {{seconds}} seconds elapsed. Please check the status again if it takes too long.",
+        "mockTemplateAwaitingBackendShort": "Confirming",
+        "backgroundMockTestReady": "The mock test finished in the background. You can open Mock test to review it now."
       },
       "fields": {
         "workspacePurpose": "Workspace purpose",
@@ -965,6 +983,12 @@
         "SECTION_BASED": "Section-based",
         "PRACTICE_SET": "Focused practice set"
       },
+      "publicTemplateMeta": {
+        "duration": "Duration",
+        "questions": "Questions / tasks",
+        "scoring": "Scoring",
+        "support": "Quizmate AI support"
+      },
       "adaptationMode": {
         "FLEXIBLE": {
           "title": "Flexible",
@@ -1002,6 +1026,8 @@
         "knowledgeDescriptionRequired": "Please provide more detail about this knowledge topic.",
         "currentLevelRequired": "Please enter your current level.",
         "learningGoalRequired": "Please enter your learning goal.",
+        "strongAreasRequired": "Please enter your strengths.",
+        "weakAreasRequired": "Please enter your weaknesses.",
         "mockExamModeRequired": "Please choose the exam type.",
         "publicExamRequired": "Please choose a public exam.",
         "privateExamRequired": "Please enter the private exam name.",
