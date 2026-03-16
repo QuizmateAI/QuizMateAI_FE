@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/Components/ui/input';
+import { getCorrectTextAnswer } from '../utils/quizTransform';
 import './QuestionCard.css';
 
 const DIFFICULTY_STYLES = {
@@ -29,23 +31,40 @@ function RadioIndicator() {
 
 export default function QuestionCard({
   question, questionNumber, totalQuestions,
-  selectedAnswers = [], onSelectAnswer,
+  answerValue, selectedAnswers = [], onSelectAnswer, onTextAnswerChange,
   showResult = false, showExplanation = false, disabled = false,
 }) {
   const isMultiple = question.type === 'MULTIPLE_CHOICE';
+  const isTextQuestion = question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK';
+  const normalizedSelectedAnswers = Array.isArray(answerValue)
+    ? answerValue
+    : Array.isArray(selectedAnswers)
+      ? selectedAnswers
+      : [];
+  const textAnswer = typeof answerValue === 'string' ? answerValue : '';
+  const correctTextAnswer = getCorrectTextAnswer(question);
 
   const isFullyCorrect = useMemo(() => {
+    if (typeof question.isCorrect === 'boolean') {
+      return question.isCorrect;
+    }
+
+    if (isTextQuestion) {
+      if (!textAnswer.trim()) return false;
+      return textAnswer.trim().toLowerCase() === correctTextAnswer.trim().toLowerCase();
+    }
+
     const correctIds = question.answers.filter(a => a.isCorrect).map(a => a.id);
-    return correctIds.length === selectedAnswers.length && correctIds.every(id => selectedAnswers.includes(id));
-  }, [question.answers, selectedAnswers]);
+    return correctIds.length === normalizedSelectedAnswers.length && correctIds.every(id => normalizedSelectedAnswers.includes(id));
+  }, [question.answers, question.isCorrect, isTextQuestion, textAnswer, correctTextAnswer, normalizedSelectedAnswers]);
 
   const getStateClass = (answer) => {
     if (showResult) {
       if (answer.isCorrect) return 'quiz-answer-correct';
-      if (selectedAnswers.includes(answer.id)) return 'quiz-answer-incorrect';
+      if (normalizedSelectedAnswers.includes(answer.id)) return 'quiz-answer-incorrect';
       return '';
     }
-    return selectedAnswers.includes(answer.id) ? 'quiz-answer-selected' : '';
+    return normalizedSelectedAnswers.includes(answer.id) ? 'quiz-answer-selected' : '';
   };
 
   const getAnswerTailwind = (answer) => {
@@ -68,34 +87,64 @@ export default function QuestionCard({
 
       {isMultiple && <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 italic">Select all that apply</p>}
 
-      <div className="space-y-2">
-        {question.answers.map((answer) => (
-          <button
-            key={answer.id}
-            type="button"
+      {isTextQuestion ? (
+        <div className="space-y-3">
+          <Input
+            value={textAnswer}
             disabled={disabled || showResult}
-            onClick={() => onSelectAnswer?.(answer.id)}
-            className={cn(
-              'quiz-answer w-full flex items-center gap-3 p-3.5 rounded-lg border text-sm font-semibold text-left transition-all duration-300',
-              'text-slate-700 dark:text-slate-300',
-              getStateClass(answer),
-              getAnswerTailwind(answer),
-              (disabled || showResult) ? 'cursor-default' : 'cursor-pointer',
-            )}
-          >
-            {isMultiple ? <CheckboxIndicator id={answer.id} /> : <RadioIndicator />}
-            <span>{answer.content}</span>
-          </button>
-        ))}
-      </div>
+            onChange={(event) => onTextAnswerChange?.(event.target.value)}
+            placeholder={question.type === 'FILL_IN_BLANK' ? 'Điền câu trả lời của bạn' : 'Nhập câu trả lời ngắn'}
+            className="h-11 border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+          />
+
+          {showResult && (
+            <div className={cn(
+              'rounded-lg border px-3 py-2 text-sm',
+              isFullyCorrect
+                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-400'
+                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400',
+            )}>
+              <p><span className="font-semibold">Câu trả lời của bạn:</span> {textAnswer.trim() || 'Chưa trả lời'}</p>
+              <p><span className="font-semibold">Đáp án đúng:</span> {correctTextAnswer || 'Không có dữ liệu'}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {question.answers.map((answer) => (
+            <button
+              key={answer.id}
+              type="button"
+              disabled={disabled || showResult}
+              onClick={() => onSelectAnswer?.(answer.id)}
+              className={cn(
+                'quiz-answer w-full flex items-center gap-3 p-3.5 rounded-lg border text-sm font-semibold text-left transition-all duration-300',
+                'text-slate-700 dark:text-slate-300',
+                getStateClass(answer),
+                getAnswerTailwind(answer),
+                (disabled || showResult) ? 'cursor-default' : 'cursor-pointer',
+              )}
+            >
+              {isMultiple ? <CheckboxIndicator id={answer.id} /> : <RadioIndicator />}
+              <span>{answer.content}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {showResult && (
         <div className="mt-3">
-          {selectedAnswers.length === 0
-            ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer selected</span>
-            : isFullyCorrect
-              ? <span className="text-green-600 dark:text-green-400 font-semibold text-sm">✓ Correct!</span>
-              : <span className="text-red-600 dark:text-red-400 font-semibold text-sm">✗ Incorrect</span>
+          {isTextQuestion
+            ? (!textAnswer.trim()
+                ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer provided</span>
+                : isFullyCorrect
+                  ? <span className="text-green-600 dark:text-green-400 font-semibold text-sm">✓ Correct!</span>
+                  : <span className="text-red-600 dark:text-red-400 font-semibold text-sm">✗ Incorrect</span>)
+            : normalizedSelectedAnswers.length === 0
+              ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer selected</span>
+              : isFullyCorrect
+                ? <span className="text-green-600 dark:text-green-400 font-semibold text-sm">✓ Correct!</span>
+                : <span className="text-red-600 dark:text-red-400 font-semibold text-sm">✗ Incorrect</span>
           }
         </div>
       )}
