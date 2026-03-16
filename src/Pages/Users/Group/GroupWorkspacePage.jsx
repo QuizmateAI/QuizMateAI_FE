@@ -14,7 +14,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useGroup } from '@/hooks/useGroup';
 import { useTopicsForCreate } from '@/hooks/useTopicsForCreate';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { createRoadmap, createPhase, createKnowledge } from '@/api/RoadmapAPI';
+import { createRoadmap } from '@/api/RoadmapAPI';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from '@/api/MaterialAPI';
 import { useToast } from '@/context/ToastContext';
@@ -298,75 +298,14 @@ function GroupWorkspacePage() {
   // Xử lý tạo roadmap — gọi API tạo roadmap cho group
   const handleCreateRoadmap = useCallback(async (data) => {
     try {
-      const roadmapRes = await createRoadmap({
+      await createRoadmap({
         groupId,
+        ...data,
+        mode: 'ai',
         name: data.name || 'Roadmap',
+        goal: data.goal || data.description || '',
         description: data.goal || data.description || '',
       });
-
-      const createdRoadmap = roadmapRes.data?.data || roadmapRes.data || {};
-      const roadmapId = createdRoadmap.roadmapId || createdRoadmap.id;
-      if (!roadmapId) {
-        throw new Error('Không lấy được roadmapId sau khi tạo roadmap.');
-      }
-
-      const serverPhases = [];
-      const formPhases = Array.isArray(data.phases) ? data.phases : [];
-
-      for (let pIdx = 0; pIdx < formPhases.length; pIdx += 1) {
-        const phase = formPhases[pIdx];
-        const phaseRes = await createPhase(roadmapId, {
-          name: phase?.name || `Phase ${pIdx + 1}`,
-          description: phase?.description || '',
-          studyDurationInDay: phase?.studyDurationInDay || 0,
-        });
-
-        const createdPhase = phaseRes.data?.data || phaseRes.data || {};
-        const phaseId = createdPhase.phaseId || createdPhase.id;
-        const phaseKnowledges = [];
-
-        const knowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
-        for (let kIdx = 0; kIdx < knowledges.length; kIdx += 1) {
-          const knowledge = knowledges[kIdx];
-          if (!phaseId) continue;
-
-          const knowledgeRes = await createKnowledge(phaseId, {
-            name: knowledge?.name || `Knowledge ${kIdx + 1}`,
-            description: knowledge?.description || '',
-          });
-
-          const createdKnowledge = knowledgeRes.data?.data || knowledgeRes.data || {};
-          phaseKnowledges.push({
-            id: createdKnowledge.knowledgeId || createdKnowledge.id || `created-kn-${Date.now()}-${kIdx}`,
-            name: createdKnowledge.title || knowledge?.name || `Knowledge ${kIdx + 1}`,
-            quizCount: 0,
-            flashcardCount: 0,
-            createdAt: createdKnowledge.createdAt || new Date().toISOString(),
-            updatedAt: createdKnowledge.updatedAt || new Date().toISOString(),
-          });
-        }
-
-        serverPhases.push({
-          id: phaseId || `created-ph-${Date.now()}-${pIdx}`,
-          name: createdPhase.title || phase?.name || `Phase ${pIdx + 1}`,
-          createdAt: createdPhase.createdAt || new Date().toISOString(),
-          updatedAt: createdPhase.updatedAt || new Date().toISOString(),
-          knowledges: phaseKnowledges,
-        });
-      }
-
-      setCreatedItems((prev) => [...prev, {
-        id: roadmapId,
-        name: createdRoadmap.title || data.name || 'Roadmap',
-        type: 'Roadmap',
-        status: createdRoadmap.status || 'INACTIVE',
-        createVia: createdRoadmap.createVia || (data.mode === 'ai' ? 'AI' : 'MANUAL'),
-        roadmapType: createdRoadmap.roadmapType || 'GENERAL',
-        phasesCount: serverPhases.length,
-        phases: serverPhases,
-        createdAt: createdRoadmap.createdAt || new Date().toISOString(),
-        updatedAt: createdRoadmap.updatedAt || new Date().toISOString(),
-      }]);
       setActiveView('roadmap');
     } catch (err) {
       // Lỗi tạo roadmap — log để debug
