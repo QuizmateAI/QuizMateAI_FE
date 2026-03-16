@@ -4,8 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
 import CreateFlashcardForm from "./CreateFlashcardForm";
-import CreateRoadmapForm from "./CreateRoadmapForm";
-import RoadmapListView from "@/Pages/Users/Individual/Workspace/Components/RoadmapListView";
+import RoadmapCanvasView from "@/Pages/Users/Individual/Workspace/Components/RoadmapCanvasView";
 import QuizListView from "@/Pages/Users/Individual/Workspace/Components/QuizListView";
 import QuizDetailView from "@/Pages/Users/Individual/Workspace/Components/QuizDetailView";
 import EditQuizForm from "./EditQuizForm";
@@ -120,16 +119,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
 
     switch (activeView) {
       case "roadmap":
-        return <RoadmapListView isDarkMode={isDarkMode} onCreateRoadmap={() => onChangeView?.("createRoadmap")} createdItems={createdRoadmaps} groupId={groupId}
-          onNavigateToCreateMockTest={() => onChangeView?.("createMockTest")}
-          onNavigateToCreatePostLearning={() => onChangeView?.("createPostLearning")}
-          onNavigateToCreateQuiz={() => onChangeView?.("createQuiz")}
-          onNavigateToCreateFlashcard={() => onChangeView?.("createFlashcard")}
-          onViewMockTest={onViewMockTest}
-          onViewPostLearning={onViewPostLearning}
-          onViewQuiz={onViewQuiz}
-          onViewFlashcard={onViewFlashcard}
-        />;
+        return <RoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} createdItems={createdRoadmaps} groupId={groupId} />;
       case "quiz":
         return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="GROUP" contextId={groupId} />;
       case "flashcard":
@@ -161,8 +151,6 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
         return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="GROUP" contextId={groupId} />;
       case "createFlashcard":
         return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="GROUP" contextId={groupId} />;
-      case "createRoadmap":
-        return <CreateRoadmapForm isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onBack={onBack} />;
       case "flashcardDetail":
         return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
       case "quizDetail":
