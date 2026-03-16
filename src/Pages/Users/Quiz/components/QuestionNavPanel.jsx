@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import HourglassLoader from './HourglassLoader';
+import { hasAnswerValue } from '../utils/quizTransform';
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -11,7 +12,7 @@ function formatTime(seconds) {
 
 export default function QuestionNavPanel({ questions, answers, timeLeft, onJumpToQuestion, onSave, onSubmit }) {
   const answeredCount = useMemo(
-    () => questions.filter(q => (answers[q.id] || []).length > 0).length,
+    () => questions.filter(q => hasAnswerValue(answers[q.id])).length,
     [questions, answers],
   );
 
@@ -34,7 +35,7 @@ export default function QuestionNavPanel({ questions, answers, timeLeft, onJumpT
       {/* Question grid */}
       <div className="grid grid-cols-5 gap-2 mb-4">
         {questions.map((q, idx) => {
-          const isAnswered = (answers[q.id] || []).length > 0;
+          const isAnswered = hasAnswerValue(answers[q.id]);
           return (
             <button
               key={q.id}

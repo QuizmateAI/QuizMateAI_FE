@@ -24,6 +24,56 @@ import { createRoadmapForWorkspace } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 
+const VIEW_TO_PATH = {
+	roadmap: "roadmap",
+	quiz: "quiz",
+	flashcard: "flashcard",
+	mockTest: "mock-test",
+	postLearning: "post-learning",
+	createQuiz: "quiz/create",
+	createFlashcard: "flashcard/create",
+	createMockTest: "mock-test/create",
+	createPostLearning: "post-learning/create",
+};
+
+const PATH_TO_VIEW = Object.entries(VIEW_TO_PATH).reduce((result, [view, path]) => {
+	result[path] = view;
+	return result;
+}, {});
+
+function resolveViewFromSubPath(subPath) {
+	if (!subPath) return { view: null, quizId: null };
+
+	const directView = PATH_TO_VIEW[subPath];
+	if (directView) {
+		return { view: directView, quizId: null };
+	}
+
+	const quizEditMatch = subPath.match(/^quiz\/(\d+)\/edit$/);
+	if (quizEditMatch) {
+		return { view: "editQuiz", quizId: Number(quizEditMatch[1]) };
+	}
+
+	const quizDetailMatch = subPath.match(/^quiz\/(\d+)$/);
+	if (quizDetailMatch) {
+		return { view: "quizDetail", quizId: Number(quizDetailMatch[1]) };
+	}
+
+	return { view: null, quizId: null };
+}
+
+function buildPathForView(view, selectedQuiz) {
+	if (view === "quizDetail" && selectedQuiz?.quizId) {
+		return `quiz/${selectedQuiz.quizId}`;
+	}
+
+	if (view === "editQuiz" && selectedQuiz?.quizId) {
+		return `quiz/${selectedQuiz.quizId}/edit`;
+	}
+
+	return VIEW_TO_PATH[view] || null;
+}
+
 function isProfileOnboardingDone(profileData) {
 	return profileData?.profileStatus === "DONE" || profileData?.workspaceSetupStatus === "PROFILE_DONE";
 }
@@ -150,6 +200,44 @@ function WorkspacePage() {
 			sessionStorage.removeItem(`workspace_${workspaceId}_activeView`);
 		}
 	}, [activeView, workspaceId]);
+
+	const getWorkspaceSubPath = useCallback(() => {
+		if (!workspaceId) return "";
+		const prefix = `/workspace/${workspaceId}`;
+		if (!location.pathname.startsWith(prefix)) return "";
+		const suffix = location.pathname.slice(prefix.length).replace(/^\/+/, "");
+		return suffix;
+	}, [location.pathname, workspaceId]);
+
+	useEffect(() => {
+		const subPath = getWorkspaceSubPath();
+		if (!subPath) return;
+
+		const { view: mappedView, quizId } = resolveViewFromSubPath(subPath);
+		if (!mappedView) return;
+
+		if (quizId) {
+			setSelectedQuiz((prev) => {
+				if (prev?.quizId === quizId) return prev;
+				return { quizId };
+			});
+		}
+
+		setActiveView((prev) => (prev === mappedView ? prev : mappedView));
+	}, [getWorkspaceSubPath]);
+
+	useEffect(() => {
+		if (!workspaceId) return;
+		if (!activeView) return;
+
+		const mappedPath = buildPathForView(activeView, selectedQuiz);
+		if (!mappedPath) return;
+
+		const currentSubPath = getWorkspaceSubPath();
+		if (currentSubPath === mappedPath) return;
+
+		navigate(`/workspace/${workspaceId}/${mappedPath}`, { replace: true });
+	}, [activeView, getWorkspaceSubPath, navigate, selectedQuiz, workspaceId]);
 
 	const currentLang = i18n.language;
 	const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
