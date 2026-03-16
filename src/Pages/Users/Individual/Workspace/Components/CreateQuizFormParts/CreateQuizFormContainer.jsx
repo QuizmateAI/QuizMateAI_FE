@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/Components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText, CheckCircle2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
@@ -1547,19 +1547,37 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                     <input type="checkbox" checked={questionTypeUnit} onChange={(e) => setQuestionTypeUnit(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                     <span className={`text-xs ${isDarkMode?"text-slate-400":"text-gray-600"}`}>{t("workspace.quiz.aiConfig.questionTypeUnitByCount")}</span>
                    </div>
-                   <div className="flex items-center gap-2 mb-3">
-                     <select className={`${selectCls} text-xs`} value={qTypeToAdd} onChange={(e) => setQTypeToAdd(e.target.value)}>
-                       <option value="">{t("workspace.quiz.aiConfig.selectQuestionType")}</option>
-                       {qTypes
-                         .filter((item) => !selectedQTypes.some((selected) => selected.questionTypeId === item.questionTypeId))
-                         .map((item) => (
-                           <option key={item.questionTypeId} value={item.questionTypeId}>{item.questionType}</option>
-                         ))}
-                     </select>
-                     <button type="button" onClick={handleAddQType} className={`px-2.5 py-1.5 rounded-md text-xs font-medium ${isDarkMode ? "bg-blue-600/20 text-blue-300 hover:bg-blue-600/30" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}>
-                       {t("workspace.quiz.aiConfig.add")}
-                     </button>
+                   {/* Chip toggles — click to select/deselect */}
+                   <div className="flex flex-wrap gap-2 mb-3">
+                     {qTypes.map((qt) => {
+                       const isSelected = selectedQTypes.some((s) => s.questionTypeId === qt.questionTypeId);
+                       return (
+                         <button
+                           key={qt.questionTypeId}
+                           type="button"
+                           onClick={() => {
+                             if (isSelected) {
+                               handleRemoveQType(qt.questionTypeId);
+                             } else {
+                               setSelectedQTypes((prev) => {
+                                 const next = [...prev, { questionTypeId: qt.questionTypeId, ratio: 0, isLocked: false }];
+                                 return distributeConfigValues(next, getTargetTotal(questionTypeUnit), questionTypeUnit);
+                               });
+                             }
+                           }}
+                           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                             isSelected
+                               ? isDarkMode ? "bg-blue-600/30 border-blue-500 text-blue-300" : "bg-blue-100 border-blue-400 text-blue-700"
+                               : isDarkMode ? "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300" : "bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                           }`}
+                         >
+                           {isSelected && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+                           {qt.questionType}
+                         </button>
+                       );
+                     })}
                    </div>
+                   {/* Ratio inputs for selected items */}
                    <div className="space-y-2">
                      {selectedQTypes.map((item) => {
                        const detail = qTypes.find((q) => q.questionTypeId === item.questionTypeId);
@@ -1581,14 +1599,6 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                            >
                              {item.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                            </button>
-                           <button
-                             type="button"
-                             onClick={() => handleRemoveQType(item.questionTypeId)}
-                             className="p-1 rounded text-red-500"
-                             title={t("workspace.quiz.aiConfig.remove")}
-                           >
-                             <Trash2 className="w-3.5 h-3.5" />
-                           </button>
                          </div>
                        );
                      })}
@@ -1604,19 +1614,37 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                      <input type="checkbox" checked={bloomUnit} onChange={(e) => setBloomUnit(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                      <span className={`text-xs ${isDarkMode?"text-slate-400":"text-gray-600"}`}>{t("workspace.quiz.aiConfig.bloomUnitByCount")}</span>
                    </div>
-                   <div className="flex items-center gap-2 mb-3">
-                     <select className={`${selectCls} text-xs`} value={bloomToAdd} onChange={(e) => setBloomToAdd(e.target.value)}>
-                       <option value="">{t("workspace.quiz.aiConfig.selectBloomSkill")}</option>
-                       {bloomSkills
-                         .filter((item) => !selectedBloomSkills.some((selected) => selected.bloomId === item.bloomId))
-                         .map((item) => (
-                           <option key={item.bloomId} value={item.bloomId}>{item.bloomName}</option>
-                         ))}
-                     </select>
-                     <button type="button" onClick={handleAddBloom} className={`px-2.5 py-1.5 rounded-md text-xs font-medium ${isDarkMode ? "bg-blue-600/20 text-blue-300 hover:bg-blue-600/30" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}>
-                       {t("workspace.quiz.aiConfig.add")}
-                     </button>
+                   {/* Chip toggles — click to select/deselect */}
+                   <div className="flex flex-wrap gap-2 mb-3">
+                     {bloomSkills.map((bs) => {
+                       const isSelected = selectedBloomSkills.some((s) => s.bloomId === bs.bloomId);
+                       return (
+                         <button
+                           key={bs.bloomId}
+                           type="button"
+                           onClick={() => {
+                             if (isSelected) {
+                               handleRemoveBloom(bs.bloomId);
+                             } else {
+                               setSelectedBloomSkills((prev) => {
+                                 const next = [...prev, { bloomId: bs.bloomId, ratio: 0, isLocked: false }];
+                                 return distributeConfigValues(next, getTargetTotal(bloomUnit), bloomUnit);
+                               });
+                             }
+                           }}
+                           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all active:scale-95 ${
+                             isSelected
+                               ? isDarkMode ? "bg-teal-600/30 border-teal-500 text-teal-300" : "bg-teal-100 border-teal-400 text-teal-700"
+                               : isDarkMode ? "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300" : "bg-gray-50 border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                           }`}
+                         >
+                           {isSelected && <CheckCircle2 className="w-3 h-3 shrink-0" />}
+                           {bs.bloomName}
+                         </button>
+                       );
+                     })}
                    </div>
+                   {/* Ratio inputs for selected items */}
                    <div className="space-y-2">
                      {selectedBloomSkills.map((item) => {
                        const detail = bloomSkills.find((b) => b.bloomId === item.bloomId);
@@ -1637,14 +1665,6 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                              title={item.isLocked ? t("workspace.quiz.aiConfig.unlock") : t("workspace.quiz.aiConfig.lock")}
                            >
                              {item.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                           </button>
-                           <button
-                             type="button"
-                             onClick={() => handleRemoveBloom(item.bloomId)}
-                             className="p-1 rounded text-red-500"
-                             title={t("workspace.quiz.aiConfig.remove")}
-                           >
-                             <Trash2 className="w-3.5 h-3.5" />
                            </button>
                          </div>
                        );

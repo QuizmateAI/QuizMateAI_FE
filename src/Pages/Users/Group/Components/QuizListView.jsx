@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Play, ClipboardCheck } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
@@ -40,6 +40,7 @@ const FILTER_OPTIONS = ["all", "knowledge", "phase", "roadmap", "workspace", "gr
 function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -157,7 +158,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setConfirmDialog({ open: false, quizId: null, mode: null })}>{t("common.cancel", "Cancel")}</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`, { state: { returnToQuizPath: location.pathname } }); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
               {t("common.confirm", "Confirm")}
             </Button>
           </DialogFooter>
