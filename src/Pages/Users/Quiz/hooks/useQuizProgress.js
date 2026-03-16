@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
-import { buildSavePayload } from '../utils/quizTransform';
+import { buildSavePayload, mapSavedAnswersToState } from '../utils/quizTransform';
 
 export function useQuizProgress(attemptId) {
   const [answers, setAnswers] = useState({});
@@ -10,7 +10,7 @@ export function useQuizProgress(attemptId) {
 
   const selectAnswer = useCallback((questionId, answerId, isMultiple) => {
     setAnswers(prev => {
-      const current = prev[questionId] || [];
+      const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
       const updated = isMultiple
         ? (current.includes(answerId) ? current.filter(id => id !== answerId) : [...current, answerId])
         : [answerId];
@@ -20,12 +20,20 @@ export function useQuizProgress(attemptId) {
     });
   }, []);
 
+  const updateTextAnswer = useCallback((questionId, textAnswer) => {
+    setAnswers(prev => {
+      hasChangedRef.current = true;
+      changedQuestionsRef.current.add(questionId);
+      return { ...prev, [questionId]: textAnswer };
+    });
+  }, []);
+
   const saveProgress = useCallback(async (allAnswers) => {
     if (!hasChangedRef.current || !attemptId) return;
     const source = allAnswers || {};
     const changedOnly = {};
     for (const qId of changedQuestionsRef.current) {
-      if (source[qId]) changedOnly[qId] = source[qId];
+      if (source[qId] !== undefined) changedOnly[qId] = source[qId];
     }
     const payload = buildSavePayload(changedOnly);
     if (payload.length === 0) return;
@@ -50,12 +58,8 @@ export function useQuizProgress(attemptId) {
 
   const initFromSaved = useCallback((savedAnswers) => {
     if (!savedAnswers?.length) return;
-    const map = {};
-    for (const sa of savedAnswers) {
-      if (sa.selectedAnswerIds?.length) map[sa.questionId] = sa.selectedAnswerIds;
-    }
-    setAnswers(map);
+    setAnswers(mapSavedAnswersToState(savedAnswers));
   }, []);
 
-  return { answers, currentIndex, setCurrentIndex, selectAnswer, goNext, goBack, saveProgress, initFromSaved };
+  return { answers, currentIndex, setCurrentIndex, selectAnswer, updateTextAnswer, goNext, goBack, saveProgress, initFromSaved };
 }

@@ -10,7 +10,7 @@ import QuestionNavPanel from './components/QuestionNavPanel';
 import ExamPerQuestion from './components/ExamPerQuestion';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
-import { normalizeQuizData } from './utils/quizTransform';
+import { buildSubmitPayload, getAttemptRemainingSeconds, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 
@@ -28,15 +28,21 @@ export default function ExamQuizPage() {
   const [isStarted, setIsStarted] = useState(false);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
+  const [attemptTimeoutAt, setAttemptTimeoutAt] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
   const examLockNotifiedRef = useRef(false);
 
-  const returnToQuizPath = location.state?.returnToQuizPath || '/home';
+  const returnToQuizPath = location.state?.returnToQuizPath
+    || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
+    || '/home';
 
-  const { saveManually } = useQuizAutoSave(attemptId, answers, { enabled: isStarted && !isSubmitted });
+  const { saveManually, syncSnapshot } = useQuizAutoSave(attemptId, answers, {
+    interval: 5000,
+    enabled: isStarted && !isSubmitted,
+  });
 
   // Fetch full quiz data
   useEffect(() => {
@@ -56,12 +62,16 @@ export default function ExamQuizPage() {
 
   const selectAnswer = useCallback((questionId, answerId, isMultiple) => {
     setAnswers(prev => {
-      const current = prev[questionId] || [];
+      const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
       const updated = isMultiple
         ? (current.includes(answerId) ? current.filter(id => id !== answerId) : [...current, answerId])
         : [answerId];
       return { ...prev, [questionId]: updated };
     });
+  }, []);
+
+  const updateTextAnswer = useCallback((questionId, textAnswer) => {
+    setAnswers(prev => ({ ...prev, [questionId]: textAnswer }));
   }, []);
 
   const handleStart = useCallback(async () => {
@@ -83,21 +93,20 @@ export default function ExamQuizPage() {
       }
 
       const attempt = res.data;
+      const hydratedAnswers = mapSavedAnswersToState(attempt.savedAnswers);
+
       setAttemptId(attempt.attemptId);
+      setAttemptTimeoutAt(attempt.timeoutAt || null);
+      setTimeLeft(getAttemptRemainingSeconds(attempt.timeoutAt, quiz?.totalTime || 0));
       markQuizAttempted(quizId);
-      if (attempt.savedAnswers?.length) {
-        const map = {};
-        for (const sa of attempt.savedAnswers) {
-          if (sa.selectedAnswerIds?.length) map[sa.questionId] = sa.selectedAnswerIds;
-        }
-        setAnswers(map);
-      }
+      setAnswers(hydratedAnswers);
+      syncSnapshot(hydratedAnswers);
       setIsStarted(true);
     } catch (err) {
       console.error('Failed to start attempt:', err);
       showError(err?.message || 'Failed to start exam attempt');
     }
-  }, [quizId, showError]);
+  }, [quiz?.totalTime, quizId, showError, syncSnapshot]);
 
   const handleSubmit = useCallback(async () => {
     if (submittingRef.current) return;
@@ -106,7 +115,8 @@ export default function ExamQuizPage() {
     await saveManually();
     if (attemptId) {
       try {
-        await submitAttempt(attemptId);
+        const submitPayload = buildSubmitPayload(quiz?.questions, answers);
+        await submitAttempt(attemptId, submitPayload);
         markQuizCompleted(quizId);
         navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
       } catch (err) {
@@ -114,7 +124,7 @@ export default function ExamQuizPage() {
         submittingRef.current = false;
       }
     }
-  }, [saveManually, attemptId, navigate, quizId, returnToQuizPath]);
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually]);
 
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
@@ -149,10 +159,29 @@ export default function ExamQuizPage() {
   // Countdown for TOTAL timer mode
   useEffect(() => {
     if (!isStarted || isSubmitted || quiz?.timerMode !== 'TOTAL') return;
-    if (timeLeft <= 0) { handleSubmit(); return; }
-    const t = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
-    return () => clearTimeout(t);
-  }, [timeLeft, isStarted, isSubmitted, quiz?.timerMode, handleSubmit]);
+    if (!attemptTimeoutAt) {
+      if (timeLeft <= 0) {
+        handleSubmit();
+        return;
+      }
+
+      const fallbackTimer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+      return () => clearTimeout(fallbackTimer);
+    }
+
+    const syncTimeLeft = () => {
+      const remainingSeconds = getAttemptRemainingSeconds(attemptTimeoutAt);
+      setTimeLeft(remainingSeconds);
+
+      if (remainingSeconds <= 0) {
+        handleSubmit();
+      }
+    };
+
+    syncTimeLeft();
+    const timer = setInterval(syncTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [attemptTimeoutAt, timeLeft, isStarted, isSubmitted, quiz?.timerMode, handleSubmit]);
 
   const jumpToQuestion = useCallback((index) => {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -223,7 +252,15 @@ export default function ExamQuizPage() {
   if (quiz.timerMode === 'PER_QUESTION') {
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8', fontClass)}>
-        <ExamPerQuestion quiz={quiz} answers={answers} onSelectAnswer={selectAnswer} onSubmit={handleSubmit} attemptId={attemptId} fontClass={fontClass} />
+        <ExamPerQuestion
+          quiz={quiz}
+          answers={answers}
+          onSelectAnswer={selectAnswer}
+          onTextAnswerChange={updateTextAnswer}
+          onSubmit={handleSubmit}
+          attemptId={attemptId}
+          fontClass={fontClass}
+        />
       </div>
     );
   }
@@ -242,8 +279,9 @@ export default function ExamQuizPage() {
                   question={q}
                   questionNumber={idx + 1}
                   totalQuestions={quiz.questions.length}
-                  selectedAnswers={answers[q.id] || []}
+                  answerValue={answers[q.id]}
                   onSelectAnswer={(answerId) => selectAnswer(q.id, answerId, q.type === 'MULTIPLE_CHOICE')}
+                  onTextAnswerChange={(value) => updateTextAnswer(q.id, value)}
                 />
               </div>
             ))}

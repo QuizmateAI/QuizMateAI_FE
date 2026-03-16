@@ -5,7 +5,8 @@ import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3 } fro
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
-import { getAttemptResult } from '@/api/QuizAPI';
+import { getAttemptResult, getQuizFull } from '@/api/QuizAPI';
+import { normalizeQuizData } from './utils/quizTransform';
 
 export default function QuizResultPage() {
   const { attemptId } = useParams();
@@ -15,18 +16,33 @@ export default function QuizResultPage() {
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [result, setResult] = useState(null);
+  const [quizDetails, setQuizDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reviewMode, setReviewMode] = useState(false);
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
   const returnToQuizPath = location.state?.returnToQuizPath;
+  const fallbackQuizPath = quizDetails?.workspaceId && (quizId || result?.quizId)
+    ? `/workspace/${quizDetails.workspaceId}/quiz/${quizId || result.quizId}`
+    : null;
 
   useEffect(() => {
     (async () => {
       try {
         const res = await getAttemptResult(attemptId);
-        setResult(res.data);
+        const attemptResult = res.data;
+        setResult(attemptResult);
+
+        if (attemptResult?.quizId) {
+          try {
+            const quizRes = await getQuizFull(attemptResult.quizId);
+            setQuizDetails(normalizeQuizData(quizRes.data));
+          } catch (quizErr) {
+            console.error('Failed to load quiz details for review:', quizErr);
+            setQuizDetails(null);
+          }
+        }
       } catch (err) {
         console.error('Failed to load result:', err);
       } finally {
@@ -37,34 +53,43 @@ export default function QuizResultPage() {
 
   // Normalize result questions for QuestionCard format
   const reviewQuestions = useMemo(() => {
-    if (!result?.questionResults) return [];
-    return result.questionResults.map(qr => ({
-      id: qr.questionId,
-      content: qr.content || qr.questionContent || '',
-      type: qr.questionTypeId === 2 ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE',
-      difficulty: qr.difficulty || 'MEDIUM',
-      explanation: qr.explanation || '',
-      answers: (qr.answers || []).map(a => ({
-        id: a.answerId,
-        content: a.content,
-        isCorrect: a.isCorrect,
-      })),
-      selectedAnswerIds: qr.selectedAnswerIds || [],
-      isCorrect: qr.isCorrect,
-    }));
-  }, [result]);
+    if (!result?.questions?.length) return [];
+
+    const questionMap = new Map((quizDetails?.questions || []).map(question => [question.id, question]));
+
+    return result.questions.map((attemptQuestion, index) => {
+      const detailQuestion = questionMap.get(attemptQuestion.questionId);
+
+      return {
+        id: attemptQuestion.questionId,
+        content: detailQuestion?.content || `Question ${index + 1}`,
+        type: detailQuestion?.type || attemptQuestion.questionType || 'SINGLE_CHOICE',
+        difficulty: detailQuestion?.difficulty || 'MEDIUM',
+        explanation: detailQuestion?.explanation || '',
+        answers: detailQuestion?.answers || [],
+        selectedAnswerIds: attemptQuestion.selectedAnswerIds || [],
+        textAnswer: attemptQuestion.textAnswer || '',
+        isCorrect: attemptQuestion.correct,
+        questionScore: attemptQuestion.questionScore || 0,
+      };
+    });
+  }, [result, quizDetails]);
 
   const handleBack = useCallback(() => {
     if (returnToQuizPath) {
       navigate(returnToQuizPath, { replace: true });
       return;
     }
-    if (quizId) {
+    if (fallbackQuizPath) {
+      navigate(fallbackQuizPath, { replace: true });
+      return;
+    }
+    if (quizId || result?.quizId) {
       navigate('/home', { replace: true });
       return;
     }
     navigate('/');
-  }, [navigate, quizId, returnToQuizPath]);
+  }, [fallbackQuizPath, navigate, quizId, returnToQuizPath, result?.quizId]);
 
   if (loading) {
     return (
@@ -82,8 +107,16 @@ export default function QuizResultPage() {
     );
   }
 
-  const passed = result.passed ?? (result.score >= (result.passScore || 0));
-  const correctCount = reviewQuestions.filter(q => q.isCorrect).length;
+  const passed = typeof result.passed === 'boolean' ? result.passed : null;
+  const scoreValue = Number(result.maxScore) > 0 ? `${result.score ?? 0}/${result.maxScore}` : `${result.score ?? 0}`;
+  const correctValue = `${result.correctQuestion ?? reviewQuestions.filter(q => q.isCorrect).length}/${result.totalQuestion ?? reviewQuestions.length}`;
+  const answeredValue = `${result.answeredQuestion ?? 0}/${result.totalQuestion ?? reviewQuestions.length}`;
+  const timeTakenSeconds = getTimeTakenSeconds(result.startedAt, result.completedAt, result.timeoutAt);
+  const resultTitle = passed == null
+    ? 'Quiz Completed'
+    : passed
+      ? 'Congratulations!'
+      : 'Keep Trying!';
 
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8', fontClass)}>
@@ -92,33 +125,50 @@ export default function QuizResultPage() {
         {!reviewMode && (
           <div className={cn(
             'rounded-2xl p-8 mb-6 text-center border shadow-lg',
-            passed
+            passed == null
+              ? 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800 shadow-blue-900/10 dark:shadow-blue-900/30'
+              : passed
               ? 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200 dark:border-emerald-800 shadow-emerald-900/10 dark:shadow-emerald-900/30'
               : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-red-200 dark:border-red-800 shadow-red-900/10 dark:shadow-red-900/30'
           )}>
             <div className="mb-4">
-              {passed
+              {passed == null
+                ? <BarChart3 className="w-16 h-16 mx-auto text-blue-500 dark:text-blue-400" />
+                : passed
                 ? <Trophy className="w-16 h-16 mx-auto text-emerald-500 dark:text-emerald-400" />
                 : <XCircle className="w-16 h-16 mx-auto text-red-500 dark:text-red-400" />}
             </div>
 
-            <h1 className={cn('text-3xl font-bold mb-2', passed ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
-              {passed ? 'Congratulations!' : 'Keep Trying!'}
+            <h1 className={cn(
+              'text-3xl font-bold mb-2',
+              passed == null
+                ? 'text-blue-700 dark:text-blue-300'
+                : passed
+                  ? 'text-emerald-700 dark:text-emerald-300'
+                  : 'text-red-700 dark:text-red-300',
+            )}>
+              {resultTitle}
             </h1>
 
-            <p className="text-slate-600 dark:text-slate-300 mb-6">{result.quizTitle || 'Quiz Result'}</p>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">Attempt #{result.attemptId} • Quiz #{result.quizId}</p>
 
             {/* Score display */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-lg mx-auto mb-6">
-              <ScoreStat label="Score" value={`${result.score ?? 0}/${result.maxScore ?? 0}`} icon={BarChart3} />
-              <ScoreStat label="Correct" value={`${correctCount}/${reviewQuestions.length}`} icon={CheckCircle2} />
-              {result.passScore != null && <ScoreStat label="Pass Score" value={result.passScore} icon={Trophy} />}
-              {result.timeTaken != null && <ScoreStat label="Time" value={formatDuration(result.timeTaken)} icon={null} />}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl mx-auto mb-6">
+              <ScoreStat label="Score" value={scoreValue} icon={BarChart3} />
+              <ScoreStat label="Correct" value={correctValue} icon={CheckCircle2} />
+              <ScoreStat label="Answered" value={answeredValue} icon={Eye} />
+              <ScoreStat label="Time" value={formatDuration(timeTakenSeconds)} icon={null} />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-6 text-xs text-slate-500 dark:text-slate-400">
+              <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
+              <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span>
+              {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Pass Score: {result.passScore}</span>}
             </div>
 
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2">
+              <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2" disabled={reviewQuestions.length === 0}>
                 <Eye className="w-4 h-4" /> Review Answers
               </Button>
               <Button onClick={handleBack} className="min-w-[160px] gap-2 bg-blue-600 hover:bg-blue-700 text-white">
@@ -152,13 +202,19 @@ export default function QuizResultPage() {
                     question={q}
                     questionNumber={idx + 1}
                     totalQuestions={reviewQuestions.length}
-                    selectedAnswers={q.selectedAnswerIds}
+                    answerValue={q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK' ? q.textAnswer : q.selectedAnswerIds}
                     showResult
                     showExplanation
                     disabled
                   />
                 </div>
               ))}
+
+              {reviewQuestions.length === 0 && (
+                <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                  Khong co du lieu chi tiet de review bai lam.
+                </div>
+              )}
             </div>
 
             <div className="flex justify-center mt-8 gap-3">
@@ -189,4 +245,17 @@ function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function getTimeTakenSeconds(startedAt, completedAt, timeoutAt) {
+  if (!startedAt) return 0;
+
+  const start = new Date(startedAt).getTime();
+  const end = new Date(completedAt || timeoutAt || startedAt).getTime();
+
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
+    return 0;
+  }
+
+  return Math.floor((end - start) / 1000);
 }
