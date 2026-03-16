@@ -72,7 +72,9 @@ function App() {
           <Route path="/wallet" element={<WalletPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
+          <Route path="/workspace/:workspaceId/*" element={<WorkspacePage />} />
           <Route path="/group-workspace/:groupId" element={<GroupWorkspacePage />} />
+          <Route path="/group-workspace/:groupId/*" element={<GroupWorkspacePage />} />
           <Route path="/group-manage/:groupId" element={<GroupManagementPage />} />
           <Route path="/quiz/practice/:quizId" element={<PracticeQuizPage />} />
           <Route path="/quiz/exam/:quizId" element={<ExamQuizPage />} />

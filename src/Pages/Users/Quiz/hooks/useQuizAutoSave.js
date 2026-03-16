@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
 import { buildSavePayload } from '../utils/quizTransform';
 
-export function useQuizAutoSave(attemptId, answers, { interval = 30000, enabled = true } = {}) {
+export function useQuizAutoSave(attemptId, answers, { interval = 10000, enabled = true } = {}) {
   const prevRef = useRef({});
 
   const saveChangedAnswers = useCallback(async () => {
@@ -24,11 +24,21 @@ export function useQuizAutoSave(attemptId, answers, { interval = 30000, enabled 
     prevRef.current = { ...answers };
   }, [attemptId, answers]);
 
+  const syncSnapshot = useCallback((snapshot = {}) => {
+    prevRef.current = { ...snapshot };
+  }, []);
+
+  useEffect(() => {
+    if (!attemptId) {
+      prevRef.current = {};
+    }
+  }, [attemptId]);
+
   useEffect(() => {
     if (!enabled) return;
     const timer = setInterval(saveChangedAnswers, interval);
     return () => clearInterval(timer);
   }, [saveChangedAnswers, interval, enabled]);
 
-  return { saveManually: saveChangedAnswers };
+  return { saveManually: saveChangedAnswers, syncSnapshot };
 }
