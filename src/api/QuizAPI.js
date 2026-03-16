@@ -149,8 +149,8 @@ export const getAttemptResult = async (attemptId) => {
 };
 
 // Nộp bài — đóng attempt và trả về kết quả
-export const submitAttempt = async (attemptId) => {
-  const response = await api.post(`/quiz-attempts/${attemptId}/submit`);
+export const submitAttempt = async (attemptId, answers = []) => {
+  const response = await api.post(`/quiz-attempts/${attemptId}/submit`, answers);
   return response;
 };
 

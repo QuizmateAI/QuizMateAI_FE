@@ -140,3 +140,32 @@ export function buildSavePayload(answers) {
       return payload;
     }, []);
 }
+
+/**
+ * Build submit payload that includes all quiz questions.
+ * Unanswered questions are still sent with empty selectedAnswerIds and null textAnswer.
+ */
+export function buildSubmitPayload(questions = [], answers = {}) {
+  return (questions || []).map((question) => {
+    const questionId = Number(question?.id);
+    const answerValue = answers?.[question?.id];
+
+    const selectedAnswerIds = Array.isArray(answerValue)
+      ? answerValue.filter(answerId => answerId != null)
+      : Array.isArray(answerValue?.selectedAnswerIds)
+        ? answerValue.selectedAnswerIds.filter(answerId => answerId != null)
+        : [];
+
+    const normalizedTextAnswer = typeof answerValue === 'string'
+      ? answerValue.trim()
+      : typeof answerValue?.textAnswer === 'string'
+        ? answerValue.textAnswer.trim()
+        : '';
+
+    return {
+      questionId,
+      selectedAnswerIds,
+      textAnswer: normalizedTextAnswer || null,
+    };
+  }).filter(item => Number.isFinite(item.questionId));
+}

@@ -10,7 +10,7 @@ import QuestionNavPanel from './components/QuestionNavPanel';
 import ExamPerQuestion from './components/ExamPerQuestion';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
-import { getAttemptRemainingSeconds, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
+import { buildSubmitPayload, getAttemptRemainingSeconds, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 
@@ -113,7 +113,8 @@ export default function ExamQuizPage() {
     await saveManually();
     if (attemptId) {
       try {
-        await submitAttempt(attemptId);
+        const submitPayload = buildSubmitPayload(quiz?.questions, answers);
+        await submitAttempt(attemptId, submitPayload);
         markQuizCompleted(quizId);
         navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
       } catch (err) {
@@ -121,7 +122,7 @@ export default function ExamQuizPage() {
         submittingRef.current = false;
       }
     }
-  }, [saveManually, attemptId, navigate, quizId, returnToQuizPath]);
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually]);
 
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
