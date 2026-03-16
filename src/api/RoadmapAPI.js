@@ -1,136 +1,552 @@
-import api from './api';
+// import api from './api';
+
+export const getRoadmapGraph = async ({ workspaceId = null, groupId = null } = {}) => {
+  // Real API reference:
+  // return api.get('/roadmap/graph', { params: { workspaceId, groupId } });
+  return buildMockResponse(getStoredRoadmap({ workspaceId, groupId }));
+};
 
 // ==================== ROADMAP ====================
 
 // Tạo roadmap general cho group — POST /roadmap/create/group/{groupId}
 export const createRoadmap = async (data) => {
-  const response = await api.post(`/roadmap/create/group/${Number(data.groupId)}`, {
-    title: data.name || data.title || 'Roadmap',
-    description: data.goal || data.description || '',
-  });
-  return response;
+  // Real API reference:
+  // return api.post(`/roadmap/create/group/${data.groupId}`, data);
+  const groupId = Number(data.groupId);
+  const graph = buildSeedRoadmapGraph(data, { groupId });
+  return buildMockResponse(setStoredRoadmap({ groupId }, graph));
 };
 
 // Tạo roadmap general cho workspace cá nhân — POST /roadmap/create/workspace/{workspaceId}
 export const createRoadmapForWorkspace = async (data) => {
-  const response = await api.post(`/roadmap/create/workspace/${Number(data.workspaceId)}`, {
-    title: data.name || data.title || 'Roadmap',
-    description: data.goal || data.description || '',
-  });
-  return response;
+  // Real API reference:
+  // return api.post(`/roadmap/create/workspace/${data.workspaceId}`, data);
+  const workspaceId = Number(data.workspaceId);
+  const graph = buildSeedRoadmapGraph(data, { workspaceId });
+  return buildMockResponse(setStoredRoadmap({ workspaceId }, graph));
 };
 
 // Lấy danh sách roadmap của group (có phân trang)
 export const getRoadmapsByGroup = async (groupId, page = 0, size = 10) => {
-  const response = await api.get(`/roadmap/group/${groupId}?page=${page}&size=${size}`);
-  return response;
+  // Real API reference:
+  // return api.get(`/roadmap/group/${groupId}`, { params: { page, size } });
+  const roadmap = getStoredRoadmap({ groupId });
+  const content = roadmap ? [mapGraphToRoadmapListItem(roadmap)] : [];
+  return buildMockResponse({ content, page, size, totalElements: content.length });
 };
 
 // Lấy danh sách roadmap của workspace cá nhân (có phân trang)
 export const getRoadmapsByWorkspace = async (workspaceId, page = 0, size = 10) => {
-  const response = await api.get(`/roadmap/workspace/${workspaceId}?page=${page}&size=${size}`);
-  return response;
+  // Real API reference:
+  // return api.get(`/roadmap/workspace/${workspaceId}`, { params: { page, size } });
+  const roadmap = getStoredRoadmap({ workspaceId });
+  const content = roadmap ? [mapGraphToRoadmapListItem(roadmap)] : [];
+  return buildMockResponse({ content, page, size, totalElements: content.length });
 };
 
 // Lấy thông tin roadmap theo ID
 export const getRoadmapById = async (roadmapId) => {
-  const response = await api.get(`/roadmap/${roadmapId}`);
-  return response;
+  // Real API reference:
+  // return api.get(`/roadmap/${roadmapId}`);
+  return buildMockResponse(findStoredRoadmapById(roadmapId));
 };
 
 // Cập nhật roadmap
 export const updateRoadmap = async (roadmapId, data) => {
-  const response = await api.put(`/roadmap/${roadmapId}`, {
-    title: data.title,
-    description: data.description,
-    status: data.status,
-  });
-  return response;
+  // Real API reference:
+  // return api.put(`/roadmap/${roadmapId}`, data);
+  const roadmap = findStoredRoadmapById(roadmapId);
+  if (!roadmap) return buildMockResponse(null);
+  roadmap.title = data.title ?? data.name ?? roadmap.title;
+  roadmap.description = data.description ?? data.goal ?? roadmap.description;
+  roadmap.canvasView = data.canvasView ?? roadmap.canvasView ?? 'view1';
+  return buildMockResponse(refreshRoadmapStats(roadmap));
 };
 
 // Xóa roadmap
 export const deleteRoadmap = async (roadmapId) => {
-  const response = await api.delete(`/roadmap/${roadmapId}`);
-  return response;
+  // Real API reference:
+  // return api.delete(`/roadmap/${roadmapId}`);
+  for (const [scopeKey, roadmap] of MOCK_ROADMAP_STORE.entries()) {
+    if (roadmap?.roadmapId === roadmapId) {
+      MOCK_ROADMAP_STORE.delete(scopeKey);
+      break;
+    }
+  }
+  return buildMockResponse(true);
 };
 
 // ==================== PHASE ====================
 
 // Lấy danh sách phases thuộc một roadmap (có phân trang)
 export const getPhasesByRoadmap = async (roadmapId, page = 0, size = 10) => {
-  const response = await api.get(`/roadmap/${roadmapId}/phases?page=${page}&size=${size}`);
-  return response;
+  // Real API reference:
+  // return api.get(`/roadmap/${roadmapId}/phases`, { params: { page, size } });
+  const roadmap = findStoredRoadmapById(roadmapId);
+  const content = roadmap?.phases || [];
+  return buildMockResponse({ content, page, size, totalElements: content.length });
 };
 
 // Tạo phase mới cho một roadmap cụ thể
 export const createPhase = async (roadmapId, data) => {
-  const response = await api.post(`/roadmap-phases?roadmapId=${roadmapId}`, {
-    title: data.title || data.name || 'Phase',
-    description: data.description || '',
-    studyDurationInDay: data.studyDurationInDay || 0,
-  });
-  return response;
+  // Real API reference:
+  // return api.post(`/roadmap/${roadmapId}/phase`, data);
+  const roadmap = findStoredRoadmapById(roadmapId);
+  if (!roadmap) return buildMockResponse(null);
+  const phase = buildPhaseMock(data, roadmapId, roadmap.phases.length);
+  roadmap.phases.push(phase);
+  return buildMockResponse(refreshRoadmapStats(roadmap).phases[roadmap.phases.length - 1]);
 };
 
 // Cập nhật thông tin phase
 export const updatePhase = async (phaseId, data) => {
-  const response = await api.put(`/roadmap-phases/${phaseId}`, {
-    title: data.title,
-    description: data.description,
-    studyDurationInDay: data.studyDurationInDay,
-    phaseIndex: data.phaseIndex,
-    status: data.status,
-  });
-  return response;
+  // Real API reference:
+  // return api.put(`/roadmap/phase/${phaseId}`, data);
+  const { roadmap, phase } = findPhaseById(phaseId);
+  if (!phase || !roadmap) return buildMockResponse(null);
+  phase.title = data.title ?? data.name ?? phase.title;
+  phase.description = data.description ?? phase.description;
+  phase.durationLabel = data.durationLabel ?? phase.durationLabel;
+  return buildMockResponse(refreshRoadmapStats(roadmap));
 };
 
 // Xóa phase khỏi roadmap
 export const deletePhase = async (phaseId, roadmapId) => {
-  const response = await api.delete(`/roadmap-phases/${phaseId}?roadmapId=${roadmapId}`);
-  return response;
+  // Real API reference:
+  // return api.delete(`/roadmap/${roadmapId}/phase/${phaseId}`);
+  const roadmap = findStoredRoadmapById(roadmapId);
+  if (!roadmap) return buildMockResponse(false);
+  roadmap.phases = roadmap.phases
+    .filter((phase) => phase.phaseId !== phaseId)
+    .map((phase, index) => ({ ...phase, phaseIndex: index }));
+  refreshRoadmapStats(roadmap);
+  return buildMockResponse(true);
 };
 
 // Thay đổi thứ tự hiển thị phase trong roadmap
 export const updatePhaseIndex = async (phaseId, roadmapId, newIndex) => {
-  const response = await api.patch(`/roadmap-phases/${phaseId}/index?roadmapId=${roadmapId}&newIndex=${newIndex}`);
-  return response;
+  // Real API reference:
+  // return api.patch(`/roadmap/${roadmapId}/phase/${phaseId}/index`, { newIndex });
+  const roadmap = findStoredRoadmapById(roadmapId);
+  if (!roadmap) return buildMockResponse(null);
+  const currentIndex = roadmap.phases.findIndex((phase) => phase.phaseId === phaseId);
+  if (currentIndex < 0) return buildMockResponse(null);
+  const [phase] = roadmap.phases.splice(currentIndex, 1);
+  roadmap.phases.splice(Math.max(0, Math.min(newIndex, roadmap.phases.length)), 0, phase);
+  roadmap.phases = roadmap.phases.map((item, index) => ({ ...item, phaseIndex: index }));
+  return buildMockResponse(refreshRoadmapStats(roadmap));
 };
 
 // ==================== KNOWLEDGE ====================
 
 // Lấy danh sách knowledge thuộc một phase (có phân trang)
 export const getKnowledgesByPhase = async (phaseId, page = 0, size = 10) => {
-  const response = await api.get(`/roadmap-knowledges/phase/${phaseId}?page=${page}&size=${size}`);
-  return response;
+  // Real API reference:
+  // return api.get(`/phase/${phaseId}/knowledges`, { params: { page, size } });
+  const { phase } = findPhaseById(phaseId);
+  const content = phase?.knowledges || [];
+  return buildMockResponse({ content, page, size, totalElements: content.length });
 };
 
 // Lấy thông tin chi tiết knowledge theo ID
 export const getKnowledgeById = async (knowledgeId) => {
-  const response = await api.get(`/roadmap-knowledges/${knowledgeId}`);
-  return response;
+  // Real API reference:
+  // return api.get(`/knowledge/${knowledgeId}`);
+  for (const roadmap of MOCK_ROADMAP_STORE.values()) {
+    for (const phase of roadmap?.phases || []) {
+      const knowledge = phase.knowledges.find((item) => item.knowledgeId === knowledgeId);
+      if (knowledge) {
+        return buildMockResponse(knowledge);
+      }
+    }
+  }
+  return buildMockResponse(null);
 };
 
 // Tạo knowledge mới trong phase cụ thể
 export const createKnowledge = async (phaseId, data) => {
-  const response = await api.post(`/roadmap-knowledges?phaseId=${phaseId}`, {
-    title: data.title || data.name || 'Knowledge',
-    description: data.description || '',
-  });
-  return response;
+  // Real API reference:
+  // return api.post(`/phase/${phaseId}/knowledge`, data);
+  const { roadmap, phase } = findPhaseById(phaseId);
+  if (!phase || !roadmap) return buildMockResponse(null);
+  const knowledge = buildKnowledgeMock(data, phaseId, phase.knowledges.length);
+  phase.knowledges.push(knowledge);
+  refreshRoadmapStats(roadmap);
+  return buildMockResponse(knowledge);
 };
 
 // Cập nhật thông tin knowledge
 export const updateKnowledge = async (knowledgeId, data) => {
-  const response = await api.put(`/roadmap-knowledges/${knowledgeId}`, {
-    title: data.title,
-    description: data.description,
-    status: data.status,
-  });
-  return response;
+  // Real API reference:
+  // return api.put(`/knowledge/${knowledgeId}`, data);
+  for (const roadmap of MOCK_ROADMAP_STORE.values()) {
+    for (const phase of roadmap?.phases || []) {
+      const knowledge = phase.knowledges.find((item) => item.knowledgeId === knowledgeId);
+      if (knowledge) {
+        knowledge.title = data.title ?? data.name ?? knowledge.title;
+        knowledge.description = data.description ?? knowledge.description;
+        refreshRoadmapStats(roadmap);
+        return buildMockResponse(knowledge);
+      }
+    }
+  }
+  return buildMockResponse(null);
 };
 
 // Xóa knowledge khỏi phase
 export const deleteKnowledge = async (knowledgeId, phaseId) => {
-  const response = await api.delete(`/roadmap-knowledges/${knowledgeId}?phaseId=${phaseId}`);
-  return response;
+  // Real API reference:
+  // return api.delete(`/phase/${phaseId}/knowledge/${knowledgeId}`);
+  const { roadmap, phase } = findPhaseById(phaseId);
+  if (!phase || !roadmap) return buildMockResponse(false);
+  phase.knowledges = phase.knowledges
+    .filter((knowledge) => knowledge.knowledgeId !== knowledgeId)
+    .map((knowledge, index) => ({ ...knowledge, knowledgeIndex: index }));
+  refreshRoadmapStats(roadmap);
+  return buildMockResponse(true);
 };
+
+// ==================== MOCK ROADMAP DATA ====================
+
+const ROADMAP_GRAPH_SEED = {
+  title: 'AI Learning Roadmap',
+  description: 'Lộ trình học từ nền tảng đến triển khai thực chiến với quiz và flashcard ở từng knowledge.',
+  estimatedDuration: '10 tuần',
+  phases: [
+    {
+      phaseId: 'phase-foundation',
+      title: 'Foundation',
+      description: 'Củng cố nền tảng toán, xác suất và cách dữ liệu đi qua hệ thống AI.',
+      durationLabel: '2 tuần',
+      postLearning: {
+        id: 'post-foundation',
+        title: 'Post-learning: Foundation Checkpoint',
+        questionCount: 18,
+      },
+      knowledges: [
+        {
+          knowledgeId: 'kn-linear-algebra',
+          title: 'Linear Algebra Core',
+          description: 'Vector, ma trận, phép chiếu và trực giác hình học cho ML.',
+          quizzes: [
+            { id: 'quiz-linear-basic', title: 'Linear Algebra Basics', questionCount: 12 },
+            { id: 'quiz-linear-ops', title: 'Matrix Operations Drill', questionCount: 10 },
+          ],
+          flashcards: [
+            { id: 'flash-linear-terms', title: 'Linear Algebra Terms', cardCount: 24 },
+          ],
+        },
+        {
+          knowledgeId: 'kn-probability',
+          title: 'Probability Thinking',
+          description: 'Biến ngẫu nhiên, phân phối và Bayes cơ bản.',
+          quizzes: [
+            { id: 'quiz-prob-intro', title: 'Probability Intro', questionCount: 14 },
+          ],
+          flashcards: [
+            { id: 'flash-prob-bayes', title: 'Bayes Concepts', cardCount: 18 },
+            { id: 'flash-prob-dist', title: 'Distributions Snapshot', cardCount: 16 },
+          ],
+        },
+      ],
+    },
+    {
+      phaseId: 'phase-data-prep',
+      title: 'Data Preparation',
+      description: 'Làm sạch dữ liệu, feature engineering và đánh giá chất lượng dữ liệu.',
+      durationLabel: '2 tuần',
+      postLearning: {
+        id: 'post-data-prep',
+        title: 'Post-learning: Data Readiness Review',
+        questionCount: 15,
+      },
+      knowledges: [
+        {
+          knowledgeId: 'kn-cleaning',
+          title: 'Cleaning Pipelines',
+          description: 'Thiết kế pipeline để xử lý missing values, outliers và duplicates.',
+          quizzes: [
+            { id: 'quiz-cleaning', title: 'Data Cleaning Practice', questionCount: 11 },
+          ],
+          flashcards: [
+            { id: 'flash-cleaning', title: 'Cleaning Heuristics', cardCount: 20 },
+          ],
+        },
+        {
+          knowledgeId: 'kn-feature-engineering',
+          title: 'Feature Engineering',
+          description: 'Tạo, chọn và chuẩn hóa feature cho từng bài toán.',
+          quizzes: [
+            { id: 'quiz-feature-design', title: 'Feature Design Cases', questionCount: 13 },
+          ],
+          flashcards: [
+            { id: 'flash-feature-types', title: 'Feature Types', cardCount: 17 },
+          ],
+        },
+      ],
+    },
+    {
+      phaseId: 'phase-modeling',
+      title: 'Modeling',
+      description: 'Huấn luyện mô hình, tối ưu tham số và đọc metric đúng ngữ cảnh.',
+      durationLabel: '3 tuần',
+      postLearning: {
+        id: 'post-modeling',
+        title: 'Post-learning: Model Selection Sprint',
+        questionCount: 22,
+      },
+      knowledges: [
+        {
+          knowledgeId: 'kn-supervised',
+          title: 'Supervised Models',
+          description: 'Linear models, tree-based models và cách so sánh bias-variance.',
+          quizzes: [
+            { id: 'quiz-supervised', title: 'Supervised Modeling', questionCount: 16 },
+            { id: 'quiz-metrics', title: 'Metric Interpretation', questionCount: 9 },
+          ],
+          flashcards: [
+            { id: 'flash-model-bias', title: 'Bias vs Variance', cardCount: 19 },
+          ],
+        },
+        {
+          knowledgeId: 'kn-experimentation',
+          title: 'Experiment Tracking',
+          description: 'Theo dõi run, baseline và quyết định iteration tiếp theo.',
+          quizzes: [
+            { id: 'quiz-experiment', title: 'Experiment Tracking', questionCount: 8 },
+          ],
+          flashcards: [
+            { id: 'flash-experiment', title: 'Experiment Checklist', cardCount: 14 },
+          ],
+        },
+      ],
+    },
+    {
+      phaseId: 'phase-deployment',
+      title: 'Deployment',
+      description: 'Đưa mô hình vào sản phẩm, giám sát chất lượng và cải tiến liên tục.',
+      durationLabel: '3 tuần',
+      postLearning: {
+        id: 'post-deployment',
+        title: 'Post-learning: Production Readiness',
+        questionCount: 20,
+      },
+      knowledges: [
+        {
+          knowledgeId: 'kn-serving',
+          title: 'Serving & APIs',
+          description: 'Đóng gói model, tối ưu inference và thiết kế endpoint.',
+          quizzes: [
+            { id: 'quiz-serving', title: 'Inference Serving', questionCount: 12 },
+          ],
+          flashcards: [
+            { id: 'flash-serving', title: 'Serving Patterns', cardCount: 15 },
+          ],
+        },
+        {
+          knowledgeId: 'kn-monitoring',
+          title: 'Monitoring',
+          description: 'Theo dõi drift, latency, lỗi và phản hồi người dùng.',
+          quizzes: [
+            { id: 'quiz-monitoring', title: 'Monitoring in Production', questionCount: 10 },
+          ],
+          flashcards: [
+            { id: 'flash-monitoring', title: 'Monitoring Signals', cardCount: 18 },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+const MOCK_ROADMAP_STORE = new Map();
+let mockSequence = 1;
+
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function nextMockId(prefix) {
+  const id = `${prefix}-${mockSequence}`;
+  mockSequence += 1;
+  return id;
+}
+
+function getScopeKey({ workspaceId = null, groupId = null } = {}) {
+  if (groupId !== null && groupId !== undefined && !Number.isNaN(groupId)) {
+    return `group:${groupId}`;
+  }
+  return `workspace:${workspaceId}`;
+}
+
+function getScopeLabel({ workspaceId = null, groupId = null } = {}) {
+  if (groupId !== null && groupId !== undefined && !Number.isNaN(groupId)) {
+    return `Group ${groupId}`;
+  }
+  return `Workspace ${workspaceId ?? 'Demo'}`;
+}
+
+function buildStats(phases) {
+  return {
+    phaseCount: phases.length,
+    knowledgeCount: phases.reduce((sum, phase) => sum + phase.knowledges.length, 0),
+    quizCount: phases.reduce(
+      (sum, phase) => sum + phase.knowledges.reduce((innerSum, knowledge) => innerSum + (knowledge.quizzes?.length ?? 0), 0),
+      0
+    ),
+    flashcardCount: phases.reduce(
+      (sum, phase) => sum + phase.knowledges.reduce((innerSum, knowledge) => innerSum + (knowledge.flashcards?.length ?? 0), 0),
+      0
+    ),
+  };
+}
+
+function buildKnowledgeMock(knowledge, phaseId, knowledgeIndex) {
+  const knowledgeTitle = knowledge?.name || knowledge?.title || `Knowledge ${knowledgeIndex + 1}`;
+  return {
+    knowledgeId: nextMockId('knowledge'),
+    phaseId,
+    knowledgeIndex,
+    title: knowledgeTitle,
+    description: knowledge?.description || '',
+    quizzes: [
+      {
+        id: nextMockId('quiz'),
+        title: `${knowledgeTitle} Quiz`,
+        questionCount: 10 + (knowledgeIndex % 4) * 2,
+      },
+    ],
+    flashcards: [
+      {
+        id: nextMockId('flashcard'),
+        title: `${knowledgeTitle} Flashcards`,
+        cardCount: 12 + (knowledgeIndex % 3) * 4,
+      },
+    ],
+  };
+}
+
+function buildPhaseMock(phase, roadmapId, phaseIndex) {
+  const phaseId = nextMockId('phase');
+  const phaseTitle = phase?.name || phase?.title || `Phase ${phaseIndex + 1}`;
+  const sourceKnowledges = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0
+    ? phase.knowledges
+    : [{ name: `${phaseTitle} Core` }, { name: `${phaseTitle} Practice` }];
+
+  return {
+    phaseId,
+    title: phaseTitle,
+    description: phase?.description || '',
+    durationLabel: phase?.durationLabel || `${Math.max(1, Math.min(4, sourceKnowledges.length))} tuần`,
+    phaseIndex,
+    roadmapId,
+    postLearning: {
+      id: nextMockId('post-learning'),
+      title: `Post-learning: ${phaseTitle} Review`,
+      questionCount: 12 + sourceKnowledges.length * 4,
+    },
+    knowledges: sourceKnowledges.map((knowledge, knowledgeIndex) => buildKnowledgeMock(knowledge, phaseId, knowledgeIndex)),
+  };
+}
+
+function buildSeedRoadmapGraph(payload = {}, { workspaceId = null, groupId = null } = {}) {
+  const scopeLabel = getScopeLabel({ workspaceId, groupId });
+  const roadmapId = nextMockId(groupId ? 'group-roadmap' : 'workspace-roadmap');
+  const graph = deepClone(ROADMAP_GRAPH_SEED);
+  const phases = graph.phases.map((phase, phaseIndex) => {
+    const phaseId = nextMockId('phase');
+    return {
+      ...phase,
+      phaseId,
+      phaseIndex,
+      roadmapId,
+      postLearning: {
+        ...phase.postLearning,
+        id: nextMockId('post-learning'),
+      },
+      knowledges: phase.knowledges.map((knowledge, knowledgeIndex) => ({
+        ...knowledge,
+        knowledgeId: nextMockId('knowledge'),
+        phaseId,
+        knowledgeIndex,
+        quizzes: knowledge.quizzes.map((quiz) => ({
+          ...quiz,
+          id: nextMockId('quiz'),
+        })),
+        flashcards: knowledge.flashcards.map((flashcard) => ({
+          ...flashcard,
+          id: nextMockId('flashcard'),
+        })),
+      })),
+    };
+  });
+
+  const title = payload?.name?.trim() || `${graph.title} - ${scopeLabel}`;
+  const description = payload?.goal?.trim() || payload?.description?.trim() || graph.description;
+
+  return {
+    roadmapId,
+    title,
+    description,
+    estimatedDuration: graph.estimatedDuration,
+    canvasView: payload?.canvasView === 'view2' ? 'view2' : 'view1',
+    generatedAt: new Date().toISOString(),
+    phases,
+    stats: buildStats(phases),
+  };
+}
+
+function getStoredRoadmap(scope) {
+  return MOCK_ROADMAP_STORE.get(getScopeKey(scope)) ?? null;
+}
+
+function setStoredRoadmap(scope, roadmap) {
+  MOCK_ROADMAP_STORE.set(getScopeKey(scope), roadmap);
+  return roadmap;
+}
+
+function mapGraphToRoadmapListItem(graph) {
+  return {
+    roadmapId: graph.roadmapId,
+    title: graph.title,
+    description: graph.description,
+    status: 'ACTIVE',
+    createdAt: graph.generatedAt,
+    roadmapType: 'GENERAL',
+    createVia: 'MOCK',
+  };
+}
+
+function findStoredRoadmapById(roadmapId) {
+  for (const roadmap of MOCK_ROADMAP_STORE.values()) {
+    if (roadmap?.roadmapId === roadmapId) {
+      return roadmap;
+    }
+  }
+  return null;
+}
+
+function findPhaseById(phaseId) {
+  for (const roadmap of MOCK_ROADMAP_STORE.values()) {
+    const phase = roadmap?.phases?.find((item) => item.phaseId === phaseId);
+    if (phase) {
+      return { roadmap, phase };
+    }
+  }
+  return { roadmap: null, phase: null };
+}
+
+function refreshRoadmapStats(roadmap) {
+  roadmap.stats = buildStats(roadmap.phases);
+  roadmap.generatedAt = new Date().toISOString();
+  return roadmap;
+}
+
+function buildMockResponse(data) {
+  return Promise.resolve({
+    data: {
+      success: true,
+      data,
+    },
+  });
+}
