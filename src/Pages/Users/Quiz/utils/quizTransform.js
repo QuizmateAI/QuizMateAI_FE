@@ -44,6 +44,7 @@ export function normalizeQuizData(apiQuiz) {
 
   return {
     quizId: apiQuiz.quizId,
+    workspaceId: apiQuiz.workspaceId || apiQuiz.workSpaceId || apiQuiz.workspace?.workspaceId || null,
     title: apiQuiz.title,
     description: '',
     timerMode: apiQuiz.timerMode === true ? 'TOTAL' : 'PER_QUESTION',

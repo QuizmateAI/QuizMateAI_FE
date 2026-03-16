@@ -150,7 +150,8 @@ export const getAttemptResult = async (attemptId) => {
 
 // Nộp bài — đóng attempt và trả về kết quả
 export const submitAttempt = async (attemptId, answers = []) => {
-  const response = await api.post(`/quiz-attempts/${attemptId}/submit`, answers);
+  console.debug('[QuizAPI] submitAttempt', { attemptId, answersCount: Array.isArray(answers) ? answers.length : 0 });
+  const response = await api.post(`/quiz-attempts/${attemptId}/submit`, answers, { timeout: 60000 });
   return response;
 };
 

@@ -23,6 +23,9 @@ export default function QuizResultPage() {
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
   const returnToQuizPath = location.state?.returnToQuizPath;
+  const fallbackQuizPath = quizDetails?.workspaceId && (quizId || result?.quizId)
+    ? `/workspace/${quizDetails.workspaceId}/quiz/${quizId || result.quizId}`
+    : null;
 
   useEffect(() => {
     (async () => {
@@ -77,12 +80,16 @@ export default function QuizResultPage() {
       navigate(returnToQuizPath, { replace: true });
       return;
     }
+    if (fallbackQuizPath) {
+      navigate(fallbackQuizPath, { replace: true });
+      return;
+    }
     if (quizId || result?.quizId) {
       navigate('/home', { replace: true });
       return;
     }
     navigate('/');
-  }, [navigate, quizId, returnToQuizPath, result?.quizId]);
+  }, [fallbackQuizPath, navigate, quizId, returnToQuizPath, result?.quizId]);
 
   if (loading) {
     return (

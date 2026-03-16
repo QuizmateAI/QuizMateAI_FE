@@ -30,7 +30,9 @@ export default function PracticeQuizPage() {
   const [showResult, setShowResult] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
-  const returnToQuizPath = location.state?.returnToQuizPath || '/home';
+  const returnToQuizPath = location.state?.returnToQuizPath
+    || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
+    || '/home';
 
   const { answers, currentIndex, selectAnswer, updateTextAnswer, goNext, goBack, initFromSaved } = useQuizProgress(attemptId);
   const { syncSnapshot } = useQuizAutoSave(attemptId, answers, {
