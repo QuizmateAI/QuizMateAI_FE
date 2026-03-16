@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  evaluateMaterialFit,
   generateTemplateSuggestion,
   getPublicExamById,
   getPublicExamByName,
@@ -12,8 +13,10 @@ import {
   validateProfileConsistency,
 } from '@/api/StudyProfileAPI';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 const ANALYSIS_DEBOUNCE_MS = 800;
+const FIELD_SUGGESTION_DEBOUNCE_MS = 500;
+const CONSISTENCY_DEBOUNCE_MS = 700;
 
 function ensureString(value, fallback = '') {
   return typeof value === 'string' ? value : fallback;
@@ -81,6 +84,7 @@ function hasRoadmapStepData(initialData) {
     || hasTextValue(initialData?.speedMode)
     || hasTextValue(initialData?.roadmapSpeedMode)
     || Number(initialData?.estimatedTotalDays) > 0
+    || Number(initialData?.estimatedMinutesPerDay) > 0
     || Number(initialData?.recommendedMinutesPerDay) > 0
   );
 }
@@ -149,7 +153,7 @@ function createInitialValues(initialData) {
     adaptationMode: normalizeAdaptationMode(ensureString(initialData?.adaptationMode || 'BALANCED')),
     roadmapSpeedMode: normalizeRoadmapSpeedMode(ensureString(initialData?.roadmapSpeedMode || initialData?.speedMode || 'STANDARD')),
     estimatedTotalDays: ensureNumber(initialData?.estimatedTotalDays, 30),
-    recommendedMinutesPerDay: ensureNumber(initialData?.recommendedMinutesPerDay, 90),
+    recommendedMinutesPerDay: ensureNumber(initialData?.recommendedMinutesPerDay ?? initialData?.estimatedMinutesPerDay, 90),
   };
 }
 
@@ -161,23 +165,29 @@ function readStoredStep(storageKey) {
 }
 
 function getInitialStep(initialData, isReadOnly, storageKey) {
+  const explicitStep = Number(initialData?.currentStep);
   const profileStatus = initialData?.profileStatus;
+  const setupStatus = initialData?.workspaceSetupStatus;
   const hasBasicData = hasBasicStepData(initialData);
   const hasPersonalData = hasPersonalInfoStepData(initialData);
   const baseStep =
-    isReadOnly || profileStatus === 'DONE'
+    isReadOnly || initialData?.onboardingCompleted || setupStatus === 'DONE'
       ? TOTAL_STEPS
-      : profileStatus === 'PERSONAL_INFO_DONE'
-        ? hasBasicData && hasPersonalData
-          ? 3
-          : hasBasicData
-            ? 2
-            : 1
-        : profileStatus === 'BASIC_DONE'
-          ? hasBasicData
-            ? 2
-            : 1
-          : 1;
+      : explicitStep >= 1 && explicitStep <= TOTAL_STEPS
+        ? explicitStep
+        : setupStatus === 'PROFILE_DONE'
+          ? 2
+          : profileStatus === 'PERSONAL_INFO_DONE'
+            ? hasBasicData && hasPersonalData
+              ? 2
+              : hasBasicData
+                ? 2
+                : 1
+            : profileStatus === 'BASIC_DONE'
+              ? hasBasicData
+                ? 2
+                : 1
+              : 1;
   const storedStep = readStoredStep(storageKey);
 
   if (storedStep && storedStep >= baseStep && storedStep <= TOTAL_STEPS) {
@@ -211,18 +221,64 @@ function translateOrFallback(t, key, fallback) {
   return translated === key ? fallback : translated;
 }
 
+function isAcceptedMaterialTone(tone) {
+  return tone === 'strong';
+}
+
+function normalizeReasonText(value) {
+  return (value || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/\s+/g, ' ');
+}
+
+function isEnglishVietnamesePairSignal(knowledge) {
+  const normalizedKnowledge = normalizeReasonText(knowledge);
+  if (!normalizedKnowledge) return false;
+
+  const exactShortPair = normalizedKnowledge === 'anh viet' || normalizedKnowledge === 'viet anh';
+  const hasExplicitEnglish = normalizedKnowledge.includes('tieng anh') || normalizedKnowledge.includes('english');
+  const hasExplicitVietnamese = normalizedKnowledge.includes('tieng viet') || normalizedKnowledge.includes('vietnamese');
+  const tokens = normalizedKnowledge.split(' ').filter(Boolean);
+  const hasShortPair = tokens.includes('anh') && tokens.includes('viet') && tokens.length <= 3;
+
+  return exactShortPair || (hasExplicitEnglish && hasExplicitVietnamese) || hasShortPair;
+}
+
+function resolveDomainReasonType(label, knowledge, index) {
+  const normalizedLabel = normalizeReasonText(label);
+
+  if (normalizedLabel.includes('dich')) {
+    return 'translation';
+  }
+
+  if (normalizedLabel.includes('bang')) {
+    return 'studyBridge';
+  }
+
+  if (isEnglishVietnamesePairSignal(knowledge)) {
+    return 'languagePair';
+  }
+
+  const reasonTypes = ['closest', 'group', 'context'];
+  return reasonTypes[index] || 'context';
+}
+
 function buildDomainOptionsFromApi(domainSuggestions, knowledge) {
   if (!Array.isArray(domainSuggestions) || domainSuggestions.length === 0) {
     return [];
   }
 
-  const reasonTypes = ['closest', 'group', 'context'];
-
   return domainSuggestions.slice(0, 5).map((label, index) => ({
     label,
     signal: knowledge,
     knowledge,
-    reasonType: reasonTypes[index] || 'context',
+    reasonType: resolveDomainReasonType(label, knowledge, index),
   }));
 }
 
@@ -235,6 +291,53 @@ function localizeDomainOptions(options, t) {
       domain: option.label,
     }),
   }));
+}
+
+function splitProfileFieldValues(value) {
+  if (!value || typeof value !== 'string') {
+    return [];
+  }
+
+  return value
+    .split(/[,\n;/]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildFieldSuggestionPayload(values) {
+  return {
+    knowledge: values.knowledgeInput.trim(),
+    domain: values.inferredDomain.trim(),
+    learningMode: mapLearningModeForApi(values.workspacePurpose),
+    currentLevel: values.currentLevel.trim() || null,
+    strongAreas: splitProfileFieldValues(values.strongAreas),
+    weakAreas: splitProfileFieldValues(values.weakAreas),
+  };
+}
+
+function buildConsistencyPayload(values) {
+  return {
+    knowledge: values.knowledgeInput.trim(),
+    domain: values.inferredDomain,
+    learningMode: mapLearningModeForApi(values.workspacePurpose),
+    currentLevel: values.currentLevel.trim() || null,
+    learningGoal: values.learningGoal.trim() || null,
+    examName: values.mockExamName?.trim() || null,
+    strongAreas: splitProfileFieldValues(values.strongAreas),
+    weakAreas: splitProfileFieldValues(values.weakAreas),
+  };
+}
+
+function shouldRunLiveConsistency(values) {
+  return Boolean(
+    values.knowledgeInput.trim()
+    && values.inferredDomain.trim()
+    && values.workspacePurpose
+    && values.currentLevel.trim()
+    && values.learningGoal.trim()
+    && values.strongAreas.trim()
+    && values.weakAreas.trim()
+  );
 }
 
 function buildPayload(values) {
@@ -301,6 +404,120 @@ function buildPayload(values) {
   };
 }
 
+function normalizeSnapshotText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeSnapshotList(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+      .join('|');
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(/[,\n;/]+/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .join('|');
+  }
+
+  return '';
+}
+
+function normalizeSnapshotNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function buildStepSnapshot(stepNumber, values) {
+  if (!values || typeof values !== 'object') {
+    return null;
+  }
+
+  if (stepNumber === 1) {
+    return {
+      workspacePurpose: normalizeSnapshotText(values.workspacePurpose),
+      knowledgeInput: normalizeSnapshotText(values.knowledgeInput),
+      knowledgeDescription: normalizeSnapshotText(values.knowledgeDescription),
+      inferredDomain: normalizeSnapshotText(values.inferredDomain),
+      enableRoadmap: values.workspacePurpose === 'STUDY_NEW' ? true : Boolean(values.enableRoadmap),
+    };
+  }
+
+  if (stepNumber === 2) {
+    return {
+      workspacePurpose: normalizeSnapshotText(values.workspacePurpose),
+      currentLevel: normalizeSnapshotText(values.currentLevel),
+      learningGoal: normalizeSnapshotText(values.learningGoal),
+      strongAreas: normalizeSnapshotList(values.strongAreas),
+      weakAreas: normalizeSnapshotList(values.weakAreas),
+      mockExamMode: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.mockExamMode) : '',
+      mockExamCatalogId:
+        values.workspacePurpose === 'MOCK_TEST' && values.mockExamMode === 'PUBLIC'
+          ? normalizeSnapshotText(values.mockExamCatalogId)
+          : '',
+      mockExamName:
+        values.workspacePurpose === 'MOCK_TEST' && values.mockExamMode !== 'PUBLIC'
+          ? normalizeSnapshotText(values.mockExamName)
+          : '',
+      templatePrompt: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templatePrompt) : '',
+      templateFormat: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templateFormat) : '',
+      templateDurationMinutes:
+        values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotNumber(values.templateDurationMinutes) : null,
+      templateQuestionCount:
+        values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotNumber(values.templateQuestionCount) : null,
+      templateNotes: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templateNotes) : '',
+    };
+  }
+
+  if (stepNumber === 4) {
+    return {
+      showRoadmapFields: shouldShowRoadmapFields(values),
+      adaptationMode: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.adaptationMode) : '',
+      roadmapSpeedMode: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.roadmapSpeedMode) : '',
+      estimatedTotalDays: shouldShowRoadmapFields(values) ? normalizeSnapshotNumber(values.estimatedTotalDays) : null,
+      recommendedMinutesPerDay:
+        shouldShowRoadmapFields(values) ? normalizeSnapshotNumber(values.recommendedMinutesPerDay) : null,
+    };
+  }
+
+  return null;
+}
+
+function areStepSnapshotsEqual(leftSnapshot, rightSnapshot) {
+  return JSON.stringify(leftSnapshot ?? null) === JSON.stringify(rightSnapshot ?? null);
+}
+
+function createSavedStepSnapshots(initialData, values, initialStep) {
+  if (!values || typeof values !== 'object') {
+    return {};
+  }
+
+  const snapshots = {};
+
+  if (initialStep >= 2 || hasBasicStepData(initialData)) {
+    snapshots[1] = buildStepSnapshot(1, values);
+  }
+
+  if (initialStep >= 3 || hasPersonalInfoStepData(initialData)) {
+    snapshots[2] = buildStepSnapshot(2, values);
+  }
+
+  if (
+    initialStep >= 3
+    || hasRoadmapStepData(initialData)
+    || initialData?.workspaceSetupStatus === 'DONE'
+    || initialData?.onboardingCompleted
+  ) {
+    snapshots[3] = buildStepSnapshot(4, values);
+  }
+
+  return snapshots;
+}
+
 function mapLearningModeForApi(purpose) {
   if (purpose === 'STUDY_NEW') return 'STUDY_NEW';
   if (purpose === 'REVIEW') return 'REVIEW';
@@ -311,9 +528,7 @@ function mapLearningModeForApi(purpose) {
 export function useWorkspaceProfileWizard({
   open,
   initialData,
-  uploadedMaterials = [],
   onSave,
-  onUploadFiles,
   storageKey,
   forceStartAtStepOne = false,
   mockTestGenerationState = 'idle',
@@ -323,6 +538,7 @@ export function useWorkspaceProfileWizard({
   isReadOnly = false,
 }) {
   const [step, setStep] = useState(1);
+  const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
   const [values, setValues] = useState(createInitialValues(initialData));
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -343,23 +559,37 @@ export function useWorkspaceProfileWizard({
 
   const analysisTimerRef = useRef(null);
   const analysisAbortRef = useRef(null);
+  const fieldSuggestionTimerRef = useRef(null);
   const fieldSuggestionAbortRef = useRef(null);
+  const consistencyTimerRef = useRef(null);
+  const consistencyAbortRef = useRef(null);
   const templateTimerRef = useRef(null);
   const wasOpenRef = useRef(false);
   const prevStepRef = useRef(null);
+  const savedStepSnapshotsRef = useRef({});
 
   const selectedExam = getPublicExamById(values.mockExamCatalogId);
   const needsKnowledgeDescription =
     analysisStatus === 'success' && knowledgeAnalysis?.tooBroad === true;
-  const uploadedMaterialCount = Array.isArray(uploadedMaterials) ? uploadedMaterials.length : 0;
+  const pendingUploadCandidates = useMemo(
+    () => pendingFiles.filter((file) => {
+      const report = evaluateMaterialFit(file, values, selectedExam);
+      return isAcceptedMaterialTone(report.tone);
+    }),
+    [pendingFiles, values, selectedExam]
+  );
+  const blockedPendingCount = Math.max(0, pendingFiles.length - pendingUploadCandidates.length);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       clearTimeout(analysisTimerRef.current);
+      clearTimeout(fieldSuggestionTimerRef.current);
+      clearTimeout(consistencyTimerRef.current);
       clearTimeout(templateTimerRef.current);
       analysisAbortRef.current?.abort();
       fieldSuggestionAbortRef.current?.abort();
+      consistencyAbortRef.current?.abort();
     };
   }, []);
 
@@ -367,6 +597,7 @@ export function useWorkspaceProfileWizard({
   useEffect(() => {
     if (!open) {
       wasOpenRef.current = false;
+      prevStepRef.current = null;
       return;
     }
 
@@ -386,7 +617,13 @@ export function useWorkspaceProfileWizard({
         nextValues.mockExamName = suggestedExam.name;
       }
     }
-    setStep(forceStartAtStepOne ? 1 : getInitialStep(initialData, isReadOnly, storageKey));
+    const initialStepValue = forceStartAtStepOne ? 1 : getInitialStep(initialData, isReadOnly, storageKey);
+    savedStepSnapshotsRef.current = forceStartAtStepOne
+      ? {}
+      : createSavedStepSnapshots(initialData, nextValues, initialStepValue);
+    prevStepRef.current = null;
+    setStep(initialStepValue);
+    setMaxUnlockedStep(Math.max(1, initialStepValue));
     setValues(nextValues);
     setErrors({});
     setSaveError('');
@@ -480,6 +717,7 @@ export function useWorkspaceProfileWizard({
     if (mockTestGenerationState !== 'ready') return;
 
     setSaveError('');
+    setMaxUnlockedStep((current) => Math.max(current, 3));
     setStep(3);
   }, [open, isReadOnly, step, values.workspacePurpose, mockTestGenerationState]);
 
@@ -549,10 +787,10 @@ export function useWorkspaceProfileWizard({
 
   // ─── Auto-fetch field suggestions when entering Step 2 ───
   const fetchFieldSuggestions = useCallback(
-    async (knowledge, domain, purpose) => {
+    async (payload) => {
       fieldSuggestionAbortRef.current?.abort();
 
-      if (!knowledge || !domain || !purpose) {
+      if (!payload?.knowledge || !payload?.domain || !payload?.learningMode) {
         setFieldSuggestions(null);
         setFieldSuggestionStatus('idle');
         return;
@@ -563,14 +801,7 @@ export function useWorkspaceProfileWizard({
       setFieldSuggestionStatus('loading');
 
       try {
-        const result = await suggestProfileFields(
-          {
-            knowledge: knowledge.trim(),
-            domain: domain.trim(),
-            learningMode: mapLearningModeForApi(purpose),
-          },
-          { signal: abortController.signal }
-        );
+        const result = await suggestProfileFields(payload, { signal: abortController.signal });
 
         if (abortController.signal.aborted) return;
         setFieldSuggestions(result);
@@ -587,18 +818,92 @@ export function useWorkspaceProfileWizard({
 
   useEffect(() => {
     if (!open || isReadOnly) return;
+    prevStepRef.current = step;
+    clearTimeout(fieldSuggestionTimerRef.current);
 
-    // Only trigger when we just ENTERED step 2
-    if (step === 2 && prevStepRef.current !== 2) {
-      fetchFieldSuggestions(
-        values.knowledgeInput,
-        values.inferredDomain,
-        values.workspacePurpose
-      );
+    if (step !== 2) {
+      fieldSuggestionAbortRef.current?.abort();
+      return;
     }
 
-    prevStepRef.current = step;
-  }, [open, step, isReadOnly, fetchFieldSuggestions, values.knowledgeInput, values.inferredDomain, values.workspacePurpose]);
+    const payload = buildFieldSuggestionPayload(values);
+    fieldSuggestionTimerRef.current = setTimeout(() => {
+      fetchFieldSuggestions(payload);
+    }, FIELD_SUGGESTION_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(fieldSuggestionTimerRef.current);
+    };
+  }, [
+    open,
+    step,
+    isReadOnly,
+    fetchFieldSuggestions,
+    values.workspacePurpose,
+    values.knowledgeInput,
+    values.inferredDomain,
+    values.currentLevel,
+    values.strongAreas,
+    values.weakAreas,
+  ]);
+
+  const runConsistencyValidation = useCallback(
+    async (payload, { signal } = {}) => {
+      return validateProfileConsistency(payload, { signal });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!open || isReadOnly) return;
+
+    clearTimeout(consistencyTimerRef.current);
+
+    if (step !== 2 || !shouldRunLiveConsistency(values)) {
+      consistencyAbortRef.current?.abort();
+      setConsistencyResult(null);
+      setConsistencyStatus('idle');
+      return;
+    }
+
+    consistencyTimerRef.current = setTimeout(async () => {
+      const abortController = new AbortController();
+      consistencyAbortRef.current?.abort();
+      consistencyAbortRef.current = abortController;
+      setConsistencyStatus('loading');
+
+      try {
+        const result = await runConsistencyValidation(buildConsistencyPayload(values), {
+          signal: abortController.signal,
+        });
+
+        if (abortController.signal.aborted) return;
+        setConsistencyResult(result);
+        setConsistencyStatus('success');
+      } catch (error) {
+        if (abortController.signal.aborted) return;
+        console.error('[StudyProfile] Live consistency validation failed:', error);
+        setConsistencyStatus('error');
+      }
+    }, CONSISTENCY_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(consistencyTimerRef.current);
+    };
+  }, [
+    open,
+    step,
+    isReadOnly,
+    runConsistencyValidation,
+    values.workspacePurpose,
+    values.knowledgeInput,
+    values.inferredDomain,
+    values.currentLevel,
+    values.learningGoal,
+    values.strongAreas,
+    values.weakAreas,
+    values.mockExamName,
+  ]);
 
   function updateField(field, value) {
     setValues((current) => ({
@@ -638,6 +943,64 @@ export function useWorkspaceProfileWizard({
       delete nextErrors.materials;
       return nextErrors;
     });
+
+    // Tự động upload ngay khi người dùng chọn file
+    if (onUploadFiles && normalizedFiles.length > 0) {
+      (async () => {
+        setUploadCheckNotice(
+          'uploading',
+          32,
+          translateOrFallback(
+            t,
+            'workspace.profileConfig.messages.materialAutoUploadRunning',
+            `Đang tải ${normalizedFiles.length} tài liệu vào workspace.`
+          )
+        );
+
+        try {
+          await onUploadFiles(normalizedFiles);
+
+          setUploadCheckNotice(
+            'processing',
+            80,
+            translateOrFallback(
+              t,
+              'workspace.profileConfig.messages.materialAutoProcessing',
+              'Tài liệu đã được tải lên, hệ thống đang kiểm tra độ phù hợp. Bạn có thể tiếp tục sau khi có ít nhất một tài liệu hợp lệ.'
+            )
+          );
+
+          // Dọn hàng chờ local, danh sách thực tế sẽ được đồng bộ qua WebSocket + fetchSources
+          setPendingFiles((current) =>
+            current.filter((file) =>
+              !normalizedFiles.some(
+                (nf) => nf.name === file.name && nf.size === file.size && nf.lastModified === file.lastModified
+              )
+            )
+          );
+        } catch (error) {
+          console.error('[WorkspaceProfile] Auto upload materials failed:', error);
+          setUploadCheckNotice(
+            'error',
+            0,
+            error?.message
+              || translateOrFallback(
+                t,
+                'workspace.profileConfig.validation.uploadFailed',
+                'Không thể tải lên tài liệu. Vui lòng thử lại.'
+              )
+          );
+          setSaveError(
+            error?.message
+              || translateOrFallback(
+                t,
+                'workspace.profileConfig.validation.uploadFailed',
+                'Không thể tải lên tài liệu. Vui lòng thử lại.'
+              )
+          );
+        }
+      })();
+    }
   }
 
   function removePendingFile(index) {
@@ -728,9 +1091,6 @@ export function useWorkspaceProfileWizard({
           'Vui lòng chọn lĩnh vực do AI đề xuất.'
         );
       }
-      if (needsKnowledgeDescription && !values.knowledgeDescription.trim()) {
-        nextErrors.knowledgeDescription = t('workspace.profileConfig.validation.knowledgeDescriptionRequired');
-      }
     }
 
     if (targetStep === 2) {
@@ -761,6 +1121,12 @@ export function useWorkspaceProfileWizard({
           'workspace.profileConfig.validation.materialsRequired',
           'Vui lòng tải lên ít nhất một tài liệu phù hợp với workspace.'
         );
+      } else if (requiresRoadmapMaterials && !hasValidUploadedMaterial) {
+        if (pendingFiles.length > 0 && !hasUploadablePendingFiles) {
+          nextErrors.materials = stepThreeInvalidSelectionMessage;
+        } else if (pendingFiles.length === 0 && processingUploadedCount > 0) {
+          nextErrors.materials = stepThreeAwaitingValidationMessage;
+        }
       }
     }
 
@@ -780,38 +1146,30 @@ export function useWorkspaceProfileWizard({
     return nextErrors;
   }
 
-  async function persistUploadStep() {
-    const stepErrors = validateStep(3);
-    setErrors(stepErrors);
+  function hasSavedSnapshot(targetStep) {
+    return Boolean(savedStepSnapshotsRef.current[targetStep]);
+  }
 
-    if (Object.keys(stepErrors).length > 0) {
+  function isStepDirty(targetStep) {
+    return !areStepSnapshotsEqual(
+      savedStepSnapshotsRef.current[targetStep],
+      buildStepSnapshot(targetStep, values)
+    );
+  }
+
+  function markStepAsSaved(targetStep) {
+    savedStepSnapshotsRef.current[targetStep] = buildStepSnapshot(targetStep, values);
+    if (targetStep < TOTAL_STEPS) {
+      setMaxUnlockedStep((current) => Math.max(current, targetStep + 1));
+    }
+  }
+
+  function canSkipPersistForCurrentStep() {
+    if (step !== 1 && step !== 2) {
       return false;
     }
 
-    if (pendingFiles.length === 0) {
-      return true;
-    }
-
-    setSubmitting(true);
-    setSaveError('');
-
-    try {
-      await onUploadFiles?.(pendingFiles);
-      setPendingFiles([]);
-      return true;
-    } catch (error) {
-      setSaveError(
-        error?.message
-          || translateOrFallback(
-            t,
-            'workspace.profileConfig.validation.uploadFailed',
-            'Không thể tải lên tài liệu ở bước hiện tại. Vui lòng thử lại.'
-          )
-      );
-      return false;
-    } finally {
-      setSubmitting(false);
-    }
+    return hasSavedSnapshot(step) && !isStepDirty(step);
   }
 
   async function persistStep(stepToPersist) {
@@ -826,17 +1184,7 @@ export function useWorkspaceProfileWizard({
     if (stepToPersist === 2) {
       try {
         setConsistencyStatus('loading');
-        const consistencyData = {
-          knowledge: values.knowledgeInput.trim(),
-          domain: values.inferredDomain,
-          learningMode: mapLearningModeForApi(values.workspacePurpose),
-          currentLevel: values.currentLevel.trim() || null,
-          learningGoal: values.learningGoal.trim() || null,
-          examName: values.mockExamName?.trim() || null,
-          strongAreas: values.strongAreas ? values.strongAreas.split(/[,\n;/]+/).map((s) => s.trim()).filter(Boolean) : [],
-          weakAreas: values.weakAreas ? values.weakAreas.split(/[,\n;/]+/).map((s) => s.trim()).filter(Boolean) : [],
-        };
-        const result = await validateProfileConsistency(consistencyData);
+        const result = await runConsistencyValidation(buildConsistencyPayload(values));
         setConsistencyResult(result);
         setConsistencyStatus('success');
 
@@ -857,6 +1205,7 @@ export function useWorkspaceProfileWizard({
 
     try {
       const result = await onSave(stepToPersist, buildPayload(values));
+      markStepAsSaved(stepToPersist);
       return { ok: true, result };
     } catch (error) {
       setSaveError(
@@ -883,11 +1232,10 @@ export function useWorkspaceProfileWizard({
       return;
     }
 
-    if (step === 3) {
-      const isUploaded = await persistUploadStep();
-      if (isUploaded) {
-        setStep(4);
-      }
+    if (canSkipPersistForCurrentStep()) {
+      setSaveError('');
+      setMaxUnlockedStep((current) => Math.max(current, Math.min(TOTAL_STEPS, step + 1)));
+      setStep((current) => Math.min(TOTAL_STEPS, current + 1));
       return;
     }
 
@@ -895,11 +1243,13 @@ export function useWorkspaceProfileWizard({
     if (saveState.ok) {
       if (step === 2 && values.workspacePurpose === 'MOCK_TEST' && saveState.result?.deferred) {
         if (saveState.result?.advanceToStep) {
+          setMaxUnlockedStep((current) => Math.max(current, saveState.result.advanceToStep));
           setStep(saveState.result.advanceToStep);
         }
         return;
       }
 
+      setMaxUnlockedStep((current) => Math.max(current, Math.min(TOTAL_STEPS, step + 1)));
       setStep((current) => Math.min(TOTAL_STEPS, current + 1));
     }
   }
@@ -907,6 +1257,22 @@ export function useWorkspaceProfileWizard({
   function previousStep() {
     setSaveError('');
     setStep((current) => Math.max(1, current - 1));
+  }
+
+  function canNavigateToStep(targetStep) {
+    return Number.isInteger(targetStep)
+      && targetStep >= 1
+      && targetStep < step
+      && targetStep <= maxUnlockedStep;
+  }
+
+  function goToStep(targetStep) {
+    if (!canNavigateToStep(targetStep)) {
+      return;
+    }
+
+    setSaveError('');
+    setStep(targetStep);
   }
 
   function isStepComplete(targetStep) {
@@ -934,10 +1300,16 @@ export function useWorkspaceProfileWizard({
   return {
     totalSteps: TOTAL_STEPS,
     step,
+    maxUnlockedStep,
     values,
     errors,
     saveError,
-    statusNotice: values.workspacePurpose === 'MOCK_TEST' ? mockTestGenerationMessage : '',
+    uploadablePendingCount: pendingUploadCandidates.length,
+    blockedPendingCount,
+    statusNotice:
+      values.workspacePurpose === 'MOCK_TEST'
+        ? mockTestGenerationMessage
+        : '',
     statusTone:
       values.workspacePurpose === 'MOCK_TEST'
         ? mockTestGenerationState === 'ready'
@@ -977,6 +1349,8 @@ export function useWorkspaceProfileWizard({
     setExamSearch,
     nextStep,
     previousStep,
+    canNavigateToStep,
+    goToStep,
     handleSubmit,
     isStepComplete,
     applySuggestion,
