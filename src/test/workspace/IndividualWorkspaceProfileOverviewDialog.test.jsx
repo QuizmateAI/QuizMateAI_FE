@@ -18,6 +18,9 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
         isDarkMode={false}
         profile={{
           profileStatus: 'DONE',
+          workspaceSetupStatus: 'DONE',
+          currentStep: 4,
+          onboardingCompleted: true,
           workspacePurpose: 'MOCK_TEST',
           inferredDomain: 'IELTS Writing',
           knowledgeInput: 'IELTS Writing task 2',
@@ -34,7 +37,7 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
           adaptationMode: 'FLEXIBLE',
           roadmapSpeedMode: 'STANDARD',
           estimatedTotalDays: 45,
-          recommendedMinutesPerDay: 90,
+          estimatedMinutesPerDay: 90,
           roadmapEnabled: true,
         }}
         materials={[

@@ -1,6 +1,7 @@
 import api from './api';
 import {
   getPublicExamById,
+  getPublicExamByName,
   getPublicExamTemplateConfig,
 } from '@/Pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/mockProfileWizardData';
 
@@ -32,6 +33,56 @@ function normalizeListField(value) {
 
 function extractApiData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
+}
+
+function deriveCurrentStep(profile) {
+  const setupStatus = profile?.workspaceSetupStatus;
+  if (setupStatus === 'DONE') return 3;
+  if (setupStatus === 'PROFILE_DONE') return 2;
+  if (profile?.profileStatus === 'BASIC_DONE') return 2;
+  return 1;
+}
+
+export function normalizeIndividualWorkspaceProfile(profile) {
+  if (!profile || typeof profile !== 'object') {
+    return null;
+  }
+
+  const learningMode = profile.workspacePurpose || profile.learningMode || '';
+  const matchedPublicExam = getPublicExamByName(profile.examName || profile.mockExamName || '');
+  const mockExamCatalogId = profile.mockExamCatalogId || matchedPublicExam?.id || '';
+  const mockExamMode = profile.mockExamMode
+    || (learningMode === 'MOCK_TEST'
+      ? (mockExamCatalogId ? 'PUBLIC' : (profile.examName || profile.mockExamName) ? 'PRIVATE' : 'PUBLIC')
+      : null);
+
+  return {
+    ...profile,
+    workspacePurpose: learningMode,
+    learningMode,
+    currentStep: Number(profile.currentStep) || deriveCurrentStep(profile),
+    totalSteps: Number(profile.totalSteps) || 3,
+    onboardingCompleted: Boolean(profile.onboardingCompleted ?? profile.workspaceSetupStatus === 'DONE'),
+    knowledgeInput: profile.knowledgeInput ?? profile.knowledge ?? '',
+    inferredDomain: profile.inferredDomain ?? profile.domain ?? '',
+    enableRoadmap:
+      learningMode === 'STUDY_NEW'
+        ? true
+        : Boolean(profile.enableRoadmap ?? profile.roadmapEnabled),
+    mockExamCatalogId,
+    mockExamMode,
+    mockExamName: profile.mockExamName ?? profile.examName ?? '',
+    roadmapSpeedMode:
+      profile.roadmapSpeedMode
+      || (profile.speedMode === 'MEDIUM' ? 'STANDARD' : profile.speedMode || ''),
+    recommendedMinutesPerDay:
+      profile.recommendedMinutesPerDay
+      ?? profile.estimatedMinutesPerDay
+      ?? null,
+    templatePrompt: profile.templatePrompt ?? '',
+    templateDurationMinutes: profile.templateDurationMinutes ?? null,
+    templateQuestionCount: profile.templateQuestionCount ?? null,
+  };
 }
 
 function mapAdaptationMode(value) {
@@ -193,7 +244,7 @@ function buildRoadmapConfigStepRequest(payload) {
       adaptationMode: null,
       speedMode: null,
       estimatedTotalDays: null,
-      recommendedMinutesPerDay: null,
+      estimatedMinutesPerDay: null,
     };
   }
 
@@ -201,7 +252,7 @@ function buildRoadmapConfigStepRequest(payload) {
     adaptationMode: mapAdaptationMode(payload.adaptationMode),
     speedMode: mapRoadmapSpeedMode(payload.roadmapSpeedMode),
     estimatedTotalDays: Number(payload.estimatedTotalDays) || null,
-    recommendedMinutesPerDay: Number(payload.recommendedMinutesPerDay) || null,
+    estimatedMinutesPerDay: Number(payload.recommendedMinutesPerDay) || Number(payload.estimatedMinutesPerDay) || null,
   };
 }
 
@@ -214,9 +265,9 @@ function delay(ms) {
 async function waitForMockTestPersonalInfoDone(workspaceId) {
   for (let attempt = 0; attempt < MOCK_TEST_POLL_ATTEMPTS; attempt += 1) {
     const response = await getIndividualWorkspaceProfile(workspaceId);
-    const profile = extractApiData(response);
+    const profile = normalizeIndividualWorkspaceProfile(extractApiData(response));
 
-    if (profile?.profileStatus === 'PERSONAL_INFO_DONE' || profile?.profileStatus === 'DONE') {
+    if (profile?.currentStep >= 3 || ['PROFILE_DONE', 'DONE'].includes(profile?.workspaceSetupStatus)) {
       return response;
     }
 
@@ -307,6 +358,11 @@ export const saveIndividualWorkspaceRoadmapConfigStep = async (workspaceId, data
     `/workspace-profile/individual/${workspaceId}/steps/roadmap-config`,
     buildRoadmapConfigStepRequest(data)
   );
+  return response;
+};
+
+export const completeIndividualWorkspaceUploadStep = async (workspaceId) => {
+  const response = await api.put(`/workspace-profile/individual/${workspaceId}/steps/upload`);
   return response;
 };
 

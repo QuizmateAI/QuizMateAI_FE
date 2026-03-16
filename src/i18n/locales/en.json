@@ -818,6 +818,9 @@
         "next": "Continue",
         "finish": "Finish",
         "saving": "Saving...",
+        "retry": "Retry",
+        "reviewStep": "Review step",
+        "checkAndUpload": "Check and upload",
         "uploadAndContinue": "Upload and continue",
         "uploading": "Uploading...",
         "generatingTemplate": "Generating template...",
@@ -835,7 +838,11 @@
         },
         "3": {
           "title": "Step 3",
-          "description": "Configure the roadmap, focus areas, and your final target."
+          "description": "Upload your materials and confirm they match the learning profile above."
+        },
+        "4": {
+          "title": "Step 4",
+          "description": "Finalize the roadmap settings, learning pace, and workspace profile."
         }
       },
       "purpose": {
@@ -874,14 +881,25 @@
         "knowledgeSuggestionTitle": "Suggested domains",
         "selectDomainTag": "Choose this domain",
         "selectedDomainTag": "Selected",
+        "noDomainSuggestionTitle": "Quizmate AI does not have enough domains to suggest yet.",
+        "noDomainSuggestionDescription": "Add a clearer language, exam, or narrower topic. If this is a shorthand level like N1 or N4, the system will prioritize inferring related domains as soon as it has enough signal.",
         "primaryDomainLockedHint": "Only selectable from AI suggestions",
         "domainReason": {
           "closest": "This matches the signal \"{{signal}}\" inside \"{{knowledge}}\", so it is the closest domain to what you entered.",
           "group": "The signal \"{{signal}}\" belongs to the same knowledge cluster as \"{{domain}}\", so this domain still stays very close to your input.",
-          "context": "\"{{domain}}\" sits in the same learning context as \"{{knowledge}}\", which helps AI expand in the right direction."
+          "context": "\"{{domain}}\" sits in the same learning context as \"{{knowledge}}\", which helps AI expand in the right direction.",
+          "languagePair": "This is a reasonable interpretation if \"{{knowledge}}\" points to learning or using {{domain}} within this language pair.",
+          "translation": "This fits if you want to translate, compare, or convert content in the direction of {{domain}}.",
+          "studyBridge": "This fits if you want to use one language as the explanation language to learn through {{domain}}."
         },
         "knowledgeNudgeTitle": "This knowledge input is still too broad",
         "knowledgeNudgeDescription": "Add more detail about scope, materials, or target skills so the AI can narrow its recommendations.",
+        "analyzing": "AI is analyzing your knowledge...",
+        "analysisError": "AI analysis failed. Please try again.",
+        "knowledgeBroadHint": "Go back to the Knowledge field and be more specific about the scope, materials, or skills you want to learn.",
+        "analysisSummaryTitle": "Quizmate AI currently understands this as",
+        "analysisHighlightsTitle": "What Quizmate AI checked",
+        "analysisRefinementTitle": "You can rewrite it like this",
         "roadmapQuestion": "Do you want AI to generate a roadmap as well?",
         "roadmapDescription": "This option only appears for review and mock-test flows.",
         "enableRoadmap": "Yes, include a roadmap",
@@ -900,7 +918,31 @@
         "supportedSection": "Supported",
         "unsupportedSection": "Not supported yet",
         "templateTitle": "Template prompt",
-        "templateDescription": "Describe your preferred mock-test structure, then generate a UI preview right inside this step."
+        "templateDescription": "Describe your preferred mock-test structure, then generate a UI preview right inside this step.",
+        "suggestionLabel": "AI suggestions",
+        "suggestionLoadingLabel": "AI is suggesting...",
+        "contextTitle": "Aligned with the confirmed context from step 1",
+        "contextDescription": "Every suggestion in this step is based on the knowledge \"{{knowledge}}\" inside the domain \"{{domain}}\". Describe your actual ability in this scope, not your overall strengths.",
+        "currentLevelTitle": "1. Current level",
+        "currentLevelDescription": "Describe your current level inside the selected knowledge and domain, for example solid N5 foundation, basic kanji knowledge, or weak N4 grammar.",
+        "strengthWeaknessTitle": "2. Strengths and weaknesses in this exact scope",
+        "strengthWeaknessDescription": "The strengths and weaknesses here must describe sub-areas directly inside the knowledge you are learning, such as grammar, vocabulary, reading comprehension, or kanji; do not switch to a different subject such as math.",
+        "waitForCurrentLevelTitle": "Fill in your current level first",
+        "waitForCurrentLevelDescription": "After you describe your current level, AI will suggest strengths and weaknesses that match the selected knowledge more closely.",
+        "learningGoalTitle": "3. Learning goal",
+        "learningGoalDescription": "Your learning goal should move from your current level toward the exact knowledge scope you are studying. AI only suggests a tighter goal after it has your current level, strengths, and weaknesses.",
+        "waitForGoalTitle": "Add strengths and weaknesses for a better goal suggestion",
+        "waitForGoalDescription": "Once current level, strengths, and weaknesses are filled with the right context, AI will suggest a more specific learning goal. You can still type your own goal if your real situation is different.",
+        "fieldSuggestionLoading": "AI is analyzing step 2 and updating suggestions based on the context you entered...",
+        "overallReviewTitle": "AI overall review",
+        "overallReviewLoadingTitle": "AI is reviewing the full step",
+        "overallReviewLoadingDescription": "The system is checking whether your current level, strengths, weaknesses, and learning goal still match the knowledge you selected.",
+        "overallReviewPendingTitle": "The overall review will appear after you fill enough detail",
+        "overallReviewPendingDescription": "Fill in your current level, strengths, weaknesses, and learning goal. Then AI will check whether the whole step 2 stays aligned with the knowledge and domain you selected.",
+        "aiRecommendationNotice": "This is AI guidance only. You can still adjust it to match your real situation.",
+        "alignmentHighlightsTitle": "What is already aligned",
+        "issuesTitle": "What needs review",
+        "recommendationsTitle": "Refinement suggestions"
       },
       "stepThree": {
         "summaryTitle": "Quick summary before finishing",
@@ -921,7 +963,9 @@
         "mockTemplateAwaitingBackend": "Waiting for the backend to confirm the template is finished. {{seconds}} seconds elapsed.",
         "mockTemplateLongWait": "The backend is still processing the template. {{seconds}} seconds elapsed. Please check the status again if it takes too long.",
         "mockTemplateAwaitingBackendShort": "Confirming",
-        "backgroundMockTestReady": "The mock test finished in the background. You can open Mock test to review it now."
+        "backgroundMockTestReady": "The mock test finished in the background. You can open Mock test to review it now.",
+        "finishSuccess": "Workspace setup completed successfully.",
+        "saveError": "Unable to save the workspace setup progress."
       },
       "fields": {
         "workspacePurpose": "Workspace purpose",
@@ -1022,6 +1066,7 @@
         "knowledgeRequired": "Please enter a knowledge topic for AI analysis.",
         "waitForAi": "Please wait for AI to finish analyzing your knowledge.",
         "domainRequired": "Please confirm the domain inferred by AI.",
+        "aiAnalysisError": "AI analysis failed. Please try again.",
         "knowledgeOptionRequired": "Please choose one main knowledge option from the AI suggestions.",
         "knowledgeDescriptionRequired": "Please provide more detail about this knowledge topic.",
         "currentLevelRequired": "Please enter your current level.",
@@ -1036,6 +1081,8 @@
         "roadmapSpeedModeRequired": "Please choose a roadmap speed mode.",
         "estimatedTotalDaysRequired": "Please enter a total number of days greater than 0.",
         "recommendedMinutesRequired": "Please enter a daily study time greater than 0.",
+        "materialsRequired": "Please upload at least one material that matches this workspace.",
+        "validMaterialsRequired": "You selected a study roadmap, so you need at least one valid material that matches this workspace knowledge before moving to step 4.",
         "targetScoreRequired": "Please choose or enter a target score.",
         "targetScoreScaleRequired": "Please enter the scoring scale for the private exam.",
         "expectedExamDateRequired": "Please choose the expected exam date."

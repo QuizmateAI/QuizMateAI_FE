@@ -107,6 +107,71 @@ function countMaterialsByStatus(materials, statuses) {
   return materials.filter((item) => statuses.includes((item?.status || '').toUpperCase())).length;
 }
 
+function buildSetupSteps(t, language, profile) {
+  const currentStep = Number(profile?.currentStep) || 1;
+  const completed = Boolean(profile?.onboardingCompleted || profile?.workspaceSetupStatus === 'DONE');
+  const isEnglish = language === 'en';
+  const steps = [
+    {
+      id: 1,
+      icon: BookOpen,
+      title: translateOrFallback(t, 'workspace.profileConfig.steps.1.title', isEnglish ? 'Step 1' : 'Bước 1'),
+      description: translateOrFallback(t, 'workspace.profileConfig.steps.1.description', isEnglish ? 'Set the workspace intent and knowledge focus.' : 'Xác định mục đích workspace và phạm vi kiến thức.'),
+    },
+    {
+      id: 2,
+      icon: GraduationCap,
+      title: translateOrFallback(t, 'workspace.profileConfig.steps.2.title', isEnglish ? 'Step 2' : 'Bước 2'),
+      description: translateOrFallback(t, 'workspace.profileConfig.steps.2.description', isEnglish ? 'Complete learner context and AI exam setup.' : 'Hoàn thiện bối cảnh người học và thiết lập AI cho kỳ thi.'),
+    },
+    {
+      id: 3,
+      icon: Route,
+      title: translateOrFallback(t, 'workspace.profileConfig.steps.3.title', isEnglish ? 'Step 3' : 'Bước 3'),
+      description: translateOrFallback(t, 'workspace.profileConfig.steps.3.description', isEnglish ? 'Finalize roadmap pacing and complete setup.' : 'Chốt nhịp học và hoàn tất thiết lập workspace.'),
+    },
+  ];
+
+  return steps.map((step) => ({
+    ...step,
+    state: completed || currentStep > step.id
+      ? 'done'
+      : currentStep === step.id
+        ? 'current'
+        : 'upcoming',
+  }));
+}
+
+function SetupStepCard({ step, isDarkMode }) {
+  const Icon = step.icon;
+  const toneClassName = step.state === 'done'
+    ? (isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50')
+    : step.state === 'current'
+      ? (isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50')
+      : (isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white');
+  const badgeClassName = step.state === 'done'
+    ? (isDarkMode ? 'bg-emerald-400 text-slate-950' : 'bg-emerald-600 text-white')
+    : step.state === 'current'
+      ? (isDarkMode ? 'bg-cyan-300 text-slate-950' : 'bg-cyan-600 text-white')
+      : (isDarkMode ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700');
+
+  return (
+    <div className={cn('rounded-[24px] border p-4', toneClassName)}>
+      <div className="flex items-start gap-3">
+        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl', badgeClassName)}>
+          {step.state === 'done' ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+        </div>
+        <div>
+          <p className="text-sm font-semibold">{step.title}</p>
+          <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
+            {step.description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function IndividualWorkspaceProfileOverviewDialog({
   open,
   onOpenChange,
@@ -121,6 +186,8 @@ function IndividualWorkspaceProfileOverviewDialog({
   const selectedExam = getPublicExamById(profile?.mockExamCatalogId);
   const examName = profile?.mockExamName || profile?.examName || selectedExam?.name || '';
   const roadmapEnabled = purpose === 'STUDY_NEW' ? true : Boolean(profile?.enableRoadmap ?? profile?.roadmapEnabled);
+  const setupSteps = buildSetupSteps(t, i18n.language, profile);
+  const onboardingCompleted = Boolean(profile?.onboardingCompleted || profile?.workspaceSetupStatus === 'DONE');
   const processingMaterials = countMaterialsByStatus(materials, ['PROCESSING', 'UPLOADING', 'PENDING', 'QUEUED']);
   const activeMaterials = countMaterialsByStatus(materials, ['ACTIVE', 'WARN', 'WARNED', 'REJECT', 'REJECTED', 'ERROR']);
 
@@ -194,6 +261,55 @@ function IndividualWorkspaceProfileOverviewDialog({
         </DialogHeader>
 
         <div className="overflow-y-auto px-5 py-5 sm:px-6">
+          <section
+            className={cn(
+              'mb-6 rounded-[28px] border p-5 sm:p-6',
+              isDarkMode ? 'border-white/10 bg-white/[0.04] text-white' : 'border-slate-200 bg-white text-slate-900'
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className={cn(
+                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+                  isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-50 text-cyan-600'
+                )}
+              >
+                <Layers3 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {translateOrFallback(t, 'workspace.profileOverview.setupTitle', i18n.language === 'en' ? 'Setup progress' : 'Tiến trình thiết lập')}
+                </h3>
+                <p className={cn('mt-1 text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+                  {translateOrFallback(
+                    t,
+                    'workspace.profileOverview.setupDescription',
+                    i18n.language === 'en'
+                      ? 'Backend and frontend now follow the same 4-step onboarding state for this workspace.'
+                      : 'Backend và frontend đang dùng cùng một tiến trình 4 bước cho workspace này.'
+                  )}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <OverviewChip
+                    isDarkMode={isDarkMode}
+                    tone={onboardingCompleted ? 'success' : 'warning'}
+                    label={onboardingCompleted
+                      ? (i18n.language === 'en' ? 'Completed' : 'Đã hoàn tất')
+                      : (i18n.language === 'en' ? `Current step ${Math.min(Number(profile?.currentStep) || 1, 4)}/4` : `Đang ở bước ${Math.min(Number(profile?.currentStep) || 1, 4)}/4`)}
+                  />
+                  <OverviewChip isDarkMode={isDarkMode} label={profile?.workspaceSetupStatus || 'CREATED'} />
+                  <OverviewChip isDarkMode={isDarkMode} label={profile?.profileStatus || 'IN_PROGRESS'} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {setupSteps.map((step) => (
+                <SetupStepCard key={step.id} step={step} isDarkMode={isDarkMode} />
+              ))}
+            </div>
+          </section>
+
           <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
             <div className="space-y-6">
               <OverviewSection
@@ -263,7 +379,7 @@ function IndividualWorkspaceProfileOverviewDialog({
                     <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Adaptation mode')} value={profile?.adaptationMode ? t(`workspace.profileConfig.adaptationMode.${profile.adaptationMode === 'STRICT' ? 'BALANCED' : profile.adaptationMode}.title`) : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} />
                     <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', 'Roadmap speed')} value={profile?.roadmapSpeedMode || profile?.speedMode ? t(`workspace.profileConfig.roadmapSpeedMode.${profile?.roadmapSpeedMode || (profile?.speedMode === 'MEDIUM' ? 'STANDARD' : profile?.speedMode)}.title`) : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} />
                     <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', 'Estimated total days')} value={profile?.estimatedTotalDays ? `${profile.estimatedTotalDays} ${i18n.language === 'en' ? 'days' : 'ngày'}` : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} />
-                    <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.recommendedMinutesPerDay', 'Recommended minutes per day')} value={profile?.recommendedMinutesPerDay ? `${profile.recommendedMinutesPerDay} ${i18n.language === 'en' ? 'minutes/day' : 'phút/ngày'}` : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} />
+                    <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.recommendedMinutesPerDay', 'Recommended minutes per day')} value={(profile?.recommendedMinutesPerDay ?? profile?.estimatedMinutesPerDay) ? `${profile?.recommendedMinutesPerDay ?? profile?.estimatedMinutesPerDay} ${i18n.language === 'en' ? 'minutes/day' : 'phút/ngày'}` : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} />
                   </div>
 
                   <div
@@ -336,7 +452,7 @@ function IndividualWorkspaceProfileOverviewDialog({
                     ))}
                     {profile?.currentLevel ? <OverviewChip isDarkMode={isDarkMode} label={profile.currentLevel} tone="info" /> : null}
                     {profile?.estimatedTotalDays ? <OverviewChip isDarkMode={isDarkMode} label={<><Clock3 className="mr-1 inline h-3 w-3" />{profile.estimatedTotalDays} {i18n.language === 'en' ? 'days' : 'ngày'}</>} /> : null}
-                    {profile?.recommendedMinutesPerDay ? <OverviewChip isDarkMode={isDarkMode} label={<><TimerReset className="mr-1 inline h-3 w-3" />{profile.recommendedMinutesPerDay} {i18n.language === 'en' ? 'min/day' : 'phút/ngày'}</>} /> : null}
+                    {(profile?.recommendedMinutesPerDay ?? profile?.estimatedMinutesPerDay) ? <OverviewChip isDarkMode={isDarkMode} label={<><TimerReset className="mr-1 inline h-3 w-3" />{profile?.recommendedMinutesPerDay ?? profile?.estimatedMinutesPerDay} {i18n.language === 'en' ? 'min/day' : 'phút/ngày'}</>} /> : null}
                     {materials.length > 0 ? <OverviewChip isDarkMode={isDarkMode} label={<><Layers3 className="mr-1 inline h-3 w-3" />{materials.length} {i18n.language === 'en' ? 'materials' : 'tài liệu'}</>} tone="warning" /> : null}
                     <OverviewChip isDarkMode={isDarkMode} label={<><CheckCircle2 className="mr-1 inline h-3 w-3" />{translateOrFallback(t, 'workspace.profileOverview.ready', i18n.language === 'en' ? 'Ready to use' : 'Sẵn sàng sử dụng')}</>} tone="success" />
                   </div>
