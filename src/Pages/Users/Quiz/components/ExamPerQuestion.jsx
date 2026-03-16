@@ -27,7 +27,7 @@ function makeReducer(questions) {
   };
 }
 
-export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onSubmit, attemptId, fontClass }) {
+export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextAnswerChange, onSubmit, attemptId, fontClass }) {
   const [state, dispatch] = useReducer(
     makeReducer(quiz.questions),
     { currentIndex: 0, timeLeft: quiz.questions[0]?.timeLimit || 0 },
@@ -119,8 +119,9 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onSubmi
         question={currentQuestion}
         questionNumber={currentIndex + 1}
         totalQuestions={total}
-        selectedAnswers={answers[currentQuestion.id] || []}
+        answerValue={answers[currentQuestion.id]}
         onSelectAnswer={(answerId) => onSelectAnswer(currentQuestion.id, answerId, currentQuestion.type === 'MULTIPLE_CHOICE')}
+        onTextAnswerChange={(value) => onTextAnswerChange?.(currentQuestion.id, value)}
         disabled={timeLeft <= 0}
       />
 

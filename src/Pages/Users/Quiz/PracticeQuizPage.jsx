@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -7,15 +7,17 @@ import { Button } from '@/Components/ui/button';
 import { Switch } from '@/Components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
 import QuestionCard from './components/QuestionCard';
+import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { useQuizProgress } from './hooks/useQuizProgress';
 import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
-import { normalizeQuizData } from './utils/quizTransform';
+import { mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 
 export default function PracticeQuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { i18n } = useTranslation();
   const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -28,8 +30,13 @@ export default function PracticeQuizPage() {
   const [showResult, setShowResult] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const returnToQuizPath = location.state?.returnToQuizPath || '/home';
 
-  const { answers, currentIndex, selectAnswer, goNext, goBack, initFromSaved } = useQuizProgress(attemptId);
+  const { answers, currentIndex, selectAnswer, updateTextAnswer, goNext, goBack, initFromSaved } = useQuizProgress(attemptId);
+  const { syncSnapshot } = useQuizAutoSave(attemptId, answers, {
+    interval: 5000,
+    enabled: isStarted && trackProgress,
+  });
 
   // Fetch full quiz data
   useEffect(() => {
@@ -67,26 +74,31 @@ export default function PracticeQuizPage() {
       }
 
       const attempt = res.data;
+      const hydratedAnswers = mapSavedAnswersToState(attempt.savedAnswers);
+
       setAttemptId(attempt.attemptId);
       markQuizAttempted(quizId);
-      if (attempt.savedAnswers?.length) initFromSaved(attempt.savedAnswers);
+      if (attempt.savedAnswers?.length) {
+        initFromSaved(attempt.savedAnswers);
+      }
+      syncSnapshot(hydratedAnswers);
       setIsStarted(true);
     } catch (err) {
       console.error('Failed to start attempt:', err);
       showError(err?.message || 'Failed to start quiz attempt');
     }
-  }, [quizId, initFromSaved, showError]);
+  }, [quizId, initFromSaved, showError, syncSnapshot]);
 
   const handleSubmit = useCallback(async () => {
     if (!attemptId) return;
     try {
       await submitAttempt(attemptId);
       markQuizCompleted(quizId);
-      navigate(`/quiz/result/${attemptId}`, { state: { quizId }, replace: true });
+      navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
     } catch (err) {
       console.error('Failed to submit:', err);
     }
-  }, [attemptId, navigate, quizId]);
+  }, [attemptId, navigate, quizId, returnToQuizPath]);
 
   const handleNext = useCallback(() => {
     setShowResult(false);
@@ -179,8 +191,9 @@ export default function PracticeQuizPage() {
           question={currentQuestion}
           questionNumber={currentIndex + 1}
           totalQuestions={total}
-          selectedAnswers={answers[currentQuestion.id] || []}
+          answerValue={answers[currentQuestion.id]}
           onSelectAnswer={(answerId) => selectAnswer(currentQuestion.id, answerId, currentQuestion.type === 'MULTIPLE_CHOICE')}
+          onTextAnswerChange={(value) => updateTextAnswer(currentQuestion.id, value)}
           showResult={showResult}
           showExplanation={showExplanation}
         />
