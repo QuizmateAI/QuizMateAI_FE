@@ -10,7 +10,7 @@ import QuestionCard from './components/QuestionCard';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { useQuizProgress } from './hooks/useQuizProgress';
 import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
-import { mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
+import { buildSubmitPayload, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 
@@ -92,13 +92,14 @@ export default function PracticeQuizPage() {
   const handleSubmit = useCallback(async () => {
     if (!attemptId) return;
     try {
-      await submitAttempt(attemptId);
+      const submitPayload = buildSubmitPayload(quiz?.questions, answers);
+      await submitAttempt(attemptId, submitPayload);
       markQuizCompleted(quizId);
       navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
     } catch (err) {
       console.error('Failed to submit:', err);
     }
-  }, [attemptId, navigate, quizId, returnToQuizPath]);
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath]);
 
   const handleNext = useCallback(() => {
     setShowResult(false);
