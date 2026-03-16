@@ -90,7 +90,7 @@ function CreditPackageManagement() {
 
   useEffect(() => {
     fetchPackages();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const openCreateForm = () => {

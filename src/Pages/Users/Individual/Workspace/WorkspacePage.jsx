@@ -14,15 +14,14 @@ import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import {
 	getIndividualWorkspaceProfile,
-	normalizeIndividualWorkspaceProfile,
 	saveIndividualWorkspaceBasicStep,
 	saveIndividualWorkspacePersonalInfoStep,
 	saveIndividualWorkspaceRoadmapConfigStep,
 	startIndividualWorkspaceMockTestPersonalInfoStep,
 } from "@/api/WorkspaceAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
-import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial, getModerationReportDetail } from "@/api/MaterialAPI";
+import { createRoadmapForWorkspace } from "@/api/RoadmapAPI";
+import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 
 function isProfileOnboardingDone(profileData) {

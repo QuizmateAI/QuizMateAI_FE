@@ -1,4 +1,3 @@
-import api from './api';
 
 // Domain/Knowledge/Scheme/Level config đã được loại bỏ.
 // Giữ file trống để tránh lỗi import từ các component còn tham chiếu.

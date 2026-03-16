@@ -529,6 +529,9 @@ export function useWorkspaceProfileWizard({
   open,
   initialData,
   onSave,
+  onUploadFiles = null,
+  setUploadCheckNotice = () => {},
+  uploadedMaterials = [],
   storageKey,
   forceStartAtStepOne = false,
   mockTestGenerationState = 'idle',
@@ -579,6 +582,34 @@ export function useWorkspaceProfileWizard({
     [pendingFiles, values, selectedExam]
   );
   const blockedPendingCount = Math.max(0, pendingFiles.length - pendingUploadCandidates.length);
+  const uploadedMaterialCount = uploadedMaterials.length;
+  const validUploadedMaterialCount = useMemo(
+    () => uploadedMaterials.filter((material) => {
+      const report = evaluateMaterialFit(material, values, selectedExam);
+      return isAcceptedMaterialTone(report.tone);
+    }).length,
+    [uploadedMaterials, values, selectedExam]
+  );
+  const processingUploadedCount = useMemo(
+    () => uploadedMaterials.filter((material) => {
+      const status = material?.status?.toUpperCase();
+      return ['PROCESSING', 'UPLOADING', 'PENDING', 'QUEUED'].includes(status);
+    }).length,
+    [uploadedMaterials]
+  );
+  const requiresRoadmapMaterials = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
+  const hasValidUploadedMaterial = validUploadedMaterialCount > 0;
+  const hasUploadablePendingFiles = pendingUploadCandidates.length > 0;
+  const stepThreeInvalidSelectionMessage = translateOrFallback(
+    t,
+    'workspace.profileConfig.validation.materialsNotRelevant',
+    'Những tài liệu đang chọn chưa phù hợp với hồ sơ học tập. Vui lòng thay tài liệu khác.'
+  );
+  const stepThreeAwaitingValidationMessage = translateOrFallback(
+    t,
+    'workspace.profileConfig.validation.materialsAwaitingValidation',
+    'Tài liệu đang được xử lý. Vui lòng đợi hệ thống xác nhận ít nhất một tài liệu hợp lệ.'
+  );
 
   // Cleanup on unmount
   useEffect(() => {
