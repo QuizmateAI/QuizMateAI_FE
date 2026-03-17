@@ -34,6 +34,18 @@ function formatDate(dateStr) {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+function getDurationInMinutes(quiz) {
+  const rawDuration = Number(quiz?.duration) || 0;
+  if (!rawDuration) return 0;
+
+  // AI timed-exam duration is stored as seconds to align with BE timeout logic.
+  if (quiz?.timerMode === true && quiz?.createVia === "AI") {
+    return Math.max(1, Math.round(rawDuration / 60));
+  }
+
+  return rawDuration;
+}
+
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
 function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contextType = "WORKSPACE", contextId: _contextId }) {
   const { t, i18n } = useTranslation();
@@ -165,6 +177,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const canActivate = currentStatus === "DRAFT" || currentStatus === "INACTIVE";
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
+  const durationInMinutes = getDurationInMinutes(effectiveQuiz);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -230,13 +243,23 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
                 {t(`workspace.quiz.statusLabels.${currentStatus}`)}
               </span>
+              {typeof effectiveQuiz?.timerMode === "boolean" && (
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${effectiveQuiz.timerMode
+                  ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
+                  : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                }`}>
+                  {effectiveQuiz.timerMode
+                    ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
+                    : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Thẻ thông tin dạng grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {effectiveQuiz?.duration && (
-              <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${effectiveQuiz.duration} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
+            {durationInMinutes > 0 && (
+              <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${durationInMinutes} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
             )}
             {effectiveQuiz?.overallDifficulty && (
               <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${effectiveQuiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} />

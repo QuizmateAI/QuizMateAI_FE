@@ -1,6 +1,25 @@
 const ATTEMPTED_QUIZ_IDS_KEY = 'attemptedQuizIds';
 const COMPLETED_QUIZ_IDS_KEY = 'completedQuizIds';
 
+function resolveActiveUserIdentity() {
+  try {
+    const raw = localStorage.getItem('user');
+    if (!raw) return 'anonymous';
+    const user = JSON.parse(raw);
+    const userId = Number(user?.id ?? user?.userId);
+    if (Number.isFinite(userId) && userId > 0) return `user-${userId}`;
+    const email = String(user?.email || '').trim().toLowerCase();
+    if (email) return `email-${email}`;
+  } catch {
+    // Ignore localStorage/JSON issues and use anonymous scope.
+  }
+  return 'anonymous';
+}
+
+function getScopedStorageKey(baseKey) {
+  return `${baseKey}:${resolveActiveUserIdentity()}`;
+}
+
 function normalizeQuizId(quizId) {
   const parsed = Number(quizId);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
@@ -8,7 +27,7 @@ function normalizeQuizId(quizId) {
 
 function readAttemptedQuizIds() {
   try {
-    const raw = localStorage.getItem(ATTEMPTED_QUIZ_IDS_KEY);
+    const raw = localStorage.getItem(getScopedStorageKey(ATTEMPTED_QUIZ_IDS_KEY));
     const arr = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(arr)) return [];
     return arr.map(normalizeQuizId).filter(Boolean);
@@ -19,7 +38,7 @@ function readAttemptedQuizIds() {
 
 function writeAttemptedQuizIds(ids) {
   try {
-    localStorage.setItem(ATTEMPTED_QUIZ_IDS_KEY, JSON.stringify(ids));
+    localStorage.setItem(getScopedStorageKey(ATTEMPTED_QUIZ_IDS_KEY), JSON.stringify(ids));
   } catch {
     // Ignore localStorage errors in restricted browser modes.
   }
@@ -43,7 +62,7 @@ export function hasQuizAttempted(quizId) {
 
 function readCompletedQuizIds() {
   try {
-    const raw = localStorage.getItem(COMPLETED_QUIZ_IDS_KEY);
+    const raw = localStorage.getItem(getScopedStorageKey(COMPLETED_QUIZ_IDS_KEY));
     const arr = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(arr)) return [];
     return arr.map(normalizeQuizId).filter(Boolean);
@@ -54,7 +73,7 @@ function readCompletedQuizIds() {
 
 function writeCompletedQuizIds(ids) {
   try {
-    localStorage.setItem(COMPLETED_QUIZ_IDS_KEY, JSON.stringify(ids));
+    localStorage.setItem(getScopedStorageKey(COMPLETED_QUIZ_IDS_KEY), JSON.stringify(ids));
   } catch {
     // Ignore localStorage errors in restricted browser modes.
   }
