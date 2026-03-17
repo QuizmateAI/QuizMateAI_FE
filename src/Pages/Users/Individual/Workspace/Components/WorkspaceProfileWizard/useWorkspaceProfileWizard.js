@@ -2,20 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   evaluateMaterialFit,
   generateTemplateSuggestion,
-  getPublicExamById,
-  getPublicExamByName,
-  getPublicExamTemplateDefaults,
-  getSuggestedPublicExams,
 } from './mockProfileWizardData';
 import {
   analyzeKnowledge,
   suggestProfileFields,
+  suggestExamTemplates,
   validateProfileConsistency,
 } from '@/api/StudyProfileAPI';
 
 const TOTAL_STEPS = 3;
 const ANALYSIS_DEBOUNCE_MS = 800;
 const FIELD_SUGGESTION_DEBOUNCE_MS = 500;
+const EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS = 600;
 const CONSISTENCY_DEBOUNCE_MS = 700;
 
 function ensureString(value, fallback = '') {
@@ -70,9 +68,7 @@ function hasPersonalInfoStepData(initialData) {
     || hasTextValue(initialData?.learningGoal)
     || hasTextValue(initialData?.strongAreas)
     || hasTextValue(initialData?.weakAreas)
-    || hasTextValue(initialData?.mockExamName)
     || hasTextValue(initialData?.examName)
-    || hasTextValue(initialData?.mockExamCatalogId)
   );
 }
 
@@ -111,15 +107,7 @@ function createInitialValues(initialData) {
         : hasExistingProfile
           ? 'STUDY_NEW'
           : '');
-  const matchedPublicExam = getPublicExamByName(initialData?.examName || initialData?.mockExamName || '');
 
-  const mockExamMode =
-    initialData?.mockExamMode ||
-    ((initialData?.mockExamCatalogId || matchedPublicExam)
-      ? 'PUBLIC'
-      : (initialData?.mockExamName || initialData?.examName)
-        ? 'PRIVATE'
-        : 'PUBLIC');
 
   return {
     workspacePurpose: purpose,
@@ -142,14 +130,13 @@ function createInitialValues(initialData) {
     learningGoal: ensureString(initialData?.learningGoal || ''),
     strongAreas: ensureTextValue(initialData?.strongAreas || ''),
     weakAreas: ensureTextValue(initialData?.weakAreas || ''),
-    mockExamMode,
-    mockExamCatalogId: ensureString(initialData?.mockExamCatalogId || matchedPublicExam?.id || ''),
     mockExamName: ensureString(initialData?.mockExamName || initialData?.examName || ''),
     templatePrompt: ensureString(initialData?.templatePrompt || ''),
     templateFormat: ensureString(initialData?.templateFormat || 'FULL_EXAM'),
     templateDurationMinutes: ensureNumber(initialData?.templateDurationMinutes, 90),
     templateQuestionCount: ensureNumber(initialData?.templateQuestionCount, 60),
     templateNotes: ensureString(initialData?.templateNotes || ''),
+    templateTotalSectionPoints: ensureNumber(initialData?.templateTotalSectionPoints, 100),
     adaptationMode: normalizeAdaptationMode(ensureString(initialData?.adaptationMode || 'BALANCED')),
     roadmapSpeedMode: normalizeRoadmapSpeedMode(ensureString(initialData?.roadmapSpeedMode || initialData?.speedMode || 'STANDARD')),
     estimatedTotalDays: ensureNumber(initialData?.estimatedTotalDays, 30),
@@ -169,28 +156,27 @@ function getInitialStep(initialData, isReadOnly, storageKey) {
   const profileStatus = initialData?.profileStatus;
   const setupStatus = initialData?.workspaceSetupStatus;
   const hasBasicData = hasBasicStepData(initialData);
-  const hasPersonalData = hasPersonalInfoStepData(initialData);
+  const isCompletedFlow = isReadOnly || initialData?.onboardingCompleted || setupStatus === 'DONE';
   const baseStep =
-    isReadOnly || initialData?.onboardingCompleted || setupStatus === 'DONE'
+    isCompletedFlow
       ? TOTAL_STEPS
       : explicitStep >= 1 && explicitStep <= TOTAL_STEPS
         ? explicitStep
         : setupStatus === 'PROFILE_DONE'
-          ? 2
-          : profileStatus === 'PERSONAL_INFO_DONE'
-            ? hasBasicData && hasPersonalData
+          ? 3
+          : profileStatus === 'BASIC_DONE' || profileStatus === 'DONE'
+            ? hasBasicData
               ? 2
-              : hasBasicData
-                ? 2
-                : 1
-            : profileStatus === 'BASIC_DONE'
-              ? hasBasicData
-                ? 2
-                : 1
-              : 1;
+              : 1
+            : 1;
+
+  if (isCompletedFlow) {
+    return TOTAL_STEPS;
+  }
+
   const storedStep = readStoredStep(storageKey);
 
-  if (storedStep && storedStep >= baseStep && storedStep <= TOTAL_STEPS) {
+  if (storedStep && storedStep >= 1 && storedStep <= baseStep) {
     return storedStep;
   }
 
@@ -219,10 +205,6 @@ function normalizeRoadmapSpeedMode(value) {
 function translateOrFallback(t, key, fallback) {
   const translated = t(key);
   return translated === key ? fallback : translated;
-}
-
-function isAcceptedMaterialTone(tone) {
-  return tone === 'strong';
 }
 
 function normalizeReasonText(value) {
@@ -269,27 +251,77 @@ function resolveDomainReasonType(label, knowledge, index) {
   return reasonTypes[index] || 'context';
 }
 
-function buildDomainOptionsFromApi(domainSuggestions, knowledge) {
+function extractDomainSuggestionDetails(result) {
+  if (!result || typeof result !== 'object') return [];
+
+  // Backend contract (as of 2026-03): domainSuggestionDetails: [{ label, reason }]
+  // Keep a few aliases for backwards/experimental payloads.
+  const candidates = [
+    result.domainSuggestionDetails,
+    result.domainSuggestionDetail,
+    result.domainSuggestionDetailList,
+    result.domainSuggestionDetailsList,
+    result.domainSuggestionsDetail,
+    result.domainSuggestionsDetails,
+  ];
+
+  const found = candidates.find((item) => Array.isArray(item));
+  return Array.isArray(found) ? found : [];
+}
+
+function normalizeDomainSuggestionDetail(detail) {
+  if (!detail || typeof detail !== 'object') return null;
+
+  const label = (detail.domain || detail.domainTitle || detail.title || detail.label || detail.name || '').toString().trim();
+  const reason = (detail.reason || detail.rationale || detail.explanation || detail.message || detail.detail || '').toString().trim();
+
+  if (!label) return null;
+
+  return {
+    label,
+    reason: reason || '',
+  };
+}
+
+function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails, knowledge }) {
+  const normalizedKnowledge = (knowledge || '').toString().trim();
+
+  const normalizedDetails = (Array.isArray(domainSuggestionDetails) ? domainSuggestionDetails : [])
+    .map(normalizeDomainSuggestionDetail)
+    .filter(Boolean);
+
+  if (normalizedDetails.length > 0) {
+    return normalizedDetails.slice(0, 5).map((item, index) => ({
+      label: item.label,
+      signal: normalizedKnowledge,
+      knowledge: normalizedKnowledge,
+      reasonType: resolveDomainReasonType(item.label, normalizedKnowledge, index),
+      reason: item.reason,
+    }));
+  }
+
   if (!Array.isArray(domainSuggestions) || domainSuggestions.length === 0) {
     return [];
   }
 
   return domainSuggestions.slice(0, 5).map((label, index) => ({
     label,
-    signal: knowledge,
-    knowledge,
-    reasonType: resolveDomainReasonType(label, knowledge, index),
+    signal: normalizedKnowledge,
+    knowledge: normalizedKnowledge,
+    reasonType: resolveDomainReasonType(label, normalizedKnowledge, index),
   }));
 }
 
 function localizeDomainOptions(options, t) {
   return options.map((option) => ({
     ...option,
-    reason: t(`workspace.profileConfig.stepOne.domainReason.${option.reasonType}`, {
-      signal: option.signal,
-      knowledge: option.knowledge,
-      domain: option.label,
-    }),
+    reason:
+      option.reason?.trim()
+      || t(`workspace.profileConfig.stepOne.domainReason.${option.reasonType}`, {
+        signal: option.signal,
+        knowledge: option.knowledge,
+        domain: option.label,
+      }),
   }));
 }
 
@@ -312,6 +344,13 @@ function buildFieldSuggestionPayload(values) {
     currentLevel: values.currentLevel.trim() || null,
     strongAreas: splitProfileFieldValues(values.strongAreas),
     weakAreas: splitProfileFieldValues(values.weakAreas),
+  };
+}
+
+function buildExamTemplateSuggestionPayload(values) {
+  return {
+    knowledge: values.knowledgeInput.trim(),
+    domain: values.inferredDomain.trim(),
   };
 }
 
@@ -341,7 +380,6 @@ function shouldRunLiveConsistency(values) {
 }
 
 function buildPayload(values) {
-  const selectedExam = getPublicExamById(values.mockExamCatalogId);
   const sharedPayload = {
     workspacePurpose: values.workspacePurpose,
     knowledgeInput: values.knowledgeInput.trim(),
@@ -363,30 +401,25 @@ function buildPayload(values) {
   const mockTestPayload =
     values.workspacePurpose === 'MOCK_TEST'
       ? {
-          mockExamMode: values.mockExamMode || null,
-          mockExamCatalogId: values.mockExamMode === 'PUBLIC' ? values.mockExamCatalogId || null : null,
-          mockExamName:
-            values.mockExamMode === 'PUBLIC'
-              ? selectedExam?.name || null
-              : values.mockExamName.trim() || null,
+          mockExamName: values.mockExamName?.trim() || null,
           templatePrompt: values.templatePrompt.trim() || null,
           templateFormat: values.templateFormat || null,
           templateDurationMinutes: Number(values.templateDurationMinutes) || null,
           templateQuestionCount: Number(values.templateQuestionCount) || null,
           templateNotes: values.templateNotes.trim() || null,
+          templateTotalSectionPoints: Number(values.templateTotalSectionPoints) || null,
           targetScore: null,
           targetScoreScale: null,
           expectedExamDate: null,
         }
       : {
-          mockExamMode: null,
-          mockExamCatalogId: null,
           mockExamName: null,
           templatePrompt: null,
           templateFormat: null,
           templateDurationMinutes: null,
           templateQuestionCount: null,
           templateNotes: null,
+          templateTotalSectionPoints: null,
           targetScore: null,
           targetScoreScale: null,
           expectedExamDate: null,
@@ -432,6 +465,47 @@ function normalizeSnapshotNumber(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+function normalizeFingerprintValue(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => normalizeFingerprintValue(item))
+      .filter((item) => item !== '' && item !== null)
+      .sort();
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.keys(value)
+      .sort()
+      .reduce((result, key) => {
+        const normalized = normalizeFingerprintValue(value[key]);
+        const isEmptyObject =
+          normalized
+          && typeof normalized === 'object'
+          && !Array.isArray(normalized)
+          && Object.keys(normalized).length === 0;
+        if (normalized === '' || normalized === null || isEmptyObject) {
+          return result;
+        }
+        result[key] = normalized;
+        return result;
+      }, {});
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().replace(/\s+/g, ' ');
+  }
+
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    return null;
+  }
+
+  return value ?? null;
+}
+
+function buildRequestFingerprint(payload) {
+  return JSON.stringify(normalizeFingerprintValue(payload));
+}
+
 function buildStepSnapshot(stepNumber, values) {
   if (!values || typeof values !== 'object') {
     return null;
@@ -454,13 +528,8 @@ function buildStepSnapshot(stepNumber, values) {
       learningGoal: normalizeSnapshotText(values.learningGoal),
       strongAreas: normalizeSnapshotList(values.strongAreas),
       weakAreas: normalizeSnapshotList(values.weakAreas),
-      mockExamMode: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.mockExamMode) : '',
-      mockExamCatalogId:
-        values.workspacePurpose === 'MOCK_TEST' && values.mockExamMode === 'PUBLIC'
-          ? normalizeSnapshotText(values.mockExamCatalogId)
-          : '',
       mockExamName:
-        values.workspacePurpose === 'MOCK_TEST' && values.mockExamMode !== 'PUBLIC'
+        values.workspacePurpose === 'MOCK_TEST'
           ? normalizeSnapshotText(values.mockExamName)
           : '',
       templatePrompt: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templatePrompt) : '',
@@ -470,10 +539,12 @@ function buildStepSnapshot(stepNumber, values) {
       templateQuestionCount:
         values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotNumber(values.templateQuestionCount) : null,
       templateNotes: values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotText(values.templateNotes) : '',
+      templateTotalSectionPoints:
+        values.workspacePurpose === 'MOCK_TEST' ? normalizeSnapshotNumber(values.templateTotalSectionPoints) : null,
     };
   }
 
-  if (stepNumber === 4) {
+  if (stepNumber === 3) {
     return {
       showRoadmapFields: shouldShowRoadmapFields(values),
       adaptationMode: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.adaptationMode) : '',
@@ -512,7 +583,7 @@ function createSavedStepSnapshots(initialData, values, initialStep) {
     || initialData?.workspaceSetupStatus === 'DONE'
     || initialData?.onboardingCompleted
   ) {
-    snapshots[3] = buildStepSnapshot(4, values);
+    snapshots[3] = buildStepSnapshot(3, values);
   }
 
   return snapshots;
@@ -529,9 +600,6 @@ export function useWorkspaceProfileWizard({
   open,
   initialData,
   onSave,
-  onUploadFiles = null,
-  setUploadCheckNotice = () => {},
-  uploadedMaterials = [],
   storageKey,
   forceStartAtStepOne = false,
   mockTestGenerationState = 'idle',
@@ -546,17 +614,19 @@ export function useWorkspaceProfileWizard({
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [pendingFiles, setPendingFiles] = useState([]);
   const [analysisStatus, setAnalysisStatus] = useState('idle');
   const [domainOptions, setDomainOptions] = useState([]);
   const [templateStatus, setTemplateStatus] = useState('idle');
   const [templatePreview, setTemplatePreview] = useState(null);
   const [examSearch, setExamSearch] = useState('');
+  const [analysisRetryTick, setAnalysisRetryTick] = useState(0);
 
   // AI analysis state
   const [knowledgeAnalysis, setKnowledgeAnalysis] = useState(null);
   const [fieldSuggestions, setFieldSuggestions] = useState(null);
   const [fieldSuggestionStatus, setFieldSuggestionStatus] = useState('idle');
+  const [examTemplateSuggestions, setExamTemplateSuggestions] = useState([]);
+  const [examTemplateSuggestionStatus, setExamTemplateSuggestionStatus] = useState('idle');
   const [consistencyResult, setConsistencyResult] = useState(null);
   const [consistencyStatus, setConsistencyStatus] = useState('idle');
 
@@ -564,62 +634,34 @@ export function useWorkspaceProfileWizard({
   const analysisAbortRef = useRef(null);
   const fieldSuggestionTimerRef = useRef(null);
   const fieldSuggestionAbortRef = useRef(null);
+  const examTemplateSuggestionTimerRef = useRef(null);
+  const examTemplateSuggestionAbortRef = useRef(null);
   const consistencyTimerRef = useRef(null);
   const consistencyAbortRef = useRef(null);
   const templateTimerRef = useRef(null);
+  const analysisFingerprintRef = useRef('');
+  const fieldSuggestionFingerprintRef = useRef('');
+  const examTemplateSuggestionFingerprintRef = useRef('');
+  const consistencyFingerprintRef = useRef('');
   const wasOpenRef = useRef(false);
   const prevStepRef = useRef(null);
   const savedStepSnapshotsRef = useRef({});
+  const basicStepChangeResetGuardRef = useRef(false);
 
-  const selectedExam = getPublicExamById(values.mockExamCatalogId);
   const needsKnowledgeDescription =
     analysisStatus === 'success' && knowledgeAnalysis?.tooBroad === true;
-  const pendingUploadCandidates = useMemo(
-    () => pendingFiles.filter((file) => {
-      const report = evaluateMaterialFit(file, values, selectedExam);
-      return isAcceptedMaterialTone(report.tone);
-    }),
-    [pendingFiles, values, selectedExam]
-  );
-  const blockedPendingCount = Math.max(0, pendingFiles.length - pendingUploadCandidates.length);
-  const uploadedMaterialCount = uploadedMaterials.length;
-  const validUploadedMaterialCount = useMemo(
-    () => uploadedMaterials.filter((material) => {
-      const report = evaluateMaterialFit(material, values, selectedExam);
-      return isAcceptedMaterialTone(report.tone);
-    }).length,
-    [uploadedMaterials, values, selectedExam]
-  );
-  const processingUploadedCount = useMemo(
-    () => uploadedMaterials.filter((material) => {
-      const status = material?.status?.toUpperCase();
-      return ['PROCESSING', 'UPLOADING', 'PENDING', 'QUEUED'].includes(status);
-    }).length,
-    [uploadedMaterials]
-  );
-  const requiresRoadmapMaterials = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
-  const hasValidUploadedMaterial = validUploadedMaterialCount > 0;
-  const hasUploadablePendingFiles = pendingUploadCandidates.length > 0;
-  const stepThreeInvalidSelectionMessage = translateOrFallback(
-    t,
-    'workspace.profileConfig.validation.materialsNotRelevant',
-    'Những tài liệu đang chọn chưa phù hợp với hồ sơ học tập. Vui lòng thay tài liệu khác.'
-  );
-  const stepThreeAwaitingValidationMessage = translateOrFallback(
-    t,
-    'workspace.profileConfig.validation.materialsAwaitingValidation',
-    'Tài liệu đang được xử lý. Vui lòng đợi hệ thống xác nhận ít nhất một tài liệu hợp lệ.'
-  );
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       clearTimeout(analysisTimerRef.current);
       clearTimeout(fieldSuggestionTimerRef.current);
+      clearTimeout(examTemplateSuggestionTimerRef.current);
       clearTimeout(consistencyTimerRef.current);
       clearTimeout(templateTimerRef.current);
       analysisAbortRef.current?.abort();
       fieldSuggestionAbortRef.current?.abort();
+      examTemplateSuggestionAbortRef.current?.abort();
       consistencyAbortRef.current?.abort();
     };
   }, []);
@@ -641,13 +683,7 @@ export function useWorkspaceProfileWizard({
     }
 
     const nextValues = createInitialValues(initialData);
-    if (nextValues.workspacePurpose === 'MOCK_TEST' && !nextValues.mockExamCatalogId && nextValues.mockExamMode === 'PUBLIC') {
-      const suggestedExam = getSuggestedPublicExams(nextValues)[0];
-      if (suggestedExam) {
-        nextValues.mockExamCatalogId = suggestedExam.id;
-        nextValues.mockExamName = suggestedExam.name;
-      }
-    }
+
     const initialStepValue = forceStartAtStepOne ? 1 : getInitialStep(initialData, isReadOnly, storageKey);
     savedStepSnapshotsRef.current = forceStartAtStepOne
       ? {}
@@ -659,23 +695,28 @@ export function useWorkspaceProfileWizard({
     setErrors({});
     setSaveError('');
     setSubmitting(false);
-    setPendingFiles([]);
     setDomainOptions([]);
     setKnowledgeAnalysis(null);
+    analysisFingerprintRef.current = '';
+    fieldSuggestionFingerprintRef.current = '';
+    examTemplateSuggestionFingerprintRef.current = '';
+    consistencyFingerprintRef.current = '';
+    setAnalysisRetryTick(0);
     setFieldSuggestions(null);
     setFieldSuggestionStatus('idle');
+    setExamTemplateSuggestions([]);
+    setExamTemplateSuggestionStatus('idle');
     setConsistencyResult(null);
     setConsistencyStatus('idle');
     setAnalysisStatus(nextValues.knowledgeInput ? 'loading' : 'idle');
-    const defaultSelectedExam = getPublicExamById(nextValues.mockExamCatalogId);
-    const canPrimeMockTemplate = nextValues.workspacePurpose === 'MOCK_TEST' && nextValues.mockExamMode === 'PUBLIC' && defaultSelectedExam;
+    const canPrimeMockTemplate = nextValues.workspacePurpose === 'MOCK_TEST' && nextValues.mockExamName;
     setTemplateStatus(nextValues.templatePrompt || canPrimeMockTemplate ? 'success' : 'idle');
     setTemplatePreview(
       nextValues.templatePrompt || canPrimeMockTemplate
-        ? generateTemplateSuggestion(nextValues, defaultSelectedExam)
+        ? generateTemplateSuggestion(nextValues)
         : null
     );
-    setExamSearch(canPrimeMockTemplate ? defaultSelectedExam?.name || '' : '');
+    setExamSearch(canPrimeMockTemplate ? nextValues.mockExamName || '' : '');
   }, [open, initialData, isReadOnly, storageKey, forceStartAtStepOne]);
 
   // Persist step to sessionStorage
@@ -684,62 +725,7 @@ export function useWorkspaceProfileWizard({
     window.sessionStorage.setItem(storageKey, String(step));
   }, [open, step, storageKey]);
 
-  // Mock test template sync for PUBLIC exams
-  useEffect(() => {
-    if (!open || values.workspacePurpose !== 'MOCK_TEST' || values.mockExamMode !== 'PUBLIC' || !selectedExam) {
-      return;
-    }
 
-    const publicExamDefaults = getPublicExamTemplateDefaults(values, selectedExam);
-    const nextTemplatePreview = generateTemplateSuggestion(values, selectedExam);
-
-    setTemplateStatus('success');
-    setTemplatePreview(nextTemplatePreview);
-    setExamSearch(selectedExam.name);
-
-    if (!publicExamDefaults) return;
-
-    setValues((current) => {
-      const nextValues = { ...current };
-      let hasChanged = false;
-
-      if (current.templateFormat !== publicExamDefaults.templateFormat) {
-        nextValues.templateFormat = publicExamDefaults.templateFormat;
-        hasChanged = true;
-      }
-
-      if (Number(current.templateDurationMinutes) !== Number(publicExamDefaults.templateDurationMinutes)) {
-        nextValues.templateDurationMinutes = publicExamDefaults.templateDurationMinutes;
-        hasChanged = true;
-      }
-
-      if (Number(current.templateQuestionCount) !== Number(publicExamDefaults.templateQuestionCount)) {
-        nextValues.templateQuestionCount = publicExamDefaults.templateQuestionCount;
-        hasChanged = true;
-      }
-
-      if (current.templatePrompt) {
-        nextValues.templatePrompt = '';
-        hasChanged = true;
-      }
-
-      if (current.templateNotes) {
-        nextValues.templateNotes = '';
-        hasChanged = true;
-      }
-
-      return hasChanged ? nextValues : current;
-    });
-  }, [
-    open,
-    values.workspacePurpose,
-    values.mockExamMode,
-    values.mockExamCatalogId,
-    values.knowledgeInput,
-    values.inferredDomain,
-    values.currentLevel,
-    selectedExam,
-  ]);
 
   // Advance to step 3 when mock test generation completes
   useEffect(() => {
@@ -759,7 +745,14 @@ export function useWorkspaceProfileWizard({
     clearTimeout(analysisTimerRef.current);
     analysisAbortRef.current?.abort();
 
-    if (!values.knowledgeInput.trim()) {
+    const trimmedKnowledge = values.knowledgeInput.trim();
+    const analysisFingerprint = buildRequestFingerprint({
+      knowledge: trimmedKnowledge,
+      retry: analysisRetryTick,
+    });
+
+    if (!trimmedKnowledge) {
+      analysisFingerprintRef.current = '';
       setAnalysisStatus('idle');
       setDomainOptions([]);
       setKnowledgeAnalysis(null);
@@ -770,6 +763,11 @@ export function useWorkspaceProfileWizard({
       return;
     }
 
+    if (analysisFingerprintRef.current === analysisFingerprint) {
+      return;
+    }
+
+    analysisFingerprintRef.current = analysisFingerprint;
     setAnalysisStatus('loading');
 
     analysisTimerRef.current = setTimeout(async () => {
@@ -777,7 +775,7 @@ export function useWorkspaceProfileWizard({
       analysisAbortRef.current = abortController;
 
       try {
-        const result = await analyzeKnowledge(values.knowledgeInput.trim(), {
+        const result = await analyzeKnowledge(trimmedKnowledge, {
           signal: abortController.signal,
         });
 
@@ -785,10 +783,11 @@ export function useWorkspaceProfileWizard({
 
         setKnowledgeAnalysis(result);
 
-        const rawOptions = buildDomainOptionsFromApi(
-          result.domainSuggestions || [],
-          values.knowledgeInput.trim()
-        );
+        const rawOptions = buildDomainOptionsFromApi({
+          domainSuggestions: result.domainSuggestions || [],
+          domainSuggestionDetails: extractDomainSuggestionDetails(result),
+          knowledge: values.knowledgeInput.trim(),
+        });
         const localizedOptions = localizeDomainOptions(rawOptions, t);
 
         setDomainOptions(localizedOptions);
@@ -804,6 +803,7 @@ export function useWorkspaceProfileWizard({
       } catch (error) {
         if (abortController.signal.aborted) return;
         console.error('[StudyProfile] Knowledge analysis failed:', error);
+        analysisFingerprintRef.current = '';
         setAnalysisStatus('error');
         setKnowledgeAnalysis(null);
         setDomainOptions([]);
@@ -814,19 +814,25 @@ export function useWorkspaceProfileWizard({
       clearTimeout(analysisTimerRef.current);
       analysisAbortRef.current?.abort();
     };
-  }, [open, values.knowledgeInput]);
+  }, [open, values.knowledgeInput, analysisRetryTick, t]);
 
   // ─── Auto-fetch field suggestions when entering Step 2 ───
   const fetchFieldSuggestions = useCallback(
     async (payload) => {
-      fieldSuggestionAbortRef.current?.abort();
-
       if (!payload?.knowledge || !payload?.domain || !payload?.learningMode) {
+        fieldSuggestionFingerprintRef.current = '';
         setFieldSuggestions(null);
         setFieldSuggestionStatus('idle');
         return;
       }
 
+      const fingerprint = buildRequestFingerprint(payload);
+      if (fieldSuggestionFingerprintRef.current === fingerprint) {
+        return;
+      }
+
+      fieldSuggestionFingerprintRef.current = fingerprint;
+      fieldSuggestionAbortRef.current?.abort();
       const abortController = new AbortController();
       fieldSuggestionAbortRef.current = abortController;
       setFieldSuggestionStatus('loading');
@@ -840,6 +846,7 @@ export function useWorkspaceProfileWizard({
       } catch (error) {
         if (abortController.signal.aborted) return;
         console.error('[StudyProfile] Field suggestion failed:', error);
+        fieldSuggestionFingerprintRef.current = '';
         setFieldSuggestionStatus('error');
         setFieldSuggestions(null);
       }
@@ -847,13 +854,77 @@ export function useWorkspaceProfileWizard({
     []
   );
 
+  const fetchExamTemplateSuggestions = useCallback(
+    async ({ knowledge, domain }) => {
+      if (!knowledge || !domain) {
+        examTemplateSuggestionFingerprintRef.current = '';
+        setExamTemplateSuggestions([]);
+        setExamTemplateSuggestionStatus('idle');
+        return;
+      }
+
+      const payload = { knowledge, domain };
+      const fingerprint = buildRequestFingerprint(payload);
+      if (examTemplateSuggestionFingerprintRef.current === fingerprint) {
+        return;
+      }
+
+      examTemplateSuggestionFingerprintRef.current = fingerprint;
+      examTemplateSuggestionAbortRef.current?.abort();
+      const abortController = new AbortController();
+      examTemplateSuggestionAbortRef.current = abortController;
+      setExamTemplateSuggestionStatus('loading');
+
+      try {
+        const response = await suggestExamTemplates(payload, { signal: abortController.signal });
+        if (abortController.signal.aborted) return;
+
+        const result = response?.data?.data ?? response?.data ?? response ?? null;
+        const templates = Array.isArray(result?.templates)
+          ? result.templates
+          : Array.isArray(result?.examTemplateSuggestions)
+            ? result.examTemplateSuggestions
+          : Array.isArray(result)
+            ? result
+            : [];
+        setExamTemplateSuggestions(templates.filter(Boolean));
+        setExamTemplateSuggestionStatus('success');
+      } catch (error) {
+        if (abortController.signal.aborted) return;
+        console.error('[StudyProfile] Exam template suggestion failed:', error);
+        examTemplateSuggestionFingerprintRef.current = '';
+        setExamTemplateSuggestionStatus('error');
+        setExamTemplateSuggestions([]);
+      }
+    },
+    []
+  );
+
+  const prefetchMockTestStepTwoAiSignals = useCallback(() => {
+    if (!values.knowledgeInput.trim() || !values.inferredDomain.trim()) {
+      return;
+    }
+
+    const fieldPayload = buildFieldSuggestionPayload(values);
+    const templatePayload = buildExamTemplateSuggestionPayload(values);
+
+    Promise.allSettled([
+      fetchFieldSuggestions(fieldPayload),
+      fetchExamTemplateSuggestions(templatePayload),
+    ]).catch(() => {});
+  }, [fetchExamTemplateSuggestions, fetchFieldSuggestions, values]);
+
   useEffect(() => {
     if (!open || isReadOnly) return;
     prevStepRef.current = step;
     clearTimeout(fieldSuggestionTimerRef.current);
+    clearTimeout(examTemplateSuggestionTimerRef.current);
 
     if (step !== 2) {
       fieldSuggestionAbortRef.current?.abort();
+      examTemplateSuggestionAbortRef.current?.abort();
+      fieldSuggestionFingerprintRef.current = '';
+      examTemplateSuggestionFingerprintRef.current = '';
       return;
     }
 
@@ -862,14 +933,28 @@ export function useWorkspaceProfileWizard({
       fetchFieldSuggestions(payload);
     }, FIELD_SUGGESTION_DEBOUNCE_MS);
 
+    if (values.workspacePurpose === 'MOCK_TEST') {
+      const knowledge = values.knowledgeInput.trim();
+      const domain = values.inferredDomain.trim();
+      examTemplateSuggestionTimerRef.current = setTimeout(() => {
+        fetchExamTemplateSuggestions({ knowledge, domain });
+      }, EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS);
+    } else {
+      examTemplateSuggestionFingerprintRef.current = '';
+      setExamTemplateSuggestions([]);
+      setExamTemplateSuggestionStatus('idle');
+    }
+
     return () => {
       clearTimeout(fieldSuggestionTimerRef.current);
+      clearTimeout(examTemplateSuggestionTimerRef.current);
     };
   }, [
     open,
     step,
     isReadOnly,
     fetchFieldSuggestions,
+    fetchExamTemplateSuggestions,
     values.workspacePurpose,
     values.knowledgeInput,
     values.inferredDomain,
@@ -892,8 +977,19 @@ export function useWorkspaceProfileWizard({
 
     if (step !== 2 || !shouldRunLiveConsistency(values)) {
       consistencyAbortRef.current?.abort();
+      consistencyFingerprintRef.current = '';
       setConsistencyResult(null);
       setConsistencyStatus('idle');
+      return;
+    }
+
+    const payload = buildConsistencyPayload(values);
+    const fingerprint = buildRequestFingerprint(payload);
+
+    if (
+      consistencyFingerprintRef.current === fingerprint
+      && (consistencyStatus === 'loading' || (consistencyResult && consistencyStatus === 'success'))
+    ) {
       return;
     }
 
@@ -901,10 +997,11 @@ export function useWorkspaceProfileWizard({
       const abortController = new AbortController();
       consistencyAbortRef.current?.abort();
       consistencyAbortRef.current = abortController;
+      consistencyFingerprintRef.current = fingerprint;
       setConsistencyStatus('loading');
 
       try {
-        const result = await runConsistencyValidation(buildConsistencyPayload(values), {
+        const result = await runConsistencyValidation(payload, {
           signal: abortController.signal,
         });
 
@@ -914,6 +1011,7 @@ export function useWorkspaceProfileWizard({
       } catch (error) {
         if (abortController.signal.aborted) return;
         console.error('[StudyProfile] Live consistency validation failed:', error);
+        consistencyFingerprintRef.current = '';
         setConsistencyStatus('error');
       }
     }, CONSISTENCY_DEBOUNCE_MS);
@@ -934,44 +1032,81 @@ export function useWorkspaceProfileWizard({
     values.strongAreas,
     values.weakAreas,
     values.mockExamName,
+    consistencyResult,
+    consistencyStatus,
   ]);
 
   function updateField(field, value) {
-    setValues((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setValues((current) => {
+      const enableRoadmapNext =
+        field === 'enableRoadmap'
+          ? Boolean(value)
+          : field === 'workspacePurpose'
+            ? (value === 'STUDY_NEW' ? true : current.enableRoadmap)
+            : current.enableRoadmap;
+      const next = {
+        ...current,
+        [field]: value,
+        enableRoadmap: enableRoadmapNext,
+      };
+
+      const savedBasic = savedStepSnapshotsRef.current?.[1];
+      const nextKnowledge = field === 'knowledgeInput' ? ensureString(value) : next.knowledgeInput;
+      const nextPurpose = field === 'workspacePurpose' ? ensureString(value) : next.workspacePurpose;
+      const savedKnowledge = ensureString(savedBasic?.knowledgeInput);
+      const savedPurpose = ensureString(savedBasic?.workspacePurpose);
+
+      const knowledgeChanged = field === 'knowledgeInput' && savedBasic && ensureString(nextKnowledge).trim() && ensureString(nextKnowledge).trim() !== savedKnowledge.trim();
+      const purposeChanged = field === 'workspacePurpose' && savedBasic && ensureString(nextPurpose).trim() && ensureString(nextPurpose).trim() !== savedPurpose.trim();
+
+      if ((knowledgeChanged || purposeChanged) && !basicStepChangeResetGuardRef.current) {
+        basicStepChangeResetGuardRef.current = true;
+        // Reset Step 2 fields when knowledge or learningMode changes (require re-setup).
+        setMaxUnlockedStep(1);
+        delete savedStepSnapshotsRef.current[2];
+        delete savedStepSnapshotsRef.current[3];
+        setTemplateStatus('idle');
+        setTemplatePreview(null);
+        setFieldSuggestions(null);
+        setFieldSuggestionStatus('idle');
+        setExamTemplateSuggestions([]);
+        setExamTemplateSuggestionStatus('idle');
+        setConsistencyResult(null);
+        setConsistencyStatus('idle');
+        fieldSuggestionFingerprintRef.current = '';
+        examTemplateSuggestionFingerprintRef.current = '';
+        consistencyFingerprintRef.current = '';
+        setStep(1);
+        globalThis.setTimeout(() => {
+          basicStepChangeResetGuardRef.current = false;
+        }, 0);
+        return {
+          ...next,
+          currentLevel: '',
+          learningGoal: '',
+          strongAreas: '',
+          weakAreas: '',
+          mockExamName: '',
+          templatePrompt: '',
+          templateFormat: 'FULL_EXAM',
+          templateDurationMinutes: 90,
+          templateQuestionCount: 60,
+          templateNotes: '',
+          templateTotalSectionPoints: 100,
+          adaptationMode: 'BALANCED',
+          roadmapSpeedMode: 'STANDARD',
+          estimatedTotalDays: 30,
+          recommendedMinutesPerDay: 90,
+        };
+      }
+
+      return next;
+    });
     setSaveError('');
     setErrors((current) => {
       if (!current[field]) return current;
       const nextErrors = { ...current };
       delete nextErrors[field];
-      return nextErrors;
-    });
-  }
-
-  function addPendingFiles(files) {
-    const normalizedFiles = Array.from(files || []).filter(Boolean);
-    if (normalizedFiles.length === 0) return;
-
-    setSaveError('');
-    setPendingFiles((current) => {
-      const nextFiles = [...current];
-      normalizedFiles.forEach((file) => {
-        const exists = nextFiles.some(
-          (item) => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified
-        );
-
-        if (!exists) {
-          nextFiles.push(file);
-        }
-      });
-      return nextFiles;
-    });
-    setErrors((current) => {
-      if (!current.materials) return current;
-      const nextErrors = { ...current };
-      delete nextErrors.materials;
       return nextErrors;
     });
 
@@ -1034,31 +1169,13 @@ export function useWorkspaceProfileWizard({
     }
   }
 
-  function removePendingFile(index) {
-    setPendingFiles((current) => current.filter((_, fileIndex) => fileIndex !== index));
-  }
-
   function setPurpose(purpose) {
     setSaveError('');
-    setValues((current) => ({
-      ...current,
-      workspacePurpose: purpose,
-      enableRoadmap: purpose === 'STUDY_NEW' ? true : current.enableRoadmap,
-    }));
+    updateField('workspacePurpose', purpose);
   }
 
   function setMockExamMode(mode) {
-    setSaveError('');
-    setValues((current) => ({
-      ...current,
-      mockExamMode: mode,
-      mockExamCatalogId: mode === 'PUBLIC' ? current.mockExamCatalogId : '',
-      mockExamName: mode === 'PRIVATE' ? current.mockExamName : '',
-    }));
-    if (mode === 'PRIVATE') {
-      setTemplateStatus('idle');
-      setTemplatePreview(null);
-    }
+    // Removed because there's only one custom mode now
   }
 
   function selectInferredDomain(domain) {
@@ -1066,26 +1183,14 @@ export function useWorkspaceProfileWizard({
   }
 
   function selectPublicExam(examId) {
-    const exam = getPublicExamById(examId);
-    const templateDefaults = getPublicExamTemplateDefaults(values, exam);
-    setSaveError('');
-    setValues((current) => ({
-      ...current,
-      mockExamCatalogId: examId,
-      mockExamName: exam?.name || '',
-      templateFormat: templateDefaults?.templateFormat || current.templateFormat,
-      templateDurationMinutes: templateDefaults?.templateDurationMinutes || current.templateDurationMinutes,
-      templateQuestionCount: templateDefaults?.templateQuestionCount || current.templateQuestionCount,
-      templatePrompt: '',
-      templateNotes: '',
-    }));
+    // Removed
   }
 
   function generateTemplatePreviewAsync() {
     clearTimeout(templateTimerRef.current);
     setTemplateStatus('loading');
     templateTimerRef.current = setTimeout(() => {
-      setTemplatePreview(generateTemplateSuggestion(values, selectedExam));
+      setTemplatePreview(generateTemplateSuggestion(values));
       setTemplateStatus('success');
     }, 800);
   }
@@ -1135,33 +1240,13 @@ export function useWorkspaceProfileWizard({
       }
 
       if (values.workspacePurpose === 'MOCK_TEST') {
-        if (!values.mockExamMode) nextErrors.mockExamMode = t('workspace.profileConfig.validation.mockExamModeRequired');
-        if (values.mockExamMode === 'PUBLIC' && !values.mockExamCatalogId) {
-          nextErrors.mockExamCatalogId = t('workspace.profileConfig.validation.publicExamRequired');
-        }
-        if (values.mockExamMode === 'PRIVATE' && !values.mockExamName.trim()) {
+        if (!values.mockExamName?.trim()) {
           nextErrors.mockExamName = t('workspace.profileConfig.validation.privateExamRequired');
         }
       }
     }
 
     if (targetStep === 3) {
-      if (pendingFiles.length === 0 && uploadedMaterialCount === 0) {
-        nextErrors.materials = translateOrFallback(
-          t,
-          'workspace.profileConfig.validation.materialsRequired',
-          'Vui lòng tải lên ít nhất một tài liệu phù hợp với workspace.'
-        );
-      } else if (requiresRoadmapMaterials && !hasValidUploadedMaterial) {
-        if (pendingFiles.length > 0 && !hasUploadablePendingFiles) {
-          nextErrors.materials = stepThreeInvalidSelectionMessage;
-        } else if (pendingFiles.length === 0 && processingUploadedCount > 0) {
-          nextErrors.materials = stepThreeAwaitingValidationMessage;
-        }
-      }
-    }
-
-    if (targetStep === 4) {
       if (shouldShowRoadmapFields(values)) {
         if (!values.adaptationMode) nextErrors.adaptationMode = t('workspace.profileConfig.validation.adaptationModeRequired');
         if (!values.roadmapSpeedMode) nextErrors.roadmapSpeedMode = t('workspace.profileConfig.validation.roadmapSpeedModeRequired');
@@ -1214,10 +1299,23 @@ export function useWorkspaceProfileWizard({
     // Run consistency validation before saving Step 2 (non-blocking, shows warnings)
     if (stepToPersist === 2) {
       try {
-        setConsistencyStatus('loading');
-        const result = await runConsistencyValidation(buildConsistencyPayload(values));
-        setConsistencyResult(result);
-        setConsistencyStatus('success');
+        const consistencyPayload = buildConsistencyPayload(values);
+        const consistencyFingerprint = buildRequestFingerprint(consistencyPayload);
+        let result = null;
+
+        if (
+          consistencyFingerprintRef.current === consistencyFingerprint
+          && consistencyResult
+          && consistencyStatus === 'success'
+        ) {
+          result = consistencyResult;
+        } else {
+          consistencyFingerprintRef.current = consistencyFingerprint;
+          setConsistencyStatus('loading');
+          result = await runConsistencyValidation(consistencyPayload);
+          setConsistencyResult(result);
+          setConsistencyStatus('success');
+        }
 
         // Block save if redFlag
         if (result.redFlag) {
@@ -1226,6 +1324,7 @@ export function useWorkspaceProfileWizard({
         }
       } catch (error) {
         console.error('[StudyProfile] Consistency validation failed:', error);
+        consistencyFingerprintRef.current = '';
         setConsistencyStatus('error');
         // Don't block save on validation API error, just log
       }
@@ -1267,6 +1366,9 @@ export function useWorkspaceProfileWizard({
       setSaveError('');
       setMaxUnlockedStep((current) => Math.max(current, Math.min(TOTAL_STEPS, step + 1)));
       setStep((current) => Math.min(TOTAL_STEPS, current + 1));
+      if (step === 1 && values.workspacePurpose === 'MOCK_TEST') {
+        prefetchMockTestStepTwoAiSignals();
+      }
       return;
     }
 
@@ -1282,6 +1384,9 @@ export function useWorkspaceProfileWizard({
 
       setMaxUnlockedStep((current) => Math.max(current, Math.min(TOTAL_STEPS, step + 1)));
       setStep((current) => Math.min(TOTAL_STEPS, current + 1));
+      if (step === 1 && values.workspacePurpose === 'MOCK_TEST') {
+        prefetchMockTestStepTwoAiSignals();
+      }
     }
   }
 
@@ -1312,31 +1417,35 @@ export function useWorkspaceProfileWizard({
 
   async function handleSubmit() {
     if (isReadOnly) return;
-    await persistStep(4);
+    return await persistStep(3);
   }
 
   function applySuggestion(field, value) {
-    updateField(field, value);
+    if (field === 'strongAreas' || field === 'weakAreas') {
+      const currentValue = values[field] || '';
+      const existingValues = currentValue.split(',').map(s => s.trim()).filter(Boolean);
+      if (!existingValues.includes(value.trim())) {
+        const newValue = existingValues.length > 0 ? `${currentValue}, ${value}` : value;
+        updateField(field, newValue);
+      }
+    } else {
+      updateField(field, value);
+    }
   }
 
   function retryKnowledgeAnalysis() {
-    // Force re-trigger by appending/removing a space
-    const current = values.knowledgeInput;
-    setValues((prev) => ({
-      ...prev,
-      knowledgeInput: current.endsWith(' ') ? current.trimEnd() : current + ' ',
-    }));
+    analysisFingerprintRef.current = '';
+    setAnalysisRetryTick((current) => current + 1);
   }
 
   return {
+    getSuggestedPublicExams: () => [],
     totalSteps: TOTAL_STEPS,
     step,
     maxUnlockedStep,
     values,
     errors,
     saveError,
-    uploadablePendingCount: pendingUploadCandidates.length,
-    blockedPendingCount,
     statusNotice:
       values.workspacePurpose === 'MOCK_TEST'
         ? mockTestGenerationMessage
@@ -1354,11 +1463,10 @@ export function useWorkspaceProfileWizard({
     mockTestGenerationProgress,
     isMockTestGenerationPending: step === 2 && values.workspacePurpose === 'MOCK_TEST' && mockTestGenerationState === 'pending',
     submitting,
-    pendingFiles,
     analysisStatus,
     domainOptions,
     needsKnowledgeDescription,
-    selectedExam,
+    selectedExam: null,
     examSearch,
     templateStatus,
     templatePreview,
@@ -1366,12 +1474,12 @@ export function useWorkspaceProfileWizard({
     knowledgeAnalysis,
     fieldSuggestions,
     fieldSuggestionStatus,
+    examTemplateSuggestions,
+    examTemplateSuggestionStatus,
     consistencyResult,
     consistencyStatus,
     // Actions
     updateField,
-    addPendingFiles,
-    removePendingFile,
     setPurpose,
     setMockExamMode,
     selectInferredDomain,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Brain, Check, ChevronLeft, ChevronRight, Flag, Loader2, Sparkles, Target, X } from 'lucide-react';
+import { Brain, Check, ChevronLeft, ChevronRight, Flag, Loader2, Target, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -74,6 +74,7 @@ function IndividualWorkspaceProfileConfigDialog({
   open,
   onOpenChange,
   onSave,
+  onConfirm,
   isDarkMode,
   initialData,
   workspaceId,
@@ -154,12 +155,17 @@ function IndividualWorkspaceProfileConfigDialog({
           templatePreview={wizard.templatePreview}
           fieldSuggestions={wizard.fieldSuggestions}
           fieldSuggestionStatus={wizard.fieldSuggestionStatus}
+          examTemplateSuggestions={wizard.examTemplateSuggestions}
+          examTemplateSuggestionStatus={wizard.examTemplateSuggestionStatus}
           consistencyResult={wizard.consistencyResult}
           consistencyStatus={wizard.consistencyStatus}
           disabled={isReadOnly}
           onFieldChange={wizard.updateField}
           onGenerateTemplate={wizard.generateTemplatePreviewAsync}
           onApplySuggestion={wizard.applySuggestion}
+          mockTestGenerationMessage={mockTestGenerationMessage}
+          mockTestGenerationState={mockTestGenerationState}
+          progressValue={progressValue}
         />
       );
     }
@@ -258,19 +264,6 @@ function IndividualWorkspaceProfileConfigDialog({
                 )}
                 style={{ width: `${progressFraction * 88}%` }}
               />
-              <div
-                className="pointer-events-none absolute -top-5 left-[6%] flex translate-x-0 items-center justify-center transition-transform duration-500 ease-out"
-                style={{ transform: `translateX(${progressFraction * 88}%)` }}
-              >
-                <div
-                  className={cn(
-                    'flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500 text-white shadow-lg',
-                    isDarkMode ? 'shadow-cyan-500/40' : 'shadow-cyan-400/40'
-                  )}
-                >
-                  <Sparkles className="h-3 w-3" />
-                </div>
-              </div>
               {STEP_IDS.map((item) => {
               const active = wizard.step === item;
                 const complete = wizard.maxUnlockedStep > item && !active;
@@ -434,11 +427,16 @@ function IndividualWorkspaceProfileConfigDialog({
               <Button
                 type="button"
                 disabled={wizard.submitting}
-                onClick={wizard.handleSubmit}
+                onClick={async () => {
+                  const result = await wizard.handleSubmit();
+                  if (result?.ok) {
+                    await onConfirm?.();
+                  }
+                }}
                 className="rounded-full bg-emerald-600 px-6 text-white hover:bg-emerald-700"
               >
                 {wizard.submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {wizard.submitting ? t('workspace.profileConfig.actions.saving') : t('workspace.profileConfig.actions.finish')}
+                Xác nhận
               </Button>
             ) : null}
 
