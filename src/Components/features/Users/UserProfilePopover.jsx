@@ -1,45 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import { LogOut, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getUserProfile } from "@/api/ProfileAPI";
 import { logout } from "@/api/Authentication";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
+import { useUserProfile } from "@/context/UserProfileContext";
 
 function UserProfilePopover({ isDarkMode = false }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigateWithLoading();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [profileData, setProfileData] = useState({ email: "", fullName: "", avatarUrl: "" });
+  const { profile } = useUserProfile();
   const profileRef = useRef(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadProfileData = async () => {
-      try {
-        const profileFromApi = await getUserProfile();
-        if (isMounted) {
-          setProfileData(profileFromApi);
-        }
-      } catch {
-        if (isMounted) {
-          setProfileData({ email: "", fullName: "", avatarUrl: "" });
-        }
-      }
-    };
-
-    // Logic nghiệp vụ: ưu tiên hiển thị profile thật từ JWT khi có token hợp lệ.
-    loadProfileData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const displayName = profileData.fullName || "User";
-  const displayEmail = profileData.email || "";
-  const displayAvatar = profileData.avatarUrl || "";
+  const displayName = profile?.fullName || "User";
+  const displayEmail = profile?.email || "";
+  const displayAvatar = profile?.avatarUrl || "";
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
   const handleGoToProfile = () => {

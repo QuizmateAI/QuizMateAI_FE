@@ -23,7 +23,6 @@ import {
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
-import { getPublicExamById } from './WorkspaceProfileWizard/mockProfileWizardData';
 
 function translateOrFallback(t, key, fallback) {
   const translated = t(key);
@@ -183,8 +182,7 @@ function IndividualWorkspaceProfileOverviewDialog({
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const fallbackEmpty = translateOrFallback(t, 'workspace.profileOverview.empty', i18n.language === 'en' ? 'Not configured' : 'Chưa cấu hình');
   const purpose = profile?.workspacePurpose || profile?.learningMode || '';
-  const selectedExam = getPublicExamById(profile?.mockExamCatalogId);
-  const examName = profile?.mockExamName || profile?.examName || selectedExam?.name || '';
+  const examName = profile?.mockExamName || profile?.examName || '';
   const roadmapEnabled = purpose === 'STUDY_NEW' ? true : Boolean(profile?.enableRoadmap ?? profile?.roadmapEnabled);
   const setupSteps = buildSetupSteps(t, i18n.language, profile);
   const onboardingCompleted = Boolean(profile?.onboardingCompleted || profile?.workspaceSetupStatus === 'DONE');
@@ -285,8 +283,8 @@ function IndividualWorkspaceProfileOverviewDialog({
                     t,
                     'workspace.profileOverview.setupDescription',
                     i18n.language === 'en'
-                      ? 'Backend and frontend now follow the same 4-step onboarding state for this workspace.'
-                      : 'Backend và frontend đang dùng cùng một tiến trình 4 bước cho workspace này.'
+                      ? 'Backend and frontend now follow the same 3-step onboarding state for this workspace.'
+                      : 'Backend và frontend đang dùng cùng một tiến trình 3 bước cho workspace này.'
                   )}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -295,7 +293,7 @@ function IndividualWorkspaceProfileOverviewDialog({
                     tone={onboardingCompleted ? 'success' : 'warning'}
                     label={onboardingCompleted
                       ? (i18n.language === 'en' ? 'Completed' : 'Đã hoàn tất')
-                      : (i18n.language === 'en' ? `Current step ${Math.min(Number(profile?.currentStep) || 1, 4)}/4` : `Đang ở bước ${Math.min(Number(profile?.currentStep) || 1, 4)}/4`)}
+                      : (i18n.language === 'en' ? `Current step ${Math.min(Number(profile?.currentStep) || 1, 3)}/3` : `Đang ở bước ${Math.min(Number(profile?.currentStep) || 1, 3)}/3`)}
                   />
                   <OverviewChip isDarkMode={isDarkMode} label={profile?.workspaceSetupStatus || 'CREATED'} />
                   <OverviewChip isDarkMode={isDarkMode} label={profile?.profileStatus || 'IN_PROGRESS'} />
@@ -303,7 +301,7 @@ function IndividualWorkspaceProfileOverviewDialog({
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {setupSteps.map((step) => (
                 <SetupStepCard key={step.id} step={step} isDarkMode={isDarkMode} />
               ))}

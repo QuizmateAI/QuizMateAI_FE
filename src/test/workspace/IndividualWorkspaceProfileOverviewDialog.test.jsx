@@ -19,7 +19,7 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
         profile={{
           profileStatus: 'DONE',
           workspaceSetupStatus: 'DONE',
-          currentStep: 4,
+          currentStep: 3,
           onboardingCompleted: true,
           workspacePurpose: 'MOCK_TEST',
           inferredDomain: 'IELTS Writing',
@@ -54,6 +54,7 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
     expect(screen.getAllByText('IELTS 6.0').length).toBeGreaterThan(0);
     expect(screen.getAllByText('45 ngày').length).toBeGreaterThan(0);
     expect(screen.getAllByText('90 phút/ngày').length).toBeGreaterThan(0);
+    expect(screen.getByText('Đã hoàn tất')).toBeInTheDocument();
     expect(screen.getByText('ielts-writing-notes.pdf, sample-essay.docx')).toBeInTheDocument();
   });
 });

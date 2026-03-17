@@ -8,6 +8,7 @@ import IndividualWorkspaceProfileConfigDialog from '@/Pages/Users/Individual/Wor
 vi.mock('@/api/StudyProfileAPI', () => ({
   analyzeKnowledge: vi.fn(),
   suggestProfileFields: vi.fn(),
+  suggestExamTemplates: vi.fn(),
   validateProfileConsistency: vi.fn(),
 }));
 
@@ -83,7 +84,6 @@ function setupApiMocks({ analysisResponse, fieldSuggestionResponse, consistencyR
 
 function renderDialog(props = {}) {
   const onSave = props.onSave || vi.fn().mockResolvedValue(undefined);
-  const onUploadFiles = props.onUploadFiles || vi.fn().mockResolvedValue([]);
   const onOpenChange = props.onOpenChange || vi.fn();
 
   const view = render(
@@ -91,15 +91,13 @@ function renderDialog(props = {}) {
       open
       onOpenChange={onOpenChange}
       onSave={onSave}
-      onUploadFiles={onUploadFiles}
-      uploadedMaterials={props.uploadedMaterials || []}
       workspaceId={props.workspaceId || '123'}
       isDarkMode={false}
       {...props}
     />
   );
 
-  return { ...view, onSave, onUploadFiles, onOpenChange };
+  return { ...view, onSave, onOpenChange };
 }
 
 function normalizeText(value = '') {
@@ -161,10 +159,6 @@ function getLearningGoalPlaceholder(purpose) {
   return i18n.t(`workspace.profileConfig.placeholders.learningGoalByPurpose.${purpose}`);
 }
 
-function getUploadInputLabel() {
-  return 'Chọn tài liệu để tải lên';
-}
-
 async function finishKnowledgeAnalysis(knowledgeText, expectedDomainText) {
   fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput')), {
     target: { value: knowledgeText },
@@ -213,15 +207,14 @@ async function moveToStepTwo({
   expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
 }
 
-async function moveToUploadStep() {
+async function moveToStepThree() {
   await act(async () => {
     fireEvent.click(getFooterPrimaryButton());
     await Promise.resolve();
     await Promise.resolve();
-    await Promise.resolve();
   });
 
-  expect(screen.getByLabelText(getUploadInputLabel())).toBeInTheDocument();
+  expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).toBeInTheDocument();
 }
 
 async function flushStepTwoAiSuggestions() {
@@ -234,19 +227,6 @@ async function flushStepTwoAiSuggestions() {
     await Promise.resolve();
     await Promise.resolve();
   });
-}
-
-async function addUploadFile(fileName = 'jlpt-n3-grammar.pdf', type = 'application/pdf') {
-  const file = new File(['study material'], fileName, { type });
-
-  await act(async () => {
-    fireEvent.change(screen.getByLabelText(getUploadInputLabel()), {
-      target: { files: [file] },
-    });
-    await Promise.resolve();
-  });
-
-  return file;
 }
 
 describe('IndividualWorkspaceProfileConfigDialog', () => {
@@ -554,6 +534,25 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepOne.noDomainSuggestionDescription'))).toBeInTheDocument();
   });
 
+  it('renders the domain suggestion reason from the backend detail payload', async () => {
+    const backendReason = 'HSK 1 là cấp độ sơ cấp trong hệ thống đánh giá năng lực tiếng Trung.';
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['Tiếng Trung'], {
+        domainSuggestionDetails: [
+          { label: 'Tiếng Trung', reason: backendReason },
+        ],
+      }),
+    });
+
+    renderDialog();
+
+    clickButtonByText(i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'));
+    await finishKnowledgeAnalysis('HSK 1');
+
+    expect(findButtonByText('Tiếng Trung')).toBeTruthy();
+    expect(screen.getByText(backendReason)).toBeInTheDocument();
+  });
+
   it('switches correctly between public and private exam UI for MOCK_TEST', async () => {
     setupApiMocks({
       analysisResponse: createAnalysisResponse(['IELTS Writing', 'IELTS', 'Academic English']),
@@ -567,27 +566,17 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       expectedDomainText: 'IELTS Writing',
     });
 
+    clickButtonByText('Cấu hình Đề thi');
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.mockTestTitle'))).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.publicExamSearch'))).toBeInTheDocument();
-    expect(screen.getByText('IELTS Academic')).toBeInTheDocument();
-    clickButtonByText('IELTS Academic');
-    expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.publicTemplateTitle'))).toBeInTheDocument();
-    expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.supportNoticeTitle'))).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.templatePrompt'))).not.toBeInTheDocument();
-
-    clickButtonByText(i18n.t('workspace.profileConfig.mockExamMode.PRIVATE'), { exact: true });
+    clickButtonByText('Custom');
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName'))).toBeInTheDocument();
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.templatePrompt'))).toBeInTheDocument();
 
-    clickButtonByText(i18n.t('workspace.profileConfig.mockExamMode.PUBLIC'), { exact: true });
-    clickButtonByText('IELTS Academic');
-
-    await act(async () => {
-      expect(
-        screen.getByText((content) => normalizeText(content).includes('ielts academic') && normalizeText(content).includes('template cong khai'))
-      ).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName')), {
+      target: { value: 'IELTS Academic' },
     });
 
+    clickButtonByText('Hồ sơ Năng lực');
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
       target: { value: 'IELTS 6.0' },
     });
@@ -600,19 +589,10 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
       target: { value: 'Quan ly thoi gian khi lam bai' },
     });
-    await act(async () => {
-      fireEvent.click(getFooterPrimaryButton());
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(screen.getByLabelText(getUploadInputLabel())).toBeInTheDocument();
+    await moveToStepThree();
     expect(onSave).toHaveBeenCalledTimes(2);
     expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({
       workspacePurpose: 'MOCK_TEST',
-      mockExamMode: 'PUBLIC',
-      mockExamCatalogId: 'ielts',
       currentLevel: 'IELTS 6.0',
       learningGoal: 'On dinh writing va giu toc do lam bai.',
       strongAreas: 'Doc hieu de nhanh',
@@ -620,18 +600,8 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     }));
   });
 
-  it('blocks step 3 until at least one valid material matches the roadmap profile', async () => {
-    const invalidUploadedMaterials = [
-      {
-        id: 'material-1',
-        name: 'business-overview.pdf',
-        materialType: 'application/pdf',
-        status: 'READY',
-      },
-    ];
-    const { onSave, onUploadFiles } = renderDialog({
-      uploadedMaterials: invalidUploadedMaterials,
-    });
+  it('finishes step 3 with default roadmap values for STUDY_NEW', async () => {
+    const { onSave } = renderDialog();
 
     await moveToStepTwo({
       purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
@@ -646,164 +616,60 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       target: { value: 'Xay dung roadmap React nang cao de hoc bai ban.' },
     });
 
-    await moveToUploadStep();
-
-    const nextButton = findButtonByText(i18n.t('workspace.profileConfig.actions.next'), {
-      exact: true,
-      includeDisabled: true,
-    });
-    expect(nextButton).toBeTruthy();
-    expect(nextButton.className).toContain('cursor-not-allowed');
+    await moveToStepThree();
 
     await act(async () => {
-      fireEvent.click(nextButton);
+      fireEvent.click(findButtonByText('Xác nhận', { exact: true, includeDisabled: true }));
       await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(
-      screen.getAllByText(i18n.t('workspace.profileConfig.validation.validMaterialsRequired')).length
-    ).toBeGreaterThan(0);
-    expect(screen.getByLabelText(getUploadInputLabel())).toBeInTheDocument();
-    expect(onSave).toHaveBeenCalledTimes(2);
-    expect(onUploadFiles).not.toHaveBeenCalled();
-  });
-
-  it('does not continue to step 4 just because a queued file looks related before validation finishes', async () => {
-    const onUploadFiles = vi.fn().mockResolvedValue([
-      {
-        id: 'material-processing',
-        name: 'react-hooks-nang-cao.pdf',
-        materialType: 'application/pdf',
-        status: 'PROCESSING',
-      },
-    ]);
-    const { onSave } = renderDialog({ onUploadFiles });
-
-    await moveToStepTwo({
-      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
-      knowledge: 'React hooks nang cao',
-      expectedDomainText: 'React',
-    });
-
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
-      target: { value: 'Da biet React co ban va dang hoc hook nang cao' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
-      target: { value: 'Xay dung roadmap React nang cao de hoc bai ban.' },
-    });
-
-    await moveToUploadStep();
-    await addUploadFile('react-hooks-nang-cao.pdf');
-
-    const uploadButton = findButtonByText(i18n.t('workspace.profileConfig.actions.checkAndUpload'), {
-      exact: true,
-      includeDisabled: true,
-    });
-    expect(uploadButton).toBeTruthy();
-
-    await act(async () => {
-      fireEvent.click(uploadButton);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(onUploadFiles).toHaveBeenCalledTimes(1);
-    expect(onSave).toHaveBeenCalledTimes(2);
-    expect(screen.getByLabelText(getUploadInputLabel())).toBeInTheDocument();
-    expect(
-      screen.getAllByText(i18n.t('workspace.profileConfig.validation.validMaterialsRequired')).length
-    ).toBeGreaterThan(0);
-  });
-
-  it('does not upload invalid pending files into the workspace', async () => {
-    const onUploadFiles = vi.fn().mockResolvedValue([]);
-    renderDialog({ onUploadFiles });
-
-    await moveToStepTwo({
-      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
-      knowledge: 'React hooks nang cao',
-      expectedDomainText: 'React',
-    });
-
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
-      target: { value: 'Da biet React co ban va dang hoc hook nang cao' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
-      target: { value: 'Xay dung roadmap React nang cao de hoc bai ban.' },
-    });
-
-    await moveToUploadStep();
-    await addUploadFile('business-overview.pdf');
-
-    const uploadButton = findButtonByText(i18n.t('workspace.profileConfig.actions.checkAndUpload'), {
-      exact: true,
-      includeDisabled: true,
-    });
-    expect(uploadButton).toBeTruthy();
-    expect(uploadButton.className).toContain('cursor-not-allowed');
-
-    await act(async () => {
-      fireEvent.click(uploadButton);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(onUploadFiles).not.toHaveBeenCalled();
-    expect(
-      screen.getAllByText(i18n.t('workspace.profileConfig.validation.validMaterialsRequired')).length
-    ).toBeGreaterThan(0);
-    expect(screen.getByLabelText(getUploadInputLabel())).toBeInTheDocument();
-  });
-
-  it('allows step 3 to continue when the workspace already has a valid material', async () => {
-    const validUploadedMaterials = [
-      {
-        id: 'material-1',
-        name: 'react-hooks-nang-cao.pdf',
-        materialType: 'application/pdf',
-        status: 'READY',
-      },
-    ];
-    const { onSave } = renderDialog({
-      uploadedMaterials: validUploadedMaterials,
-    });
-
-    await moveToStepTwo({
-      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
-      knowledge: 'React hooks nang cao',
-      expectedDomainText: 'React',
-    });
-
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
-      target: { value: 'Da biet React co ban va dang hoc hook nang cao' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
-      target: { value: 'Xay dung roadmap React nang cao de hoc bai ban.' },
-    });
-
-    await moveToUploadStep();
-
-    await act(async () => {
-      fireEvent.click(findButtonByText(i18n.t('workspace.profileConfig.actions.next'), {
-        exact: true,
-        includeDisabled: true,
-      }));
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(screen.getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
     expect(onSave).toHaveBeenCalledTimes(3);
     expect(onSave).toHaveBeenNthCalledWith(
       3,
       3,
       expect.objectContaining({
         workspacePurpose: 'STUDY_NEW',
-        knowledgeInput: 'React hooks nang cao',
-        inferredDomain: 'React',
+        adaptationMode: expect.any(String),
+        roadmapSpeedMode: expect.any(String),
       })
     );
+  });
+
+  it('allows finish on step 3 when roadmap is disabled for REVIEW', async () => {
+    const { onSave } = renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.REVIEW.title'),
+      knowledge: 'xac suat thong ke co ban',
+      expectedDomainText: 'React',
+      roadmapChoiceText: i18n.t('workspace.profileConfig.common.no'),
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da hoc xac suat co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW')), {
+      target: { value: 'On lai de thi cuoi ky' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Cong thuc co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Bai toan xac suat tong hop' },
+    });
+
+    await moveToStepThree();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.noRoadmapTitle'))).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(findButtonByText('Xác nhận', { exact: true, includeDisabled: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onSave).toHaveBeenCalledTimes(3);
+    expect(onSave).toHaveBeenNthCalledWith(3, 3, expect.objectContaining({ workspacePurpose: 'REVIEW' }));
   });
 
   it('requires strengths and weaknesses for REVIEW', async () => {
@@ -892,7 +758,13 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       clickButtonByText(i18n.t('workspace.profileConfig.actions.previous'));
       await Promise.resolve();
     });
-    clickButtonByText(i18n.t('workspace.profileConfig.stepOne.enableRoadmap'));
+    const yesRoadmapButton = screen.getAllByRole('button').find((button) => {
+      const text = normalizeText(button.textContent || '');
+      return text.includes(normalizeText(i18n.t('workspace.profileConfig.common.yes')))
+        && text.includes(normalizeText(i18n.t('workspace.profileConfig.stepOne.enableRoadmap')));
+    });
+    expect(yesRoadmapButton).toBeTruthy();
+    fireEvent.click(yesRoadmapButton);
 
     await act(async () => {
       fireEvent.click(getFooterPrimaryButton());
@@ -1053,10 +925,10 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput'))).toBeInTheDocument();
-    expect(screen.queryByLabelText(getUploadInputLabel())).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).not.toBeInTheDocument();
   });
 
-  it('resumes at the upload step when personal info is already saved', async () => {
+  it('resumes at step 3 when personal info is already saved', async () => {
     setupApiMocks({
       analysisResponse: createAnalysisResponse(['React', 'Frontend Development', 'JavaScript']),
     });
@@ -1084,6 +956,40 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByLabelText(getUploadInputLabel())).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
+  });
+
+  it('does not resume past backend step when profile status is DONE but workspace step 2 is not completed', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['React', 'Frontend Development', 'JavaScript']),
+    });
+
+    window.sessionStorage.setItem('workspace-profile-wizard-123', '3');
+
+    renderDialog({
+      initialData: {
+        profileStatus: 'DONE',
+        workspaceSetupStatus: 'CREATED',
+        learningMode: 'STUDY_NEW',
+        knowledge: 'React hooks nang cao',
+        domain: 'React',
+        currentLevel: 'Da biet React co ban',
+        learningGoal: 'Xay dung mot project hoan chinh',
+      },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(900);
+      await vi.runAllTimersAsync();
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).not.toBeInTheDocument();
   });
 });
