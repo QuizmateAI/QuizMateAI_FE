@@ -118,6 +118,31 @@ function WorkspaceProfileStepOne({
   const selectedDomainTheme = selectedDomainOption
     ? DOMAIN_OPTION_THEMES[domainOptions.findIndex((option) => option.label === values.inferredDomain) % DOMAIN_OPTION_THEMES.length]
     : DOMAIN_OPTION_THEMES[0];
+  const analysisHighlights = Array.isArray(knowledgeAnalysis?.validationHighlights)
+    ? knowledgeAnalysis.validationHighlights.filter(Boolean)
+    : [];
+  const analysisRefinementSuggestions = Array.isArray(knowledgeAnalysis?.refinementSuggestions)
+    ? knowledgeAnalysis.refinementSuggestions.filter(Boolean)
+    : [];
+  const analysisConstraintWarnings = Array.isArray(knowledgeAnalysis?.quizConstraintWarnings)
+    ? knowledgeAnalysis.quizConstraintWarnings.filter(Boolean)
+    : [];
+  const hasAnalysisSummary = analysisStatus === 'success' && Boolean(
+    knowledgeAnalysis?.warning
+    || knowledgeAnalysis?.message
+    || knowledgeAnalysis?.advice
+    || knowledgeAnalysis?.normalizedKnowledge
+    || analysisHighlights.length > 0
+    || analysisRefinementSuggestions.length > 0
+    || analysisConstraintWarnings.length > 0
+    || needsKnowledgeDescription
+  );
+  const analysisToneClass = knowledgeAnalysis?.warning
+    ? knowledgeAnalysis.redFlag
+      ? isDarkMode ? 'border-rose-400/20 bg-rose-500/10 text-rose-200' : 'border-rose-200 bg-rose-50 text-rose-700'
+      : isDarkMode ? 'border-amber-400/20 bg-amber-500/10 text-amber-200' : 'border-amber-200 bg-amber-50 text-amber-700'
+    : isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  const AnalysisStatusIcon = knowledgeAnalysis?.warning ? AlertTriangle : CheckCircle2;
 
   return (
     <div className="space-y-6">
@@ -271,27 +296,81 @@ function WorkspaceProfileStepOne({
             </div>
           ) : null}
 
-          {analysisStatus === 'success' && knowledgeAnalysis?.warning && knowledgeAnalysis?.message ? (
+          {hasAnalysisSummary ? (
             <div
               className={cn(
                 'rounded-[24px] border px-4 py-3',
-                knowledgeAnalysis.redFlag
-                  ? isDarkMode ? 'border-rose-400/20 bg-rose-500/10 text-rose-200' : 'border-rose-200 bg-rose-50 text-rose-700'
-                  : isDarkMode ? 'border-amber-400/20 bg-amber-500/10 text-amber-200' : 'border-amber-200 bg-amber-50 text-amber-700'
+                analysisToneClass
               )}
             >
               <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-6">{knowledgeAnalysis.message}</p>
+                <AnalysisStatusIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  {knowledgeAnalysis?.message ? (
+                    <p className="text-sm font-medium leading-6">{knowledgeAnalysis.message}</p>
+                  ) : null}
                   {knowledgeAnalysis.advice ? (
                     <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'opacity-80' : 'opacity-75')}>
                       {knowledgeAnalysis.advice}
                     </p>
                   ) : null}
-                  {knowledgeAnalysis.quizConstraintWarnings?.length > 0 ? (
-                    <ul className="mt-2 space-y-1">
-                      {knowledgeAnalysis.quizConstraintWarnings.map((warn, idx) => (
+
+                  {knowledgeAnalysis?.normalizedKnowledge ? (
+                    <div className="mt-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">
+                        {translateOrFallback(t, 'workspace.profileConfig.stepOne.analysisSummaryTitle', 'AI đang hiểu nội dung này là')}
+                      </p>
+                      <p className="mt-1 text-sm leading-6">
+                        {knowledgeAnalysis.normalizedKnowledge}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {analysisHighlights.length > 0 ? (
+                    <div className="mt-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">
+                        {translateOrFallback(t, 'workspace.profileConfig.stepOne.analysisHighlightsTitle', 'Quizmate AI đã kiểm tra')}
+                      </p>
+                      <ul className="mt-1.5 space-y-1">
+                        {analysisHighlights.map((highlight, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-xs leading-5">
+                            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+                            {highlight}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {analysisRefinementSuggestions.length > 0 ? (
+                    <div className="mt-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">
+                        {translateOrFallback(t, 'workspace.profileConfig.stepOne.analysisRefinementTitle', 'Bạn có thể nhập lại theo hướng này')}
+                      </p>
+                      <ul className="mt-1.5 space-y-1">
+                        {analysisRefinementSuggestions.map((suggestion, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-xs leading-5">
+                            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {needsKnowledgeDescription ? (
+                    <p className={cn('mt-2 text-xs font-medium leading-5', isDarkMode ? 'text-amber-100/85' : 'text-amber-900/80')}>
+                      {translateOrFallback(
+                        t,
+                        'workspace.profileConfig.stepOne.knowledgeBroadHint',
+                        'Hãy quay lại ô "Kiến thức" và nhập cụ thể hơn về phạm vi, tài liệu hoặc kỹ năng bạn muốn học.'
+                      )}
+                    </p>
+                  ) : null}
+
+                  {analysisConstraintWarnings.length > 0 ? (
+                    <ul className="mt-3 space-y-1">
+                      {analysisConstraintWarnings.map((warn, idx) => (
                         <li key={idx} className="flex items-start gap-2 text-xs leading-5">
                           <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
                           {warn}
@@ -315,73 +394,97 @@ function WorkspaceProfileStepOne({
                 {t('workspace.profileConfig.stepOne.knowledgeSuggestionTitle')}
                 <RequiredAsterisk />
               </p>
-              <div className="space-y-3">
-                {domainOptions.map((option, index) => {
-                  const active = values.inferredDomain === option.label;
-                  const theme = DOMAIN_OPTION_THEMES[index % DOMAIN_OPTION_THEMES.length];
+              {domainOptions.length > 0 ? (
+                <div className="space-y-3">
+                  {domainOptions.map((option, index) => {
+                    const active = values.inferredDomain === option.label;
+                    const theme = DOMAIN_OPTION_THEMES[index % DOMAIN_OPTION_THEMES.length];
 
-                  return (
-                    <button
-                      key={option.label}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => onDomainSelect(option.label)}
-                      className={cn(
-                        'flex w-full items-start gap-3 rounded-[20px] border px-4 py-3 text-left transition-all',
-                        active
-                          ? isDarkMode
-                            ? theme.darkActive
-                            : theme.lightActive
-                          : isDarkMode
-                            ? theme.darkInactive
-                            : theme.lightInactive
-                      )}
-                    >
-                      <div
+                    return (
+                      <button
+                        key={option.label}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => onDomainSelect(option.label)}
                         className={cn(
-                          'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                          'flex w-full items-start gap-3 rounded-[20px] border px-4 py-3 text-left transition-all',
                           active
                             ? isDarkMode
-                              ? theme.darkActiveIcon
-                              : theme.lightActiveIcon
+                              ? theme.darkActive
+                              : theme.lightActive
                             : isDarkMode
-                              ? theme.darkIcon
-                              : theme.lightIcon
+                              ? theme.darkInactive
+                              : theme.lightInactive
                         )}
                       >
-                        {active ? <CheckCircle2 className="h-4 w-4" /> : <Compass className="h-4 w-4" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold">{option.label}</p>
-                          <span
-                            className={cn(
-                              'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                              active
-                                ? isDarkMode
-                                  ? theme.darkActiveTag
-                                  : theme.lightActiveTag
-                                : isDarkMode
-                                  ? theme.darkTag
-                                  : theme.lightTag
-                            )}
-                          >
-                            {active ? t('workspace.profileConfig.stepOne.selectedDomainTag') : t('workspace.profileConfig.stepOne.selectDomainTag')}
-                          </span>
-                        </div>
-                        <p
+                        <div
                           className={cn(
-                            'mt-1.5 text-sm leading-6',
-                            active ? 'text-white/85' : isDarkMode ? theme.darkReason : theme.lightReason
+                            'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+                            active
+                              ? isDarkMode
+                                ? theme.darkActiveIcon
+                                : theme.lightActiveIcon
+                              : isDarkMode
+                                ? theme.darkIcon
+                                : theme.lightIcon
                           )}
                         >
-                          {option.reason}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                          {active ? <CheckCircle2 className="h-4 w-4" /> : <Compass className="h-4 w-4" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold">{option.label}</p>
+                            <span
+                              className={cn(
+                                'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                                active
+                                  ? isDarkMode
+                                    ? theme.darkActiveTag
+                                    : theme.lightActiveTag
+                                  : isDarkMode
+                                    ? theme.darkTag
+                                    : theme.lightTag
+                              )}
+                            >
+                              {active ? t('workspace.profileConfig.stepOne.selectedDomainTag') : t('workspace.profileConfig.stepOne.selectDomainTag')}
+                            </span>
+                          </div>
+                          <p
+                            className={cn(
+                              'mt-1.5 text-sm leading-6',
+                              active ? 'text-white/85' : isDarkMode ? theme.darkReason : theme.lightReason
+                            )}
+                          >
+                            {option.reason}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    'rounded-[20px] border border-dashed px-4 py-3 text-sm leading-6',
+                    isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-white text-slate-600'
+                  )}
+                >
+                  <p className="font-semibold">
+                    {translateOrFallback(
+                      t,
+                      'workspace.profileConfig.stepOne.noDomainSuggestionTitle',
+                      'Quizmate AI chưa có đủ lĩnh vực để bạn chọn.'
+                    )}
+                  </p>
+                  <p className={cn('mt-1 text-sm', mutedClass)}>
+                    {translateOrFallback(
+                      t,
+                      'workspace.profileConfig.stepOne.noDomainSuggestionDescription',
+                      'Hãy nhập rõ hơn tên ngôn ngữ, kỳ thi hoặc mảng kiến thức cụ thể hơn. Nếu đây là một cấp độ như N1 hoặc N4, hệ thống sẽ ưu tiên suy ra các lĩnh vực liên quan ngay khi có đủ tín hiệu.'
+                    )}
+                  </p>
+                </div>
+              )}
 
               {errors.inferredDomain ? <p className="mt-3 text-sm font-medium text-red-400">{errors.inferredDomain}</p> : null}
             </div>
@@ -430,50 +533,6 @@ function WorkspaceProfileStepOne({
           ) : null}
         </div>
       </section>
-
-      {needsKnowledgeDescription ? (
-        <section
-          className={cn(
-            'rounded-[28px] border p-5 sm:p-6',
-            isDarkMode ? 'border-amber-400/20 bg-amber-500/10' : 'border-amber-200 bg-amber-50'
-          )}
-        >
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                isDarkMode ? 'bg-amber-400/15 text-amber-300' : 'bg-amber-100 text-amber-700'
-              )}
-            >
-              <Route className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-base font-semibold">{t('workspace.profileConfig.stepOne.knowledgeNudgeTitle')}</h3>
-              <p className={cn('mt-1 text-sm leading-6', isDarkMode ? 'text-amber-100/80' : 'text-amber-900/70')}>
-                {t('workspace.profileConfig.stepOne.knowledgeNudgeDescription')}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="mb-2 block text-sm font-semibold">
-              {t('workspace.profileConfig.fields.knowledgeDescription')}
-              <RequiredAsterisk />
-            </label>
-            <textarea
-              rows={4}
-              disabled={disabled}
-              value={values.knowledgeDescription}
-              onChange={(event) => onFieldChange('knowledgeDescription', event.target.value)}
-              placeholder={t('workspace.profileConfig.placeholders.knowledgeDescription')}
-              className={inputClass}
-            />
-            {errors.knowledgeDescription ? (
-              <p className="mt-2 text-sm font-medium text-red-400">{errors.knowledgeDescription}</p>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
 
       {(values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') ? (
         <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>

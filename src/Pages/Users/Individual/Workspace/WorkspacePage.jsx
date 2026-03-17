@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
@@ -94,8 +94,7 @@ function getProfilePurpose(profileData) {
 function isMockTestGenerationInProgress(profileData) {
 	if (getProfilePurpose(profileData) !== "MOCK_TEST") return false;
 
-	const profileStatus = profileData?.profileStatus;
-	if (profileStatus === "PERSONAL_INFO_DONE" || profileStatus === "DONE") {
+	if (profileData?.currentStep >= 3 || ["PROFILE_DONE", "DONE"].includes(profileData?.workspaceSetupStatus)) {
 		return false;
 	}
 
@@ -104,7 +103,7 @@ function isMockTestGenerationInProgress(profileData) {
 		|| profileData?.learningGoal
 		|| profileData?.mockExamName
 		|| profileData?.examName
-		|| profileData?.templatePrompt
+		|| profileData?.mockExamName
 	);
 }
 

@@ -817,6 +817,9 @@
         "next": "Tiếp tục",
         "finish": "Hoàn thành",
         "saving": "Đang lưu...",
+        "retry": "Thử lại",
+        "reviewStep": "Xem lại bước này",
+        "checkAndUpload": "Kiểm tra và tải lên",
         "uploadAndContinue": "Tải lên và tiếp tục",
         "uploading": "Đang tải lên...",
         "generatingTemplate": "Template đang được tạo...",
@@ -834,7 +837,11 @@
         },
         "3": {
           "title": "Bước 3",
-          "description": "Thiết lập lộ trình, phần cần cải thiện và mục tiêu cuối cùng."
+          "description": "Tải tài liệu lên và rà lại xem nội dung đã khớp với hồ sơ học tập hay chưa."
+        },
+        "4": {
+          "title": "Bước 4",
+          "description": "Thiết lập lộ trình, nhịp học và chốt cấu hình cuối cùng cho workspace."
         }
       },
       "purpose": {
@@ -873,14 +880,25 @@
         "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
         "selectDomainTag": "Chọn lĩnh vực này",
         "selectedDomainTag": "Đã chọn",
+        "noDomainSuggestionTitle": "Quizmate AI chưa có đủ lĩnh vực để bạn chọn.",
+        "noDomainSuggestionDescription": "Hãy nhập rõ hơn tên ngôn ngữ, kỳ thi hoặc mảng kiến thức cụ thể hơn. Nếu đây là một cấp độ như N1 hoặc N4, hệ thống sẽ ưu tiên suy ra các lĩnh vực liên quan ngay khi có đủ tín hiệu.",
         "primaryDomainLockedHint": "Chỉ chọn từ gợi ý Quizmate AI",
         "domainReason": {
           "closest": "Khớp trực tiếp với tín hiệu \"{{signal}}\" trong kiến thức \"{{knowledge}}\", nên đây là domain sát nhất với nội dung bạn đang học.",
-          "group": "Tín hiệu \"{{signal}}\" thuộc cùng nhóm với lĩnh vực v \"{{lĩnh vực}}\", nên lựa chọn này vẫn bám rất gần với kiến thức bạn nhập.",
-          "context": "Domain \"{{domain}}\" nằm trong cùng bối cảnh học tập với \"{{knowledge}}\", phù hợp để AI mở rộng đúng hướng hơn."
+          "group": "Tín hiệu \"{{signal}}\" thuộc cùng nhóm với lĩnh vực \"{{domain}}\", nên lựa chọn này vẫn bám rất gần với kiến thức bạn nhập.",
+          "context": "Domain \"{{domain}}\" nằm trong cùng bối cảnh học tập với \"{{knowledge}}\", phù hợp để AI mở rộng đúng hướng hơn.",
+          "languagePair": "Đây là một hướng hiểu hợp lý nếu cụm \"{{knowledge}}\" đang ám chỉ việc học hoặc sử dụng {{domain}} trong cặp ngôn ngữ này.",
+          "translation": "Lựa chọn này phù hợp nếu bạn đang muốn dịch, đối chiếu hoặc chuyển đổi nội dung theo hướng {{domain}}.",
+          "studyBridge": "Lựa chọn này phù hợp nếu bạn muốn dùng một ngôn ngữ làm ngôn ngữ giải thích để học theo hướng {{domain}}."
         },
         "knowledgeNudgeTitle": "Knowledge này vẫn còn khá chung chung",
         "knowledgeNudgeDescription": "Hãy mô tả rõ hơn phạm vi, tài liệu hoặc kỹ năng mục tiêu để Quizmate AI gợi ý chính xác hơn.",
+        "analyzing": "AI đang phân tích kiến thức...",
+        "analysisError": "AI phân tích thất bại. Vui lòng thử lại.",
+        "knowledgeBroadHint": "Hãy quay lại ô \"Kiến thức\" và nhập cụ thể hơn về phạm vi, tài liệu hoặc kỹ năng bạn muốn học.",
+        "analysisSummaryTitle": "Quizmate AI đang hiểu nội dung này là",
+        "analysisHighlightsTitle": "Quizmate AI đã kiểm tra",
+        "analysisRefinementTitle": "Bạn có thể nhập lại theo hướng này",
         "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
         "roadmapDescription": "Tùy chọn này chỉ xuất hiện với luồng ôn tập và mock test.",
         "enableRoadmap": "Có, tạo lộ trình kèm theo",
@@ -899,7 +917,31 @@
         "supportedSection": "Được hỗ trợ",
         "unsupportedSection": "Chưa hỗ trợ",
         "templateTitle": "Prompt tạo bản mẫu",
-        "templateDescription": "Bạn có thể mô tả yêu cầu riêng rồi tạo preview template ngay trong giao diện này."
+        "templateDescription": "Bạn có thể mô tả yêu cầu riêng rồi tạo preview template ngay trong giao diện này.",
+        "suggestionLabel": "AI gợi ý",
+        "suggestionLoadingLabel": "AI đang gợi ý...",
+        "contextTitle": "Đang bám theo ngữ cảnh đã xác nhận ở bước 1",
+        "contextDescription": "Mọi gợi ý ở bước này sẽ dựa trên kiến thức \"{{knowledge}}\" trong lĩnh vực \"{{domain}}\". Hãy mô tả đúng năng lực trong phạm vi này, không phải điểm mạnh tổng quát của bạn.",
+        "currentLevelTitle": "1. Trình độ hiện tại",
+        "currentLevelDescription": "Hãy mô tả trình độ hiện tại theo đúng kiến thức và lĩnh vực đã chọn, ví dụ nền tảng N5, đã biết chữ Hán cơ bản, đang yếu ngữ pháp N4.",
+        "strengthWeaknessTitle": "2. Điểm mạnh và điểm yếu trong đúng phạm vi này",
+        "strengthWeaknessDescription": "Điểm mạnh và điểm yếu ở đây phải nói về các mảng con trực tiếp thuộc kiến thức bạn đang học, ví dụ ngữ pháp, từ vựng, đọc hiểu, chữ Hán; không nên nêu một môn khác như Toán.",
+        "waitForCurrentLevelTitle": "Điền trình độ hiện tại trước",
+        "waitForCurrentLevelDescription": "Sau khi bạn mô tả trình độ hiện tại, AI sẽ gợi ý điểm mạnh và điểm yếu sát hơn với kiến thức đã chọn.",
+        "learningGoalTitle": "3. Mục tiêu học tập",
+        "learningGoalDescription": "Mục tiêu học tập nên đi từ trình độ hiện tại sang đúng phần kiến thức bạn đang học. AI chỉ gợi ý sát hơn sau khi đã có trình độ hiện tại, điểm mạnh và điểm yếu.",
+        "waitForGoalTitle": "Bổ sung điểm mạnh và điểm yếu để AI gợi ý mục tiêu",
+        "waitForGoalDescription": "Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.",
+        "fieldSuggestionLoading": "AI đang phân tích bước 2 và cập nhật gợi ý theo đúng ngữ cảnh bạn đã nhập...",
+        "overallReviewTitle": "Đánh giá tổng quan của AI",
+        "overallReviewLoadingTitle": "AI đang đánh giá tổng quan",
+        "overallReviewLoadingDescription": "Hệ thống đang kiểm tra xem trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập đã bám đúng kiến thức bạn chọn hay chưa.",
+        "overallReviewPendingTitle": "Đánh giá tổng quan sẽ xuất hiện sau khi bạn điền đủ dữ liệu",
+        "overallReviewPendingDescription": "Hãy điền trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập. Sau đó AI sẽ kiểm tra xem toàn bộ phần step 2 đã bám đúng kiến thức và lĩnh vực bạn chọn hay chưa.",
+        "aiRecommendationNotice": "Đây là gợi ý tham khảo của AI, bạn có thể chỉnh lại theo ngữ cảnh thực tế của mình.",
+        "alignmentHighlightsTitle": "Những điểm đang khớp",
+        "issuesTitle": "Điểm cần xem lại",
+        "recommendationsTitle": "Gợi ý tinh chỉnh"
       },
       "stepThree": {
         "summaryTitle": "Tóm tắt nhanh trước khi hoàn thành",
@@ -920,7 +962,9 @@
         "mockTemplateAwaitingBackend": "Đang chờ backend xác nhận hoàn tất template. Đã chờ {{seconds}} giây.",
         "mockTemplateLongWait": "Backend vẫn đang xử lý template. Đã chờ {{seconds}} giây. Nếu quá lâu, hãy kiểm tra lại trạng thái.",
         "mockTemplateAwaitingBackendShort": "Đang xác nhận",
-        "backgroundMockTestReady": "Mock test đã được tạo xong ở nền. Bạn có thể mở mục Mock test để xem ngay."
+        "backgroundMockTestReady": "Mock test đã được tạo xong ở nền. Bạn có thể mở mục Mock test để xem ngay.",
+        "finishSuccess": "Hoàn thành thiết lập workspace thành công.",
+        "saveError": "Không thể lưu tiến trình thiết lập workspace."
       },
       "fields": {
         "workspacePurpose": "Mục đích sử dụng",
@@ -1019,6 +1063,7 @@
       "validation": {
         "purposeRequired": "Vui lòng chọn mục đích sử dụng workspace.",
         "knowledgeRequired": "Vui lòng nhập kiến thức.",
+        "aiAnalysisError": "AI phân tích thất bại. Vui lòng thử lại.",
         "knowledgeOptionRequired": "Vui lòng chọn một knowledge chính từ gợi ý AI.",
         "knowledgeDescriptionRequired": "Vui lòng mô tả rõ hơn knowledge đang học.",
         "currentLevelRequired": "Vui lòng nhập trình độ hiện tại.",
@@ -1033,6 +1078,8 @@
         "roadmapSpeedModeRequired": "Vui lòng chọn tốc độ roadmap.",
         "estimatedTotalDaysRequired": "Vui lòng nhập số ngày dự kiến lớn hơn 0.",
         "recommendedMinutesRequired": "Vui lòng nhập số phút học mỗi ngày lớn hơn 0.",
+        "materialsRequired": "Vui lòng tải lên ít nhất một tài liệu phù hợp với workspace.",
+        "validMaterialsRequired": "Bạn đang chọn sử dụng lộ trình để học tập nên cần tải lên ít nhất một tài liệu hợp lệ và bám đúng kiến thức trước khi sang bước 4.",
         "targetScoreRequired": "Vui lòng nhập hoặc chọn điểm mục tiêu.",
         "targetScoreScaleRequired": "Vui lòng nhập thang điểm cho kỳ thi private.",
         "expectedExamDateRequired": "Vui lòng chọn ngày thi dự kiến."
