@@ -191,7 +191,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
                       {t(`workspace.quiz.statusLabels.${quiz.status}`)}
                     </span>
-                    {quiz.status !== "DRAFT" && (
+                    {quiz.status !== "DRAFT" && quiz.status !== "PROCESSING" && (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${completed
                         ? (isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-700")
                         : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")

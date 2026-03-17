@@ -471,10 +471,16 @@
     "emailAvailable": "Email khả dụng",
     "usernameExists": "Tên đăng nhập đã được sử dụng",
     "emailExists": "Email đã được sử dụng",
+    "accountNotFound": "Tài khoản không tồn tại",
     "agreeToTermsRequired": "Vui lòng đồng ý với điều khoản sử dụng",
     "sendOTPFailed": "Gửi OTP thất bại, vui lòng thử lại",
+    "checkAvailabilityFailed": "Không thể kiểm tra tính khả dụng, vui lòng thử lại",
     "validationFailed": "Dữ liệu nhập không hợp lệ",
-    "verifyOTPFailed": "Xác thực OTP thất bại, mã không đúng hoặc đã hết hạn"
+    "verifyOTPFailed": "Xác thực OTP thất bại, mã không đúng hoặc đã hết hạn",
+    "otpRequired": "Vui lòng nhập mã OTP",
+    "passwordMismatch": "Mật khẩu xác nhận không khớp",
+    "resetPasswordFailed": "Đặt lại mật khẩu thất bại",
+    "loginFailed": "Đăng nhập thất bại, vui lòng thử lại"
   },
   "validation": {
     "fullnameRequired": "Họ và tên không được để trống",
@@ -490,6 +496,7 @@
     "emailConsecutiveDots": "Email không được chứa hai dấu chấm liên tiếp",
     "emailDotPosition": "Email không được bắt đầu hoặc kết thúc bằng dấu chấm",
     "emailDomainFormat": "Tên miền email không hợp lệ",
+    "otpRequired": "Vui lòng nhập mã OTP",
     "passwordRequired": "Mật khẩu không được để trống",
     "passwordLength": "Mật khẩu phải nhiều hơn 8 ký tự",
     "passwordFormat": "Mật khẩu phải chứa cả chữ và số",
