@@ -112,7 +112,11 @@ const LoginPageContent = () => {
                   label={t('auth.username') || 'Username'}
                   value={loginHook.loginData.username}
                   onChange={loginHook.handleLoginChange('username')}
+                  error={Boolean(loginHook.fieldErrors?.username)}
                 />
+                {loginHook.fieldErrors?.username && (
+                  <p className="text-red-500 text-xs mt-1 ml-1">{loginHook.fieldErrors.username}</p>
+                )}
 
                 {/* Password Input - Floating Label */}
                 <FloatingPasswordInput
@@ -122,7 +126,11 @@ const LoginPageContent = () => {
                   onChange={loginHook.handleLoginChange('password')}
                   showPassword={loginHook.showPassword}
                   onTogglePassword={() => loginHook.setShowPassword(!loginHook.showPassword)}
+                  error={Boolean(loginHook.fieldErrors?.password)}
                 />
+                {loginHook.fieldErrors?.password && (
+                  <p className="text-red-500 text-xs mt-1 ml-1">{loginHook.fieldErrors.password}</p>
+                )}
 
                 <div className="flex items-center justify-between">
                   {/* ...existing code... */}
@@ -221,13 +229,20 @@ const LoginPageContent = () => {
               {/* Step 1: Enter Email */}
               {forgotPasswordHook.forgotPasswordStep === 'email' && (
                 <form className="space-y-6" onSubmit={forgotPasswordHook.handleSendOTP}>
-                  <FloatingInput
-                    id="forgot-email"
-                    type="email"
-                    label={t('auth.email')}
-                    value={forgotPasswordHook.forgotPasswordData.email}
-                    onChange={forgotPasswordHook.handleForgotPasswordChange('email')}
-                  />
+                  <div>
+                    <FloatingInput
+                      id="forgot-email"
+                      type="email"
+                      label={t('auth.email')}
+                      value={forgotPasswordHook.forgotPasswordData.email}
+                      onChange={forgotPasswordHook.handleForgotPasswordChange('email')}
+                      onBlur={forgotPasswordHook.handleForgotPasswordEmailBlur}
+                      error={Boolean(forgotPasswordHook.fieldErrors?.email)}
+                    />
+                    {forgotPasswordHook.fieldErrors?.email && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.email}</p>
+                    )}
+                  </div>
 
                   <Button
                     type="submit"
@@ -242,13 +257,19 @@ const LoginPageContent = () => {
               {/* Step 2: Enter OTP */}
               {forgotPasswordHook.forgotPasswordStep === 'otp' && (
                 <form className="space-y-6" onSubmit={forgotPasswordHook.handleVerifyOTP}>
-                  <FloatingInput
-                    id="otp-code"
-                    type="text"
-                    label={t('auth.otpCode') || 'Mã OTP'}
-                    value={forgotPasswordHook.forgotPasswordData.otp}
-                    onChange={forgotPasswordHook.handleForgotPasswordChange('otp')}
-                  />
+                  <div>
+                    <FloatingInput
+                      id="otp-code"
+                      type="text"
+                      label={t('auth.otpCode') || 'Mã OTP'}
+                      value={forgotPasswordHook.forgotPasswordData.otp}
+                      onChange={forgotPasswordHook.handleForgotPasswordChange('otp')}
+                      error={Boolean(forgotPasswordHook.fieldErrors?.otp)}
+                    />
+                    {forgotPasswordHook.fieldErrors?.otp && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.otp}</p>
+                    )}
+                  </div>
 
                   <Button
                     type="submit"
@@ -271,23 +292,35 @@ const LoginPageContent = () => {
               {/* Step 3: Enter New Password */}
               {forgotPasswordHook.forgotPasswordStep === 'newPassword' && (
                 <form className="space-y-6" onSubmit={forgotPasswordHook.handleResetPassword}>
-                  <FloatingPasswordInput
-                    id="new-password"
-                    label={t('auth.newPassword') || 'Mật khẩu mới'}
-                    value={forgotPasswordHook.forgotPasswordData.newPassword}
-                    onChange={forgotPasswordHook.handleForgotPasswordChange('newPassword')}
-                    showPassword={forgotPasswordHook.showPassword}
-                    onTogglePassword={() => forgotPasswordHook.setShowPassword(!forgotPasswordHook.showPassword)}
-                  />
+                  <div>
+                    <FloatingPasswordInput
+                      id="new-password"
+                      label={t('auth.newPassword') || 'Mật khẩu mới'}
+                      value={forgotPasswordHook.forgotPasswordData.newPassword}
+                      onChange={forgotPasswordHook.handleForgotPasswordChange('newPassword')}
+                      showPassword={forgotPasswordHook.showPassword}
+                      onTogglePassword={() => forgotPasswordHook.setShowPassword(!forgotPasswordHook.showPassword)}
+                      error={Boolean(forgotPasswordHook.fieldErrors?.newPassword)}
+                    />
+                    {forgotPasswordHook.fieldErrors?.newPassword && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.newPassword}</p>
+                    )}
+                  </div>
 
-                  <FloatingPasswordInput
-                    id="confirm-new-password"
-                    label={t('auth.confirmNewPassword') || 'Xác nhận mật khẩu mới'}
-                    value={forgotPasswordHook.forgotPasswordData.confirmNewPassword}
-                    onChange={forgotPasswordHook.handleForgotPasswordChange('confirmNewPassword')}
-                    showPassword={forgotPasswordHook.showConfirmPassword}
-                    onTogglePassword={() => forgotPasswordHook.setShowConfirmPassword(!forgotPasswordHook.showConfirmPassword)}
-                  />
+                  <div>
+                    <FloatingPasswordInput
+                      id="confirm-new-password"
+                      label={t('auth.confirmNewPassword') || 'Xác nhận mật khẩu mới'}
+                      value={forgotPasswordHook.forgotPasswordData.confirmNewPassword}
+                      onChange={forgotPasswordHook.handleForgotPasswordChange('confirmNewPassword')}
+                      showPassword={forgotPasswordHook.showConfirmPassword}
+                      onTogglePassword={() => forgotPasswordHook.setShowConfirmPassword(!forgotPasswordHook.showConfirmPassword)}
+                      error={Boolean(forgotPasswordHook.fieldErrors?.confirmNewPassword)}
+                    />
+                    {forgotPasswordHook.fieldErrors?.confirmNewPassword && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{forgotPasswordHook.fieldErrors.confirmNewPassword}</p>
+                    )}
+                  </div>
 
                   <Button
                     type="submit"
@@ -366,6 +399,7 @@ const LoginPageContent = () => {
                       label={t('auth.fullname') || 'Họ và tên'}
                       value={registerHook.formData.fullname}
                       onChange={registerHook.handleChange('fullname')}
+                      error={Boolean(registerHook.fieldErrors?.fullname)}
                     />
                     {registerHook.fieldErrors?.fullname && (
                       <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.fullname}</p>
@@ -380,8 +414,12 @@ const LoginPageContent = () => {
                       label={t('auth.username') || 'Username'}
                       value={registerHook.formData.username}
                       onChange={registerHook.handleChange('username')}
+                      onBlur={registerHook.handleAvailabilityBlur('username')}
+                      error={Boolean(registerHook.fieldErrors?.username)}
                     />
-                    {registerHook.availabilityStatus?.username?.message && (
+                    {registerHook.fieldErrors?.username ? (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.username}</p>
+                    ) : registerHook.availabilityStatus?.username?.message ? (
                       <p className={`text-xs mt-1 ml-1 ${
                         registerHook.availabilityStatus.username.available === true
                           ? 'text-green-600 dark:text-green-400'
@@ -391,7 +429,7 @@ const LoginPageContent = () => {
                       }`}>
                         {registerHook.availabilityStatus.username.message}
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Email */}
@@ -402,8 +440,12 @@ const LoginPageContent = () => {
                       label={t('auth.email')}
                       value={registerHook.formData.email}
                       onChange={registerHook.handleChange('email')}
+                      onBlur={registerHook.handleAvailabilityBlur('email')}
+                      error={Boolean(registerHook.fieldErrors?.email)}
                     />
-                    {registerHook.availabilityStatus?.email?.message && (
+                    {registerHook.fieldErrors?.email ? (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.email}</p>
+                    ) : registerHook.availabilityStatus?.email?.message ? (
                       <p className={`text-xs mt-1 ml-1 ${
                         registerHook.availabilityStatus.email.available === true
                           ? 'text-green-600 dark:text-green-400'
@@ -413,7 +455,7 @@ const LoginPageContent = () => {
                       }`}>
                         {registerHook.availabilityStatus.email.message}
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Password */}
@@ -425,6 +467,7 @@ const LoginPageContent = () => {
                       onChange={registerHook.handleChange('password')}
                       showPassword={registerHook.showPassword}
                       onTogglePassword={() => registerHook.setShowPassword(!registerHook.showPassword)}
+                      error={Boolean(registerHook.fieldErrors?.password)}
                     />
                     {registerHook.fieldErrors?.password && (
                       <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.password}</p>
@@ -440,6 +483,7 @@ const LoginPageContent = () => {
                       onChange={registerHook.handleChange('confirmPassword')}
                       showPassword={registerHook.showConfirmPassword}
                       onTogglePassword={() => registerHook.setShowConfirmPassword(!registerHook.showConfirmPassword)}
+                      error={Boolean(registerHook.fieldErrors?.confirmPassword)}
                     />
                     {registerHook.fieldErrors?.confirmPassword && (
                       <p className="text-red-500 text-xs mt-1 ml-1">{registerHook.fieldErrors.confirmPassword}</p>
@@ -459,6 +503,9 @@ const LoginPageContent = () => {
                       {t('auth.agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.terms')}</a> {t('auth.and')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.privacyPolicies')}</a>
                     </label>
                   </div>
+                  {registerHook.fieldErrors?.agreeToTerms && (
+                    <p className="text-red-500 text-xs -mt-2 ml-1">{registerHook.fieldErrors.agreeToTerms}</p>
+                  )}
 
                   {/* Submit Button - Gửi OTP */}
                   <Button
@@ -519,7 +566,11 @@ const LoginPageContent = () => {
                     label={t('auth.otpCode') || 'Mã OTP'}
                     value={registerHook.otp}
                     onChange={registerHook.handleOtpChange}
+                    error={Boolean(registerHook.fieldErrors?.otp)}
                   />
+                  {registerHook.fieldErrors?.otp && (
+                    <p className="text-red-500 text-xs -mt-4 ml-1">{registerHook.fieldErrors.otp}</p>
+                  )}
 
                   <Button
                     type="submit"
