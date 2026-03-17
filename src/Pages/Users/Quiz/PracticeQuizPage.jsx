@@ -12,7 +12,7 @@ import { useQuizProgress } from './hooks/useQuizProgress';
 import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
 import { buildSubmitPayload, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
-import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
+import { markQuizAttempted } from '@/Utils/quizAttemptTracker';
 
 export default function PracticeQuizPage() {
   const { quizId } = useParams();
@@ -96,7 +96,6 @@ export default function PracticeQuizPage() {
     try {
       const submitPayload = buildSubmitPayload(quiz?.questions, answers);
       await submitAttempt(attemptId, submitPayload);
-      markQuizCompleted(quizId);
       navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
     } catch (err) {
       console.error('Failed to submit:', err);
