@@ -18,6 +18,7 @@ import {
 	saveIndividualWorkspacePersonalInfoStep,
 	saveIndividualWorkspaceRoadmapConfigStep,
 	startIndividualWorkspaceMockTestPersonalInfoStep,
+	confirmIndividualWorkspaceProfile,
 } from "@/api/WorkspaceAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace } from "@/api/RoadmapAPI";
@@ -75,7 +76,11 @@ function buildPathForView(view, selectedQuiz) {
 }
 
 function isProfileOnboardingDone(profileData) {
-	return profileData?.profileStatus === "DONE" || profileData?.workspaceSetupStatus === "PROFILE_DONE";
+	return profileData?.onboardingCompleted === true || profileData?.workspaceSetupStatus === "DONE";
+}
+
+function hasCompletedProfileStepTwo(profileData) {
+	return Number(profileData?.currentStep) >= 3 || ["PROFILE_DONE", "DONE"].includes(profileData?.workspaceSetupStatus);
 }
 
 function extractProfileData(response) {
@@ -149,6 +154,7 @@ function WorkspacePage() {
 	const mockTestPollingRunRef = useRef(0);
 	const mockTestProgressTimerRef = useRef(null);
 	const mockTestElapsedTimerRef = useRef(null);
+	const mockTestReadyAutoHideTimerRef = useRef(null);
 	const mockTestAutoFinalizePayloadRef = useRef(null);
 	const mockTestShouldCloseAfterStartRef = useRef(false);
 	const mockTestGenerationStorageKey = workspaceId ? `workspace_${workspaceId}_mockTestGeneration` : null;
@@ -253,7 +259,7 @@ function WorkspacePage() {
 		return translateOrFallback(
 			t,
 			"workspace.profileConfig.messages.mockTemplateReady",
-			"Template đã được tạo xong. Bạn có thể tiếp tục sang bước tiếp theo."
+			"Đã lưu template mock test thành công."
 		);
 	}, [t]);
 
@@ -305,6 +311,10 @@ function WorkspacePage() {
 			clearInterval(mockTestProgressTimerRef.current);
 			mockTestProgressTimerRef.current = null;
 		}
+		if (mockTestReadyAutoHideTimerRef.current) {
+			clearTimeout(mockTestReadyAutoHideTimerRef.current);
+			mockTestReadyAutoHideTimerRef.current = null;
+		}
 		setMockTestGenerationState("idle");
 		setMockTestGenerationMessage("");
 		setMockTestGenerationProgress(0);
@@ -314,6 +324,31 @@ function WorkspacePage() {
 			window.sessionStorage.removeItem(mockTestGenerationStorageKey);
 		}
 	}, [mockTestGenerationStorageKey]);
+
+	useEffect(() => {
+		if (mockTestGenerationState !== "ready") {
+			if (mockTestReadyAutoHideTimerRef.current) {
+				clearTimeout(mockTestReadyAutoHideTimerRef.current);
+				mockTestReadyAutoHideTimerRef.current = null;
+			}
+			return;
+		}
+
+		if (mockTestReadyAutoHideTimerRef.current) {
+			clearTimeout(mockTestReadyAutoHideTimerRef.current);
+		}
+
+		mockTestReadyAutoHideTimerRef.current = globalThis.setTimeout(() => {
+			resetMockTestGenerationStatus();
+		}, 3000);
+
+		return () => {
+			if (mockTestReadyAutoHideTimerRef.current) {
+				clearTimeout(mockTestReadyAutoHideTimerRef.current);
+				mockTestReadyAutoHideTimerRef.current = null;
+			}
+		};
+	}, [mockTestGenerationState, resetMockTestGenerationStatus]);
 
 	useEffect(() => {
 		if (mockTestGenerationState !== "pending") {
@@ -451,7 +486,7 @@ function WorkspacePage() {
 						setIsProfileConfigured(isProfileOnboardingDone(profileData));
 					}
 
-					if (profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") {
+					if (hasCompletedProfileStepTwo(profileData)) {
 						setMockTestGenerationProgress(100);
 						setMockTestGenerationState("ready");
 						setMockTestGenerationMessage(getMockTestReadyMessage());
@@ -534,7 +569,7 @@ function WorkspacePage() {
 				setIsProfileConfigured(isProfileOnboardingDone(profileData));
 			}
 
-			if (profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") {
+			if (hasCompletedProfileStepTwo(profileData)) {
 				setMockTestGenerationProgress(100);
 				setMockTestGenerationState("ready");
 				setMockTestGenerationMessage(getMockTestReadyMessage());
@@ -649,7 +684,7 @@ function WorkspacePage() {
 					setMockTestGenerationMessage(getMockTestGeneratingMessage());
 					setMockTestGenerationProgress(Number(storedMockTestGeneration?.progress) || 12);
 					startMockTestGenerationPolling();
-				} else if ((profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") && storedMockTestGeneration) {
+				} else if (hasCompletedProfileStepTwo(profileData) && storedMockTestGeneration) {
 					mockTestShouldCloseAfterStartRef.current = Boolean(storedMockTestGeneration?.shouldCloseAfterStart);
 					mockTestAutoFinalizePayloadRef.current = storedMockTestGeneration?.autoFinalizePayload || null;
 					if (mockTestShouldCloseAfterStartRef.current && mockTestAutoFinalizePayloadRef.current) {
@@ -729,7 +764,7 @@ function WorkspacePage() {
 						setMockTestGenerationMessage(getMockTestGeneratingMessage());
 						setMockTestGenerationProgress(Number(storedMockTestGeneration?.progress) || 12);
 						startMockTestGenerationPolling();
-					} else if ((profileData?.profileStatus === "PERSONAL_INFO_DONE" || profileData?.profileStatus === "DONE") && storedMockTestGeneration) {
+					} else if (hasCompletedProfileStepTwo(profileData) && storedMockTestGeneration) {
 						mockTestShouldCloseAfterStartRef.current = Boolean(storedMockTestGeneration?.shouldCloseAfterStart);
 						mockTestAutoFinalizePayloadRef.current = storedMockTestGeneration?.autoFinalizePayload || null;
 						if (mockTestShouldCloseAfterStartRef.current && mockTestAutoFinalizePayloadRef.current) {
@@ -822,23 +857,8 @@ function WorkspacePage() {
 			if (savedProfile) {
 				setWorkspaceProfile(savedProfile);
 			}
-			setProfileConfigOpen(false);
-			setProfileOverviewOpen(false);
-			setIsProfileConfigured(isProfileOnboardingDone(savedProfile));
-			fetchWorkspaceDetail(workspaceId);
-
-			if (sources.length === 0) {
-				setUploadDialogOpen(true);
-			}
-
-			showSuccess(
-				translateOrFallback(
-					t,
-					"workspace.profileConfig.messages.finishSuccess",
-					"Hoan thanh thiet lap workspace thanh cong."
-				)
-			);
-			navigate(`/workspace/${workspaceId}`, { replace: true });
+			// Step 3 chỉ lưu draft. Chỉ khi user Confirm mới khóa onboarding và đóng wizard.
+			showSuccess("Đã lưu cấu hình (draft). Bạn có thể tiếp tục chỉnh sửa hoặc bấm Xác nhận để hoàn tất.");
 			return savedProfile;
 		} catch (error) {
 			console.error("Failed to config profile:", error);
@@ -857,13 +877,45 @@ function WorkspacePage() {
 		resetMockTestGenerationStatus,
 		getMockTestGeneratingMessage,
 		startMockTestGenerationPolling,
-		fetchWorkspaceDetail,
-		sources,
 		showSuccess,
 		t,
-		navigate,
 		showError,
 	]);
+
+	const handleConfirmProfileConfig = useCallback(async () => {
+		if (!workspaceId) return;
+
+		try {
+			const response = await confirmIndividualWorkspaceProfile(workspaceId);
+			const confirmedProfile = extractProfileData(response);
+
+			if (confirmedProfile) {
+				setWorkspaceProfile(confirmedProfile);
+				setIsProfileConfigured(isProfileOnboardingDone(confirmedProfile));
+			}
+
+			setProfileConfigOpen(false);
+			setProfileOverviewOpen(false);
+			fetchWorkspaceDetail(workspaceId).catch(() => {});
+
+			if (sources.length === 0) {
+				setUploadDialogOpen(true);
+			}
+
+			showSuccess(
+				translateOrFallback(
+					t,
+					"workspace.profileConfig.messages.finishSuccess",
+					"Hoàn thành thiết lập workspace thành công."
+				)
+			);
+			navigate(`/workspace/${workspaceId}`, { replace: true });
+		} catch (error) {
+			console.error("Failed to confirm profile:", error);
+			showError(error?.message || "Không thể xác nhận onboarding. Vui lòng thử lại.");
+			throw error;
+		}
+	}, [workspaceId, fetchWorkspaceDetail, navigate, showError, showSuccess, sources.length, t]);
 
 	// ÄÃ³ng settings khi click ra ngoÃ i
 	useEffect(() => {
@@ -1363,6 +1415,7 @@ function WorkspacePage() {
 				open={profileConfigOpen}
 				onOpenChange={handleProfileConfigChange}
 				onSave={handleSaveProfileConfig}
+				onConfirm={handleConfirmProfileConfig}
 				onUploadFiles={handleUploadFiles}
 				isDarkMode={isDarkMode}
 				uploadedMaterials={sources}

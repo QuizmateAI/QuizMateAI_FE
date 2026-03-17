@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import LoadingSpinner from "@/Components/ui/LoadingSpinner";
-import { getUserProfile, updateUserProfile, changePassword, uploadAvatar } from "@/api/ProfileAPI";
+import { updateUserProfile, changePassword, uploadAvatar } from "@/api/ProfileAPI";
 import { getMyWallet } from "@/api/ManagementSystemAPI";
 import { logout } from "@/api/Authentication";
 import { Button } from "@/Components/ui/button";
@@ -25,6 +25,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/Components/ui/dialog";
+import { useUserProfile } from "@/context/UserProfileContext";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
@@ -137,6 +138,7 @@ function ProfilePage() {
   const settingsRef = useRef(null);
 
   // State cho profile data
+  const { profile: contextProfile, setProfile: setContextProfile, loading: profileLoading } = useUserProfile();
   const [profile, setProfile] = useState({
     email: "",
     username: "",
@@ -188,11 +190,23 @@ function ProfilePage() {
     { id: 3, name: t("profile.badges.speedster"), icon: Zap, bg: "bg-red-100 dark:bg-red-900/30", color: "text-red-600 dark:text-red-400" },
   ];
 
-  // Load profile data khi component mount
+  // Đồng bộ profile từ context + load wallet
   useEffect(() => {
-    loadProfile();
+    if (contextProfile) {
+      setProfile((prev) => ({
+        ...prev,
+        ...contextProfile,
+      }));
+      setEditForm({
+        fullName: contextProfile.fullName || "",
+        birthday: contextProfile.birthday || "",
+      });
+      setLoading(false);
+    } else if (!profileLoading) {
+      setLoading(false);
+    }
     loadWallet();
-  }, []);
+  }, [contextProfile, profileLoading]);
 
   // Xử lý chuyển tab từ trang khác (ví dụ: từ HomePage settings)
   useEffect(() => {
@@ -219,19 +233,6 @@ function ProfilePage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSettingsOpen]);
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const data = await getUserProfile();
-      setProfile(data);
-      setEditForm({ fullName: data.fullName || "", birthday: data.birthday || "" });
-    } catch (error) {
-      showMessage("error", error.message || t("profile.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadWallet = async () => {
     try {

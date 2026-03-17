@@ -52,7 +52,7 @@ function canSelectSource(source) {
 
 function canDeleteSource(source) {
   const status = source?.status?.toUpperCase();
-  return !["UPLOADING", "PENDING", "QUEUED"].includes(status);
+  return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết

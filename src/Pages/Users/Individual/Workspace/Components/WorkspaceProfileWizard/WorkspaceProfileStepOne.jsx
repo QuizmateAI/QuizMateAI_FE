@@ -480,7 +480,7 @@ function WorkspaceProfileStepOne({
                     {translateOrFallback(
                       t,
                       'workspace.profileConfig.stepOne.noDomainSuggestionDescription',
-                      'Hãy nhập rõ hơn tên ngôn ngữ, kỳ thi hoặc mảng kiến thức cụ thể hơn. Nếu đây là một cấp độ như N1 hoặc N4, hệ thống sẽ ưu tiên suy ra các lĩnh vực liên quan ngay khi có đủ tín hiệu.'
+                      'Hãy nhập rõ hơn tên ngôn ngữ, kỳ thi hoặc mảng kiến thức cụ thể hơn.'
                     )}
                   </p>
                 </div>

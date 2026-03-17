@@ -1,20 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AlertTriangle,
   ClipboardList,
   FilePenLine,
   GraduationCap,
-  ListChecks,
   Loader2,
-  Radar,
-  Search,
   Sparkles,
-  Target,
-  Trophy,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
-import { TEMPLATE_FORMAT_OPTIONS } from './mockProfileWizardData';
+
+function normalizeText(value) {
+  return (value ?? '').toString().trim();
+}
+
+function buildTemplateNotesFromStructure(structure) {
+  if (!structure || typeof structure !== 'object') return '';
+
+  const lines = [];
+  const overview = normalizeText(structure.overview);
+  if (overview) lines.push(`- Overview: ${overview}`);
+
+  const excludedSections = Array.isArray(structure.excludedSections) ? structure.excludedSections : [];
+  excludedSections.forEach((item) => {
+    const name = normalizeText(item?.name);
+    const reason = normalizeText(item?.reason);
+    if (name && reason) lines.push(`- Loại bỏ: ${name} (${reason})`);
+    else if (name) lines.push(`- Loại bỏ: ${name}`);
+  });
+
+  const sections = Array.isArray(structure.sections) ? structure.sections : [];
+  sections.forEach((section) => {
+    const sectionName = normalizeText(section?.name);
+    const parts = Array.isArray(section?.parts) ? section.parts : [];
+    if (!sectionName || parts.length === 0) return;
+    lines.push(`- ${sectionName}: ${parts.map((p) => `${normalizeText(p?.name)} (${Number(p?.questionCount) || 0} câu)`).filter(Boolean).join(', ')}`);
+  });
+
+  return lines.join('\n');
+}
 
 function FieldBlock({
                       label,
@@ -98,6 +124,20 @@ function GuidanceNote({
   );
 }
 
+function normalizeStringList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.map((item) => (item ?? '').toString().trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(/[|\n;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 function WorkspaceProfileStepTwo({
                                    t,
                                    isDarkMode,
@@ -107,24 +147,18 @@ function WorkspaceProfileStepTwo({
                                    templatePreview,
                                    fieldSuggestions,
                                    fieldSuggestionStatus,
+                                   examTemplateSuggestions = [],
+                                   examTemplateSuggestionStatus = 'idle',
                                    consistencyResult,
                                    consistencyStatus,
                                    disabled = false,
                                    onFieldChange,
                                    onGenerateTemplate,
                                    onApplySuggestion,
-
-                                   onMockExamModeChange,
                                    mockTestGenerationMessage,
                                    generationBannerClassName,
                                    mockTestGenerationState,
                                    progressValue = 0,
-                                   examSearch = '',
-                                   onExamSearchChange,
-                                   filteredExams = [],
-                                   onPublicExamSelect,
-                                   selectedExam,
-                                   isPublicExamMode,
                                  }) {
   const translateStepTwo = (key, fallback, options) => {
     const translated = t(key, options);
@@ -159,9 +193,58 @@ function WorkspaceProfileStepTwo({
       : 'AI gợi ý';
 
   const overallReviewTone = consistencyResult?.isConsistent ? 'success' : 'warning';
+  const isMockTest = values.workspacePurpose === 'MOCK_TEST';
+  const [activeTab, setActiveTab] = useState('profile');
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+  const [examConfigTab, setExamConfigTab] = useState('popular'); // popular | custom
+  const [selectedPopularExamName, setSelectedPopularExamName] = useState('');
+  const hasTemplatePreview = templateStatus === 'success' && Boolean(templatePreview);
+  const examNameSuggestions = Array.isArray(fieldSuggestions?.examNameSuggestions) ? fieldSuggestions.examNameSuggestions.filter(Boolean) : [];
+  const normalizedExamTemplates = Array.isArray(examTemplateSuggestions) ? examTemplateSuggestions.filter(Boolean) : [];
+  const availablePopularExamNames = examNameSuggestions.length > 0
+    ? examNameSuggestions
+    : Array.from(new Set(normalizedExamTemplates.map((item) => normalizeText(item?.examName)).filter(Boolean)));
+  const effectiveSelectedPopularExam = selectedPopularExamName || availablePopularExamNames[0] || '';
+  const filteredPopularTemplates = normalizedExamTemplates.filter((tpl) => normalizeText(tpl?.examName) === normalizeText(effectiveSelectedPopularExam));
+
+  const aiOverallMessage = normalizeText(consistencyResult?.message || '');
+  const aiOverallIssues = normalizeStringList(
+    consistencyResult?.issues
+    || consistencyResult?.issueList
+    || consistencyResult?.warnings
+  );
+  const aiOverallRecommendations = normalizeStringList(
+    consistencyResult?.recommendations
+    || consistencyResult?.recommendationList
+    || consistencyResult?.suggestions
+  );
+  const aiQuizConstraintWarnings = normalizeStringList(
+    consistencyResult?.quizConstraintWarnings
+    || consistencyResult?.quizConstraints
+  );
 
   return (
       <div className="space-y-6">
+        {isMockTest ? (
+            <div className="flex bg-slate-100 dark:bg-slate-900 rounded-2xl p-1.5 shadow-inner border border-slate-200 dark:border-slate-800 relative z-10 w-fit">
+              <button
+                  type="button"
+                  onClick={() => setActiveTab('profile')}
+                  className={cn("px-7 py-2.5 rounded-xl font-bold text-sm transition-all relative z-10", activeTab === 'profile' ? "bg-white dark:bg-slate-800 shadow-md text-sky-600 dark:text-sky-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50")}
+              >
+                Hồ sơ Năng lực
+              </button>
+              <button
+                  type="button"
+                  onClick={() => setActiveTab('mocktest')}
+                  className={cn("px-7 py-2.5 rounded-xl font-bold text-sm transition-all relative z-10", activeTab === 'mocktest' ? "bg-white dark:bg-slate-800 shadow-md text-blue-600 dark:text-blue-400" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50")}
+              >
+                Cấu hình Đề thi
+              </button>
+            </div>
+        ) : null}
+
+        {(!isMockTest || activeTab === 'profile') && (
         <section className={cn('rounded-[28px] border p-5 sm:p-6', cardClass)}>
           <div className="flex items-start gap-3">
             <div
@@ -172,6 +255,7 @@ function WorkspaceProfileStepTwo({
             >
               <GraduationCap className="h-5 w-5" />
             </div>
+
             <div>
               <h3 className="text-lg font-semibold">{t('workspace.profileConfig.stepTwo.title')}</h3>
               <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
@@ -180,60 +264,34 @@ function WorkspaceProfileStepTwo({
             </div>
           </div>
 
-          <div className="mt-6">
-            <GuidanceNote
-                isDarkMode={isDarkMode}
-                title={translateStepTwo(
-                    'workspace.profileConfig.stepTwo.contextTitle',
-                    'Đang bám theo ngữ cảnh đã xác nhận ở bước 1'
-                )}
-                description={translateStepTwo(
-                    'workspace.profileConfig.stepTwo.contextDescription',
-                    'Mọi gợi ý ở bước này sẽ dựa trên kiến thức "{{knowledge}}" trong lĩnh vực "{{domain}}". Hãy mô tả đúng năng lực trong phạm vi này, không phải điểm mạnh tổng quát của bạn.',
-                    {
-                      knowledge: values.knowledgeInput || t('workspace.profileConfig.fields.knowledgeInput'),
-                      domain: values.inferredDomain || t('workspace.profileConfig.fields.primaryDomain'),
-                    }
-                )}
-            />
-          </div>
-
           <div className="mt-4 space-y-4">
             <div className="rounded-[24px] border border-dashed p-4">
-              <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>
-                {translateStepTwo(
-                    'workspace.profileConfig.stepTwo.currentLevelTitle',
-                    '1. Trình độ hiện tại'
-                )}
-              </p>
-              <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
-                {translateStepTwo(
-                    'workspace.profileConfig.stepTwo.currentLevelDescription',
-                    'Hãy mô tả trình độ hiện tại theo đúng kiến thức và lĩnh vực đã chọn, ví dụ nền tảng N5, đã biết chữ Hán cơ bản, đang yếu ngữ pháp N4.'
-                )}
-              </p>
-              <div className="mt-4">
-                <FieldBlock
-                    label={t('workspace.profileConfig.fields.currentLevel')}
-                    error={errors.currentLevel}
-                    required
-                >
-                  <input
-                      type="text"
-                      value={values.currentLevel}
-                      disabled={disabled}
-                      onChange={(event) => onFieldChange('currentLevel', event.target.value)}
-                      placeholder={t('workspace.profileConfig.placeholders.currentLevel')}
-                      className={inputClass}
-                  />
-                  <SuggestionChips
-                      suggestions={fieldSuggestions?.currentLevelSuggestions}
-                      isDarkMode={isDarkMode}
-                      onSelect={(val) => onApplySuggestion?.('currentLevel', val)}
-                      label={sugLabel}
-                  />
-                </FieldBlock>
-              </div>
+              <FieldBlock
+                  label={`1. ${t('workspace.profileConfig.fields.currentLevel')}`}
+                  error={errors.currentLevel}
+                  required
+              >
+                <p className={cn('mb-4 text-sm leading-6', mutedClass)}>
+                  {translateStepTwo(
+                      'workspace.profileConfig.stepTwo.currentLevelDescription',
+                      'Hãy mô tả trình độ hiện tại theo đúng kiến thức và lĩnh vực đã chọn, ví dụ nền tảng N5, đã biết chữ Hán cơ bản, đang yếu ngữ pháp N4.'
+                  )}
+                </p>
+                <input
+                    type="text"
+                    value={values.currentLevel}
+                    disabled={disabled}
+                    onChange={(event) => onFieldChange('currentLevel', event.target.value)}
+                    placeholder={t('workspace.profileConfig.placeholders.currentLevel')}
+                    className={inputClass}
+                />
+                <SuggestionChips
+                    suggestions={fieldSuggestions?.currentLevelSuggestions}
+                    isDarkMode={isDarkMode}
+                    onSelect={(val) => onApplySuggestion?.('currentLevel', val)}
+                    label={sugLabel}
+                />
+              </FieldBlock>
             </div>
 
             <div className="rounded-[24px] border border-dashed p-4">
@@ -243,12 +301,7 @@ function WorkspaceProfileStepTwo({
                     '2. Điểm mạnh và điểm yếu trong đúng phạm vi này'
                 )}
               </p>
-              <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
-                {translateStepTwo(
-                    'workspace.profileConfig.stepTwo.strengthWeaknessDescription',
-                    'Điểm mạnh và điểm yếu ở đây phải nói về các mảng con trực tiếp thuộc kiến thức bạn đang học, ví dụ ngữ pháp, từ vựng, đọc hiểu, chữ Hán; không nên nêu một môn khác như Toán.'
-                )}
-              </p>
+
 
               {!hasCurrentLevel ? (
                   <div className="mt-4">
@@ -316,41 +369,28 @@ function WorkspaceProfileStepTwo({
             </div>
 
             <div className="rounded-[24px] border border-dashed p-4">
-              <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>
-                {translateStepTwo(
-                    'workspace.profileConfig.stepTwo.learningGoalTitle',
-                    '3. Mục tiêu học tập'
-                )}
-              </p>
-              <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
-                {translateStepTwo(
-                    'workspace.profileConfig.stepTwo.learningGoalDescription',
-                    'Mục tiêu học tập nên đi từ trình độ hiện tại sang đúng phần kiến thức bạn đang học. AI chỉ gợi ý sát hơn sau khi đã có trình độ hiện tại, điểm mạnh và điểm yếu.'
-                )}
-              </p>
+              <FieldBlock
+                  label={`3. ${learningGoalLabel}`}
+                  error={errors.learningGoal}
+                  required
+              >
 
-              {!hasStrengthWeaknessContext ? (
-                  <div className="mt-4">
-                    <GuidanceNote
-                        isDarkMode={isDarkMode}
-                        title={translateStepTwo(
-                            'workspace.profileConfig.stepTwo.waitForGoalTitle',
-                            'Bổ sung điểm mạnh và điểm yếu để AI gợi ý mục tiêu'
-                        )}
-                        description={translateStepTwo(
-                            'workspace.profileConfig.stepTwo.waitForGoalDescription',
-                            'Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.'
-                        )}
-                    />
-                  </div>
-              ) : null}
+                {!hasStrengthWeaknessContext ? (
+                    <div className="mb-4">
+                      <GuidanceNote
+                          isDarkMode={isDarkMode}
+                          title={translateStepTwo(
+                              'workspace.profileConfig.stepTwo.waitForGoalTitle',
+                              'Bổ sung điểm mạnh và điểm yếu để AI gợi ý mục tiêu'
+                          )}
+                          description={translateStepTwo(
+                              'workspace.profileConfig.stepTwo.waitForGoalDescription',
+                              'Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.'
+                          )}
+                      />
+                    </div>
+                ) : null}
 
-              <div className="mt-4">
-                <FieldBlock
-                    label={learningGoalLabel}
-                    error={errors.learningGoal}
-                    required
-                >
                 <textarea
                     rows={3}
                     value={values.learningGoal}
@@ -359,16 +399,15 @@ function WorkspaceProfileStepTwo({
                     placeholder={learningGoalPlaceholder}
                     className={inputClass}
                 />
-                  {hasStrengthWeaknessContext ? (
-                      <SuggestionChips
-                          suggestions={fieldSuggestions?.learningGoalSuggestions}
-                          isDarkMode={isDarkMode}
-                          onSelect={(val) => onApplySuggestion?.('learningGoal', val)}
-                          label={sugLabel}
-                      />
-                  ) : null}
-                </FieldBlock>
-              </div>
+                {hasStrengthWeaknessContext ? (
+                    <SuggestionChips
+                        suggestions={fieldSuggestions?.learningGoalSuggestions}
+                        isDarkMode={isDarkMode}
+                        onSelect={(val) => onApplySuggestion?.('learningGoal', val)}
+                        label={sugLabel}
+                    />
+                ) : null}
+              </FieldBlock>
             </div>
           </div>
 
@@ -474,7 +513,7 @@ function WorkspaceProfileStepTwo({
                                 : 'border-amber-200 bg-amber-50 text-amber-900'
                     )}
                 >
-                  {consistencyResult.alignmentHighlights?.length > 0 ? (
+                  {normalizeStringList(consistencyResult.alignmentHighlights).length > 0 ? (
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.08em]">
                           {translateStepTwo(
@@ -483,15 +522,15 @@ function WorkspaceProfileStepTwo({
                           )}
                         </p>
                         <ul className="mt-2 space-y-1">
-                          {consistencyResult.alignmentHighlights.map((item, idx) => (
+                          {normalizeStringList(consistencyResult.alignmentHighlights).map((item, idx) => (
                               <li key={`${item}-${idx}`} className="text-xs leading-5">• {item}</li>
                           ))}
                         </ul>
                       </div>
                   ) : null}
 
-                  {consistencyResult.issues?.length > 0 ? (
-                      <div className={cn(consistencyResult.alignmentHighlights?.length > 0 ? 'mt-4' : '')}>
+                  {aiOverallIssues.length > 0 ? (
+                      <div className={cn(normalizeStringList(consistencyResult.alignmentHighlights).length > 0 ? 'mt-4' : '')}>
                         <p className="text-xs font-semibold uppercase tracking-[0.08em]">
                           {translateStepTwo(
                               'workspace.profileConfig.stepTwo.issuesTitle',
@@ -499,17 +538,17 @@ function WorkspaceProfileStepTwo({
                           )}
                         </p>
                         <ul className="mt-2 space-y-1">
-                          {consistencyResult.issues.map((issue, idx) => (
+                          {aiOverallIssues.map((issue, idx) => (
                               <li key={`${issue}-${idx}`} className="text-xs leading-5">• {issue}</li>
                           ))}
                         </ul>
                       </div>
                   ) : null}
 
-                  {consistencyResult.recommendations?.length > 0 ? (
+                  {aiOverallRecommendations.length > 0 ? (
                       <div
                           className={cn(
-                              (consistencyResult.alignmentHighlights?.length > 0 || consistencyResult.issues?.length > 0)
+                              (normalizeStringList(consistencyResult.alignmentHighlights).length > 0 || aiOverallIssues.length > 0)
                                   ? 'mt-4'
                                   : ''
                           )}
@@ -521,11 +560,42 @@ function WorkspaceProfileStepTwo({
                           )}
                         </p>
                         <ul className="mt-2 space-y-1">
-                          {consistencyResult.recommendations.map((rec, idx) => (
+                          {aiOverallRecommendations.map((rec, idx) => (
                               <li key={`${rec}-${idx}`} className="text-xs leading-5">→ {rec}</li>
                           ))}
                         </ul>
                       </div>
+                  ) : null}
+
+                  {aiQuizConstraintWarnings.length > 0 ? (
+                    <div
+                      className={cn(
+                        (normalizeStringList(consistencyResult.alignmentHighlights).length > 0 || aiOverallIssues.length > 0 || aiOverallRecommendations.length > 0)
+                          ? 'mt-4'
+                          : ''
+                      )}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em]">
+                        {translateStepTwo(
+                          'workspace.profileConfig.stepTwo.quizConstraintWarningsTitle',
+                          'Lưu ý tương thích Quiz'
+                        )}
+                      </p>
+                      <ul className="mt-2 space-y-1">
+                        {aiQuizConstraintWarnings.map((warn, idx) => (
+                          <li key={`${warn}-${idx}`} className="text-xs leading-5">• {warn}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {!aiOverallMessage && aiOverallIssues.length === 0 && aiOverallRecommendations.length === 0 && aiQuizConstraintWarnings.length === 0 ? (
+                    <p className={cn('text-xs leading-5', mutedClass)}>
+                      {translateStepTwo(
+                        'workspace.profileConfig.stepTwo.overallReviewEmpty',
+                        'AI chưa có đủ dữ liệu để đưa ra đánh giá tổng quan.'
+                      )}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -568,7 +638,9 @@ function WorkspaceProfileStepTwo({
               </div>
           ) : null}
         </section>
+        )}
 
+        {isMockTest && activeTab === 'mocktest' && (
         <section className={cn('rounded-[28px] border p-5 sm:p-6', cardClass)}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -589,47 +661,34 @@ function WorkspaceProfileStepTwo({
                 </p>
               </div>
             </div>
-
-            <div>
-              <p className="mb-2 text-sm font-semibold">
-                {t('workspace.profileConfig.fields.mockExamMode')}
-                <span className="ml-1 text-red-500">*</span>
-              </p>
-              <div
-                  className={cn(
-                      'inline-flex rounded-full border p-1',
-                      isDarkMode ? 'border-slate-700 bg-slate-900/70' : 'border-slate-200 bg-slate-50'
-                  )}
-              >
-                {['PUBLIC', 'PRIVATE'].map((mode) => {
-                  const active = values.mockExamMode === mode;
-
-                  return (
-                      <button
-                          key={mode}
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => onMockExamModeChange?.(mode)}
-                          className={cn(
-                              'rounded-full px-4 py-2 text-sm font-semibold transition-all',
-                              active
-                                  ? isDarkMode
-                                      ? 'bg-white text-slate-950'
-                                      : 'bg-slate-900 text-white'
-                                  : mutedClass
-                          )}
-                      >
-                        {t(`workspace.profileConfig.mockExamMode.${mode}`)}
-                      </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
 
-          {errors.mockExamMode ? (
-              <p className="mt-3 text-sm font-medium text-red-400">{errors.mockExamMode}</p>
-          ) : null}
+          <div className="mt-5 flex bg-slate-100 dark:bg-slate-900 rounded-2xl p-1.5 shadow-inner border border-slate-200 dark:border-slate-800 relative z-10 w-fit">
+            <button
+              type="button"
+              onClick={() => setExamConfigTab('popular')}
+              className={cn(
+                "px-6 py-2.5 rounded-xl font-bold text-sm transition-all relative z-10",
+                examConfigTab === 'popular'
+                  ? "bg-white dark:bg-slate-800 shadow-md text-emerald-600 dark:text-emerald-400"
+                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
+              )}
+            >
+              Bài thi phổ biến
+            </button>
+            <button
+              type="button"
+              onClick={() => setExamConfigTab('custom')}
+              className={cn(
+                "px-6 py-2.5 rounded-xl font-bold text-sm transition-all relative z-10",
+                examConfigTab === 'custom'
+                  ? "bg-white dark:bg-slate-800 shadow-md text-blue-600 dark:text-blue-400"
+                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
+              )}
+            >
+              Custom
+            </button>
+          </div>
 
           {mockTestGenerationMessage ? (
               <div
@@ -666,347 +725,213 @@ function WorkspaceProfileStepTwo({
               </div>
           ) : null}
 
-          {values.mockExamMode === 'PUBLIC' ? (
-              <div className="mt-6 space-y-4">
-                <FieldBlock
-                    label={t('workspace.profileConfig.fields.publicExamSearch')}
-                    error={errors.mockExamCatalogId}
-                    required
-                >
-                  <div className="relative">
-                    <Search
-                        className={cn(
-                            'pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2',
-                            mutedClass
-                        )}
-                    />
-                    <input
-                        type="text"
-                        value={examSearch}
-                        disabled={disabled}
-                        onChange={(event) => onExamSearchChange?.(event.target.value)}
-                        placeholder={t('workspace.profileConfig.placeholders.publicExamSearch')}
-                        className={cn(inputClass, 'pl-11')}
-                    />
-                  </div>
-                </FieldBlock>
+          {examConfigTab === 'custom' ? (
+            <div className="mt-6">
+              <FieldBlock
+                label={t('workspace.profileConfig.fields.privateExamName')}
+                error={errors.mockExamName}
+                required
+              >
+                <input
+                  type="text"
+                  value={values.mockExamName}
+                  disabled={disabled}
+                  onChange={(event) => onFieldChange('mockExamName', event.target.value)}
+                  placeholder={t('workspace.profileConfig.placeholders.privateExamName')}
+                  className={inputClass}
+                />
+                <SuggestionChips
+                  suggestions={fieldSuggestions?.examNameSuggestions}
+                  isDarkMode={isDarkMode}
+                  onSelect={(val) => onApplySuggestion?.('mockExamName', val)}
+                  label={sugLabel}
+                />
+              </FieldBlock>
+            </div>
+          ) : null}
 
-                <div className="grid gap-3 md:grid-cols-2">
-                  {filteredExams.map((exam) => {
-                    const active = values.mockExamCatalogId === exam.id;
+          {examConfigTab === 'popular' ? (
+            <div className="mt-8">
+              <div className={cn('rounded-[24px] border p-5 sm:p-6', isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white')}>
+                <p className="text-sm font-semibold">Chọn kỳ thi phổ biến</p>
+                <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
+                  Nhấn vào tên kỳ thi để xem các template gợi ý do AI trả về.
+                </p>
 
-                    return (
-                        <button
-                            key={exam.id}
-                            type="button"
-                            disabled={disabled}
-                            onClick={() => onPublicExamSelect?.(exam.id)}
-                            className={cn(
-                                'rounded-[24px] border p-4 text-left transition-all',
-                                active
-                                    ? isDarkMode
-                                        ? 'border-fuchsia-400/50 bg-fuchsia-500/10'
-                                        : 'border-fuchsia-300 bg-fuchsia-50'
-                                    : isDarkMode
-                                        ? 'border-white/10 bg-white/[0.03] hover:border-fuchsia-400/30'
-                                        : 'border-slate-200 bg-slate-50 hover:border-fuchsia-300'
-                            )}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold">{exam.name}</p>
-                              <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                                {exam.summary}
-                              </p>
-                            </div>
-                            <Trophy className={cn('h-5 w-5 shrink-0', active ? 'text-fuchsia-400' : mutedClass)} />
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap gap-2">
-                      <span
-                          className={cn(
-                              'rounded-full px-3 py-1 text-xs font-semibold',
-                              isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-white text-slate-700'
-                          )}
-                      >
-                        {exam.scoreScale}
-                      </span>
-                            <span
-                                className={cn(
-                                    'rounded-full px-3 py-1 text-xs font-semibold',
-                                    isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-white text-slate-700'
-                                )}
-                            >
-                        {exam.domain}
-                      </span>
-                          </div>
-                        </button>
-                    );
-                  })}
-                </div>
-
-                {filteredExams.length === 0 ? (
-                    <div
-                        className={cn(
-                            'rounded-[24px] border border-dashed p-5 text-sm',
-                            isDarkMode ? 'border-slate-700 text-slate-400' : 'border-slate-300 text-slate-500'
-                        )}
-                    >
-                      {t('workspace.profileConfig.stepTwo.noPublicExam')}
-                    </div>
-                ) : null}
-
-                {selectedExam ? (
-                    <div
-                        className={cn(
-                            'rounded-[24px] border p-4',
-                            isDarkMode ? 'border-fuchsia-400/30 bg-fuchsia-500/10' : 'border-fuchsia-200 bg-fuchsia-50'
-                        )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Radar
-                            className={cn(
-                                'mt-0.5 h-5 w-5 shrink-0',
-                                isDarkMode ? 'text-fuchsia-300' : 'text-fuchsia-600'
-                            )}
-                        />
-                        <div>
-                          <p className="text-sm font-semibold">{selectedExam.name}</p>
-                          <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                            {selectedExam.summary}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                ) : null}
-              </div>
-          ) : (
-              <div className="mt-6">
-                <FieldBlock
-                    label={t('workspace.profileConfig.fields.privateExamName')}
-                    error={errors.mockExamName}
-                    required
-                >
-                  <input
-                      type="text"
-                      value={values.mockExamName}
-                      disabled={disabled}
-                      onChange={(event) => onFieldChange('mockExamName', event.target.value)}
-                      placeholder={t('workspace.profileConfig.placeholders.privateExamName')}
-                      className={inputClass}
-                  />
-                </FieldBlock>
-              </div>
-          )}
-
-          {isPublicExamMode ? (
-              <div className="mt-6 rounded-[24px] border p-4 sm:p-5">
-                <div className="flex items-start gap-3">
+                {availablePopularExamNames.length === 0 ? (
                   <div
-                      className={cn(
-                          'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
-                          isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-50 text-emerald-600'
-                      )}
+                    className={cn(
+                      'mt-4 rounded-[20px] border border-dashed px-4 py-4 text-sm leading-6',
+                      isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'
+                    )}
                   >
-                    <ListChecks className="h-4 w-4" />
+                    Hiện chưa có danh sách “bài thi phổ biến”. Hãy điền đủ thông tin ở Step 1-2 để AI gợi ý.
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">
-                      {t('workspace.profileConfig.stepTwo.publicTemplateTitle')}
-                    </p>
-                    <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                      {t('workspace.profileConfig.stepTwo.publicTemplateDescription')}
-                    </p>
-                  </div>
-                </div>
-
-                {templatePreview ? (
-                    <div
-                        className={cn(
-                            'mt-5 rounded-[24px] border p-5',
-                            isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50'
-                        )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <ListChecks
-                            className={cn(
-                                'mt-0.5 h-5 w-5 shrink-0',
-                                isDarkMode ? 'text-emerald-300' : 'text-emerald-600'
-                            )}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold">{templatePreview.title}</p>
-                          <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                            {templatePreview.summary}
-                          </p>
-                        </div>
-                      </div>
-
-                      {templatePreview.metadata?.length ? (
-                          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                            {templatePreview.metadata.map((item) => (
-                                <div
-                                    key={`${item.labelKey}-${item.value}`}
-                                    className={cn(
-                                        'rounded-2xl border px-4 py-3',
-                                        isDarkMode ? 'border-white/10 bg-slate-950/50' : 'border-white bg-white/80'
-                                    )}
-                                >
-                                  <p
-                                      className={cn(
-                                          'text-[11px] font-semibold uppercase tracking-[0.08em]',
-                                          mutedClass
-                                      )}
-                                  >
-                                    {t(`workspace.profileConfig.publicTemplateMeta.${item.labelKey}`)}
-                                  </p>
-                                  <p className="mt-2 text-sm font-semibold leading-6">{item.value}</p>
-                                </div>
-                            ))}
-                          </div>
-                      ) : null}
-
-                      <div
+                ) : (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {availablePopularExamNames.map((name) => {
+                      const active = normalizeText(name) === normalizeText(effectiveSelectedPopularExam);
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => {
+                            setSelectedPopularExamName(name);
+                            onFieldChange('mockExamName', name);
+                          }}
                           className={cn(
-                              'mt-4 rounded-[20px] border px-4 py-3',
-                              isDarkMode ? 'border-amber-400/20 bg-amber-500/10' : 'border-amber-200 bg-amber-50'
+                            'rounded-full border px-4 py-2 text-xs font-semibold transition-all',
+                            active
+                              ? isDarkMode
+                                ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-200'
+                                : 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                              : isDarkMode
+                                ? 'border-white/10 bg-white/[0.03] text-slate-200 hover:border-emerald-400/30 hover:bg-emerald-500/10'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50'
                           )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <AlertTriangle
-                              className={cn(
-                                  'mt-0.5 h-4.5 w-4.5 shrink-0',
-                                  isDarkMode ? 'text-amber-300' : 'text-amber-600'
-                              )}
-                          />
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold">
-                              {t('workspace.profileConfig.stepTwo.supportNoticeTitle')}
-                            </p>
-                            <p
-                                className={cn(
-                                    'mt-1 text-xs leading-5',
-                                    isDarkMode ? 'text-amber-100/80' : 'text-amber-900/75'
-                                )}
-                            >
-                              {t('workspace.profileConfig.stepTwo.supportNoticeDescription')}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                        >
+                          {name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {errors.mockExamName ? (
+                  <p className="mt-3 text-sm font-medium text-red-400">{errors.mockExamName}</p>
+                ) : null}
 
-                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                        {templatePreview.sections.map((section) => (
+                {effectiveSelectedPopularExam ? (
+                  <div className="mt-6">
+                    <p className="text-sm font-semibold">Templates cho {effectiveSelectedPopularExam}</p>
+                    {filteredPopularTemplates.length === 0 ? (
+                      <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
+                        Không có template nào trong response cho kỳ thi này.
+                      </p>
+                    ) : (
+                      <div className="mt-3 grid gap-3">
+                        {filteredPopularTemplates.map((tpl) => {
+                          const duration = Number(tpl?.structure?.totalDurationMinutes) || null;
+                          const recommendedCount = Number(tpl?.structure?.recommendedTotalQuestions) || null;
+                          const overview = normalizeText(tpl?.structure?.overview);
+                          const templateName = normalizeText(tpl?.templateName) || normalizeText(tpl?.examName) || 'Template';
+
+                          return (
                             <div
-                                key={section.name}
-                                className={cn(
-                                    'rounded-2xl border p-4',
-                                    section.supported
-                                        ? isDarkMode
-                                            ? 'border-emerald-400/20 bg-slate-950/50'
-                                            : 'border-emerald-200 bg-white/80'
-                                        : isDarkMode
-                                            ? 'border-amber-400/20 bg-slate-950/50'
-                                            : 'border-amber-200 bg-white/80'
-                                )}
+                              key={`${tpl?.templateId ?? templateName}-${tpl?.examName ?? ''}`}
+                              className={cn(
+                                'rounded-[22px] border p-4 sm:p-5',
+                                isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50/60'
+                              )}
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <p className="text-sm font-semibold">{section.name}</p>
-                                <span
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold">{templateName}</p>
+                                  {overview ? (
+                                    <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
+                                      {overview}
+                                    </p>
+                                  ) : null}
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {duration ? (
+                                      <span className={cn('rounded-full px-3 py-1 text-[11px] font-semibold', isDarkMode ? 'bg-slate-950/60 text-slate-200' : 'bg-white text-slate-700')}>
+                                        {duration} phút
+                                      </span>
+                                    ) : null}
+                                    {recommendedCount ? (
+                                      <span className={cn('rounded-full px-3 py-1 text-[11px] font-semibold', isDarkMode ? 'bg-slate-950/60 text-slate-200' : 'bg-white text-slate-700')}>
+                                        ~{recommendedCount} câu
+                                      </span>
+                                    ) : null}
+                                    {tpl?.enforcedLanguage ? (
+                                      <span className={cn('rounded-full px-3 py-1 text-[11px] font-semibold', isDarkMode ? 'bg-slate-950/60 text-slate-200' : 'bg-white text-slate-700')}>
+                                        {tpl.enforcedLanguage}
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={disabled}
+                                    onClick={() => {
+                                      // Apply minimal mapping into current fields for convenience.
+                                      onFieldChange('mockExamName', normalizeText(tpl?.examName) || values.mockExamName);
+                                      if (duration) onFieldChange('templateDurationMinutes', duration);
+                                      if (recommendedCount) onFieldChange('templateQuestionCount', recommendedCount);
+                                      const notes = buildTemplateNotesFromStructure(tpl?.structure);
+                                      if (notes) onFieldChange('templateNotes', notes);
+                                      if (overview && !values.templatePrompt) onFieldChange('templatePrompt', overview);
+                                    }}
                                     className={cn(
-                                        'rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                                        section.supported
-                                            ? isDarkMode
-                                                ? 'bg-emerald-500/15 text-emerald-200'
-                                                : 'bg-emerald-100 text-emerald-700'
-                                            : isDarkMode
-                                                ? 'bg-amber-500/15 text-amber-200'
-                                                : 'bg-amber-100 text-amber-700'
+                                      'rounded-full',
+                                      isDarkMode ? 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]' : 'bg-white'
                                     )}
-                                >
-                          {section.supported
-                              ? t('workspace.profileConfig.stepTwo.supportedSection')
-                              : t('workspace.profileConfig.stepTwo.unsupportedSection')}
-                        </span>
-                              </div>
-
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {section.questionLabel ? (
-                                    <span
-                                        className={cn(
-                                            'rounded-full px-3 py-1 text-xs font-semibold',
-                                            isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-700'
-                                        )}
-                                    >
-                            {section.questionLabel}
-                          </span>
-                                ) : null}
-                                {section.durationLabel ? (
-                                    <span
-                                        className={cn(
-                                            'rounded-full px-3 py-1 text-xs font-semibold',
-                                            isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-700'
-                                        )}
-                                    >
-                            {section.durationLabel}
-                          </span>
-                                ) : null}
-                              </div>
-
-                              <p className={cn('mt-3 text-xs leading-5', mutedClass)}>{section.detail}</p>
-
-                              {section.supportReason ? (
-                                  <p
-                                      className={cn(
-                                          'mt-2 text-xs leading-5',
-                                          section.supported ? mutedClass : 'text-amber-500'
-                                      )}
                                   >
-                                    {section.supportReason}
-                                  </p>
+                                    Dùng template này
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {Array.isArray(tpl?.structure?.sections) && tpl.structure.sections.length > 0 ? (
+                                <div className="mt-4 space-y-2">
+                                  {tpl.structure.sections.map((section, sectionIndex) => (
+                                    <div
+                                      key={`${section?.name || 'section'}-${sectionIndex}`}
+                                      className={cn(
+                                        'rounded-[18px] border px-4 py-3',
+                                        isDarkMode ? 'border-white/10 bg-slate-950/40' : 'border-slate-200 bg-white'
+                                      )}
+                                    >
+                                      <p className="text-sm font-semibold">{section?.name}</p>
+                                      {section?.description ? (
+                                        <p className={cn('mt-1 text-xs leading-5', mutedClass)}>{section.description}</p>
+                                      ) : null}
+                                      {Array.isArray(section?.parts) && section.parts.length > 0 ? (
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                          {section.parts.map((part) => (
+                                            <span
+                                              key={`${section?.name}-${part?.name}`}
+                                              className={cn(
+                                                'rounded-full px-3 py-1 text-[11px] font-semibold',
+                                                isDarkMode ? 'bg-white/10 text-slate-100' : 'bg-slate-100 text-slate-700'
+                                              )}
+                                            >
+                                              {part?.name} • {Number(part?.questionCount) || 0} câu
+                                            </span>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
                               ) : null}
                             </div>
-                        ))}
+                          );
+                        })}
                       </div>
-
-                      {templatePreview.notes?.length ? (
-                          <div className="mt-4 space-y-2">
-                            {templatePreview.notes.map((note, index) => (
-                                <div key={`${note}-${index}`} className="flex gap-2 text-xs leading-5">
-                                  <Target
-                                      className={cn(
-                                          'mt-0.5 h-3.5 w-3.5 shrink-0',
-                                          isDarkMode ? 'text-emerald-300' : 'text-emerald-600'
-                                      )}
-                                  />
-                                  <span>{note}</span>
-                                </div>
-                            ))}
-                          </div>
-                      ) : null}
-                    </div>
+                    )}
+                  </div>
                 ) : null}
               </div>
+            </div>
           ) : (
-              <div className="mt-6 rounded-[24px] border p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div
-                        className={cn(
-                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
-                            isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-50 text-emerald-600'
-                        )}
-                    >
-                      <FilePenLine className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">
-                        {t('workspace.profileConfig.stepTwo.templateTitle')}
-                      </p>
-                      <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                        {t('workspace.profileConfig.stepTwo.templateDescription')}
-                      </p>
-                    </div>
+            <div className={cn(
+              "mt-8 mx-auto w-full max-w-5xl overflow-hidden rounded-md border border-slate-300 bg-slate-100 shadow-xl dark:border-slate-700 dark:bg-slate-950 transition-all",
+              isPreviewFullscreen ? "fixed inset-2 sm:inset-4 z-[100] flex flex-col !mt-0 !max-w-none" : ""
+            )}>
+              {/* Word-like Ribbon / Header */}
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-300 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 shrink-0">
+                <div className="flex items-center gap-2">
+                  <FilePenLine className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+                  <div>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                      Document - {t('workspace.profileConfig.stepTwo.templateTitle')}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {t('workspace.profileConfig.stepTwo.templateDescription')}
+                    </p>
                   </div>
 
                   <Button
@@ -1023,142 +948,202 @@ function WorkspaceProfileStepTwo({
                     {t('workspace.profileConfig.actions.generateTemplate')}
                   </Button>
                 </div>
-
-                <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                  <FieldBlock
-                      label={t('workspace.profileConfig.fields.templatePrompt')}
-                      error={errors.templatePrompt}
-                  >
-                <textarea
-                    rows={3}
-                    value={values.templatePrompt}
-                    disabled={disabled}
-                    onChange={(event) => onFieldChange('templatePrompt', event.target.value)}
-                    placeholder={t('workspace.profileConfig.placeholders.templatePrompt')}
-                    className={inputClass}
-                />
-                  </FieldBlock>
-
-                  <FieldBlock
-                      label={t('workspace.profileConfig.fields.templateNotes')}
-                      error={errors.templateNotes}
-                  >
-                <textarea
-                    rows={3}
-                    value={values.templateNotes}
-                    disabled={disabled}
-                    onChange={(event) => onFieldChange('templateNotes', event.target.value)}
-                    placeholder={t('workspace.profileConfig.placeholders.templateNotes')}
-                    className={inputClass}
-                />
-                  </FieldBlock>
-                </div>
-
-                <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                  <FieldBlock
-                      label={t('workspace.profileConfig.fields.templateFormat')}
-                      error={errors.templateFormat}
-                  >
-                    <select
-                        value={values.templateFormat}
-                        disabled={disabled}
-                        onChange={(event) => onFieldChange('templateFormat', event.target.value)}
-                        className={inputClass}
+                <div className="flex flex-wrap items-center gap-2">
+                  {templateStatus === 'success' && (
+                    <Button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setIsPreviewFullscreen(!isPreviewFullscreen)}
+                      variant="outline"
+                      className="rounded bg-white hover:bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700"
                     >
-                      {TEMPLATE_FORMAT_OPTIONS.map((format) => (
-                          <option key={format} value={format}>
-                            {t(`workspace.profileConfig.templateFormat.${format}`)}
-                          </option>
-                      ))}
-                    </select>
-                  </FieldBlock>
-
-                  <FieldBlock
-                      label={t('workspace.profileConfig.fields.templateDurationMinutes')}
-                      error={errors.templateDurationMinutes}
+                      {isPreviewFullscreen ? <Minimize2 className="h-4 w-4 sm:mr-2" /> : <Maximize2 className="h-4 w-4 sm:mr-2" />}
+                      <span className="hidden sm:inline">{isPreviewFullscreen ? "Thu nhỏ lại" : "Phóng to đề thi"}</span>
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    disabled={disabled}
+                    onClick={onGenerateTemplate}
+                    className="rounded bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
                   >
-                    <input
-                        type="number"
-                        min={15}
-                        value={values.templateDurationMinutes}
-                        disabled={disabled}
-                        onChange={(event) => onFieldChange('templateDurationMinutes', event.target.value)}
-                        className={inputClass}
-                    />
-                  </FieldBlock>
-
-                  <FieldBlock
-                      label={t('workspace.profileConfig.fields.templateQuestionCount')}
-                      error={errors.templateQuestionCount}
-                  >
-                    <input
-                        type="number"
-                        min={10}
-                        value={values.templateQuestionCount}
-                        disabled={disabled}
-                        onChange={(event) => onFieldChange('templateQuestionCount', event.target.value)}
-                        className={inputClass}
-                    />
-                  </FieldBlock>
+                    {templateStatus === 'loading' ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="mr-2 h-4 w-4" />
+                    )}
+                    {t('workspace.profileConfig.actions.generateTemplate')}
+                  </Button>
                 </div>
+              </div>
 
-                {templateStatus === 'success' && templatePreview ? (
-                    <div
-                        className={cn(
-                            'mt-5 rounded-[24px] border p-5',
-                            isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50'
-                        )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <ListChecks
-                            className={cn(
-                                'mt-0.5 h-5 w-5 shrink-0',
-                                isDarkMode ? 'text-emerald-300' : 'text-emerald-600'
-                            )}
+              {/* Document Body (A4 Paper style) */}
+              <div className={cn("p-4 sm:p-8 bg-slate-100 dark:bg-slate-950 flex justify-center", isPreviewFullscreen ? "flex-1 overflow-y-auto" : "")}>
+                <div
+                  className={cn(
+                    'w-full max-w-4xl bg-white p-8 sm:p-12 shadow-md border border-slate-200 dark:bg-slate-900 dark:border-slate-800',
+                    hasTemplatePreview ? 'min-h-[500px]' : 'min-h-[260px]'
+                  )}
+                >
+                  {/* Configuration Fields mapped like a form in the document */}
+                  <h2 className="mb-6 border-b border-slate-200 pb-2 text-2xl font-bold text-slate-800 dark:text-slate-100 dark:border-slate-800">
+                    Thiết Lập Khung Bài Thi
+                  </h2>
+
+                  <div className="grid gap-6">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <FieldBlock
+                        label={t('workspace.profileConfig.fields.templatePrompt')}
+                        error={errors.templatePrompt}
+                      >
+                        <textarea
+                          rows={3}
+                          value={values.templatePrompt}
+                          disabled={disabled}
+                          onChange={(event) => onFieldChange('templatePrompt', event.target.value)}
+                          placeholder={t('workspace.profileConfig.placeholders.templatePrompt')}
+                          className={inputClass}
                         />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold">{templatePreview.title}</p>
-                          <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
+                      </FieldBlock>
+
+                      <FieldBlock
+                        label={t('workspace.profileConfig.fields.templateNotes')}
+                        error={errors.templateNotes}
+                      >
+                        <textarea
+                          rows={3}
+                          value={values.templateNotes}
+                          disabled={disabled}
+                          onChange={(event) => onFieldChange('templateNotes', event.target.value)}
+                          placeholder={t('workspace.profileConfig.placeholders.templateNotes')}
+                          className={inputClass}
+                        />
+                      </FieldBlock>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      <FieldBlock
+                        label={t('workspace.profileConfig.fields.templateDurationMinutes')}
+                        error={errors.templateDurationMinutes}
+                      >
+                        <input
+                          type="number"
+                          min={15}
+                          value={values.templateDurationMinutes}
+                          disabled={disabled}
+                          onChange={(event) => onFieldChange('templateDurationMinutes', event.target.value)}
+                          className={inputClass}
+                        />
+                      </FieldBlock>
+
+                      <FieldBlock
+                        label={t('workspace.profileConfig.fields.templateQuestionCount')}
+                        error={errors.templateQuestionCount}
+                      >
+                        <input
+                          type="number"
+                          min={10}
+                          value={values.templateQuestionCount}
+                          disabled={disabled}
+                          onChange={(event) => onFieldChange('templateQuestionCount', event.target.value)}
+                          className={inputClass}
+                        />
+                      </FieldBlock>
+
+                      <FieldBlock
+                        label="Tổng điểm một phần"
+                        error={errors.templateTotalSectionPoints}
+                      >
+                        <input
+                          type="number"
+                          min={1}
+                          value={values.templateTotalSectionPoints}
+                          disabled={disabled}
+                          onChange={(event) => onFieldChange('templateTotalSectionPoints', event.target.value)}
+                          className={inputClass}
+                        />
+                      </FieldBlock>
+                    </div>
+                  </div>
+
+                  {/* AI Generated Word-like Result */}
+                  {templateStatus === 'success' && templatePreview ? (
+                    <div className="mt-10 pt-8 border-t-2 border-dashed border-slate-300 dark:border-slate-700 relative">
+                      <div className="mb-6 p-4 bg-blue-50/50 border border-blue-100 rounded-lg text-sm text-blue-800 dark:bg-blue-900/10 dark:border-blue-800/30 dark:text-blue-300 font-sans flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 shrink-0 text-blue-500 mt-0.5" />
+                        <p>
+                          <span className="font-semibold">Lưu ý:</span> Bạn đang xem trước dàn ý hiển thị (Format Demo) của bài thi. Các câu hỏi bên dưới chỉ là dữ liệu mẫu để minh họa, không phải nội dung câu hỏi chính thức.
+                        </p>
+                      </div>
+
+                      <div
+                        className={cn(
+                          'rounded-[24px] border p-5 sm:p-7 shadow-sm',
+                          isDarkMode ? 'border-white/10 bg-slate-950/60 text-slate-100' : 'border-slate-200 bg-white text-slate-900'
+                        )}
+                      >
+                        <div className="text-center mb-8">
+                          <h1 className="text-2xl sm:text-3xl font-bold font-sans text-slate-900 dark:text-slate-50 tracking-tight mb-2 antialiased">
+                            {templatePreview.title}
+                          </h1>
+                          <p className="text-sm font-sans italic text-slate-600 dark:text-slate-400 antialiased">
                             {templatePreview.summary}
                           </p>
                         </div>
-                      </div>
 
-                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                        {templatePreview.sections.map((section) => (
-                            <div
-                                key={section.name}
-                                className={cn(
-                                    'rounded-2xl border p-4',
-                                    isDarkMode ? 'border-white/10 bg-slate-950/50' : 'border-white bg-white/70'
-                                )}
-                            >
-                              <p className="text-sm font-semibold">{section.name}</p>
-                              <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
-                                {section.detail}
+                        <div className="space-y-10 font-sans text-slate-900 dark:text-slate-100 antialiased">
+                          {templatePreview.sections.map((section, index) => (
+                            <div key={section.name}>
+                              <h3 className="text-base sm:text-lg font-bold mb-1 tracking-tight">
+                                Phần {index + 1}: {section.name}
+                              </h3>
+                              <p className="text-sm italic text-slate-600 dark:text-slate-400 mb-6 pb-2 border-b border-slate-200 dark:border-slate-700 inline-block">
+                                {section.detail} ({values.templateTotalSectionPoints || 100} điểm)
                               </p>
-                            </div>
-                        ))}
-                      </div>
 
-                      <div className="mt-4 space-y-2">
-                        {templatePreview.notes.map((note, index) => (
-                            <div key={`${note}-${index}`} className="flex gap-2 text-xs leading-5">
-                              <Target
-                                  className={cn(
-                                      'mt-0.5 h-3.5 w-3.5 shrink-0',
-                                      isDarkMode ? 'text-emerald-300' : 'text-emerald-600'
-                                  )}
-                              />
-                              <span>{note}</span>
+                              <div className="space-y-8">
+                                {section.mockQuestions?.map((q) => (
+                                  <div key={q.index} className="ml-2 lg:ml-6">
+                                    <p className="font-semibold mb-2">Câu {q.index}</p>
+                                    <div className="whitespace-pre-wrap leading-relaxed mb-4 text-[15px]">{q.content}</div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                      {q.options.map((opt) => (
+                                        <div key={opt} className="flex items-start">
+                                          <span>{opt}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                                {section.totalQuestions > (section.mockQuestions?.length || 0) && (
+                                  <div className="ml-2 lg:ml-6 mt-6 pb-4 text-center italic text-slate-400 dark:text-slate-500">
+                                    ... (còn {section.totalQuestions - section.mockQuestions.length} câu hỏi khác)
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                        ))}
+                          ))}
+                        </div>
+
+                        {templatePreview.notes?.length ? (
+                          <div className="mt-10 bg-yellow-50/50 p-6 border-l-4 border-yellow-400 dark:bg-yellow-900/10">
+                            <h4 className="font-bold text-yellow-800 dark:text-yellow-400 mb-3 font-sans">Ghi chú yêu cầu</h4>
+                            <ul className="list-disc pl-5 space-y-2 text-sm font-sans text-yellow-900 dark:text-yellow-200">
+                              {templatePreview.notes.map((note, index) => (
+                                <li key={`${note}-${index}`}>{note}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
+            </div>
           )}
         </section>
+        )}
       </div>
   );
 }
