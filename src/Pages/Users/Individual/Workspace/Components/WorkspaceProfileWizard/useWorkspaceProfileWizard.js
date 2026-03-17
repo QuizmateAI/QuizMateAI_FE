@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  evaluateMaterialFit,
   generateTemplateSuggestion,
 } from './mockProfileWizardData';
 import {
@@ -1108,6 +1109,64 @@ export function useWorkspaceProfileWizard({
       delete nextErrors[field];
       return nextErrors;
     });
+
+    // Tự động upload ngay khi người dùng chọn file
+    if (onUploadFiles && normalizedFiles.length > 0) {
+      (async () => {
+        setUploadCheckNotice(
+          'uploading',
+          32,
+          translateOrFallback(
+            t,
+            'workspace.profileConfig.messages.materialAutoUploadRunning',
+            `Đang tải ${normalizedFiles.length} tài liệu vào workspace.`
+          )
+        );
+
+        try {
+          await onUploadFiles(normalizedFiles);
+
+          setUploadCheckNotice(
+            'processing',
+            80,
+            translateOrFallback(
+              t,
+              'workspace.profileConfig.messages.materialAutoProcessing',
+              'Tài liệu đã được tải lên, hệ thống đang kiểm tra độ phù hợp. Bạn có thể tiếp tục sau khi có ít nhất một tài liệu hợp lệ.'
+            )
+          );
+
+          // Dọn hàng chờ local, danh sách thực tế sẽ được đồng bộ qua WebSocket + fetchSources
+          setPendingFiles((current) =>
+            current.filter((file) =>
+              !normalizedFiles.some(
+                (nf) => nf.name === file.name && nf.size === file.size && nf.lastModified === file.lastModified
+              )
+            )
+          );
+        } catch (error) {
+          console.error('[WorkspaceProfile] Auto upload materials failed:', error);
+          setUploadCheckNotice(
+            'error',
+            0,
+            error?.message
+              || translateOrFallback(
+                t,
+                'workspace.profileConfig.validation.uploadFailed',
+                'Không thể tải lên tài liệu. Vui lòng thử lại.'
+              )
+          );
+          setSaveError(
+            error?.message
+              || translateOrFallback(
+                t,
+                'workspace.profileConfig.validation.uploadFailed',
+                'Không thể tải lên tài liệu. Vui lòng thử lại.'
+              )
+          );
+        }
+      })();
+    }
   }
 
   function setPurpose(purpose) {
