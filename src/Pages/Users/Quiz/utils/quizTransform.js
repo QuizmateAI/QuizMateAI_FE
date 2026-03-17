@@ -20,11 +20,18 @@ export function getCardQuestionType(questionTypeId) {
 export function normalizeQuizData(apiQuiz) {
   if (!apiQuiz) return null;
 
+  const isTotalTimerMode = apiQuiz.timerMode === true;
+  const rawDuration = Number(apiQuiz.duration) || 0;
+  const isAiTimedQuiz = isTotalTimerMode && apiQuiz.createVia === 'AI';
+  const totalTimeInSeconds = isAiTimedQuiz ? rawDuration : rawDuration * 60;
   const questions = [];
   const sections = apiQuiz.sections || [];
   for (const section of sections) {
     for (const q of section.questions || []) {
       const cardType = getCardQuestionType(q.questionTypeId);
+      const normalizedTimeLimit = isTotalTimerMode
+        ? 0
+        : Math.max(1, Number(q.duration) || 0);
       questions.push({
         id: q.questionId,
         content: q.content,
@@ -32,7 +39,7 @@ export function normalizeQuizData(apiQuiz) {
         difficulty: q.difficulty || 'MEDIUM',
         score: q.score || 0,
         explanation: q.explanation || '',
-        timeLimit: q.duration || 0,
+        timeLimit: normalizedTimeLimit,
         answers: (q.answers || []).map(a => ({
           id: a.answerId,
           content: a.content,
@@ -47,8 +54,8 @@ export function normalizeQuizData(apiQuiz) {
     workspaceId: apiQuiz.workspaceId || apiQuiz.workSpaceId || apiQuiz.workspace?.workspaceId || null,
     title: apiQuiz.title,
     description: '',
-    timerMode: apiQuiz.timerMode === true ? 'TOTAL' : 'PER_QUESTION',
-    totalTime: (apiQuiz.duration || 0) * 60,
+    timerMode: isTotalTimerMode ? 'TOTAL' : 'PER_QUESTION',
+    totalTime: totalTimeInSeconds,
     maxAttempt: apiQuiz.maxAttempt,
     passScore: apiQuiz.passScore,
     maxScore: apiQuiz.maxScore,
