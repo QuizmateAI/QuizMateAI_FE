@@ -53,7 +53,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const [currentStatus, setCurrentStatus] = useState(quiz?.status || "DRAFT");
   const [confirmDialog, setConfirmDialog] = useState({ open: false, mode: null });
   const [quizMeta, setQuizMeta] = useState(null);
-  const canViewAnswers = hasQuizCompleted(quiz?.quizId);
+  const canViewAnswers = hasQuizCompleted(quiz?.quizId) || currentStatus === "DRAFT";
 
   useEffect(() => {
     setCurrentStatus(quizMeta?.status || quiz?.status || "DRAFT");
