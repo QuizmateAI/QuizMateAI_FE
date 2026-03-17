@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { checkEmail, checkUsername, register, sendOTP, verifyOTP } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { getEmailViolationKey } from '@/Utils/emailValidation';
@@ -7,8 +7,6 @@ import { getEmailViolationKey } from '@/Utils/emailValidation';
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;
 // Regex theo BE: password phải chứa cả chữ và số
 const PASSWORD_REGEX = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
-const AVAILABILITY_DEBOUNCE_MS = 500;
-
 function getUsernameValidationMessage(username, t) {
   if (!username) {
     return t('validation.usernameRequired');
@@ -50,8 +48,8 @@ export const useRegister = (setView, t) => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [availabilityStatus, setAvailabilityStatus] = useState({
-    username: { checking: false, available: null, message: '' },
-    email: { checking: false, available: null, message: '' }
+    username: { checking: false, available: null, message: '', checkedValue: '' },
+    email: { checking: false, available: null, message: '', checkedValue: '' }
   });
   const availabilityRequestRef = useRef({ username: 0, email: 0 });
 
@@ -82,6 +80,7 @@ export const useRegister = (setView, t) => {
     setAvailabilityFieldState(field, {
       checking: true,
       available: null,
+      checkedValue: value,
       message: t('auth.checkingAvailability') || 'Đang kiểm tra...',
     });
 
@@ -105,6 +104,7 @@ export const useRegister = (setView, t) => {
       setAvailabilityFieldState(field, {
         checking: false,
         available: isAvailable,
+        checkedValue: value,
         message: isAvailable ? successMessageByField : errorMessageByField,
       });
 
@@ -115,14 +115,30 @@ export const useRegister = (setView, t) => {
       }
 
       return isAvailable;
-    } catch {
+    } catch (err) {
       if (availabilityRequestRef.current[field] !== requestId) {
         return null;
+      }
+
+      const errorMessageByField = field === 'username'
+        ? (t('auth.usernameExists') || 'Username đã được sử dụng')
+        : (t('auth.emailExists') || 'Email đã được sử dụng');
+
+      if (err?.statusCode === 400) {
+        setAvailabilityFieldState(field, {
+          checking: false,
+          available: false,
+          checkedValue: value,
+          message: errorMessageByField,
+        });
+        setFieldErrors(prev => ({ ...prev, [field]: errorMessageByField }));
+        return false;
       }
 
       setAvailabilityFieldState(field, {
         checking: false,
         available: null,
+        checkedValue: value,
         message: '',
       });
 
@@ -156,6 +172,7 @@ export const useRegister = (setView, t) => {
       setAvailabilityFieldState(field, {
         checking: false,
         available: null,
+        checkedValue: '',
         message: '',
       });
     }
@@ -164,17 +181,62 @@ export const useRegister = (setView, t) => {
   const handleOtpChange = (e) => {
     setOtp(e.target.value.trim());
     setError('');
+    if (fieldErrors.otp) {
+      setFieldErrors(prev => ({ ...prev, otp: undefined }));
+    }
+  };
+
+  const handleAvailabilityBlur = (field) => async () => {
+    if (registerStep !== 'form') {
+      return;
+    }
+
+    const trimmedValue = formData[field]?.trim() || '';
+    setFormData(prev => ({ ...prev, [field]: trimmedValue }));
+
+    if (!trimmedValue) {
+      setAvailabilityFieldState(field, {
+        checking: false,
+        available: null,
+        message: '',
+      });
+      return;
+    }
+
+    const formatError = field === 'username'
+      ? getUsernameValidationMessage(trimmedValue, t)
+      : getEmailValidationMessage(trimmedValue, t);
+
+    if (formatError) {
+      setAvailabilityFieldState(field, {
+        checking: false,
+        available: false,
+        checkedValue: trimmedValue,
+        message: formatError,
+      });
+      return;
+    }
+
+    if (
+      availabilityStatus[field]?.checkedValue === trimmedValue
+      && availabilityStatus[field]?.available !== null
+      && !availabilityStatus[field]?.checking
+    ) {
+      return;
+    }
+
+    await runAvailabilityCheck(field, trimmedValue);
   };
 
   // Validate toàn bộ form đăng ký theo quy tắc BE
-  const validateRegisterForm = () => {
+  const validateRegisterForm = (data) => {
     const errors = {};
     const trimmed = {
-      fullname: formData.fullname.trim(),
-      username: formData.username.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
-      confirmPassword: formData.confirmPassword
+      fullname: data.fullname.trim(),
+      username: data.username.trim(),
+      email: data.email.trim(),
+      password: data.password,
+      confirmPassword: data.confirmPassword
     };
 
     // Fullname không được để trống
@@ -213,78 +275,19 @@ export const useRegister = (setView, t) => {
     return { isValid: Object.keys(errors).length === 0, errors };
   };
 
-  useEffect(() => {
-    if (registerStep !== 'form') {
-      return undefined;
-    }
-
-    const trimmedUsername = formData.username.trim();
-    const usernameError = getUsernameValidationMessage(trimmedUsername, t);
-
-    if (!trimmedUsername) {
-      setAvailabilityFieldState('username', {
-        checking: false,
-        available: null,
-        message: '',
-      });
-      return undefined;
-    }
-
-    if (usernameError) {
-      setAvailabilityFieldState('username', {
-        checking: false,
-        available: false,
-        message: usernameError,
-      });
-      clearFieldError('username');
-      return undefined;
-    }
-
-    const timeoutId = setTimeout(() => {
-      void runAvailabilityCheck('username', trimmedUsername);
-    }, AVAILABILITY_DEBOUNCE_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [formData.username, registerStep, t]);
-
-  useEffect(() => {
-    if (registerStep !== 'form') {
-      return undefined;
-    }
-
-    const trimmedEmail = formData.email.trim();
-    const emailError = getEmailValidationMessage(trimmedEmail, t);
-
-    if (!trimmedEmail) {
-      setAvailabilityFieldState('email', {
-        checking: false,
-        available: null,
-        message: '',
-      });
-      return undefined;
-    }
-
-    if (emailError) {
-      setAvailabilityFieldState('email', {
-        checking: false,
-        available: false,
-        message: emailError,
-      });
-      clearFieldError('email');
-      return undefined;
-    }
-
-    const timeoutId = setTimeout(() => {
-      void runAvailabilityCheck('email', trimmedEmail);
-    }, AVAILABILITY_DEBOUNCE_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [formData.email, registerStep, t]);
-
   const validateAvailabilityBeforeSubmit = async (trimmedData) => {
+    const usernameFromCache =
+      availabilityStatus.username.checkedValue === trimmedData.username
+        ? availabilityStatus.username.available
+        : null;
+    const emailFromCache =
+      availabilityStatus.email.checkedValue === trimmedData.email
+        ? availabilityStatus.email.available
+        : null;
+
     const [usernameAvailable, emailAvailable] = await Promise.all([
-      runAvailabilityCheck('username', trimmedData.username),
-      runAvailabilityCheck('email', trimmedData.email),
+      usernameFromCache !== null ? Promise.resolve(usernameFromCache) : runAvailabilityCheck('username', trimmedData.username),
+      emailFromCache !== null ? Promise.resolve(emailFromCache) : runAvailabilityCheck('email', trimmedData.email),
     ]);
 
     const nextErrors = {};
@@ -299,6 +302,11 @@ export const useRegister = (setView, t) => {
 
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(prev => ({ ...prev, ...nextErrors }));
+      return false;
+    }
+
+    if (usernameAvailable === null || emailAvailable === null) {
+      setError(t('auth.checkAvailabilityFailed') || 'Không thể kiểm tra tính khả dụng, vui lòng thử lại');
       return false;
     }
 
@@ -321,14 +329,14 @@ export const useRegister = (setView, t) => {
     setFormData(trimmedData);
 
     // Validation phía client theo quy tắc BE
-    const { isValid, errors } = validateRegisterForm();
+    const { isValid, errors } = validateRegisterForm(trimmedData);
     if (!isValid) {
       setFieldErrors(errors);
       return;
     }
     
     if (!trimmedData.agreeToTerms) {
-      setError(t('auth.agreeToTermsRequired') || 'Vui lòng đồng ý với điều khoản sử dụng');
+      setFieldErrors({ agreeToTerms: t('auth.agreeToTermsRequired') || 'Vui lòng đồng ý với điều khoản sử dụng' });
       return;
     }
     
@@ -345,6 +353,7 @@ export const useRegister = (setView, t) => {
         'auth.registerOtpSent',
         'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra.'
       );
+      setFieldErrors({});
       setRegisterStep('otp');
     } catch (err) {
       setError(err.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
@@ -358,11 +367,17 @@ export const useRegister = (setView, t) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
+
+    const trimmedOtp = otp.trim();
+    if (!trimmedOtp) {
+      setFieldErrors(prev => ({ ...prev, otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Vui lòng nhập mã OTP' }));
+      return;
+    }
+
     setIsLoading(true);
     
     try {
       // Xác thực OTP (trim OTP)
-      const trimmedOtp = otp.trim();
       const otpResponse = await verifyOTP(formData.email.trim(), trimmedOtp);
       if (otpResponse.statusCode === 200 || otpResponse.statusCode === 0) {
         // OTP hợp lệ -> gọi API đăng ký (trim tất cả dữ liệu)
@@ -431,8 +446,8 @@ export const useRegister = (setView, t) => {
     setFieldErrors({});
     setSuccessMessage('');
     setAvailabilityStatus({
-      username: { checking: false, available: null, message: '' },
-      email: { checking: false, available: null, message: '' }
+      username: { checking: false, available: null, message: '', checkedValue: '' },
+      email: { checking: false, available: null, message: '', checkedValue: '' }
     });
   };
 
@@ -455,6 +470,7 @@ export const useRegister = (setView, t) => {
     successMessage,
     setSuccessMessage,
     handleChange,
+    handleAvailabilityBlur,
     handleOtpChange,
     handleRegisterSubmit,
     handleVerifyOTPAndRegister,

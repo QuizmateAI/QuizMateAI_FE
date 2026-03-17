@@ -255,6 +255,7 @@ function WorkspaceProfileStepTwo({
             >
               <GraduationCap className="h-5 w-5" />
             </div>
+
             <div>
               <h3 className="text-lg font-semibold">{t('workspace.profileConfig.stepTwo.title')}</h3>
               <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
@@ -932,6 +933,20 @@ function WorkspaceProfileStepTwo({
                       {t('workspace.profileConfig.stepTwo.templateDescription')}
                     </p>
                   </div>
+
+                  <Button
+                      type="button"
+                      disabled={disabled}
+                      onClick={onGenerateTemplate}
+                      className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                  >
+                    {templateStatus === 'loading' ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Sparkles className="mr-2 h-4 w-4" />
+                    )}
+                    {t('workspace.profileConfig.actions.generateTemplate')}
+                  </Button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {templateStatus === 'success' && (

@@ -29,7 +29,7 @@ export function FloatingInput({
           "placeholder-shown:border placeholder-shown:border-gray-300 placeholder-shown:border-t-gray-300 dark:placeholder-shown:border-slate-700 dark:placeholder-shown:border-t-slate-700",
           "focus:border-2 focus:border-[#0455BF] focus:border-t-transparent dark:focus:border-blue-500 dark:focus:border-t-transparent focus:outline-none focus:ring-0 focus:ring-offset-0",
           "disabled:border-0 disabled:bg-gray-50",
-          error && "border-red-500 focus:border-red-500",
+          error && "border-red-500 border-t-transparent focus:border-red-500 focus:border-t-transparent dark:border-red-500 dark:border-t-transparent dark:focus:border-red-500 dark:focus:border-t-transparent",
           className
         )}
         {...props}
@@ -79,7 +79,7 @@ export function FloatingPasswordInput({
           "placeholder-shown:border placeholder-shown:border-gray-300 placeholder-shown:border-t-gray-300 dark:placeholder-shown:border-slate-700 dark:placeholder-shown:border-t-slate-700",
           "focus:border-2 focus:border-[#0455BF] focus:border-t-transparent dark:focus:border-blue-500 dark:focus:border-t-transparent focus:outline-none focus:ring-0 focus:ring-offset-0",
           "disabled:border-0 disabled:bg-gray-50",
-          error && "border-red-500 focus:border-red-500",
+          error && "border-red-500 border-t-transparent focus:border-red-500 focus:border-t-transparent dark:border-red-500 dark:border-t-transparent dark:focus:border-red-500 dark:focus:border-t-transparent",
           className
         )}
         {...props}

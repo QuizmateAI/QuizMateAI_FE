@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
+import { checkEmail, sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { getEmailViolationKey, isEmailValid } from '@/Utils/emailValidation';
 
@@ -20,6 +20,7 @@ export const useForgotPassword = (setView, t) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
 
   const requestOtpWithSocket = async (email, successKey, fallbackSuccessMessage) => {
@@ -32,28 +33,79 @@ export const useForgotPassword = (setView, t) => {
     setSuccessMessage(t(successKey) || fallbackSuccessMessage);
   };
 
+  const isEmailRegistered = async (email) => {
+    try {
+      const response = await checkEmail(email);
+
+      if (response?.data === false) {
+        return true;
+      }
+
+      return response?.data !== true;
+    } catch (err) {
+      if (err?.statusCode === 400) {
+        return true;
+      }
+
+      throw err;
+    }
+  };
+
   const handleForgotPasswordChange = (field) => (e) => {
     setForgotPasswordData(prev => ({ ...prev, [field]: e.target.value }));
     setError('');
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleForgotPasswordEmailBlur = () => {
+    if (forgotPasswordStep !== 'email') {
+      return;
+    }
+
+    const trimmedEmail = forgotPasswordData.email.trim();
+    setForgotPasswordData(prev => ({ ...prev, email: trimmedEmail }));
+
+    if (!trimmedEmail) {
+      return;
+    }
+
+    const validation = validateForgotPasswordForm(trimmedEmail, t);
+    if (!validation.isValid) {
+      setFieldErrors(prev => ({ ...prev, ...validation.errors }));
+      return;
+    }
+
+    if (fieldErrors.email) {
+      setFieldErrors(prev => ({ ...prev, email: undefined }));
+    }
   };
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     
     // Trim email trước khi gửi
     const trimmedEmail = forgotPasswordData.email.trim();
     setForgotPasswordData(prev => ({ ...prev, email: trimmedEmail }));
 
-    const emailViolationKey = getEmailViolationKey(trimmedEmail);
-    if (emailViolationKey) {
-      setError(t(`validation.${emailViolationKey}`) || t('validation.emailInvalid') || 'Email không hợp lệ');
+    const validation = validateForgotPasswordForm(trimmedEmail, t);
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors);
       return;
     }
     
     setIsLoading(true);
     
     try {
+      const emailExists = await isEmailRegistered(trimmedEmail);
+      if (!emailExists) {
+        setFieldErrors({ email: t('auth.accountNotFound') || 'Tài khoản không tồn tại' });
+        return;
+      }
+
       await requestOtpWithSocket(trimmedEmail, 'auth.otpSent', 'Mã OTP đã được gửi đến email của bạn');
       setForgotPasswordStep('otp');
     } catch (err) {
@@ -66,10 +118,16 @@ export const useForgotPassword = (setView, t) => {
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     
     // Trim OTP trước khi gửi
     const trimmedOtp = forgotPasswordData.otp.trim();
     setForgotPasswordData(prev => ({ ...prev, otp: trimmedOtp }));
+
+    if (!trimmedOtp) {
+      setFieldErrors({ otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Vui lòng nhập mã OTP' });
+      return;
+    }
     
     setIsLoading(true);
     
@@ -89,23 +147,24 @@ export const useForgotPassword = (setView, t) => {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     
     const trimmedNewPassword = forgotPasswordData.newPassword;
     const trimmedConfirmNewPassword = forgotPasswordData.confirmNewPassword;
     
     if (trimmedNewPassword !== trimmedConfirmNewPassword) {
-      setError(t('auth.passwordMismatch') || 'Mật khẩu xác nhận không khớp');
+      setFieldErrors({ confirmNewPassword: t('auth.passwordMismatch') || 'Mật khẩu xác nhận không khớp' });
       return;
     }
     
     // Validate mật khẩu mới theo quy tắc BE
     if (trimmedNewPassword.length < 8) {
-      setError(t('validation.passwordLength') || 'Mật khẩu phải nhiều hơn 8 ký tự');
+      setFieldErrors({ newPassword: t('validation.passwordLength') || 'Mật khẩu phải nhiều hơn 8 ký tự' });
       return;
     }
     
     if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(trimmedNewPassword)) {
-      setError(t('validation.passwordFormat') || 'Mật khẩu phải chứa cả chữ và số');
+      setFieldErrors({ newPassword: t('validation.passwordFormat') || 'Mật khẩu phải chứa cả chữ và số' });
       return;
     }
     
@@ -137,6 +196,7 @@ export const useForgotPassword = (setView, t) => {
     setForgotPasswordStep('email');
     setForgotPasswordData({ email: '', otp: '', newPassword: '', confirmNewPassword: '' });
     setError('');
+    setFieldErrors({});
     setSuccessMessage('');
   }
 
@@ -151,10 +211,12 @@ export const useForgotPassword = (setView, t) => {
     setShowConfirmPassword,
     isLoading,
     error,
+    fieldErrors,
     setError,
     successMessage,
     setSuccessMessage,
     handleForgotPasswordChange,
+    handleForgotPasswordEmailBlur,
     handleSendOTP,
     handleVerifyOTP,
     handleResetPassword,
@@ -168,7 +230,7 @@ export const isEmailEmpty = (email) => {
 };
 
 // Xác thực email với nhiều quy tắc
-export const validateForgotPasswordForm = (email) => {
+export const validateForgotPasswordForm = (email, t) => {
   const errors = {};
 
   const emailViolationKey = getEmailViolationKey(email);
@@ -184,7 +246,7 @@ export const validateForgotPasswordForm = (email) => {
       emailDomainFormat: 'Tên miền email không hợp lệ',
       emailInvalid: 'Vui lòng nhập email hợp lệ (ví dụ: user@domain.com)',
     };
-    errors.email = fallbackMessages[emailViolationKey] || fallbackMessages.emailInvalid;
+    errors.email = t?.(`validation.${emailViolationKey}`) || fallbackMessages[emailViolationKey] || fallbackMessages.emailInvalid;
   }
 
   return {

@@ -9,10 +9,14 @@ export const useLogin = (navigate, t) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleLoginChange = (field) => (e) => {
     setLoginData(prev => ({ ...prev, [field]: e.target.value }));
     setError('');
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   // Trim tất cả dữ liệu trước khi submit
@@ -31,10 +35,24 @@ export const useLogin = (navigate, t) => {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     
     // Trim dữ liệu trước khi gửi
     const trimmed = trimLoginData();
     setLoginData(trimmed);
+
+    const nextFieldErrors = {};
+    if (!trimmed.username) {
+      nextFieldErrors.username = t('validation.usernameRequired');
+    }
+    if (!trimmed.password) {
+      nextFieldErrors.password = t('validation.passwordRequired');
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
     
     setIsLoading(true);
     
@@ -76,6 +94,7 @@ export const useLogin = (navigate, t) => {
     setShowPassword,
     isLoading,
     error,
+    fieldErrors,
     setError,
     handleLoginChange,
     handleLoginSubmit,
