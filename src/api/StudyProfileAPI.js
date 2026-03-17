@@ -32,6 +32,22 @@ export const suggestProfileFields = async (
 };
 
 /**
+ * POST /ai/study-profile/exam-templates:suggest
+ * Gợi ý + tạo templates cho kỳ thi (dựa trên knowledge + domain).
+ */
+export const suggestExamTemplates = async (
+  { knowledge, domain },
+  { signal } = {}
+) => {
+  const response = await api.post(
+    '/ai/study-profile/exam-templates:suggest',
+    { knowledge, domain },
+    { timeout: AI_TIMEOUT, signal }
+  );
+  return response;
+};
+
+/**
  * POST /ai/study-profile/consistency:validate
  * Kiểm tra tính liên kết giữa các trường đã điền.
  */

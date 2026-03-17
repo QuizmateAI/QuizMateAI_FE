@@ -50,6 +50,11 @@ function canSelectSource(source) {
   return !["REJECT", "REJECTED", "ERROR", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
+function canDeleteSource(source) {
+  const status = source?.status?.toUpperCase();
+  return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
+}
+
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
 function SourcesPanel({ isDarkMode = false, sources = [], onAddSource, onRemoveSource, onRemoveMultiple, onSourceUpdated, isCollapsed = false, onToggleCollapse }) {
   const { t, i18n } = useTranslation();

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
+import { UserProfileProvider } from '@/context/UserProfileContext';
 import LoadingSpinner from '@/Components/ui/LoadingSpinner';
 import './i18n';
 import './App.css';
@@ -48,6 +49,7 @@ function App() {
     <ToastProvider>
     <Router>
       <NavigationLoadingProvider>
+      <UserProfileProvider>
       <Suspense fallback={<LoadingSpinner />}>
       <Routes>
 
@@ -109,6 +111,7 @@ function App() {
         </Route>
       </Routes>
       </Suspense>
+      </UserProfileProvider>
       </NavigationLoadingProvider>
     </Router>
     </ToastProvider>

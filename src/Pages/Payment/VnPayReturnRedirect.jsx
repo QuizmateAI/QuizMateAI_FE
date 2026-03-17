@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Khi VNPay redirect về /api/vnpay/return nhưng request lại trúng frontend (SPA)
- * thay vì backend → màn hình trắng và payment không được cập nhật.
- * Component này chuyển hướng trình duyệt sang đúng backend để xử lý return và redirect tiếp sang /payment/result.
- * Production: cấu hình VITE_API_BASE_URL=https://api.quizmateai.io.vn/api (hoặc URL backend thực tế).
+ * When VNPay redirects back to /api/vnpay/return but the SPA handles that route,
+ * forward the browser to the backend return handler instead.
  */
 function buildResultUrlFromParams(search) {
   const params = new URLSearchParams(search);
@@ -19,27 +17,29 @@ function buildResultUrlFromParams(search) {
 }
 
 export default function VnPayReturnRedirect() {
-  const [error, setError] = useState(null);
   const [showFallback, setShowFallback] = useState(false);
   const search = typeof window !== 'undefined' ? window.location.search : '';
-
-  useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL || '';
-    const apiOrigin = base.startsWith('http')
+  const base = import.meta.env.VITE_API_BASE_URL || '';
+  const apiOrigin = typeof window === 'undefined'
+    ? ''
+    : base.startsWith('http')
       ? new URL(base).origin
       : window.location.origin;
+  const error = typeof window !== 'undefined' && apiOrigin === window.location.origin
+    ? 'Cấu hình proxy: /api phải trỏ về backend. Hoặc đặt VITE_API_BASE_URL trỏ sang domain API.'
+    : null;
 
-    if (apiOrigin === window.location.origin) {
-      setError('Cấu hình proxy: /api phải trỏ về backend. Hoặc đặt VITE_API_BASE_URL trỏ sang domain API.');
+  useEffect(() => {
+    if (typeof window === 'undefined' || error) {
       return;
     }
 
     const returnUrl = `${apiOrigin}/api/vnpay/return${window.location.search}`;
     window.location.replace(returnUrl);
 
-    const t = setTimeout(() => setShowFallback(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
+    const timeoutId = setTimeout(() => setShowFallback(true), 4000);
+    return () => clearTimeout(timeoutId);
+  }, [apiOrigin, error]);
 
   if (error) {
     return (
