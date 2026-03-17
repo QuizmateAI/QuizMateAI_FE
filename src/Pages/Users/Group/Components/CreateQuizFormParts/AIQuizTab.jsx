@@ -117,16 +117,42 @@ function AIQuizTab({
             <label className={labelCls}>{t("Total Questions")}</label>
             <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
           </div>
-          {aiTimerMode && (
-            <div>
-              <label className={labelCls}>{t("Time (Minutes)")}</label>
-              <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
-            </div>
-          )}
+          <div>
+            <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes")}</label>
+            <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <input type="checkbox" checked={aiTimerMode} onChange={(e) => setAiTimerMode(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-          <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{t("Enable Timer Mode")}</span>
+        <div className="mt-3">
+          <label className={labelCls}>{t("workspace.quiz.aiConfig.examType")}</label>
+          <div className="grid grid-cols-1 gap-2">
+            <button
+              type="button"
+              onClick={() => setAiTimerMode(true)}
+              className={`text-left rounded-lg border px-3 py-2 transition-all ${aiTimerMode
+                ? (isDarkMode ? "border-blue-500 bg-blue-950/30 text-blue-300" : "border-blue-400 bg-blue-50 text-blue-700")
+                : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
+              }`}
+            >
+              <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeTimed")}</p>
+              <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintTimed")}</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAiTimerMode(false)}
+              className={`text-left rounded-lg border px-3 py-2 transition-all ${!aiTimerMode
+                ? (isDarkMode ? "border-emerald-500 bg-emerald-950/25 text-emerald-300" : "border-emerald-400 bg-emerald-50 text-emerald-700")
+                : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
+              }`}
+            >
+              <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeSequential")}</p>
+              <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintSequential")}</p>
+            </button>
+          </div>
+          {!aiTimerMode && (
+            <p className={`text-[11px] mt-2 ${isDarkMode ? "text-amber-400" : "text-amber-700"}`}>
+              {t("workspace.quiz.aiConfig.perQuestionDurationHint")}
+            </p>
+          )}
         </div>
       </div>
 

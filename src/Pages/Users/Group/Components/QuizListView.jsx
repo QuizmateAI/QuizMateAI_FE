@@ -118,6 +118,16 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {typeof quiz.timerMode === "boolean" && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${quiz.timerMode
+                        ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
+                        : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                      }`}>
+                        {quiz.timerMode
+                          ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
+                          : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                      </span>
+                    )}
                     {quiz.status === "ACTIVE" && (
                       <>
                         <button
