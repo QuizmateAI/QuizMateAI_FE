@@ -78,6 +78,31 @@ function createCopy(t, language) {
       'workspace.profileConfig.stepUpload.reviewDescription',
       isEnglish ? 'Each row explains why a document matches or does not match the profile above.' : 'Mỗi dòng sẽ giải thích vì sao tài liệu khớp hoặc chưa khớp với hồ sơ ở trên.'
     ),
+    statusTitle: translateOrFallback(
+      t,
+      'workspace.profileConfig.stepUpload.statusTitle',
+      isEnglish ? 'Validation and upload status' : 'Trạng thái kiểm tra và tải tài liệu'
+    ),
+    statusDescription: translateOrFallback(
+      t,
+      'workspace.profileConfig.stepUpload.statusDescription',
+      isEnglish ? 'Only materials that pass the profile check will be added to the workspace and unlock step 4.' : 'Chỉ các tài liệu vượt qua bước kiểm tra hồ sơ mới được thêm vào workspace và mở bước 4.'
+    ),
+    summaryValid: translateOrFallback(
+      t,
+      'workspace.profileConfig.stepUpload.summaryValid',
+      isEnglish ? 'Valid in workspace' : 'Đã hợp lệ trong workspace'
+    ),
+    summaryReady: translateOrFallback(
+      t,
+      'workspace.profileConfig.stepUpload.summaryReady',
+      isEnglish ? 'Ready to upload' : 'Đạt để tải lên'
+    ),
+    summaryReplace: translateOrFallback(
+      t,
+      'workspace.profileConfig.stepUpload.summaryReplace',
+      isEnglish ? 'Needs replacement' : 'Cần thay thế'
+    ),
     emptyTitle: translateOrFallback(
       t,
       'workspace.profileConfig.stepUpload.emptyTitle',
@@ -163,6 +188,13 @@ function toneStyles(tone, isDarkMode) {
 
 function buildMaterialSummary(report, copy, isEnglish) {
   const labels = report.matchedContexts.map((item) => copy.labels[item.key]).filter(Boolean);
+  const backendReason = report.backendReason;
+
+  if (report.isPendingUpload) {
+    return isEnglish
+      ? 'This file is still waiting to be checked and uploaded. It will only be added to the workspace if it matches the current learning profile.'
+      : 'Tệp này vẫn đang chờ được kiểm tra và tải lên. Hệ thống chỉ thêm vào workspace nếu nó khớp với hồ sơ học tập hiện tại.';
+  }
 
   if (report.tone === 'processing') {
     return isEnglish
@@ -171,9 +203,13 @@ function buildMaterialSummary(report, copy, isEnglish) {
   }
 
   if (report.tone === 'critical') {
-    return isEnglish
+    const baseText = isEnglish
       ? 'This material already has a warning from the system or does not yet show a clear connection to the workspace profile.'
       : 'Tài liệu này đang có cảnh báo từ hệ thống hoặc chưa cho thấy liên hệ rõ ràng với hồ sơ của workspace.';
+    if (backendReason) {
+      return `${baseText} ${isEnglish ? 'Reason:' : 'Lý do:'} ${backendReason}`;
+    }
+    return baseText;
   }
 
   if (labels.length === 0) {
@@ -189,8 +225,8 @@ function buildMaterialSummary(report, copy, isEnglish) {
   }
 
   return isEnglish
-    ? `This material already connects to ${labels.join(', ')}, but you should still review the content quality after upload.`
-    : `Tài liệu này đã có liên hệ với ${labels.join(', ')}, nhưng bạn nên kiểm tra lại nội dung sau khi tải lên.`;
+    ? `This material already connects to ${labels.join(', ')}, but you should still review the content quality after upload.${backendReason ? ` Reason: ${backendReason}` : ''}`
+    : `Tài liệu này đã có liên hệ với ${labels.join(', ')}, nhưng bạn nên kiểm tra lại nội dung sau khi tải lên.${backendReason ? ` Lý do: ${backendReason}` : ''}`;
 }
 
 function WorkspaceProfileStepUpload({
@@ -202,6 +238,12 @@ function WorkspaceProfileStepUpload({
   selectedExam,
   uploadedMaterials = [],
   pendingFiles = [],
+  uploadCheckState = 'idle',
+  uploadCheckProgress = 0,
+  uploadCheckMessage = '',
+  uploadablePendingCount = 0,
+  blockedPendingCount = 0,
+  validUploadedMaterialCount = 0,
   disabled = false,
   uploading = false,
   onAddFiles,
@@ -215,6 +257,21 @@ function WorkspaceProfileStepUpload({
   const surfaceClass = isDarkMode
     ? 'border-white/10 bg-white/[0.04] text-white'
     : 'border-slate-200 bg-white text-slate-900';
+  const progressToneClass = uploadCheckState === 'success'
+    ? isDarkMode
+      ? 'border-emerald-400/20 bg-emerald-500/10'
+      : 'border-emerald-200 bg-emerald-50'
+    : uploadCheckState === 'checking' || uploadCheckState === 'uploading' || uploadCheckState === 'processing'
+      ? isDarkMode
+        ? 'border-cyan-400/20 bg-cyan-500/10'
+        : 'border-cyan-200 bg-cyan-50'
+      : uploadCheckState === 'blocked' || uploadCheckState === 'error'
+        ? isDarkMode
+          ? 'border-amber-400/20 bg-amber-500/10'
+          : 'border-amber-200 bg-amber-50'
+        : isDarkMode
+          ? 'border-white/10 bg-white/[0.04]'
+          : 'border-slate-200 bg-slate-50';
 
   const profileSignals = [
     values.knowledgeInput ? { label: copy.labels.knowledge, value: values.knowledgeInput } : null,
@@ -240,7 +297,16 @@ function WorkspaceProfileStepUpload({
   }, [pendingFiles, uploadedMaterials]);
 
   const reviewedMaterials = useMemo(
-    () => reviewItems.map((item) => ({ item, report: evaluateMaterialFit(item, values, selectedExam) })),
+    () => reviewItems.map((item) => {
+      const report = evaluateMaterialFit(item, values, selectedExam);
+      return {
+        item,
+        report: {
+          ...report,
+          backendReason: item.moderationSummary || null,
+        },
+      };
+    }),
     [reviewItems, values, selectedExam]
   );
 
@@ -293,6 +359,77 @@ function WorkspaceProfileStepUpload({
             </span>
           ))}
         </div>
+      </section>
+
+      <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+              isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-50 text-cyan-600'
+            )}
+          >
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">{copy.statusTitle}</h3>
+            <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{copy.statusDescription}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50')}>
+            <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>{copy.summaryValid}</p>
+            <p className="mt-2 text-2xl font-bold">{validUploadedMaterialCount}</p>
+          </div>
+          <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50')}>
+            <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>{copy.summaryReady}</p>
+            <p className="mt-2 text-2xl font-bold">{uploadablePendingCount}</p>
+          </div>
+          <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-amber-400/20 bg-amber-500/10' : 'border-amber-200 bg-amber-50')}>
+            <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>{copy.summaryReplace}</p>
+            <p className="mt-2 text-2xl font-bold">{blockedPendingCount}</p>
+          </div>
+        </div>
+
+        {uploadCheckState !== 'idle' || pendingFiles.length > 0 || validUploadedMaterialCount > 0 ? (
+          <div className={cn('mt-5 rounded-[24px] border px-4 py-4', progressToneClass)}>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-semibold">
+                {uploadCheckMessage
+                  || (pendingFiles.length > 0
+                    ? (uploadablePendingCount > 0
+                      ? (isEnglish
+                        ? `${uploadablePendingCount} selected file(s) passed the first check and can be uploaded.`
+                        : `Có ${uploadablePendingCount} tệp đang chọn đã vượt qua kiểm tra sơ bộ và có thể tải lên.`)
+                      : (isEnglish
+                        ? 'The selected files have not passed the first check yet.'
+                        : 'Các tệp đang chọn chưa vượt qua kiểm tra sơ bộ.'))
+                    : validUploadedMaterialCount > 0
+                      ? (isEnglish
+                        ? 'The workspace already has valid study materials for the roadmap.'
+                        : 'Workspace hiện đã có tài liệu hợp lệ để đi tiếp với lộ trình.')
+                      : '')}
+              </p>
+              {uploadCheckState === 'checking' || uploadCheckState === 'uploading' || uploadCheckState === 'processing' ? (
+                <span className="shrink-0 text-xs font-semibold">{Math.max(0, Math.min(100, Number(uploadCheckProgress) || 0))}%</span>
+              ) : null}
+            </div>
+            {uploadCheckState === 'checking' || uploadCheckState === 'uploading' || uploadCheckState === 'processing' ? (
+              <div className={cn('mt-3 h-2 overflow-hidden rounded-full', isDarkMode ? 'bg-slate-950/70' : 'bg-white/80')}>
+                <div
+                  className={cn(
+                    'h-full rounded-full transition-all duration-500',
+                    uploadCheckState === 'processing'
+                      ? 'bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#22d3ee)] bg-[length:200%_100%] animate-pulse'
+                      : 'bg-cyan-500'
+                  )}
+                  style={{ width: `${Math.max(8, Math.min(100, Number(uploadCheckProgress) || 0))}%` }}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       <section className={cn('rounded-[28px] border p-5 sm:p-6', surfaceClass)}>
@@ -466,7 +603,7 @@ function WorkspaceProfileStepUpload({
                                   : isDarkMode ? 'bg-amber-950/70 text-amber-200' : 'bg-amber-100 text-amber-700'
                         )}
                       >
-                        {copy.tone[report.tone]}
+                        {report.isPendingUpload ? (isEnglish ? 'Awaiting validation' : 'Chờ kiểm tra') : copy.tone[report.tone]}
                       </span>
                       <span
                         className={cn(

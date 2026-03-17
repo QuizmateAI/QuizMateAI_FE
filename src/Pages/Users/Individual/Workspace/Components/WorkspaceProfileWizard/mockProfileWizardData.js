@@ -22,25 +22,25 @@ export const PUBLIC_EXAMS = [
     domain: 'IELTS',
     scoreScale: 'Band 0 - 9',
     scoreSuggestions: ['5.5', '6.5', '7.0', '7.5', '8.0'],
-    summary: 'Bai thi 4 ky nang voi trong tam hoc thuat.',
+    summary: 'Bài thi 4 kỹ năng với trọng tâm học thuật.',
   },
   {
     id: 'toeic',
     name: 'TOEIC',
     alias: ['toeic'],
     domain: 'TOEIC',
-    scoreScale: 'Diem / 990',
+    scoreScale: 'Điểm / 990',
     scoreSuggestions: ['550', '650', '750', '850', '900'],
-    summary: 'De thi nghe doc pho bien trong moi truong doanh nghiep.',
+    summary: 'Đề thi nghe đọc phổ biến trong môi trường doanh nghiệp.',
   },
   {
     id: 'jlpt',
     name: 'JLPT',
     alias: ['jlpt', 'n5', 'n4', 'n3', 'n2', 'n1'],
     domain: 'Japanese',
-    scoreScale: 'Cap do N5 - N1',
+    scoreScale: 'Cấp độ N5 - N1',
     scoreSuggestions: ['N4', 'N3', 'N2', 'N1'],
-    summary: 'Ky thi nang luc tieng Nhat theo cap do.',
+    summary: 'Kỳ thi năng lực tiếng Nhật theo cấp độ.',
   },
   {
     id: 'topik',
@@ -49,7 +49,7 @@ export const PUBLIC_EXAMS = [
     domain: 'Korean',
     scoreScale: 'Level 1 - 6',
     scoreSuggestions: ['Level 2', 'Level 3', 'Level 4', 'Level 5'],
-    summary: 'Ky thi nang luc tieng Han danh cho hoc tap va lam viec.',
+    summary: 'Kỳ thi năng lực tiếng Hàn dành cho học tập và làm việc.',
   },
   {
     id: 'hsk',
@@ -58,16 +58,16 @@ export const PUBLIC_EXAMS = [
     domain: 'Chinese',
     scoreScale: 'Level 1 - 9',
     scoreSuggestions: ['Level 3', 'Level 4', 'Level 5', 'Level 6'],
-    summary: 'Ky thi nang luc tieng Trung voi lo trinh tu co ban den nang cao.',
+    summary: 'Kỳ thi năng lực tiếng Trung với lộ trình từ cơ bản đến nâng cao.',
   },
   {
     id: 'sat',
     name: 'SAT',
     alias: ['sat'],
     domain: 'Mathematics',
-    scoreScale: 'Diem / 1600',
+    scoreScale: 'Điểm / 1600',
     scoreSuggestions: ['1100', '1250', '1400', '1500'],
-    summary: 'Bai thi chuan hoa cho tuyen sinh dai hoc.',
+    summary: 'Bài thi chuẩn hóa cho tuyển sinh đại học.',
   },
 ];
 
@@ -123,61 +123,61 @@ function buildJlptPreview(values) {
   const levelConfig = {
     N1: {
       supportedDuration: 110,
-      totalDurationLabel: '165 phut',
-      scoring: 'Tong diem scaled 0-180, can dat nguong tung phan.',
+      totalDurationLabel: '165 phút',
+      scoring: 'Tổng điểm scaled 0-180, cần đạt ngưỡng từng phần.',
     },
     N2: {
       supportedDuration: 105,
-      totalDurationLabel: '155 phut',
-      scoring: 'Tong diem scaled 0-180, can dat nguong tung phan.',
+      totalDurationLabel: '155 phút',
+      scoring: 'Tổng điểm scaled 0-180, cần đạt ngưỡng từng phần.',
     },
     N3: {
       supportedDuration: 100,
-      totalDurationLabel: '140 phut',
-      scoring: 'Tong diem scaled 0-180, can dat nguong tung phan.',
+      totalDurationLabel: '140 phút',
+      scoring: 'Tổng điểm scaled 0-180, cần đạt ngưỡng từng phần.',
     },
     N4: {
       supportedDuration: 80,
-      totalDurationLabel: '115 phut',
-      scoring: 'Tong diem scaled 0-180, can dat nguong tung phan.',
+      totalDurationLabel: '115 phút',
+      scoring: 'Tổng điểm scaled 0-180, cần đạt ngưỡng từng phần.',
     },
     N5: {
       supportedDuration: 60,
-      totalDurationLabel: '90 phut',
-      scoring: 'Tong diem scaled 0-180, can dat nguong tung phan.',
+      totalDurationLabel: '90 phút',
+      scoring: 'Tổng điểm scaled 0-180, cần đạt ngưỡng từng phần.',
     },
   }[level];
 
   return {
     kind: 'public',
-    title: `JLPT ${level} - template cong khai`,
-    summary: `Hien thi theo bo cuc cong khai cua ${level} de ban hinh dung ngay cau truc bai thi.`,
+    title: `JLPT ${level} - template công khai`,
+    summary: `Hiển thị theo bố cục công khai của ${level} để bạn hình dung ngay cấu trúc bài thi.`,
     metadata: [
       { labelKey: 'duration', value: levelConfig.totalDurationLabel },
-      { labelKey: 'questions', value: 'Cau hoi trac nghiem theo tung section JLPT' },
+      { labelKey: 'questions', value: 'Câu hỏi trắc nghiệm theo từng section JLPT' },
       { labelKey: 'scoring', value: levelConfig.scoring },
-      { labelKey: 'support', value: `Quizmate AI se uu tien phan Language Knowledge + Reading cua ${level}` },
+      { labelKey: 'support', value: `Quizmate AI sẽ ưu tiên phần Language Knowledge + Reading của ${level}` },
     ],
     sections: [
       createPublicSection(
         'Language Knowledge + Reading',
-        `Mo phong nhom cau hoi tu vung, ngu phap va doc hieu cua ${level}.`,
-        'Khoang 60 cau trac nghiem',
-        `${levelConfig.supportedDuration} phut`,
+        `Mô phỏng nhóm câu hỏi từ vựng, ngữ pháp và đọc hiểu của ${level}.`,
+        'Khoảng 60 câu trắc nghiệm',
+        `${levelConfig.supportedDuration} phút`,
         true
       ),
       createPublicSection(
         'Listening',
-        `Giup ban thay ro day la phan nghe cua de cong khai ${level}.`,
+        `Giúp bạn thấy rõ đây là phần nghe của đề công khai ${level}.`,
         'Audio tasks',
-        level === 'N1' ? '55 phut' : level === 'N2' ? '50 phut' : level === 'N3' ? '40 phut' : level === 'N4' ? '35 phut' : '30 phut',
+        level === 'N1' ? '55 phút' : level === 'N2' ? '50 phút' : level === 'N3' ? '40 phút' : level === 'N4' ? '35 phút' : '30 phút',
         false,
-        'Quizmate AI chua ho tro listening.'
+        'Quizmate AI chưa hỗ trợ listening.'
       ),
     ],
     notes: [
-      `Template AI sinh ra se chi tap trung vao phan trac nghiem khong can audio cua ${level}.`,
-      'Bo cuc cong khai van duoc hien thi day du de ban doi chieu voi ky thi that.',
+      `Template AI sinh ra sẽ chỉ tập trung vào phần trắc nghiệm không cần audio của ${level}.`,
+      'Bố cục công khai vẫn được hiển thị đầy đủ để bạn đối chiếu với kỳ thi thật.',
     ],
     defaults: {
       templateFormat: 'FULL_EXAM',
@@ -190,23 +190,23 @@ function buildJlptPreview(values) {
 function buildIeltsPreview() {
   return {
     kind: 'public',
-    title: 'IELTS Academic - template cong khai',
-    summary: 'Hien thi bo cuc cong khai cua IELTS Academic de ban de hinh dung tong the bai thi.',
+    title: 'IELTS Academic - template công khai',
+    summary: 'Hiển thị bố cục công khai của IELTS Academic để bạn dễ hình dung tổng thể bài thi.',
     metadata: [
-      { labelKey: 'duration', value: 'Khoang 2 gio 44 phut' },
-      { labelKey: 'questions', value: '80 cau objective + Writing/Speaking tasks' },
-      { labelKey: 'scoring', value: 'Band 0 - 9, overall la trung binh 4 ky nang' },
-      { labelKey: 'support', value: 'Quizmate AI chi tao duoc bai luyen trac nghiem theo Reading-style' },
+      { labelKey: 'duration', value: 'Khoảng 2 giờ 44 phút' },
+      { labelKey: 'questions', value: '80 câu objective + Writing/Speaking tasks' },
+      { labelKey: 'scoring', value: 'Band 0 - 9, overall là trung bình 4 kỹ năng' },
+      { labelKey: 'support', value: 'Quizmate AI chỉ tạo được bài luyện trắc nghiệm theo Reading-style' },
     ],
     sections: [
-      createPublicSection('Listening', '4 parts, moi part 10 cau.', '40 cau', '30 phut + 10 phut transfer', false, 'Quizmate AI chua ho tro listening.'),
-      createPublicSection('Reading', '3 sections theo format Academic Reading.', '40 cau', '60 phut', true),
-      createPublicSection('Writing', 'Task 1 va Task 2 theo tieu chi cham viet.', '2 tasks', '60 phut', false, 'Quizmate AI chua ho tro writing.'),
-      createPublicSection('Speaking', 'Interview truc tiep voi 3 parts.', '3 parts', '11-14 phut', false, 'Quizmate AI chua ho tro speaking.'),
+      createPublicSection('Listening', '4 parts, mỗi part 10 câu.', '40 câu', '30 phút + 10 phút transfer', false, 'Quizmate AI chưa hỗ trợ listening.'),
+      createPublicSection('Reading', '3 sections theo format Academic Reading.', '40 câu', '60 phút', true),
+      createPublicSection('Writing', 'Task 1 và Task 2 theo tiêu chí chấm viết.', '2 tasks', '60 phút', false, 'Quizmate AI chưa hỗ trợ writing.'),
+      createPublicSection('Speaking', 'Interview trực tiếp với 3 parts.', '3 parts', '11-14 phút', false, 'Quizmate AI chưa hỗ trợ speaking.'),
     ],
     notes: [
-      'Template AI tao se uu tien phan doc hieu dang trac nghiem/de doi chieu.',
-      'Listening, Writing va Speaking hien chi duoc hien thi de ban tham khao cau truc cong khai.',
+      'Template AI tạo sẽ ưu tiên phần đọc hiểu dạng trắc nghiệm để đối chiếu.',
+      'Listening, Writing và Speaking hiện chỉ được hiển thị để bạn tham khảo cấu trúc công khai.',
     ],
     defaults: {
       templateFormat: 'FULL_EXAM',
@@ -219,23 +219,23 @@ function buildIeltsPreview() {
 function buildToeicPreview() {
   return {
     kind: 'public',
-    title: 'TOEIC Listening & Reading - template cong khai',
-    summary: 'Bo cuc cong khai cua TOEIC L&R gom 200 cau trong khoang 2 gio.',
+    title: 'TOEIC Listening & Reading - template công khai',
+    summary: 'Bố cục công khai của TOEIC L&R gồm 200 câu trong khoảng 2 giờ.',
     metadata: [
-      { labelKey: 'duration', value: '120 phut' },
-      { labelKey: 'questions', value: '200 cau' },
-      { labelKey: 'scoring', value: 'Diem 10 - 990' },
-      { labelKey: 'support', value: 'Quizmate AI uu tien Reading (Part 5-7) vi khong can audio' },
+      { labelKey: 'duration', value: '120 phút' },
+      { labelKey: 'questions', value: '200 câu' },
+      { labelKey: 'scoring', value: 'Điểm 10 - 990' },
+      { labelKey: 'support', value: 'Quizmate AI ưu tiên Reading (Part 5-7) vì không cần audio' },
     ],
     sections: [
-      createPublicSection('Listening Part 1-4', 'Photographs, Question-Response, Conversations, Talks.', '100 cau', '45 phut', false, 'Quizmate AI chua ho tro listening.'),
-      createPublicSection('Reading Part 5', 'Incomplete Sentences.', '30 cau', 'Trong 75 phut Reading', true),
-      createPublicSection('Reading Part 6', 'Text Completion.', '16 cau', 'Trong 75 phut Reading', true),
-      createPublicSection('Reading Part 7', 'Single passages + multiple passages.', '54 cau', 'Trong 75 phut Reading', true),
+      createPublicSection('Listening Part 1-4', 'Photographs, Question-Response, Conversations, Talks.', '100 câu', '45 phút', false, 'Quizmate AI chưa hỗ trợ listening.'),
+      createPublicSection('Reading Part 5', 'Incomplete Sentences.', '30 câu', 'Trong 75 phút Reading', true),
+      createPublicSection('Reading Part 6', 'Text Completion.', '16 câu', 'Trong 75 phút Reading', true),
+      createPublicSection('Reading Part 7', 'Single passages + multiple passages.', '54 câu', 'Trong 75 phút Reading', true),
     ],
     notes: [
-      'Template AI tao se bam sat phan Reading cua TOEIC L&R.',
-      'Bo cuc Listening van duoc hien thi de ban thay ro format cong khai cua de that.',
+      'Template AI tạo sẽ bám sát phần Reading của TOEIC L&R.',
+      'Bố cục Listening vẫn được hiển thị để bạn thấy rõ format công khai của đề thật.',
     ],
     defaults: {
       templateFormat: 'FULL_EXAM',
@@ -248,21 +248,21 @@ function buildToeicPreview() {
 function buildSatPreview() {
   return {
     kind: 'public',
-    title: 'Digital SAT - template cong khai',
-    summary: 'Bo cuc cong khai cua Digital SAT gom 2 sections, moi section chia thanh 2 modules.',
+    title: 'Digital SAT - template công khai',
+    summary: 'Bố cục công khai của Digital SAT gồm 2 sections, mỗi section chia thành 2 modules.',
     metadata: [
-      { labelKey: 'duration', value: '134 phut + 10 phut break' },
-      { labelKey: 'questions', value: '98 cau/tasks' },
-      { labelKey: 'scoring', value: 'Tong diem 400 - 1600' },
-      { labelKey: 'support', value: 'Quizmate AI uu tien cau hoi multiple-choice; math free-response se khong day du' },
+      { labelKey: 'duration', value: '134 phút + 10 phút break' },
+      { labelKey: 'questions', value: '98 câu/tasks' },
+      { labelKey: 'scoring', value: 'Tổng điểm 400 - 1600' },
+      { labelKey: 'support', value: 'Quizmate AI ưu tiên câu hỏi multiple-choice; math free-response sẽ không đầy đủ' },
     ],
     sections: [
-      createPublicSection('Reading and Writing', '2 modules, adaptive by module 1 performance.', '54 cau', '64 phut', true),
-      createPublicSection('Math', '2 modules, adaptive; mot so cau yeu cau tu nhap dap an.', '44 cau', '70 phut', true, 'Mot so cau Math tu nhap dap an se duoc quy doi sang dang trac nghiem de luyen tap.'),
+      createPublicSection('Reading and Writing', '2 modules, adaptive by module 1 performance.', '54 câu', '64 phút', true),
+      createPublicSection('Math', '2 modules, adaptive; một số câu yêu cầu tự nhập đáp án.', '44 câu', '70 phút', true, 'Một số câu Math tự nhập đáp án sẽ được quy đổi sang dạng trắc nghiệm để luyện tập.'),
     ],
     notes: [
-      'Template AI tao se uu tien phan multiple-choice de ban luyen toc do va nhan dang dang bai.',
-      'Nhung cau Math can tu nhap dap an khong duoc mo phong day du nhu bai thi goc.',
+      'Template AI tạo sẽ ưu tiên phần multiple-choice để bạn luyện tốc độ và nhận dạng dạng bài.',
+      'Những câu Math cần tự nhập đáp án không được mô phỏng đầy đủ như bài thi gốc.',
     ],
     defaults: {
       templateFormat: 'FULL_EXAM',
@@ -283,22 +283,22 @@ function buildHskPreview(values) {
 
   return {
     kind: 'public',
-    title: `HSK ${level} - template cong khai`,
-    summary: 'Bo cuc cong khai tham khao cua HSK theo level da suy ra tu knowledge hien tai.',
+    title: `HSK ${level} - template công khai`,
+    summary: 'Bố cục công khai tham khảo của HSK theo level đã suy ra từ knowledge hiện tại.',
     metadata: [
-      { labelKey: 'duration', value: `${levelDefaults.duration} phut` },
-      { labelKey: 'questions', value: `${levelDefaults.questions} cau / tasks` },
-      { labelKey: 'scoring', value: `Level ${level} theo score scale cua HSK` },
-      { labelKey: 'support', value: 'Quizmate AI uu tien Reading; Listening/Writing chua ho tro day du' },
+      { labelKey: 'duration', value: `${levelDefaults.duration} phút` },
+      { labelKey: 'questions', value: `${levelDefaults.questions} câu / tasks` },
+      { labelKey: 'scoring', value: `Level ${level} theo score scale của HSK` },
+      { labelKey: 'support', value: 'Quizmate AI ưu tiên Reading; Listening/Writing chưa hỗ trợ đầy đủ' },
     ],
     sections: [
-      createPublicSection('Listening', 'Phan nghe theo level HSK.', 'Audio tasks', 'Theo lich thi tung level', false, 'Quizmate AI chua ho tro listening.'),
-      createPublicSection('Reading', 'Phan doc hieu va nhan dien ngon ngu.', 'Reading items', 'Trong tong thoi gian de', true),
-      createPublicSection('Writing', 'Phan viet/tao cau neu level co yeu cau.', 'Writing tasks', 'Trong tong thoi gian de', false, 'Quizmate AI chua ho tro writing.'),
+      createPublicSection('Listening', 'Phần nghe theo level HSK.', 'Audio tasks', 'Theo lịch thi từng level', false, 'Quizmate AI chưa hỗ trợ listening.'),
+      createPublicSection('Reading', 'Phần đọc hiểu và nhận diện ngôn ngữ.', 'Reading items', 'Trong tổng thời gian đề', true),
+      createPublicSection('Writing', 'Phần viết/tạo câu nếu level có yêu cầu.', 'Writing tasks', 'Trong tổng thời gian đề', false, 'Quizmate AI chưa hỗ trợ writing.'),
     ],
     notes: [
-      'Voi HSK, Quizmate AI se tao ban luyen phan doc va cau hoi trac nghiem gan voi format cong khai.',
-      'Listening va Writing hien chi hien de tham khao cau truc.',
+      'Với HSK, Quizmate AI sẽ tạo bản luyện phần đọc và câu hỏi trắc nghiệm gần với format công khai.',
+      'Listening và Writing hiện chỉ hiển thị để tham khảo cấu trúc.',
     ],
     defaults: {
       templateFormat: 'FULL_EXAM',
@@ -313,22 +313,22 @@ function buildTopikPreview(values) {
 
   return {
     kind: 'public',
-    title: `TOPIK - template cong khai`,
-    summary: `Bo cuc cong khai tham khao cua TOPIK gan voi muc level ${level}.`,
+    title: 'TOPIK - template công khai',
+    summary: `Bố cục công khai tham khảo của TOPIK gần với mức level ${level}.`,
     metadata: [
-      { labelKey: 'duration', value: 'Tuy cap do va ky thi TOPIK I / II' },
-      { labelKey: 'questions', value: 'Nghe + Doc + Viet tuy cap do' },
+      { labelKey: 'duration', value: 'Tùy cấp độ và kỳ thi TOPIK I / II' },
+      { labelKey: 'questions', value: 'Nghe + Đọc + Viết tùy cấp độ' },
       { labelKey: 'scoring', value: 'Scale theo level TOPIK' },
-      { labelKey: 'support', value: 'Quizmate AI uu tien phan doc dang trac nghiem' },
+      { labelKey: 'support', value: 'Quizmate AI ưu tiên phần đọc dạng trắc nghiệm' },
     ],
     sections: [
-      createPublicSection('Listening', 'Phan nghe cua TOPIK cong khai.', 'Audio tasks', 'Theo lich thi', false, 'Quizmate AI chua ho tro listening.'),
-      createPublicSection('Reading', 'Phan doc hieu cua TOPIK.', 'Reading items', 'Theo lich thi', true),
-      createPublicSection('Writing', 'Phan viet cua TOPIK II neu co.', 'Writing tasks', 'Theo lich thi', false, 'Quizmate AI chua ho tro writing.'),
+      createPublicSection('Listening', 'Phần nghe của TOPIK công khai.', 'Audio tasks', 'Theo lịch thi', false, 'Quizmate AI chưa hỗ trợ listening.'),
+      createPublicSection('Reading', 'Phần đọc hiểu của TOPIK.', 'Reading items', 'Theo lịch thi', true),
+      createPublicSection('Writing', 'Phần viết của TOPIK II nếu có.', 'Writing tasks', 'Theo lịch thi', false, 'Quizmate AI chưa hỗ trợ writing.'),
     ],
     notes: [
-      'TOPIK co phan nghe va viet khong duoc Quizmate AI ho tro o giai doan hien tai.',
-      'Template AI sinh ra se uu tien phan doc dang trac nghiem de ban luyen cau truc de.',
+      'TOPIK có phần nghe và viết không được Quizmate AI hỗ trợ ở giai đoạn hiện tại.',
+      'Template AI sinh ra sẽ ưu tiên phần đọc dạng trắc nghiệm để bạn luyện cấu trúc đề.',
     ],
     defaults: {
       templateFormat: 'FULL_EXAM',
@@ -454,37 +454,37 @@ export function generateImprovementRecommendations(values, selectedExam) {
   weakAreas.forEach((item) => suggestions.push(item));
 
   if (focusKnowledge) {
-    suggestions.push(`Cung co ${focusKnowledge}`);
+    suggestions.push(`Củng cố ${focusKnowledge}`);
   }
 
   if (values.learningGoal) {
-    suggestions.push('Bam sat muc tieu hoc tap uu tien');
+    suggestions.push('Bám sát mục tiêu học tập ưu tiên');
   }
 
   if (values.currentLevel) {
-    suggestions.push(`Nang tu muc ${values.currentLevel} len cap do tiep theo`);
+    suggestions.push(`Nâng từ mức ${values.currentLevel} lên cấp độ tiếp theo`);
   }
 
   if (strongAreas.length > 0) {
-    suggestions.push(`Tan dung the manh: ${strongAreas[0]}`);
+    suggestions.push(`Tận dụng thế mạnh: ${strongAreas[0]}`);
   }
 
   if (values.inferredDomain) {
-    suggestions.push(`Dao sau trong ${values.inferredDomain}`);
+    suggestions.push(`Đào sâu trong ${values.inferredDomain}`);
   }
 
   if (values.workspacePurpose === 'REVIEW') {
-    suggestions.push('On lai phan sai thuong gap');
-    suggestions.push('Tang tan suat nhac lai chu de trong tam');
+    suggestions.push('Ôn lại phần sai thường gặp');
+    suggestions.push('Tăng tần suất nhắc lại chủ đề trọng tâm');
   }
 
   if (values.workspacePurpose === 'MOCK_TEST') {
-    suggestions.push('Lam quen ap luc thoi gian');
-    suggestions.push('Chuan hoa chien luoc phan bo thoi gian');
+    suggestions.push('Làm quen áp lực thời gian');
+    suggestions.push('Chuẩn hóa chiến lược phân bổ thời gian');
   }
 
   if (selectedExam?.name) {
-    suggestions.push(`Luyen dung format ${selectedExam.name}`);
+    suggestions.push(`Luyện đúng format ${selectedExam.name}`);
   }
 
   return suggestions.filter((item, index, array) => array.indexOf(item) === index).slice(0, 8);
@@ -496,38 +496,38 @@ export function generateTemplateSuggestion(values, selectedExam) {
     return publicExamTemplate;
   }
 
-  const examName = selectedExam?.name || values.mockExamName || 'Mock test ca nhan';
+  const examName = selectedExam?.name || values.mockExamName || 'Mock test cá nhân';
   const format = values.templateFormat || 'FULL_EXAM';
   const questionCount = Number(values.templateQuestionCount) || 60;
   const duration = Number(values.templateDurationMinutes) || 90;
   const sectionSet = {
     FULL_EXAM: [
-      'Khoi dong theo format de',
-      'Phan trong tam mo phong de that',
-      'Phan tang toc cuoi bai',
+      'Khởi động theo format đề',
+      'Phần trọng tâm mô phỏng đề thật',
+      'Phần tăng tốc cuối bài',
     ],
     SECTION_BASED: [
-      'Section ky nang 1',
-      'Section ky nang 2',
-      'Section tong hop loi can chu y',
+      'Section kỹ năng 1',
+      'Section kỹ năng 2',
+      'Section tổng hợp lỗi cần chú ý',
     ],
     PRACTICE_SET: [
-      'Bai luyen muc tieu',
-      'Bo cau hoi kho',
-      'Tu danh gia nhanh cuoi buoi',
+      'Bài luyện mục tiêu',
+      'Bộ câu hỏi khó',
+      'Tự đánh giá nhanh cuối buổi',
     ],
   }[format];
 
   return {
-    title: `${examName} - template goi y`,
-    summary: `Template gom ${sectionSet.length} phan, khoang ${questionCount} cau trong ${duration} phut.`,
+    title: `${examName} - template gợi ý`,
+    summary: `Template gồm ${sectionSet.length} phần, khoảng ${questionCount} câu trong ${duration} phút.`,
     sections: sectionSet.map((item, index) => ({
       name: item,
-      detail: `Uu tien ${Math.max(6, Math.round(questionCount / sectionSet.length))} cau o phan ${index + 1}.`,
+      detail: `Ưu tiên ${Math.max(6, Math.round(questionCount / sectionSet.length))} câu ở phần ${index + 1}.`,
     })),
     notes: [
-      values.templatePrompt || 'Bam sat muc tieu nguoi hoc da nhap.',
-      values.templateNotes || 'Giu muc do kho tang dan va co checkpoint giua bai.',
+      values.templatePrompt || 'Bám sát mục tiêu người học đã nhập.',
+      values.templateNotes || 'Giữ mức độ khó tăng dần và có checkpoint giữa bài.',
     ],
   };
 }
@@ -597,7 +597,7 @@ export function evaluateMaterialFit(material, values, selectedExam) {
 
   let tone = 'weak';
 
-  if (backendStatus === 'PROCESSING' || backendStatus === 'UPLOADING' || backendStatus === 'PENDING' || backendStatus === 'QUEUED') {
+  if (backendStatus === 'PROCESSING' || backendStatus === 'UPLOADING' || backendStatus === 'PENDING' || backendStatus === 'QUEUED' || backendStatus === 'PENDING_UPLOAD') {
     tone = 'processing';
   } else if (backendStatus === 'REJECT' || backendStatus === 'REJECTED' || backendStatus === 'ERROR') {
     tone = 'critical';

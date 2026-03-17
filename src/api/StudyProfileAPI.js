@@ -19,10 +19,13 @@ export const analyzeKnowledge = async (knowledge, { signal } = {}) => {
  * POST /ai/study-profile/fields:suggest
  * Gợi ý các trường form (currentLevel, learningGoal, strongAreas, weakAreas, examName).
  */
-export const suggestProfileFields = async ({ knowledge, domain, learningMode }, { signal } = {}) => {
+export const suggestProfileFields = async (
+  { knowledge, domain, learningMode, currentLevel, strongAreas, weakAreas },
+  { signal } = {}
+) => {
   const response = await api.post(
     '/ai/study-profile/fields:suggest',
-    { knowledge, domain, learningMode },
+    { knowledge, domain, learningMode, currentLevel, strongAreas, weakAreas },
     { timeout: AI_TIMEOUT, signal }
   );
   return response;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
+import { Brain, Check, ChevronLeft, ChevronRight, Flag, Loader2, Sparkles, Target, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,60 +12,14 @@ import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 import WorkspaceProfileStepOne from './WorkspaceProfileWizard/WorkspaceProfileStepOne';
 import WorkspaceProfileStepTwo from './WorkspaceProfileWizard/WorkspaceProfileStepTwo';
-import WorkspaceProfileStepUpload from './WorkspaceProfileWizard/WorkspaceProfileStepUpload';
 import WorkspaceProfileStepThree from './WorkspaceProfileWizard/WorkspaceProfileStepThree';
 import { useWorkspaceProfileWizard } from './WorkspaceProfileWizard/useWorkspaceProfileWizard';
 
-const STEP_IDS = [1, 2, 3, 4];
-const STEP_THEMES = {
-  1: {
-    lightCard: 'border-sky-200 bg-sky-50/90',
-    lightActiveCard: 'border-sky-300 bg-gradient-to-br from-cyan-50 via-sky-50 to-blue-100',
-    darkCard: 'border-sky-400/20 bg-sky-500/10',
-    darkActiveCard: 'border-sky-300/40 bg-gradient-to-br from-cyan-500/18 via-sky-500/16 to-blue-500/18',
-    lightBadge: 'bg-sky-100 text-sky-700',
-    lightActiveBadge: 'bg-sky-600 text-white',
-    darkBadge: 'bg-sky-500/15 text-sky-200',
-    darkActiveBadge: 'bg-sky-300 text-slate-950',
-    lightDescription: 'text-sky-900/75',
-    darkDescription: 'text-sky-100/75',
-  },
-  2: {
-    lightCard: 'border-orange-200 bg-orange-50/90',
-    lightActiveCard: 'border-orange-300 bg-gradient-to-br from-amber-50 via-orange-50 to-orange-100',
-    darkCard: 'border-orange-400/20 bg-orange-500/10',
-    darkActiveCard: 'border-orange-300/40 bg-gradient-to-br from-amber-500/18 via-orange-500/16 to-amber-600/18',
-    lightBadge: 'bg-orange-100 text-orange-700',
-    lightActiveBadge: 'bg-orange-500 text-white',
-    darkBadge: 'bg-orange-500/15 text-orange-200',
-    darkActiveBadge: 'bg-orange-300 text-slate-950',
-    lightDescription: 'text-orange-900/75',
-    darkDescription: 'text-orange-100/75',
-  },
-  3: {
-    lightCard: 'border-emerald-200 bg-emerald-50/90',
-    lightActiveCard: 'border-emerald-300 bg-gradient-to-br from-emerald-50 via-green-50 to-lime-100',
-    darkCard: 'border-emerald-400/20 bg-emerald-500/10',
-    darkActiveCard: 'border-emerald-300/40 bg-gradient-to-br from-emerald-500/18 via-green-500/16 to-lime-500/18',
-    lightBadge: 'bg-emerald-100 text-emerald-700',
-    lightActiveBadge: 'bg-emerald-600 text-white',
-    darkBadge: 'bg-emerald-500/15 text-emerald-200',
-    darkActiveBadge: 'bg-emerald-300 text-slate-950',
-    lightDescription: 'text-emerald-900/75',
-    darkDescription: 'text-emerald-100/75',
-  },
-  4: {
-    lightCard: 'border-violet-200 bg-violet-50/90',
-    lightActiveCard: 'border-violet-300 bg-gradient-to-br from-violet-50 via-fuchsia-50 to-indigo-100',
-    darkCard: 'border-violet-400/20 bg-violet-500/10',
-    darkActiveCard: 'border-violet-300/40 bg-gradient-to-br from-violet-500/18 via-fuchsia-500/16 to-indigo-500/18',
-    lightBadge: 'bg-violet-100 text-violet-700',
-    lightActiveBadge: 'bg-violet-600 text-white',
-    darkBadge: 'bg-violet-500/15 text-violet-200',
-    darkActiveBadge: 'bg-violet-300 text-slate-950',
-    lightDescription: 'text-violet-900/75',
-    darkDescription: 'text-violet-100/75',
-  },
+const STEP_IDS = [1, 2, 3];
+const STEP_ICON_MAP = {
+  1: Brain,
+  2: Target,
+  3: Flag,
 };
 
 function translateOrFallback(t, key, fallback) {
@@ -98,14 +52,6 @@ function createStepCopy(t, language) {
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.3.description',
-        isEnglish ? 'Upload materials and review whether they align with the profile above.' : 'Tải tài liệu và rà xem chúng có bám đúng hồ sơ học tập ở trên hay không.'
-      ),
-    },
-    4: {
-      title: translateOrFallback(t, 'workspace.profileConfig.steps.4.title', isEnglish ? 'Step 4' : 'Bước 4'),
-      description: translateOrFallback(
-        t,
-        'workspace.profileConfig.steps.4.description',
         isEnglish ? 'Finish the roadmap setup and confirm the learning pace.' : 'Hoàn tất cấu hình roadmap và chốt nhịp học cho workspace.'
       ),
     },
@@ -116,16 +62,6 @@ function createActionCopy(t, language) {
   const isEnglish = language === 'en';
 
   return {
-    uploadAndContinue: translateOrFallback(
-      t,
-      'workspace.profileConfig.actions.uploadAndContinue',
-      isEnglish ? 'Upload and continue' : 'Tải lên và tiếp tục'
-    ),
-    uploading: translateOrFallback(
-      t,
-      'workspace.profileConfig.actions.uploading',
-      isEnglish ? 'Uploading...' : 'Đang tải lên...'
-    ),
     generatingTemplate: translateOrFallback(
       t,
       'workspace.profileConfig.actions.generatingTemplate',
@@ -138,10 +74,8 @@ function IndividualWorkspaceProfileConfigDialog({
   open,
   onOpenChange,
   onSave,
-  onUploadFiles,
   isDarkMode,
   initialData,
-  uploadedMaterials = [],
   workspaceId,
   isReadOnly = false,
   forceStartAtStepOne = false,
@@ -154,9 +88,7 @@ function IndividualWorkspaceProfileConfigDialog({
   const wizard = useWorkspaceProfileWizard({
     open,
     initialData,
-    uploadedMaterials,
     onSave,
-    onUploadFiles,
     storageKey: workspaceId ? `workspace-profile-wizard-${workspaceId}` : undefined,
     forceStartAtStepOne,
     mockTestGenerationState,
@@ -187,6 +119,8 @@ function IndividualWorkspaceProfileConfigDialog({
       : isDarkMode
         ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100'
         : 'border-cyan-200 bg-cyan-50 text-cyan-800';
+  const isPrimaryActionBusy = wizard.submitting || wizard.isMockTestGenerationPending;
+  const progressFraction = STEP_IDS.length > 1 ? (wizard.step - 1) / (STEP_IDS.length - 1) : 0;
 
   function renderStep() {
     if (wizard.step === 1) {
@@ -216,43 +150,16 @@ function IndividualWorkspaceProfileConfigDialog({
           isDarkMode={isDarkMode}
           values={wizard.values}
           errors={wizard.errors}
-          selectedExam={wizard.selectedExam}
-          examSearch={wizard.examSearch}
           templateStatus={wizard.templateStatus}
           templatePreview={wizard.templatePreview}
-          mockTestGenerationState={mockTestGenerationState}
-          mockTestGenerationMessage={mockTestGenerationMessage}
-          mockTestGenerationProgress={mockTestGenerationProgress}
           fieldSuggestions={wizard.fieldSuggestions}
           fieldSuggestionStatus={wizard.fieldSuggestionStatus}
           consistencyResult={wizard.consistencyResult}
           consistencyStatus={wizard.consistencyStatus}
           disabled={isReadOnly}
           onFieldChange={wizard.updateField}
-          onMockExamModeChange={wizard.setMockExamMode}
-          onExamSearchChange={wizard.setExamSearch}
-          onPublicExamSelect={wizard.selectPublicExam}
           onGenerateTemplate={wizard.generateTemplatePreviewAsync}
           onApplySuggestion={wizard.applySuggestion}
-        />
-      );
-    }
-
-    if (wizard.step === 3) {
-      return (
-        <WorkspaceProfileStepUpload
-          t={t}
-          language={i18n.language}
-          isDarkMode={isDarkMode}
-          values={wizard.values}
-          errors={wizard.errors}
-          selectedExam={wizard.selectedExam}
-          uploadedMaterials={uploadedMaterials}
-          pendingFiles={wizard.pendingFiles}
-          uploading={wizard.submitting}
-          disabled={isReadOnly}
-          onAddFiles={wizard.addPendingFiles}
-          onRemovePendingFile={wizard.removePendingFile}
         />
       );
     }
@@ -335,57 +242,88 @@ function IndividualWorkspaceProfileConfigDialog({
             </div>
           </div>
 
-          <div className="mt-3 grid gap-2 md:grid-cols-4">
-            {STEP_IDS.map((item) => {
-              const active = wizard.step === item;
-              const complete = wizard.isStepComplete(item) && wizard.step > item;
-              const theme = STEP_THEMES[item];
-
-              return (
+        <div className="mt-6 flex items-center justify-center">
+          <div className="relative flex w-full max-w-[920px] flex-col items-center px-4 sm:px-10">
+            <div className="relative flex w-full items-center justify-between">
+              <div
+                className={cn(
+                  'pointer-events-none absolute inset-x-[6%] top-1/2 h-[2px] -translate-y-1/2 rounded-full',
+                  isDarkMode ? 'bg-slate-800/70' : 'bg-slate-200'
+                )}
+              />
+              <div
+                className={cn(
+                  'pointer-events-none absolute left-[6%] top-1/2 h-[2px] -translate-y-1/2 rounded-full transition-all duration-500 ease-out',
+                  isDarkMode ? 'bg-cyan-400' : 'bg-cyan-500'
+                )}
+                style={{ width: `${progressFraction * 88}%` }}
+              />
+              <div
+                className="pointer-events-none absolute -top-5 left-[6%] flex translate-x-0 items-center justify-center transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(${progressFraction * 88}%)` }}
+              >
                 <div
-                  key={item}
                   className={cn(
-                    'rounded-[18px] border px-3 py-2.5 transition-all',
-                    active || complete
-                      ? isDarkMode
-                        ? theme.darkActiveCard
-                        : theme.lightActiveCard
-                      : isDarkMode
-                        ? theme.darkCard
-                        : theme.lightCard
+                    'flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500 text-white shadow-lg',
+                    isDarkMode ? 'shadow-cyan-500/40' : 'shadow-cyan-400/40'
                   )}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <Sparkles className="h-3 w-3" />
+                </div>
+              </div>
+              {STEP_IDS.map((item) => {
+              const active = wizard.step === item;
+                const complete = wizard.maxUnlockedStep > item && !active;
+                const canReview = wizard.canNavigateToStep(item);
+                const StepIcon = STEP_ICON_MAP[item];
+
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    disabled={!canReview}
+                    onClick={() => wizard.goToStep(item)}
+                    className={cn(
+                      'relative flex flex-col items-center gap-2 bg-transparent transition-all',
+                      canReview
+                        ? 'cursor-pointer focus-visible:outline-none'
+                        : 'cursor-default'
+                    )}
+                  >
                     <div
                       className={cn(
-                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-semibold',
-                        active || complete
-                          ? isDarkMode
-                            ? theme.darkActiveBadge
-                            : theme.lightActiveBadge
-                          : isDarkMode
-                            ? theme.darkBadge
-                            : theme.lightBadge
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-300',
+                        complete
+                          ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200/50 dark:shadow-emerald-900/30'
+                          : active
+                            ? isDarkMode
+                              ? 'bg-yellow-400 text-slate-900 shadow-lg shadow-yellow-400/30 scale-105'
+                              : 'bg-yellow-400 text-slate-900 shadow-lg shadow-yellow-300/50 scale-105'
+                            : isDarkMode
+                              ? 'border-2 border-slate-600 bg-[#020617] text-slate-400'
+                              : 'border-2 border-slate-300 bg-white text-slate-400'
                       )}
                     >
-                      {complete ? <Check className="h-3.5 w-3.5" /> : item}
+                      {complete ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold leading-5">{stepCopy[item].title}</p>
-                      <p
-                        className={cn(
-                          'mt-0.5 line-clamp-2 text-[12px] leading-4',
-                          isDarkMode ? theme.darkDescription : theme.lightDescription
-                        )}
-                      >
-                        {stepCopy[item].description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                    <span
+                      className={cn(
+                        'max-w-[120px] whitespace-nowrap text-center text-xs font-medium leading-4',
+                        complete
+                          ? isDarkMode ? 'text-emerald-300' : 'text-emerald-600'
+                          : active
+                            ? isDarkMode ? 'font-semibold text-white' : 'font-semibold text-slate-900'
+                            : mutedClass
+                      )}
+                    >
+                      {stepCopy[item].title}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+        </div>
         </DialogHeader>
 
         {showMockTestProgress ? (
@@ -457,7 +395,7 @@ function IndividualWorkspaceProfileConfigDialog({
             <Button
               type="button"
               variant="ghost"
-              disabled={wizard.submitting || wizard.isMockTestGenerationPending}
+              disabled={isPrimaryActionBusy}
               onClick={() => {
                 if (wizard.step === 1) {
                   onOpenChange(false);
@@ -478,20 +416,16 @@ function IndividualWorkspaceProfileConfigDialog({
             {!isReadOnly && wizard.step < wizard.totalSteps ? (
               <Button
                 type="button"
-                disabled={wizard.submitting || wizard.isMockTestGenerationPending}
+                disabled={isPrimaryActionBusy}
                 onClick={wizard.nextStep}
-                className="rounded-full bg-cyan-600 px-6 text-white hover:bg-cyan-700"
+                className="rounded-full bg-cyan-600 px-6 text-white transition-all hover:bg-cyan-700"
               >
-                {wizard.submitting || wizard.isMockTestGenerationPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isPrimaryActionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {wizard.isMockTestGenerationPending
                   ? actionCopy.generatingTemplate
                   : wizard.submitting
-                    ? wizard.step === 3
-                      ? actionCopy.uploading
-                      : t('workspace.profileConfig.actions.saving')
-                    : wizard.step === 3 && wizard.pendingFiles.length > 0
-                      ? actionCopy.uploadAndContinue
-                      : t('workspace.profileConfig.actions.next')}
+                    ? t('workspace.profileConfig.actions.saving')
+                    : t('workspace.profileConfig.actions.next')}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             ) : null}

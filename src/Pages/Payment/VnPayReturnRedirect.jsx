@@ -19,18 +19,22 @@ function buildResultUrlFromParams(search) {
 }
 
 export default function VnPayReturnRedirect() {
-  const [error, setError] = useState(null);
   const [showFallback, setShowFallback] = useState(false);
   const search = typeof window !== 'undefined' ? window.location.search : '';
+  const base = import.meta.env.VITE_API_BASE_URL || '';
+  const apiOrigin =
+    typeof window === 'undefined'
+      ? ''
+      : base.startsWith('http')
+        ? new URL(base).origin
+        : window.location.origin;
+  const error =
+    typeof window !== 'undefined' && apiOrigin === window.location.origin
+      ? 'Cấu hình proxy: /api phải trỏ về backend. Hoặc đặt VITE_API_BASE_URL trỏ sang domain API.'
+      : null;
 
   useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL || '';
-    const apiOrigin = base.startsWith('http')
-      ? new URL(base).origin
-      : window.location.origin;
-
-    if (apiOrigin === window.location.origin) {
-      setError('Cấu hình proxy: /api phải trỏ về backend. Hoặc đặt VITE_API_BASE_URL trỏ sang domain API.');
+    if (typeof window === 'undefined' || error) {
       return;
     }
 
@@ -39,7 +43,7 @@ export default function VnPayReturnRedirect() {
 
     const t = setTimeout(() => setShowFallback(true), 4000);
     return () => clearTimeout(t);
-  }, []);
+  }, [apiOrigin, error]);
 
   if (error) {
     return (
