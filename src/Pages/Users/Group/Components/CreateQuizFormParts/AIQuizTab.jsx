@@ -47,15 +47,34 @@ function AIQuizTab({
   aiDuration,
   setAiDuration,
 }) {
+  const requiredMark = <span className="text-red-500 ml-1">*</span>;
+
+  const normalizeIntegerInput = (value) => {
+    if (value === "") return "";
+    const digits = String(value).replace(/\D/g, "");
+    if (!digits) return "";
+    const normalized = digits.replace(/^0+(?=\d)/, "");
+    return Number(normalized || 0);
+  };
+
+  const applyMinOnBlur = (value, setter, minValue = 1) => {
+    const next = Number(value);
+    setter(Number.isFinite(next) && next >= minValue ? next : minValue);
+  };
+
   return (
     <div className="space-y-5 pb-4">
+      <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+        {t("workspace.quiz.validation.requiredFieldsHint")}
+      </div>
+
       <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
         <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <FileText className="w-4 h-4 text-blue-500" /> {t("General Info")}
         </h3>
         <div className="space-y-3">
           <div>
-            <label className={labelCls}>{t("workspace.quiz.name")}</label>
+            <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
             <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
           </div>
           <div>
@@ -85,7 +104,7 @@ function AIQuizTab({
 
       <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
         <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          <CheckSquare className="w-4 h-4 text-green-500" /> {t("Select Materials")}
+          <CheckSquare className="w-4 h-4 text-green-500" /> {t("Select Materials")} {requiredMark}
         </h3>
         {loadingMetadata ? (
           <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="w-3 h-3 animate-spin" /> {t("Loading materials...")}</div>
@@ -114,12 +133,26 @@ function AIQuizTab({
         </h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>{t("Total Questions")}</label>
-            <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
+            <label className={labelCls}>{t("Total Questions")}{requiredMark}</label>
+            <input
+              type="number"
+              className={inputCls}
+              value={aiTotalQuestions}
+              onChange={(e) => setAiTotalQuestions(normalizeIntegerInput(e.target.value))}
+              onBlur={() => applyMinOnBlur(aiTotalQuestions, setAiTotalQuestions, 1)}
+              min={1}
+            />
           </div>
           <div>
-            <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes")}</label>
-            <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
+            <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes")}{requiredMark}</label>
+            <input
+              type="number"
+              className={inputCls}
+              value={aiDuration}
+              onChange={(e) => setAiDuration(normalizeIntegerInput(e.target.value))}
+              onBlur={() => applyMinOnBlur(aiDuration, setAiDuration, 1)}
+              min={1}
+            />
           </div>
         </div>
         <div className="mt-3">
@@ -158,13 +191,13 @@ function AIQuizTab({
 
       <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
         <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          <Sliders className="w-4 h-4 text-amber-500" /> {t("Difficulty Level")}
+          <Sliders className="w-4 h-4 text-amber-500" /> {t("Difficulty Level")} {requiredMark}
         </h3>
         <select className={selectCls} value={selectedDifficultyId} onChange={onDifficultyChange}>
           {difficultyDefs.map((d) => (
             <option key={d.id} value={d.id}>{d.difficultyName} ({d.easyRatio}-{d.mediumRatio}-{d.hardRatio})</option>
           ))}
-          <option value="CUSTOM">{t("Custom (Self-config)")}</option>
+          <option value="CUSTOM">{t("workspace.quiz.difficultyLevels.custom")}</option>
         </select>
 
         {selectedDifficultyId === "CUSTOM" && (
@@ -206,7 +239,7 @@ function AIQuizTab({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
           <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-            <Sparkles className="w-4 h-4 text-purple-500" /> {t("Question Types")}
+            <Sparkles className="w-4 h-4 text-purple-500" /> {t("Question Types")} {requiredMark}
           </h3>
           <div className="mb-2 flex items-center gap-2">
             <input
@@ -242,7 +275,7 @@ function AIQuizTab({
 
         <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
           <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-            <BrainCircuit className="w-4 h-4 text-teal-500" /> {t("Bloom Skills")}
+            <BrainCircuit className="w-4 h-4 text-teal-500" /> {t("Bloom Skills")} {requiredMark}
           </h3>
           <div className="mb-2 flex items-center gap-2">
             <input

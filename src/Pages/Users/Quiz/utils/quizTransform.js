@@ -114,6 +114,22 @@ export function getCorrectTextAnswer(question) {
   return question?.answers?.find(answer => answer.isCorrect)?.content || '';
 }
 
+export function getCorrectTextAnswers(question) {
+  const answers = Array.isArray(question?.answers) ? question.answers : [];
+  const correctAnswers = answers
+    .filter(answer => answer?.isCorrect)
+    .map(answer => (typeof answer?.content === 'string' ? answer.content.trim() : ''))
+    .filter(Boolean);
+
+  if (correctAnswers.length > 0) {
+    return correctAnswers;
+  }
+
+  return answers
+    .map(answer => (typeof answer?.content === 'string' ? answer.content.trim() : ''))
+    .filter(Boolean);
+}
+
 export function getAttemptRemainingSeconds(timeoutAt, fallbackSeconds = 0) {
   if (!timeoutAt) {
     return Math.max(0, fallbackSeconds);

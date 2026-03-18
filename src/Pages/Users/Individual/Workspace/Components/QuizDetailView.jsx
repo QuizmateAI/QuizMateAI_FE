@@ -354,6 +354,16 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                     ) : (
                       questions.map((question, qIdx) => {
                         const answers = answersMap[question.questionId] || [];
+                        const correctTextAnswers = answers
+                          .filter((ans) => ans?.isCorrect)
+                          .map((ans) => (typeof ans?.content === "string" ? ans.content.trim() : ""))
+                          .filter(Boolean);
+                        const fallbackTextAnswers = answers
+                          .map((ans) => (typeof ans?.content === "string" ? ans.content.trim() : ""))
+                          .filter(Boolean);
+                        const textAnswersToDisplay = correctTextAnswers.length > 0
+                          ? correctTextAnswers
+                          : fallbackTextAnswers;
                         const isQExpanded = expandedQuestions[question.questionId];
                         const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
 
@@ -427,7 +437,9 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                                             }`}>
                                               {t("workspace.quiz.correctAnswerLabel", "Đáp án đúng")}
                                             </span>
-                                            <span className={`flex-1 ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>{answers[0]?.content || "-"}</span>
+                                            <span className={`flex-1 ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
+                                              {textAnswersToDisplay.length ? textAnswersToDisplay.join(" / ") : "-"}
+                                            </span>
                                             <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
                                           </div>
                                         ) : (
