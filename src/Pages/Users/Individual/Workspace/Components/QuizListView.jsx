@@ -38,6 +38,28 @@ const INTENT_STYLES = {
 // Bộ lọc theo trạng thái
 const STATUS_FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT", "COMPLETED"];
 
+function hasQuizListChanged(prevList, nextList) {
+  if (!Array.isArray(prevList) || !Array.isArray(nextList)) return true;
+  if (prevList.length !== nextList.length) return true;
+
+  for (let i = 0; i < prevList.length; i += 1) {
+    const prev = prevList[i];
+    const next = nextList[i];
+    if (!prev || !next) return true;
+
+    if (
+      prev.quizId !== next.quizId
+      || prev.status !== next.status
+      || prev.updatedAt !== next.updatedAt
+      || prev.title !== next.title
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function getDurationInMinutes(quiz) {
   const rawDuration = Number(quiz?.duration) || 0;
   if (!rawDuration) return 0;
@@ -89,16 +111,17 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
   const [confirmDialog, setConfirmDialog] = useState({ open: false, quizId: null, mode: null });
 
   // Lấy danh sách quiz từ API (theo user hiện tại)
-  const fetchQuizzes = useCallback(async () => {
-    setLoading(true);
+  const fetchQuizzes = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const res = await getQuizzesByUser();
-      setQuizzes(res.data || []);
+      const incoming = res.data || [];
+      setQuizzes((prev) => (hasQuizListChanged(prev, incoming) ? incoming : prev));
     } catch (err) {
       console.error("Lỗi khi lấy danh sách quiz:", err);
-      setQuizzes([]);
+      if (!silent) setQuizzes([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -106,6 +129,18 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
   useEffect(() => {
     fetchQuizzes();
   }, [fetchQuizzes]);
+
+  // Chỉ polling khi còn quiz PROCESSING, và polling silent để tránh lag cả màn.
+  useEffect(() => {
+    const hasProcessingQuiz = quizzes.some((q) => String(q?.status || "").toUpperCase() === "PROCESSING");
+    if (!hasProcessingQuiz) return undefined;
+
+    const timer = setInterval(() => {
+      fetchQuizzes({ silent: true });
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [quizzes, fetchQuizzes]);
 
   // Xử lý xóa quiz
   const handleDeleteQuiz = useCallback(async (e, quizId) => {

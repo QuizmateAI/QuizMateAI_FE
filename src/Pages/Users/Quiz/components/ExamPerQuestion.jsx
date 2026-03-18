@@ -159,22 +159,35 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
     initializedAttemptRef.current = attemptId;
   }, [attemptId, attemptStartedAt, answers, onSubmit, quiz.questions]);
 
-  // Save current question's answer to API
-  const saveCurrentQuestion = useCallback(async () => {
-    if (!attemptId || !currentQuestion) return;
-    const qId = currentQuestion.id;
-    const selected = answers[qId];
+  // Save a specific question answer to API.
+  // If retryInBackground=true, this method retries once to reduce transient failures.
+  const saveQuestionAnswer = useCallback(async (qId, selected, { retryInBackground = false } = {}) => {
+    if (!attemptId || !qId) return { ok: true, skipped: true };
     if (!hasAnswerValue(selected)) return { ok: true, skipped: true };
     const payload = buildSavePayload({ [qId]: selected });
     if (payload.length === 0) return { ok: true, skipped: true };
+
+    const runSave = async (remainingRetry) => {
+      try {
+        await saveAttemptAnswers(attemptId, payload);
+        return { ok: true, skipped: false };
+      } catch (err) {
+        if (remainingRetry > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          return runSave(remainingRetry - 1);
+        }
+        console.error('[PerQuestion] Save failed:', err);
+        return { ok: false, error: err };
+      }
+    };
+
     try {
-      await saveAttemptAnswers(attemptId, payload);
-      return { ok: true, skipped: false };
+      return await runSave(retryInBackground ? 1 : 0);
     } catch (err) {
       console.error('[PerQuestion] Save failed:', err);
       return { ok: false, error: err };
     }
-  }, [attemptId, currentQuestion, answers]);
+  }, [attemptId]);
 
   // Countdown — dispatch TICK every second
   useEffect(() => {
@@ -190,12 +203,15 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
     handledTimeUpForIndexRef.current = currentIndex;
 
     const timeout = setTimeout(async () => {
-      const saveResult = await saveCurrentQuestion();
-      if (saveResult && !saveResult.ok) {
-        setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
-        return;
-      }
+      const qId = currentQuestion?.id;
+      const selected = qId ? answers[qId] : undefined;
+
       if (currentIndex >= total - 1) {
+        const saveResult = await saveQuestionAnswer(qId, selected);
+        if (saveResult && !saveResult.ok) {
+          setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
+          return;
+        }
         if (!submittingRef.current) {
           submittingRef.current = true;
           setIsFinished(true);
@@ -206,22 +222,32 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
           }
         }
       } else {
+        // Move immediately, then save in background to avoid blocking next question UX.
         dispatch({ type: 'NEXT' });
+        void saveQuestionAnswer(qId, selected, { retryInBackground: true }).then((saveResult) => {
+          if (saveResult && !saveResult.ok) {
+            setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
+          }
+        });
       }
     }, 800);
     return () => clearTimeout(timeout);
-  }, [timeLeft, isFinished, currentIndex, total, onSubmit, currentQuestion?.timeLimit, saveCurrentQuestion]);
+  }, [timeLeft, isFinished, currentIndex, total, onSubmit, currentQuestion?.id, currentQuestion?.timeLimit, answers, saveQuestionAnswer, t]);
 
   const handleNext = useCallback(async () => {
     setNextLoading(true);
     setNextError('');
-    const saveResult = await saveCurrentQuestion();
-    if (saveResult && !saveResult.ok) {
-      setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
-      setNextLoading(false);
-      return;
-    }
+
+    const qId = currentQuestion?.id;
+    const selected = qId ? answers[qId] : undefined;
+
     if (currentIndex >= total - 1) {
+      const saveResult = await saveQuestionAnswer(qId, selected);
+      if (saveResult && !saveResult.ok) {
+        setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
+        setNextLoading(false);
+        return;
+      }
       if (!submittingRef.current) {
         submittingRef.current = true;
         setIsFinished(true);
@@ -234,9 +260,16 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
       setNextLoading(false);
       return;
     }
+
+    // Move immediately, save in background.
     dispatch({ type: 'NEXT' });
     setNextLoading(false);
-  }, [currentIndex, total, onSubmit, saveCurrentQuestion, t]);
+    void saveQuestionAnswer(qId, selected, { retryInBackground: true }).then((saveResult) => {
+      if (saveResult && !saveResult.ok) {
+        setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
+      }
+    });
+  }, [currentIndex, total, onSubmit, currentQuestion?.id, answers, saveQuestionAnswer, t]);
 
   if (isFinished) {
     return (
