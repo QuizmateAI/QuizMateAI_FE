@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  evaluateMaterialFit,
   generateTemplateSuggestion,
 } from './mockProfileWizardData';
 import {
@@ -10,7 +9,8 @@ import {
   validateProfileConsistency,
 } from '@/api/StudyProfileAPI';
 
-const TOTAL_STEPS = 3;
+const ROADMAP_FLOW_TOTAL_STEPS = 3;
+const NO_ROADMAP_FLOW_TOTAL_STEPS = 2;
 const ANALYSIS_DEBOUNCE_MS = 800;
 const FIELD_SUGGESTION_DEBOUNCE_MS = 500;
 const EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS = 600;
@@ -151,7 +151,7 @@ function readStoredStep(storageKey) {
   return Number.isFinite(storedStep) ? storedStep : null;
 }
 
-function getInitialStep(initialData, isReadOnly, storageKey) {
+function getInitialStep(initialData, isReadOnly, storageKey, totalSteps = ROADMAP_FLOW_TOTAL_STEPS) {
   const explicitStep = Number(initialData?.currentStep);
   const profileStatus = initialData?.profileStatus;
   const setupStatus = initialData?.workspaceSetupStatus;
@@ -159,11 +159,11 @@ function getInitialStep(initialData, isReadOnly, storageKey) {
   const isCompletedFlow = isReadOnly || initialData?.onboardingCompleted || setupStatus === 'DONE';
   const baseStep =
     isCompletedFlow
-      ? TOTAL_STEPS
-      : explicitStep >= 1 && explicitStep <= TOTAL_STEPS
+      ? totalSteps
+      : explicitStep >= 1 && explicitStep <= totalSteps
         ? explicitStep
         : setupStatus === 'PROFILE_DONE'
-          ? 3
+          ? totalSteps
           : profileStatus === 'BASIC_DONE' || profileStatus === 'DONE'
             ? hasBasicData
               ? 2
@@ -171,7 +171,7 @@ function getInitialStep(initialData, isReadOnly, storageKey) {
             : 1;
 
   if (isCompletedFlow) {
-    return TOTAL_STEPS;
+    return totalSteps;
   }
 
   const storedStep = readStoredStep(storageKey);
@@ -185,6 +185,12 @@ function getInitialStep(initialData, isReadOnly, storageKey) {
 
 function shouldShowRoadmapFields(values) {
   return values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
+}
+
+function getTotalStepsForValues(values) {
+  return shouldShowRoadmapFields(values)
+    ? ROADMAP_FLOW_TOTAL_STEPS
+    : NO_ROADMAP_FLOW_TOTAL_STEPS;
 }
 
 function validatePositiveNumber(value) {
@@ -379,6 +385,10 @@ function shouldRunLiveConsistency(values) {
   );
 }
 
+function buildConsistencyFingerprint(values) {
+  return buildRequestFingerprint(buildConsistencyPayload(values));
+}
+
 function buildPayload(values) {
   const sharedPayload = {
     workspacePurpose: values.workspacePurpose,
@@ -562,7 +572,7 @@ function areStepSnapshotsEqual(leftSnapshot, rightSnapshot) {
   return JSON.stringify(leftSnapshot ?? null) === JSON.stringify(rightSnapshot ?? null);
 }
 
-function createSavedStepSnapshots(initialData, values, initialStep) {
+function createSavedStepSnapshots(initialData, values, initialStep, totalSteps = ROADMAP_FLOW_TOTAL_STEPS) {
   if (!values || typeof values !== 'object') {
     return {};
   }
@@ -578,10 +588,13 @@ function createSavedStepSnapshots(initialData, values, initialStep) {
   }
 
   if (
+    totalSteps >= 3
+    && (
     initialStep >= 3
     || hasRoadmapStepData(initialData)
     || initialData?.workspaceSetupStatus === 'DONE'
     || initialData?.onboardingCompleted
+    )
   ) {
     snapshots[3] = buildStepSnapshot(3, values);
   }
@@ -611,6 +624,7 @@ export function useWorkspaceProfileWizard({
   const [step, setStep] = useState(1);
   const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
   const [values, setValues] = useState(createInitialValues(initialData));
+  const totalSteps = getTotalStepsForValues(values);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -650,6 +664,16 @@ export function useWorkspaceProfileWizard({
 
   const needsKnowledgeDescription =
     analysisStatus === 'success' && knowledgeAnalysis?.tooBroad === true;
+  const shouldAwaitOverallReview = step === 2 && shouldRunLiveConsistency(values);
+  const currentConsistencyFingerprint = shouldAwaitOverallReview
+    ? buildConsistencyFingerprint(values)
+    : '';
+  const hasCompletedOverallReview =
+    shouldAwaitOverallReview
+    && consistencyStatus === 'success'
+    && Boolean(consistencyResult)
+    && consistencyFingerprintRef.current === currentConsistencyFingerprint;
+  const isWaitingForOverallReview = shouldAwaitOverallReview && !hasCompletedOverallReview;
 
   // Cleanup on unmount
   useEffect(() => {
@@ -684,10 +708,13 @@ export function useWorkspaceProfileWizard({
 
     const nextValues = createInitialValues(initialData);
 
-    const initialStepValue = forceStartAtStepOne ? 1 : getInitialStep(initialData, isReadOnly, storageKey);
+    const initialTotalSteps = getTotalStepsForValues(nextValues);
+    const initialStepValue = forceStartAtStepOne
+      ? 1
+      : getInitialStep(initialData, isReadOnly, storageKey, initialTotalSteps);
     savedStepSnapshotsRef.current = forceStartAtStepOne
       ? {}
-      : createSavedStepSnapshots(initialData, nextValues, initialStepValue);
+      : createSavedStepSnapshots(initialData, nextValues, initialStepValue, initialTotalSteps);
     prevStepRef.current = null;
     setStep(initialStepValue);
     setMaxUnlockedStep(Math.max(1, initialStepValue));
@@ -730,13 +757,14 @@ export function useWorkspaceProfileWizard({
   // Advance to step 3 when mock test generation completes
   useEffect(() => {
     if (!open || isReadOnly) return;
+    if (totalSteps < ROADMAP_FLOW_TOTAL_STEPS) return;
     if (step !== 2 || values.workspacePurpose !== 'MOCK_TEST') return;
     if (mockTestGenerationState !== 'ready') return;
 
     setSaveError('');
     setMaxUnlockedStep((current) => Math.max(current, 3));
     setStep(3);
-  }, [open, isReadOnly, step, values.workspacePurpose, mockTestGenerationState]);
+  }, [open, isReadOnly, step, totalSteps, values.workspacePurpose, mockTestGenerationState]);
 
   // ─── Real AI Knowledge Analysis (debounced) ───
   useEffect(() => {
@@ -1109,64 +1137,6 @@ export function useWorkspaceProfileWizard({
       delete nextErrors[field];
       return nextErrors;
     });
-
-    // Tự động upload ngay khi người dùng chọn file
-    if (onUploadFiles && normalizedFiles.length > 0) {
-      (async () => {
-        setUploadCheckNotice(
-          'uploading',
-          32,
-          translateOrFallback(
-            t,
-            'workspace.profileConfig.messages.materialAutoUploadRunning',
-            `Đang tải ${normalizedFiles.length} tài liệu vào workspace.`
-          )
-        );
-
-        try {
-          await onUploadFiles(normalizedFiles);
-
-          setUploadCheckNotice(
-            'processing',
-            80,
-            translateOrFallback(
-              t,
-              'workspace.profileConfig.messages.materialAutoProcessing',
-              'Tài liệu đã được tải lên, hệ thống đang kiểm tra độ phù hợp. Bạn có thể tiếp tục sau khi có ít nhất một tài liệu hợp lệ.'
-            )
-          );
-
-          // Dọn hàng chờ local, danh sách thực tế sẽ được đồng bộ qua WebSocket + fetchSources
-          setPendingFiles((current) =>
-            current.filter((file) =>
-              !normalizedFiles.some(
-                (nf) => nf.name === file.name && nf.size === file.size && nf.lastModified === file.lastModified
-              )
-            )
-          );
-        } catch (error) {
-          console.error('[WorkspaceProfile] Auto upload materials failed:', error);
-          setUploadCheckNotice(
-            'error',
-            0,
-            error?.message
-              || translateOrFallback(
-                t,
-                'workspace.profileConfig.validation.uploadFailed',
-                'Không thể tải lên tài liệu. Vui lòng thử lại.'
-              )
-          );
-          setSaveError(
-            error?.message
-              || translateOrFallback(
-                t,
-                'workspace.profileConfig.validation.uploadFailed',
-                'Không thể tải lên tài liệu. Vui lòng thử lại.'
-              )
-          );
-        }
-      })();
-    }
   }
 
   function setPurpose(purpose) {
@@ -1275,7 +1245,7 @@ export function useWorkspaceProfileWizard({
 
   function markStepAsSaved(targetStep) {
     savedStepSnapshotsRef.current[targetStep] = buildStepSnapshot(targetStep, values);
-    if (targetStep < TOTAL_STEPS) {
+    if (targetStep < totalSteps) {
       setMaxUnlockedStep((current) => Math.max(current, targetStep + 1));
     }
   }
@@ -1354,7 +1324,7 @@ export function useWorkspaceProfileWizard({
 
   async function nextStep() {
     if (isReadOnly) {
-      setStep((current) => Math.min(TOTAL_STEPS, current + 1));
+      setStep((current) => Math.min(totalSteps, current + 1));
       return;
     }
 
@@ -1362,10 +1332,14 @@ export function useWorkspaceProfileWizard({
       return;
     }
 
+    if (step === 2 && isWaitingForOverallReview) {
+      return;
+    }
+
     if (canSkipPersistForCurrentStep()) {
       setSaveError('');
-      setMaxUnlockedStep((current) => Math.max(current, Math.min(TOTAL_STEPS, step + 1)));
-      setStep((current) => Math.min(TOTAL_STEPS, current + 1));
+      setMaxUnlockedStep((current) => Math.max(current, Math.min(totalSteps, step + 1)));
+      setStep((current) => Math.min(totalSteps, current + 1));
       if (step === 1 && values.workspacePurpose === 'MOCK_TEST') {
         prefetchMockTestStepTwoAiSignals();
       }
@@ -1382,8 +1356,8 @@ export function useWorkspaceProfileWizard({
         return;
       }
 
-      setMaxUnlockedStep((current) => Math.max(current, Math.min(TOTAL_STEPS, step + 1)));
-      setStep((current) => Math.min(TOTAL_STEPS, current + 1));
+      setMaxUnlockedStep((current) => Math.max(current, Math.min(totalSteps, step + 1)));
+      setStep((current) => Math.min(totalSteps, current + 1));
       if (step === 1 && values.workspacePurpose === 'MOCK_TEST') {
         prefetchMockTestStepTwoAiSignals();
       }
@@ -1417,7 +1391,31 @@ export function useWorkspaceProfileWizard({
 
   async function handleSubmit() {
     if (isReadOnly) return;
-    return await persistStep(3);
+    const finalStep = totalSteps;
+    const shouldConfirmAfterSubmit = values.workspacePurpose !== 'MOCK_TEST';
+
+    if (step === 2 && isWaitingForOverallReview) {
+      return { ok: false };
+    }
+
+    if (step === finalStep && canSkipPersistForCurrentStep()) {
+      setSaveError('');
+      return {
+        ok: true,
+        shouldConfirm: shouldConfirmAfterSubmit,
+      };
+    }
+
+    const saveState = await persistStep(finalStep);
+
+    if (!saveState.ok) {
+      return saveState;
+    }
+
+    return {
+      ...saveState,
+      shouldConfirm: shouldConfirmAfterSubmit,
+    };
   }
 
   function applySuggestion(field, value) {
@@ -1440,18 +1438,26 @@ export function useWorkspaceProfileWizard({
 
   return {
     getSuggestedPublicExams: () => [],
-    totalSteps: TOTAL_STEPS,
+    totalSteps,
     step,
     maxUnlockedStep,
     values,
     errors,
     saveError,
     statusNotice:
-      values.workspacePurpose === 'MOCK_TEST'
+      isWaitingForOverallReview
+        ? translateOrFallback(
+          t,
+          'workspace.profileConfig.stepTwo.overallReviewLoadingTitle',
+          'Quizmate AI dang danh gia tong quan'
+        )
+        : values.workspacePurpose === 'MOCK_TEST'
         ? mockTestGenerationMessage
         : '',
     statusTone:
-      values.workspacePurpose === 'MOCK_TEST'
+      isWaitingForOverallReview
+        ? 'info'
+        : values.workspacePurpose === 'MOCK_TEST'
         ? mockTestGenerationState === 'ready'
           ? 'success'
           : mockTestGenerationState === 'error'
@@ -1462,6 +1468,7 @@ export function useWorkspaceProfileWizard({
         : null,
     mockTestGenerationProgress,
     isMockTestGenerationPending: step === 2 && values.workspacePurpose === 'MOCK_TEST' && mockTestGenerationState === 'pending',
+    isWaitingForOverallReview,
     submitting,
     analysisStatus,
     domainOptions,
