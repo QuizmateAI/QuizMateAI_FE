@@ -31,6 +31,9 @@ export default function ExamQuizPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [attemptTimeoutAt, setAttemptTimeoutAt] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [saveStatus, setSaveStatus] = useState('idle');
+  const [saveMessage, setSaveMessage] = useState('');
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
@@ -73,6 +76,25 @@ export default function ExamQuizPage() {
     interval: 5000,
     enabled: isStarted && !isSubmitted,
   });
+
+  const handleManualSave = useCallback(async () => {
+    setSaveStatus('saving');
+    setSaveMessage('');
+    const result = await saveManually();
+    if (result?.ok) {
+      setSaveStatus('success');
+      setSaveMessage(t('workspace.quiz.examActions.saveSuccess', 'Saved successfully'));
+      setTimeout(() => {
+        setSaveStatus((prev) => (prev === 'success' ? 'idle' : prev));
+          setSaveMessage((prev) => (prev === t('workspace.quiz.examActions.saveSuccess', 'Saved successfully') ? '' : prev));
+      }, 1500);
+      return true;
+    }
+
+    setSaveStatus('error');
+    setSaveMessage(result?.error?.message || t('workspace.quiz.examActions.saveFailed', 'Save failed. Please try again.'));
+    return false;
+  }, [saveManually, t]);
 
   // Fetch full quiz data
   useEffect(() => {
@@ -144,7 +166,12 @@ export default function ExamQuizPage() {
     if (submittingRef.current) return false;
     submittingRef.current = true;
     setIsSubmitted(true);
-    await saveManually();
+    setSubmitError('');
+    const saveResult = await saveManually();
+    if (saveResult && !saveResult.ok) {
+      setSaveStatus('error');
+      setSaveMessage(saveResult?.error?.message || t('workspace.quiz.examActions.saveFailed', 'Save failed. Please try again.'));
+    }
     if (attemptId) {
       try {
         if (quiz?.timerMode === 'PER_QUESTION') {
@@ -159,16 +186,19 @@ export default function ExamQuizPage() {
         return true;
       } catch (err) {
         console.error('Failed to submit:', err);
-        showError(err?.message || 'Nộp bài thất bại, vui lòng thử lại.');
+        const submitErrorMessage = err?.message || t('workspace.quiz.examActions.submitFailed', 'Submit failed. Please try again.');
+        showError(submitErrorMessage);
+        setSubmitError(submitErrorMessage);
         submittingRef.current = false;
         setIsSubmitted(false);
         return false;
       }
     }
+    setSubmitError(t('workspace.quiz.examActions.submitMissingAttempt', 'Cannot submit because attempt is missing.'));
     submittingRef.current = false;
     setIsSubmitted(false);
     return false;
-  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually, showError]);
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually, showError, t, quiz?.timerMode]);
 
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
@@ -315,6 +345,7 @@ export default function ExamQuizPage() {
           onSubmit={handleSubmit}
           attemptId={attemptId}
           attemptStartedAt={attemptStartedAt}
+          submitError={submitError}
           fontClass={fontClass}
         />
       </div>
@@ -352,8 +383,13 @@ export default function ExamQuizPage() {
               </div>
             ))}
             <Button onClick={handleSubmit} disabled={isSubmitted} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white text-base py-3">
-              {isSubmitted ? <Loader2 className="w-5 h-5 animate-spin" /> : '📤 Submit Exam'}
+              {isSubmitted
+                  ? <span className="inline-flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" />{t('workspace.quiz.examActions.submitting', 'Submitting...')}</span>
+                  : t('workspace.quiz.examActions.submitButton', 'Submit Exam')}
             </Button>
+            {submitError && (
+              <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
+            )}
           </div>
 
           {/* Side nav panel (desktop) */}
@@ -363,8 +399,14 @@ export default function ExamQuizPage() {
               answers={answers}
               timeLeft={timeLeft}
               onJumpToQuestion={jumpToQuestion}
-              onSave={saveManually}
+              onSave={handleManualSave}
               onSubmit={handleSubmit}
+              isSaveLoading={saveStatus === 'saving'}
+              saveStatus={saveStatus}
+              saveMessage={saveMessage}
+              isSubmitLoading={isSubmitted}
+              submitError={submitError}
+              t={t}
             />
           </div>
         </div>

@@ -1,6 +1,8 @@
 import { useReducer, useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import QuestionCard from './QuestionCard';
 import HourglassLoader from './HourglassLoader';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
@@ -109,12 +111,15 @@ function resolvePerQuestionProgress(questions, attemptStartedAt, answers) {
   };
 }
 
-export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextAnswerChange, onSubmit, attemptId, attemptStartedAt, fontClass }) {
+export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextAnswerChange, onSubmit, attemptId, attemptStartedAt, submitError, fontClass }) {
+  const { t } = useTranslation();
   const [state, dispatch] = useReducer(
     makeReducer(quiz.questions),
     { currentIndex: 0, timeLeft: quiz.questions[0]?.timeLimit || 0 },
   );
   const [isFinished, setIsFinished] = useState(false);
+  const [nextLoading, setNextLoading] = useState(false);
+  const [nextError, setNextError] = useState('');
   // Track which question index has already been handled on timeout
   const handledTimeUpForIndexRef = useRef(-1);
   const submittingRef = useRef(false);
@@ -159,13 +164,15 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
     if (!attemptId || !currentQuestion) return;
     const qId = currentQuestion.id;
     const selected = answers[qId];
-    if (!selected?.length) return;
+    if (!hasAnswerValue(selected)) return { ok: true, skipped: true };
     const payload = buildSavePayload({ [qId]: selected });
-    if (payload.length === 0) return;
+    if (payload.length === 0) return { ok: true, skipped: true };
     try {
       await saveAttemptAnswers(attemptId, payload);
+      return { ok: true, skipped: false };
     } catch (err) {
       console.error('[PerQuestion] Save failed:', err);
+      return { ok: false, error: err };
     }
   }, [attemptId, currentQuestion, answers]);
 
@@ -183,7 +190,11 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
     handledTimeUpForIndexRef.current = currentIndex;
 
     const timeout = setTimeout(async () => {
-      await saveCurrentQuestion();
+      const saveResult = await saveCurrentQuestion();
+      if (saveResult && !saveResult.ok) {
+        setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
+        return;
+      }
       if (currentIndex >= total - 1) {
         if (!submittingRef.current) {
           submittingRef.current = true;
@@ -202,7 +213,14 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
   }, [timeLeft, isFinished, currentIndex, total, onSubmit, currentQuestion?.timeLimit, saveCurrentQuestion]);
 
   const handleNext = useCallback(async () => {
-    await saveCurrentQuestion();
+    setNextLoading(true);
+    setNextError('');
+    const saveResult = await saveCurrentQuestion();
+    if (saveResult && !saveResult.ok) {
+      setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
+      setNextLoading(false);
+      return;
+    }
     if (currentIndex >= total - 1) {
       if (!submittingRef.current) {
         submittingRef.current = true;
@@ -213,10 +231,12 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
           setIsFinished(false);
         }
       }
+      setNextLoading(false);
       return;
     }
     dispatch({ type: 'NEXT' });
-  }, [currentIndex, total, onSubmit, saveCurrentQuestion]);
+    setNextLoading(false);
+  }, [currentIndex, total, onSubmit, saveCurrentQuestion, t]);
 
   if (isFinished) {
     return (
@@ -256,10 +276,17 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
       />
 
       <div className="flex justify-end mt-4">
-        <Button onClick={handleNext} disabled={timeLeft <= 0} className="min-w-[160px] bg-blue-600 hover:bg-blue-700 text-white">
-          {currentIndex >= total - 1 ? 'Submit Exam' : 'Next Question →'}
+        <Button onClick={handleNext} disabled={timeLeft <= 0 || nextLoading} className="min-w-[160px] bg-blue-600 hover:bg-blue-700 text-white">
+          {nextLoading
+            ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t('workspace.quiz.examActions.processingAction', 'Processing...')}</span>
+            : (currentIndex >= total - 1
+              ? t('workspace.quiz.examActions.submitButton', 'Submit Exam')
+              : t('workspace.quiz.examActions.nextQuestion', 'Next Question'))}
         </Button>
       </div>
+      {(nextError || submitError) && (
+        <p className="text-sm text-red-600 dark:text-red-400 mt-2 text-right">{nextError || submitError}</p>
+      )}
     </div>
   );
 }

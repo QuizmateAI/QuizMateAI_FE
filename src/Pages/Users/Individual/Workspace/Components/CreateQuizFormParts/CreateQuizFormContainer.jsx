@@ -917,6 +917,20 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   }`;
 
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass} text-left`;
+  const requiredMark = <span className="text-red-500 ml-1">*</span>;
+
+  const normalizeIntegerInput = (value) => {
+    if (value === "") return "";
+    const digits = String(value).replace(/\D/g, "");
+    if (!digits) return "";
+    const normalized = digits.replace(/^0+(?=\d)/, "");
+    return Number(normalized || 0);
+  };
+
+  const applyMinOnBlur = (value, setter, minValue = 1) => {
+    const next = Number(value);
+    setter(Number.isFinite(next) && next >= minValue ? next : minValue);
+  };
 
   // Tổng điểm hiện tại (computed)
   const totalScoreDisplay = Math.round(questions.reduce((s, q) => s + (q.point || 0), 0) * 100) / 100;
@@ -942,6 +956,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
           {t("workspace.quiz.createDesc")}
         </p>
 
+        <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+          {t("workspace.quiz.validation.requiredFieldsHint")}
+        </div>
+
         {/* Tab chọn chế độ */}
         {/* <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
           <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("workspace.quiz.tabManual")}</button>
@@ -951,7 +969,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         {tab === "manual" ? (
           <div className="space-y-4">
             <div>
-              <label className={labelCls}>{t("workspace.quiz.name")}</label>
+              <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
               <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
@@ -1079,13 +1097,13 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
             {/* Cấu hình Quiz Intent và Timer */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>{t("workspace.quiz.intent")}</label>
+                <label className={labelCls}>{t("workspace.quiz.intent")}{requiredMark}</label>
                 <select className={selectCls} value={quizIntent} onChange={(e) => setQuizIntent(e.target.value)}>
                   {QUIZ_INTENTS.map((intent) => <option key={intent} value={intent}>{t(`workspace.quiz.intentLabels.${intent}`)}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}</label>
+                <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}{requiredMark}</label>
                 <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
                   {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
                 </select>
@@ -1108,8 +1126,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
               {/* Thời lượng tổng — chỉ hiện khi timerMode=true */}
               {timerMode && (
                 <div>
-                  <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
-                  <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
+                  <label className={labelCls}>{t("workspace.quiz.timeDuration")}{requiredMark}</label>
+                  <input
+                    type="number"
+                    className={inputCls}
+                    value={duration}
+                    onChange={(e) => setDuration(normalizeIntegerInput(e.target.value))}
+                    onBlur={() => applyMinOnBlur(duration, setDuration, 1)}
+                    min={1}
+                  />
                 </div>
               )}
               <div>
@@ -1117,8 +1142,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                 <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
               </div>
               <div>
-                <label className={labelCls}>{t("workspace.quiz.maxAttempt")}</label>
-                <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
+                <label className={labelCls}>{t("workspace.quiz.maxAttempt")}{requiredMark}</label>
+                <input
+                  type="number"
+                  className={inputCls}
+                  value={maxAttempt}
+                  onChange={(e) => setMaxAttempt(normalizeIntegerInput(e.target.value))}
+                  onBlur={() => applyMinOnBlur(maxAttempt, setMaxAttempt, 1)}
+                  min={1}
+                />
               </div>
             </div>
 
@@ -1134,8 +1166,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
               {/* Tổng số câu hỏi + Tổng điểm tối đa */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>{t("workspace.quiz.totalQuestions")}</label>
-                  <input type="number" className={inputCls} value={totalQuestions} onChange={(e) => handleTotalQuestionsChange(e.target.value)} min={0} placeholder="0" />
+                  <label className={labelCls}>{t("workspace.quiz.totalQuestions")}{requiredMark}</label>
+                  <input
+                    type="number"
+                    className={inputCls}
+                    value={totalQuestions}
+                    onChange={(e) => handleTotalQuestionsChange(normalizeIntegerInput(e.target.value))}
+                    min={0}
+                    placeholder="0"
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>{t("workspace.quiz.maxScore")}</label>
@@ -1437,7 +1476,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                </h3>
                <div className="space-y-3">
                   <div>
-                    <label className={labelCls}>{t("workspace.quiz.name")}</label>
+                    <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
                     <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
                   </div>
                   <div>
@@ -1479,12 +1518,26 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                    <div>
-                     <label className={labelCls}>{t("workspace.quiz.aiConfig.totalQuestions")}</label>
-                     <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
+                     <label className={labelCls}>{t("workspace.quiz.aiConfig.totalQuestions")}{requiredMark}</label>
+                     <input
+                       type="number"
+                       className={inputCls}
+                       value={aiTotalQuestions}
+                       onChange={(e) => setAiTotalQuestions(normalizeIntegerInput(e.target.value))}
+                       onBlur={() => applyMinOnBlur(aiTotalQuestions, setAiTotalQuestions, 1)}
+                       min={1}
+                     />
                    </div>
                    <div>
-                     <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes")}</label>
-                     <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
+                     <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes")}{requiredMark}</label>
+                     <input
+                       type="number"
+                       className={inputCls}
+                       value={aiDuration}
+                       onChange={(e) => setAiDuration(normalizeIntegerInput(e.target.value))}
+                       onBlur={() => applyMinOnBlur(aiDuration, setAiDuration, 1)}
+                       min={1}
+                     />
                    </div>
                 </div>
                 <div className="mt-3">

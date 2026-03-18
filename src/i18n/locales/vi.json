@@ -1265,7 +1265,8 @@
       "difficultyLevels": {
         "easy": "Dễ",
         "medium": "Trung bình",
-        "hard": "Khó"
+        "hard": "Khó",
+        "custom": "Tùy chỉnh (Tự cấu hình)"
       },
       "bloomLevels": {
         "remember": "Ghi nhớ",
@@ -1295,6 +1296,7 @@
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
+        "requiredFieldsHint": "Các trường có dấu * là bắt buộc.",
         "contextRequired": "Vui lòng chọn vị trí tạo quiz.",
         "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
         "correctAnswerRequiredInline": "Chưa chọn đáp án đúng cho câu này.",
@@ -1443,6 +1445,26 @@
       "generateAI": "Tạo bằng AI",
       "generating": "AI đang tạo...",
       "questions": "câu hỏi"
+      ,"examActions": {
+        "submitButton": "Nộp bài",
+        "submitting": "Đang nộp bài...",
+        "submitFailed": "Nộp bài thất bại. Vui lòng thử lại.",
+        "submitMissingAttempt": "Không thể nộp vì chưa có attempt.",
+        "saveProgressButton": "Lưu tiến độ",
+        "saving": "Đang lưu...",
+        "saveSuccess": "Đã lưu thành công",
+        "saveFailed": "Lưu thất bại. Vui lòng thử lại.",
+        "saveAnswerFailed": "Lưu câu trả lời thất bại. Vui lòng thử lại.",
+        "nextQuestion": "Câu tiếp theo",
+        "processingAction": "Đang xử lý..."
+      },
+      "result": {
+        "reviewAnswers": "Xem đáp án",
+        "reviewPending": "AI đang chấm bài của bạn, vui lòng đợi...",
+        "reviewPendingHint": "AI đang chấm bài của bạn. Vui lòng đợi một chút trước khi xem đáp án.",
+        "backToQuiz": "Quay lại Quiz",
+        "backToScore": "Quay lại điểm"
+      }
     },
     "flashcard": {
       "createTitle": "Tạo Flashcard",

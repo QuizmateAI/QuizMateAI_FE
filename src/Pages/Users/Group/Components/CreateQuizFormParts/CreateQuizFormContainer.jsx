@@ -762,7 +762,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
            return;
         }
         if (selectedMaterialIds.length === 0 && !aiPrompt.trim()) {
-           setError(t("Please select at least one material or provide a prompt."));
+            setError(t("workspace.quiz.validation.aiMaterialOrPromptRequired"));
            setSubmitting(false);
            return;
         }
