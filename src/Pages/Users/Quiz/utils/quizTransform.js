@@ -20,10 +20,21 @@ export function getCardQuestionType(questionTypeId) {
 export function normalizeQuizData(apiQuiz) {
   if (!apiQuiz) return null;
 
-  const isTotalTimerMode = apiQuiz.timerMode === true;
+  const rawTimerMode = apiQuiz.timerMode;
+  const isTotalTimerMode = rawTimerMode === true
+    || rawTimerMode === 'true'
+    || rawTimerMode === 1
+    || rawTimerMode === '1'
+    || rawTimerMode === 'TOTAL';
   const rawDuration = Number(apiQuiz.duration) || 0;
-  const isAiTimedQuiz = isTotalTimerMode && apiQuiz.createVia === 'AI';
-  const totalTimeInSeconds = isAiTimedQuiz ? rawDuration : rawDuration * 60;
+  // Legacy FE bug sent minutes as seconds into durationInMinute, and BE converted again.
+  // Example: 15 -> FE sends 900 -> BE stores 54000 seconds.
+  const normalizedDurationInSeconds = isTotalTimerMode && rawDuration >= 36000
+    ? Math.floor(rawDuration / 60)
+    : rawDuration;
+  const totalTimeInSeconds = isTotalTimerMode
+    ? normalizedDurationInSeconds
+    : rawDuration * 60;
   const questions = [];
   const sections = apiQuiz.sections || [];
   for (const section of sections) {
@@ -101,6 +112,22 @@ export function hasAnswerValue(answerValue) {
 
 export function getCorrectTextAnswer(question) {
   return question?.answers?.find(answer => answer.isCorrect)?.content || '';
+}
+
+export function getCorrectTextAnswers(question) {
+  const answers = Array.isArray(question?.answers) ? question.answers : [];
+  const correctAnswers = answers
+    .filter(answer => answer?.isCorrect)
+    .map(answer => (typeof answer?.content === 'string' ? answer.content.trim() : ''))
+    .filter(Boolean);
+
+  if (correctAnswers.length > 0) {
+    return correctAnswers;
+  }
+
+  return answers
+    .map(answer => (typeof answer?.content === 'string' ? answer.content.trim() : ''))
+    .filter(Boolean);
 }
 
 export function getAttemptRemainingSeconds(timeoutAt, fallbackSeconds = 0) {

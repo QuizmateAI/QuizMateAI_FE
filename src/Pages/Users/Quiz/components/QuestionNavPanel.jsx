@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
+import { Loader2 } from 'lucide-react';
 import HourglassLoader from './HourglassLoader';
 import { hasAnswerValue } from '../utils/quizTransform';
 
@@ -10,7 +11,20 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export default function QuestionNavPanel({ questions, answers, timeLeft, onJumpToQuestion, onSave, onSubmit }) {
+export default function QuestionNavPanel({
+  questions,
+  answers,
+  timeLeft,
+  onJumpToQuestion,
+  onSave,
+  onSubmit,
+  isSaveLoading = false,
+  saveStatus = 'idle',
+  saveMessage = '',
+  isSubmitLoading = false,
+  submitError = '',
+  t,
+}) {
   const answeredCount = useMemo(
     () => questions.filter(q => hasAnswerValue(answers[q.id])).length,
     [questions, answers],
@@ -56,12 +70,24 @@ export default function QuestionNavPanel({ questions, answers, timeLeft, onJumpT
 
       {/* Actions */}
       <div className="space-y-2">
-        <Button onClick={onSave} variant="outline" className="w-full min-w-[100px]">
-          💾 Save Progress
+        <Button onClick={onSave} variant="outline" className="w-full min-w-[100px]" disabled={isSaveLoading}>
+          {isSaveLoading
+            ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t?.('workspace.quiz.examActions.saving', 'Saving...') || 'Saving...'}</span>
+            : (t?.('workspace.quiz.examActions.saveProgressButton', 'Save Progress') || 'Save Progress')}
         </Button>
-        <Button onClick={onSubmit} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
-          📤 Submit Exam
+        {saveMessage && (
+          <p className={`text-xs ${saveStatus === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            {saveMessage}
+          </p>
+        )}
+        <Button onClick={onSubmit} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white" disabled={isSubmitLoading}>
+          {isSubmitLoading
+            ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t?.('workspace.quiz.examActions.submitting', 'Submitting...') || 'Submitting...'}</span>
+            : (t?.('workspace.quiz.examActions.submitButton', 'Submit Exam') || 'Submit Exam')}
         </Button>
+        {submitError && (
+          <p className="text-xs text-red-600 dark:text-red-400">{submitError}</p>
+        )}
       </div>
     </div>
   );

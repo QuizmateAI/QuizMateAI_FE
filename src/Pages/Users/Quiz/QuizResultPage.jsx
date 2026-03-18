@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3 } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
@@ -153,16 +153,16 @@ export default function QuizResultPage() {
             <p className="text-slate-600 dark:text-slate-300 mb-6">Attempt #{result.attemptId} • Quiz #{result.quizId}</p>
 
             {/* Score display */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-xl mx-auto mb-6">
-              <ScoreStat label="Score" value={scoreValue} icon={BarChart3} />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-6">
+              {/* <ScoreStat label="Score" value={scoreValue} icon={BarChart3} /> */}
               <ScoreStat label="Correct" value={correctValue} icon={CheckCircle2} />
               <ScoreStat label="Answered" value={answeredValue} icon={Eye} />
-              <ScoreStat label="Time" value={formatDuration(timeTakenSeconds)} icon={null} />
+              <ScoreStat label="Time" value={formatDuration(timeTakenSeconds)} icon={Clock3} />
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2 mb-6 text-xs text-slate-500 dark:text-slate-400">
-              <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
-              <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span>
+              {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
+              <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
               {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Pass Score: {result.passScore}</span>}
             </div>
 

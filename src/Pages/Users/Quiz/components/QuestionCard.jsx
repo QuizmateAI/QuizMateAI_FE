@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/Components/ui/input';
-import { getCorrectTextAnswer } from '../utils/quizTransform';
+import { getCorrectTextAnswers } from '../utils/quizTransform';
 import './QuestionCard.css';
 
 const DIFFICULTY_STYLES = {
@@ -29,6 +29,12 @@ function RadioIndicator() {
   );
 }
 
+function normalizeTextValue(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
 export default function QuestionCard({
   question, questionNumber, totalQuestions,
   answerValue, selectedAnswers = [], onSelectAnswer, onTextAnswerChange,
@@ -42,7 +48,7 @@ export default function QuestionCard({
       ? selectedAnswers
       : [];
   const textAnswer = typeof answerValue === 'string' ? answerValue : '';
-  const correctTextAnswer = getCorrectTextAnswer(question);
+  const correctTextAnswers = getCorrectTextAnswers(question);
 
   const isFullyCorrect = useMemo(() => {
     if (typeof question.isCorrect === 'boolean') {
@@ -50,13 +56,16 @@ export default function QuestionCard({
     }
 
     if (isTextQuestion) {
-      if (!textAnswer.trim()) return false;
-      return textAnswer.trim().toLowerCase() === correctTextAnswer.trim().toLowerCase();
+      const normalizedUserAnswer = normalizeTextValue(textAnswer);
+      if (!normalizedUserAnswer) return false;
+      return correctTextAnswers
+        .map(normalizeTextValue)
+        .some((answer) => answer && answer === normalizedUserAnswer);
     }
 
     const correctIds = question.answers.filter(a => a.isCorrect).map(a => a.id);
     return correctIds.length === normalizedSelectedAnswers.length && correctIds.every(id => normalizedSelectedAnswers.includes(id));
-  }, [question.answers, question.isCorrect, isTextQuestion, textAnswer, correctTextAnswer, normalizedSelectedAnswers]);
+  }, [question.answers, question.isCorrect, isTextQuestion, textAnswer, correctTextAnswers, normalizedSelectedAnswers]);
 
   const getStateClass = (answer) => {
     if (showResult) {
@@ -105,7 +114,7 @@ export default function QuestionCard({
                 : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400',
             )}>
               <p><span className="font-semibold">Câu trả lời của bạn:</span> {textAnswer.trim() || 'Chưa trả lời'}</p>
-              <p><span className="font-semibold">Đáp án đúng:</span> {correctTextAnswer || 'Không có dữ liệu'}</p>
+              <p><span className="font-semibold">Đáp án đúng:</span> {correctTextAnswers.length ? correctTextAnswers.join(' / ') : 'Không có dữ liệu'}</p>
             </div>
           )}
         </div>

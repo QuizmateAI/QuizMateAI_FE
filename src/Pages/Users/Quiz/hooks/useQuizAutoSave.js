@@ -1,27 +1,33 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
 import { buildSavePayload } from '../utils/quizTransform';
 
 export function useQuizAutoSave(attemptId, answers, { interval = 10000, enabled = true } = {}) {
   const prevRef = useRef({});
+  const [isSaving, setIsSaving] = useState(false);
 
-  const saveChangedAnswers = useCallback(async () => {
-    if (!attemptId) return;
+  const saveChangedAnswers = useCallback(async ({ silent = false } = {}) => {
+    if (!attemptId) return { ok: false, skipped: true, error: 'MISSING_ATTEMPT_ID' };
     const changed = {};
     for (const [qId, vals] of Object.entries(answers)) {
       if (JSON.stringify(prevRef.current[qId]) !== JSON.stringify(vals)) {
         changed[qId] = vals;
       }
     }
-    if (Object.keys(changed).length === 0) return;
+    if (Object.keys(changed).length === 0) return { ok: true, skipped: true };
     const payload = buildSavePayload(changed);
-    if (payload.length === 0) return;
+    if (payload.length === 0) return { ok: true, skipped: true };
     try {
+      if (!silent) setIsSaving(true);
       await saveAttemptAnswers(attemptId, payload);
+      prevRef.current = { ...answers };
+      return { ok: true, skipped: false };
     } catch (err) {
       console.error('[QuizAutoSave] Save failed:', err);
+      return { ok: false, skipped: false, error: err };
+    } finally {
+      if (!silent) setIsSaving(false);
     }
-    prevRef.current = { ...answers };
   }, [attemptId, answers]);
 
   const syncSnapshot = useCallback((snapshot = {}) => {
@@ -36,9 +42,11 @@ export function useQuizAutoSave(attemptId, answers, { interval = 10000, enabled 
 
   useEffect(() => {
     if (!enabled) return;
-    const timer = setInterval(saveChangedAnswers, interval);
+    const timer = setInterval(() => {
+      saveChangedAnswers({ silent: true });
+    }, interval);
     return () => clearInterval(timer);
   }, [saveChangedAnswers, interval, enabled]);
 
-  return { saveManually: saveChangedAnswers, syncSnapshot };
+  return { saveManually: saveChangedAnswers, syncSnapshot, isSaving };
 }

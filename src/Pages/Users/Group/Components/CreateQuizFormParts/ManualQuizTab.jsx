@@ -67,10 +67,29 @@ function ManualQuizTab({
   addAnswer,
   addQuestion,
 }) {
+  const requiredMark = <span className="text-red-500 ml-1">*</span>;
+
+  const normalizeIntegerInput = (value) => {
+    if (value === "") return "";
+    const digits = String(value).replace(/\D/g, "");
+    if (!digits) return "";
+    const normalized = digits.replace(/^0+(?=\d)/, "");
+    return Number(normalized || 0);
+  };
+
+  const applyMinOnBlur = (value, setter, minValue = 1) => {
+    const next = Number(value);
+    setter(Number.isFinite(next) && next >= minValue ? next : minValue);
+  };
+
   return (
     <div className="space-y-4">
+      <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+        {t("workspace.quiz.validation.requiredFieldsHint")}
+      </div>
+
       <div>
-        <label className={labelCls}>{t("workspace.quiz.name")}</label>
+        <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
         <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
       </div>
 
@@ -193,13 +212,13 @@ function ManualQuizTab({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>{t("workspace.quiz.intent")}</label>
+          <label className={labelCls}>{t("workspace.quiz.intent")}{requiredMark}</label>
           <select className={selectCls} value={quizIntent} onChange={(e) => setQuizIntent(e.target.value)}>
             {QUIZ_INTENTS.map((intent) => <option key={intent} value={intent}>{t(`workspace.quiz.intentLabels.${intent}`)}</option>)}
           </select>
         </div>
         <div>
-          <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}</label>
+          <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}{requiredMark}</label>
           <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
             {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
           </select>
@@ -219,8 +238,15 @@ function ManualQuizTab({
       <div className={`grid ${timerMode ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
         {timerMode && (
           <div>
-            <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
-            <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
+            <label className={labelCls}>{t("workspace.quiz.timeDuration")}{requiredMark}</label>
+            <input
+              type="number"
+              className={inputCls}
+              value={duration}
+              onChange={(e) => setDuration(normalizeIntegerInput(e.target.value))}
+              onBlur={() => applyMinOnBlur(duration, setDuration, 1)}
+              min={1}
+            />
           </div>
         )}
         <div>
@@ -228,8 +254,15 @@ function ManualQuizTab({
           <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
         </div>
         <div>
-          <label className={labelCls}>{t("workspace.quiz.maxAttempt")}</label>
-          <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
+          <label className={labelCls}>{t("workspace.quiz.maxAttempt")}{requiredMark}</label>
+          <input
+            type="number"
+            className={inputCls}
+            value={maxAttempt}
+            onChange={(e) => setMaxAttempt(normalizeIntegerInput(e.target.value))}
+            onBlur={() => applyMinOnBlur(maxAttempt, setMaxAttempt, 1)}
+            min={1}
+          />
         </div>
       </div>
 
@@ -242,8 +275,15 @@ function ManualQuizTab({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>{t("workspace.quiz.totalQuestions")}</label>
-            <input type="number" className={inputCls} value={totalQuestions} onChange={(e) => handleTotalQuestionsChange(e.target.value)} min={0} placeholder="0" />
+            <label className={labelCls}>{t("workspace.quiz.totalQuestions")}{requiredMark}</label>
+            <input
+              type="number"
+              className={inputCls}
+              value={totalQuestions}
+              onChange={(e) => handleTotalQuestionsChange(normalizeIntegerInput(e.target.value))}
+              min={0}
+              placeholder="0"
+            />
           </div>
           <div>
             <label className={labelCls}>{t("workspace.quiz.maxScore")}</label>
