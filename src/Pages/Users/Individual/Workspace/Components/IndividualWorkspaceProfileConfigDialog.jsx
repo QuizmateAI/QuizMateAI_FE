@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Brain, Check, ChevronLeft, ChevronRight, Flag, Loader2, Target, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, FilePenLine, Loader2, Rocket, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,11 +15,103 @@ import WorkspaceProfileStepTwo from './WorkspaceProfileWizard/WorkspaceProfileSt
 import WorkspaceProfileStepThree from './WorkspaceProfileWizard/WorkspaceProfileStepThree';
 import { useWorkspaceProfileWizard } from './WorkspaceProfileWizard/useWorkspaceProfileWizard';
 
-const STEP_IDS = [1, 2, 3];
-const STEP_ICON_MAP = {
-  1: Brain,
-  2: Target,
-  3: Flag,
+function QuizmateStepOneIcon({ className, ...props }) {
+  const iconId = React.useId();
+  const glowGradientId = `${iconId}-glow`;
+  const badgeGradientId = `${iconId}-badge`;
+  const shineGradientId = `${iconId}-shine`;
+  const shadowId = `${iconId}-shadow`;
+
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+      {...props}
+    >
+      <defs>
+        <radialGradient id={glowGradientId} cx="0" cy="0" r="1" gradientTransform="translate(18 14) rotate(50) scale(30)">
+          <stop offset="0" stopColor="#c9f1ff" />
+          <stop offset="0.42" stopColor="#77d6ff" />
+          <stop offset="1" stopColor="#0f7bff" />
+        </radialGradient>
+        <linearGradient id={badgeGradientId} x1="13" x2="35" y1="10" y2="38" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#4cd6ff" />
+          <stop offset="0.52" stopColor="#239fff" />
+          <stop offset="1" stopColor="#1f5cff" />
+        </linearGradient>
+        <radialGradient id={shineGradientId} cx="0" cy="0" r="1" gradientTransform="translate(17 14) rotate(35) scale(13 9)">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.95" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+        <filter id={shadowId} x="4" y="4" width="40" height="40" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="0" dy="2.5" stdDeviation="2" floodColor="#0f7bff" floodOpacity="0.24" />
+        </filter>
+      </defs>
+
+      <g filter={`url(#${shadowId})`}>
+        <circle cx="24" cy="24" r="21" fill="#d9f2ff" />
+        <circle cx="24" cy="24" r="18.6" fill={`url(#${glowGradientId})`} />
+        <circle cx="24" cy="24" r="17" fill={`url(#${badgeGradientId})`} />
+        <circle cx="24" cy="24" r="17" fill={`url(#${shineGradientId})`} />
+        <ellipse cx="16.8" cy="14.1" rx="5.3" ry="3.6" fill="#ffffff" fillOpacity="0.22" transform="rotate(-20 16.8 14.1)" />
+
+        <path
+          fill="#ffffff"
+          d="M24.4 13.4c1.63 6.32 3.7 8.4 10.02 10.02-6.32 1.63-8.4 3.7-10.02 10.02-1.63-6.32-3.7-8.4-10.02-10.02 6.32-1.63 8.4-3.7 10.02-10.02Z"
+        />
+        <path
+          fill="#ffffff"
+          d="M15.2 15.4c.48 1.9 1.1 2.52 3 3-.48.48-2.52 1.1-3 3-.48-1.9-1.1-2.52-3-3 1.9-.48 2.52-1.1 3-3Z"
+        />
+        <path
+          fill="#ffffff"
+          d="M33.6 28.7c.4 1.55.92 2.07 2.46 2.46-1.54.4-2.06.92-2.46 2.46-.39-1.54-.91-2.06-2.46-2.46 1.55-.39 2.07-.91 2.46-2.46Z"
+        />
+      </g>
+    </svg>
+  );
+}
+
+const STEP_META_MAP = {
+  1: {
+    icon: QuizmateStepOneIcon,
+    usesStandaloneBadge: true,
+    gradient: 'from-sky-500 to-blue-600',
+    lightInactive: 'border-sky-100 bg-sky-50/90 text-sky-500 hover:border-sky-200 hover:bg-sky-100/80',
+    darkInactive: 'border-sky-400/20 bg-sky-500/10 text-sky-200 hover:border-sky-300/35 hover:bg-sky-500/15',
+    lightComplete: 'border-sky-200 bg-sky-100 text-sky-700 shadow-[0_10px_24px_rgba(14,165,233,0.16)]',
+    darkComplete: 'border-sky-300/25 bg-sky-500/20 text-sky-100 shadow-[0_10px_24px_rgba(14,165,233,0.18)]',
+    lightLabel: 'text-sky-600',
+    darkLabel: 'text-sky-200',
+    halo: 'bg-sky-400/25',
+    badge: 'bg-sky-500 text-white',
+  },
+  2: {
+    icon: FilePenLine,
+    gradient: 'from-orange-500 to-amber-500',
+    lightInactive: 'border-orange-100 bg-orange-50/90 text-orange-500 hover:border-orange-200 hover:bg-orange-100/80',
+    darkInactive: 'border-orange-400/20 bg-orange-500/10 text-orange-200 hover:border-orange-300/35 hover:bg-orange-500/15',
+    lightComplete: 'border-orange-200 bg-orange-100 text-orange-700 shadow-[0_10px_24px_rgba(249,115,22,0.16)]',
+    darkComplete: 'border-orange-300/25 bg-orange-500/20 text-orange-100 shadow-[0_10px_24px_rgba(249,115,22,0.18)]',
+    lightLabel: 'text-orange-600',
+    darkLabel: 'text-orange-200',
+    halo: 'bg-orange-400/25',
+    badge: 'bg-orange-500 text-white',
+  },
+  3: {
+    icon: Rocket,
+    gradient: 'from-emerald-500 to-green-600',
+    lightInactive: 'border-emerald-100 bg-emerald-50/90 text-emerald-500 hover:border-emerald-200 hover:bg-emerald-100/80',
+    darkInactive: 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200 hover:border-emerald-300/35 hover:bg-emerald-500/15',
+    lightComplete: 'border-emerald-200 bg-emerald-100 text-emerald-700 shadow-[0_10px_24px_rgba(34,197,94,0.16)]',
+    darkComplete: 'border-emerald-300/25 bg-emerald-500/20 text-emerald-100 shadow-[0_10px_24px_rgba(34,197,94,0.18)]',
+    lightLabel: 'text-emerald-600',
+    darkLabel: 'text-emerald-200',
+    halo: 'bg-emerald-400/25',
+    badge: 'bg-emerald-500 text-white',
+  },
 };
 
 function translateOrFallback(t, key, fallback) {
@@ -27,46 +119,48 @@ function translateOrFallback(t, key, fallback) {
   return translated === key ? fallback : translated;
 }
 
-function createStepCopy(t, language) {
-  const isEnglish = language === 'en';
-
+function createStepCopy(t) {
   return {
     1: {
-      title: translateOrFallback(t, 'workspace.profileConfig.steps.1.title', isEnglish ? 'Step 1' : 'Bước 1'),
+      title: translateOrFallback(t, 'workspace.profileConfig.steps.1.title', 'Step 1'),
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.1.description',
-        isEnglish ? 'Choose the workspace intent and let AI assess the knowledge area.' : 'Chọn mục đích sử dụng workspace và để AI đánh giá kiến thức.'
+        'Choose the workspace intent and let AI assess the knowledge area.'
       ),
     },
     2: {
-      title: translateOrFallback(t, 'workspace.profileConfig.steps.2.title', isEnglish ? 'Step 2' : 'Bước 2'),
+      title: translateOrFallback(t, 'workspace.profileConfig.steps.2.title', 'Step 2'),
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.2.description',
-        isEnglish ? 'Add your current level, goals, and mock-test details if needed.' : 'Bổ sung trình độ hiện tại, mục tiêu và thông tin mock test nếu cần.'
+        'Add your current level, goals, and mock-test details if needed.'
       ),
     },
     3: {
-      title: translateOrFallback(t, 'workspace.profileConfig.steps.3.title', isEnglish ? 'Step 3' : 'Bước 3'),
+      title: translateOrFallback(t, 'workspace.profileConfig.steps.3.title', 'Step 3'),
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.3.description',
-        isEnglish ? 'Finish the roadmap setup and confirm the learning pace.' : 'Hoàn tất cấu hình roadmap và chốt nhịp học cho workspace.'
+        'Finish the roadmap setup and confirm the learning pace.'
       ),
     },
   };
 }
 
-function createActionCopy(t, language) {
-  const isEnglish = language === 'en';
-
+function createActionCopy(t) {
   return {
     generatingTemplate: translateOrFallback(
       t,
       'workspace.profileConfig.actions.generatingTemplate',
-      isEnglish ? 'Generating template...' : 'Template đang được tạo...'
+      'Generating template...'
     ),
+    overallReviewLoading: translateOrFallback(
+      t,
+      'workspace.profileConfig.stepTwo.overallReviewLoadingTitle',
+      'Quizmate AI dang danh gia tong quan'
+    ),
+    confirm: translateOrFallback(t, 'confirm', 'Confirm'),
   };
 }
 
@@ -98,8 +192,9 @@ function IndividualWorkspaceProfileConfigDialog({
     t,
     isReadOnly,
   });
-  const stepCopy = createStepCopy(t, i18n.language);
-  const actionCopy = createActionCopy(t, i18n.language);
+  const stepCopy = createStepCopy(t);
+  const actionCopy = createActionCopy(t);
+  const stepIds = Array.from({ length: wizard.totalSteps }, (_, index) => index + 1);
 
   const shellClass = isDarkMode ? 'border-slate-800 bg-[#020817] text-white' : 'border-slate-200 bg-[#f8fbff] text-slate-900';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
@@ -107,7 +202,7 @@ function IndividualWorkspaceProfileConfigDialog({
   const progressValue = Math.max(0, Math.min(100, Number(mockTestGenerationProgress) || 0));
   const isAwaitingBackendConfirmation = mockTestGenerationState === 'pending' && progressValue >= 92;
   const progressLabel = isAwaitingBackendConfirmation
-    ? translateOrFallback(t, 'workspace.profileConfig.messages.mockTemplateAwaitingBackendShort', i18n.language === 'en' ? 'Confirming' : 'Đang xác nhận')
+    ? translateOrFallback(t, 'workspace.profileConfig.messages.mockTemplateAwaitingBackendShort', 'Confirming')
     : `${progressValue}%`;
   const progressToneClass = mockTestGenerationState === 'ready'
     ? isDarkMode
@@ -120,8 +215,10 @@ function IndividualWorkspaceProfileConfigDialog({
       : isDarkMode
         ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100'
         : 'border-cyan-200 bg-cyan-50 text-cyan-800';
-  const isPrimaryActionBusy = wizard.submitting || wizard.isMockTestGenerationPending;
-  const progressFraction = STEP_IDS.length > 1 ? (wizard.step - 1) / (STEP_IDS.length - 1) : 0;
+  const isNavigationBusy = wizard.submitting || wizard.isMockTestGenerationPending;
+  const isPrimaryActionBusy = isNavigationBusy || wizard.isWaitingForOverallReview;
+  const progressFraction = stepIds.length > 1 ? (wizard.step - 1) / (stepIds.length - 1) : 0;
+  const stepTransitionClass = 'animate-in fade-in-50 slide-in-from-bottom-3 zoom-in-95 duration-500';
 
   function renderStep() {
     if (wizard.step === 1) {
@@ -248,75 +345,116 @@ function IndividualWorkspaceProfileConfigDialog({
             </div>
           </div>
 
-        <div className="mt-6 flex items-center justify-center">
-          <div className="relative flex w-full max-w-[920px] flex-col items-center px-4 sm:px-10">
-            <div className="relative flex w-full items-center justify-between">
-              <div
-                className={cn(
-                  'pointer-events-none absolute inset-x-[6%] top-1/2 h-[2px] -translate-y-1/2 rounded-full',
-                  isDarkMode ? 'bg-slate-800/70' : 'bg-slate-200'
-                )}
-              />
-              <div
-                className={cn(
-                  'pointer-events-none absolute left-[6%] top-1/2 h-[2px] -translate-y-1/2 rounded-full transition-all duration-500 ease-out',
-                  isDarkMode ? 'bg-cyan-400' : 'bg-cyan-500'
-                )}
-                style={{ width: `${progressFraction * 88}%` }}
-              />
-              {STEP_IDS.map((item) => {
-              const active = wizard.step === item;
-                const complete = wizard.maxUnlockedStep > item && !active;
-                const canReview = wizard.canNavigateToStep(item);
-                const StepIcon = STEP_ICON_MAP[item];
+          <div className="mt-6 flex items-center justify-center">
+            <div className="relative flex w-full max-w-[920px] flex-col items-center px-4 sm:px-10">
+              <div className="relative flex w-full items-center justify-between py-2">
+                <div
+                  className={cn(
+                    'pointer-events-none absolute inset-x-[6%] top-1/2 h-[3px] -translate-y-1/2 rounded-full',
+                    isDarkMode ? 'bg-slate-800/70' : 'bg-slate-200'
+                  )}
+                />
+                <div
+                  className={cn(
+                    'pointer-events-none absolute left-[6%] top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,#0ea5e9_0%,#f97316_52%,#22c55e_100%)] shadow-[0_0_18px_rgba(14,165,233,0.25)] transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]'
+                  )}
+                  style={{ width: `${progressFraction * 88}%` }}
+                />
+                <div
+                  className="pointer-events-none absolute left-[6%] top-1/2 h-[8px] -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(14,165,233,0.18)_0%,rgba(249,115,22,0.18)_52%,rgba(34,197,94,0.18)_100%)] blur-md transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                  style={{ width: `${progressFraction * 88}%` }}
+                />
 
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    disabled={!canReview}
-                    onClick={() => wizard.goToStep(item)}
-                    className={cn(
-                      'relative flex flex-col items-center gap-2 bg-transparent transition-all',
-                      canReview
-                        ? 'cursor-pointer focus-visible:outline-none'
-                        : 'cursor-default'
-                    )}
-                  >
-                    <div
+                {stepIds.map((item) => {
+                  const meta = STEP_META_MAP[item];
+                  const StepIcon = meta.icon;
+                  const active = wizard.step === item;
+                  const complete = wizard.maxUnlockedStep > item && !active;
+                  const usesStandaloneBadge = meta.usesStandaloneBadge === true;
+                  const canReview = wizard.canNavigateToStep(item);
+                  const circleClass = complete
+                    ? isDarkMode
+                      ? meta.darkComplete
+                      : meta.lightComplete
+                    : active
+                      ? cn(
+                        'border-transparent bg-gradient-to-br text-white scale-[1.08] shadow-[0_16px_38px_rgba(15,23,42,0.12)]',
+                        meta.gradient
+                      )
+                      : isDarkMode
+                        ? meta.darkInactive
+                        : meta.lightInactive;
+                  const labelToneClass = active || complete
+                    ? isDarkMode
+                      ? meta.darkLabel
+                      : meta.lightLabel
+                    : mutedClass;
+
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      disabled={!canReview}
+                      onClick={() => wizard.goToStep(item)}
                       className={cn(
-                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-300',
-                        complete
-                          ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200/50 dark:shadow-emerald-900/30'
-                          : active
-                            ? isDarkMode
-                              ? 'bg-yellow-400 text-slate-900 shadow-lg shadow-yellow-400/30 scale-105'
-                              : 'bg-yellow-400 text-slate-900 shadow-lg shadow-yellow-300/50 scale-105'
-                            : isDarkMode
-                              ? 'border-2 border-slate-600 bg-[#020617] text-slate-400'
-                              : 'border-2 border-slate-300 bg-white text-slate-400'
+                        'relative flex flex-col items-center gap-2 bg-transparent transition-all duration-500',
+                        canReview ? 'cursor-pointer focus-visible:outline-none' : 'cursor-default'
                       )}
                     >
-                      {complete ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
-                    </div>
-                    <span
-                      className={cn(
-                        'max-w-[120px] whitespace-nowrap text-center text-xs font-medium leading-4',
-                        complete
-                          ? isDarkMode ? 'text-emerald-300' : 'text-emerald-600'
-                          : active
-                            ? isDarkMode ? 'font-semibold text-white' : 'font-semibold text-slate-900'
-                            : mutedClass
-                      )}
-                    >
-                      {stepCopy[item].title}
-                    </span>
-                  </button>
-                );
-              })}
+                      <div className="relative">
+                        {active ? (
+                          <span
+                            className={cn(
+                              'absolute inset-[-7px] rounded-full animate-pulse',
+                              meta.halo
+                            )}
+                          />
+                        ) : null}
+                        {usesStandaloneBadge ? (
+                          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+                            <StepIcon
+                              className={cn(
+                                'h-11 w-11 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                                active ? 'scale-[1.08]' : complete ? 'scale-[1.03]' : 'opacity-95'
+                              )}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className={cn(
+                              'relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                              circleClass
+                            )}
+                          >
+                            <StepIcon className={cn('h-4.5 w-4.5 transition-transform duration-500', active ? 'scale-110' : '')} />
+                          </div>
+                        )}
+                        {complete ? (
+                          <span
+                            className={cn(
+                              'absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 text-[10px] shadow-sm',
+                              isDarkMode ? 'border-[#020817]' : 'border-white',
+                              meta.badge
+                            )}
+                          >
+                            <Check className="h-3 w-3" />
+                          </span>
+                        ) : null}
+                      </div>
+                      <span
+                        className={cn(
+                          'max-w-[120px] whitespace-nowrap text-center text-xs font-semibold leading-4 transition-colors duration-300',
+                          labelToneClass
+                        )}
+                      >
+                        {stepCopy[item].title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
         </DialogHeader>
 
         {showMockTestProgress ? (
@@ -339,9 +477,9 @@ function IndividualWorkspaceProfileConfigDialog({
                       ? 'bg-emerald-500'
                       : isAwaitingBackendConfirmation
                         ? 'bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#22d3ee)] bg-[length:200%_100%] animate-pulse'
-                      : mockTestGenerationState === 'error'
-                        ? 'bg-rose-500'
-                        : 'bg-cyan-500'
+                        : mockTestGenerationState === 'error'
+                          ? 'bg-rose-500'
+                          : 'bg-cyan-500'
                   )}
                   style={{ width: `${progressValue}%` }}
                 />
@@ -350,7 +488,11 @@ function IndividualWorkspaceProfileConfigDialog({
           </div>
         ) : null}
 
-        <div className="overflow-y-auto px-5 py-5 sm:px-7">{renderStep()}</div>
+        <div className="overflow-y-auto px-5 py-5 sm:px-7">
+          <div key={wizard.step} className={stepTransitionClass}>
+            {renderStep()}
+          </div>
+        </div>
 
         <div
           className={cn(
@@ -385,26 +527,21 @@ function IndividualWorkspaceProfileConfigDialog({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={isPrimaryActionBusy}
-              onClick={() => {
-                if (wizard.step === 1) {
-                  onOpenChange(false);
-                  return;
-                }
-
-                wizard.previousStep();
-              }}
-              className={cn(
-                'rounded-full px-5',
-                isDarkMode ? 'text-slate-200 hover:bg-slate-900 hover:text-white' : 'text-slate-700 hover:bg-slate-100'
-              )}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              {wizard.step === 1 ? t('workspace.profileConfig.actions.cancel') : t('workspace.profileConfig.actions.previous')}
-            </Button>
+            {wizard.step > 1 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={isNavigationBusy}
+                onClick={wizard.previousStep}
+                className={cn(
+                  'rounded-full px-5',
+                  isDarkMode ? 'text-slate-200 hover:bg-slate-900 hover:text-white' : 'text-slate-700 hover:bg-slate-100'
+                )}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {t('workspace.profileConfig.actions.previous')}
+              </Button>
+            ) : null}
 
             {!isReadOnly && wizard.step < wizard.totalSteps ? (
               <Button
@@ -416,6 +553,8 @@ function IndividualWorkspaceProfileConfigDialog({
                 {isPrimaryActionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {wizard.isMockTestGenerationPending
                   ? actionCopy.generatingTemplate
+                  : wizard.isWaitingForOverallReview
+                    ? actionCopy.overallReviewLoading
                   : wizard.submitting
                     ? t('workspace.profileConfig.actions.saving')
                     : t('workspace.profileConfig.actions.next')}
@@ -426,17 +565,23 @@ function IndividualWorkspaceProfileConfigDialog({
             {!isReadOnly && wizard.step === wizard.totalSteps ? (
               <Button
                 type="button"
-                disabled={wizard.submitting}
+                disabled={isPrimaryActionBusy}
                 onClick={async () => {
                   const result = await wizard.handleSubmit();
-                  if (result?.ok) {
+                  if (result?.ok && result?.shouldConfirm !== false) {
                     await onConfirm?.();
                   }
                 }}
                 className="rounded-full bg-emerald-600 px-6 text-white hover:bg-emerald-700"
               >
-                {wizard.submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Xác nhận
+                {isPrimaryActionBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {wizard.isMockTestGenerationPending
+                  ? actionCopy.generatingTemplate
+                  : wizard.isWaitingForOverallReview
+                    ? actionCopy.overallReviewLoading
+                  : wizard.submitting
+                    ? t('workspace.profileConfig.actions.saving')
+                    : actionCopy.confirm}
               </Button>
             ) : null}
 

@@ -189,8 +189,8 @@ function WorkspaceProfileStepTwo({
       values.strongAreas.trim().length > 0 && values.weakAreas.trim().length > 0;
 
   const sugLabel = fieldSuggestionStatus === 'loading'
-      ? 'AI đang gợi ý...'
-      : 'AI gợi ý';
+      ? 'Quizmate AI đang gợi ý...'
+      : 'Quizmate AI gợi ý';
 
   const overallReviewTone = consistencyResult?.isConsistent ? 'success' : 'warning';
   const isMockTest = values.workspacePurpose === 'MOCK_TEST';
@@ -313,7 +313,7 @@ function WorkspaceProfileStepTwo({
                         )}
                         description={translateStepTwo(
                             'workspace.profileConfig.stepTwo.waitForCurrentLevelDescription',
-                            'Sau khi bạn mô tả trình độ hiện tại, AI sẽ gợi ý điểm mạnh và điểm yếu sát hơn với kiến thức đã chọn.'
+                            'Sau khi bạn mô tả trình độ hiện tại, Quizmate AI sẽ gợi ý điểm mạnh và điểm yếu sát hơn với kiến thức đã chọn.'
                         )}
                     />
                   </div>
@@ -381,11 +381,11 @@ function WorkspaceProfileStepTwo({
                           isDarkMode={isDarkMode}
                           title={translateStepTwo(
                               'workspace.profileConfig.stepTwo.waitForGoalTitle',
-                              'Bổ sung điểm mạnh và điểm yếu để AI gợi ý mục tiêu'
+                              'Bổ sung điểm mạnh và điểm yếu để Quizmate AI gợi ý mục tiêu'
                           )}
                           description={translateStepTwo(
                               'workspace.profileConfig.stepTwo.waitForGoalDescription',
-                              'Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.'
+                              'Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, Quizmate AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.'
                           )}
                       />
                     </div>
@@ -456,7 +456,7 @@ function WorkspaceProfileStepTwo({
                     isDarkMode={isDarkMode}
                     title={translateStepTwo(
                         'workspace.profileConfig.stepTwo.overallReviewLoadingTitle',
-                        'AI đang đánh giá tổng quan'
+                        'Quizmate AI đang đánh giá tổng quan'
                     )}
                     description={translateStepTwo(
                         'workspace.profileConfig.stepTwo.overallReviewLoadingDescription',
@@ -476,7 +476,7 @@ function WorkspaceProfileStepTwo({
                     )}
                     description={translateStepTwo(
                         'workspace.profileConfig.stepTwo.overallReviewPendingDescription',
-                        'Hãy điền trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập. Sau đó AI sẽ kiểm tra xem toàn bộ phần step 2 đã bám đúng kiến thức và lĩnh vực bạn chọn hay chưa.'
+                        'Hãy điền trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập. Sau đó Quizmate AI sẽ kiểm tra xem toàn bộ phần step 2 đã bám đúng kiến thức và lĩnh vực bạn chọn hay chưa.'
                     )}
                 />
               </div>
@@ -492,12 +492,12 @@ function WorkspaceProfileStepTwo({
                         consistencyResult.message
                         || translateStepTwo(
                             'workspace.profileConfig.stepTwo.overallReviewTitle',
-                            'Đánh giá tổng quan của AI'
+                            'Đánh giá tổng quan của Quizmate AI'
                         )
                     }
                     description={translateStepTwo(
                         'workspace.profileConfig.stepTwo.aiRecommendationNotice',
-                        'Đây là gợi ý tham khảo của AI, bạn có thể chỉnh lại theo ngữ cảnh thực tế của mình.'
+                        'Đây là gợi ý tham khảo của Quizmate AI, bạn có thể chỉnh lại theo ngữ cảnh thực tế của mình.'
                     )}
                 />
 
@@ -589,14 +589,6 @@ function WorkspaceProfileStepTwo({
                     </div>
                   ) : null}
 
-                  {!aiOverallMessage && aiOverallIssues.length === 0 && aiOverallRecommendations.length === 0 && aiQuizConstraintWarnings.length === 0 ? (
-                    <p className={cn('text-xs leading-5', mutedClass)}>
-                      {translateStepTwo(
-                        'workspace.profileConfig.stepTwo.overallReviewEmpty',
-                        'AI chưa có đủ dữ liệu để đưa ra đánh giá tổng quan.'
-                      )}
-                    </p>
-                  ) : null}
                 </div>
               </div>
           ) : null}
@@ -614,7 +606,7 @@ function WorkspaceProfileStepTwo({
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">
-                      {consistencyResult.message || 'AI phát hiện một số vấn đề'}
+                      {consistencyResult.message || 'Quizmate AI phát hiện một số vấn đề'}
                     </p>
                     <ul className="mt-2 space-y-1">
                       {consistencyResult.issues.map((issue, idx) => (
@@ -755,7 +747,7 @@ function WorkspaceProfileStepTwo({
               <div className={cn('rounded-[24px] border p-5 sm:p-6', isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white')}>
                 <p className="text-sm font-semibold">Chọn kỳ thi phổ biến</p>
                 <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
-                  Nhấn vào tên kỳ thi để xem các template gợi ý do AI trả về.
+                  Nhấn vào tên kỳ thi để xem các template gợi ý do Quizmate AI trả về.
                 </p>
 
                 {availablePopularExamNames.length === 0 ? (
@@ -765,7 +757,7 @@ function WorkspaceProfileStepTwo({
                       isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'
                     )}
                   >
-                    Hiện chưa có danh sách “bài thi phổ biến”. Hãy điền đủ thông tin ở Step 1-2 để AI gợi ý.
+                    Hiện chưa có danh sách “bài thi phổ biến”. Hãy điền đủ thông tin ở Step 1-2 để Quizmate AI gợi ý.
                   </div>
                 ) : (
                   <div className="mt-4 flex flex-wrap gap-2">
