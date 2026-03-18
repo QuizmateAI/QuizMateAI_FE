@@ -108,13 +108,12 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
           </div>
         ) : isList ? (
           <div className={`rounded-2xl border transition-colors duration-300 ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
-            <div className={`grid grid-cols-[minmax(260px,2fr)_minmax(220px,1.2fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-xs font-semibold ${
+            <div className={`grid grid-cols-[minmax(260px,2fr)_minmax(220px,1.4fr)_minmax(140px,0.8fr)_40px] gap-4 px-4 py-3 text-xs font-semibold ${
               isDarkMode ? "text-slate-500" : "text-gray-500"
             }`}>
               <span>{t("home.table.title")}</span>
               <span>{t("home.workspace.descriptionLabel")}</span>
               <span>{t("home.table.created")}</span>
-              <span>{t("home.workspace.status")}</span>
               <span />
             </div>
             <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-gray-200"}`}>
@@ -122,7 +121,7 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
                 <div
                   key={ws.workspaceId}
                   onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
-                  className={`grid grid-cols-[minmax(260px,2fr)_minmax(220px,1.2fr)_minmax(140px,0.8fr)_minmax(100px,0.5fr)_40px] gap-4 px-4 py-3 text-sm cursor-pointer group transition-colors ${
+                  className={`grid grid-cols-[minmax(260px,2fr)_minmax(220px,1.4fr)_minmax(140px,0.8fr)_40px] gap-4 px-4 py-3 text-sm cursor-pointer group transition-colors ${
                     isDarkMode ? "text-slate-300 hover:bg-slate-800/50" : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -132,11 +131,6 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
                   </div>
                   <span className={`text-xs truncate ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{ws.description || noDescription}</span>
                   <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{formatDate(ws.createdAt, locale)}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full w-fit ${
-                    ws.status === "ACTIVE"
-                      ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-50 text-green-700"
-                      : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
-                  }`}>{ws.status}</span>
                   <CardMenu isDarkMode={isDarkMode} onEdit={() => onOpenEdit(ws)} onDelete={() => onOpenDelete(ws)} />
                 </div>
               ))}
@@ -169,15 +163,10 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
                     </div>
                   </div>
 
-                  <div className={`flex items-center justify-between text-sm mt-3 pt-3 border-t ${
+                  <div className={`flex items-center text-sm mt-3 pt-3 border-t ${
                     isDarkMode ? "text-slate-400 border-slate-700/50" : "text-gray-600 border-gray-200/50"
                   }`}>
                     <span className="text-xs truncate">{formatDate(ws.createdAt, locale)}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      ws.status === "ACTIVE"
-                        ? isDarkMode ? "bg-green-950/50 text-green-400" : "bg-green-100 text-green-700"
-                        : isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"
-                    }`}>{ws.status}</span>
                   </div>
                 </div>
               );

@@ -169,7 +169,7 @@ function WorkspaceProfileStepOne({
           </p>
         </div>
 
-        <div className="grid gap-2.5 lg:grid-cols-3">
+        <div className="grid gap-1.5 lg:grid-cols-3">
           {Object.entries(PURPOSE_META).map(([purpose, meta]) => {
             const Icon = meta.icon;
             const active = values.workspacePurpose === purpose;
@@ -181,7 +181,7 @@ function WorkspaceProfileStepOne({
                 disabled={disabled}
                 onClick={() => onPurposeChange(purpose)}
                 className={cn(
-                  'group min-h-[136px] rounded-[22px] border p-3.5 text-left transition-all',
+                  'group min-h-[96px] rounded-[18px] border p-2.5 text-left transition-all sm:min-h-[102px] sm:p-3',
                   disabled && 'cursor-not-allowed opacity-70',
                   active
                     ? isDarkMode
@@ -193,10 +193,10 @@ function WorkspaceProfileStepOne({
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex min-w-0 items-start gap-2">
                     <div
                       className={cn(
-                        'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+                        'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
                         active
                           ? 'bg-white/15 text-white'
                           : isDarkMode
@@ -204,16 +204,16 @@ function WorkspaceProfileStepOne({
                             : 'bg-white text-cyan-600'
                       )}
                     >
-                      <Icon className="h-4.5 w-4.5" />
+                      <Icon className="h-3.5 w-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[1.02rem] font-semibold leading-6">{t(`workspace.profileConfig.purpose.${purpose}.title`)}</p>
-                      <p className={cn('mt-1.5 text-[13px] leading-6', active ? 'text-white/80' : mutedClass)}>
+                      <p className="text-[15px] font-semibold leading-5">{t(`workspace.profileConfig.purpose.${purpose}.title`)}</p>
+                      <p className={cn('mt-0.5 text-[11px] leading-[1.45] sm:text-xs', active ? 'text-white/80' : mutedClass)}>
                         {t(`workspace.profileConfig.purpose.${purpose}.description`)}
                       </p>
                     </div>
                   </div>
-                  {active ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : <ChevronRight className={cn('h-5 w-5 shrink-0', mutedClass)} />}
+                  {active ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className={cn('h-3.5 w-3.5 shrink-0', mutedClass)} />}
                 </div>
               </button>
             );
