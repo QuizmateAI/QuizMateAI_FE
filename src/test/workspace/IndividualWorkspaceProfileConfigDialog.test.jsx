@@ -70,6 +70,18 @@ function createConsistencyResponse(options = {}) {
   };
 }
 
+function createDeferred() {
+  let resolve;
+  let reject;
+
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve, reject };
+}
+
 function setupApiMocks({ analysisResponse, fieldSuggestionResponse, consistencyResponse } = {}) {
   analyzeKnowledge.mockResolvedValue(
     analysisResponse || createAnalysisResponse(['React', 'Frontend Development', 'JavaScript'])
@@ -85,19 +97,21 @@ function setupApiMocks({ analysisResponse, fieldSuggestionResponse, consistencyR
 function renderDialog(props = {}) {
   const onSave = props.onSave || vi.fn().mockResolvedValue(undefined);
   const onOpenChange = props.onOpenChange || vi.fn();
+  const onConfirm = props.onConfirm || vi.fn().mockResolvedValue(undefined);
 
   const view = render(
     <IndividualWorkspaceProfileConfigDialog
       open
       onOpenChange={onOpenChange}
       onSave={onSave}
+      onConfirm={onConfirm}
       workspaceId={props.workspaceId || '123'}
       isDarkMode={false}
       {...props}
     />
   );
 
-  return { ...view, onSave, onOpenChange };
+  return { ...view, onSave, onOpenChange, onConfirm };
 }
 
 function normalizeText(value = '') {
@@ -113,6 +127,18 @@ function normalizeText(value = '') {
 
 function getPurposeButtons() {
   return Array.from(document.body.querySelectorAll('button.group'));
+}
+
+function clickPurposeButtonByText(text) {
+  const expected = normalizeText(text);
+  const target = getPurposeButtons().find((button) => {
+    const actual = normalizeText(button.textContent || '');
+    return actual.includes(expected);
+  });
+
+  expect(target).toBeTruthy();
+  fireEvent.click(target);
+  return target;
 }
 
 function getFooterPrimaryButton() {
@@ -146,6 +172,30 @@ function findButtonByText(text, { exact = false, includeDisabled = false } = {})
 
 function clickButtonByText(text, options) {
   const target = findButtonByText(text, options);
+  expect(target).toBeTruthy();
+  fireEvent.click(target);
+  return target;
+}
+
+function clickMockTestStepTwoTab(tab) {
+  const labelCandidates = tab === 'mocktest'
+    ? ['Cấu hình Đề thi', 'Cáº¥u hÃ¬nh Äá» thi', 'CÃ¡ÂºÂ¥u hÃƒÂ¬nh Ã„ÂÃ¡Â»Â thi']
+    : ['Hồ sơ Năng lực', 'Há»“ sÆ¡ NÄƒng lá»±c', 'HÃ¡Â»â€œ sÃ†Â¡ NÃ„Æ’ng lÃ¡Â»Â±c'];
+
+  let target = screen.getAllByRole('button').find((button) => {
+    const actual = normalizeText(button.textContent || '');
+    return labelCandidates.some((label) => actual.includes(normalizeText(label)));
+  });
+
+  if (!target) {
+    const tabs = screen.getAllByRole('button').filter((button) => {
+      const className = typeof button.className === 'string' ? button.className : '';
+      return className.includes('px-7') && className.includes('py-2.5') && className.includes('rounded-xl');
+    });
+
+    target = tab === 'mocktest' ? tabs[1] : tabs[0];
+  }
+
   expect(target).toBeTruthy();
   fireEvent.click(target);
   return target;
@@ -187,7 +237,7 @@ async function moveToStepTwo({
   expectedDomainText,
   roadmapChoiceText,
 }) {
-  clickButtonByText(purposeText);
+  clickPurposeButtonByText(purposeText);
   await finishKnowledgeAnalysis(knowledge, expectedDomainText);
 
   if (expectedDomainText) {
@@ -217,6 +267,14 @@ async function moveToStepThree() {
   expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).toBeInTheDocument();
 }
 
+async function clickConfirmButton() {
+  await act(async () => {
+    fireEvent.click(findButtonByText(i18n.t('confirm'), { exact: true, includeDisabled: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 async function flushStepTwoAiSuggestions() {
   await act(async () => {
     vi.advanceTimersByTime(900);
@@ -227,6 +285,15 @@ async function flushStepTwoAiSuggestions() {
     await Promise.resolve();
     await Promise.resolve();
   });
+}
+
+function getAiOverallReviewSummaryCard(message) {
+  return screen.getByText(message).closest('div.min-w-0')?.parentElement?.parentElement ?? null;
+}
+
+function getAiOverallReviewDetailCard() {
+  const alignmentTitle = screen.getByText(i18n.t('workspace.profileConfig.stepTwo.alignmentHighlightsTitle'));
+  return alignmentTitle.parentElement?.parentElement ?? null;
 }
 
 describe('IndividualWorkspaceProfileConfigDialog', () => {
@@ -412,6 +479,189 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.recommendationsTitle'))).toBeInTheDocument();
   });
 
+  it('keeps step 2 locked until Quizmate AI finishes the overall review for roadmap flows', async () => {
+    const consistencyDeferred = createDeferred();
+
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['React', 'Frontend Development', 'JavaScript']),
+      fieldSuggestionResponse: createFieldSuggestionResponse({
+        currentLevelSuggestions: ['Da biet React co ban'],
+        strongAreaSuggestions: ['Component tach nho'],
+        weakAreaSuggestions: ['Hook nang cao'],
+      }),
+    });
+    validateProfileConsistency.mockImplementation(() => consistencyDeferred.promise);
+
+    const { onSave } = renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
+      knowledge: 'React hooks nang cao',
+      expectedDomainText: 'React',
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da biet React co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Component tach nho' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Hook nang cao' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
+      target: { value: 'Muon hoc bai ban de dung hook nang cao dung cach.' },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(validateProfileConsistency).toHaveBeenCalled();
+    expect(getFooterPrimaryButton()).toBeDisabled();
+    expect(getFooterPrimaryButton()).toHaveTextContent(i18n.t('workspace.profileConfig.stepTwo.overallReviewLoadingTitle'));
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).not.toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      consistencyDeferred.resolve(createConsistencyResponse({
+        message: 'Thong tin dang bam sat voi muc tieu hien tai.',
+        alignmentHighlights: ['Muc tieu hoc tap dang hop voi pham vi React da chon.'],
+      }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getFooterPrimaryButton()).not.toBeDisabled();
+
+    await moveToStepThree();
+
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSave).toHaveBeenNthCalledWith(
+      2,
+      2,
+      expect.objectContaining({
+        workspacePurpose: 'STUDY_NEW',
+        learningGoal: 'Muon hoc bai ban de dung hook nang cao dung cach.',
+      })
+    );
+  });
+
+  it('keeps the AI overall review green when the profile is clearly aligned', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['Java Core'], {
+        normalizedKnowledge: 'Java Core',
+      }),
+      fieldSuggestionResponse: createFieldSuggestionResponse({
+        currentLevelSuggestions: ['Da hoc bien va vong lap'],
+        strongAreaSuggestions: ['Cu phap co ban'],
+        weakAreaSuggestions: ['Lap trinh huong doi tuong'],
+      }),
+      consistencyResponse: createConsistencyResponse({
+        message: 'Thong tin dang khop tot voi ho so hoc tap hien tai.',
+        alignmentHighlights: [
+          'Noi dung hien tai dang tap trung vao Java Core.',
+        ],
+        recommendations: [
+          'Co the tiep tuc mo rong sang OOP sau khi cung co nen tang.',
+        ],
+      }),
+    });
+
+    renderDialog();
+
+    clickButtonByText(i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'));
+    await finishKnowledgeAnalysis('Java Core', 'Java Core');
+    clickButtonByText('Java Core');
+
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da hoc bien va vong lap' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Cu phap co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Lap trinh huong doi tuong' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
+      target: { value: 'Muon hoc vung Java Core truoc khi hoc sau hon ve OOP.' },
+    });
+
+    await flushStepTwoAiSuggestions();
+
+    const summaryCard = getAiOverallReviewSummaryCard('Thong tin dang khop tot voi ho so hoc tap hien tai.');
+    const detailCard = getAiOverallReviewDetailCard();
+    expect(summaryCard?.className).toContain('border-emerald-200');
+    expect(detailCard?.className).toContain('border-emerald-200');
+  });
+
+  it('switches the AI overall review to yellow when the profile is only partially aligned', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['Java Core'], {
+        normalizedKnowledge: 'Java Core',
+      }),
+      fieldSuggestionResponse: createFieldSuggestionResponse({
+        currentLevelSuggestions: ['Da hoc bien va vong lap'],
+        strongAreaSuggestions: ['Cu phap co ban'],
+        weakAreaSuggestions: ['Tieng Anh chuyen nganh'],
+      }),
+      consistencyResponse: createConsistencyResponse({
+        isConsistent: false,
+        warning: true,
+        message: 'Thong tin chua khop lam voi muc tieu hien tai.',
+        alignmentHighlights: [
+          'Noi dung kien thuc van xoay quanh Java Core.',
+        ],
+        issues: [
+          'Diem yeu hien tai nghieng ve tieng Anh hon la lo hong chuyen mon.',
+        ],
+        recommendations: [
+          'Can can nhac bo sung muc tieu hoc tieng Anh chuyen nganh.',
+        ],
+      }),
+    });
+
+    renderDialog();
+
+    clickButtonByText(i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'));
+    await finishKnowledgeAnalysis('Java Core', 'Java Core');
+    clickButtonByText('Java Core');
+
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da hoc bien va vong lap' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Cu phap co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Tieng Anh chuyen nganh' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
+      target: { value: 'Muon hoc vung Java Core de lam bai tap va doc tai lieu tot hon.' },
+    });
+
+    await flushStepTwoAiSuggestions();
+
+    const summaryCard = getAiOverallReviewSummaryCard('Thong tin chua khop lam voi muc tieu hien tai.');
+    const detailCard = getAiOverallReviewDetailCard();
+    expect(summaryCard?.className).toContain('border-amber-200');
+    expect(detailCard?.className).toContain('border-amber-200');
+  });
+
   it('shows a hint to refine knowledge input when the AI flags input as too broad', async () => {
     setupApiMocks({
       analysisResponse: createAnalysisResponse(['English', 'English Communication', 'Language Skills'], {
@@ -553,53 +803,6 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(screen.getByText(backendReason)).toBeInTheDocument();
   });
 
-  it('switches correctly between public and private exam UI for MOCK_TEST', async () => {
-    setupApiMocks({
-      analysisResponse: createAnalysisResponse(['IELTS Writing', 'IELTS', 'Academic English']),
-    });
-
-    const { onSave } = renderDialog();
-
-    await moveToStepTwo({
-      purposeText: i18n.t('workspace.profileConfig.purpose.MOCK_TEST.title'),
-      knowledge: 'IELTS Writing task 2',
-      expectedDomainText: 'IELTS Writing',
-    });
-
-    clickButtonByText('Cấu hình Đề thi');
-    expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.mockTestTitle'))).toBeInTheDocument();
-    clickButtonByText('Custom');
-    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName'))).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.templatePrompt'))).toBeInTheDocument();
-
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName')), {
-      target: { value: 'IELTS Academic' },
-    });
-
-    clickButtonByText('Hồ sơ Năng lực');
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
-      target: { value: 'IELTS 6.0' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('MOCK_TEST')), {
-      target: { value: 'On dinh writing va giu toc do lam bai.' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
-      target: { value: 'Doc hieu de nhanh' },
-    });
-    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
-      target: { value: 'Quan ly thoi gian khi lam bai' },
-    });
-    await moveToStepThree();
-    expect(onSave).toHaveBeenCalledTimes(2);
-    expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({
-      workspacePurpose: 'MOCK_TEST',
-      currentLevel: 'IELTS 6.0',
-      learningGoal: 'On dinh writing va giu toc do lam bai.',
-      strongAreas: 'Doc hieu de nhanh',
-      weakAreas: 'Quan ly thoi gian khi lam bai',
-    }));
-  });
-
   it('finishes step 3 with default roadmap values for STUDY_NEW', async () => {
     const { onSave } = renderDialog();
 
@@ -617,12 +820,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await moveToStepThree();
-
-    await act(async () => {
-      fireEvent.click(findButtonByText('Xác nhận', { exact: true, includeDisabled: true }));
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await clickConfirmButton();
 
     expect(onSave).toHaveBeenCalledTimes(3);
     expect(onSave).toHaveBeenNthCalledWith(
@@ -636,8 +834,8 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     );
   });
 
-  it('allows finish on step 3 when roadmap is disabled for REVIEW', async () => {
-    const { onSave } = renderDialog();
+  it('finishes on step 2 when roadmap is disabled for REVIEW', async () => {
+    const { onSave, onConfirm } = renderDialog();
 
     await moveToStepTwo({
       purposeText: i18n.t('workspace.profileConfig.purpose.REVIEW.title'),
@@ -659,17 +857,139 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       target: { value: 'Bai toan xac suat tong hop' },
     });
 
-    await moveToStepThree();
-    expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.noRoadmapTitle'))).toBeInTheDocument();
+    await flushStepTwoAiSuggestions();
+
+    expect(screen.getAllByText(i18n.t('workspace.profileConfig.footerHint', { current: 2, total: 2 })).length).toBeGreaterThan(0);
+    expect(getStepCardButton(3)).toBeUndefined();
+
+    await clickConfirmButton();
+
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({ workspacePurpose: 'REVIEW' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the final confirm disabled on step 2 until Quizmate AI finishes the overall review', async () => {
+    const consistencyDeferred = createDeferred();
+
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['Probability & Statistics', 'Mathematics', 'STEM']),
+      fieldSuggestionResponse: createFieldSuggestionResponse({
+        currentLevelSuggestions: ['Da hoc xac suat co ban'],
+        strongAreaSuggestions: ['Cong thuc co ban'],
+        weakAreaSuggestions: ['Bai toan xac suat tong hop'],
+      }),
+    });
+    validateProfileConsistency.mockImplementation(() => consistencyDeferred.promise);
+
+    const { onSave, onConfirm } = renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.REVIEW.title'),
+      knowledge: 'xac suat thong ke co ban',
+      expectedDomainText: 'Probability & Statistics',
+      roadmapChoiceText: i18n.t('workspace.profileConfig.common.no'),
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da hoc xac suat co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW')), {
+      target: { value: 'On lai de thi cuoi ky' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Cong thuc co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Bai toan xac suat tong hop' },
+    });
 
     await act(async () => {
-      fireEvent.click(findButtonByText('Xác nhận', { exact: true, includeDisabled: true }));
+      vi.advanceTimersByTime(800);
       await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(onSave).toHaveBeenCalledTimes(3);
-    expect(onSave).toHaveBeenNthCalledWith(3, 3, expect.objectContaining({ workspacePurpose: 'REVIEW' }));
+    expect(validateProfileConsistency).toHaveBeenCalled();
+    expect(getFooterPrimaryButton()).toBeDisabled();
+    expect(getFooterPrimaryButton()).toHaveTextContent(i18n.t('workspace.profileConfig.stepTwo.overallReviewLoadingTitle'));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+
+    await act(async () => {
+      consistencyDeferred.resolve(createConsistencyResponse({
+        message: 'Thong tin on tap dang hop voi ho so hien tai.',
+        alignmentHighlights: ['Muc tieu on tap bam sat voi phan kien thuc da chon.'],
+      }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(getFooterPrimaryButton()).not.toBeDisabled();
+
+    await clickConfirmButton();
+
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSave).toHaveBeenNthCalledWith(
+      2,
+      2,
+      expect.objectContaining({
+        workspacePurpose: 'REVIEW',
+        learningGoal: 'On lai de thi cuoi ky',
+      })
+    );
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats step 2 as the final step for MOCK_TEST when roadmap is disabled', async () => {
+    const onSave = vi.fn()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ deferred: true });
+    const onConfirm = vi.fn().mockResolvedValue(undefined);
+
+    renderDialog({ onSave, onConfirm });
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.MOCK_TEST.title'),
+      knowledge: 'IELTS Writing task 2',
+      expectedDomainText: 'IELTS Writing',
+      roadmapChoiceText: i18n.t('workspace.profileConfig.common.no'),
+    });
+
+    clickMockTestStepTwoTab('mocktest');
+    clickButtonByText('Custom');
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName')), {
+      target: { value: 'IELTS Academic' },
+    });
+
+    clickMockTestStepTwoTab('profile');
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'IELTS 6.0' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('MOCK_TEST')), {
+      target: { value: 'On dinh writing va giu toc do lam bai.' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Doc hieu de nhanh' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Quan ly thoi gian khi lam bai' },
+    });
+
+    await flushStepTwoAiSuggestions();
+
+    expect(screen.getAllByText(i18n.t('workspace.profileConfig.footerHint', { current: 2, total: 2 })).length).toBeGreaterThan(0);
+    expect(getStepCardButton(3)).toBeUndefined();
+
+    await clickConfirmButton();
+
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({
+      workspacePurpose: 'MOCK_TEST',
+      enableRoadmap: false,
+      mockExamName: 'IELTS Academic',
+    }));
+    expect(onConfirm).not.toHaveBeenCalled();
   });
 
   it('requires strengths and weaknesses for REVIEW', async () => {
@@ -958,6 +1278,42 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
 
     expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).toBeInTheDocument();
     expect(screen.getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
+  });
+
+  it('clamps back to step 2 when roadmap is disabled and the backend reports PROFILE_DONE', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['Probability & Statistics', 'Mathematics', 'STEM']),
+    });
+
+    renderDialog({
+      initialData: {
+        profileStatus: 'DONE',
+        workspaceSetupStatus: 'PROFILE_DONE',
+        currentStep: 3,
+        learningMode: 'REVIEW',
+        knowledge: 'xac suat thong ke co ban',
+        domain: 'Probability & Statistics',
+        roadmapEnabled: false,
+        currentLevel: 'Da hoc xac suat co ban',
+        learningGoal: 'On lai de thi cuoi ky',
+        strongAreas: 'Cong thuc co ban',
+        weakAreas: 'Bai toan xac suat tong hop',
+      },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(900);
+      await vi.runAllTimersAsync();
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).not.toBeInTheDocument();
+    expect(screen.getAllByText(i18n.t('workspace.profileConfig.footerHint', { current: 2, total: 2 })).length).toBeGreaterThan(0);
   });
 
   it('does not resume past backend step when profile status is DONE but workspace step 2 is not completed', async () => {

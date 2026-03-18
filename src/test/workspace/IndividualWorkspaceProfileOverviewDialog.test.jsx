@@ -47,14 +47,16 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
       />
     );
 
-    expect(screen.getByText('Tổng quan thiết lập workspace')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /tổng quan thiết lập không gian học tập/i })).toBeInTheDocument();
     expect(screen.getAllByText('IELTS Writing task 2').length).toBeGreaterThan(0);
     expect(screen.getAllByText('IELTS Writing').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Mock test').length).toBeGreaterThan(0);
     expect(screen.getAllByText('IELTS 6.0').length).toBeGreaterThan(0);
     expect(screen.getAllByText('45 ngày').length).toBeGreaterThan(0);
     expect(screen.getAllByText('90 phút/ngày').length).toBeGreaterThan(0);
-    expect(screen.getByText('Đã hoàn tất')).toBeInTheDocument();
-    expect(screen.getByText('ielts-writing-notes.pdf, sample-essay.docx')).toBeInTheDocument();
+    expect(screen.getAllByText(/đã hoàn tất/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/mô tả chi tiết knowledge/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/trạng thái tài liệu/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('DONE')).not.toBeInTheDocument();
   });
 });
