@@ -149,9 +149,20 @@ export const getAttemptResult = async (attemptId) => {
 };
 
 // Nộp bài — đóng attempt và trả về kết quả
-export const submitAttempt = async (attemptId, answers = []) => {
-  console.debug('[QuizAPI] submitAttempt', { attemptId, answersCount: Array.isArray(answers) ? answers.length : 0 });
-  const response = await api.post(`/quiz-attempts/${attemptId}/submit`, answers, { timeout: 60000 });
+export const submitAttempt = async (attemptId, answers) => {
+  const hasRequestBody = Array.isArray(answers);
+  console.debug('[QuizAPI] submitAttempt', {
+    attemptId,
+    hasRequestBody,
+    answersCount: hasRequestBody ? answers.length : null,
+  });
+
+  if (hasRequestBody) {
+    const response = await api.post(`/quiz-attempts/${attemptId}/submit`, answers, { timeout: 60000 });
+    return response;
+  }
+
+  const response = await api.post(`/quiz-attempts/${attemptId}/submit`, undefined, { timeout: 60000 });
   return response;
 };
 

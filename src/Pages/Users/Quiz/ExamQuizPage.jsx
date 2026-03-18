@@ -25,15 +25,48 @@ export default function ExamQuizPage() {
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [attemptId, setAttemptId] = useState(null);
+  const [attemptStartedAt, setAttemptStartedAt] = useState(null);
   const [isStarted, setIsStarted] = useState(false);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [attemptTimeoutAt, setAttemptTimeoutAt] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [saveStatus, setSaveStatus] = useState('idle');
+  const [saveMessage, setSaveMessage] = useState('');
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
   const examLockNotifiedRef = useRef(false);
+
+  const resolveEffectiveTimeoutAt = useCallback((attempt, normalizedQuiz) => {
+    const timeoutAt = attempt?.timeoutAt || null;
+    const startedAt = attempt?.startedAt || null;
+    const normalizedTotalSeconds = Number(normalizedQuiz?.totalTime) || 0;
+
+    if (!timeoutAt || normalizedQuiz?.timerMode !== 'TOTAL' || normalizedTotalSeconds <= 0) {
+      return timeoutAt;
+    }
+
+    const remainingFromApiTimeout = getAttemptRemainingSeconds(timeoutAt, normalizedTotalSeconds);
+
+    // Legacy data may keep timeout much larger than normalized duration (e.g. 900 mins vs 15 mins).
+    if (remainingFromApiTimeout <= normalizedTotalSeconds * 3) {
+      return timeoutAt;
+    }
+
+    if (!startedAt) {
+      return timeoutAt;
+    }
+
+    const startedAtMs = new Date(startedAt).getTime();
+    if (Number.isNaN(startedAtMs)) {
+      return timeoutAt;
+    }
+
+    const correctedTimeoutAt = new Date(startedAtMs + (normalizedTotalSeconds * 1000)).toISOString();
+    return correctedTimeoutAt;
+  }, []);
 
   const returnToQuizPath = location.state?.returnToQuizPath
     || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
@@ -43,6 +76,25 @@ export default function ExamQuizPage() {
     interval: 5000,
     enabled: isStarted && !isSubmitted,
   });
+
+  const handleManualSave = useCallback(async () => {
+    setSaveStatus('saving');
+    setSaveMessage('');
+    const result = await saveManually();
+    if (result?.ok) {
+      setSaveStatus('success');
+      setSaveMessage(t('workspace.quiz.examActions.saveSuccess', 'Saved successfully'));
+      setTimeout(() => {
+        setSaveStatus((prev) => (prev === 'success' ? 'idle' : prev));
+          setSaveMessage((prev) => (prev === t('workspace.quiz.examActions.saveSuccess', 'Saved successfully') ? '' : prev));
+      }, 1500);
+      return true;
+    }
+
+    setSaveStatus('error');
+    setSaveMessage(result?.error?.message || t('workspace.quiz.examActions.saveFailed', 'Save failed. Please try again.'));
+    return false;
+  }, [saveManually, t]);
 
   // Fetch full quiz data
   useEffect(() => {
@@ -94,10 +146,12 @@ export default function ExamQuizPage() {
 
       const attempt = res.data;
       const hydratedAnswers = mapSavedAnswersToState(attempt.savedAnswers);
+      const effectiveTimeoutAt = resolveEffectiveTimeoutAt(attempt, quiz);
 
       setAttemptId(attempt.attemptId);
-      setAttemptTimeoutAt(attempt.timeoutAt || null);
-      setTimeLeft(getAttemptRemainingSeconds(attempt.timeoutAt, quiz?.totalTime || 0));
+      setAttemptStartedAt(attempt.startedAt || null);
+      setAttemptTimeoutAt(effectiveTimeoutAt);
+      setTimeLeft(getAttemptRemainingSeconds(effectiveTimeoutAt, quiz?.totalTime || 0));
       markQuizAttempted(quizId);
       setAnswers(hydratedAnswers);
       syncSnapshot(hydratedAnswers);
@@ -106,25 +160,45 @@ export default function ExamQuizPage() {
       console.error('Failed to start attempt:', err);
       showError(err?.message || 'Failed to start exam attempt');
     }
-  }, [quiz?.totalTime, quizId, showError, syncSnapshot]);
+  }, [quiz, quizId, resolveEffectiveTimeoutAt, showError, syncSnapshot]);
 
   const handleSubmit = useCallback(async () => {
-    if (submittingRef.current) return;
+    if (submittingRef.current) return false;
     submittingRef.current = true;
     setIsSubmitted(true);
-    await saveManually();
+    setSubmitError('');
+    const saveResult = await saveManually();
+    if (saveResult && !saveResult.ok) {
+      setSaveStatus('error');
+      setSaveMessage(saveResult?.error?.message || t('workspace.quiz.examActions.saveFailed', 'Save failed. Please try again.'));
+    }
     if (attemptId) {
       try {
-        const submitPayload = buildSubmitPayload(quiz?.questions, answers);
-        await submitAttempt(attemptId, submitPayload);
+        if (quiz?.timerMode === 'PER_QUESTION') {
+          // Per-question flow already persists answers on each next/timeout.
+          await submitAttempt(attemptId);
+        } else {
+          const submitPayload = buildSubmitPayload(quiz?.questions, answers);
+          await submitAttempt(attemptId, submitPayload);
+        }
         markQuizCompleted(quizId);
         navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
+        return true;
       } catch (err) {
         console.error('Failed to submit:', err);
+        const submitErrorMessage = err?.message || t('workspace.quiz.examActions.submitFailed', 'Submit failed. Please try again.');
+        showError(submitErrorMessage);
+        setSubmitError(submitErrorMessage);
         submittingRef.current = false;
+        setIsSubmitted(false);
+        return false;
       }
     }
-  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually]);
+    setSubmitError(t('workspace.quiz.examActions.submitMissingAttempt', 'Cannot submit because attempt is missing.'));
+    submittingRef.current = false;
+    setIsSubmitted(false);
+    return false;
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually, showError, t, quiz?.timerMode]);
 
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
@@ -270,6 +344,8 @@ export default function ExamQuizPage() {
           onTextAnswerChange={updateTextAnswer}
           onSubmit={handleSubmit}
           attemptId={attemptId}
+          attemptStartedAt={attemptStartedAt}
+          submitError={submitError}
           fontClass={fontClass}
         />
       </div>
@@ -307,8 +383,13 @@ export default function ExamQuizPage() {
               </div>
             ))}
             <Button onClick={handleSubmit} disabled={isSubmitted} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white text-base py-3">
-              {isSubmitted ? <Loader2 className="w-5 h-5 animate-spin" /> : '📤 Submit Exam'}
+              {isSubmitted
+                  ? <span className="inline-flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" />{t('workspace.quiz.examActions.submitting', 'Submitting...')}</span>
+                  : t('workspace.quiz.examActions.submitButton', 'Submit Exam')}
             </Button>
+            {submitError && (
+              <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
+            )}
           </div>
 
           {/* Side nav panel (desktop) */}
@@ -318,8 +399,14 @@ export default function ExamQuizPage() {
               answers={answers}
               timeLeft={timeLeft}
               onJumpToQuestion={jumpToQuestion}
-              onSave={saveManually}
+              onSave={handleManualSave}
               onSubmit={handleSubmit}
+              isSaveLoading={saveStatus === 'saving'}
+              saveStatus={saveStatus}
+              saveMessage={saveMessage}
+              isSubmitLoading={isSubmitted}
+              submitError={submitError}
+              t={t}
             />
           </div>
         </div>

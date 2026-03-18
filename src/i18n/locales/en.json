@@ -1268,7 +1268,8 @@
       "difficultyLevels": {
         "easy": "Easy",
         "medium": "Medium",
-        "hard": "Hard"
+        "hard": "Hard",
+        "custom": "Custom (Self-config)"
       },
       "bloomLevels": {
         "remember": "Remember",
@@ -1298,6 +1299,7 @@
       },
       "validation": {
         "nameRequired": "Please enter a quiz name.",
+        "requiredFieldsHint": "Fields marked with * are required.",
         "contextRequired": "Please choose where to create the quiz.",
         "correctAnswerRequired": "Question {{index}} has no correct answer selected.",
         "correctAnswerRequiredInline": "No correct answer selected for this question.",
@@ -1446,6 +1448,26 @@
       "generateAI": "Generate with AI",
       "generating": "AI is generating...",
       "questions": "questions"
+      ,"examActions": {
+        "submitButton": "Submit Exam",
+        "submitting": "Submitting...",
+        "submitFailed": "Submit failed. Please try again.",
+        "submitMissingAttempt": "Cannot submit because attempt is missing.",
+        "saveProgressButton": "Save Progress",
+        "saving": "Saving...",
+        "saveSuccess": "Saved successfully",
+        "saveFailed": "Save failed. Please try again.",
+        "saveAnswerFailed": "Failed to save answer. Please try again.",
+        "nextQuestion": "Next Question",
+        "processingAction": "Processing..."
+      },
+      "result": {
+        "reviewAnswers": "Review Answers",
+        "reviewPending": "AI is grading your answers, please wait...",
+        "reviewPendingHint": "AI is grading your submission. Please wait a moment before reviewing answers.",
+        "backToQuiz": "Back to Quiz",
+        "backToScore": "Back to Score"
+      }
     },
     "flashcard": {
       "createTitle": "Create Flashcard",
