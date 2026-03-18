@@ -19,6 +19,7 @@ export default function QuizResultPage() {
   const [quizDetails, setQuizDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reviewMode, setReviewMode] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
@@ -45,11 +46,18 @@ export default function QuizResultPage() {
         }
       } catch (err) {
         console.error('Failed to load result:', err);
+        // If first attempt fails and result is still null after 1 second (race condition), retry
+        if (retryCount < 2) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 1000);
+          return;
+        }
       } finally {
         setLoading(false);
       }
     })();
-  }, [attemptId]);
+  }, [attemptId, retryCount]);
 
   // Normalize result questions for QuestionCard format
   const reviewQuestions = useMemo(() => {

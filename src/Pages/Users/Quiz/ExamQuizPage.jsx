@@ -38,6 +38,8 @@ export default function ExamQuizPage() {
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
   const examLockNotifiedRef = useRef(false);
+  const instantSaveTimerRef = useRef(null);
+  const instantSaveInFlightRef = useRef(false);
 
   const resolveEffectiveTimeoutAt = useCallback((attempt, normalizedQuiz) => {
     const timeoutAt = attempt?.timeoutAt || null;
@@ -72,10 +74,38 @@ export default function ExamQuizPage() {
     || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
     || '/home';
 
+  const isPerQuestionMode = quiz?.timerMode === 'PER_QUESTION';
+
   const { saveManually, syncSnapshot } = useQuizAutoSave(attemptId, answers, {
     interval: 5000,
-    enabled: isStarted && !isSubmitted,
+    enabled: isStarted && !isSubmitted && !isPerQuestionMode,
   });
+
+  // TOTAL mode: debounce save on answer change to persist faster without blocking UI.
+  useEffect(() => {
+    if (!isStarted || isSubmitted || isPerQuestionMode || !attemptId) return;
+
+    if (instantSaveTimerRef.current) {
+      clearTimeout(instantSaveTimerRef.current);
+    }
+
+    instantSaveTimerRef.current = setTimeout(async () => {
+      if (instantSaveInFlightRef.current) return;
+      instantSaveInFlightRef.current = true;
+      try {
+        await saveManually({ silent: true });
+      } finally {
+        instantSaveInFlightRef.current = false;
+      }
+    }, 700);
+
+    return () => {
+      if (instantSaveTimerRef.current) {
+        clearTimeout(instantSaveTimerRef.current);
+        instantSaveTimerRef.current = null;
+      }
+    };
+  }, [answers, attemptId, isPerQuestionMode, isStarted, isSubmitted, saveManually]);
 
   const handleManualSave = useCallback(async () => {
     setSaveStatus('saving');
@@ -167,14 +197,10 @@ export default function ExamQuizPage() {
     submittingRef.current = true;
     setIsSubmitted(true);
     setSubmitError('');
-    const saveResult = await saveManually();
-    if (saveResult && !saveResult.ok) {
-      setSaveStatus('error');
-      setSaveMessage(saveResult?.error?.message || t('workspace.quiz.examActions.saveFailed', 'Save failed. Please try again.'));
-    }
+
     if (attemptId) {
       try {
-        if (quiz?.timerMode === 'PER_QUESTION') {
+        if (isPerQuestionMode) {
           // Per-question flow already persists answers on each next/timeout.
           await submitAttempt(attemptId);
         } else {
@@ -182,6 +208,9 @@ export default function ExamQuizPage() {
           await submitAttempt(attemptId, submitPayload);
         }
         markQuizCompleted(quizId);
+        // Add small delay to ensure backend finishes processing before navigating
+        // This prevents white screen bug when navigating too quickly
+        await new Promise(resolve => setTimeout(resolve, 500));
         navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
         return true;
       } catch (err) {
@@ -198,7 +227,7 @@ export default function ExamQuizPage() {
     submittingRef.current = false;
     setIsSubmitted(false);
     return false;
-  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually, showError, t, quiz?.timerMode]);
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, showError, t, isPerQuestionMode]);
 
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
@@ -273,6 +302,18 @@ export default function ExamQuizPage() {
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)}>
         <h2 className="text-xl text-slate-600 dark:text-slate-300">Quiz not found</h2>
+      </div>
+    );
+  }
+
+  // Show loading state while submitting to prevent white screen (race condition with result page)
+  if (isSubmitted) {
+    return (
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center flex-col gap-4', fontClass)}>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
+          {t('workspace.quiz.examActions.processing', 'Processing your submission...')}
+        </p>
       </div>
     );
   }
