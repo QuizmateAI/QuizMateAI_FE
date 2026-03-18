@@ -164,17 +164,13 @@ function WorkspacePage() {
 	const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
 	const [createdItems, setCreatedItems] = useState([]);
 	const [accessHistory, setAccessHistory] = useState([]);
-	const [isLeftResizing, setIsLeftResizing] = useState(false);
-	const [isRightResizing, setIsRightResizing] = useState(false);
 
 	// State quáº£n lÃ½ dialog upload â€” chá»‰ má»Ÿ khi workspace chÆ°a cÃ³ tÃ i liá»‡u sau láº§n fetch Ä‘áº§u tiÃªn
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
-
-	// State quáº£n lÃ½ kÃ­ch thÆ°á»›c panel (px) â€” kÃ©o tháº£ Ä‘á»ƒ thay Ä‘á»•i
-	const [leftWidth, setLeftWidth] = useState(320);
-	const [rightWidth, setRightWidth] = useState(320);
+	const workspaceLayoutRef = useRef(null);
+	const [workspaceLayoutWidth, setWorkspaceLayoutWidth] = useState(0);
 
 	// Tráº¡ng thÃ¡i hiá»ƒn thá»‹ ná»™i dung chÃ­nh â€” khÃ´i phá»¥c tá»« sessionStorage khi reload
 	const [activeView, setActiveView] = useState(() => {
@@ -190,11 +186,104 @@ function WorkspacePage() {
 
 	// Háº±ng sá»‘ kÃ­ch thÆ°á»›c panel
 	const COLLAPSED_WIDTH = 56;
-	const MIN_WIDTH = 240;
-	const MAX_WIDTH = 500;
+	const DEFAULT_SIDE_PANEL_WIDTH = 280;
+	const COLLAPSED_HANDLE_WIDTH = 8;
+	const EXPANDED_HANDLE_WIDTH = 16;
+	const CHAT_MIN_WIDTH = 760;
 
-	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : leftWidth;
-	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : rightWidth;
+	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
+	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
+
+	const getRequiredLayoutWidth = useCallback((sourcesCollapsed, studioCollapsed) => {
+		const leftPanelWidth = sourcesCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
+		const rightPanelWidth = studioCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
+		const leftHandleWidth = sourcesCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
+		const rightHandleWidth = studioCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
+		return CHAT_MIN_WIDTH + leftPanelWidth + rightPanelWidth + leftHandleWidth + rightHandleWidth;
+	}, [CHAT_MIN_WIDTH]);
+
+	const minWidthForChatWithOneSidePanel = getRequiredLayoutWidth(false, true);
+	const shouldStackSidePanels = workspaceLayoutWidth > 0 && workspaceLayoutWidth < minWidthForChatWithOneSidePanel;
+
+	const resolveCollapsedStateByWidth = useCallback((layoutWidth, sourcesCollapsed, studioCollapsed) => {
+		let nextSourcesCollapsed = sourcesCollapsed;
+		let nextStudioCollapsed = studioCollapsed;
+
+		if (layoutWidth < getRequiredLayoutWidth(nextSourcesCollapsed, nextStudioCollapsed) && !nextSourcesCollapsed) {
+			nextSourcesCollapsed = true;
+		}
+
+		if (layoutWidth < getRequiredLayoutWidth(nextSourcesCollapsed, nextStudioCollapsed) && !nextStudioCollapsed) {
+			nextStudioCollapsed = true;
+		}
+
+		return { nextSourcesCollapsed, nextStudioCollapsed };
+	}, [getRequiredLayoutWidth]);
+
+	const handleToggleSourcesCollapse = useCallback(() => {
+		const nextSourcesCollapsed = !isSourcesCollapsed;
+
+		if (nextSourcesCollapsed) {
+			setIsSourcesCollapsed(true);
+			return;
+		}
+
+		let nextStudioCollapsed = isStudioCollapsed;
+		if (workspaceLayoutWidth > 0 && workspaceLayoutWidth < getRequiredLayoutWidth(false, nextStudioCollapsed)) {
+			nextStudioCollapsed = true;
+		}
+
+		setIsStudioCollapsed(nextStudioCollapsed);
+		setIsSourcesCollapsed(false);
+	}, [getRequiredLayoutWidth, isSourcesCollapsed, isStudioCollapsed, workspaceLayoutWidth]);
+
+	const handleToggleStudioCollapse = useCallback(() => {
+		const nextStudioCollapsed = !isStudioCollapsed;
+
+		if (nextStudioCollapsed) {
+			setIsStudioCollapsed(true);
+			return;
+		}
+
+		let nextSourcesCollapsed = isSourcesCollapsed;
+		if (workspaceLayoutWidth > 0 && workspaceLayoutWidth < getRequiredLayoutWidth(nextSourcesCollapsed, false)) {
+			nextSourcesCollapsed = true;
+		}
+
+		setIsSourcesCollapsed(nextSourcesCollapsed);
+		setIsStudioCollapsed(false);
+	}, [getRequiredLayoutWidth, isSourcesCollapsed, isStudioCollapsed, workspaceLayoutWidth]);
+
+	useEffect(() => {
+		const container = workspaceLayoutRef.current;
+		if (!container || typeof ResizeObserver === "undefined") return undefined;
+
+		const observer = new ResizeObserver((entries) => {
+			const width = entries?.[0]?.contentRect?.width || 0;
+			setWorkspaceLayoutWidth(width);
+		});
+
+		observer.observe(container);
+		return () => observer.disconnect();
+	}, []);
+
+	useEffect(() => {
+		if (!workspaceLayoutWidth || shouldStackSidePanels) return;
+
+		const { nextSourcesCollapsed, nextStudioCollapsed } = resolveCollapsedStateByWidth(
+			workspaceLayoutWidth,
+			isSourcesCollapsed,
+			isStudioCollapsed
+		);
+
+		if (nextSourcesCollapsed !== isSourcesCollapsed) {
+			setIsSourcesCollapsed(nextSourcesCollapsed);
+		}
+
+		if (nextStudioCollapsed !== isStudioCollapsed) {
+			setIsStudioCollapsed(nextStudioCollapsed);
+		}
+	}, [isSourcesCollapsed, isStudioCollapsed, resolveCollapsedStateByWidth, shouldStackSidePanels, workspaceLayoutWidth]);
 
 	// LÆ°u activeView vÃ o sessionStorage má»—i khi thay Ä‘á»•i
 	useEffect(() => {
@@ -1089,52 +1178,6 @@ function WorkspacePage() {
 		setActiveView("mockTestDetail");
 	}, []);
 
-	// KÃ©o tháº£ thay Ä‘á»•i kÃ­ch thÆ°á»›c panel trÃ¡i (Sources)
-	const handleLeftResize = useCallback((e) => {
-		if (isSourcesCollapsed) return;
-		e.preventDefault();
-		setIsLeftResizing(true);
-		const startX = e.clientX;
-		const startW = leftWidth;
-		const onMove = (ev) => {
-			setLeftWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startW + ev.clientX - startX)));
-		};
-		const onUp = () => {
-			setIsLeftResizing(false);
-			document.removeEventListener("mousemove", onMove);
-			document.removeEventListener("mouseup", onUp);
-			document.body.style.cursor = "";
-			document.body.style.userSelect = "";
-		};
-		document.body.style.cursor = "col-resize";
-		document.body.style.userSelect = "none";
-		document.addEventListener("mousemove", onMove);
-		document.addEventListener("mouseup", onUp);
-	}, [leftWidth, isSourcesCollapsed]);
-
-	// KÃ©o tháº£ thay Ä‘á»•i kÃ­ch thÆ°á»›c panel pháº£i (Studio)
-	const handleRightResize = useCallback((e) => {
-		if (isStudioCollapsed) return;
-		e.preventDefault();
-		setIsRightResizing(true);
-		const startX = e.clientX;
-		const startW = rightWidth;
-		const onMove = (ev) => {
-			setRightWidth(Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startW - (ev.clientX - startX))));
-		};
-		const onUp = () => {
-			setIsRightResizing(false);
-			document.removeEventListener("mousemove", onMove);
-			document.removeEventListener("mouseup", onUp);
-			document.body.style.cursor = "";
-			document.body.style.userSelect = "";
-		};
-		document.body.style.cursor = "col-resize";
-		document.body.style.userSelect = "none";
-		document.addEventListener("mousemove", onMove);
-		document.addEventListener("mouseup", onUp);
-	}, [rightWidth, isStudioCollapsed]);
-
 	const settingsMenu = (
 		<div ref={settingsRef} className="relative">
 			<Button
@@ -1310,95 +1353,156 @@ function WorkspacePage() {
 				</div>
 			) : null}
 			<div className="flex-1 min-h-0">
-				<div className="max-w-[1740px] mx-auto px-4 py-4 h-full">
-					{/* Layout flex vá»›i resize handles â€” kÃ©o tháº£ Ä‘á»ƒ thay Ä‘á»•i kÃ­ch thÆ°á»›c */}
-					<div className="flex h-full">
-						{/* Panel nguá»“n tÃ i liá»‡u (trÃ¡i) */}
-						<div
-							style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
-							className={`shrink-0 h-full ${isLeftResizing ? "" : "transition-[width,min-width] duration-300 ease-in-out"}`}
-						>
-							<SourcesPanel
-								isDarkMode={isDarkMode}
-								sources={sources}
-								onAddSource={handleUploadClickSafe}
-								onRemoveSource={handleRemoveSource}
-								onRemoveMultiple={handleRemoveMultipleSources}
-                                selectedIds={selectedSourceIds}
-                                onSelectionChange={setSelectedSourceIds}
-								onSourceUpdated={(updatedSource) => {
-									setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
-								}}								isCollapsed={isSourcesCollapsed}
-								onToggleCollapse={() => setIsSourcesCollapsed((prev) => !prev)}
+				<div ref={workspaceLayoutRef} className="max-w-[1740px] mx-auto px-4 py-4 h-full">
+					{/* Layout workspace: bình thường là 3 cột, màn hình quá nhỏ thì đưa sources + studio xuống dưới */}
+					{shouldStackSidePanels ? (
+						<div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-4">
+							<div className="min-h-0">
+								<ChatPanel
+									isDarkMode={isDarkMode}
+									sources={sources}
+									selectedSourceIds={selectedSourceIds}
+									activeView={activeView}
+									createdItems={createdItems}
+									onUploadClick={handleUploadClickSafe}
+									onChangeView={handleStudioAction}
+									onCreateQuiz={handleCreateQuiz}
+									onCreateFlashcard={handleCreateFlashcard}
+									onCreateRoadmap={handleCreateRoadmap}
+									onCreateMockTest={handleCreateMockTest}
+									onBack={handleBackFromForm}
+									workspaceId={workspaceId}
+									selectedQuiz={selectedQuiz}
+									onViewQuiz={handleViewQuiz}
+									onEditQuiz={handleEditQuiz}
+									onSaveQuiz={handleSaveQuiz}
+									selectedFlashcard={selectedFlashcard}
+									onViewFlashcard={handleViewFlashcard}
+									onDeleteFlashcard={handleDeleteFlashcard}
+									selectedMockTest={selectedMockTest}
+									onViewMockTest={handleViewMockTest}
+									onEditMockTest={handleEditMockTest}
+									onSaveMockTest={handleSaveMockTest}
+								/>
+							</div>
 
-							/>
-						</div>
+							<div className="grid min-h-0 grid-cols-2 gap-4">
+								<div className="min-w-0 min-h-0">
+									<SourcesPanel
+										isDarkMode={isDarkMode}
+										sources={sources}
+										onAddSource={handleUploadClickSafe}
+										onRemoveSource={handleRemoveSource}
+										onRemoveMultiple={handleRemoveMultipleSources}
+										selectedIds={selectedSourceIds}
+										onSelectionChange={setSelectedSourceIds}
+										onSourceUpdated={(updatedSource) => {
+											setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
+										}}
+										isCollapsed={false}
+										onToggleCollapse={handleToggleSourcesCollapse}
+									/>
+								</div>
 
-						{/* Resize handle trÃ¡i */}
-						<div
-							className={`shrink-0 flex items-center justify-center ${isLeftResizing ? "" : "transition-all duration-300 ease-in-out"} ${isSourcesCollapsed ? "w-2" : "w-4 cursor-col-resize group"}`}
-							onMouseDown={isSourcesCollapsed ? undefined : handleLeftResize}
-						>
-							{!isSourcesCollapsed && (
-								<div className={`w-0.5 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
-							)}
+								<div className="min-w-0 min-h-0">
+									<StudioPanel
+										isDarkMode={isDarkMode}
+										onAction={handleStudioAction}
+										accessHistory={accessHistory}
+										isCollapsed={false}
+										onToggleCollapse={handleToggleStudioCollapse}
+										activeView={activeView}
+									/>
+								</div>
+							</div>
 						</div>
+					) : (
+						<div className="flex h-full">
+							{/* Panel nguá»“n tÃ i liá»‡u (trÃ¡i) */}
+							<div
+								style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
+								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
+							>
+								<SourcesPanel
+									isDarkMode={isDarkMode}
+									sources={sources}
+									onAddSource={handleUploadClickSafe}
+									onRemoveSource={handleRemoveSource}
+									onRemoveMultiple={handleRemoveMultipleSources}
+									selectedIds={selectedSourceIds}
+									onSelectionChange={setSelectedSourceIds}
+									onSourceUpdated={(updatedSource) => {
+										setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
+									}}
+									isCollapsed={isSourcesCollapsed}
+									onToggleCollapse={handleToggleSourcesCollapse}
+								/>
+							</div>
 
-						{/* Panel khu vá»±c há»c táº­p (giá»¯a) */}
-						<div className="flex-1 min-w-0 h-full">
-							<ChatPanel
-								isDarkMode={isDarkMode}
-								sources={sources}
-                                selectedSourceIds={selectedSourceIds}
-								activeView={activeView}
-								createdItems={createdItems}
-								onUploadClick={handleUploadClickSafe}
-								onChangeView={handleStudioAction}
-								onCreateQuiz={handleCreateQuiz}
-								onCreateFlashcard={handleCreateFlashcard}
-								onCreateRoadmap={handleCreateRoadmap}
-								onCreateMockTest={handleCreateMockTest}
-								onBack={handleBackFromForm}
-								workspaceId={workspaceId}
-								selectedQuiz={selectedQuiz}
-								onViewQuiz={handleViewQuiz}
-								onEditQuiz={handleEditQuiz}
-								onSaveQuiz={handleSaveQuiz}
-								selectedFlashcard={selectedFlashcard}
-								onViewFlashcard={handleViewFlashcard}
-								onDeleteFlashcard={handleDeleteFlashcard}
-								selectedMockTest={selectedMockTest}
-								onViewMockTest={handleViewMockTest}
-								onEditMockTest={handleEditMockTest}
-								onSaveMockTest={handleSaveMockTest}
-							/>
-						</div>
+							{/* Resize handle trÃ¡i */}
+							<div
+								className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${isSourcesCollapsed ? "w-2" : "w-4"}`}
+							>
+								{!isSourcesCollapsed && (
+									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
+								)}
+							</div>
 
-						{/* Resize handle pháº£i */}
-						<div
-							className={`shrink-0 flex items-center justify-center ${isRightResizing ? "" : "transition-all duration-300 ease-in-out"} ${isStudioCollapsed ? "w-2" : "w-4 cursor-col-resize group"}`}
-							onMouseDown={isStudioCollapsed ? undefined : handleRightResize}
-						>
-							{!isStudioCollapsed && (
-								<div className={`w-0.5 h-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
-							)}
-						</div>
+							{/* Panel khu vá»±c há»c táº­p (giá»¯a) */}
+							<div className="flex-1 min-w-0 h-full">
+								<ChatPanel
+									isDarkMode={isDarkMode}
+									sources={sources}
+									selectedSourceIds={selectedSourceIds}
+									activeView={activeView}
+									createdItems={createdItems}
+									onUploadClick={handleUploadClickSafe}
+									onChangeView={handleStudioAction}
+									onCreateQuiz={handleCreateQuiz}
+									onCreateFlashcard={handleCreateFlashcard}
+									onCreateRoadmap={handleCreateRoadmap}
+									onCreateMockTest={handleCreateMockTest}
+									onBack={handleBackFromForm}
+									workspaceId={workspaceId}
+									selectedQuiz={selectedQuiz}
+									onViewQuiz={handleViewQuiz}
+									onEditQuiz={handleEditQuiz}
+									onSaveQuiz={handleSaveQuiz}
+									selectedFlashcard={selectedFlashcard}
+									onViewFlashcard={handleViewFlashcard}
+									onDeleteFlashcard={handleDeleteFlashcard}
+									selectedMockTest={selectedMockTest}
+									onViewMockTest={handleViewMockTest}
+									onEditMockTest={handleEditMockTest}
+									onSaveMockTest={handleSaveMockTest}
+								/>
+							</div>
 
-						{/* Panel Studio (pháº£i) */}
-						<div
-							style={{ width: effectiveRightWidth, minWidth: effectiveRightWidth }}
-							className={`shrink-0 h-full ${isRightResizing ? "" : "transition-[width,min-width] duration-300 ease-in-out"}`}
-						>
-							<StudioPanel
-								isDarkMode={isDarkMode}
-								onAction={handleStudioAction}
-								accessHistory={accessHistory}
-								isCollapsed={isStudioCollapsed}
-								onToggleCollapse={() => setIsStudioCollapsed((prev) => !prev)}
-								activeView={activeView}
-							/>
+							{/* Resize handle pháº£i */}
+							<div
+								className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${isStudioCollapsed ? "w-2" : "w-4"}`}
+							>
+								{!isStudioCollapsed && (
+									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
+								)}
+							</div>
+
+							{/* Panel Studio (pháº£i) */}
+							<div
+								style={{ width: effectiveRightWidth, minWidth: effectiveRightWidth }}
+								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
+							>
+								<StudioPanel
+									isDarkMode={isDarkMode}
+									onAction={handleStudioAction}
+									accessHistory={accessHistory}
+									isCollapsed={isStudioCollapsed}
+									onToggleCollapse={handleToggleStudioCollapse}
+									activeView={activeView}
+								/>
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			</div>
 

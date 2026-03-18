@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine } from "lucide-react";
+import { UploadCloud, BookOpen, Sparkles, Route, BadgeCheck, Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
@@ -80,29 +80,50 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             </p>
           </div>
 
-          {/* Gợi ý nhanh 3 chế độ quiz */}
+          {/* Lối tắt nhanh đến 3 chức năng chính */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
             {[
-              { key: "manual", icon: PenLine, color: "text-blue-500" },
-              { key: "companion", icon: Mic, color: "text-purple-500" },
-              { key: "practice", icon: Play, color: "text-emerald-500" },
+              {
+                key: "roadmap",
+                icon: Route,
+                color: "text-blue-500",
+                label: t("workspace.studio.actions.roadmap"),
+                description: t("workspace.studio.actions.createRoadmap"),
+              },
+              {
+                key: "quiz",
+                icon: BadgeCheck,
+                color: "text-emerald-500",
+                label: t("workspace.studio.actions.quiz"),
+                description: t("workspace.studio.actions.createQuiz"),
+              },
+              {
+                key: "flashcard",
+                icon: Layers,
+                color: "text-amber-500",
+                label: t("workspace.studio.actions.flashcard"),
+                description: t("workspace.studio.actions.createFlashcard"),
+              },
             ].map((mode) => (
-              <div
+              <Button
                 key={mode.key}
+                type="button"
+                onClick={() => onChangeView?.(mode.key)}
                 className={`rounded-xl p-4 text-center border cursor-pointer transition-all ${
                   isDarkMode
-                    ? "bg-slate-800/50 border-slate-700 hover:border-slate-600"
-                    : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                    ? "bg-slate-800/50 border-slate-700 hover:border-slate-600 text-slate-200 hover:bg-slate-800"
+                    : "bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-800 hover:bg-gray-100"
                 }`}
+                variant="outline"
               >
                 <mode.icon className={`w-5 h-5 mx-auto mb-2 ${mode.color}`} />
-                <p className={`text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
-                  {t(`workspace.chat.quizMode.${mode.key}`)}
+                <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
+                  {mode.label}
                 </p>
-                <p className={`text-[10px] mt-0.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-                  {t(`workspace.chat.quizMode.${mode.key}Desc`)}
+                <p className={`text-[10px] mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                  {mode.description}
                 </p>
-              </div>
+              </Button>
             ))}
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map, Clock, History } from "lucide-react";
+import { GitBranch, BadgeCheck, CreditCard, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, Map, Clock, History } from "lucide-react";
 
 // Lấy icon và màu theo loại output đã tạo
 function getOutputIcon(type) {
@@ -15,15 +15,12 @@ const STUDIO_ACTIONS = [
   { key: "roadmap", icon: GitBranch, color: "text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-950/40" },
   { key: "quiz", icon: BadgeCheck, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-950/40" },
   { key: "flashcard", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-950/40" },
-  { key: "mockTest", icon: ClipboardList, color: "text-purple-500", bg: "bg-purple-100 dark:bg-purple-950/40" },
-  { key: "postLearning", icon: BookMarked, color: "text-orange-500", bg: "bg-orange-100 dark:bg-orange-950/40" },
-  { key: "prelearning", icon: GraduationCap, color: "text-rose-500", bg: "bg-rose-100 dark:bg-rose-950/40" },
 ];
 
 // Lấy action key đang active từ activeView
 function getActiveKey(view) {
   if (!view) return null;
-  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", createMockTest: "mockTest", createPostLearning: "postLearning" };
+  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard" };
   return map[view] || view;
 }
 
