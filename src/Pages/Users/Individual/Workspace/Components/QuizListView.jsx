@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
-import { getQuizzesByUser, deleteQuiz } from "@/api/QuizAPI";
+import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 
@@ -97,7 +97,7 @@ function getDurationInMinutes(quiz) {
   return rawDuration;
 }
 
-function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _contextType = "WORKSPACE", contextId: _contextId }) {
+function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
   const location = useLocation();
@@ -110,11 +110,16 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, quizId: null, mode: null });
 
-  // Lấy danh sách quiz từ API (theo user hiện tại)
-  const fetchQuizzes = useCallback(async ({ silent = false } = {}) => {
+  // Lấy danh sách quiz từ API theo context hiện tại (workspace/roadmap/phase/knowledge)
+  const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
+    if (!scopeId) {
+      setQuizzes([]);
+      return;
+    }
+
     if (!silent) setLoading(true);
     try {
-      const res = await getQuizzesByUser();
+      const res = await getQuizzesByScope(contextType, scopeId);
       const incoming = res.data || [];
       setQuizzes((prev) => (hasQuizListChanged(prev, incoming) ? incoming : prev));
     } catch (err) {
@@ -123,12 +128,12 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
     } finally {
       if (!silent) setLoading(false);
     }
-  }, []);
+  }, [contextId, contextType]);
 
   // Gọi API khi component mount hoặc context thay đổi
   useEffect(() => {
-    fetchQuizzes();
-  }, [fetchQuizzes]);
+    fetchQuizzes({ scopeId: contextId });
+  }, [contextId, fetchQuizzes]);
 
   // Chỉ polling khi còn quiz PROCESSING, và polling silent để tránh lag cả màn.
   useEffect(() => {
@@ -182,7 +187,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={fetchQuizzes} disabled={loading}
+          <Button variant="outline" onClick={() => fetchQuizzes({ scopeId: contextId })} disabled={loading}
             className={`rounded-full h-9 w-9 p-0 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
@@ -219,6 +224,20 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.loading")}</p>
+          </div>
+        ) : quizzes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
+            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+              {t("workspace.roadmap.noQuizYet")}
+            </p>
+            <Button
+              onClick={onCreateQuiz}
+              className="mt-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm">{t("workspace.studio.actions.createQuiz")}</span>
+            </Button>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">

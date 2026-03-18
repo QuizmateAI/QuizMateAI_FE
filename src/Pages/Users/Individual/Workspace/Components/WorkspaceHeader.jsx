@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/Components/ui/button";
-import { Pencil, Settings, Share2 } from "lucide-react";
+import { Pencil, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -110,15 +110,7 @@ function WorkspaceHeader({
             <Zap className="w-4 h-4" />
             <span className={fontClass}>{t("upgradePlan.upgradeBtn")}</span>
           </Button> */}
-          <Button
-            variant="outline"
-            className={`rounded-full h-9 px-4 flex items-center gap-2 ${
-              isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-gray-200"
-            }`}
-          >
-            <Share2 className="w-4 h-4" />
-            <span className={fontClass}>{t("workspace.header.share")}</span>
-          </Button>
+          
           {settingsMenu ? (
             settingsMenu
           ) : (
