@@ -90,15 +90,12 @@ export const buildAiQuizPayload = ({
       : String(selectedDifficulty?.difficultyName || "MEDIUM").toUpperCase();
 
   const normalizedDuration = Math.max(1, Number(aiDuration) || 1);
-  // BE currently computes attempt timeout with plusSeconds(quiz.duration).
-  // For total-timer exams, send duration in seconds to align runtime behavior.
-  const durationForBackend = aiTimerMode ? normalizedDuration * 60 : normalizedDuration;
 
   return {
     title: aiName,
     materialIds: selectedMaterialIds,
     overallDifficulty: overallDifficultyEnum,
-    durationInMinute: durationForBackend,
+    durationInMinute: normalizedDuration,
     durationInSecond: 0,
     roadmapId: null,
     phaseId: null,

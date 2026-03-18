@@ -38,9 +38,34 @@ function getDurationInMinutes(quiz) {
   const rawDuration = Number(quiz?.duration) || 0;
   if (!rawDuration) return 0;
 
-  // AI timed-exam duration is stored as seconds to align with BE timeout logic.
-  if (quiz?.timerMode === true && quiz?.createVia === "AI") {
-    return Math.max(1, Math.round(rawDuration / 60));
+  const createVia = String(quiz?.createVia || '').toUpperCase();
+  const isAiQuiz = createVia === 'AI';
+
+  const rawTimerMode = quiz?.timerMode;
+  const isTotalTimerMode = rawTimerMode === true
+    || rawTimerMode === "true"
+    || rawTimerMode === 1
+    || rawTimerMode === "1"
+    || rawTimerMode === "TOTAL";
+
+  if (isAiQuiz) {
+    // AI quizzes store quiz.duration in seconds.
+    // Legacy FE bug may have multiplied once more before BE conversion.
+    const normalizedSeconds = rawDuration >= 36000
+      ? Math.floor(rawDuration / 60)
+      : rawDuration;
+    return Math.max(1, Math.round(normalizedSeconds / 60));
+  }
+
+  // Legacy FE bug sent minutes as seconds into durationInMinute, and BE converted again.
+  // Example: 15 -> FE sends 900 -> BE stores 54000 seconds.
+  const normalizedDurationInSeconds = isTotalTimerMode && rawDuration >= 36000
+    ? Math.floor(rawDuration / 60)
+    : rawDuration;
+
+  // Total-mode duration is stored as seconds by BE (e.g. 900 = 15 minutes).
+  if (isTotalTimerMode) {
+    return Math.max(1, Math.round(normalizedDurationInSeconds / 60));
   }
 
   return rawDuration;

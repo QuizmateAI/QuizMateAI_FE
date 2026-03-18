@@ -25,6 +25,7 @@ export default function ExamQuizPage() {
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [attemptId, setAttemptId] = useState(null);
+  const [attemptStartedAt, setAttemptStartedAt] = useState(null);
   const [isStarted, setIsStarted] = useState(false);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
@@ -34,6 +35,35 @@ export default function ExamQuizPage() {
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
   const examLockNotifiedRef = useRef(false);
+
+  const resolveEffectiveTimeoutAt = useCallback((attempt, normalizedQuiz) => {
+    const timeoutAt = attempt?.timeoutAt || null;
+    const startedAt = attempt?.startedAt || null;
+    const normalizedTotalSeconds = Number(normalizedQuiz?.totalTime) || 0;
+
+    if (!timeoutAt || normalizedQuiz?.timerMode !== 'TOTAL' || normalizedTotalSeconds <= 0) {
+      return timeoutAt;
+    }
+
+    const remainingFromApiTimeout = getAttemptRemainingSeconds(timeoutAt, normalizedTotalSeconds);
+
+    // Legacy data may keep timeout much larger than normalized duration (e.g. 900 mins vs 15 mins).
+    if (remainingFromApiTimeout <= normalizedTotalSeconds * 3) {
+      return timeoutAt;
+    }
+
+    if (!startedAt) {
+      return timeoutAt;
+    }
+
+    const startedAtMs = new Date(startedAt).getTime();
+    if (Number.isNaN(startedAtMs)) {
+      return timeoutAt;
+    }
+
+    const correctedTimeoutAt = new Date(startedAtMs + (normalizedTotalSeconds * 1000)).toISOString();
+    return correctedTimeoutAt;
+  }, []);
 
   const returnToQuizPath = location.state?.returnToQuizPath
     || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
@@ -94,10 +124,12 @@ export default function ExamQuizPage() {
 
       const attempt = res.data;
       const hydratedAnswers = mapSavedAnswersToState(attempt.savedAnswers);
+      const effectiveTimeoutAt = resolveEffectiveTimeoutAt(attempt, quiz);
 
       setAttemptId(attempt.attemptId);
-      setAttemptTimeoutAt(attempt.timeoutAt || null);
-      setTimeLeft(getAttemptRemainingSeconds(attempt.timeoutAt, quiz?.totalTime || 0));
+      setAttemptStartedAt(attempt.startedAt || null);
+      setAttemptTimeoutAt(effectiveTimeoutAt);
+      setTimeLeft(getAttemptRemainingSeconds(effectiveTimeoutAt, quiz?.totalTime || 0));
       markQuizAttempted(quizId);
       setAnswers(hydratedAnswers);
       syncSnapshot(hydratedAnswers);
@@ -106,25 +138,37 @@ export default function ExamQuizPage() {
       console.error('Failed to start attempt:', err);
       showError(err?.message || 'Failed to start exam attempt');
     }
-  }, [quiz?.totalTime, quizId, showError, syncSnapshot]);
+  }, [quiz, quizId, resolveEffectiveTimeoutAt, showError, syncSnapshot]);
 
   const handleSubmit = useCallback(async () => {
-    if (submittingRef.current) return;
+    if (submittingRef.current) return false;
     submittingRef.current = true;
     setIsSubmitted(true);
     await saveManually();
     if (attemptId) {
       try {
-        const submitPayload = buildSubmitPayload(quiz?.questions, answers);
-        await submitAttempt(attemptId, submitPayload);
+        if (quiz?.timerMode === 'PER_QUESTION') {
+          // Per-question flow already persists answers on each next/timeout.
+          await submitAttempt(attemptId);
+        } else {
+          const submitPayload = buildSubmitPayload(quiz?.questions, answers);
+          await submitAttempt(attemptId, submitPayload);
+        }
         markQuizCompleted(quizId);
         navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
+        return true;
       } catch (err) {
         console.error('Failed to submit:', err);
+        showError(err?.message || 'Nộp bài thất bại, vui lòng thử lại.');
         submittingRef.current = false;
+        setIsSubmitted(false);
+        return false;
       }
     }
-  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually]);
+    submittingRef.current = false;
+    setIsSubmitted(false);
+    return false;
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, saveManually, showError]);
 
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
@@ -270,6 +314,7 @@ export default function ExamQuizPage() {
           onTextAnswerChange={updateTextAnswer}
           onSubmit={handleSubmit}
           attemptId={attemptId}
+          attemptStartedAt={attemptStartedAt}
           fontClass={fontClass}
         />
       </div>

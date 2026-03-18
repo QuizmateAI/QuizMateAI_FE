@@ -864,15 +864,12 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         }
 
         const normalizedDuration = Math.max(1, Number(aiDuration) || 1);
-        // BE currently computes attempt timeout with plusSeconds(quiz.duration).
-        // For total-timer exams, send duration in seconds to align runtime behavior.
-        const durationForBackend = aiTimerMode ? normalizedDuration * 60 : normalizedDuration;
 
         const payload = {
           title: aiName,
           materialIds: selectedMaterialIds,
           overallDifficulty: selectedDifficultyId === "CUSTOM" ? "CUSTOM" : selectedDifficulty?.difficultyName || "MEDIUM",
-          durationInMinute: durationForBackend,
+          durationInMinute: normalizedDuration,
           durationInSecond: 0,
           roadmapId: null,
           phaseId: null,
