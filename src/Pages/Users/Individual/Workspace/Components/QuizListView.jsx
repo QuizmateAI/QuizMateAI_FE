@@ -38,6 +38,18 @@ const INTENT_STYLES = {
 // Bộ lọc theo trạng thái
 const STATUS_FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT", "COMPLETED"];
 
+function getDurationInMinutes(quiz) {
+  const rawDuration = Number(quiz?.duration) || 0;
+  if (!rawDuration) return 0;
+
+  // AI timed-exam duration is stored as seconds to align with BE timeout logic.
+  if (quiz?.timerMode === true && quiz?.createVia === "AI") {
+    return Math.max(1, Math.round(rawDuration / 60));
+  }
+
+  return rawDuration;
+}
+
 function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _contextType = "WORKSPACE", contextId: _contextId }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -159,6 +171,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
               const ss = STATUS_STYLES[quiz.status] || STATUS_STYLES.DRAFT;
               const is = INTENT_STYLES[quiz.quizIntent] || {};
               const completed = hasQuizCompleted(quiz.quizId);
+              const durationInMinutes = getDurationInMinutes(quiz);
               return (
                 <div key={quiz.quizId} onClick={() => onViewQuiz?.(quiz)} className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all duration-300 group ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-blue-950/40" : "bg-blue-100"}`}>
@@ -167,9 +180,9 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
                   <div className="flex-1 min-w-0 transition-transform duration-300 group-hover:-translate-x-1">
                     <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{quiz.title}</p>
                     <div className={`flex items-center gap-2 mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      {quiz.duration && (
+                      {durationInMinutes > 0 && (
                         <span className="flex items-center gap-1">
-                          <Timer className="w-3 h-3" />{quiz.duration} {t("workspace.quiz.minutes")}
+                          <Timer className="w-3 h-3" />{durationInMinutes} {t("workspace.quiz.minutes")}
                         </span>
                       )}
                       {quiz.overallDifficulty && (
@@ -191,6 +204,16 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType: _cont
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
                       {t(`workspace.quiz.statusLabels.${quiz.status}`)}
                     </span>
+                    {typeof quiz.timerMode === "boolean" && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${quiz.timerMode
+                        ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
+                        : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                      }`}>
+                        {quiz.timerMode
+                          ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
+                          : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                      </span>
+                    )}
                     {quiz.status !== "DRAFT" && quiz.status !== "PROCESSING" && (
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${completed
                         ? (isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-700")

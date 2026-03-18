@@ -18,7 +18,7 @@ export default function ExamQuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
@@ -205,6 +205,7 @@ export default function ExamQuizPage() {
 
   /* ── Start screen ── */
   if (!isStarted) {
+    const isTimedExam = quiz.timerMode === 'TOTAL';
     const info = quiz.timerMode === 'TOTAL'
       ? `${Math.floor(quiz.totalTime / 60)} minutes • ${quiz.questions.length} questions`
       : `${quiz.questions.length} questions • Per-question timer`;
@@ -212,6 +213,16 @@ export default function ExamQuizPage() {
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4', fontClass)}>
         <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg shadow-slate-900/10 dark:shadow-blue-900/50 max-w-md w-full border border-slate-200 dark:border-slate-700">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{quiz.title}</h1>
+          <div className="mb-2">
+            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isTimedExam
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+            }`}>
+              {isTimedExam
+                ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
+                : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
+            </span>
+          </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-2">{info} • Exam Mode</p>
           {quiz.maxAttempt && <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Max attempts: {quiz.maxAttempt}</p>}
           <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
@@ -269,7 +280,17 @@ export default function ExamQuizPage() {
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8', fontClass)}>
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">{quiz.title}</h1>
+        <div className="mb-6 flex items-center gap-2 flex-wrap">
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{quiz.title}</h1>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${quiz.timerMode === 'TOTAL'
+            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+          }`}>
+            {quiz.timerMode === 'TOTAL'
+              ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
+              : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
+          </span>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
           {/* Questions list */}
           <div className="space-y-4">
