@@ -18,7 +18,7 @@ import PostLearningListView from "./PostLearningListView";
 import CreatePostLearningForm from "./CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onCreatePhaseKnowledge, onCreatePhasePreLearning, isGeneratingRoadmapPhases = false, generatingKnowledgePhaseIds = [], generatingPreLearningPhaseIds = [] }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -61,6 +61,12 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
           <RoadmapCanvasView
             isDarkMode={isDarkMode}
             onCreateRoadmap={onCreateRoadmap}
+            onCreateRoadmapPhases={onCreateRoadmapPhases}
+            onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+            onCreatePhasePreLearning={onCreatePhasePreLearning}
+            isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+            generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+            generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
             createdItems={createdRoadmaps}
             workspaceId={workspaceId}
             forcedCanvasView={roadmapCanvasView}
