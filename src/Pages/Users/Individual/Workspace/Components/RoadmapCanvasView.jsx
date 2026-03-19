@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Map, Maximize2, Minimize2, Rows3, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
+import { BookOpen, BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Rows3, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
@@ -149,6 +149,12 @@ function RoadmapCanvasView({
   workspaceId = null,
   groupId = null,
   onCreateRoadmap,
+  onCreateRoadmapPhases,
+  onCreatePhaseKnowledge,
+  onCreatePhasePreLearning,
+  isGeneratingRoadmapPhases = false,
+  generatingKnowledgePhaseIds = [],
+  generatingPreLearningPhaseIds = [],
   forcedCanvasView = null,
   onCanvasViewChange,
   selectedPhaseId = null,
@@ -589,53 +595,62 @@ function RoadmapCanvasView({
     );
   }
 
-  if (!roadmap || !roadmap.canvasView) {
+  const hasPhase = (roadmap?.phases?.length ?? 0) > 0;
+
+  if (loading && !roadmap) {
+    return (
+      <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-300" : "bg-white text-gray-700"}`}>
+        <div className="max-w-xl text-center">
+          <Loader2 className={`w-8 h-8 animate-spin mx-auto ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+          <p className={`mt-4 text-lg font-semibold ${fontClass}`}>
+            {t("workspace.roadmap.loading.title", "Đang tải roadmap")}
+          </p>
+          <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+            {t("workspace.roadmap.loading.description", "Vui lòng đợi AI tạo title, description và cấu trúc roadmap")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGeneratingRoadmapPhases) {
+    return (
+      <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-300" : "bg-white text-gray-700"}`}>
+        <div className="max-w-xl text-center">
+          <Loader2 className={`w-8 h-8 animate-spin mx-auto ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+          <p className={`mt-4 text-lg font-semibold ${fontClass}`}>
+            {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi AI tạo phase")}
+          </p>
+          <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+            {t("workspace.roadmap.phaseGenerating.description", "Hệ thống đang tạo danh sách phase từ tài liệu đã chọn.")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!roadmap || !roadmap.canvasView || !hasPhase) {
     return (
       <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-gray-500"}`}>
-        <div className="max-w-3xl text-center">
-          <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl ${isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-50 text-emerald-600"}`}>
-            <Map className="w-8 h-8" />
+        <div className="max-w-2xl text-center">
+          <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl ${isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-600"}`}>
+            <BookOpen className="w-8 h-8" />
           </div>
           <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-            {labels.selectorTitle}
+            {t("workspace.roadmap.emptyRoadmapTitle", "Chào mừng đến với roadmap")}
           </p>
           <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-            {labels.selectorDescription}
+            {t("workspace.roadmap.emptyRoadmapDescription", "Tạo phase bằng AI để bắt đầu lộ trình học từ tài liệu của bạn.")}
           </p>
-          <div className="mt-6 grid gap-4 md:grid-cols-2 text-left">
-            <button
+          <div className="mt-6 flex items-center justify-center">
+            <Button
               type="button"
               disabled={isCreatingRoadmap}
-              onClick={() => handleSelectCanvasView("view1")}
-              className={`rounded-[28px] border p-5 transition-all ${isDarkMode ? "border-slate-700 bg-slate-900/80 hover:border-slate-500" : "border-gray-200 bg-white hover:border-blue-300"}`}
+              onClick={() => onCreateRoadmapPhases?.()}
+              className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
-                <Map className="h-5 w-5" />
-              </div>
-              <p className={`mt-4 text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                {labels.canvasView1Title}
-              </p>
-              <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-                {labels.canvasView1Description}
-              </p>
-            </button>
-
-            <button
-              type="button"
-              disabled={isCreatingRoadmap}
-              onClick={() => handleSelectCanvasView("view2")}
-              className={`rounded-[28px] border p-5 transition-all ${isDarkMode ? "border-slate-700 bg-slate-900/80 hover:border-slate-500" : "border-gray-200 bg-white hover:border-blue-300"}`}
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-500">
-                <Rows3 className="h-5 w-5" />
-              </div>
-              <p className={`mt-4 text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                {labels.canvasView2Title}
-              </p>
-              <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-                {labels.canvasView2Description}
-              </p>
-            </button>
+              {t("workspace.roadmap.createPhaseButton", "Tạo phase")}
+            </Button>
           </div>
         </div>
       </div>
@@ -651,6 +666,10 @@ function RoadmapCanvasView({
         isDarkMode={isDarkMode}
         fontClass={fontClass}
         selectedPhaseId={selectedPhaseId}
+        onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+        onCreatePhasePreLearning={onCreatePhasePreLearning}
+        generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+        generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
       />
     );
   }
