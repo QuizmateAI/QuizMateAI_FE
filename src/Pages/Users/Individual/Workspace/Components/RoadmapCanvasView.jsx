@@ -68,7 +68,7 @@ function buildLayoutBounds(layout, expandedKnowledges) {
       height: PHASE_CARD_SIZE.height,
     });
 
-    phase.knowledges.forEach((knowledge) => {
+    (phase.knowledges ?? []).forEach((knowledge) => {
       const knowledgeHeight = estimateKnowledgeCardHeight(knowledge, Boolean(expandedKnowledges[knowledge.knowledgeId]));
       rectangles.push({
         x: knowledge.x,
@@ -97,13 +97,13 @@ function buildLayoutBounds(layout, expandedKnowledges) {
 }
 
 function buildLayout(phases, phaseOffsets, knowledgeOffsets) {
-  const phaseLayouts = phases.map((phase, index) => {
+  const phaseLayouts = (phases ?? []).map((phase, index) => {
     const side = getPhaseSide(index);
     const phaseX = PHASE_X_BY_SIDE[side];
     const phaseY = PHASE_Y_POSITIONS[index] ?? CENTER_Y;
     const phaseOffset = phaseOffsets[phase.phaseId] ?? { x: 0, y: 0 };
     const knowledgeX = KNOWLEDGE_X_BY_SIDE[side];
-    const knowledges = phase.knowledges.map((knowledge, knowledgeIndex) => {
+    const knowledges = (phase.knowledges ?? []).map((knowledge, knowledgeIndex) => {
       const knowledgeOffset = knowledgeOffsets[phase.phaseId]?.[knowledge.knowledgeId] ?? { x: 0, y: 0 };
       return {
         ...knowledge,
@@ -130,7 +130,7 @@ function buildLayout(phases, phaseOffsets, knowledgeOffsets) {
       y2: phase.y,
     };
 
-    const knowledgeLinks = phase.knowledges.map((knowledge) => ({
+    const knowledgeLinks = (phase.knowledges ?? []).map((knowledge) => ({
       key: `${phase.phaseId}-${knowledge.knowledgeId}`,
       x1: phase.x,
       y1: phase.y,
@@ -149,6 +149,9 @@ function RoadmapCanvasView({
   workspaceId = null,
   groupId = null,
   onCreateRoadmap,
+  forcedCanvasView = null,
+  onCanvasViewChange,
+  selectedPhaseId = null,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -168,12 +171,24 @@ function RoadmapCanvasView({
   const [isCreatingRoadmap, setIsCreatingRoadmap] = useState(false);
   const [transform, setTransform] = useState({ x: -CENTER_X + 520, y: -CENTER_Y + 390, scale: 1 });
 
+  const persistCanvasView = useCallback((roadmapId, canvasView) => {
+    if (!roadmapId || !canvasView) return;
+    localStorage.setItem(`roadmap_${roadmapId}_canvasView`, canvasView);
+  }, []);
+
   const loadRoadmap = useCallback(async () => {
     setLoading(true);
     try {
       const response = await getRoadmapGraph({ workspaceId, groupId });
       const nextRoadmap = response?.data?.data ?? null;
-      setRoadmap(nextRoadmap);
+      const resolvedCanvasView = forcedCanvasView || nextRoadmap?.canvasView || null;
+      const mergedRoadmap = nextRoadmap
+        ? { ...nextRoadmap, canvasView: resolvedCanvasView }
+        : null;
+      setRoadmap(mergedRoadmap);
+      if (mergedRoadmap?.canvasView) {
+        onCanvasViewChange?.(mergedRoadmap.canvasView);
+      }
       const firstKnowledgeIds = nextRoadmap?.phases?.reduce((accumulator, phase) => {
         if (phase.knowledges?.[0]?.knowledgeId) {
           accumulator[phase.knowledges[0].knowledgeId] = true;
@@ -187,7 +202,16 @@ function RoadmapCanvasView({
     } finally {
       setLoading(false);
     }
-  }, [groupId, workspaceId]);
+  }, [forcedCanvasView, groupId, onCanvasViewChange, workspaceId]);
+
+  useEffect(() => {
+    if (!forcedCanvasView) return;
+    setRoadmap((current) => (current ? { ...current, canvasView: forcedCanvasView } : current));
+    if (roadmap?.roadmapId) {
+      persistCanvasView(roadmap.roadmapId, forcedCanvasView);
+      onCanvasViewChange?.(forcedCanvasView);
+    }
+  }, [forcedCanvasView, onCanvasViewChange, persistCanvasView, roadmap?.roadmapId]);
 
   const getFitScaleForBounds = (bounds, rect, padding = FIT_EDGE_PADDING) => {
     const scaleX = (rect.width - padding * 2) / bounds.width;
@@ -303,10 +327,17 @@ function RoadmapCanvasView({
     flashcard: t("workspace.roadmap.canvas.flashcard"),
   }), [t]);
 
-  const handleCreateMockRoadmap = useCallback(async (canvasView) => {
-    if (!onCreateRoadmap) {
+  const handleSelectCanvasView = useCallback(async (canvasView) => {
+    if (!canvasView) return;
+
+    if (roadmap?.roadmapId) {
+      persistCanvasView(roadmap.roadmapId, canvasView);
+      setRoadmap((current) => (current ? { ...current, canvasView } : current));
+      onCanvasViewChange?.(canvasView);
       return;
     }
+
+    if (!onCreateRoadmap) return;
 
     setIsCreatingRoadmap(true);
     try {
@@ -315,7 +346,7 @@ function RoadmapCanvasView({
     } finally {
       setIsCreatingRoadmap(false);
     }
-  }, [loadRoadmap, onCreateRoadmap]);
+  }, [loadRoadmap, onCanvasViewChange, onCreateRoadmap, persistCanvasView, roadmap?.roadmapId]);
 
   useEffect(() => {
     transformRef.current = transform;
@@ -558,7 +589,7 @@ function RoadmapCanvasView({
     );
   }
 
-  if (!roadmap) {
+  if (!roadmap || !roadmap.canvasView) {
     return (
       <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-gray-500"}`}>
         <div className="max-w-3xl text-center">
@@ -575,7 +606,7 @@ function RoadmapCanvasView({
             <button
               type="button"
               disabled={isCreatingRoadmap}
-              onClick={() => handleCreateMockRoadmap("view1")}
+              onClick={() => handleSelectCanvasView("view1")}
               className={`rounded-[28px] border p-5 transition-all ${isDarkMode ? "border-slate-700 bg-slate-900/80 hover:border-slate-500" : "border-gray-200 bg-white hover:border-blue-300"}`}
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
@@ -592,7 +623,7 @@ function RoadmapCanvasView({
             <button
               type="button"
               disabled={isCreatingRoadmap}
-              onClick={() => handleCreateMockRoadmap("view2")}
+              onClick={() => handleSelectCanvasView("view2")}
               className={`rounded-[28px] border p-5 transition-all ${isDarkMode ? "border-slate-700 bg-slate-900/80 hover:border-slate-500" : "border-gray-200 bg-white hover:border-blue-300"}`}
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-500">
@@ -611,8 +642,17 @@ function RoadmapCanvasView({
     );
   }
 
-  if (roadmap.canvasView === "view2") {
-    return <RoadmapCanvasView2 roadmap={roadmap} isDarkMode={isDarkMode} fontClass={fontClass} />;
+  // Swapped mapping by request:
+  // view1 -> canvas view 2, view2 -> canvas view 1
+  if (roadmap.canvasView === "view1") {
+    return (
+      <RoadmapCanvasView2
+        roadmap={roadmap}
+        isDarkMode={isDarkMode}
+        fontClass={fontClass}
+        selectedPhaseId={selectedPhaseId}
+      />
+    );
   }
 
   const content = (
@@ -647,15 +687,15 @@ function RoadmapCanvasView({
       <div className={`px-5 py-3 border-b flex flex-wrap items-center gap-2 ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-gray-200 bg-[#F7FBFF]"}`}>
         <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
           <Layers3 className="w-3.5 h-3.5 text-emerald-500" />
-          <span className={fontClass}>{roadmap.stats.phaseCount} {labels.phases}</span>
+          <span className={fontClass}>{roadmap.stats?.phaseCount ?? 0} {labels.phases}</span>
         </div>
         <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
           <GitBranch className="w-3.5 h-3.5 text-blue-500" />
-          <span className={fontClass}>{roadmap.stats.knowledgeCount} {labels.knowledges}</span>
+          <span className={fontClass}>{roadmap.stats?.knowledgeCount ?? 0} {labels.knowledges}</span>
         </div>
         <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
           <BookOpenCheck className="w-3.5 h-3.5 text-amber-500" />
-          <span className={fontClass}>{roadmap.stats.quizCount} {labels.quizzes}</span>
+          <span className={fontClass}>{roadmap.stats?.quizCount ?? 0} {labels.quizzes}</span>
         </div>
         <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
           <TimerReset className="w-3.5 h-3.5 text-violet-500" />
@@ -819,15 +859,15 @@ function RoadmapCanvasView({
                     {labels.postLearning}
                   </p>
                   <p data-no-pan="true" className={`mt-1 text-sm font-medium select-text cursor-text ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-                    {phase.postLearning.title}
+                    {phase.postLearning?.title || "-"}
                   </p>
                   <p data-no-pan="true" className={`mt-1 text-xs select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                    {phase.postLearning.questionCount} {labels.questions}
+                    {phase.postLearning?.questionCount ?? 0} {labels.questions}
                   </p>
                 </div>
               </div>
 
-              {phase.knowledges.map((knowledge) => {
+              {(phase.knowledges ?? []).map((knowledge) => {
                 const isExpanded = Boolean(expandedKnowledges[knowledge.knowledgeId]);
                 return (
                   <div
@@ -875,7 +915,7 @@ function RoadmapCanvasView({
                               {labels.quiz}
                             </p>
                             <div className="mt-2 space-y-2">
-                              {knowledge.quizzes.map((quiz) => (
+                              {(knowledge.quizzes ?? []).map((quiz) => (
                                 <div
                                   key={quiz.id}
                                   className={`rounded-2xl px-3 py-2 text-sm ${isDarkMode ? "bg-slate-900 border border-slate-800 text-slate-200" : "bg-[#F7FBFF] border border-blue-100 text-gray-700"}`}
@@ -894,7 +934,7 @@ function RoadmapCanvasView({
                               {labels.flashcard}
                             </p>
                             <div className="mt-2 space-y-2">
-                              {knowledge.flashcards.map((flashcard) => (
+                              {(knowledge.flashcards ?? []).map((flashcard) => (
                                 <div
                                   key={flashcard.id}
                                   className={`rounded-2xl px-3 py-2 text-sm ${isDarkMode ? "bg-slate-900 border border-slate-800 text-slate-200" : "bg-[#FFF9ED] border border-amber-100 text-gray-700"}`}

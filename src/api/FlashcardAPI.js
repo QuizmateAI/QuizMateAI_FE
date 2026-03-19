@@ -3,7 +3,7 @@ import api from './api';
 // Lấy danh sách flashcard set theo contextType và scopeId
 export const getFlashcardsByScope = async (contextType, scopeId) => {
   let url = '';
-  if (contextType === 'WORKSPACE') url = `/flashcards/getByWorkspace/${scopeId}`;
+  if (contextType === 'WORKSPACE' || contextType === 'GROUP') url = `/flashcards/getByWorkspace/${scopeId}`;
   else if (contextType === 'ROADMAP') url = `/flashcards/getByRoadmap/${scopeId}`;
   else if (contextType === 'PHASE') url = `/flashcards/getByPhase/${scopeId}`;
   else if (contextType === 'KNOWLEDGE') url = `/flashcards/getByKnowledge/${scopeId}`;
@@ -20,7 +20,35 @@ export const getFlashcardsByUser = async () => {
 
 // Tạo flashcard set mới (trạng thái DRAFT)
 export const createFlashcardSet = async (data) => {
-  const response = await api.post('/flashcards/create', data);
+  const {
+    workspaceId,
+    roadmapId,
+    phaseId,
+    knowledgeId,
+    contextType,
+    contextId,
+    flashcardSetName,
+  } = data || {};
+
+  const resolvedWorkspaceId = workspaceId
+    || ((contextType === 'WORKSPACE' || contextType === 'GROUP') ? Number(contextId) : undefined);
+
+  const payload = {
+    workspaceId: Number(resolvedWorkspaceId),
+    flashcardSetName,
+  };
+
+  if (roadmapId) payload.roadmapId = Number(roadmapId);
+  if (phaseId) payload.phaseId = Number(phaseId);
+  if (knowledgeId) payload.knowledgeId = Number(knowledgeId);
+
+  const response = await api.post('/flashcards/create', payload);
+  return response;
+};
+
+// Tạo flashcard set bằng AI (async)
+export const generateAIFlashcardSet = async (data) => {
+  const response = await api.post('/ai/flashcard:generated', data);
   return response;
 };
 
