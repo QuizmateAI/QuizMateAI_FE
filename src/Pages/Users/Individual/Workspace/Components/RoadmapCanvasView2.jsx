@@ -1,13 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  BadgeCheck,
   BookOpenCheck,
   CheckCircle2,
   ChevronDown,
-  CircleDot,
-  Clock3,
-  CreditCard,
 } from "lucide-react";
 
 function RoadmapCanvasView2({ roadmap, isDarkMode = false, fontClass = "font-sans", selectedPhaseId = null }) {

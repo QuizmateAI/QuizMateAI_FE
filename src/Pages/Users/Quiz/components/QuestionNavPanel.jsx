@@ -18,6 +18,8 @@ export default function QuestionNavPanel({
   onJumpToQuestion,
   onSave,
   onSubmit,
+  currentPage = 1,
+  onPageChange,
   isSaveLoading = false,
   saveStatus = 'idle',
   saveMessage = '',
@@ -29,6 +31,11 @@ export default function QuestionNavPanel({
     () => questions.filter(q => hasAnswerValue(answers[q.id])).length,
     [questions, answers],
   );
+  const itemsPerPage = 20;
+  const totalPages = Math.max(1, Math.ceil(questions.length / itemsPerPage));
+  const safeNavPage = Math.min(Math.max(1, currentPage), totalPages);
+  const navStartIndex = (safeNavPage - 1) * itemsPerPage;
+  const navQuestions = questions.slice(navStartIndex, navStartIndex + itemsPerPage);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md shadow-slate-900/10 dark:shadow-blue-900/50 border border-slate-200 dark:border-slate-700 sticky top-4">
@@ -48,13 +55,14 @@ export default function QuestionNavPanel({
 
       {/* Question grid */}
       <div className="grid grid-cols-5 gap-2 mb-4">
-        {questions.map((q, idx) => {
+        {navQuestions.map((q, idx) => {
+          const globalIdx = navStartIndex + idx;
           const isAnswered = hasAnswerValue(answers[q.id]);
           return (
             <button
               key={q.id}
               type="button"
-              onClick={() => onJumpToQuestion(idx)}
+              onClick={() => onJumpToQuestion(globalIdx)}
               className={cn(
                 'w-full aspect-square rounded-lg text-sm font-semibold transition-all flex items-center justify-center',
                 isAnswered
@@ -62,11 +70,35 @@ export default function QuestionNavPanel({
                   : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600',
               )}
             >
-              {idx + 1}
+              {globalIdx + 1}
             </button>
           );
         })}
       </div>
+
+      {questions.length > itemsPerPage && (
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safeNavPage === 1}
+            onClick={() => onPageChange?.(Math.max(1, safeNavPage - 1))}
+          >
+            {t?.('workspace.quiz.pagination.prev', 'Previous page') || 'Previous page'}
+          </Button>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {(t?.('workspace.quiz.pagination.page', 'Page') || 'Page')} {safeNavPage}/{totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safeNavPage === totalPages}
+            onClick={() => onPageChange?.(Math.min(totalPages, safeNavPage + 1))}
+          >
+            {t?.('workspace.quiz.pagination.next', 'Next page') || 'Next page'}
+          </Button>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="space-y-2">
