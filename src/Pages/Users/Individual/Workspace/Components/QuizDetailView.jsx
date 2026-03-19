@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star,
-  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck
+  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
 import {
-  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, updateQuiz, getQuizFull
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, updateQuiz, getQuizFull, getQuizHistory
 } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
@@ -90,6 +90,12 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const [currentStatus, setCurrentStatus] = useState(quiz?.status || "DRAFT");
   const [confirmDialog, setConfirmDialog] = useState({ open: false, mode: null });
   const [quizMeta, setQuizMeta] = useState(null);
+  
+  // Tab states
+  const [activeTab, setActiveTab] = useState("overview"); // overview, questions, history
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   const canViewAnswers = hasQuizCompleted(quiz?.quizId) || currentStatus === "DRAFT";
 
   useEffect(() => {
@@ -149,6 +155,25 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   useEffect(() => {
     fetchFullDetail();
   }, [fetchFullDetail]);
+
+  const fetchHistoryData = useCallback(async () => {
+    if (!quiz?.quizId) return;
+    setLoadingHistory(true);
+    try {
+      const res = await getQuizHistory(quiz.quizId);
+      setHistory(res?.data || []);
+    } catch (err) {
+      console.error("Lỗi khi tải lịch sử quiz:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [quiz?.quizId]);
+
+  useEffect(() => {
+    if (activeTab === "history" && history.length === 0) {
+      fetchHistoryData();
+    }
+  }, [activeTab, fetchHistoryData, history.length]);
 
   // Toggle mở rộng/thu gọn section
   const toggleSection = (sectionId) => {
@@ -218,20 +243,6 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isActiveQuiz && (
-            <>
-              <Button onClick={() => setConfirmDialog({ open: true, mode: 'practice' })} variant="outline"
-                className={`rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-blue-400 hover:bg-blue-950/30" : "border-blue-200 text-blue-600 hover:bg-blue-50"}`}>
-                <Play className="w-4 h-4" />
-                <span className="text-sm">{t("workspace.quiz.practice", "Practice")}</span>
-              </Button>
-              <Button onClick={() => setConfirmDialog({ open: true, mode: 'exam' })} variant="outline"
-                className={`rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-emerald-400 hover:bg-emerald-950/30" : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}>
-                <ClipboardCheck className="w-4 h-4" />
-                <span className="text-sm">{t("workspace.quiz.exam", "Exam")}</span>
-              </Button>
-            </>
-          )}
           {!isActiveQuiz && (
             <>
               <Button onClick={() => onEdit?.(effectiveQuiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
@@ -253,75 +264,141 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className={`px-4 pt-3 flex items-center gap-4 border-b ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === "overview"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+          }`}
+        >
+          <Info className="w-4 h-4" /> {t("workspace.quiz.tabs.overview", "Tổng quan")}
+        </button>
+        <button
+          onClick={() => setActiveTab("questions")}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === "questions"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+          }`}
+        >
+          <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Câu hỏi")}
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === "history"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+          }`}
+        >
+          <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
+        </button>
+      </div>
+
       {/* Nội dung chi tiết */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {/* Thông tin tổng quan quiz */}
-        <div className={`rounded-xl p-4 border ${isDarkMode ? "bg-slate-800/50 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
-          <div className="flex items-start justify-between mb-3">
-            <h3 className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>{effectiveQuiz?.title}</h3>
-            <div className="flex items-center gap-2">
-              {effectiveQuiz?.quizIntent && (
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? is.dark || "" : is.light || ""}`}>
-                  {t(`workspace.quiz.intentLabels.${effectiveQuiz.quizIntent}`)}
-                </span>
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <>
+            {/* Thông tin tổng quan quiz */}
+            <div className={`rounded-xl p-4 border ${isDarkMode ? "bg-slate-800/50 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+              <div className="flex items-start justify-between mb-3">
+                <h3 className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>{effectiveQuiz?.title}</h3>
+                <div className="flex items-center gap-2">
+                  {effectiveQuiz?.quizIntent && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? is.dark || "" : is.light || ""}`}>
+                      {t(`workspace.quiz.intentLabels.${effectiveQuiz.quizIntent}`)}
+                    </span>
+                  )}
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
+                    {t(`workspace.quiz.statusLabels.${currentStatus}`)}
+                  </span>
+                  {typeof effectiveQuiz?.timerMode === "boolean" && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${effectiveQuiz.timerMode
+                      ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
+                      : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                    }`}>
+                      {effectiveQuiz.timerMode
+                        ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
+                        : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {effectiveQuiz?.description && (
+                <p className={`text-sm mb-4 ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>
+                  {effectiveQuiz.description}
+                </p>
               )}
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
-                {t(`workspace.quiz.statusLabels.${currentStatus}`)}
-              </span>
-              {typeof effectiveQuiz?.timerMode === "boolean" && (
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${effectiveQuiz.timerMode
-                  ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
-                  : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
-                }`}>
-                  {effectiveQuiz.timerMode
-                    ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
-                    : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
-                </span>
+
+              {/* Thẻ thông tin dạng grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                {durationInMinutes > 0 && (
+                  <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${durationInMinutes} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
+                )}
+                {effectiveQuiz?.overallDifficulty && (
+                  <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${effectiveQuiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} />
+                )}
+                {effectiveQuiz?.passScore != null && (
+                  <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={effectiveQuiz.passScore} isDarkMode={isDarkMode} />
+                )}
+                {effectiveQuiz?.maxAttempt != null && (
+                  <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={effectiveQuiz.maxAttempt} isDarkMode={isDarkMode} />
+                )}
+                {sections.length > 0 && (
+                  <InfoChip icon={BookOpen} label={t("workspace.quiz.tabs.questions", "Câu hỏi")} value={sections.reduce((acc, s) => acc + (questionsMap[s.sectionId]?.length || 0), 0)} isDarkMode={isDarkMode} />
+                )}
+              </div>
+
+              {/* Action Buttons in Overview */}
+              {isActiveQuiz && (
+                <div className={`mt-4 pt-4 border-t flex flex-row items-center gap-3 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+                  <Button onClick={() => setConfirmDialog({ open: true, mode: 'practice' })} variant="outline"
+                    className={`flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl transition-all active:scale-95 ${isDarkMode ? "border-blue-800/60 bg-blue-900/20 text-blue-400 hover:bg-blue-900/40" : "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
+                    <Play className="w-4 h-4" />
+                    <span className="font-medium">{t("workspace.quiz.practice", "Practice mode")}</span>
+                  </Button>
+                  <Button onClick={() => setConfirmDialog({ open: true, mode: 'exam' })} className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all active:scale-95 shadow-sm">
+                    <ClipboardCheck className="w-4 h-4" />
+                    <span className="font-medium">{t("workspace.quiz.exam", "Exam mode")}</span>
+                  </Button>
+                </div>
               )}
+
+              {/* Ngày tạo */}
+              <div className={`flex items-center gap-2 mt-3 text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                <Clock className="w-3 h-3" />
+                <span>{t("workspace.quiz.detail.createdAt", "Ngày tạo")}: {formatDate(effectiveQuiz?.createdAt)}</span>
+                {effectiveQuiz?.updatedAt && (
+                  <>
+                    <span>•</span>
+                    <span>{t("workspace.quiz.detail.updatedAt", "Cập nhật")}: {formatDate(effectiveQuiz.updatedAt)}</span>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </>
+        )}
 
-          {/* Thẻ thông tin dạng grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {durationInMinutes > 0 && (
-              <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${durationInMinutes} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
-            )}
-            {effectiveQuiz?.overallDifficulty && (
-              <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${effectiveQuiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} />
-            )}
-            {effectiveQuiz?.passScore != null && (
-              <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={effectiveQuiz.passScore} isDarkMode={isDarkMode} />
-            )}
-            {effectiveQuiz?.maxAttempt != null && (
-              <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={effectiveQuiz.maxAttempt} isDarkMode={isDarkMode} />
-            )}
-          </div>
-
-          {/* Ngày tạo */}
-          <div className={`flex items-center gap-2 mt-3 text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-            <Clock className="w-3 h-3" />
-            <span>{t("workspace.quiz.detail.createdAt")}: {formatDate(effectiveQuiz?.createdAt)}</span>
-            {effectiveQuiz?.updatedAt && (
-              <>
-                <span>•</span>
-                <span>{t("workspace.quiz.detail.updatedAt")}: {formatDate(effectiveQuiz.updatedAt)}</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Danh sách sections + questions */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail")}</p>
-          </div>
-        ) : sections.length === 0 ? (
-          <div className={`text-center py-8 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.quiz.detail.noSections", "No sections available")}
-          </div>
-        ) : (
-          sections.map((section, sIdx) => {
+        {/* Questions Tab */}
+        {activeTab === "questions" && (
+          <div className="space-y-4">
+            {/* Danh sách sections + questions */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+                <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail", "Đang tải dữ liệu...")}</p>
+              </div>
+            ) : sections.length === 0 ? (
+              <div className={`text-center py-8 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                {t("workspace.quiz.detail.noSections", "Không có section nào")}
+              </div>
+            ) : (
+              sections.map((section, sIdx) => {
             const isExpanded = expandedSections[section.sectionId];
             const questions = questionsMap[section.sectionId] || [];
 
@@ -487,6 +564,63 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
               </div>
             );
           })
+        )}
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === "history" && (
+          <div className="space-y-4">
+            {loadingHistory ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+                <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.history.loading", "Đang tải lịch sử...")}</p>
+              </div>
+            ) : history.length === 0 ? (
+              <div className={`text-center py-12 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                <History className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                {t("workspace.quiz.history.empty", "Chưa có lịch sử làm bài nào.")}
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {history.map((attempt) => (
+                  <div key={attempt.attemptId} className={`rounded-xl p-4 border transition-colors cursor-pointer ${
+                    isDarkMode ? "bg-slate-800/50 border-slate-800 hover:bg-slate-800/80" : "bg-white border-slate-200 hover:bg-slate-50"
+                  }`} onClick={() => navigate(`/quiz/result/${attempt.attemptId}`, { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: location.pathname } })}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
+                          {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <h4 className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                            {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
+                          </h4>
+                          <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                            {formatDate(attempt.startedAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-lg font-bold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
+                          {attempt.score || 0} {t("workspace.quiz.history.points", "điểm")}
+                        </div>
+                        <div className="flex gap-2 justify-end mt-1">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-md ${
+                            attempt.isPracticeMode 
+                              ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") 
+                              : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")
+                          }`}>
+                            {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 

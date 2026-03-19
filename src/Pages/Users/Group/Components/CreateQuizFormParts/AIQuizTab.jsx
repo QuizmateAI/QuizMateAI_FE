@@ -173,10 +173,10 @@ function AIQuizTab({
               }}
               onBlur={() => applyMinOnBlur(aiTotalQuestions, setAiTotalQuestions, 1)}
               min={1}
+            />
                         {fieldErrors.aiTotalQuestions && (
                           <p className="text-xs text-red-500 mt-1">{fieldErrors.aiTotalQuestions}</p>
                         )}
-            />
           </div>
           {aiTimerMode && (
             <div>
@@ -191,10 +191,10 @@ function AIQuizTab({
                 }}
                 onBlur={() => applyMinOnBlur(aiDuration, setAiDuration, 1)}
                 min={1}
+              />
                             {fieldErrors.aiDuration && (
                               <p className="text-xs text-red-500 mt-1">{fieldErrors.aiDuration}</p>
                             )}
-              />
             </div>
           )}
         </div>
@@ -278,16 +278,13 @@ function AIQuizTab({
                     }
                   }}
                   min={1}
+                />
                             {fieldErrors.aiDurations && (
                               <p className="text-xs text-red-500 mt-2">{fieldErrors.aiDurations}</p>
                             )}
-                />
               </div>
             </div>
           )}
-        </div>
-            />
-          </div>
         </div>
         <div className="mt-3">
           <label className={labelCls}>{t("workspace.quiz.aiConfig.examType")}</label>

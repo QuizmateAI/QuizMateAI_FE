@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Route, BadgeCheck, Layers, Map, Rows3 } from "lucide-react";
+import { UploadCloud, Sparkles, Route, BadgeCheck, Layers, Map, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
@@ -48,114 +48,6 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
     if (view !== "view1" && view !== "view2") return;
     setRoadmapCanvasView(view);
   }, []);
-
-  // Khi chưa có nguồn tài liệu — hiển thị lời chào và nút upload
-  if (!hasSources && !activeView) {
-    return (
-      <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
-        isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
-      }`}>
-        <div className={`px-4 py-3 border-b transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>{t("workspace.chat.title")}</p>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-8">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDarkMode ? "bg-blue-950/50" : "bg-blue-100"}`}>
-            <BookOpen className={`w-8 h-8 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
-          </div>
-          <div>
-            <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-              {t("workspace.chat.emptyTitle")}
-            </p>
-            <p className={`text-sm mt-1.5 max-w-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-              {t("workspace.chat.emptyDesc")}
-            </p>
-          </div>
-          <Button
-            onClick={onUploadClick}
-            className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10 flex items-center gap-2"
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span className={fontClass}>{t("workspace.chat.upload")}</span>
-          </Button>
-        </div>
-      </section>
-    );
-  }
-
-  // Khi đã có nguồn nhưng chưa chọn hoạt động — hiển thị gợi ý chọn từ Studio
-  if (hasSources && !activeView) {
-    return (
-      <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
-        isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
-      }`}>
-        <div className={`px-4 py-3 border-b transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>{t("workspace.chat.title")}</p>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center px-8">
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDarkMode ? "bg-emerald-950/50" : "bg-emerald-100"}`}>
-            <Sparkles className={`w-8 h-8 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
-          </div>
-          <div>
-            <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-              {t("workspace.chat.emptyTitle")}
-            </p>
-            <p className={`text-sm mt-1.5 max-w-md ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-              {t("workspace.chat.emptyDesc")}
-            </p>
-          </div>
-
-          {/* Lối tắt nhanh đến 3 chức năng chính */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
-            {[
-              {
-                key: "roadmap",
-                icon: Route,
-                color: "text-blue-500",
-                label: t("workspace.studio.actions.roadmap"),
-                description: t("workspace.studio.actions.createRoadmap"),
-              },
-              {
-                key: "quiz",
-                icon: BadgeCheck,
-                color: "text-emerald-500",
-                label: t("workspace.studio.actions.quiz"),
-                description: t("workspace.studio.actions.createQuiz"),
-              },
-              {
-                key: "flashcard",
-                icon: Layers,
-                color: "text-amber-500",
-                label: t("workspace.studio.actions.flashcard"),
-                description: t("workspace.studio.actions.createFlashcard"),
-              },
-            ].map((mode) => (
-              <Button
-                key={mode.key}
-                type="button"
-                onClick={() => onChangeView?.(mode.key)}
-                className={`rounded-xl p-4 text-center border cursor-pointer transition-all ${
-                  isDarkMode
-                    ? "bg-slate-800/50 border-slate-700 hover:border-slate-600 text-slate-200 hover:bg-slate-800"
-                    : "bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-800 hover:bg-gray-100"
-                }`}
-                variant="outline"
-              >
-                <mode.icon className={`w-5 h-5 mx-auto mb-2 ${mode.color}`} />
-                <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-                  {mode.label}
-                </p>
-                <p className={`text-[10px] mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                  {mode.description}
-                </p>
-              </Button>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   const renderListView = () => {
     // Lọc createdItems theo loại tương ứng
@@ -287,33 +179,93 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
     );
   }
 
-  // Khi đang hiển thị nội dung cụ thể khác (mockTest, prelearning...) — placeholder
+  // Fallback: Nếu không có nội dung nào được hiển thị, hiển thị màn hình chào mừng
   return (
     <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
       isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
     }`}>
       <div className={`px-4 py-3 border-b transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>{t("workspace.chat.title")}</p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4">
-        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-          {t("workspace.chat.aiThinking")}
+        <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+          {t("workspace.chat.title", "Workspace Area")}
         </p>
       </div>
 
-      {/* Thanh input dưới cùng */}
-      <div className={`p-4 border-t transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div className={`flex items-center gap-3 border rounded-2xl px-4 py-2 ${
-          isDarkMode ? "border-slate-700 bg-slate-950" : "border-gray-200"
-        }`}>
-          <input
-            className={`flex-1 bg-transparent outline-none text-sm ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}
-            placeholder={t("workspace.chat.placeholder")}
-          />
-          <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-            {t("workspace.chat.sources", { count: sources.length })}
-          </span>
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center px-8">
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDarkMode ? "bg-emerald-950/50" : "bg-emerald-100"}`}>
+          <Sparkles className={`w-8 h-8 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
+        </div>
+        <div>
+          <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
+            {t("workspace.chat.emptyTitle", "Chào mừng đến với Workspace")}
+          </p>
+          <p className={`text-sm mt-1.5 max-w-md ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+            {t("workspace.chat.emptyDesc", "Chọn một chức năng bên dưới để bắt đầu")}
+          </p>
+        </div>
+
+        {!hasSources && (
+          <div className={`flex flex-col items-center gap-3 p-4 rounded-xl border w-full max-w-lg ${isDarkMode ? "bg-amber-950/20 border-amber-900/30" : "bg-amber-50 border-amber-200"}`}>
+            <p className={`text-sm text-center ${isDarkMode ? "text-amber-400" : "text-amber-700"} ${fontClass}`}>
+              {t("workspace.chat.requireUpload", "Vui lòng tải tài liệu lên để có thể sử dụng các chức năng này.")}
+            </p>
+            <Button
+              onClick={onUploadClick}
+              className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-9 flex items-center gap-2 transition-all active:scale-95"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span className={fontClass}>{t("workspace.chat.upload", "Tải tài liệu lên")}</span>
+            </Button>
+          </div>
+        )}
+
+        {/* Lối tắt nhanh đến 3 chức năng chính */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
+          {[
+            {
+              key: "roadmap",
+              icon: Route,
+              color: "text-blue-500",
+              label: t("workspace.studio.actions.roadmap"),
+              description: t("workspace.studio.actions.createRoadmap"),
+            },
+            {
+              key: "quiz",
+              icon: BadgeCheck,
+              color: "text-emerald-500",
+              label: t("workspace.studio.actions.quiz"),
+              description: t("workspace.studio.actions.createQuiz"),
+            },
+            {
+              key: "flashcard",
+              icon: Layers,
+              color: "text-amber-500",
+              label: t("workspace.studio.actions.flashcard"),
+              description: t("workspace.studio.actions.createFlashcard"),
+            },
+          ].map((mode) => (
+            <Button
+              key={mode.key}
+              type="button"
+              disabled={!hasSources}
+              onClick={() => onChangeView?.(mode.key)}
+              className={`rounded-xl p-4 h-auto text-center border transition-all flex flex-col items-center justify-center ${
+                !hasSources 
+                  ? (isDarkMode ? "opacity-50 cursor-not-allowed bg-slate-800/30 border-slate-800" : "opacity-50 cursor-not-allowed bg-gray-50/50 border-gray-200")
+                  : (isDarkMode
+                    ? "bg-slate-800/50 border-slate-700 hover:border-slate-600 text-slate-200 hover:bg-slate-800 cursor-pointer"
+                    : "bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-800 hover:bg-gray-100 cursor-pointer")
+              }`}
+              variant="outline"
+            >
+              <mode.icon className={`w-5 h-5 mb-2 ${!hasSources ? "text-gray-400 dark:text-slate-500" : mode.color}`} />
+              <p className={`text-xs font-medium ${!hasSources ? (isDarkMode ? "text-slate-400" : "text-gray-500") : (isDarkMode ? "text-slate-200" : "text-gray-800")} ${fontClass}`}>
+                {mode.label}
+              </p>
+              <p className={`text-[10px] mt-0.5 whitespace-normal leading-tight ${isDarkMode ? "text-slate-500" : "text-gray-500"} ${fontClass}`}>
+                {mode.description}
+              </p>
+            </Button>
+          ))}
         </div>
       </div>
     </section>

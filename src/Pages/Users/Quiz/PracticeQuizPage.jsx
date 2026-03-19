@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button';
 import { Switch } from '@/Components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
 import QuestionCard from './components/QuestionCard';
+import QuizHeader from './components/QuizHeader';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { useQuizProgress } from './hooks/useQuizProgress';
 import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
@@ -18,9 +19,10 @@ export default function PracticeQuizPage() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
 
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,11 @@ export default function PracticeQuizPage() {
 
   const currentQuestion = quiz?.questions[currentIndex];
   const total = quiz?.questions.length || 0;
+
+  const handleHeaderBack = useCallback((confirmed) => {
+    if (isStarted && !confirmed) return;
+    navigate(returnToQuizPath, { replace: true });
+  }, [navigate, returnToQuizPath, isStarted]);
 
   const handleStart = useCallback(async () => {
     try {
@@ -116,7 +123,7 @@ export default function PracticeQuizPage() {
 
   if (loading) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)}>
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
@@ -124,7 +131,7 @@ export default function PracticeQuizPage() {
 
   if (!quiz) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)}>
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
         <h2 className="text-xl text-slate-600 dark:text-slate-300">Quiz not found</h2>
       </div>
     );
@@ -132,8 +139,10 @@ export default function PracticeQuizPage() {
 
   if (!isStarted) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4', fontClass)}>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg shadow-slate-900/10 dark:shadow-blue-900/50 max-w-md w-full border border-slate-200 dark:border-slate-700">
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
+        <QuizHeader onBack={handleHeaderBack} title={quiz.title} showConfirm={false} />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg shadow-slate-900/10 dark:shadow-blue-900/50 max-w-md w-full border border-slate-200 dark:border-slate-700">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{quiz.title}</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">{total} questions • Practice Mode</p>
           {quiz.maxAttempt && <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Max attempts: {quiz.maxAttempt}</p>}
@@ -171,14 +180,23 @@ export default function PracticeQuizPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8', fontClass)}>
-      <div className="max-w-2xl mx-auto">
-        {/* Progress bar */}
+    <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
+      <QuizHeader 
+        onBack={handleHeaderBack} 
+        title={quiz.title} 
+        showConfirm={isStarted} 
+        confirmTitle={t('workspace.quiz.practiceActions.confirmExitTitle', 'Leave practice mode?')} 
+        confirmDescription={t('workspace.quiz.practiceActions.confirmExitDescription', 'Your current progress may be lost.')} 
+      />
+      <div className="flex-1 p-4 md:p-8">
+        <div className="max-w-2xl mx-auto">
+          {/* Progress bar */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
             <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100">{quiz.title}</h1>
@@ -225,6 +243,7 @@ export default function PracticeQuizPage() {
             </Button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

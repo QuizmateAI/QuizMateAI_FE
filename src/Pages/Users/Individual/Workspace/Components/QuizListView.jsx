@@ -252,84 +252,109 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
               const completed = hasQuizCompleted(quiz.quizId);
               const durationInMinutes = getDurationInMinutes(quiz);
               return (
-                <div key={quiz.quizId} onClick={() => onViewQuiz?.(quiz)} className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all duration-300 group ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-blue-950/40" : "bg-blue-100"}`}>
-                    <BadgeCheck className="w-4 h-4 text-blue-500" />
-                  </div>
-                  <div className="flex-1 min-w-0 transition-transform duration-300 group-hover:-translate-x-1">
-                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{quiz.title}</p>
-                    <div className={`flex items-center gap-2 mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      {durationInMinutes > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Timer className="w-3 h-3" />{durationInMinutes} {t("workspace.quiz.minutes")}
-                        </span>
-                      )}
-                      {quiz.overallDifficulty && (
-                        <span className="flex items-center gap-1">
-                          <BarChart3 className="w-3 h-3" />{t(`workspace.quiz.difficultyLevels.${quiz.overallDifficulty.toLowerCase()}`)}
-                        </span>
-                      )}
+                <div
+                  key={quiz.quizId}
+                  onClick={() => onViewQuiz?.(quiz)}
+                  className={`relative rounded-xl border overflow-hidden h-[104px] cursor-pointer shadow-[0_10px_20px_rgba(51,51,51,0.12)] transition-all duration-300 group ${
+                    isDarkMode ? "border-slate-700 bg-slate-900/50" : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <div
+                    className="absolute inset-0 px-4 py-3 flex items-center gap-3 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.23,1,0.320,1)] group-hover:-translate-x-full"
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-blue-950/40" : "bg-blue-100"}`}>
+                      <BadgeCheck className="w-4 h-4 text-blue-500" />
                     </div>
-                    <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatShortDate(quiz.createdAt)}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{quiz.title}</p>
+                      <div className={`flex items-center gap-2 mt-1 text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>
+                        {durationInMinutes > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Timer className="w-3 h-3" />{durationInMinutes} {t("workspace.quiz.minutes")}
+                          </span>
+                        )}
+                        {quiz.overallDifficulty && (
+                          <span className="flex items-center gap-1">
+                            <BarChart3 className="w-3 h-3" />{t(`workspace.quiz.difficultyLevels.${quiz.overallDifficulty.toLowerCase()}`)}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatShortDate(quiz.createdAt)}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="ml-auto flex items-center gap-2 shrink-0 transition-transform duration-300 group-hover:-translate-x-1">
-                    {quiz.quizIntent && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDarkMode ? is.dark || "bg-slate-800 text-slate-400" : is.light || "bg-gray-100 text-gray-500"}`}>
-                        {t(`workspace.quiz.intentLabels.${quiz.quizIntent}`)}
-                      </span>
-                    )}
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
-                      {t(`workspace.quiz.statusLabels.${quiz.status}`)}
-                    </span>
-                    {typeof quiz.timerMode === "boolean" && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${quiz.timerMode
-                        ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
-                        : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
-                      }`}>
-                        {quiz.timerMode
-                          ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
-                          : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
-                      </span>
-                    )}
-                    {quiz.status !== "DRAFT" && quiz.status !== "PROCESSING" && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${completed
-                        ? (isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-700")
-                        : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")
-                      }`}>
-                        {completed
-                          ? t("workspace.quiz.completed", "Đã làm")
-                          : t("workspace.quiz.notCompleted", "Chưa làm")}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-1 overflow-hidden max-w-0 opacity-0 translate-x-2 transition-all duration-300 group-hover:max-w-40 group-hover:opacity-100 group-hover:translate-x-0">
-                      {quiz.status === "ACTIVE" && (
-                        <>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'practice' }); }}
-                            className={`p-1.5 rounded-lg transition-all ${isDarkMode ? "hover:bg-blue-950/30 text-blue-400" : "hover:bg-blue-50 text-blue-600"}`}
-                            title={t("workspace.quiz.practice", "Practice")}
-                          >
-                            <Play className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'exam' }); }}
-                            className={`p-1.5 rounded-lg transition-all ${isDarkMode ? "hover:bg-emerald-950/30 text-emerald-400" : "hover:bg-emerald-50 text-emerald-600"}`}
-                            title={t("workspace.quiz.exam", "Exam")}
-                          >
-                            <ClipboardCheck className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={(e) => handleDeleteQuiz(e, quiz.quizId)}
-                        disabled={deletingId === quiz.quizId}
-                        className={`p-1.5 rounded-lg transition-all ${isDarkMode ? "hover:bg-red-950/30 text-red-400" : "hover:bg-red-50 text-red-500"}`}
-                        title={t("workspace.quiz.deleteQuiz")}
-                      >
-                        {deletingId === quiz.quizId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </button>
+
+                  <div
+                    className={`absolute inset-0 px-4 py-3 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.23,1,0.320,1)] translate-x-full group-hover:translate-x-0 ${
+                      isDarkMode
+                        ? "bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950/60"
+                        : "bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100"
+                    }`}
+                  >
+                    <div className="h-full flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        {quiz.quizIntent && (
+                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${isDarkMode ? is.dark || "bg-slate-800 text-slate-400" : is.light || "bg-gray-100 text-gray-500"}`}>
+                            {t(`workspace.quiz.intentLabels.${quiz.quizIntent}`)}
+                          </span>
+                        )}
+                        <span className={`text-sm px-3.5 py-1.5 rounded-full font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
+                          {t(`workspace.quiz.statusLabels.${quiz.status}`)}
+                        </span>
+                        {typeof quiz.timerMode === "boolean" && (
+                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${quiz.timerMode
+                            ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
+                            : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                          }`}>
+                            {quiz.timerMode
+                              ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
+                              : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                          </span>
+                        )}
+                        {quiz.status !== "DRAFT" && quiz.status !== "PROCESSING" && (
+                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${completed
+                            ? (isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-700")
+                            : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")
+                          }`}>
+                            {completed
+                              ? t("workspace.quiz.completed", "Đã làm")
+                              : t("workspace.quiz.notCompleted", "Chưa làm")}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2.5">
+                        {quiz.status === "ACTIVE" && (
+                          <>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'practice' }); }}
+                              className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-blue-950/40 text-blue-300" : "hover:bg-blue-100 text-blue-700"}`}
+                              title={t("workspace.quiz.practice", "Practice")}
+                            >
+                              <Play className="w-5 h-5" />
+                              <span>{t("workspace.quiz.actionButtons.practice", "Practice")}</span>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'exam' }); }}
+                              className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-emerald-950/40 text-emerald-300" : "hover:bg-emerald-100 text-emerald-700"}`}
+                              title={t("workspace.quiz.exam", "Exam")}
+                            >
+                              <ClipboardCheck className="w-5 h-5" />
+                              <span>{t("workspace.quiz.actionButtons.exam", "Exam")}</span>
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={(e) => handleDeleteQuiz(e, quiz.quizId)}
+                          disabled={deletingId === quiz.quizId}
+                          className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-red-950/40 text-red-300" : "hover:bg-red-100 text-red-600"}`}
+                          title={t("workspace.quiz.deleteQuiz")}
+                        >
+                          {deletingId === quiz.quizId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                          <span>{deletingId === quiz.quizId ? t("workspace.quiz.actionButtons.deleting", "Deleting...") : t("workspace.quiz.actionButtons.delete", "Delete")}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
