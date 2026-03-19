@@ -1,12 +1,24 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/Components/ui/button";
 import {
   BookOpenCheck,
   CheckCircle2,
   ChevronDown,
+  Loader2,
+  Plus,
 } from "lucide-react";
 
-function RoadmapCanvasView2({ roadmap, isDarkMode = false, fontClass = "font-sans", selectedPhaseId = null }) {
+function RoadmapCanvasView2({
+  roadmap,
+  isDarkMode = false,
+  fontClass = "font-sans",
+  selectedPhaseId = null,
+  onCreatePhaseKnowledge,
+  onCreatePhasePreLearning,
+  generatingKnowledgePhaseIds = [],
+  generatingPreLearningPhaseIds = [],
+}) {
   const { t } = useTranslation();
   const [openPhaseId, setOpenPhaseId] = useState(null);
   const [openKnowledgeMap, setOpenKnowledgeMap] = useState({});
@@ -171,6 +183,13 @@ function RoadmapCanvasView2({ roadmap, isDarkMode = false, fontClass = "font-san
       <div className="space-y-3">
         {activePhase ? [activePhase].map((phase) => {
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
+          const normalizedPhaseId = Number(phase.phaseId);
+          const isGeneratingKnowledge = generatingKnowledgePhaseIds.includes(Number(phase.phaseId));
+          const isGeneratingPreLearning = generatingPreLearningPhaseIds.includes(normalizedPhaseId)
+            || String(phase?.status || "").toUpperCase() === "PROCESSING";
+          const hasKnowledge = (phase.knowledges || []).length > 0;
+          const hasPreLearning = (phase.preLearningQuizzes || []).length > 0;
+          const shouldShowPreLearningDecision = !hasPreLearning && !hasKnowledge;
           return (
             <div key={phase.phaseId} className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white"}`}>
               <button
@@ -206,7 +225,7 @@ function RoadmapCanvasView2({ roadmap, isDarkMode = false, fontClass = "font-san
                   {renderQuizSection(t("workspace.roadmap.canvas.postLearning", "Post-learning"), phase.postLearningQuizzes || [])}
 
                   {/* Knowledge Items */}
-                  {(phase.knowledges || []).length > 0 && (
+                  {hasKnowledge && (
                     <div className={`border-t mt-2 pt-2 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
                       <div className="space-y-1">
                         {(phase.knowledges || []).map((knowledge) => {
@@ -233,6 +252,91 @@ function RoadmapCanvasView2({ roadmap, isDarkMode = false, fontClass = "font-san
                             </div>
                           );
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {shouldShowPreLearningDecision && (
+                    <div className={`border-t mt-2 pt-4 px-4 pb-4 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
+                      <div className={`rounded-lg border p-4 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
+                        {isGeneratingKnowledge ? (
+                          <div className="flex items-center gap-3">
+                            <Loader2 className={`w-5 h-5 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                            <p className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                              {t("workspace.roadmap.generatingKnowledge", "Vui lòng đợi AI tạo knowledge cũng như quiz liên quan...")}
+                            </p>
+                          </div>
+                        ) : isGeneratingPreLearning ? (
+                          <div className="flex items-center gap-3">
+                            <Loader2 className={`w-5 h-5 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                            <p className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                              {t("workspace.roadmap.generatingPreLearning", "AI đang tạo pre-learning cho phase này...")}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-3">
+                            <p className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                              {t("workspace.roadmap.preLearningPrompt", "Bạn có muốn làm bài pre-learning trước khi tạo knowledge không?")}
+                            </p>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onCreatePhaseKnowledge?.(phase.phaseId, { skipPreLearning: true })}
+                                className={`${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                              >
+                                {t("workspace.roadmap.skipPreLearning", "Không, bỏ qua pre-learning")}
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={() => onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false })}
+                                className="bg-[#2563EB] hover:bg-blue-700 text-white"
+                              >
+                                {t("workspace.roadmap.createPreLearningButton", "Có, tạo pre-learning")}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!hasKnowledge && hasPreLearning && (
+                    <div className={`border-t mt-2 pt-4 px-4 pb-4 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
+                      <div className={`rounded-lg border p-4 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
+                        {isGeneratingKnowledge ? (
+                          <div className="flex items-center gap-3">
+                            <Loader2 className={`w-5 h-5 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                            <p className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                              {t("workspace.roadmap.generatingKnowledge", "Vui lòng đợi AI tạo knowledge cũng như quiz liên quan...")}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <p className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                              {t("workspace.roadmap.noKnowledgeYet", "Vui lòng tạo knowledge cho phase này")}
+                            </p>
+                            <Button
+                              type="button"
+                              onClick={() => onCreatePhaseKnowledge?.(phase.phaseId)}
+                              className="bg-[#2563EB] hover:bg-blue-700 text-white"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              {t("workspace.roadmap.createKnowledgeButton", "Tạo knowledge")}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {isGeneratingKnowledge && hasKnowledge && (
+                    <div className={`border-t px-4 py-3 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
+                      <div className="flex items-center gap-2">
+                        <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                        <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+                          {t("workspace.roadmap.generatingKnowledge", "Vui lòng đợi AI tạo knowledge cũng như quiz liên quan...")}
+                        </p>
                       </div>
                     </div>
                   )}

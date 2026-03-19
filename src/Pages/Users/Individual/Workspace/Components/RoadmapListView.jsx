@@ -24,6 +24,7 @@ import {
 } from "@/api/RoadmapAPI";
 import { getQuizzesByScope, deleteQuiz as deleteQuizAPI } from "@/api/QuizAPI";
 import { getFlashcardsByScope, deleteFlashcardSet } from "@/api/FlashcardAPI";
+import QuizListView from "./QuizListView";
 
 /* ==================== Helpers ==================== */
 function formatShortDate(dateStr) {
@@ -81,8 +82,7 @@ function RoadmapListView({
   // Dữ liệu API — quiz, flashcard, post-learning, mock test (dùng API thật)
   const [quizzes, setQuizzes] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
-  const [postLearnings, setPostLearnings] = useState([]);
-  const [mockTests, setMockTests] = useState([]);
+  // Removed postLearnings, mockTests - using QuizListView
 
   // Inline add (thêm phase / knowledge / quiz / flashcard)
   const [addingType, setAddingType] = useState(null);
@@ -143,49 +143,7 @@ function RoadmapListView({
     finally { setLoading(false); }
   }, []);
 
-  /* ==================== FETCH đặc biệt (MockTest, PostLearning, Quiz, Flashcard) — API thật ==================== */
-  const fetchMockTests = useCallback(async (roadmapId) => {
-    try {
-      const res = await getQuizzesByScope("ROADMAP", roadmapId);
-      const data = res.data || [];
-      setMockTests(data.map((q) => ({
-        id: q.quizId, name: q.title, status: q.status, createdAt: q.createdAt,
-        duration: q.duration, quizId: q.quizId, itemType: "mockTest",
-      })));
-    } catch { setMockTests([]); }
-  }, []);
-
-  const fetchPostLearnings = useCallback(async (phaseId) => {
-    try {
-      const res = await getQuizzesByScope("PHASE", phaseId);
-      const data = res.data || [];
-      setPostLearnings(data.map((q) => ({
-        id: q.quizId, name: q.title, status: q.status, createdAt: q.createdAt,
-        duration: q.duration, quizId: q.quizId, itemType: "postLearning",
-      })));
-    } catch { setPostLearnings([]); }
-  }, []);
-
-  const fetchQuizzesAndFlashcards = useCallback(async (knowledgeId) => {
-    try {
-      const [qRes, fRes] = await Promise.all([
-        getQuizzesByScope("KNOWLEDGE", knowledgeId),
-        getFlashcardsByScope("KNOWLEDGE", knowledgeId),
-      ]);
-      const qData = qRes.data || [];
-      const fData = fRes.data || [];
-      setQuizzes(qData.map((q) => ({
-        id: q.quizId, name: q.title, status: q.status, createdAt: q.createdAt,
-        duration: q.duration, quizId: q.quizId, itemType: "quiz",
-      })));
-      setFlashcards(fData.map((f) => ({
-        id: f.flashcardSetId, name: f.flashcardSetName, status: f.status, createdAt: f.createdAt,
-        flashcardSetId: f.flashcardSetId, itemType: "flashcard",
-      })));
-    } catch {
-      setQuizzes([]); setFlashcards([]);
-    }
-  }, []);
+  /* Quiz fetches replaced by QuizListView components */
 
   /* ==================== NAVIGATION (drill-down / breadcrumb) ==================== */
   const allRoadmaps = useMemo(() => {
@@ -694,10 +652,24 @@ function RoadmapListView({
 
       {/* ===== Content list ===== */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {/* Special card: MockTest (depth 1 = bên trong 1 roadmap) */}
-        {depth === 1 && renderSpecialCard("mockTest")}
-        {/* Special card: PostLearning (depth 2 = bên trong 1 phase) */}
-        {depth === 2 && renderSpecialCard("postLearning")}
+        {depth === 1 && path[0] && (
+          <QuizListView 
+            isDarkMode={isDarkMode}
+            contextType="ROADMAP" 
+            contextId={path[0].id}
+            onCreateQuiz={onNavigateToCreateMockTest}
+            onViewQuiz={onViewMockTest}
+          />
+        )}
+        {depth === 2 && path[1] && (
+          <QuizListView 
+            isDarkMode={isDarkMode}
+            contextType="PHASE" 
+            contextId={path[1].id}
+            onCreateQuiz={onNavigateToCreatePostLearning}
+            onViewQuiz={onViewPostLearning}
+          />
+        )}
 
         {loading ? (
           <ListSpinner variant="section" />

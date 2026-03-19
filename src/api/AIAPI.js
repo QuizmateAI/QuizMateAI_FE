@@ -30,3 +30,21 @@ export const generateAIQuiz = async (data) => {
   return response;
 };
 
+// Tao phase roadmap bang AI (async)
+export const generateRoadmapPhases = async (data) => {
+  const response = await api.post('/ai/roadmap-phases:generated', data);
+  return response;
+};
+
+// Tao noi dung hoc cho 1 phase bang AI (knowledge + quiz)
+export const generateRoadmapPhaseContent = async (data) => {
+  const response = await api.post('/ai/roadmap-phase-content:generated', data);
+  return response;
+};
+
+// Tao pre-learning quiz cho 1 phase bang AI
+export const generateRoadmapPreLearning = async (data) => {
+  const response = await api.post('/ai/roadmap-prelearning:generated', data);
+  return response;
+};
+
