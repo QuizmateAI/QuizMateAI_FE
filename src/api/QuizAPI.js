@@ -148,6 +148,12 @@ export const getAttemptResult = async (attemptId) => {
   return response;
 };
 
+// Lấy lịch sử làm bài của 1 quiz
+export const getQuizHistory = async (quizId) => {
+  const response = await api.get(`/quiz-attempts/history?quizId=${quizId}`);
+  return response;
+};
+
 // Nộp bài — đóng attempt và trả về kết quả
 export const submitAttempt = async (attemptId, answers) => {
   const hasRequestBody = Array.isArray(answers);
