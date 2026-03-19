@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import QuestionCard from './components/QuestionCard';
 import QuestionNavPanel from './components/QuestionNavPanel';
 import ExamPerQuestion from './components/ExamPerQuestion';
+import QuizHeader from './components/QuizHeader';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
 import { buildSubmitPayload, getAttemptRemainingSeconds, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
@@ -21,6 +22,7 @@ export default function ExamQuizPage() {
   const { i18n, t } = useTranslation();
   const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
 
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,9 @@ export default function ExamQuizPage() {
   const [saveStatus, setSaveStatus] = useState('idle');
   const [saveMessage, setSaveMessage] = useState('');
   const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  const totalPages = Math.max(1, Math.ceil((quiz?.questions?.length || 0) / itemsPerPage));
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
   const examLockNotifiedRef = useRef(false);
@@ -229,6 +234,15 @@ export default function ExamQuizPage() {
     return false;
   }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, showError, t, isPerQuestionMode]);
 
+  const handleHeaderBack = useCallback(async (confirmed) => {
+    if (isStarted && !isSubmitted) {
+      if (!confirmed) return;
+      await handleSubmit();
+    } else {
+      navigate(returnToQuizPath, { replace: true });
+    }
+  }, [isStarted, isSubmitted, handleSubmit, navigate, returnToQuizPath]);
+
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
     if (!isStarted || isSubmitted) return;
@@ -287,12 +301,21 @@ export default function ExamQuizPage() {
   }, [attemptTimeoutAt, timeLeft, isStarted, isSubmitted, quiz?.timerMode, handleSubmit]);
 
   const jumpToQuestion = useCallback((index) => {
+    const targetPage = Math.floor(index / itemsPerPage) + 1;
+    if (targetPage !== currentPage) {
+      setCurrentPage(targetPage);
+      setTimeout(() => {
+        questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 0);
+      return;
+    }
+
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   if (loading) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)}>
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
@@ -300,7 +323,7 @@ export default function ExamQuizPage() {
 
   if (!quiz) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)}>
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
         <h2 className="text-xl text-slate-600 dark:text-slate-300">Quiz not found</h2>
       </div>
     );
@@ -309,7 +332,7 @@ export default function ExamQuizPage() {
   // Show loading state while submitting to prevent white screen (race condition with result page)
   if (isSubmitted) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center flex-col gap-4', fontClass)}>
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center flex-col gap-4', fontClass)} style={quizFontStyle}>
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
         <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
           {t('workspace.quiz.examActions.processing', 'Processing your submission...')}
@@ -325,8 +348,10 @@ export default function ExamQuizPage() {
       ? `${Math.floor(quiz.totalTime / 60)} minutes • ${quiz.questions.length} questions`
       : `${quiz.questions.length} questions • Per-question timer`;
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-4', fontClass)}>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg shadow-slate-900/10 dark:shadow-blue-900/50 max-w-md w-full border border-slate-200 dark:border-slate-700">
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
+        <QuizHeader onBack={handleHeaderBack} title={quiz.title} showConfirm={false} />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg shadow-slate-900/10 dark:shadow-blue-900/50 max-w-md w-full border border-slate-200 dark:border-slate-700">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{quiz.title}</h1>
           <div className="mb-2">
             <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isTimedExam
@@ -370,6 +395,7 @@ export default function ExamQuizPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     );
   }
@@ -377,8 +403,16 @@ export default function ExamQuizPage() {
   /* ── Per-question timer mode ── */
   if (quiz.timerMode === 'PER_QUESTION') {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8', fontClass)}>
-        <ExamPerQuestion
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
+        <QuizHeader
+          onBack={handleHeaderBack}
+          title={quiz.title}
+          showConfirm={isStarted && !isSubmitted}
+          confirmTitle={t('workspace.quiz.examActions.confirmSubmitTitle', 'Stop and submit your exam?')}
+          confirmDescription={t('workspace.quiz.examActions.confirmSubmitDescription', 'Your current answers will be submitted immediately.')}
+        />
+        <div className="flex-1 p-4 md:p-8">
+          <ExamPerQuestion
           quiz={quiz}
           answers={answers}
           onSelectAnswer={selectAnswer}
@@ -389,13 +423,22 @@ export default function ExamQuizPage() {
           submitError={submitError}
           fontClass={fontClass}
         />
+        </div>
       </div>
     );
   }
 
   /* ── Total time mode – list view ── */
   return (
-    <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8', fontClass)}>
+    <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
+      <QuizHeader
+        onBack={handleHeaderBack}
+        title={quiz.title}
+        showConfirm={isStarted && !isSubmitted}
+        confirmTitle={t('workspace.quiz.examActions.confirmSubmitTitle', 'Stop and submit your exam?')}
+        confirmDescription={t('workspace.quiz.examActions.confirmSubmitDescription', 'Your current answers will be submitted immediately.')}
+      />
+      <div className="flex-1 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 flex items-center gap-2 flex-wrap">
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{quiz.title}</h1>
@@ -411,18 +454,28 @@ export default function ExamQuizPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
           {/* Questions list */}
           <div className="space-y-4">
-            {quiz.questions.map((q, idx) => (
-              <div key={q.id} ref={el => { if (el) questionRefs.current[idx] = el; }}>
+            {quiz.questions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
+              const globalIdx = (currentPage - 1) * itemsPerPage + idx;
+              return (
+              <div key={q.id} ref={el => { if (el) questionRefs.current[globalIdx] = el; }}>
                 <QuestionCard
                   question={q}
-                  questionNumber={idx + 1}
+                  questionNumber={globalIdx + 1}
                   totalQuestions={quiz.questions.length}
                   answerValue={answers[q.id]}
                   onSelectAnswer={(answerId) => selectAnswer(q.id, answerId, q.type === 'MULTIPLE_CHOICE')}
                   onTextAnswerChange={(value) => updateTextAnswer(q.id, value)}
                 />
               </div>
-            ))}
+            );
+          })}
+            {quiz.questions.length > itemsPerPage && (
+              <div className="flex justify-between items-center mt-6 p-4">
+                <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); window.scrollTo(0,0); }}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
+                <span className="text-sm font-medium text-slate-500">{t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}</span>
+                <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); window.scrollTo(0,0); }}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
+              </div>
+            )}
             <Button onClick={handleSubmit} disabled={isSubmitted} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white text-base py-3">
               {isSubmitted
                   ? <span className="inline-flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" />{t('workspace.quiz.examActions.submitting', 'Submitting...')}</span>
@@ -440,6 +493,11 @@ export default function ExamQuizPage() {
               answers={answers}
               timeLeft={timeLeft}
               onJumpToQuestion={jumpToQuestion}
+              currentPage={currentPage}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo(0, 0);
+              }}
               onSave={handleManualSave}
               onSubmit={handleSubmit}
               isSaveLoading={saveStatus === 'saving'}
@@ -451,6 +509,7 @@ export default function ExamQuizPage() {
             />
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

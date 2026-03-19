@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
+import QuizHeader from './components/QuizHeader';
 import { getAttemptResult, getQuizFull } from '@/api/QuizAPI';
 import { normalizeQuizData } from './utils/quizTransform';
 
@@ -12,14 +13,18 @@ export default function QuizResultPage() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
 
   const [result, setResult] = useState(null);
   const [quizDetails, setQuizDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reviewMode, setReviewMode] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  const questionRefs = useRef({});
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
@@ -99,9 +104,22 @@ export default function QuizResultPage() {
     navigate('/');
   }, [fallbackQuizPath, navigate, quizId, returnToQuizPath, result?.quizId]);
 
+  const jumpToQuestion = useCallback((questionIndex) => {
+    const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
+    if (targetPage !== currentPage) {
+      setCurrentPage(targetPage);
+      setTimeout(() => {
+        questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 0);
+      return;
+    }
+
+    questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [currentPage, itemsPerPage]);
+
   if (loading) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)}>
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
@@ -109,8 +127,8 @@ export default function QuizResultPage() {
 
   if (!result) {
     return (
-      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)}>
-        <h2 className="text-xl text-slate-600 dark:text-slate-300">Result not found</h2>
+      <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
+        <h2 className="text-xl text-slate-600 dark:text-slate-300">{t('workspace.quiz.result.notFound', 'Result not found')}</h2>
       </div>
     );
   }
@@ -120,15 +138,21 @@ export default function QuizResultPage() {
   const correctValue = `${result.correctQuestion ?? reviewQuestions.filter(q => q.isCorrect).length}/${result.totalQuestion ?? reviewQuestions.length}`;
   const answeredValue = `${result.answeredQuestion ?? 0}/${result.totalQuestion ?? reviewQuestions.length}`;
   const timeTakenSeconds = getTimeTakenSeconds(result.startedAt, result.completedAt, result.timeoutAt);
+  const totalPages = Math.max(1, Math.ceil(reviewQuestions.length / itemsPerPage));
+  const safeNavPage = Math.min(currentPage, totalPages);
+  const navStartIndex = (safeNavPage - 1) * itemsPerPage;
+  const navQuestions = reviewQuestions.slice(navStartIndex, navStartIndex + itemsPerPage);
   const resultTitle = passed == null
-    ? 'Quiz Completed'
+    ? t('workspace.quiz.result.quizCompleted', 'Quiz Completed')
     : passed
-      ? 'Congratulations!'
-      : 'Keep Trying!';
+      ? t('workspace.quiz.result.congratulations', 'Congratulations!')
+      : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
 
   return (
-    <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-8', fontClass)}>
-      <div className="max-w-3xl mx-auto">
+    <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
+      <QuizHeader onBack={handleBack} title={quizDetails?.title || t('workspace.quiz.result.title', 'Result')} showConfirm={false} />
+      <div className="flex-1 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
         {/* Score card */}
         {!reviewMode && (
           <div className={cn(
@@ -163,24 +187,24 @@ export default function QuizResultPage() {
             {/* Score display */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-6">
               {/* <ScoreStat label="Score" value={scoreValue} icon={BarChart3} /> */}
-              <ScoreStat label="Correct" value={correctValue} icon={CheckCircle2} />
-              <ScoreStat label="Answered" value={answeredValue} icon={Eye} />
-              <ScoreStat label="Time" value={formatDuration(timeTakenSeconds)} icon={Clock3} />
+              <ScoreStat label={t('workspace.quiz.result.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
+              <ScoreStat label={t('workspace.quiz.result.answered', 'Answered')} value={answeredValue} icon={Eye} />
+              <ScoreStat label={t('workspace.quiz.result.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2 mb-6 text-xs text-slate-500 dark:text-slate-400">
               {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
               <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
-              {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Pass Score: {result.passScore}</span>}
+              {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">{t('workspace.quiz.result.passScore', 'Pass Score')}: {result.passScore}</span>}
             </div>
 
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2" disabled={reviewQuestions.length === 0}>
-                <Eye className="w-4 h-4" /> Review Answers
+                <Eye className="w-4 h-4" /> {t('workspace.quiz.result.reviewAnswers', 'Review Answers')}
               </Button>
               <Button onClick={handleBack} className="min-w-[160px] gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                <ArrowLeft className="w-4 h-4" /> Back to Quiz
+                <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
               </Button>
             </div>
           </div>
@@ -190,15 +214,18 @@ export default function QuizResultPage() {
         {reviewMode && (
           <>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Review Answers</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.reviewAnswersTitle', 'Review Answers')}</h2>
               <Button variant="outline" onClick={() => setReviewMode(false)} className="gap-2">
-                <ArrowLeft className="w-4 h-4" /> Back to Score
+                <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToScore', 'Back to Score')}
               </Button>
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
             <div className="space-y-4">
-              {reviewQuestions.map((q, idx) => (
-                <div key={q.id} className="relative">
+              {reviewQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
+                const globalIdx = (currentPage - 1) * itemsPerPage + idx;
+                return (
+                <div key={q.id} className="relative" ref={el => { if (el) questionRefs.current[globalIdx] = el; }}>
                   {/* Correct/incorrect badge */}
                   <div className={cn(
                     'absolute -left-2 -top-2 z-10 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
@@ -208,7 +235,7 @@ export default function QuizResultPage() {
                   </div>
                   <QuestionCard
                     question={q}
-                    questionNumber={idx + 1}
+                    questionNumber={globalIdx + 1}
                     totalQuestions={reviewQuestions.length}
                     answerValue={q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK' ? q.textAnswer : q.selectedAnswerIds}
                     showResult
@@ -216,23 +243,90 @@ export default function QuizResultPage() {
                     disabled
                   />
                 </div>
-              ))}
+              );
+            })}
+
+              {reviewQuestions.length > itemsPerPage && (
+                <div className="flex justify-between items-center mt-6 p-4">
+                  <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); window.scrollTo(0, 0); }}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
+                  <span className="text-sm font-medium text-slate-500">{t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}</span>
+                  <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); window.scrollTo(0, 0); }}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
+                </div>
+              )}
 
               {reviewQuestions.length === 0 && (
                 <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                  Khong co du lieu chi tiet de review bai lam.
+                  {t('workspace.quiz.result.noReviewData', 'No detailed data available to review this attempt.')}
                 </div>
               )}
             </div>
 
+            {/* Right Sticky Nav */}
+            <div className="hidden lg:block relative">
+              <div className="sticky top-[100px] p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <h3 className="font-bold mb-4 text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.questionList', 'Question list')}</h3>
+                <div className="flex flex-wrap gap-2 max-h-[60vh] overflow-y-auto pr-2 pb-2 items-start justify-start content-start">
+                  {navQuestions.map((q, idx) => {
+                    const globalIdx = navStartIndex + idx;
+                    const isCorrect = q.isCorrect;
+                    const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => jumpToQuestion(globalIdx)}
+                        className={cn(
+                          'w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold transition-all',
+                          isCorrect ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400',
+                          inCurrentPage ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-800' : ''
+                        )}
+                      >
+                        {globalIdx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+                {reviewQuestions.length > itemsPerPage && (
+                  <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={safeNavPage === 1}
+                      onClick={() => {
+                        setCurrentPage((p) => Math.max(1, p - 1));
+                        window.scrollTo(0, 0);
+                      }}
+                    >
+                      {t('workspace.quiz.pagination.prev', 'Previous page')}
+                    </Button>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {t('workspace.quiz.pagination.page', 'Page')} {safeNavPage}/{totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={safeNavPage === totalPages}
+                      onClick={() => {
+                        setCurrentPage((p) => Math.min(totalPages, p + 1));
+                        window.scrollTo(0, 0);
+                      }}
+                    >
+                      {t('workspace.quiz.pagination.next', 'Next page')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            </div>
+
             <div className="flex justify-center mt-8 gap-3">
-              <Button variant="outline" onClick={() => setReviewMode(false)} className="min-w-[160px]">Back to Score</Button>
+              <Button variant="outline" onClick={() => setReviewMode(false)} className="min-w-[160px]">{t('workspace.quiz.result.backToScore', 'Back to Score')}</Button>
               <Button onClick={handleBack} className="min-w-[160px] bg-blue-600 hover:bg-blue-700 text-white gap-2">
-                <ArrowLeft className="w-4 h-4" /> Back to Quiz
+                <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
               </Button>
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );
