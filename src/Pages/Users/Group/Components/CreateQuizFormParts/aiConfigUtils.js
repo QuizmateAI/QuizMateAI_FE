@@ -80,6 +80,9 @@ export const buildAiQuizPayload = ({
   aiQuizIntent,
   questionUnit,
   aiTimerMode,
+  aiEasyDuration,
+  aiMediumDuration,
+  aiHardDuration,
 }) => {
   const normalizedQTypes = normalizeItemRatios(selectedQTypes, "questionTypeId");
   const normalizedBloomSkills = normalizeItemRatios(selectedBloomSkills, "bloomId");
@@ -95,7 +98,7 @@ export const buildAiQuizPayload = ({
     title: aiName,
     materialIds: selectedMaterialIds,
     overallDifficulty: overallDifficultyEnum,
-    durationInMinute: normalizedDuration,
+    durationInMinute: aiTimerMode ? normalizedDuration : 0,
     durationInSecond: 0,
     roadmapId: null,
     phaseId: null,
@@ -114,5 +117,10 @@ export const buildAiQuizPayload = ({
     mediumRatio: difficultyRatios.medium,
     hardRatio: difficultyRatios.hard,
     timerMode: aiTimerMode,
+    ...(aiTimerMode ? {} : {
+      easyDurationInSeconds: Math.max(1, Number(aiEasyDuration) || 1),
+      mediumDurationInSeconds: Math.max(1, Number(aiMediumDuration) || 1),
+      hardDurationInSeconds: Math.max(1, Number(aiHardDuration) || 1),
+    })
   };
 };

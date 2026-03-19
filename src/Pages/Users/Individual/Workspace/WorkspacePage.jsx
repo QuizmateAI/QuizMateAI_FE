@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
+import RoadmapJourPanel from "@/Pages/Users/Individual/Workspace/Components/RoadmapJourPanel";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
 import UploadSourceDialog from "@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog";
@@ -183,6 +184,7 @@ function WorkspacePage() {
 	const [selectedFlashcard, setSelectedFlashcard] = useState(null);
 	// State lÆ°u mock test Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
 	const [selectedMockTest, setSelectedMockTest] = useState(null);
+	const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
 
 	// Háº±ng sá»‘ kÃ­ch thÆ°á»›c panel
 	const COLLAPSED_WIDTH = 56;
@@ -204,6 +206,7 @@ function WorkspacePage() {
 
 	const minWidthForChatWithOneSidePanel = getRequiredLayoutWidth(false, true);
 	const shouldStackSidePanels = workspaceLayoutWidth > 0 && workspaceLayoutWidth < minWidthForChatWithOneSidePanel;
+	const isRoadmapJourActive = activeView === "roadmap";
 
 	const resolveCollapsedStateByWidth = useCallback((layoutWidth, sourcesCollapsed, studioCollapsed) => {
 		let nextSourcesCollapsed = sourcesCollapsed;
@@ -1060,6 +1063,9 @@ function WorkspacePage() {
 			addAccessHistory(viewTypeMap[actionKey], viewTypeMap[actionKey], actionKey);
 		}
 		setActiveView(actionKey);
+		if (actionKey !== "roadmap") {
+			setSelectedRoadmapPhaseId(null);
+		}
 	}, []);
 
 	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€” ghi nháº­n má»—i láº§n truy cáº­p list view
@@ -1362,6 +1368,7 @@ function WorkspacePage() {
 									isDarkMode={isDarkMode}
 									sources={sources}
 									selectedSourceIds={selectedSourceIds}
+									selectedRoadmapPhaseId={selectedRoadmapPhaseId}
 									activeView={activeView}
 									createdItems={createdItems}
 									onUploadClick={handleUploadClickSafe}
@@ -1388,20 +1395,34 @@ function WorkspacePage() {
 
 							<div className="grid min-h-0 grid-cols-2 gap-4">
 								<div className="min-w-0 min-h-0">
-									<SourcesPanel
-										isDarkMode={isDarkMode}
-										sources={sources}
-										onAddSource={handleUploadClickSafe}
-										onRemoveSource={handleRemoveSource}
-										onRemoveMultiple={handleRemoveMultipleSources}
-										selectedIds={selectedSourceIds}
-										onSelectionChange={setSelectedSourceIds}
-										onSourceUpdated={(updatedSource) => {
-											setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
-										}}
-										isCollapsed={false}
-										onToggleCollapse={handleToggleSourcesCollapse}
-									/>
+									<div className="relative h-full overflow-hidden">
+										<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
+											<SourcesPanel
+												isDarkMode={isDarkMode}
+												sources={sources}
+												onAddSource={handleUploadClickSafe}
+												onRemoveSource={handleRemoveSource}
+												onRemoveMultiple={handleRemoveMultipleSources}
+												selectedIds={selectedSourceIds}
+												onSelectionChange={setSelectedSourceIds}
+												onSourceUpdated={(updatedSource) => {
+													setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
+												}}
+												isCollapsed={false}
+												onToggleCollapse={handleToggleSourcesCollapse}
+											/>
+										</div>
+										<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
+											<RoadmapJourPanel
+												isDarkMode={isDarkMode}
+												workspaceId={workspaceId}
+												selectedPhaseId={selectedRoadmapPhaseId}
+												onSelectPhase={setSelectedRoadmapPhaseId}
+												isCollapsed={false}
+												onToggleCollapse={handleToggleSourcesCollapse}
+											/>
+										</div>
+									</div>
 								</div>
 
 								<div className="min-w-0 min-h-0">
@@ -1423,20 +1444,34 @@ function WorkspacePage() {
 								style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
 								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
 							>
-								<SourcesPanel
-									isDarkMode={isDarkMode}
-									sources={sources}
-									onAddSource={handleUploadClickSafe}
-									onRemoveSource={handleRemoveSource}
-									onRemoveMultiple={handleRemoveMultipleSources}
-									selectedIds={selectedSourceIds}
-									onSelectionChange={setSelectedSourceIds}
-									onSourceUpdated={(updatedSource) => {
-										setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
-									}}
-									isCollapsed={isSourcesCollapsed}
-									onToggleCollapse={handleToggleSourcesCollapse}
-								/>
+								<div className="relative h-full overflow-hidden">
+									<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
+										<SourcesPanel
+											isDarkMode={isDarkMode}
+											sources={sources}
+											onAddSource={handleUploadClickSafe}
+											onRemoveSource={handleRemoveSource}
+											onRemoveMultiple={handleRemoveMultipleSources}
+											selectedIds={selectedSourceIds}
+											onSelectionChange={setSelectedSourceIds}
+											onSourceUpdated={(updatedSource) => {
+												setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
+											}}
+											isCollapsed={isSourcesCollapsed}
+											onToggleCollapse={handleToggleSourcesCollapse}
+										/>
+									</div>
+									<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
+										<RoadmapJourPanel
+											isDarkMode={isDarkMode}
+											workspaceId={workspaceId}
+											selectedPhaseId={selectedRoadmapPhaseId}
+											onSelectPhase={setSelectedRoadmapPhaseId}
+											isCollapsed={isSourcesCollapsed}
+											onToggleCollapse={handleToggleSourcesCollapse}
+										/>
+									</div>
+								</div>
 							</div>
 
 							{/* Resize handle trÃ¡i */}
@@ -1454,6 +1489,7 @@ function WorkspacePage() {
 									isDarkMode={isDarkMode}
 									sources={sources}
 									selectedSourceIds={selectedSourceIds}
+									selectedRoadmapPhaseId={selectedRoadmapPhaseId}
 									activeView={activeView}
 									createdItems={createdItems}
 									onUploadClick={handleUploadClickSafe}

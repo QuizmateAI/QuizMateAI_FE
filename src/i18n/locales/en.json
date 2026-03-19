@@ -778,6 +778,7 @@
       "greeting": "Hi {{name}},",
       "manageAccount": "Manage your Account",
       "logout": "Log out",
+        "materialRequired": "Please select at least one material.",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service"
     }
@@ -1313,7 +1314,12 @@
         "questionTypeTotalByPercent": "Question type total must equal 100%.",
         "bloomRequired": "Please add at least one bloom skill.",
         "bloomTotalByCount": "Bloom skill total must equal total questions ({{target}}).",
-        "bloomTotalByPercent": "Bloom skill total must equal 100%."
+        "bloomTotalByPercent": "Bloom skill total must equal 100%.",
+        "durationMinimum": "Duration for each difficulty level must be at least 10 seconds.",
+        "allDurationsRequired": "Please enter duration for all difficulty levels.",
+        "mediumDurationMustBeGreaterThanEasy": "Medium difficulty duration must be greater than easy difficulty duration.",
+        "hardDurationMustBeGreaterThanMedium": "Hard difficulty duration must be greater than medium difficulty duration.",
+        "timeDurationRequired": "Please enter total duration for the quiz."
       },
       "contextSelector": {
         "title": "Quiz Location",
@@ -1381,6 +1387,7 @@
         "skillDistribution": "Skill distribution",
         "quizStyle": "Quiz style",
         "additionalPrompt": "Additional prompt",
+        "customPromptLabel": "Please enter your request",
         "promptPlaceholder": "Enter additional instructions for AI...",
         "byCount": "By count",
         "byPercent": "By percentage",
@@ -1412,6 +1419,9 @@
         "examTypeHintTimed": "Learners can review all questions, go back to previous ones, and submit once at the end.",
         "examTypeHintSequential": "Learners see one question at a time and cannot return to previous questions. Timeout moves to next automatically.",
         "perQuestionDurationHint": "This mode uses per-question timing (seconds). AI will generate duration for each question.",
+        "easyDuration": "Easy question duration",
+        "mediumDuration": "Medium question duration",
+        "hardDuration": "Hard question duration",
         "loadingMetadata": "Loading AI metadata...",
         "metadataLoadFailed": "Failed to load AI metadata. Please try again.",
         "metadataEmpty": "Metadata loaded but no options were returned from one or more endpoints."

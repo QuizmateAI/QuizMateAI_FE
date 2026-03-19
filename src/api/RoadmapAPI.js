@@ -1,8 +1,122 @@
-// import api from './api';
+import api from './api';
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function formatEstimatedDuration(totalDays, minutesPerDay) {
+  const safeDays = Number(totalDays) || 0;
+  const safeMinutes = Number(minutesPerDay) || 0;
+  if (!safeDays && !safeMinutes) return 'N/A';
+  if (!safeMinutes) return `${safeDays} ngày`;
+  if (!safeDays) return `${safeMinutes} phút/ngày`;
+  return `${safeDays} ngày • ${safeMinutes} phút/ngày`;
+}
+
+function getCanvasPreference(roadmapId) {
+  if (!roadmapId) return null;
+  const value = localStorage.getItem(`roadmap_${roadmapId}_canvasView`);
+  return value === 'view1' || value === 'view2' ? value : null;
+}
+
+function mapQuizNode(quiz) {
+  return {
+    id: quiz?.quizId,
+    title: quiz?.title || 'Quiz',
+    questionCount: Number(quiz?.totalQuestion) || 0,
+    duration: Number(quiz?.duration) || 0,
+    maxAttempt: quiz?.maxAttempt ?? null,
+    passScore: quiz?.passScore ?? null,
+    status: quiz?.status || null,
+    quizIntent: quiz?.quizIntent || null,
+  };
+}
+
+function mapRoadmapStructureToCanvas(structure) {
+  const phases = toArray(structure?.phases).map((phase, index) => {
+    const preLearningQuizzes = toArray(phase?.preLearningQuizzes).map(mapQuizNode);
+    const postLearningQuizzes = toArray(phase?.postLearningQuizzes).map(mapQuizNode);
+    const knowledges = toArray(phase?.knowledges).map((knowledge) => ({
+      knowledgeId: knowledge?.knowledgeId,
+      phaseId: knowledge?.phaseId,
+      title: knowledge?.title || 'Knowledge',
+      description: knowledge?.description || '',
+      quizzes: toArray(knowledge?.quizzes).map(mapQuizNode),
+      // Structure API currently does not include flashcards.
+      flashcards: [],
+    }));
+
+    return {
+      phaseId: phase?.phaseId,
+      phaseIndex: Math.max(0, Number(phase?.phaseIndex ?? index + 1) - 1),
+      title: phase?.title || `Phase ${index + 1}`,
+      description: phase?.description || '',
+      status: phase?.status || null,
+      isRemedial: Boolean(phase?.isRemedial),
+      estimatedDays: Number(phase?.estimatedDays) || 0,
+      estimatedMinutesPerDay: Number(phase?.estimatedMinutesPerDay) || 0,
+      durationLabel: formatEstimatedDuration(phase?.estimatedDays, phase?.estimatedMinutesPerDay),
+      preLearningQuizzes,
+      postLearningQuizzes,
+      knowledges,
+      // Backward-compat fields used by current canvas.
+      preLearning: preLearningQuizzes[0] || null,
+      postLearning: postLearningQuizzes[0] || null,
+    };
+  });
+
+  const stats = phases.reduce((accumulator, phase) => {
+    accumulator.phaseCount += 1;
+    accumulator.knowledgeCount += toArray(phase.knowledges).length;
+    accumulator.quizCount += toArray(phase.preLearningQuizzes).length;
+    accumulator.quizCount += toArray(phase.postLearningQuizzes).length;
+    accumulator.quizCount += toArray(phase.knowledges).reduce((sum, knowledge) => sum + toArray(knowledge.quizzes).length, 0);
+    accumulator.flashcardCount += toArray(phase.knowledges).reduce((sum, knowledge) => sum + toArray(knowledge.flashcards).length, 0);
+    return accumulator;
+  }, { phaseCount: 0, knowledgeCount: 0, quizCount: 0, flashcardCount: 0 });
+
+  return {
+    roadmapId: structure?.roadmapId,
+    workspaceId: structure?.workspaceId,
+    title: structure?.title || 'Roadmap',
+    description: structure?.description || '',
+    status: structure?.status || null,
+    estimatedTotalDays: Number(structure?.estimatedTotalDays) || 0,
+    estimatedMinutesPerDay: Number(structure?.estimatedMinutesPerDay) || 0,
+    speedMode: structure?.speedMode || 'MEDIUM',
+    estimatedDuration: formatEstimatedDuration(structure?.estimatedTotalDays, structure?.estimatedMinutesPerDay),
+    canvasView: getCanvasPreference(structure?.roadmapId),
+    phases,
+    stats,
+  };
+}
 
 export const getRoadmapGraph = async ({ workspaceId = null, groupId = null } = {}) => {
-  // Real API reference:
-  // return api.get('/roadmap/graph', { params: { workspaceId, groupId } });
+  if (!workspaceId && !groupId) {
+    return buildMockResponse(null);
+  }
+
+  // Canvas currently used in individual workspace. Resolve roadmapId via workspace profile.
+  if (workspaceId) {
+    try {
+      const profileResponse = await api.get(`/workspace-profile/individual/${workspaceId}`);
+      const profileData = profileResponse?.data || profileResponse;
+      const roadmapId = profileData?.roadmap_id ?? profileData?.roadmapId ?? null;
+
+      if (!roadmapId) {
+        return buildMockResponse(null);
+      }
+
+      const structureResponse = await api.get(`/roadmaps/${roadmapId}/structure`);
+      const mappedRoadmap = mapRoadmapStructureToCanvas(structureResponse);
+      return buildMockResponse(mappedRoadmap);
+    } catch (error) {
+      console.error('Failed to fetch roadmap structure:', error);
+      return buildMockResponse(null);
+    }
+  }
+
+  // Group fallback remains mock until group roadmap structure endpoint is aligned.
   return buildMockResponse(getStoredRoadmap({ workspaceId, groupId }));
 };
 
