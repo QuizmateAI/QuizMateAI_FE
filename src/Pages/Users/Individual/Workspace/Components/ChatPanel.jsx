@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Route, BadgeCheck, Layers } from "lucide-react";
+import { UploadCloud, BookOpen, Sparkles, Route, BadgeCheck, Layers, Map, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import CreateQuizForm from "./CreateQuizForm";
@@ -18,10 +18,36 @@ import PostLearningListView from "./PostLearningListView";
 import CreatePostLearningForm from "./CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [] }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+  const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
+  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
+    if (!workspaceId) return null;
+    const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
+    return saved === "view1" || saved === "view2" ? saved : null;
+  });
+
+  React.useEffect(() => {
+    if (!workspaceId) {
+      setRoadmapCanvasView(null);
+      return;
+    }
+
+    const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
+    setRoadmapCanvasView(saved === "view1" || saved === "view2" ? saved : null);
+  }, [workspaceId]);
+
+  React.useEffect(() => {
+    if (!roadmapCanvasStorageKey || !roadmapCanvasView) return;
+    localStorage.setItem(roadmapCanvasStorageKey, roadmapCanvasView);
+  }, [roadmapCanvasStorageKey, roadmapCanvasView]);
+
+  const handleSwitchRoadmapView = React.useCallback((view) => {
+    if (view !== "view1" && view !== "view2") return;
+    setRoadmapCanvasView(view);
+  }, []);
 
   // Khi chưa có nguồn tài liệu — hiển thị lời chào và nút upload
   if (!hasSources && !activeView) {
@@ -139,7 +165,17 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
 
     switch (activeView) {
       case "roadmap":
-        return <RoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} createdItems={createdRoadmaps} workspaceId={workspaceId} />;
+        return (
+          <RoadmapCanvasView
+            isDarkMode={isDarkMode}
+            onCreateRoadmap={onCreateRoadmap}
+            createdItems={createdRoadmaps}
+            workspaceId={workspaceId}
+            forcedCanvasView={roadmapCanvasView}
+            onCanvasViewChange={setRoadmapCanvasView}
+            selectedPhaseId={selectedRoadmapPhaseId}
+          />
+        );
       case "quiz":
         return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="WORKSPACE" contextId={workspaceId} />;
       case "flashcard":
@@ -151,7 +187,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
       case "createQuiz":
         return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "createFlashcard":
-        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "flashcardDetail":
         return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
       case "quizDetail":
@@ -177,6 +213,35 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
       <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
         isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
       }`}>
+        {activeView === "roadmap" ? (
+          <div className={`px-4 py-3 border-b flex items-center justify-between gap-3 ${isDarkMode ? "border-slate-800 bg-slate-950/50" : "border-gray-200 bg-slate-50"}`}>
+            <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+              {t("workspace.roadmap.title", "Roadmap")}
+            </p>
+            <div className="inline-flex items-center gap-1 rounded-full border p-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                onClick={() => handleSwitchRoadmapView("view1")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Rows3 className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>View 1</span>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
+                onClick={() => handleSwitchRoadmapView("view2")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Map className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>View 2</span>
+              </Button>
+            </div>
+          </div>
+        ) : null}
         {listContent}
       </section>
     );
@@ -189,7 +254,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
       case "createQuiz":
         return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "createFlashcard":
-        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "flashcardDetail":
         return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
       case "quizDetail":

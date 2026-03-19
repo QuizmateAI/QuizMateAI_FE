@@ -45,6 +45,7 @@ function GroupWorkspacePage() {
   // State lưu mock test đang được xem chi tiết hoặc chỉnh sửa
   const [selectedMockTest, setSelectedMockTest] = useState(null);
   const [sources, setSources] = useState([]);
+  const [selectedSourceIds, setSelectedSourceIds] = useState([]);
   const [createdItems, setCreatedItems] = useState([]);
   const [accessHistory, setAccessHistory] = useState([]);
   const [leftWidth, setLeftWidth] = useState(320);
@@ -521,6 +522,8 @@ function GroupWorkspacePage() {
                 onAddSource={() => setUploadDialogOpen(true)}
                 onRemoveSource={handleRemoveSource}
                 onRemoveMultiple={handleRemoveMultipleSources}
+                selectedIds={selectedSourceIds}
+                onSelectionChange={setSelectedSourceIds}
                 onSourceUpdated={(updatedSource) => {
                   setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
                 }}
@@ -544,6 +547,7 @@ function GroupWorkspacePage() {
               <ChatPanel
                 isDarkMode={isDarkMode}
                 sources={sources}
+                selectedSourceIds={selectedSourceIds}
                 activeView={activeView}
                 createdItems={createdItems}
                 onUploadClick={() => setUploadDialogOpen(true)}

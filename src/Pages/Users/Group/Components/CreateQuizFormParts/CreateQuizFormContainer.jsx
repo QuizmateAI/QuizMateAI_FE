@@ -100,6 +100,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [tab, setTab] = useState("manual");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({}); // Track errors for each field
   const [questionValidationErrors, setQuestionValidationErrors] = useState({});
 
   // Quiz luôn ở context KNOWLEDGE — không cần chọn
@@ -275,6 +276,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   // const [aiDifficulty, setAiDifficulty] = useState("medium"); // replaced by proper difficulty handling
   const [aiTotalQuestions, setAiTotalQuestions] = useState(10);
   const [aiDuration, setAiDuration] = useState(15);
+  const [aiEasyDuration, setAiEasyDuration] = useState(60); // in seconds
+  const [aiMediumDuration, setAiMediumDuration] = useState(120); // in seconds
+  const [aiHardDuration, setAiHardDuration] = useState(180); // in seconds
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiQuizIntent, setAiQuizIntent] = useState("REVIEW");
   const [aiTimerMode, setAiTimerMode] = useState(true);
@@ -501,6 +505,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   }, [aiTotalQuestions, questionUnit, selectedDifficultyId]);
 
   const handleToggleMaterial = (id) => {
+    setFieldErrors((prev) => ({ ...prev, selectedMaterialIds: "" }));
     setSelectedMaterialIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
@@ -772,6 +777,50 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             return;
         }
 
+        // Validate required AI fields
+        let newFieldErrors = {};
+
+        if (!aiName.trim()) {
+           newFieldErrors.aiName = t("workspace.quiz.validation.nameRequired");
+        }
+          if (!selectedMaterialIds.length) {
+            newFieldErrors.selectedMaterialIds = t("workspace.quiz.validation.materialRequired");
+          }
+        if (!Number.isFinite(aiTotalQuestions) || aiTotalQuestions <= 0) {
+           newFieldErrors.aiTotalQuestions = t("workspace.quiz.aiConfig.totalQuestions");
+        }
+        if (aiTimerMode && (!Number.isFinite(aiDuration) || aiDuration <= 0)) {
+           newFieldErrors.aiDuration = t("workspace.quiz.validation.timeDurationRequired");
+        }
+
+        // Validate per-question durations when timerMode is false
+        if (!aiTimerMode) {
+          const easyDur = Number(aiEasyDuration) || 0;
+          const mediumDur = Number(aiMediumDuration) || 0;
+          const hardDur = Number(aiHardDuration) || 0;
+
+          if (!easyDur || !mediumDur || !hardDur) {
+            newFieldErrors.aiDurations = t("workspace.quiz.validation.allDurationsRequired");
+          } else {
+            if (easyDur < 10 || mediumDur < 10 || hardDur < 10) {
+              newFieldErrors.aiDurations = t("workspace.quiz.validation.durationMinimum");
+            }
+            if (mediumDur <= easyDur) {
+              newFieldErrors.aiDurations = t("workspace.quiz.validation.mediumDurationMustBeGreaterThanEasy");
+            }
+            if (hardDur <= mediumDur) {
+              newFieldErrors.aiDurations = t("workspace.quiz.validation.hardDurationMustBeGreaterThanMedium");
+            }
+          }
+        }
+
+        if (Object.keys(newFieldErrors).length > 0) {
+          setFieldErrors(newFieldErrors);
+          setError(Object.values(newFieldErrors)[0]); // Show first error as main error
+          setSubmitting(false);
+          return;
+        }
+
         const selectedDifficulty = difficultyDefs.find((d) => d.id === selectedDifficultyId);
         const difficultyRatios = selectedDifficultyId === "CUSTOM"
           ? {
@@ -819,6 +868,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           aiQuizIntent,
           questionUnit,
           aiTimerMode,
+          aiEasyDuration,
+          aiMediumDuration,
+          aiHardDuration,
         });
         
         const result = await generateAIQuiz(payload);
@@ -992,6 +1044,13 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             setAiTimerMode={setAiTimerMode}
             aiDuration={aiDuration}
             setAiDuration={setAiDuration}
+            aiEasyDuration={aiEasyDuration}
+            setAiEasyDuration={setAiEasyDuration}
+            aiMediumDuration={aiMediumDuration}
+            setAiMediumDuration={setAiMediumDuration}
+            aiHardDuration={aiHardDuration}
+            setAiHardDuration={setAiHardDuration}
+                      setFieldErrors={setFieldErrors}
           />
         )}
 
