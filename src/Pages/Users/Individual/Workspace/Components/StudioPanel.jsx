@@ -40,13 +40,20 @@ function formatAccessTime(dateStr, t) {
 }
 
 // Panel chứa các nút chức năng chính của workspace
-function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isCollapsed = false, onToggleCollapse, activeView = null }) {
+function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isCollapsed = false, onToggleCollapse, activeView = null, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
   const highlightKey = getActiveKey(activeView);
 
+	// Xác định nút nào nên disabled
+	const getIsActionDisabled = (actionKey) => {
+		if (actionKey === "quiz") return shouldDisableQuiz;
+		if (actionKey === "flashcard") return shouldDisableFlashcard;
+		if (actionKey === "roadmap") return shouldDisableRoadmap;
+		return false;
+	};
   useEffect(() => {
     if (!isCollapsed) {
       const resetTimer = setTimeout(() => {
@@ -91,10 +98,12 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
         <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
           {STUDIO_ACTIONS.map((action) => {
             const Icon = action.icon;
+            const isDisabled = getIsActionDisabled(action.key);
             return (
               <button
                 key={action.key}
                 type="button"
+                disabled={isDisabled}
                 onClick={() => {
                   setHoverTooltip(null);
                   onAction?.(action.key);
@@ -102,14 +111,18 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
                 onMouseEnter={(event) => showTooltip(event, t(`workspace.studio.actions.${action.key}`))}
                 onMouseLeave={() => setHoverTooltip(null)}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                  highlightKey === action.key
+                  isDisabled
+                    ? isDarkMode
+                      ? "bg-slate-800 opacity-50 cursor-not-allowed"
+                      : "bg-gray-50 opacity-50 cursor-not-allowed"
+                    : highlightKey === action.key
                     ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
                     : isDarkMode
                     ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
                     : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <Icon className={`w-4.5 h-4.5 ${action.color}`} />
+                <Icon className={`w-4.5 h-4.5 ${isDisabled ? "text-gray-400" : action.color}`} />
               </button>
             );
           })}
@@ -168,12 +181,18 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
       <div className="p-3 space-y-2">
         {STUDIO_ACTIONS.map((action) => {
           const Icon = action.icon;
+          const isDisabled = getIsActionDisabled(action.key);
           return (
             <button
               key={action.key}
+              disabled={isDisabled}
               onClick={() => onAction?.(action.key)}
               className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${
-                highlightKey === action.key
+                isDisabled
+                  ? isDarkMode
+                    ? "bg-slate-800/40 border border-slate-800 opacity-50 cursor-not-allowed"
+                    : "bg-gray-50 border border-gray-100 opacity-50 cursor-not-allowed"
+                  : highlightKey === action.key
                   ? isDarkMode
                     ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20"
                     : "bg-blue-50 border border-blue-200"
@@ -182,13 +201,13 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
                   : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
               }`}
             >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.bg}`}>
-                <Icon className={`w-4.5 h-4.5 ${action.color}`} />
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDisabled ? "bg-gray-200 dark:bg-slate-700" : action.bg}`}>
+                <Icon className={`w-4.5 h-4.5 ${isDisabled ? "text-gray-400" : action.color}`} />
               </div>
-              <span className={`text-sm font-medium flex-1 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+              <span className={`text-sm font-medium flex-1 ${isDisabled ? "text-gray-400" : isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
                 {t(`workspace.studio.actions.${action.key}`)}
               </span>
-              <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+              {!isDisabled && <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />}
             </button>
           );
         })}

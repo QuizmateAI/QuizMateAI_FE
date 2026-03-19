@@ -10,6 +10,8 @@ function RoadmapJourPanel({
   onToggleCollapse,
   selectedPhaseId: selectedPhaseIdProp = null,
   onSelectPhase,
+  reloadToken = 0,
+  isGeneratingRoadmapPhases = false,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -42,7 +44,7 @@ function RoadmapJourPanel({
 
   useEffect(() => {
     loadRoadmap();
-  }, [loadRoadmap]);
+  }, [loadRoadmap, reloadToken]);
 
   const phases = useMemo(() => {
     const rawPhases = roadmap?.phases ?? [];
@@ -85,8 +87,20 @@ function RoadmapJourPanel({
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="py-10 flex flex-col items-center justify-center">
-            <Loader2 className={`w-6 h-6 animate-spin ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
+          <div className="py-10 flex flex-col items-center justify-center gap-3">
+            <Loader2 className={`w-6 h-6 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+            <p className={`text-sm text-center ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+              {t("workspace.roadmap.loading.title", "Đang tải roadmap")}
+            </p>
+          </div>
+        ) : isGeneratingRoadmapPhases ? (
+          <div className={`rounded-2xl border px-4 py-5 ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-300 bg-slate-50"}`}>
+            <div className="flex items-center gap-2">
+              <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+              <p className={`text-sm ${fontClass} ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+                {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi AI tạo phase")}
+              </p>
+            </div>
           </div>
         ) : !roadmap ? (
           <div className={`rounded-2xl border px-4 py-5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-400" : "border-slate-300 bg-slate-200 text-slate-600"}`}>

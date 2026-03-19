@@ -120,8 +120,18 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
     if (!silent) setLoading(true);
     try {
       const res = await getQuizzesByScope(contextType, scopeId);
-      const incoming = res.data || [];
+      let incoming = res.data || [];
+      
+      // Studio filter: exclude roadmap quizzes when in WORKSPACE context
+      if (contextType === 'WORKSPACE') {
+        incoming = incoming.filter(quiz => {
+          const qContext = quiz.contextType?.toUpperCase();
+          return !['ROADMAP', 'PHASE', 'KNOWLEDGE'].includes(qContext);
+        });
+      }
+      
       setQuizzes((prev) => (hasQuizListChanged(prev, incoming) ? incoming : prev));
+
     } catch (err) {
       console.error("Lỗi khi lấy danh sách quiz:", err);
       if (!silent) setQuizzes([]);
