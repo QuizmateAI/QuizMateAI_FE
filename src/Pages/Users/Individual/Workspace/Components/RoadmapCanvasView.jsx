@@ -152,9 +152,13 @@ function RoadmapCanvasView({
   onCreateRoadmapPhases,
   onCreatePhaseKnowledge,
   onCreatePhasePreLearning,
+  isStudyNewRoadmap = false,
+  onViewQuiz,
   isGeneratingRoadmapPhases = false,
   generatingKnowledgePhaseIds = [],
+  generatingKnowledgeQuizPhaseIds = [],
   generatingPreLearningPhaseIds = [],
+  reloadToken = 0,
   forcedCanvasView = null,
   onCanvasViewChange,
   selectedPhaseId = null,
@@ -187,7 +191,13 @@ function RoadmapCanvasView({
     try {
       const response = await getRoadmapGraph({ workspaceId, groupId });
       const nextRoadmap = response?.data?.data ?? null;
-      const resolvedCanvasView = forcedCanvasView || nextRoadmap?.canvasView || null;
+      const storedCanvasView = nextRoadmap?.roadmapId
+        ? localStorage.getItem(`roadmap_${nextRoadmap.roadmapId}_canvasView`)
+        : null;
+      const resolvedCanvasView = forcedCanvasView
+        || nextRoadmap?.canvasView
+        || (storedCanvasView === "view1" || storedCanvasView === "view2" ? storedCanvasView : null)
+        || "view1";
       const mergedRoadmap = nextRoadmap
         ? { ...nextRoadmap, canvasView: resolvedCanvasView }
         : null;
@@ -297,7 +307,7 @@ function RoadmapCanvasView({
 
   useEffect(() => {
     loadRoadmap();
-  }, [loadRoadmap]);
+  }, [loadRoadmap, reloadToken]);
 
   const layout = useMemo(() => buildLayout(roadmap?.phases ?? [], phaseOffsets, knowledgeOffsets), [knowledgeOffsets, phaseOffsets, roadmap]);
   const layoutBounds = useMemo(() => buildLayoutBounds(layout, expandedKnowledges), [expandedKnowledges, layout]);
@@ -629,7 +639,7 @@ function RoadmapCanvasView({
     );
   }
 
-  if (!roadmap || !roadmap.canvasView || !hasPhase) {
+  if (!roadmap || !hasPhase) {
     return (
       <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-gray-500"}`}>
         <div className="max-w-2xl text-center">
@@ -659,7 +669,9 @@ function RoadmapCanvasView({
 
   // Swapped mapping by request:
   // view1 -> canvas view 2, view2 -> canvas view 1
-  if (roadmap.canvasView === "view1") {
+  const effectiveCanvasView = roadmap?.canvasView === "view2" ? "view2" : "view1";
+
+  if (effectiveCanvasView === "view1") {
     return (
       <RoadmapCanvasView2
         roadmap={roadmap}
@@ -668,8 +680,12 @@ function RoadmapCanvasView({
         selectedPhaseId={selectedPhaseId}
         onCreatePhaseKnowledge={onCreatePhaseKnowledge}
         onCreatePhasePreLearning={onCreatePhasePreLearning}
+        isStudyNewRoadmap={isStudyNewRoadmap}
+        onViewQuiz={onViewQuiz}
         generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+        generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
         generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+        quizRefreshToken={reloadToken}
       />
     );
   }

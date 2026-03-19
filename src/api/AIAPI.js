@@ -48,3 +48,9 @@ export const generateRoadmapPreLearning = async (data) => {
   return response;
 };
 
+// Tao quiz cho knowledge sau khi da tao/hoan thanh noi dung knowledge
+export const generateRoadmapKnowledgeQuiz = async (data) => {
+  const response = await api.post('/ai/knowledge-quiz:generated', data);
+  return response;
+};
+

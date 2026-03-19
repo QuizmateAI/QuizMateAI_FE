@@ -7,7 +7,48 @@ import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
 import { getAttemptResult, getQuizFull } from '@/api/QuizAPI';
+import { generateRoadmapPhaseContent } from '@/api/AIAPI';
 import { normalizeQuizData } from './utils/quizTransform';
+
+const PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY = 'prelearning_phasecontent_triggered_attempts';
+
+function markPhaseContentGenerating(workspaceId, phaseId) {
+  const normalizedWorkspaceId = Number(workspaceId);
+  const normalizedPhaseId = Number(phaseId);
+  if (!Number.isInteger(normalizedWorkspaceId) || normalizedWorkspaceId <= 0) return;
+  if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+  if (typeof window === 'undefined') return;
+
+  const storageKey = `workspace_${normalizedWorkspaceId}_phaseContentGeneratingPhaseIds`;
+  try {
+    const raw = window.sessionStorage.getItem(storageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const ids = Array.isArray(parsed) ? parsed : [];
+    if (!ids.includes(normalizedPhaseId)) {
+      window.sessionStorage.setItem(storageKey, JSON.stringify([...ids, normalizedPhaseId]));
+    }
+  } catch (error) {
+    console.error('Không thể lưu trạng thái generating phase-content:', error);
+  }
+}
+
+function unmarkPhaseContentGenerating(workspaceId, phaseId) {
+  const normalizedWorkspaceId = Number(workspaceId);
+  const normalizedPhaseId = Number(phaseId);
+  if (!Number.isInteger(normalizedWorkspaceId) || normalizedWorkspaceId <= 0) return;
+  if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+  if (typeof window === 'undefined') return;
+
+  const storageKey = `workspace_${normalizedWorkspaceId}_phaseContentGeneratingPhaseIds`;
+  try {
+    const raw = window.sessionStorage.getItem(storageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    const ids = Array.isArray(parsed) ? parsed : [];
+    window.sessionStorage.setItem(storageKey, JSON.stringify(ids.filter((id) => Number(id) !== normalizedPhaseId)));
+  } catch (error) {
+    console.error('Không thể xoá trạng thái generating phase-content:', error);
+  }
+}
 
 export default function QuizResultPage() {
   const { attemptId } = useParams();
@@ -19,12 +60,14 @@ export default function QuizResultPage() {
 
   const [result, setResult] = useState(null);
   const [quizDetails, setQuizDetails] = useState(null);
+  const [quizRawDetails, setQuizRawDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reviewMode, setReviewMode] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
+  const autoGenerateTriggeredRef = useRef(false);
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
@@ -43,10 +86,12 @@ export default function QuizResultPage() {
         if (attemptResult?.quizId) {
           try {
             const quizRes = await getQuizFull(attemptResult.quizId);
+            setQuizRawDetails(quizRes.data || null);
             setQuizDetails(normalizeQuizData(quizRes.data));
           } catch (quizErr) {
             console.error('Failed to load quiz details for review:', quizErr);
             setQuizDetails(null);
+            setQuizRawDetails(null);
           }
         }
       } catch (err) {
@@ -63,6 +108,71 @@ export default function QuizResultPage() {
       }
     })();
   }, [attemptId, retryCount]);
+
+  useEffect(() => {
+    if (!attemptId || !result || !quizRawDetails) return;
+    if (autoGenerateTriggeredRef.current) return;
+
+    const quizIntent = String(
+      quizRawDetails?.quizIntent
+      || quizRawDetails?.intent
+      || result?.quizIntent
+      || ''
+    ).toUpperCase();
+
+    if (quizIntent !== 'PRE_LEARNING') return;
+
+    const roadmapId = Number(
+      quizRawDetails?.roadmapId
+      ?? quizRawDetails?.roadmap?.roadmapId
+      ?? result?.roadmapId
+    );
+    const phaseId = Number(
+      quizRawDetails?.phaseId
+      ?? quizRawDetails?.phase?.phaseId
+      ?? result?.phaseId
+    );
+    const workspaceId = Number(
+      quizRawDetails?.workspaceId
+      ?? quizRawDetails?.workspace?.workspaceId
+      ?? result?.workspaceId
+    );
+
+    if (!Number.isInteger(roadmapId) || roadmapId <= 0 || !Number.isInteger(phaseId) || phaseId <= 0) {
+      return;
+    }
+
+    const attemptStatus = String(result?.status || '').toUpperCase();
+    if (attemptStatus && attemptStatus !== 'COMPLETED') return;
+
+    const dedupeKey = `${PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY}:${attemptId}`;
+    if (typeof window !== 'undefined') {
+      const triggered = window.localStorage.getItem(dedupeKey);
+      if (triggered === '1') return;
+    }
+
+    autoGenerateTriggeredRef.current = true;
+
+    void (async () => {
+      try {
+        markPhaseContentGenerating(workspaceId, phaseId);
+
+        await generateRoadmapPhaseContent({
+          roadmapId,
+          phaseId,
+          skipPreLearning: false,
+        });
+
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(dedupeKey, '1');
+        }
+      } catch (error) {
+        unmarkPhaseContentGenerating(workspaceId, phaseId);
+        autoGenerateTriggeredRef.current = false;
+        console.error('Failed to auto-generate roadmap phase content after pre-learning:', error);
+      }
+    })();
+  }, [attemptId, quizRawDetails, result]);
 
   // Normalize result questions for QuestionCard format
   const reviewQuestions = useMemo(() => {
@@ -133,10 +243,24 @@ export default function QuizResultPage() {
     );
   }
 
-  const passed = typeof result.passed === 'boolean' ? result.passed : null;
+  const totalQuestion = Number(result.totalQuestion ?? reviewQuestions.length ?? 0);
+  const correctQuestion = Number(result.correctQuestion ?? reviewQuestions.filter(q => q.isCorrect).length ?? 0);
+  const passScore = result.passScore != null ? Number(result.passScore) : null;
+  const accuracyPercent = totalQuestion > 0
+    ? (correctQuestion / totalQuestion) * 100
+    : null;
+
+  // Ưu tiên trạng thái passed từ BE; fallback bằng tỉ lệ đúng khi dữ liệu BE không nhất quán.
+  const passed = typeof result.passed === 'boolean'
+    ? (passScore != null && accuracyPercent != null
+      ? (result.passed || accuracyPercent >= passScore)
+      : result.passed)
+    : (passScore != null && accuracyPercent != null
+      ? accuracyPercent >= passScore
+      : null);
   const scoreValue = Number(result.maxScore) > 0 ? `${result.score ?? 0}/${result.maxScore}` : `${result.score ?? 0}`;
-  const correctValue = `${result.correctQuestion ?? reviewQuestions.filter(q => q.isCorrect).length}/${result.totalQuestion ?? reviewQuestions.length}`;
-  const answeredValue = `${result.answeredQuestion ?? 0}/${result.totalQuestion ?? reviewQuestions.length}`;
+  const correctValue = `${correctQuestion}/${totalQuestion}`;
+  const answeredValue = `${result.answeredQuestion ?? 0}/${totalQuestion}`;
   const timeTakenSeconds = getTimeTakenSeconds(result.startedAt, result.completedAt, result.timeoutAt);
   const totalPages = Math.max(1, Math.ceil(reviewQuestions.length / itemsPerPage));
   const safeNavPage = Math.min(currentPage, totalPages);
