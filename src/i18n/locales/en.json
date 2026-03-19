@@ -1256,6 +1256,12 @@
       "correctAnswer": "Correct answer",
       "correctAnswerLabel": "Correct answer",
       "deleteQuiz": "Delete quiz",
+      "actionButtons": {
+        "practice": "Practice",
+        "exam": "Exam",
+        "delete": "Delete",
+        "deleting": "Deleting..."
+      },
       "deleteQuestion": "Delete",
       "loading": "Loading quizzes...",
       "types": {
@@ -1457,8 +1463,27 @@
       "cancel": "Cancel",
       "generateAI": "Generate with AI",
       "generating": "AI is generating...",
-      "questions": "questions"
-      ,"examActions": {
+      "questions": "questions",
+      "header": {
+        "english": "English",
+        "vietnamese": "Tiếng Việt",
+        "fontBeVietnamPro": "Be Vietnam Pro",
+        "fontPoppins": "Poppins",
+        "fontNunito": "Nunito",
+        "fontRobotoSlab": "Roboto Slab",
+        "fontMerriweather": "Merriweather",
+        "fontTangerine": "Tangerine",
+        "confirmBackTitle": "Are you sure?",
+        "confirmBackDescription": "Any unsaved progress might be lost.",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      },
+      "pagination": {
+        "prev": "Previous page",
+        "next": "Next page",
+        "page": "Page"
+      },
+      "examActions": {
         "submitButton": "Submit Exam",
         "submitting": "Submitting...",
         "submitFailed": "Submit failed. Please try again.",
@@ -1469,14 +1494,33 @@
         "saveFailed": "Save failed. Please try again.",
         "saveAnswerFailed": "Failed to save answer. Please try again.",
         "nextQuestion": "Next Question",
-        "processingAction": "Processing..."
+        "processingAction": "Processing...",
+        "processing": "Processing your submission...",
+        "confirmSubmitTitle": "Stop and submit your exam?",
+        "confirmSubmitDescription": "Your current answers will be submitted immediately."
+      },
+      "practiceActions": {
+        "confirmExitTitle": "Leave practice mode?",
+        "confirmExitDescription": "Your current progress may be lost."
       },
       "result": {
+        "title": "Result",
+        "notFound": "Result not found",
+        "quizCompleted": "Quiz Completed",
+        "congratulations": "Congratulations!",
+        "keepTrying": "Keep Trying!",
+        "correct": "Correct",
+        "answered": "Answered",
+        "time": "Time",
+        "passScore": "Pass Score",
         "reviewAnswers": "Review Answers",
+        "reviewAnswersTitle": "Review Answers",
         "reviewPending": "AI is grading your answers, please wait...",
         "reviewPendingHint": "AI is grading your submission. Please wait a moment before reviewing answers.",
         "backToQuiz": "Back to Quiz",
-        "backToScore": "Back to Score"
+        "backToScore": "Back to Score",
+        "questionList": "Question list",
+        "noReviewData": "No detailed data available to review this attempt."
       }
     },
     "flashcard": {
