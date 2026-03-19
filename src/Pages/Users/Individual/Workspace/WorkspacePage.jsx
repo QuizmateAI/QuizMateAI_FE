@@ -24,8 +24,10 @@ import {
 } from "@/api/WorkspaceAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, getRoadmapGraph } from "@/api/RoadmapAPI";
-import { generateRoadmapPhaseContent, generateRoadmapPhases, generateRoadmapPreLearning } from "@/api/AIAPI";
+import { generateRoadmapKnowledgeQuiz, generateRoadmapPhaseContent, generateRoadmapPhases, generateRoadmapPreLearning } from "@/api/AIAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
+import { getQuizzesByScope } from "@/api/QuizAPI";
+import { getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 
 const VIEW_TO_PATH = {
@@ -198,6 +200,7 @@ function WorkspacePage() {
 	});
 	// State lÆ°u quiz Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
 	const [selectedQuiz, setSelectedQuiz] = useState(null);
+	const [quizBackTarget, setQuizBackTarget] = useState(null);
 	// State lÆ°u flashcard Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t
 	const [selectedFlashcard, setSelectedFlashcard] = useState(null);
 	// State lÆ°u mock test Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
@@ -208,16 +211,23 @@ function WorkspacePage() {
 	const [phaseGenerateDialogDefaultIds, setPhaseGenerateDialogDefaultIds] = useState([]);
 	const [roadmapAiRoadmapId, setRoadmapAiRoadmapId] = useState(null);
 	const [roadmapHasPhases, setRoadmapHasPhases] = useState(false);
+	const [hasExistingWorkspaceQuiz, setHasExistingWorkspaceQuiz] = useState(false);
+	const [hasExistingWorkspaceFlashcard, setHasExistingWorkspaceFlashcard] = useState(false);
 	const [isGeneratingRoadmapPhases, setIsGeneratingRoadmapPhases] = useState(false);
 	const [isGeneratingRoadmapStructure, setIsGeneratingRoadmapStructure] = useState(false);
 	const [isSubmittingRoadmapPhaseRequest, setIsSubmittingRoadmapPhaseRequest] = useState(false);
 	const [generatingKnowledgePhaseIds, setGeneratingKnowledgePhaseIds] = useState([]);
+	const [generatingKnowledgeQuizPhaseIds, setGeneratingKnowledgeQuizPhaseIds] = useState([]);
 	const [generatingPreLearningPhaseIds, setGeneratingPreLearningPhaseIds] = useState([]);
 	const roadmapPhaseGeneratingStorageKey = workspaceId ? `workspace_${workspaceId}_roadmapPhaseGenerating` : null;
+	const phaseContentGeneratingStorageKey = workspaceId ? `workspace_${workspaceId}_phaseContentGeneratingPhaseIds` : null;
 	const preLearningGeneratingStorageKey = workspaceId ? `workspace_${workspaceId}_preLearningGeneratingPhaseIds` : null;
 	const phaseGenerationPollingRef = useRef({ runId: 0, active: false });
 	const phaseContentPollingRef = useRef({});
 	const preLearningPollingRef = useRef({});
+	const knowledgeQuizPollingRef = useRef({});
+	const knowledgeQuizGenerationRequestedRef = useRef({});
+	const knowledgeQuizGenerationRequestedByKnowledgeRef = useRef({});
 	const bumpRoadmapReloadToken = useCallback(() => {
 		setRoadmapReloadToken((current) => current + 1);
 	}, []);
@@ -242,15 +252,66 @@ function WorkspacePage() {
 
 	const minWidthForChatWithOneSidePanel = getRequiredLayoutWidth(false, true);
 	const shouldStackSidePanels = workspaceLayoutWidth > 0 && workspaceLayoutWidth < minWidthForChatWithOneSidePanel;
-	const isRoadmapJourActive = activeView === "roadmap";
+	const isRoadmapJourActive = activeView === "roadmap"
+		|| (quizBackTarget?.view === "roadmap" && (activeView === "quizDetail" || activeView === "editQuiz"));
+
+	useEffect(() => {
+		if (!workspaceId) {
+			setHasExistingWorkspaceQuiz(false);
+			setHasExistingWorkspaceFlashcard(false);
+			return;
+		}
+
+		let cancelled = false;
+
+		const syncExistingWorkspaceContent = async () => {
+			try {
+				const [quizResponse, flashcardResponse] = await Promise.all([
+					getQuizzesByScope("WORKSPACE", Number(workspaceId)),
+					getFlashcardsByScope("WORKSPACE", Number(workspaceId)),
+				]);
+
+				if (cancelled) return;
+
+				const workspaceQuizzes = (quizResponse?.data || []).filter((quiz) => {
+					const qContext = String(quiz?.contextType || "").toUpperCase();
+					if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(qContext)) return false;
+					if (Number(quiz?.roadmapId) > 0 || Number(quiz?.phaseId) > 0 || Number(quiz?.knowledgeId) > 0) return false;
+					return true;
+				});
+
+				const workspaceFlashcards = Array.isArray(flashcardResponse?.data)
+					? flashcardResponse.data
+					: [];
+
+				setHasExistingWorkspaceQuiz(workspaceQuizzes.length > 0);
+				setHasExistingWorkspaceFlashcard(workspaceFlashcards.length > 0);
+			} catch (error) {
+				if (!cancelled) {
+					console.error("Không thể đồng bộ trạng thái quiz/flashcard workspace:", error);
+					setHasExistingWorkspaceQuiz(false);
+					setHasExistingWorkspaceFlashcard(false);
+				}
+			}
+		};
+
+		syncExistingWorkspaceContent();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [workspaceId, activeView]);
 
 	// Xác định các chức năng nên disabled
 	const hasAtLeastOneActiveSource = sources.some(
 		(source) => String(source?.status || "").toUpperCase() === "ACTIVE"
 	);
-	const shouldDisableQuiz = !hasAtLeastOneActiveSource;
-	const shouldDisableFlashcard = !hasAtLeastOneActiveSource;
+	const shouldDisableQuiz = !hasAtLeastOneActiveSource && !hasExistingWorkspaceQuiz;
+	const shouldDisableFlashcard = !hasAtLeastOneActiveSource && !hasExistingWorkspaceFlashcard;
+	const shouldDisableCreateQuiz = !hasAtLeastOneActiveSource;
+	const shouldDisableCreateFlashcard = !hasAtLeastOneActiveSource;
 	const shouldDisableRoadmap = !hasAtLeastOneActiveSource && !roadmapHasPhases;
+	const isStudyNewRoadmap = getProfilePurpose(workspaceProfile) === "STUDY_NEW";
 
 	const resolveCollapsedStateByWidth = useCallback((layoutWidth, sourcesCollapsed, studioCollapsed) => {
 		let nextSourcesCollapsed = sourcesCollapsed;
@@ -354,6 +415,14 @@ function WorkspacePage() {
 		const subPath = getWorkspaceSubPath();
 		if (!subPath) return;
 
+		if (subPath === "roadmap") {
+			const phaseParam = new URLSearchParams(location.search).get("phaseId");
+			const parsedPhaseId = Number(phaseParam);
+			if (Number.isInteger(parsedPhaseId) && parsedPhaseId > 0) {
+				setSelectedRoadmapPhaseId(parsedPhaseId);
+			}
+		}
+
 		const { view: mappedView, quizId } = resolveViewFromSubPath(subPath);
 		if (!mappedView) return;
 
@@ -365,7 +434,7 @@ function WorkspacePage() {
 		}
 
 		setActiveView((prev) => (prev === mappedView ? prev : mappedView));
-	}, [getWorkspaceSubPath]);
+	}, [getWorkspaceSubPath, location.search]);
 
 	useEffect(() => {
 		if (!workspaceId) return;
@@ -664,6 +733,8 @@ function WorkspacePage() {
 			phaseGenerationPollingRef.current.active = false;
 			phaseContentPollingRef.current = {};
 			preLearningPollingRef.current = {};
+			knowledgeQuizPollingRef.current = {};
+			knowledgeQuizGenerationRequestedRef.current = {};
 			mockTestPollingRunRef.current += 1;
 			mockTestPollingActiveRef.current = false;
 			if (mockTestProgressTimerRef.current) {
@@ -690,8 +761,12 @@ function WorkspacePage() {
 		phaseGenerationPollingRef.current.active = false;
 		phaseContentPollingRef.current = {};
 		preLearningPollingRef.current = {};
+		knowledgeQuizPollingRef.current = {};
+		knowledgeQuizGenerationRequestedRef.current = {};
+		knowledgeQuizGenerationRequestedByKnowledgeRef.current = {};
 		setIsGeneratingRoadmapPhases(false);
 		setGeneratingKnowledgePhaseIds([]);
+		setGeneratingKnowledgeQuizPhaseIds([]);
 		setGeneratingPreLearningPhaseIds([]);
 		setPhaseGenerateDialogOpen(false);
 	}, [workspaceId]);
@@ -702,6 +777,7 @@ function WorkspacePage() {
 
 		try {
 			const storedRoadmapGenerating = window.sessionStorage.getItem(roadmapPhaseGeneratingStorageKey);
+			const storedPhaseContentGenerating = window.sessionStorage.getItem(phaseContentGeneratingStorageKey);
 			const storedPreLearningGenerating = window.sessionStorage.getItem(preLearningGeneratingStorageKey);
 
 			if (storedRoadmapGenerating !== null) {
@@ -712,10 +788,20 @@ function WorkspacePage() {
 				const parsedPhaseIds = JSON.parse(storedPreLearningGenerating);
 				setGeneratingPreLearningPhaseIds(normalizePositiveIds(parsedPhaseIds));
 			}
+
+			if (storedPhaseContentGenerating) {
+				const parsedPhaseIds = JSON.parse(storedPhaseContentGenerating);
+				setGeneratingKnowledgePhaseIds(normalizePositiveIds(parsedPhaseIds));
+			}
 		} catch (error) {
 			console.error("Failed to restore roadmap generating state:", error);
 		}
-	}, [preLearningGeneratingStorageKey, roadmapPhaseGeneratingStorageKey, workspaceId]);
+	}, [
+		phaseContentGeneratingStorageKey,
+		preLearningGeneratingStorageKey,
+		roadmapPhaseGeneratingStorageKey,
+		workspaceId,
+	]);
 
 	// Persist trạng thái generating để reload vẫn giữ được spinner như Sources panel.
 	useEffect(() => {
@@ -723,10 +809,16 @@ function WorkspacePage() {
 
 		window.sessionStorage.setItem(roadmapPhaseGeneratingStorageKey, String(isGeneratingRoadmapPhases));
 		window.sessionStorage.setItem(
+			phaseContentGeneratingStorageKey,
+			JSON.stringify(normalizePositiveIds(generatingKnowledgePhaseIds))
+		);
+		window.sessionStorage.setItem(
 			preLearningGeneratingStorageKey,
 			JSON.stringify(normalizePositiveIds(generatingPreLearningPhaseIds))
 		);
 	}, [
+		phaseContentGeneratingStorageKey,
+		generatingKnowledgePhaseIds,
 		generatingPreLearningPhaseIds,
 		isGeneratingRoadmapPhases,
 		preLearningGeneratingStorageKey,
@@ -745,6 +837,12 @@ function WorkspacePage() {
 		phaseContentPollingRef.current[normalized] = (phaseContentPollingRef.current[normalized] || 0) + 1;
 	}, []);
 
+	const stopKnowledgeQuizPolling = useCallback((phaseId) => {
+		const normalized = Number(phaseId);
+		if (!Number.isInteger(normalized) || normalized <= 0) return;
+		knowledgeQuizPollingRef.current[normalized] = (knowledgeQuizPollingRef.current[normalized] || 0) + 1;
+	}, []);
+
 	// Đồng bộ trạng thái phase roadmap từ backend để clear spinner chính xác khi thành công.
 	useEffect(() => {
 		if (!workspaceId) return;
@@ -759,9 +857,42 @@ function WorkspacePage() {
 				const roadmapStatus = String(roadmapData?.status || "").toUpperCase();
 				const isProcessing = roadmapStatus === "PROCESSING";
 				const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
+				const processingPhases = phases.filter((phase) => String(phase?.status || "").toUpperCase() === "PROCESSING");
+				const inferredPhaseContentGeneratingIds = normalizePositiveIds(
+					processingPhases
+						.filter((phase) => {
+							const hasPreLearning = (phase?.preLearningQuizzes || []).length > 0;
+							const hasKnowledge = (phase?.knowledges || []).length > 0;
+							return hasPreLearning && !hasKnowledge;
+						})
+						.map((phase) => phase?.phaseId)
+				);
+				const inferredPreLearningGeneratingIds = normalizePositiveIds(
+					processingPhases
+						.filter((phase) => {
+							const hasPreLearning = (phase?.preLearningQuizzes || []).length > 0;
+							const hasKnowledge = (phase?.knowledges || []).length > 0;
+							return !hasPreLearning && !hasKnowledge;
+						})
+						.map((phase) => phase?.phaseId)
+				);
 				
 				setIsGeneratingRoadmapPhases(isProcessing);
 				setRoadmapHasPhases(phases.length > 0);
+
+				if (inferredPhaseContentGeneratingIds.length > 0) {
+					setGeneratingKnowledgePhaseIds((current) => {
+						const merged = new Set([...normalizePositiveIds(current), ...inferredPhaseContentGeneratingIds]);
+						return Array.from(merged);
+					});
+				}
+
+				if (inferredPreLearningGeneratingIds.length > 0) {
+					setGeneratingPreLearningPhaseIds((current) => {
+						const merged = new Set([...normalizePositiveIds(current), ...inferredPreLearningGeneratingIds]);
+						return Array.from(merged);
+					});
+				}
 
 				if (!isProcessing) {
 					stopPhaseGenerationPolling();
@@ -945,6 +1076,144 @@ function WorkspacePage() {
 		}
 	}, [bumpRoadmapReloadToken, workspaceId]);
 
+	useEffect(() => {
+		if (!workspaceId || generatingKnowledgePhaseIds.length === 0) return;
+
+		const phaseIds = normalizePositiveIds(generatingKnowledgePhaseIds);
+		phaseIds.forEach((phaseId) => {
+			startPhaseContentPolling(phaseId);
+		});
+	}, [generatingKnowledgePhaseIds, startPhaseContentPolling, workspaceId]);
+
+	const startKnowledgeQuizPolling = useCallback(async (phaseId) => {
+		if (!workspaceId || !phaseId) return;
+		const normalizedPhaseId = Number(phaseId);
+		if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+
+		const runId = (knowledgeQuizPollingRef.current[normalizedPhaseId] || 0) + 1;
+		knowledgeQuizPollingRef.current[normalizedPhaseId] = runId;
+
+		try {
+			for (let attempt = 0; attempt < 80; attempt += 1) {
+				if (!isMountedRef.current || knowledgeQuizPollingRef.current[normalizedPhaseId] !== runId) return;
+				const response = await getRoadmapGraph({ workspaceId });
+				const roadmapData = response?.data?.data ?? null;
+				const phase = (roadmapData?.phases || []).find((item) => Number(item?.phaseId) === normalizedPhaseId);
+				if (!phase) {
+					await delay(1500);
+					continue;
+				}
+
+				const knowledges = phase?.knowledges || [];
+				if (knowledges.length === 0) {
+					await delay(1500);
+					continue;
+				}
+
+				const allKnowledgeQuizzesReady = knowledges.every((knowledge) => (knowledge?.quizzes || []).length > 0);
+				if (allKnowledgeQuizzesReady) {
+					knowledgeQuizGenerationRequestedRef.current[normalizedPhaseId] = false;
+					Object.keys(knowledgeQuizGenerationRequestedByKnowledgeRef.current).forEach((key) => {
+						if (key.startsWith(`${normalizedPhaseId}:`)) {
+							knowledgeQuizGenerationRequestedByKnowledgeRef.current[key] = false;
+						}
+					});
+					setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+					bumpRoadmapReloadToken();
+					return;
+				}
+
+				await delay(1500);
+			}
+		} catch (error) {
+			console.error("Failed polling phase knowledge-quiz generation:", error);
+		} finally {
+			if (knowledgeQuizPollingRef.current[normalizedPhaseId] === runId) {
+				knowledgeQuizGenerationRequestedRef.current[normalizedPhaseId] = false;
+				Object.keys(knowledgeQuizGenerationRequestedByKnowledgeRef.current).forEach((key) => {
+					if (key.startsWith(`${normalizedPhaseId}:`)) {
+						knowledgeQuizGenerationRequestedByKnowledgeRef.current[key] = false;
+					}
+				});
+				setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+			}
+		}
+	}, [bumpRoadmapReloadToken, workspaceId]);
+
+	const triggerKnowledgeQuizGenerationForPhase = useCallback(async (phaseId) => {
+		if (!workspaceId || !phaseId) return;
+		const normalizedPhaseId = Number(phaseId);
+		if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+		if (knowledgeQuizGenerationRequestedRef.current[normalizedPhaseId] === true) return;
+
+		try {
+			const roadmapId = roadmapAiRoadmapId || await resolveLatestRoadmapId();
+			if (!roadmapId) {
+				showError("Không tìm thấy roadmapId trong Workspace Profile.");
+				setProfileOverviewOpen(false);
+				setProfileConfigOpen(true);
+				setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+				return;
+			}
+
+			const graphResponse = await getRoadmapGraph({ workspaceId });
+			const roadmapData = graphResponse?.data?.data ?? null;
+			const phase = (roadmapData?.phases || []).find((item) => Number(item?.phaseId) === normalizedPhaseId);
+			if (!phase) {
+				setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+				return;
+			}
+
+			const knowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+			if (knowledges.length === 0) {
+				setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+				return;
+			}
+
+			const pendingKnowledgeIds = Array.from(new Set(knowledges
+				.filter((knowledge) => Number(knowledge?.knowledgeId) > 0 && (knowledge?.quizzes || []).length === 0)
+				.map((knowledge) => Number(knowledge.knowledgeId))));
+
+			const validatedKnowledgeIds = pendingKnowledgeIds.filter((knowledgeId) => {
+				const requestKey = `${normalizedPhaseId}:${knowledgeId}`;
+				return knowledgeQuizGenerationRequestedByKnowledgeRef.current[requestKey] !== true;
+			});
+
+			if (validatedKnowledgeIds.length === 0) {
+				setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+				return;
+			}
+
+			validatedKnowledgeIds.forEach((knowledgeId) => {
+				const requestKey = `${normalizedPhaseId}:${knowledgeId}`;
+				knowledgeQuizGenerationRequestedByKnowledgeRef.current[requestKey] = true;
+			});
+			knowledgeQuizGenerationRequestedRef.current[normalizedPhaseId] = true;
+			await Promise.all(
+				validatedKnowledgeIds.map((knowledgeId) =>
+					generateRoadmapKnowledgeQuiz({ roadmapId, knowledgeId })
+				)
+			);
+
+			startKnowledgeQuizPolling(normalizedPhaseId);
+		} catch (error) {
+			knowledgeQuizGenerationRequestedRef.current[normalizedPhaseId] = false;
+			Object.keys(knowledgeQuizGenerationRequestedByKnowledgeRef.current).forEach((key) => {
+				if (key.startsWith(`${normalizedPhaseId}:`)) {
+					knowledgeQuizGenerationRequestedByKnowledgeRef.current[key] = false;
+				}
+			});
+			setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+			showError(error?.message || "Tạo knowledge-quiz cho phase thất bại.");
+		}
+	}, [
+		resolveLatestRoadmapId,
+		roadmapAiRoadmapId,
+		showError,
+		startKnowledgeQuizPolling,
+		workspaceId,
+	]);
+
 	const startPreLearningPolling = useCallback(async (phaseId) => {
 		if (!workspaceId || !phaseId) return;
 		const normalizedPhaseId = Number(phaseId);
@@ -976,11 +1245,13 @@ function WorkspacePage() {
 		} catch (error) {
 			console.error("Failed polling phase pre-learning generation:", error);
 		} finally {
-			if (preLearningPollingRef.current[normalizedPhaseId] === runId) {
-				setGeneratingPreLearningPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
-			}
+			// Giữ trạng thái loading cho đến khi có event ERROR hoặc polling xác nhận đã có pre-learning.
+			// Tránh trường hợp backend bắn COMPLETED sớm hơn lúc graph phản ánh dữ liệu quiz mới.
 		}
-	}, [bumpRoadmapReloadToken, workspaceId]);
+	}, [
+		bumpRoadmapReloadToken,
+		workspaceId,
+	]);
 
 	const handleOpenRoadmapPhaseDialog = useCallback(async () => {
 		if (!workspaceId) return;
@@ -1205,11 +1476,59 @@ function WorkspacePage() {
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					stopPhaseContentPolling(phaseId);
 					setGeneratingKnowledgePhaseIds((current) => current.filter((id) => id !== phaseId));
+					setGeneratingKnowledgeQuizPhaseIds((current) => {
+						if (current.includes(phaseId)) return current;
+						return [...current, phaseId];
+					});
+					void triggerKnowledgeQuizGenerationForPhase(phaseId);
 				} else {
 					setGeneratingKnowledgePhaseIds([]);
+					setGeneratingKnowledgeQuizPhaseIds([]);
+					knowledgeQuizGenerationRequestedRef.current = {};
+					knowledgeQuizPollingRef.current = {};
 				}
 				setActiveView("roadmap");
 				bumpRoadmapReloadToken();
+				return;
+			}
+
+			if (status === "ROADMAP_KNOWLEDGE_QUIZ_COMPLETED") {
+				const phaseId = Number(progressData?.phaseId);
+				if (Number.isInteger(phaseId) && phaseId > 0) {
+					knowledgeQuizGenerationRequestedRef.current[phaseId] = false;
+					Object.keys(knowledgeQuizGenerationRequestedByKnowledgeRef.current).forEach((key) => {
+						if (key.startsWith(`${phaseId}:`)) {
+							knowledgeQuizGenerationRequestedByKnowledgeRef.current[key] = false;
+						}
+					});
+					setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== phaseId));
+				}
+				setActiveView("roadmap");
+				bumpRoadmapReloadToken();
+				return;
+			}
+
+			if (status === "ROADMAP_KNOWLEDGE_QUIZ_STARTED" || status === "ROADMAP_KNOWLEDGE_QUIZ_PROCESSING") {
+				const phaseId = Number(progressData?.phaseId);
+				if (Number.isInteger(phaseId) && phaseId > 0) {
+					setGeneratingKnowledgeQuizPhaseIds((current) => {
+						if (current.includes(phaseId)) return current;
+						return [...current, phaseId];
+					});
+				}
+				setActiveView("roadmap");
+				return;
+			}
+
+			if (status === "ROADMAP_PHASE_CONTENT_STARTED" || status === "ROADMAP_PHASE_CONTENT_PROCESSING") {
+				const phaseId = Number(progressData?.phaseId);
+				if (Number.isInteger(phaseId) && phaseId > 0) {
+					setGeneratingKnowledgePhaseIds((current) => {
+						if (current.includes(phaseId)) return current;
+						return [...current, phaseId];
+					});
+				}
+				setActiveView("roadmap");
 				return;
 			}
 
@@ -1228,8 +1547,11 @@ function WorkspacePage() {
 			if (status === "ROADMAP_PRE_LEARNING_COMPLETED") {
 				const phaseId = Number(progressData?.phaseId);
 				if (Number.isInteger(phaseId) && phaseId > 0) {
-					stopPreLearningPolling(phaseId);
-					setGeneratingPreLearningPhaseIds((current) => current.filter((id) => id !== phaseId));
+					setGeneratingPreLearningPhaseIds((current) => {
+						if (current.includes(phaseId)) return current;
+						return [...current, phaseId];
+					});
+					startPreLearningPolling(phaseId);
 				} else {
 					setGeneratingPreLearningPhaseIds([]);
 					preLearningPollingRef.current = {};
@@ -1244,14 +1566,26 @@ function WorkspacePage() {
 				const roadmapId = Number(progressData?.roadmapId);
 
 				if (Number.isInteger(phaseId) && phaseId > 0) {
+					knowledgeQuizGenerationRequestedRef.current[phaseId] = false;
+					Object.keys(knowledgeQuizGenerationRequestedByKnowledgeRef.current).forEach((key) => {
+						if (key.startsWith(`${phaseId}:`)) {
+							knowledgeQuizGenerationRequestedByKnowledgeRef.current[key] = false;
+						}
+					});
 					setGeneratingKnowledgePhaseIds((current) => current.filter((id) => id !== phaseId));
+					setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== phaseId));
 					setGeneratingPreLearningPhaseIds((current) => current.filter((id) => id !== phaseId));
 					stopPhaseContentPolling(phaseId);
 					stopPreLearningPolling(phaseId);
+					stopKnowledgeQuizPolling(phaseId);
 				}
 
 				if (!Number.isInteger(phaseId) || phaseId <= 0) {
+					knowledgeQuizGenerationRequestedRef.current = {};
+					knowledgeQuizGenerationRequestedByKnowledgeRef.current = {};
+					knowledgeQuizPollingRef.current = {};
 					setGeneratingKnowledgePhaseIds([]);
+					setGeneratingKnowledgeQuizPhaseIds([]);
 					setGeneratingPreLearningPhaseIds([]);
 					preLearningPollingRef.current = {};
 				}
@@ -1589,9 +1923,21 @@ function WorkspacePage() {
 			addAccessHistory(viewTypeMap[actionKey], viewTypeMap[actionKey], actionKey);
 		}
 		setActiveView(actionKey);
+		if (actionKey !== "quiz" && actionKey !== "quizDetail" && actionKey !== "editQuiz") {
+			setQuizBackTarget(null);
+		}
 		if (actionKey !== "roadmap") {
 			setSelectedRoadmapPhaseId(null);
 		}
+	}, []);
+
+	const handleSelectRoadmapPhase = useCallback((phaseId) => {
+		const normalizedPhaseId = Number(phaseId);
+		if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+		setSelectedRoadmapPhaseId(normalizedPhaseId);
+		setSelectedQuiz(null);
+		setQuizBackTarget(null);
+		setActiveView("roadmap");
 	}, []);
 
 	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€” ghi nháº­n má»—i láº§n truy cáº­p list view
@@ -1610,8 +1956,13 @@ function WorkspacePage() {
 	}, []);
 
 	// Xá»­ lÃ½ xem chi tiáº¿t quiz â€” khi click vÃ o quiz trong danh sÃ¡ch
-	const handleViewQuiz = useCallback((quiz) => {
+	const handleViewQuiz = useCallback((quiz, options = null) => {
+		const backTarget = options?.backTarget || null;
 		setSelectedQuiz(quiz);
+		setQuizBackTarget(backTarget);
+		if (backTarget?.view === "roadmap" && Number.isInteger(Number(backTarget?.phaseId)) && Number(backTarget.phaseId) > 0) {
+			setSelectedRoadmapPhaseId(Number(backTarget.phaseId));
+		}
 		setActiveView("quizDetail");
 	}, []);
 
@@ -1673,10 +2024,24 @@ function WorkspacePage() {
 
 	// Quay vá» list view tÆ°Æ¡ng á»©ng khi báº¥m nÃºt Back trong form táº¡o
 	const handleBackFromForm = useCallback(() => {
+		if (activeView === "quizDetail" && quizBackTarget?.view === "roadmap") {
+			const phaseId = Number(quizBackTarget?.phaseId);
+			setSelectedQuiz(null);
+			setActiveView("roadmap");
+			if (Number.isInteger(phaseId) && phaseId > 0) {
+				setSelectedRoadmapPhaseId(phaseId);
+				if (workspaceId) {
+					navigate(`/workspace/${workspaceId}/roadmap?phaseId=${phaseId}`, { replace: true });
+				}
+			}
+			return;
+		}
+
 		const formToList = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", quizDetail: "quiz", editQuiz: "quizDetail", flashcardDetail: "flashcard", createMockTest: "mockTest", mockTestDetail: "mockTest", editMockTest: "mockTestDetail" };
 		const nextView = formToList[activeView] || null;
 		if (nextView !== "quizDetail" && nextView !== "editQuiz") {
 			setSelectedQuiz(null);
+			setQuizBackTarget(null);
 		}
 		if (nextView !== "flashcardDetail") {
 			setSelectedFlashcard(null);
@@ -1685,7 +2050,7 @@ function WorkspacePage() {
 			setSelectedMockTest(null);
 		}
 		setActiveView(nextView);
-	}, [activeView]);
+	}, [activeView, navigate, quizBackTarget, workspaceId]);
 
 	// Xá»­ lÃ½ táº¡o mock test â€” quay vá» list sau khi táº¡o thÃ nh cÃ´ng
 	const handleCreateMockTest = useCallback(async () => {
@@ -1905,9 +2270,12 @@ function WorkspacePage() {
 											onCreateRoadmapPhases={handleOpenRoadmapPhaseDialog}
 											onCreatePhaseKnowledge={handleCreatePhaseKnowledge}
 											onCreatePhasePreLearning={handleCreatePhasePreLearning}
+											isStudyNewRoadmap={isStudyNewRoadmap}
 											isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
 											generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+											generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
 											generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+											roadmapReloadToken={roadmapReloadToken}
 									onCreateMockTest={handleCreateMockTest}
 									onBack={handleBackFromForm}
 									workspaceId={workspaceId}
@@ -1922,6 +2290,11 @@ function WorkspacePage() {
 									onViewMockTest={handleViewMockTest}
 									onEditMockTest={handleEditMockTest}
 									onSaveMockTest={handleSaveMockTest}
+									shouldDisableQuiz={shouldDisableQuiz}
+									shouldDisableFlashcard={shouldDisableFlashcard}
+									shouldDisableRoadmap={shouldDisableRoadmap}
+									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
+									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
 								/>
 							</div>
 
@@ -1949,7 +2322,7 @@ function WorkspacePage() {
 												isDarkMode={isDarkMode}
 												workspaceId={workspaceId}
 												selectedPhaseId={selectedRoadmapPhaseId}
-												onSelectPhase={setSelectedRoadmapPhaseId}
+												onSelectPhase={handleSelectRoadmapPhase}
 												reloadToken={roadmapReloadToken}
 												isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
 												isCollapsed={false}
@@ -2003,7 +2376,7 @@ function WorkspacePage() {
 											isDarkMode={isDarkMode}
 											workspaceId={workspaceId}
 											selectedPhaseId={selectedRoadmapPhaseId}
-											onSelectPhase={setSelectedRoadmapPhaseId}
+											onSelectPhase={handleSelectRoadmapPhase}
 											reloadToken={roadmapReloadToken}
 											isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
 											isCollapsed={isSourcesCollapsed}
@@ -2039,9 +2412,12 @@ function WorkspacePage() {
 									onCreateRoadmapPhases={handleOpenRoadmapPhaseDialog}
 									onCreatePhaseKnowledge={handleCreatePhaseKnowledge}
 									onCreatePhasePreLearning={handleCreatePhasePreLearning}
+									isStudyNewRoadmap={isStudyNewRoadmap}
 									isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
 									generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+									generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
 									generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+									roadmapReloadToken={roadmapReloadToken}
 									onCreateMockTest={handleCreateMockTest}
 									onBack={handleBackFromForm}
 									workspaceId={workspaceId}
@@ -2056,6 +2432,11 @@ function WorkspacePage() {
 									onViewMockTest={handleViewMockTest}
 									onEditMockTest={handleEditMockTest}
 									onSaveMockTest={handleSaveMockTest}
+									shouldDisableQuiz={shouldDisableQuiz}
+									shouldDisableFlashcard={shouldDisableFlashcard}
+									shouldDisableRoadmap={shouldDisableRoadmap}
+									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
+									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
 								/>
 							</div>
 
