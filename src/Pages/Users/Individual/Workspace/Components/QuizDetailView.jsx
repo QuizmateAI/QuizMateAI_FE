@@ -602,9 +602,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`text-lg font-bold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
-                          {attempt.score || 0} {t("workspace.quiz.history.points", "điểm")}
-                        </div>
+                        
                         <div className="flex gap-2 justify-end mt-1">
                           <span className={`text-[10px] px-2 py-0.5 rounded-md ${
                             attempt.isPracticeMode 
