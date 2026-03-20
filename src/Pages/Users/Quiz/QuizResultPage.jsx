@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3 } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
-import { getAttemptResult, getQuizFull } from '@/api/QuizAPI';
+import { getAttemptResult, getQuizFull, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
 import { normalizeQuizData } from './utils/quizTransform';
+import { useToast } from '@/context/ToastContext';
 
 const PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY = 'prelearning_phasecontent_triggered_attempts';
 
@@ -55,6 +56,7 @@ export default function QuizResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { i18n, t } = useTranslation();
+  const { showError, showSuccess } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
 
@@ -65,9 +67,15 @@ export default function QuizResultPage() {
   const [reviewMode, setReviewMode] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [assessmentData, setAssessmentData] = useState(null);
+  const [assessmentStatus, setAssessmentStatus] = useState('NOT_AVAILABLE');
+  const [assessmentLoading, setAssessmentLoading] = useState(false);
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
+  const [generatingKnowledge, setGeneratingKnowledge] = useState(false);
+  const [knowledgeGenerationTriggered, setKnowledgeGenerationTriggered] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
-  const autoGenerateTriggeredRef = useRef(false);
+  const retryTimeoutRef = useRef(null);
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
@@ -77,102 +85,154 @@ export default function QuizResultPage() {
     : null;
 
   useEffect(() => {
-    (async () => {
+    if (!attemptId) {
+      setLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    let shouldRetry = false;
+    setLoading(true);
+
+    const loadResult = async () => {
       try {
         const res = await getAttemptResult(attemptId);
+        if (cancelled) return;
+
         const attemptResult = res.data;
         setResult(attemptResult);
 
         if (attemptResult?.quizId) {
           try {
             const quizRes = await getQuizFull(attemptResult.quizId);
+            if (cancelled) return;
             setQuizRawDetails(quizRes.data || null);
             setQuizDetails(normalizeQuizData(quizRes.data));
           } catch (quizErr) {
+            if (cancelled) return;
             console.error('Failed to load quiz details for review:', quizErr);
             setQuizDetails(null);
             setQuizRawDetails(null);
           }
         }
       } catch (err) {
+        if (cancelled) return;
+
         console.error('Failed to load result:', err);
-        // If first attempt fails and result is still null after 1 second (race condition), retry
+        // Retry ngắn để tránh race-condition khi BE vừa ghi attempt result.
         if (retryCount < 2) {
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
+          shouldRetry = true;
+          retryTimeoutRef.current = globalThis.setTimeout(() => {
+            setRetryCount((prev) => prev + 1);
           }, 1000);
           return;
         }
       } finally {
-        setLoading(false);
+        if (!cancelled && !shouldRetry) {
+          setLoading(false);
+        }
       }
-    })();
+    };
+
+    void loadResult();
+
+    return () => {
+      cancelled = true;
+      if (retryTimeoutRef.current) {
+        globalThis.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
   }, [attemptId, retryCount]);
 
-  useEffect(() => {
-    if (!attemptId || !result || !quizRawDetails) return;
-    if (autoGenerateTriggeredRef.current) return;
-
+  const preLearningGenerationContext = useMemo(() => {
+    const quizSource = quizRawDetails || {};
     const quizIntent = String(
-      quizRawDetails?.quizIntent
-      || quizRawDetails?.intent
+      quizSource?.quizIntent
+      || quizSource?.intent
       || result?.quizIntent
       || ''
     ).toUpperCase();
 
-    if (quizIntent !== 'PRE_LEARNING') return;
-
     const roadmapId = Number(
-      quizRawDetails?.roadmapId
-      ?? quizRawDetails?.roadmap?.roadmapId
+      quizSource?.roadmapId
+      ?? quizSource?.roadmap?.roadmapId
       ?? result?.roadmapId
     );
     const phaseId = Number(
-      quizRawDetails?.phaseId
-      ?? quizRawDetails?.phase?.phaseId
+      quizSource?.phaseId
+      ?? quizSource?.phase?.phaseId
       ?? result?.phaseId
     );
     const workspaceId = Number(
-      quizRawDetails?.workspaceId
-      ?? quizRawDetails?.workspace?.workspaceId
+      quizSource?.workspaceId
+      ?? quizSource?.workspace?.workspaceId
       ?? result?.workspaceId
     );
 
-    if (!Number.isInteger(roadmapId) || roadmapId <= 0 || !Number.isInteger(phaseId) || phaseId <= 0) {
+    const attemptStatus = String(result?.status || '').toUpperCase();
+    const isCompletedAttempt = !attemptStatus || attemptStatus === 'COMPLETED';
+    const isPreLearningQuiz = quizIntent === 'PRE_LEARNING';
+    const isValidRoadmapContext = Number.isInteger(roadmapId) && roadmapId > 0 && Number.isInteger(phaseId) && phaseId > 0;
+
+    return {
+      isPreLearningQuiz,
+      isCompletedAttempt,
+      isValidRoadmapContext,
+      roadmapId,
+      phaseId,
+      workspaceId,
+    };
+  }, [quizRawDetails, result]);
+
+  const preLearningGenerateDedupeKey = useMemo(
+    () => `${PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY}:${attemptId}`,
+    [attemptId]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setKnowledgeGenerationTriggered(false);
       return;
     }
 
-    const attemptStatus = String(result?.status || '').toUpperCase();
-    if (attemptStatus && attemptStatus !== 'COMPLETED') return;
-
-    const dedupeKey = `${PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY}:${attemptId}`;
-    if (typeof window !== 'undefined') {
-      const triggered = window.localStorage.getItem(dedupeKey);
-      if (triggered === '1') return;
+    const triggered = window.localStorage.getItem(preLearningGenerateDedupeKey) === '1';
+    setKnowledgeGenerationTriggered(triggered);
+  }, [preLearningGenerateDedupeKey]);
+  const fetchAssessment = useCallback(async () => {
+    if (!attemptId) return;
+    setAssessmentLoading(true);
+    try {
+      const res = await getAttemptAssessment(attemptId);
+      const payload = res?.data || null;
+      setAssessmentStatus(payload?.status || 'NOT_AVAILABLE');
+      setAssessmentData(payload);
+    } catch (err) {
+      console.error('Failed to load assessment:', err);
+      setAssessmentStatus('NOT_AVAILABLE');
+      setAssessmentData(null);
+    } finally {
+      setAssessmentLoading(false);
     }
+  }, [attemptId]);
 
-    autoGenerateTriggeredRef.current = true;
+  useEffect(() => {
+    fetchAssessment();
+  }, [fetchAssessment]);
 
-    void (async () => {
-      try {
-        markPhaseContentGenerating(workspaceId, phaseId);
+  useEffect(() => {
+    if (assessmentStatus !== 'PROCESSING') return undefined;
+    const intervalId = globalThis.setInterval(() => {
+      fetchAssessment();
+    }, 8000);
+    return () => globalThis.clearInterval(intervalId);
+  }, [assessmentStatus, fetchAssessment]);
 
-        await generateRoadmapPhaseContent({
-          roadmapId,
-          phaseId,
-          skipPreLearning: false,
-        });
-
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(dedupeKey, '1');
-        }
-      } catch (error) {
-        unmarkPhaseContentGenerating(workspaceId, phaseId);
-        autoGenerateTriggeredRef.current = false;
-        console.error('Failed to auto-generate roadmap phase content after pre-learning:', error);
-      }
-    })();
-  }, [attemptId, quizRawDetails, result]);
+  const scrollToTop = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
   // Normalize result questions for QuestionCard format
   const reviewQuestions = useMemo(() => {
@@ -271,6 +331,61 @@ export default function QuizResultPage() {
     : passed
       ? t('workspace.quiz.result.congratulations', 'Congratulations!')
       : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
+  const aiSummary = assessmentData?.summary;
+  const aiStrengths = Array.isArray(assessmentData?.strengths) ? assessmentData.strengths : [];
+  const aiWeaknesses = Array.isArray(assessmentData?.weaknesses) ? assessmentData.weaknesses : [];
+  const recurringMistakes = Array.isArray(assessmentData?.recurringMistakes) ? assessmentData.recurringMistakes : [];
+  const nextQuizPlan = assessmentData?.nextQuizPlan;
+  const canGenerateRecommendedQuiz = assessmentData?.recommendationStatus === 'PENDING' && Number(assessmentData?.assessmentId) > 0;
+
+  const handleGenerateQuizFromAssessment = async () => {
+    const assessmentId = Number(assessmentData?.assessmentId);
+    const workspaceId = Number(quizDetails?.workspaceId);
+    if (!assessmentId || !workspaceId || generatingQuiz) return;
+
+    setGeneratingQuiz(true);
+    try {
+      await generateQuizFromWorkspaceAssessment(assessmentId);
+      showSuccess(t('workspace.quiz.result.generateFromAssessmentSuccess', 'Đã tạo quiz từ đánh giá AI thành công'));
+      navigate(`/workspace/${workspaceId}/quiz`, { replace: true });
+    } catch (err) {
+      showError(err?.message || t('workspace.quiz.result.generateFromAssessmentFail', 'Tạo quiz từ đánh giá AI thất bại'));
+    } finally {
+      setGeneratingQuiz(false);
+    }
+  };
+
+  const canShowGenerateKnowledgeButton = preLearningGenerationContext.isPreLearningQuiz
+    && preLearningGenerationContext.isCompletedAttempt
+    && preLearningGenerationContext.isValidRoadmapContext;
+
+  const handleGenerateKnowledgeAfterPreLearning = async () => {
+    const { roadmapId, phaseId, workspaceId } = preLearningGenerationContext;
+    if (!canShowGenerateKnowledgeButton || generatingKnowledge || knowledgeGenerationTriggered) return;
+
+    setGeneratingKnowledge(true);
+    try {
+      markPhaseContentGenerating(workspaceId, phaseId);
+      await generateRoadmapPhaseContent({
+        roadmapId,
+        phaseId,
+        skipPreLearning: false,
+      });
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(preLearningGenerateDedupeKey, '1');
+      }
+
+      setKnowledgeGenerationTriggered(true);
+      showSuccess(t('workspace.quiz.result.generateKnowledgeSuccess', 'Đã gửi yêu cầu tạo knowledge cho phase này.'));
+    } catch (error) {
+      unmarkPhaseContentGenerating(workspaceId, phaseId);
+      console.error('Failed to generate roadmap phase content after pre-learning:', error);
+      showError(error?.message || t('workspace.quiz.result.generateKnowledgeFail', 'Tạo knowledge thất bại. Vui lòng thử lại.'));
+    } finally {
+      setGeneratingKnowledge(false);
+    }
+  };
 
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
@@ -322,8 +437,108 @@ export default function QuizResultPage() {
               {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">{t('workspace.quiz.result.passScore', 'Pass Score')}: {result.passScore}</span>}
             </div>
 
+            <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
+                  <Sparkles className="w-4 h-4" />
+                  {t('workspace.quiz.result.aiAssessment', 'AI Assessment')}
+                </h3>
+                <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
+                  <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
+                  {t('workspace.quiz.result.refreshAssessment', 'Refresh')}
+                </Button>
+              </div>
+
+              {(assessmentLoading && !assessmentData) && (
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
+              )}
+
+              {assessmentStatus === 'NOT_AVAILABLE' && !assessmentLoading && (
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentNotAvailable', 'Hiện chưa có đánh giá AI cho lần làm bài này.')}</div>
+              )}
+
+              {assessmentStatus === 'PROCESSING' && (
+                <div className="text-sm text-amber-600 dark:text-amber-400">{t('workspace.quiz.result.assessmentProcessing', 'Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.')}</div>
+              )}
+
+              {assessmentStatus === 'READY' && assessmentData && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                    {aiSummary || t('workspace.quiz.result.assessmentNoSummary', 'Chưa có tóm tắt đánh giá AI.')}
+                  </p>
+
+                  {!!aiStrengths.length && (
+                    <div>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-300 mb-1">{t('workspace.quiz.result.strengths', 'Điểm mạnh')}</p>
+                      <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300 space-y-1">
+                        {aiStrengths.map((item, idx) => (
+                          <li key={`strength-${idx}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {!!aiWeaknesses.length && (
+                    <div>
+                      <p className="font-medium text-rose-700 dark:text-rose-300 mb-1">{t('workspace.quiz.result.weaknesses', 'Điểm cần cải thiện')}</p>
+                      <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300 space-y-1">
+                        {aiWeaknesses.map((item, idx) => (
+                          <li key={`weakness-${idx}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {!!recurringMistakes.length && (
+                    <div>
+                      <p className="font-medium text-slate-800 dark:text-slate-100 mb-1">{t('workspace.quiz.result.recurringMistakes', 'Lỗi lặp lại')}</p>
+                      <div className="space-y-2">
+                        {recurringMistakes.map((mistake, idx) => (
+                          <div key={`mistake-${idx}`} className="rounded-lg bg-slate-100/80 dark:bg-slate-700/40 p-3 text-sm">
+                            <p className="font-medium text-slate-800 dark:text-slate-100">{mistake?.topic || t('workspace.quiz.result.unknownTopic', 'Chủ đề chưa rõ')}</p>
+                            <p className="text-slate-600 dark:text-slate-300">{mistake?.detail}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {nextQuizPlan && (
+                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                      <p className="font-medium text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.nextQuizPlan', 'Kế hoạch quiz tiếp theo')}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{nextQuizPlan?.goal}</p>
+                      {nextQuizPlan?.reason && (
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{nextQuizPlan.reason}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {canGenerateRecommendedQuiz && (
+                    <div className="pt-1">
+                      <Button onClick={handleGenerateQuizFromAssessment} disabled={generatingQuiz || !quizDetails?.workspaceId} className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
+                        {generatingQuiz ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
+                        {t('workspace.quiz.result.generateQuizFromAssessment', 'Tạo quiz dựa trên đánh giá AI')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              {canShowGenerateKnowledgeButton && (
+                <Button
+                  onClick={handleGenerateKnowledgeAfterPreLearning}
+                  disabled={generatingKnowledge || knowledgeGenerationTriggered}
+                  className="min-w-[200px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {generatingKnowledge ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
+                  {knowledgeGenerationTriggered
+                    ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
+                    : t('workspace.quiz.result.generateKnowledge', 'Tạo knowledge')}
+                </Button>
+              )}
               <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2" disabled={reviewQuestions.length === 0}>
                 <Eye className="w-4 h-4" /> {t('workspace.quiz.result.reviewAnswers', 'Review Answers')}
               </Button>
@@ -372,9 +587,9 @@ export default function QuizResultPage() {
 
               {reviewQuestions.length > itemsPerPage && (
                 <div className="flex justify-between items-center mt-6 p-4">
-                  <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); window.scrollTo(0, 0); }}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
+                  <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage((p) => p - 1); scrollToTop(); }}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
                   <span className="text-sm font-medium text-slate-500">{t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}</span>
-                  <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); window.scrollTo(0, 0); }}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
+                  <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage((p) => p + 1); scrollToTop(); }}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
                 </div>
               )}
 
@@ -387,9 +602,26 @@ export default function QuizResultPage() {
 
             {/* Right Sticky Nav */}
             <div className="hidden lg:block relative">
-              <div className="sticky top-[100px] p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                <h3 className="font-bold mb-4 text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.questionList', 'Question list')}</h3>
-                <div className="flex flex-wrap gap-2 max-h-[60vh] overflow-y-auto pr-2 pb-2 items-start justify-start content-start">
+              <div className="sticky top-[96px] rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-blue-900/20">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    {t('workspace.quiz.result.questionList', 'Question list')}
+                  </h3>
+                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    {reviewQuestions.length}
+                  </span>
+                </div>
+
+                <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    {t('workspace.quiz.result.correct', 'Correct')}: {reviewQuestions.filter((question) => question?.isCorrect).length}
+                  </div>
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/30 dark:text-rose-300">
+                    {t('workspace.quiz.result.wrong', 'Wrong')}: {reviewQuestions.filter((question) => !question?.isCorrect).length}
+                  </div>
+                </div>
+
+                <div className="grid max-h-[58vh] grid-cols-5 gap-2 overflow-y-auto pr-1 pb-1">
                   {navQuestions.map((q, idx) => {
                     const globalIdx = navStartIndex + idx;
                     const isCorrect = q.isCorrect;
@@ -399,9 +631,13 @@ export default function QuizResultPage() {
                         key={q.id}
                         onClick={() => jumpToQuestion(globalIdx)}
                         className={cn(
-                          'w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold transition-all',
-                          isCorrect ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400',
-                          inCurrentPage ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-800' : ''
+                          'h-9 w-9 rounded-lg border text-xs font-semibold transition-all duration-200 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900',
+                          isCorrect
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
+                            : 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
+                          inCurrentPage
+                            ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900'
+                            : ''
                         )}
                       >
                         {globalIdx + 1}
@@ -410,14 +646,14 @@ export default function QuizResultPage() {
                   })}
                 </div>
                 {reviewQuestions.length > itemsPerPage && (
-                  <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
                     <Button
                       variant="outline"
                       size="sm"
                       disabled={safeNavPage === 1}
                       onClick={() => {
                         setCurrentPage((p) => Math.max(1, p - 1));
-                        window.scrollTo(0, 0);
+                        scrollToTop();
                       }}
                     >
                       {t('workspace.quiz.pagination.prev', 'Previous page')}
@@ -431,7 +667,7 @@ export default function QuizResultPage() {
                       disabled={safeNavPage === totalPages}
                       onClick={() => {
                         setCurrentPage((p) => Math.min(totalPages, p + 1));
-                        window.scrollTo(0, 0);
+                        scrollToTop();
                       }}
                     >
                       {t('workspace.quiz.pagination.next', 'Next page')}
