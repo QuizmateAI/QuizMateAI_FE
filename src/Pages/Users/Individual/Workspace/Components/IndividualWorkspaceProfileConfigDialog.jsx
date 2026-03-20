@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/Components/ui/dialog';
@@ -13,6 +14,10 @@ import { cn } from '@/lib/utils';
 import WorkspaceProfileStepOne from './WorkspaceProfileWizard/WorkspaceProfileStepOne';
 import WorkspaceProfileStepTwo from './WorkspaceProfileWizard/WorkspaceProfileStepTwo';
 import WorkspaceProfileStepThree from './WorkspaceProfileWizard/WorkspaceProfileStepThree';
+import {
+  getBeginnerScopeLabel,
+  isAbsoluteBeginnerLevel,
+} from './WorkspaceProfileWizard/profileWizardBeginnerUtils';
 import { useWorkspaceProfileWizard } from './WorkspaceProfileWizard/useWorkspaceProfileWizard';
 
 function QuizmateStepOneIcon({ className, ...props }) {
@@ -114,15 +119,226 @@ const STEP_META_MAP = {
   },
 };
 
-function translateOrFallback(t, key, fallback) {
-  const translated = t(key);
+function translateOrFallback(t, key, fallback, options) {
+  const translated = t(key, options);
   return translated === key ? fallback : translated;
+}
+
+function normalizeDisplayValue(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+}
+
+function createConfirmationSummary(t, values) {
+  const emptyValueLabel = translateOrFallback(
+    t,
+    'workspace.profileConfig.confirmProfileDialog.emptyValue',
+    'Chưa thiết lập'
+  );
+  const shouldShowRoadmapConfig = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
+  const beginnerScope = getBeginnerScopeLabel(
+    values,
+    translateOrFallback(t, 'workspace.profileConfig.stepTwo.beginnerFallbackScope', 'kiến thức này')
+  );
+  const isBeginnerProfile = isAbsoluteBeginnerLevel(values.currentLevel);
+  const purposeTitle = values.workspacePurpose
+    ? translateOrFallback(
+      t,
+      `workspace.profileConfig.purpose.${values.workspacePurpose}.title`,
+      normalizeDisplayValue(values.workspacePurpose)
+    )
+    : emptyValueLabel;
+  const strongAreasValue = normalizeDisplayValue(values.strongAreas)
+    || (isBeginnerProfile
+      ? translateOrFallback(
+        t,
+        'workspace.profileConfig.stepTwo.beginnerStrongSuggestion1',
+        `Hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học ${beginnerScope}.`,
+        { scope: beginnerScope }
+      )
+      : emptyValueLabel);
+  const weakAreasValue = normalizeDisplayValue(values.weakAreas)
+    || (isBeginnerProfile
+      ? translateOrFallback(
+        t,
+        'workspace.profileConfig.stepTwo.beginnerWeakSuggestion1',
+        `Hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học ${beginnerScope}.`,
+        { scope: beginnerScope }
+      )
+      : emptyValueLabel);
+  const roadmapItems = shouldShowRoadmapConfig
+    ? [
+      {
+        id: 'adaptationMode',
+        label: translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Chế độ thích ứng'),
+        value: values.adaptationMode
+          ? translateOrFallback(
+            t,
+            `workspace.profileConfig.adaptationMode.${values.adaptationMode}.title`,
+            normalizeDisplayValue(values.adaptationMode)
+          )
+          : emptyValueLabel,
+      },
+      {
+        id: 'roadmapSpeedMode',
+        label: translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', 'Tốc độ lộ trình'),
+        value: values.roadmapSpeedMode
+          ? translateOrFallback(
+            t,
+            `workspace.profileConfig.roadmapSpeedMode.${values.roadmapSpeedMode}.title`,
+            normalizeDisplayValue(values.roadmapSpeedMode)
+          )
+          : emptyValueLabel,
+      },
+      {
+        id: 'estimatedTotalDays',
+        label: translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', 'Số ngày dự kiến'),
+        value: Number(values.estimatedTotalDays) > 0
+          ? translateOrFallback(
+            t,
+            'workspace.profileConfig.confirmProfileDialog.values.estimatedTotalDays',
+            `${values.estimatedTotalDays} ngày`,
+            { value: values.estimatedTotalDays }
+          )
+          : emptyValueLabel,
+      },
+      {
+        id: 'recommendedMinutesPerDay',
+        label: translateOrFallback(
+          t,
+          'workspace.profileConfig.fields.recommendedMinutesPerDay',
+          'Số phút học mỗi ngày'
+        ),
+        value: Number(values.recommendedMinutesPerDay) > 0
+          ? translateOrFallback(
+            t,
+            'workspace.profileConfig.confirmProfileDialog.values.recommendedMinutesPerDay',
+            `${values.recommendedMinutesPerDay} phút/ngày`,
+            { value: values.recommendedMinutesPerDay }
+          )
+          : emptyValueLabel,
+      },
+    ]
+    : [
+      {
+        id: 'roadmapDisabled',
+        value: translateOrFallback(
+          t,
+          'workspace.profileConfig.confirmProfileDialog.roadmapDisabled',
+          'Không bật lộ trình cho hồ sơ này.'
+        ),
+      },
+    ];
+
+  return {
+    summaryLabel: translateOrFallback(
+      t,
+      'workspace.profileConfig.confirmProfileDialog.summaryLabel',
+      'Hồ sơ sẽ được áp dụng'
+    ),
+    sections: [
+      {
+        id: 'purpose',
+        title: translateOrFallback(
+          t,
+          'workspace.profileConfig.confirmProfileDialog.sections.purpose',
+          'Mục đích sử dụng'
+        ),
+        items: [{ id: 'purposeValue', value: purposeTitle }],
+      },
+      {
+        id: 'knowledgeDomain',
+        title: translateOrFallback(
+          t,
+          'workspace.profileConfig.confirmProfileDialog.sections.knowledgeDomain',
+          'Kiến thức - lĩnh vực'
+        ),
+        items: [
+          {
+            id: 'knowledgeInput',
+            label: translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeInput', 'Kiến thức bạn muốn học'),
+            value: normalizeDisplayValue(values.knowledgeInput) || emptyValueLabel,
+          },
+          {
+            id: 'primaryDomain',
+            label: translateOrFallback(t, 'workspace.profileConfig.fields.primaryDomain', 'Lĩnh vực chính'),
+            value: normalizeDisplayValue(values.inferredDomain) || emptyValueLabel,
+          },
+        ],
+      },
+      {
+        id: 'currentLevel',
+        title: translateOrFallback(
+          t,
+          'workspace.profileConfig.confirmProfileDialog.sections.currentLevel',
+          'Trình độ hiện tại'
+        ),
+        items: [
+          {
+            id: 'currentLevelValue',
+            value: normalizeDisplayValue(values.currentLevel) || emptyValueLabel,
+          },
+        ],
+      },
+      {
+        id: 'learningGoal',
+        title: translateOrFallback(
+          t,
+          'workspace.profileConfig.confirmProfileDialog.sections.learningGoal',
+          'Mục tiêu'
+        ),
+        items: [
+          {
+            id: 'learningGoalValue',
+            value: normalizeDisplayValue(values.learningGoal) || emptyValueLabel,
+          },
+        ],
+      },
+      {
+        id: 'strengthWeakness',
+        title: translateOrFallback(
+          t,
+          'workspace.profileConfig.confirmProfileDialog.sections.strengthWeakness',
+          'Điểm mạnh và điểm yếu'
+        ),
+        spanClass: 'md:col-span-2',
+        items: [
+          {
+            id: 'strongAreas',
+            label: translateOrFallback(t, 'workspace.profileConfig.fields.strongAreas', 'Điểm mạnh'),
+            value: strongAreasValue,
+          },
+          {
+            id: 'weakAreas',
+            label: translateOrFallback(t, 'workspace.profileConfig.fields.weakAreas', 'Điểm yếu'),
+            value: weakAreasValue,
+          },
+        ],
+      },
+      {
+        id: 'roadmapConfig',
+        title: translateOrFallback(
+          t,
+          'workspace.profileConfig.confirmProfileDialog.sections.roadmapConfig',
+          'Các config của lộ trình'
+        ),
+        spanClass: 'md:col-span-2',
+        itemsGridClass: shouldShowRoadmapConfig ? 'grid gap-3 md:grid-cols-2' : 'space-y-3',
+        items: roadmapItems,
+      },
+    ],
+  };
 }
 
 function createStepCopy(t) {
   return {
     1: {
       title: translateOrFallback(t, 'workspace.profileConfig.steps.1.title', 'Step 1'),
+      stepperLabel: translateOrFallback(
+        t,
+        'workspace.profileConfig.steps.1.stepperLabel',
+        'Learning intent'
+      ),
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.1.description',
@@ -131,6 +347,11 @@ function createStepCopy(t) {
     },
     2: {
       title: translateOrFallback(t, 'workspace.profileConfig.steps.2.title', 'Step 2'),
+      stepperLabel: translateOrFallback(
+        t,
+        'workspace.profileConfig.steps.2.stepperLabel',
+        'Current profile'
+      ),
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.2.description',
@@ -139,6 +360,11 @@ function createStepCopy(t) {
     },
     3: {
       title: translateOrFallback(t, 'workspace.profileConfig.steps.3.title', 'Step 3'),
+      stepperLabel: translateOrFallback(
+        t,
+        'workspace.profileConfig.steps.3.stepperLabel',
+        'Roadmap setup'
+      ),
       description: translateOrFallback(
         t,
         'workspace.profileConfig.steps.3.description',
@@ -160,7 +386,13 @@ function createActionCopy(t) {
       'workspace.profileConfig.stepTwo.overallReviewLoadingTitle',
       'Quizmate AI dang danh gia tong quan'
     ),
-    confirm: translateOrFallback(t, 'confirm', 'Confirm'),
+    confirm: translateOrFallback(t, 'confirm', 'Xác nhận'),
+    cancel: translateOrFallback(t, 'workspace.profileConfig.actions.cancel', 'Cancel'),
+    confirmProfileUse: translateOrFallback(
+      t,
+      'workspace.profileConfig.actions.confirmProfileUse',
+      'Use this profile'
+    ),
   };
 }
 
@@ -219,6 +451,41 @@ function IndividualWorkspaceProfileConfigDialog({
   const isPrimaryActionBusy = isNavigationBusy || wizard.isWaitingForOverallReview;
   const progressFraction = stepIds.length > 1 ? (wizard.step - 1) / (stepIds.length - 1) : 0;
   const stepTransitionClass = 'animate-in fade-in-50 slide-in-from-bottom-3 zoom-in-95 duration-500';
+  const [isProfileConfirmOpen, setIsProfileConfirmOpen] = React.useState(false);
+  const confirmationTitle = translateOrFallback(
+    t,
+    'workspace.profileConfig.confirmProfileDialog.title',
+    'Xác nhận sử dụng hồ sơ này'
+  );
+  const confirmationDescription = translateOrFallback(
+    t,
+    'workspace.profileConfig.confirmProfileDialog.description',
+    'Bạn đã chắc chắn sử dụng hồ sơ này chưa? Sau khi xác nhận, hệ thống sẽ lưu cấu hình hiện tại cho không gian học tập.'
+  );
+  const confirmationSummary = React.useMemo(
+    () => createConfirmationSummary(t, wizard.values),
+    [t, wizard.values]
+  );
+
+  React.useEffect(() => {
+    if (!open) {
+      setIsProfileConfirmOpen(false);
+    }
+  }, [open]);
+
+  async function handleConfirmedProfileUse() {
+    const result = await wizard.handleSubmit();
+    if (result?.ok && result?.shouldConfirm !== false) {
+      setIsProfileConfirmOpen(false);
+      await onConfirm?.();
+      onOpenChange(false);
+      return;
+    }
+
+    if (!result?.ok || result?.shouldConfirm === false) {
+      setIsProfileConfirmOpen(false);
+    }
+  }
 
   function renderStep() {
     if (wizard.step === 1) {
@@ -443,11 +710,12 @@ function IndividualWorkspaceProfileConfigDialog({
                       </div>
                       <span
                         className={cn(
-                          'max-w-[120px] whitespace-nowrap text-center text-xs font-semibold leading-4 transition-colors duration-300',
+                          'max-w-[180px] text-center text-[11px] font-medium leading-4 transition-colors duration-300 sm:text-xs',
                           labelToneClass
                         )}
                       >
-                        {stepCopy[item].title}
+                        <span className="sr-only">{stepCopy[item].title}</span>
+                        {stepCopy[item].stepperLabel}
                       </span>
                     </button>
                   );
@@ -566,11 +834,11 @@ function IndividualWorkspaceProfileConfigDialog({
               <Button
                 type="button"
                 disabled={isPrimaryActionBusy}
-                onClick={async () => {
-                  const result = await wizard.handleSubmit();
-                  if (result?.ok && result?.shouldConfirm !== false) {
-                    await onConfirm?.();
+                onClick={() => {
+                  if (!wizard.showValidationErrors(wizard.step)) {
+                    return;
                   }
+                  setIsProfileConfirmOpen(true);
                 }}
                 className="rounded-full bg-emerald-600 px-6 text-white hover:bg-emerald-700"
               >
@@ -597,6 +865,116 @@ function IndividualWorkspaceProfileConfigDialog({
           </div>
         </div>
       </DialogContent>
+
+      <Dialog open={isProfileConfirmOpen} onOpenChange={setIsProfileConfirmOpen}>
+        <DialogContent
+          className={cn(
+            'grid max-h-[85vh] max-w-3xl grid-rows-[auto,minmax(0,1fr),auto] overflow-hidden rounded-[28px] border p-0 shadow-2xl',
+            isDarkMode ? 'border-slate-700 bg-[#020817] text-white' : 'border-slate-200 bg-white text-slate-900',
+            fontClass
+          )}
+        >
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-[28px]',
+              isDarkMode
+                ? 'bg-[linear-gradient(90deg,rgba(34,197,94,0.12),rgba(14,165,233,0.10),rgba(249,115,22,0.10))]'
+                : 'bg-[linear-gradient(90deg,rgba(34,197,94,0.10),rgba(14,165,233,0.08),rgba(249,115,22,0.08))]'
+            )}
+          />
+          <DialogHeader className="relative px-6 pb-3 pt-6 text-left">
+            <DialogTitle className="text-xl font-bold">{confirmationTitle}</DialogTitle>
+            <DialogDescription className={cn('pt-2 text-sm leading-6', mutedClass)}>
+              {confirmationDescription}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="min-h-0 overflow-y-auto px-6 pb-6">
+            {confirmationSummary.sections.length > 0 ? (
+              <div
+                className={cn(
+                  'rounded-[22px] border px-4 py-4 shadow-[0_20px_48px_rgba(15,23,42,0.08)]',
+                  isDarkMode
+                    ? 'border-white/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]'
+                    : 'border-slate-300 bg-[linear-gradient(180deg,#f8fbff_0%,#f1f7ff_100%)]'
+                )}
+              >
+                <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>
+                  {confirmationSummary.summaryLabel}
+                </p>
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {confirmationSummary.sections.map((section) => (
+                    <section
+                      key={section.id}
+                      className={cn(
+                        'rounded-[20px] border-2 px-4 py-4 shadow-[0_14px_32px_rgba(14,165,233,0.08)]',
+                        section.spanClass,
+                        isDarkMode
+                          ? 'border-cyan-400/20 bg-slate-950/75'
+                          : 'border-cyan-200/80 bg-white'
+                      )}
+                    >
+                      <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', mutedClass)}>
+                        {section.title}
+                      </p>
+                      <div className={cn('mt-3', section.itemsGridClass || 'space-y-3')}>
+                        {section.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className={cn(
+                              'rounded-[18px] border border-l-4 px-3 py-3 shadow-sm',
+                              isDarkMode
+                                ? 'border-white/10 border-l-cyan-400 bg-white/[0.04]'
+                                : 'border-slate-200 border-l-cyan-300 bg-slate-50/90'
+                            )}
+                          >
+                            {item.label ? (
+                              <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedClass)}>
+                                {item.label}
+                              </p>
+                            ) : null}
+                            <p className={cn('text-sm font-medium leading-6', item.label ? 'mt-1.5' : '', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>
+                              {item.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter
+            className={cn(
+              'flex-col-reverse gap-3 border-t px-6 py-4 sm:flex-row sm:justify-end sm:space-x-0',
+              isDarkMode ? 'border-slate-700 bg-[#020817]' : 'border-slate-200 bg-white'
+            )}
+          >
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsProfileConfirmOpen(false)}
+              className={cn(
+                'rounded-full px-5',
+                isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              )}
+            >
+              {actionCopy.cancel}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmedProfileUse}
+              disabled={wizard.submitting || wizard.isMockTestGenerationPending || wizard.isWaitingForOverallReview}
+              className="rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700"
+            >
+              {wizard.submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {actionCopy.confirmProfileUse}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
