@@ -1,19 +1,21 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3 } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
-import { getAttemptResult, getQuizFull } from '@/api/QuizAPI';
+import { getAttemptResult, getQuizFull, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
 import { normalizeQuizData } from './utils/quizTransform';
+import { useToast } from '@/context/ToastContext';
 
 export default function QuizResultPage() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { i18n, t } = useTranslation();
+  const { showError, showSuccess } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
 
@@ -23,6 +25,10 @@ export default function QuizResultPage() {
   const [reviewMode, setReviewMode] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [assessmentData, setAssessmentData] = useState(null);
+  const [assessmentStatus, setAssessmentStatus] = useState('NOT_AVAILABLE');
+  const [assessmentLoading, setAssessmentLoading] = useState(false);
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
 
@@ -63,6 +69,35 @@ export default function QuizResultPage() {
       }
     })();
   }, [attemptId, retryCount]);
+
+  const fetchAssessment = useCallback(async () => {
+    if (!attemptId) return;
+    setAssessmentLoading(true);
+    try {
+      const res = await getAttemptAssessment(attemptId);
+      const payload = res?.data || null;
+      setAssessmentStatus(payload?.status || 'NOT_AVAILABLE');
+      setAssessmentData(payload);
+    } catch (err) {
+      console.error('Failed to load assessment:', err);
+      setAssessmentStatus('NOT_AVAILABLE');
+      setAssessmentData(null);
+    } finally {
+      setAssessmentLoading(false);
+    }
+  }, [attemptId]);
+
+  useEffect(() => {
+    fetchAssessment();
+  }, [fetchAssessment]);
+
+  useEffect(() => {
+    if (assessmentStatus !== 'PROCESSING') return undefined;
+    const intervalId = window.setInterval(() => {
+      fetchAssessment();
+    }, 8000);
+    return () => window.clearInterval(intervalId);
+  }, [assessmentStatus, fetchAssessment]);
 
   // Normalize result questions for QuestionCard format
   const reviewQuestions = useMemo(() => {
@@ -147,6 +182,29 @@ export default function QuizResultPage() {
     : passed
       ? t('workspace.quiz.result.congratulations', 'Congratulations!')
       : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
+  const aiSummary = assessmentData?.summary;
+  const aiStrengths = Array.isArray(assessmentData?.strengths) ? assessmentData.strengths : [];
+  const aiWeaknesses = Array.isArray(assessmentData?.weaknesses) ? assessmentData.weaknesses : [];
+  const recurringMistakes = Array.isArray(assessmentData?.recurringMistakes) ? assessmentData.recurringMistakes : [];
+  const nextQuizPlan = assessmentData?.nextQuizPlan;
+  const canGenerateRecommendedQuiz = assessmentData?.recommendationStatus === 'PENDING' && Number(assessmentData?.assessmentId) > 0;
+
+  const handleGenerateQuizFromAssessment = async () => {
+    const assessmentId = Number(assessmentData?.assessmentId);
+    const workspaceId = Number(quizDetails?.workspaceId);
+    if (!assessmentId || !workspaceId || generatingQuiz) return;
+
+    setGeneratingQuiz(true);
+    try {
+      await generateQuizFromWorkspaceAssessment(assessmentId);
+      showSuccess(t('workspace.quiz.result.generateFromAssessmentSuccess', 'Đã tạo quiz từ đánh giá AI thành công'));
+      navigate(`/workspace/${workspaceId}/quiz`, { replace: true });
+    } catch (err) {
+      showError(err?.message || t('workspace.quiz.result.generateFromAssessmentFail', 'Tạo quiz từ đánh giá AI thất bại'));
+    } finally {
+      setGeneratingQuiz(false);
+    }
+  };
 
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
@@ -196,6 +254,94 @@ export default function QuizResultPage() {
               {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
               <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
               {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">{t('workspace.quiz.result.passScore', 'Pass Score')}: {result.passScore}</span>}
+            </div>
+
+            <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
+                  <Sparkles className="w-4 h-4" />
+                  {t('workspace.quiz.result.aiAssessment', 'AI Assessment')}
+                </h3>
+                <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
+                  <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
+                  {t('workspace.quiz.result.refreshAssessment', 'Refresh')}
+                </Button>
+              </div>
+
+              {(assessmentLoading && !assessmentData) && (
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
+              )}
+
+              {assessmentStatus === 'NOT_AVAILABLE' && !assessmentLoading && (
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentNotAvailable', 'Hiện chưa có đánh giá AI cho lần làm bài này.')}</div>
+              )}
+
+              {assessmentStatus === 'PROCESSING' && (
+                <div className="text-sm text-amber-600 dark:text-amber-400">{t('workspace.quiz.result.assessmentProcessing', 'Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.')}</div>
+              )}
+
+              {assessmentStatus === 'READY' && assessmentData && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                    {aiSummary || t('workspace.quiz.result.assessmentNoSummary', 'Chưa có tóm tắt đánh giá AI.')}
+                  </p>
+
+                  {!!aiStrengths.length && (
+                    <div>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-300 mb-1">{t('workspace.quiz.result.strengths', 'Điểm mạnh')}</p>
+                      <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300 space-y-1">
+                        {aiStrengths.map((item, idx) => (
+                          <li key={`strength-${idx}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {!!aiWeaknesses.length && (
+                    <div>
+                      <p className="font-medium text-rose-700 dark:text-rose-300 mb-1">{t('workspace.quiz.result.weaknesses', 'Điểm cần cải thiện')}</p>
+                      <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300 space-y-1">
+                        {aiWeaknesses.map((item, idx) => (
+                          <li key={`weakness-${idx}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {!!recurringMistakes.length && (
+                    <div>
+                      <p className="font-medium text-slate-800 dark:text-slate-100 mb-1">{t('workspace.quiz.result.recurringMistakes', 'Lỗi lặp lại')}</p>
+                      <div className="space-y-2">
+                        {recurringMistakes.map((mistake, idx) => (
+                          <div key={`mistake-${idx}`} className="rounded-lg bg-slate-100/80 dark:bg-slate-700/40 p-3 text-sm">
+                            <p className="font-medium text-slate-800 dark:text-slate-100">{mistake?.topic || t('workspace.quiz.result.unknownTopic', 'Chủ đề chưa rõ')}</p>
+                            <p className="text-slate-600 dark:text-slate-300">{mistake?.detail}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {nextQuizPlan && (
+                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                      <p className="font-medium text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.nextQuizPlan', 'Kế hoạch quiz tiếp theo')}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{nextQuizPlan?.goal}</p>
+                      {nextQuizPlan?.reason && (
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{nextQuizPlan.reason}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {canGenerateRecommendedQuiz && (
+                    <div className="pt-1">
+                      <Button onClick={handleGenerateQuizFromAssessment} disabled={generatingQuiz || !quizDetails?.workspaceId} className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
+                        {generatingQuiz ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
+                        {t('workspace.quiz.result.generateQuizFromAssessment', 'Tạo quiz dựa trên đánh giá AI')}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Action buttons */}
