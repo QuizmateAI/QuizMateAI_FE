@@ -1408,6 +1408,14 @@
         "questionTypeUnitByCount": "Question type unit by count",
         "bloomUnitByCount": "Bloom unit by count",
         "questionTypes": "Question Types",
+        "questionTypeLabels": {
+          "SINGLE_CHOICE": "Single choice",
+          "MULTIPLE_CHOICE": "Multiple choice",
+          "SHORT_ANSWER": "Short answer",
+          "TRUE_FALSE": "True/False",
+          "FILL_IN_BLANK": "Fill in the blank",
+          "IMAGED_BASED": "Image based"
+        },
         "bloomSkills": "Bloom Skills",
         "countUnit": "count",
         "selectQuestionType": "Select question type",

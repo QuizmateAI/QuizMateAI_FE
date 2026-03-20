@@ -11,6 +11,7 @@ import QuickCreateDialog from "../QuickCreateDialog";
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
 const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "REVIEW"];
+const HIDDEN_AI_QUESTION_TYPES = ["IMAGED_BASED"];
 const BLOOM_LEVELS = [
   { id: 1, key: "remember" },
   { id: 2, key: "understand" },
@@ -18,6 +19,15 @@ const BLOOM_LEVELS = [
   { id: 4, key: "analyze" },
   { id: 5, key: "evaluate" },
 ];
+
+const QUESTION_TYPE_LABEL_FALLBACKS = {
+  SINGLE_CHOICE: "Single choice",
+  MULTIPLE_CHOICE: "Multiple choice",
+  SHORT_ANSWER: "Short answer",
+  TRUE_FALSE: "True/False",
+  FILL_IN_BLANK: "Fill in the blank",
+  IMAGED_BASED: "Image based",
+};
 // Danh sách contextType cho Individual Workspace — Quiz chỉ tạo ở KNOWLEDGE
 // (ROADMAP dành cho MockTest, PHASE dành cho PostLearning)
 const FIXED_CONTEXT_TYPE = "KNOWLEDGE";
@@ -93,6 +103,11 @@ const makeDefaultQuestion = (difficulty = "medium") => ({
 function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: defaultContextId, selectedSourceIds = [], sources = [] }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const getQuestionTypeLabel = useCallback((questionType) => {
+    const normalizedType = String(questionType || "").toUpperCase();
+    const fallbackLabel = QUESTION_TYPE_LABEL_FALLBACKS[normalizedType] || questionType || "-";
+    return t(`workspace.quiz.aiConfig.questionTypeLabels.${normalizedType}`, fallbackLabel);
+  }, [t]);
   // Auto-switch to AI tab if materials are pre-selected
   // const [tab, setTab] = useState(selectedSourceIds.length > 0 ? "ai" : "manual");
     const [tab, setTab] = useState("ai");
@@ -443,7 +458,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
             return [];
           };
 
-          const questionTypeList = toList(qTypeRes);
+          const questionTypeList = toList(qTypeRes).filter((item) => {
+            const normalizedType = String(item?.questionType || "").toUpperCase();
+            return !HIDDEN_AI_QUESTION_TYPES.includes(normalizedType);
+          });
           const difficultyList = toList(diffRes);
           const bloomList = toList(bloomRes);
 
@@ -460,6 +478,8 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
              const singleChoice = questionTypeList.find((q) => q.questionType === "SINGLE_CHOICE");
              if (singleChoice) {
               setSelectedQTypes([{ questionTypeId: singleChoice.questionTypeId, ratio: 100, isLocked: false }]);
+             } else {
+              setSelectedQTypes([{ questionTypeId: questionTypeList[0].questionTypeId, ratio: 100, isLocked: false }]);
              }
              setQTypeToAdd(String((questionTypeList[0]?.questionTypeId ?? "")));
           }
@@ -602,6 +622,20 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
 
     setSelectedQTypes((prev) => distributeConfigValues(prev, getTargetTotal(questionTypeUnit), questionTypeUnit));
   }, [questionTypeUnit, aiTotalQuestions]);
+
+  useEffect(() => {
+    if (!Array.isArray(qTypes) || qTypes.length === 0) {
+      setSelectedQTypes([]);
+      return;
+    }
+
+    const availableTypeIds = new Set(qTypes.map((item) => Number(item?.questionTypeId)).filter((id) => Number.isInteger(id) && id > 0));
+    setSelectedQTypes((prev) => {
+      const filtered = prev.filter((item) => availableTypeIds.has(Number(item?.questionTypeId)));
+      if (filtered.length === prev.length) return prev;
+      return distributeConfigValues(filtered, getTargetTotal(questionTypeUnit), questionTypeUnit);
+    });
+  }, [qTypes, questionTypeUnit, aiTotalQuestions]);
 
   useEffect(() => {
     if (prevBloomUnitRef.current !== bloomUnit) {
@@ -819,6 +853,20 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         }
         if (aiTimerMode && (!Number.isFinite(aiDuration) || aiDuration <= 0)) {
            newFieldErrors.aiDuration = t("workspace.quiz.validation.timeDurationRequired");
+        }
+
+        if (aiTimerMode && Number.isFinite(aiTotalQuestions) && aiTotalQuestions > 0 && Number.isFinite(aiDuration) && aiDuration > 0) {
+          const minimumSecondsPerQuestion = 30;
+          const totalDurationInSeconds = Number(aiDuration) * 60;
+          const minimumTotalDurationInSeconds = Number(aiTotalQuestions) * minimumSecondsPerQuestion;
+
+          if (totalDurationInSeconds < minimumTotalDurationInSeconds) {
+            const minimumTotalMinutes = Math.ceil(minimumTotalDurationInSeconds / 60);
+            newFieldErrors.aiDuration = t(
+              "workspace.quiz.validation.minimumTimePerQuestion",
+              `Mỗi câu cần tối thiểu ${minimumSecondsPerQuestion} giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumTotalMinutes} phút.`
+            );
+          }
         }
 
         // Validate per-question durations when timerMode is false
@@ -1619,6 +1667,14 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                        {fieldErrors.aiDuration && (
                          <p className="text-xs text-red-500 mt-1">{fieldErrors.aiDuration}</p>
                        )}
+                       {!fieldErrors.aiDuration && Number(aiTotalQuestions) > 0 && (
+                         <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                           {t(
+                             "workspace.quiz.validation.minimumTimePerQuestionHint",
+                             `Tối thiểu ${Math.ceil((Number(aiTotalQuestions) * 30) / 60)} phút (${30}s/câu).`
+                           )}
+                         </p>
+                       )}
                      </div>
                    )}
                 </div>
@@ -1791,7 +1847,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                            }`}
                          >
                            {isSelected && <CheckCircle2 className="w-3 h-3 shrink-0" />}
-                           {qt.questionType}
+                           {getQuestionTypeLabel(qt.questionType)}
                          </button>
                        );
                      })}
@@ -1802,7 +1858,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                        const detail = qTypes.find((q) => q.questionTypeId === item.questionTypeId);
                        return (
                          <div key={item.questionTypeId} className={`flex items-center gap-2 text-xs p-2 rounded-md border ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
-                           <span className="flex-1 truncate" title={detail?.description}>{detail?.questionType || `Type #${item.questionTypeId}`}</span>
+                           <span className="flex-1 truncate" title={detail?.description}>{detail?.questionType ? getQuestionTypeLabel(detail.questionType) : `Type #${item.questionTypeId}`}</span>
                            <input
                              type="number"
                              className={`w-16 p-1 text-center border rounded ${isDarkMode?"bg-slate-800 border-slate-700":"bg-white border-gray-200"}`}
