@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, ChevronDown, ChevronsLeft, Loader2, Map } from "lucide-react";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
@@ -19,6 +19,11 @@ function RoadmapJourPanel({
   const [roadmap, setRoadmap] = useState(null);
   const [isPhaseOpen, setIsPhaseOpen] = useState(true);
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
+  const selectedPhaseRef = useRef(null);
+
+  useEffect(() => {
+    selectedPhaseRef.current = selectedPhaseIdProp ?? selectedPhaseId;
+  }, [selectedPhaseId, selectedPhaseIdProp]);
 
   const loadRoadmap = useCallback(async () => {
     if (!workspaceId) {
@@ -33,8 +38,10 @@ function RoadmapJourPanel({
       const nextRoadmap = response?.data?.data ?? null;
       setRoadmap(nextRoadmap);
       const firstPhaseId = nextRoadmap?.phases?.[0]?.phaseId ?? null;
-      setSelectedPhaseId(firstPhaseId);
-      onSelectPhase?.(firstPhaseId);
+      if (!selectedPhaseRef.current) {
+        setSelectedPhaseId(firstPhaseId);
+        onSelectPhase?.(firstPhaseId);
+      }
     } catch {
       setRoadmap(null);
     } finally {

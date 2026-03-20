@@ -13,7 +13,7 @@ const STATUS_STYLES = {
 const FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT"];
 
 // Danh sách flashcard sets — lấy từ API theo contextType/contextId
-function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onDeleteFlashcard, contextType = "WORKSPACE", contextId }) {
+function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onDeleteFlashcard, contextType = "WORKSPACE", contextId, disableCreate = false }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,7 +61,7 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onD
           <CreditCard className="w-5 h-5 text-amber-500" />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>Flashcard</p>
         </div>
-        <Button onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2">
+        <Button disabled={disableCreate} onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
           <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
         </Button>
       </div>
@@ -97,7 +97,7 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onD
           <div className="flex flex-col items-center justify-center py-16">
             <CreditCard className={`w-12 h-12 mb-3 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm mb-3 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.flashcard.noFlashcards")}</p>
-            <Button onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2">
+            <Button disabled={disableCreate} onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
               <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.flashcard.createFirstFlashcard")}</span>
             </Button>
           </div>
