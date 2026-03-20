@@ -14,6 +14,22 @@ function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
   return `/workspace/${match[1]}/roadmap?phaseId=${phaseId}`;
 }
 
+function extractWorkspaceIdFromPath(path) {
+  if (!path) return null;
+  const match = String(path).match(/^\/workspace\/(\d+)/);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function extractPhaseIdFromPath(path) {
+  if (!path) return null;
+  const match = String(path).match(/[?&]phaseId=(\d+)/);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
@@ -136,6 +152,30 @@ function QuizListView({
     }
     return `${location.pathname}${location.search || ""}`;
   }, [contextId, contextType, location.pathname, location.search, returnToPath]);
+
+  const quizNavigationSourceState = useMemo(() => {
+    const normalizedContextType = String(contextType || "").toUpperCase();
+    const normalizedContextId = Number(contextId);
+    const workspaceIdFromReturnPath = extractWorkspaceIdFromPath(resolvedReturnToPath);
+    const workspaceIdFromLocation = extractWorkspaceIdFromPath(location.pathname);
+    const sourceWorkspaceId = workspaceIdFromReturnPath || workspaceIdFromLocation || null;
+
+    const phaseIdFromContext = normalizedContextType === "PHASE" && Number.isInteger(normalizedContextId) && normalizedContextId > 0
+      ? normalizedContextId
+      : null;
+    const phaseIdFromReturnPath = extractPhaseIdFromPath(resolvedReturnToPath);
+    const sourcePhaseId = phaseIdFromContext || phaseIdFromReturnPath || null;
+
+    const isRoadmapContextType = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContextType);
+    const isRoadmapPath = /\/workspace\/\d+\/roadmap(?:\/|$|\?)/.test(String(resolvedReturnToPath || ""))
+      || /\/workspace\/\d+\/roadmap(?:\/|$)/.test(String(location.pathname || ""));
+
+    return {
+      sourceView: isRoadmapContextType || isRoadmapPath ? "roadmap" : "quiz-panel",
+      sourceWorkspaceId,
+      sourcePhaseId,
+    };
+  }, [contextId, contextType, location.pathname, resolvedReturnToPath]);
 
   // Lấy danh sách quiz từ API theo context hiện tại (workspace/roadmap/phase/knowledge)
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
@@ -443,7 +483,7 @@ function QuizListView({
           {confirmDialog.mode ? (
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setConfirmDialog({ open: false, quizId: null, mode: null })}>{t("common.cancel", "Cancel")}</Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`, { state: { returnToQuizPath: resolvedReturnToPath } }); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`, { state: { returnToQuizPath: resolvedReturnToPath, ...quizNavigationSourceState } }); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
                 {t("common.confirm", "Confirm")}
               </Button>
             </DialogFooter>
