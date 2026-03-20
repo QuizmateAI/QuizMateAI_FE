@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, Save, X } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, Save, X, MapPin, ArrowUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion,
@@ -12,7 +12,6 @@ import {
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
-const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "PRACTICE"];
 const BLOOM_LEVELS = [
   { id: 1, key: "remember" },
   { id: 2, key: "understand" },
@@ -28,6 +27,12 @@ const QUESTION_TYPE_MAP = {
 const DIFFICULTY_MAP = { easy: "EASY", medium: "MEDIUM", hard: "HARD" };
 const REVERSE_DIFFICULTY = { EASY: "easy", MEDIUM: "medium", HARD: "hard" };
 
+const convertSecondsToMinutes = (seconds) => {
+  const numeric = Number(seconds);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 1;
+  return Math.max(1, Math.ceil(numeric / 60));
+};
+
 // Form chỉnh sửa Quiz — tải dữ liệu hiện có và cho phép cập nhật
 function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = "WORKSPACE", contextId }) {
   const { t, i18n } = useTranslation();
@@ -39,10 +44,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
 
   // State thông tin quiz
   const [name, setName] = useState(quiz?.title || "");
-  const [duration, setDuration] = useState(quiz?.duration || 30);
-  const [passingScore, setPassingScore] = useState(quiz?.passScore || 7.5);
-  const [maxAttempt, setMaxAttempt] = useState(quiz?.maxAttempt || 3);
-  const [quizIntent, setQuizIntent] = useState(quiz?.quizIntent || "PRE_LEARNING");
+  const [duration, setDuration] = useState(convertSecondsToMinutes(quiz?.duration));
   const [timerMode, setTimerMode] = useState(quiz?.timerMode ?? true);
   const [overallDifficulty, setOverallDifficulty] = useState(
     quiz?.overallDifficulty ? REVERSE_DIFFICULTY[quiz.overallDifficulty] || "medium" : "medium"
@@ -55,6 +57,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
   // Track các question/answer đã xóa để gọi API delete
   const [deletedQuestionIds, setDeletedQuestionIds] = useState([]);
   const [deletedAnswerIds, setDeletedAnswerIds] = useState([]);
+  const [jumpTarget, setJumpTarget] = useState("");
 
   // Tải dữ liệu quiz hiện có: sections → questions → answers
   const loadExistingData = useCallback(async () => {
@@ -193,12 +196,11 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         phaseId: contextType === 'PHASE' ? Number(contextId) : null,
         knowledgeId: contextType === 'KNOWLEDGE' ? Number(contextId) : null,
         title: name,
-        duration,
-        quizIntent,
+        duration: Math.max(1, Number(duration) || 1) * 60,
         timerMode,
         status,
-        maxAttempt: maxAttempt || null,
-        passScore: passingScore || null,
+        maxAttempt: 0,
+        passScore: 0,
         createVia: quiz.createVia || "MANUAL",
         overallDifficulty: DIFFICULTY_MAP[overallDifficulty] || null,
       });
@@ -297,13 +299,38 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
   }`;
   const selectCls = `${inputCls} appearance-none cursor-pointer`;
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
+  const requiredMark = <span className="text-red-500 ml-1">*</span>;
+
+  const normalizeIntegerInput = (value) => {
+    if (value === "") return "";
+    const digits = String(value).replace(/\D/g, "");
+    if (!digits) return "";
+    const normalized = digits.replace(/^0+(?=\d)/, "");
+    return Number(normalized || 0);
+  };
+
+  const applyMinOnBlur = (value, setter, minValue = 1) => {
+    const next = Number(value);
+    setter(Number.isFinite(next) && next >= minValue ? next : minValue);
+  };
+
+  const jumpToQuestion = (value) => {
+    const v = Number(value);
+    if (!Number.isFinite(v) || v < 1 || v > questions.length) return;
+    setJumpTarget(String(v));
+    scrollToQuestion(v - 1);
+  };
+
+  const scrollToQuestion = (idx) => {
+    document.getElementById(`quiz-q-${idx}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   if (loading) {
     return <ListSpinner variant="section" />;
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div id="create-quiz-header" className="flex flex-col h-full scroll-mt-20">
       {/* Header */}
       <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
@@ -318,10 +345,14 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
       </div>
 
       {/* Form chỉnh sửa */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div id="create-quiz-scroll-root" className="flex-1 overflow-y-auto p-4 space-y-4">
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
           {t("workspace.quiz.edit.desc")}
         </p>
+
+        <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+          {t("workspace.quiz.validation.requiredFieldsHint")}
+        </div>
 
         {/* Thông báo lỗi/thành công */}
         {error && (
@@ -337,24 +368,15 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
 
         {/* Tên Quiz */}
         <div>
-          <label className={labelCls}>{t("workspace.quiz.name")}</label>
+          <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
           <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
-        {/* Intent + Difficulty */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>{t("workspace.quiz.intent")}</label>
-            <select className={selectCls} value={quizIntent} onChange={(e) => setQuizIntent(e.target.value)}>
-              {QUIZ_INTENTS.map((intent) => <option key={intent} value={intent}>{t(`workspace.quiz.intentLabels.${intent}`)}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}</label>
-            <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
-              {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
-            </select>
-          </div>
+        <div>
+          <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}{requiredMark}</label>
+          <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
+            {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+          </select>
         </div>
 
         {/* Status */}
@@ -379,22 +401,21 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
           </span>
         </div>
 
-        {/* Duration + PassScore + MaxAttempt — Duration chỉ hiện khi timerMode=true */}
-        <div className={`grid ${timerMode ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
+        {/* Duration — hiển thị theo phút, gửi BE theo giây */}
+        <div className="grid grid-cols-1 gap-3">
           {timerMode && (
             <div>
-              <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
-              <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
+              <label className={labelCls}>{t("workspace.quiz.timeDuration")}{requiredMark} (min)</label>
+              <input
+                type="number"
+                className={inputCls}
+                value={duration}
+                onChange={(e) => setDuration(normalizeIntegerInput(e.target.value))}
+                onBlur={() => applyMinOnBlur(duration, setDuration, 1)}
+                min={1}
+              />
             </div>
           )}
-          <div>
-            <label className={labelCls}>{t("workspace.quiz.passingScore")}</label>
-            <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
-          </div>
-          <div>
-            <label className={labelCls}>{t("workspace.quiz.maxAttempt")}</label>
-            <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
-          </div>
         </div>
 
         {/* Danh sách câu hỏi */}
@@ -403,8 +424,83 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
             {t("workspace.quiz.edit.questionsSection")} ({questions.length})
           </h4>
 
+          {questions.length > 0 && (
+            <div className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-blue-200 bg-blue-50/30"}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`text-xs font-semibold ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
+                  {t("workspace.quiz.navigator.title")}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {questions.map((q, idx) => {
+                  const difficultyBorder = q.difficulty === "easy"
+                    ? (isDarkMode ? "border-green-500/60" : "border-green-400")
+                    : q.difficulty === "hard"
+                      ? (isDarkMode ? "border-red-500/60" : "border-red-400")
+                      : (isDarkMode ? "border-amber-500/60" : "border-amber-400");
+
+                  return (
+                    <button
+                      key={q.questionId || `q-nav-${idx}`}
+                      type="button"
+                      onClick={() => scrollToQuestion(idx)}
+                      className={`w-8 h-8 rounded-lg text-[11px] font-semibold border-2 flex items-center justify-center transition-all active:scale-95 ${difficultyBorder} ${isDarkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-white text-gray-700 hover:bg-gray-100"}`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {questions.length > 3 && (
+            <div className={`sticky top-0 z-20 flex items-center justify-between px-3 py-2 mb-3 rounded-lg shadow-sm backdrop-blur-md border ${isDarkMode ? "bg-slate-900/90 border-slate-700" : "bg-white/90 border-gray-200"}`}>
+              <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
+                <MapPin className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+                <input
+                  type="number"
+                  min={1}
+                  max={questions.length}
+                  placeholder={t("workspace.quiz.navigator.jumpTo")}
+                  className={`text-xs w-full bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isDarkMode ? "text-slate-200 placeholder:text-slate-500" : "text-gray-700 placeholder:text-gray-400"} ${fontClass}`}
+                  value={jumpTarget}
+                  onChange={(e) => setJumpTarget(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      jumpToQuestion(e.currentTarget.value);
+                    }
+                  }}
+                />
+                <select
+                  className={`text-xs rounded-md border px-2 py-1.5 min-w-[110px] ${isDarkMode ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-white border-gray-300 text-gray-700"}`}
+                  value={jumpTarget}
+                  onChange={(e) => jumpToQuestion(e.target.value)}
+                >
+                  <option value="">{t("workspace.quiz.edit.selectQuestion", { defaultValue: "Chọn câu" })}</option>
+                  {questions.map((q, idx) => (
+                    <option key={q.questionId || `jump-${idx}`} value={idx + 1}>
+                      {t("workspace.quiz.edit.questionOption", { defaultValue: "Câu {{number}}", number: idx + 1 })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                title={t("workspace.quiz.navigator.scrollTop")}
+                onClick={() => {
+                  const root = document.getElementById("create-quiz-scroll-root");
+                  if (root) root.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className={`p-1.5 rounded-full transition-all active:scale-95 ${isDarkMode ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+              >
+                <ArrowUp className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {questions.map((q, qIdx) => (
-            <div key={q.questionId || `new-${qIdx}`} className={`rounded-lg border p-3 space-y-2 ${
+            <div id={`quiz-q-${qIdx}`} key={q.questionId || `new-${qIdx}`} className={`rounded-lg border p-3 space-y-2 ${
               q.isNew
                 ? isDarkMode ? "border-blue-800/50 bg-blue-950/20" : "border-blue-200 bg-blue-50/30"
                 : isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"
@@ -418,7 +514,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
                     </span>
                   )}
                 </div>
-                <button onClick={() => removeQuestion(qIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all active:scale-95">
+                <button type="button" onClick={() => removeQuestion(qIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all active:scale-95">
                   <Trash2 className="w-3.5 h-3.5 text-red-500" />
                 </button>
               </div>
@@ -474,12 +570,12 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
                           updateQuestionField(qIdx, "answers", newAnswers);
                         }}
                       />
-                      <button onClick={() => removeAnswer(qIdx, aIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all">
+                      <button type="button" onClick={() => removeAnswer(qIdx, aIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all">
                         <Trash2 className="w-3 h-3 text-red-400" />
                       </button>
                     </div>
                   ))}
-                  <button onClick={() => addAnswer(qIdx)} className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-1">
+                  <button type="button" onClick={() => addAnswer(qIdx)} className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-1">
                     <Plus className="w-3 h-3" /> {t("workspace.quiz.addAnswer")}
                   </button>
                 </div>
