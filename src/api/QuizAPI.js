@@ -148,6 +148,18 @@ export const getAttemptResult = async (attemptId) => {
   return response;
 };
 
+// Lấy trạng thái + dữ liệu AI assessment của attempt
+export const getAttemptAssessment = async (attemptId) => {
+  const response = await api.get(`/quiz-attempts/${attemptId}/assessment`);
+  return response;
+};
+
+// Tạo quiz từ workspace assessment (tái sử dụng pipeline AI quiz)
+export const generateQuizFromWorkspaceAssessment = async (assessmentId) => {
+  const response = await api.post(`/workspace-assessments/${assessmentId}/generate-quiz`);
+  return response;
+};
+
 // Lấy lịch sử làm bài của 1 quiz
 export const getQuizHistory = async (quizId) => {
   const response = await api.get(`/quiz-attempts/history?quizId=${quizId}`);
