@@ -103,7 +103,16 @@ export default function PracticeQuizPage() {
     try {
       const submitPayload = buildSubmitPayload(quiz?.questions, answers);
       await submitAttempt(attemptId, submitPayload);
-      navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
+      navigate(`/quiz/result/${attemptId}`, {
+        state: {
+          quizId,
+          returnToQuizPath,
+          sourceView: location.state?.sourceView,
+          sourceWorkspaceId: location.state?.sourceWorkspaceId,
+          sourcePhaseId: location.state?.sourcePhaseId,
+        },
+        replace: true,
+      });
     } catch (err) {
       console.error('Failed to submit:', err);
     }

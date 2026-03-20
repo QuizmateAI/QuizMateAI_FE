@@ -40,7 +40,7 @@ function RoadmapJourPanel({
       const firstPhaseId = nextRoadmap?.phases?.[0]?.phaseId ?? null;
       if (!selectedPhaseRef.current) {
         setSelectedPhaseId(firstPhaseId);
-        onSelectPhase?.(firstPhaseId);
+        onSelectPhase?.(firstPhaseId, { preserveActiveView: true });
       }
     } catch {
       setRoadmap(null);
@@ -141,13 +141,16 @@ function RoadmapJourPanel({
                   <div className="px-2 py-2 space-y-1">
                     {phases.map((phase, index) => {
                       const active = effectiveSelectedPhaseId === phase.phaseId;
+                      const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
+                      const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
+                      const isProcessingPhase = normalizedPhaseStatus === "PROCESSING";
                       return (
                         <button
                           key={phase.phaseId}
                           type="button"
                           onClick={() => {
                             setSelectedPhaseId(phase.phaseId);
-                            onSelectPhase?.(phase.phaseId);
+                            onSelectPhase?.(phase.phaseId, { preserveActiveView: false });
                           }}
                           className={`w-full rounded-lg px-3 py-2.5 text-left flex items-center gap-2 border-l-4 transition-all ${active
                             ? isDarkMode
@@ -157,7 +160,13 @@ function RoadmapJourPanel({
                               ? "border-l-transparent bg-transparent hover:bg-slate-800/30"
                               : "border-l-transparent bg-transparent hover:bg-slate-50"}`}
                         >
-                          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                          {isCompletedPhase ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+                          ) : isProcessingPhase ? (
+                            <Loader2 className="w-4 h-4 text-amber-500 shrink-0 animate-spin" />
+                          ) : (
+                            <div className={`w-4 h-4 shrink-0 rounded-full border-2 ${isDarkMode ? "border-slate-500" : "border-slate-300"}`} />
+                          )}
                           <span className={`text-sm truncate ${isDarkMode ? "text-slate-200" : "text-gray-900"} ${fontClass}`}>
                             {phase.title || `${t("workspace.roadmap.canvas.phase", "Phase")} ${index + 1}`}
                           </span>

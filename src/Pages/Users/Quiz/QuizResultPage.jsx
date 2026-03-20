@@ -73,16 +73,55 @@ export default function QuizResultPage() {
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [generatingKnowledge, setGeneratingKnowledge] = useState(false);
   const [knowledgeGenerationTriggered, setKnowledgeGenerationTriggered] = useState(false);
+  const [knowledgeGenerationHydrated, setKnowledgeGenerationHydrated] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
+  const autoKnowledgeTriggerAttemptedRef = useRef(false);
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
   const returnToQuizPath = location.state?.returnToQuizPath;
-  const fallbackQuizPath = quizDetails?.workspaceId && (quizId || result?.quizId)
-    ? `/workspace/${quizDetails.workspaceId}/quiz/${quizId || result.quizId}`
+  const sourceView = String(location.state?.sourceView || '').toLowerCase();
+  const sourceWorkspaceId = Number(location.state?.sourceWorkspaceId);
+  const normalizedWorkspaceId = Number(
+    quizRawDetails?.workspaceId
+    ?? quizRawDetails?.workspace?.workspaceId
+    ?? quizDetails?.workspaceId
+    ?? result?.workspaceId
+  );
+  const returnPathWorkspaceId = useMemo(() => {
+    if (!returnToQuizPath) return null;
+    const matched = returnToQuizPath.match(/\/workspace\/(\d+)/);
+    if (!matched) return null;
+    const parsed = Number(matched[1]);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [returnToQuizPath]);
+
+  const resolvedWorkspaceIdForBack = Number.isInteger(sourceWorkspaceId) && sourceWorkspaceId > 0
+    ? sourceWorkspaceId
+    : Number.isInteger(normalizedWorkspaceId) && normalizedWorkspaceId > 0
+    ? normalizedWorkspaceId
+    : returnPathWorkspaceId;
+
+  const normalizedQuizIdForBack = Number(
+    quizId
+    ?? result?.quizId
+    ?? quizRawDetails?.quizId
+    ?? quizDetails?.quizId
+  );
+  const hasQuizIdForBack = Number.isInteger(normalizedQuizIdForBack) && normalizedQuizIdForBack > 0;
+
+  const directQuizDetailBackPath = Number.isInteger(resolvedWorkspaceIdForBack) && resolvedWorkspaceIdForBack > 0 && hasQuizIdForBack
+    ? (sourceView === 'roadmap'
+      ? `/workspace/${resolvedWorkspaceIdForBack}/roadmap/quiz/${normalizedQuizIdForBack}`
+      : `/workspace/${resolvedWorkspaceIdForBack}/quiz/${normalizedQuizIdForBack}`)
     : null;
+
+  const canUseReturnPathAsQuizDetail = useMemo(() => {
+    if (!returnToQuizPath) return false;
+    return /\/workspace\/\d+\/(?:quiz(?:\/\d+)?|roadmap\/quiz\/\d+)(?:\?|$)/.test(returnToQuizPath);
+  }, [returnToQuizPath]);
 
   useEffect(() => {
     if (!attemptId) {
@@ -193,11 +232,14 @@ export default function QuizResultPage() {
   useEffect(() => {
     if (typeof window === 'undefined') {
       setKnowledgeGenerationTriggered(false);
+      setKnowledgeGenerationHydrated(true);
       return;
     }
 
     const triggered = window.localStorage.getItem(preLearningGenerateDedupeKey) === '1';
     setKnowledgeGenerationTriggered(triggered);
+    setKnowledgeGenerationHydrated(true);
+    autoKnowledgeTriggerAttemptedRef.current = false;
   }, [preLearningGenerateDedupeKey]);
   const fetchAssessment = useCallback(async () => {
     if (!attemptId) return;
@@ -259,20 +301,27 @@ export default function QuizResultPage() {
   }, [result, quizDetails]);
 
   const handleBack = useCallback(() => {
-    if (returnToQuizPath) {
+    if (directQuizDetailBackPath) {
+      navigate(directQuizDetailBackPath, { replace: true });
+      return;
+    }
+
+    if (canUseReturnPathAsQuizDetail && returnToQuizPath) {
       navigate(returnToQuizPath, { replace: true });
       return;
     }
-    if (fallbackQuizPath) {
-      navigate(fallbackQuizPath, { replace: true });
-      return;
-    }
+
     if (quizId || result?.quizId) {
       navigate('/home', { replace: true });
       return;
     }
     navigate('/');
-  }, [fallbackQuizPath, navigate, quizId, returnToQuizPath, result?.quizId]);
+  }, [
+    directQuizDetailBackPath,
+    navigate,
+    canUseReturnPathAsQuizDetail,
+    returnToQuizPath,
+  ]);
 
   const jumpToQuestion = useCallback((questionIndex) => {
     const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
@@ -355,13 +404,13 @@ export default function QuizResultPage() {
     }
   };
 
-  const canShowGenerateKnowledgeButton = preLearningGenerationContext.isPreLearningQuiz
+  const canTriggerKnowledgeAfterPreLearning = preLearningGenerationContext.isPreLearningQuiz
     && preLearningGenerationContext.isCompletedAttempt
     && preLearningGenerationContext.isValidRoadmapContext;
 
-  const handleGenerateKnowledgeAfterPreLearning = async () => {
+  const handleGenerateKnowledgeAfterPreLearning = useCallback(async () => {
     const { roadmapId, phaseId, workspaceId } = preLearningGenerationContext;
-    if (!canShowGenerateKnowledgeButton || generatingKnowledge || knowledgeGenerationTriggered) return;
+    if (!canTriggerKnowledgeAfterPreLearning || generatingKnowledge || knowledgeGenerationTriggered) return;
 
     setGeneratingKnowledge(true);
     try {
@@ -385,7 +434,32 @@ export default function QuizResultPage() {
     } finally {
       setGeneratingKnowledge(false);
     }
-  };
+  }, [
+    canTriggerKnowledgeAfterPreLearning,
+    generatingKnowledge,
+    knowledgeGenerationTriggered,
+    preLearningGenerateDedupeKey,
+    preLearningGenerationContext,
+    showError,
+    showSuccess,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (!knowledgeGenerationHydrated) return;
+    if (!canTriggerKnowledgeAfterPreLearning) return;
+    if (knowledgeGenerationTriggered || generatingKnowledge) return;
+    if (autoKnowledgeTriggerAttemptedRef.current) return;
+
+    autoKnowledgeTriggerAttemptedRef.current = true;
+    void handleGenerateKnowledgeAfterPreLearning();
+  }, [
+    canTriggerKnowledgeAfterPreLearning,
+    generatingKnowledge,
+    handleGenerateKnowledgeAfterPreLearning,
+    knowledgeGenerationHydrated,
+    knowledgeGenerationTriggered,
+  ]);
 
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
@@ -527,7 +601,7 @@ export default function QuizResultPage() {
 
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {canShowGenerateKnowledgeButton && (
+              {canTriggerKnowledgeAfterPreLearning && (
                 <Button
                   onClick={handleGenerateKnowledgeAfterPreLearning}
                   disabled={generatingKnowledge || knowledgeGenerationTriggered}
@@ -536,7 +610,7 @@ export default function QuizResultPage() {
                   {generatingKnowledge ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
                   {knowledgeGenerationTriggered
                     ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
-                    : t('workspace.quiz.result.generateKnowledge', 'Tạo knowledge')}
+                    : t('workspace.quiz.result.generatingKnowledge', 'Đang tạo knowledge...')}
                 </Button>
               )}
               <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2" disabled={reviewQuestions.length === 0}>

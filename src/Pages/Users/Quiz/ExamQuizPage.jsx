@@ -216,7 +216,16 @@ export default function ExamQuizPage() {
         // Add small delay to ensure backend finishes processing before navigating
         // This prevents white screen bug when navigating too quickly
         await new Promise(resolve => setTimeout(resolve, 500));
-        navigate(`/quiz/result/${attemptId}`, { state: { quizId, returnToQuizPath }, replace: true });
+        navigate(`/quiz/result/${attemptId}`, {
+          state: {
+            quizId,
+            returnToQuizPath,
+            sourceView: location.state?.sourceView,
+            sourceWorkspaceId: location.state?.sourceWorkspaceId,
+            sourcePhaseId: location.state?.sourcePhaseId,
+          },
+          replace: true,
+        });
         return true;
       } catch (err) {
         console.error('Failed to submit:', err);

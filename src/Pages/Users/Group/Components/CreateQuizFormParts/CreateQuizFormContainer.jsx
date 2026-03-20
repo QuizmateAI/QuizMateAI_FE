@@ -16,6 +16,7 @@ import { buildAiQuizPayload, validateAiDistributions } from "./aiConfigUtils";
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
 const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "REVIEW"];
+const HIDDEN_AI_QUESTION_TYPES = ["IMAGED_BASED"];
 const BLOOM_LEVELS = [
   { id: 1, key: "remember" },
   { id: 2, key: "understand" },
@@ -444,7 +445,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             getDifficultyDefinitions(),
             getBloomSkills()
           ]);
-          const qTypeData = resolveList(qTypeRes);
+          const qTypeData = resolveList(qTypeRes).filter((item) => {
+            const normalizedType = String(item?.questionType || "").toUpperCase();
+            return !HIDDEN_AI_QUESTION_TYPES.includes(normalizedType);
+          });
           const diffData = resolveList(diffRes);
           const bloomData = resolveList(bloomRes);
 
@@ -461,7 +465,11 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           if (qTypeData.length > 0) {
              // Select all by default or first few? Let's select Single Choice by default
              const singleChoice = qTypeData.find(q => q.questionType === "SINGLE_CHOICE");
-             if (singleChoice) setSelectedQTypes([{ questionTypeId: singleChoice.questionTypeId, ratio: 100 }]);
+             if (singleChoice) {
+              setSelectedQTypes([{ questionTypeId: singleChoice.questionTypeId, ratio: 100 }]);
+             } else {
+              setSelectedQTypes([{ questionTypeId: qTypeData[0].questionTypeId, ratio: 100 }]);
+             }
           }
 
           if (bloomData.length > 0) {
@@ -555,6 +563,20 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
     setSelectedQTypes((prev) => redistributeConfigValues(prev, questionTypeUnit));
   }, [questionTypeUnit, aiTotalQuestions]);
+
+  useEffect(() => {
+    if (!Array.isArray(qTypes) || qTypes.length === 0) {
+      setSelectedQTypes([]);
+      return;
+    }
+
+    const availableTypeIds = new Set(qTypes.map((item) => Number(item?.questionTypeId)).filter((id) => Number.isInteger(id) && id > 0));
+    setSelectedQTypes((prev) => {
+      const filtered = prev.filter((item) => availableTypeIds.has(Number(item?.questionTypeId)));
+      if (filtered.length === prev.length) return prev;
+      return redistributeConfigValues(filtered, questionTypeUnit);
+    });
+  }, [qTypes, questionTypeUnit]);
 
   useEffect(() => {
     if (prevBloomUnitRef.current !== bloomUnit) {
