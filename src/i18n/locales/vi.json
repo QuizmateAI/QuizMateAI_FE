@@ -1390,7 +1390,7 @@
         "skillDistribution": "Phân bổ kỹ năng",
         "quizStyle": "Kiểu quiz",
         "additionalPrompt": "Yêu cầu bổ sung",
-        "customPromptLabel": "vui lòng nhập yêu cầu của bạn",
+        "customPromptLabel": "Vui lòng nhập yêu cầu của bạn",
         "promptPlaceholder": "Nhập yêu cầu bổ sung cho AI...",
         "byCount": "Theo số lượng",
         "byPercent": "Theo phần trăm",
@@ -1405,6 +1405,14 @@
         "questionTypeUnitByCount": "Đơn vị loại câu hỏi theo số lượng",
         "bloomUnitByCount": "Đơn vị bloom skill theo số lượng",
         "questionTypes": "Loại câu hỏi",
+        "questionTypeLabels": {
+          "SINGLE_CHOICE": "Một đáp án",
+          "MULTIPLE_CHOICE": "Nhiều đáp án",
+          "SHORT_ANSWER": "Trả lời ngắn",
+          "TRUE_FALSE": "Đúng/Sai",
+          "FILL_IN_BLANK": "Điền vào chỗ trống",
+          "IMAGED_BASED": "Dựa trên hình ảnh"
+        },
         "bloomSkills": "Kỹ năng Bloom",
         "countUnit": "câu",
         "selectQuestionType": "Chọn loại câu hỏi",

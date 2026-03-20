@@ -354,6 +354,14 @@ function RoadmapCanvasView2({
         {activePhase ? [activePhase].map((phase) => {
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
+          const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
+          const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
+          const isProcessingPhase = normalizedPhaseStatus === "PROCESSING";
+          const phaseStatusLabel = isCompletedPhase
+            ? t("workspace.quiz.statusLabels.COMPLETED", "Completed")
+            : isProcessingPhase
+            ? t("workspace.quiz.statusLabels.PROCESSING", "Processing")
+            : t("workspace.quiz.statusLabels.ACTIVE", "Active");
           const isGeneratingPhaseContent = generatingKnowledgePhaseIds.includes(Number(phase.phaseId));
           const isGeneratingKnowledgeQuiz = generatingKnowledgeQuizPhaseIds.includes(Number(phase.phaseId));
           const isGeneratingKnowledge = isGeneratingPhaseContent || isGeneratingKnowledgeQuiz;
@@ -407,9 +415,21 @@ function RoadmapCanvasView2({
                   <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{phase.description}</p>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${isDarkMode ? "bg-emerald-950/60 text-emerald-300" : "bg-green-100 text-green-800"}`}>
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    {t("workspace.quiz.statusLabels.COMPLETED", "Completed")}
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${
+                    isCompletedPhase
+                      ? (isDarkMode ? "bg-emerald-950/60 text-emerald-300" : "bg-green-100 text-green-800")
+                      : isProcessingPhase
+                      ? (isDarkMode ? "bg-amber-950/60 text-amber-300" : "bg-amber-100 text-amber-800")
+                      : (isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700")
+                  }`}>
+                    {isCompletedPhase ? (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    ) : isProcessingPhase ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <div className="w-2 h-2 rounded-full bg-current" />
+                    )}
+                    {phaseStatusLabel}
                   </span>
                   <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : "rotate-0"} ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
                 </div>
