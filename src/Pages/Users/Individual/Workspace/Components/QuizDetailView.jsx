@@ -586,7 +586,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                 {history.map((attempt) => (
                   <div key={attempt.attemptId} className={`rounded-xl p-4 border transition-colors cursor-pointer ${
                     isDarkMode ? "bg-slate-800/50 border-slate-800 hover:bg-slate-800/80" : "bg-white border-slate-200 hover:bg-slate-50"
-                  }`} onClick={() => navigate(`/quiz/result/${attempt.attemptId}`, { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: location.pathname } })}>
+                  }`} onClick={() => navigate(`/quiz/result/${attempt.attemptId}`, { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}` } })}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
@@ -635,7 +635,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setConfirmDialog({ open: false, mode: null })}>{t("common.cancel", "Cancel")}</Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${quiz?.quizId}`, { state: { returnToQuizPath: location.pathname } }); setConfirmDialog({ open: false, mode: null }); }}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${quiz?.quizId}`, { state: { returnToQuizPath: `${location.pathname}${location.search || ""}` } }); setConfirmDialog({ open: false, mode: null }); }}>
               {t("common.confirm", "Confirm")}
             </Button>
           </DialogFooter>

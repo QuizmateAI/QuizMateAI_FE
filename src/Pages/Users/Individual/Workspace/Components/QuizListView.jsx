@@ -8,6 +8,12 @@ import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 
+function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
+  const match = pathname.match(/^\/workspace\/(\d+)/);
+  if (!match || !phaseId) return null;
+  return `/workspace/${match[1]}/roadmap?phaseId=${phaseId}`;
+}
+
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
@@ -97,7 +103,20 @@ function getDurationInMinutes(quiz) {
   return rawDuration;
 }
 
-function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WORKSPACE", contextId }) {
+function QuizListView({
+  isDarkMode,
+  onCreateQuiz,
+  onViewQuiz,
+  contextType = "WORKSPACE",
+  contextId,
+  intentFilter = null,
+  embedded = false,
+  hideCreateButton = false,
+  returnToPath = null,
+  refreshToken = 0,
+  disableCreate = false,
+  title = "Quiz",
+}) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
   const location = useLocation();
@@ -109,6 +128,14 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, quizId: null, mode: null });
+
+  const resolvedReturnToPath = useMemo(() => {
+    if (returnToPath) return returnToPath;
+    if (contextType === "PHASE") {
+      return resolveWorkspaceRoadmapReturnPath(location.pathname, contextId);
+    }
+    return `${location.pathname}${location.search || ""}`;
+  }, [contextId, contextType, location.pathname, location.search, returnToPath]);
 
   // Lấy danh sách quiz từ API theo context hiện tại (workspace/roadmap/phase/knowledge)
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
@@ -122,12 +149,19 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
       const res = await getQuizzesByScope(contextType, scopeId);
       let incoming = res.data || [];
       
-      // Studio filter: exclude roadmap quizzes when in WORKSPACE context
+      // Studio filter: exclude roadmap-related quizzes when in WORKSPACE context
       if (contextType === 'WORKSPACE') {
         incoming = incoming.filter(quiz => {
-          const qContext = quiz.contextType?.toUpperCase();
-          return !['ROADMAP', 'PHASE', 'KNOWLEDGE'].includes(qContext);
+          const qContext = String(quiz.contextType || '').toUpperCase();
+          if (['ROADMAP', 'PHASE', 'KNOWLEDGE'].includes(qContext)) return false;
+          if (Number(quiz.roadmapId) > 0 || Number(quiz.phaseId) > 0 || Number(quiz.knowledgeId) > 0) return false;
+          return true;
         });
+      }
+
+      if (Array.isArray(intentFilter) && intentFilter.length > 0) {
+        const normalizedIntents = intentFilter.map((intent) => String(intent).toUpperCase());
+        incoming = incoming.filter((quiz) => normalizedIntents.includes(String(quiz?.quizIntent || "").toUpperCase()));
       }
       
       setQuizzes((prev) => (hasQuizListChanged(prev, incoming) ? incoming : prev));
@@ -138,12 +172,18 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [contextId, contextType]);
+  }, [contextId, contextType, intentFilter]);
 
   // Gọi API khi component mount hoặc context thay đổi
   useEffect(() => {
     fetchQuizzes({ scopeId: contextId });
   }, [contextId, fetchQuizzes]);
+
+  // Refetch khi parent báo có cập nhật realtime (websocket/polling hoàn tất).
+  useEffect(() => {
+    if (!contextId) return;
+    fetchQuizzes({ silent: true, scopeId: contextId });
+  }, [contextId, fetchQuizzes, refreshToken]);
 
   // Chỉ polling khi còn quiz PROCESSING, và polling silent để tránh lag cả màn.
   useEffect(() => {
@@ -186,12 +226,13 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
   }, [quizzes, searchQuery, filterStatus]);
 
   return (
-    <div className={`h-full flex flex-col ${fontClass}`}>
+    <div className={`${embedded ? "" : "h-full flex flex-col"} ${fontClass}`}>
       {/* Header */}
+      {!embedded ? (
       <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className="flex items-center gap-2">
           <BadgeCheck className="w-5 h-5 text-blue-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>Quiz</p>
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{title}</p>
           <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
             {quizzes.length}
           </span>
@@ -201,13 +242,17 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
             className={`rounded-full h-9 w-9 p-0 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          <Button onClick={onCreateQuiz} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
+          {!hideCreateButton ? (
+          <Button disabled={disableCreate} onClick={onCreateQuiz} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
             <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
           </Button>
+          ) : null}
         </div>
       </div>
+      ) : null}
 
       {/* Tìm kiếm + Lọc theo trạng thái */}
+      {!embedded ? (
       <div className="px-4 py-3 flex flex-col gap-3">
         <div className="relative max-w-sm">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
@@ -227,9 +272,10 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
           ))}
         </div>
       </div>
+      ) : null}
 
       {/* Danh sách quiz */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className={`${embedded ? "px-0" : "flex-1 overflow-y-auto px-4 pb-4"}`}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
@@ -241,13 +287,16 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
               {t("workspace.roadmap.noQuizYet")}
             </p>
+            {!hideCreateButton ? (
             <Button
+              disabled={disableCreate}
               onClick={onCreateQuiz}
-              className="mt-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
+              className="mt-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]"
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm">{t("workspace.studio.actions.createQuiz")}</span>
             </Button>
+            ) : null}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
@@ -394,7 +443,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, onViewQuiz, contextType = "WOR
           {confirmDialog.mode ? (
             <DialogFooter className="gap-2 sm:gap-0">
               <Button variant="outline" onClick={() => setConfirmDialog({ open: false, quizId: null, mode: null })}>{t("common.cancel", "Cancel")}</Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`, { state: { returnToQuizPath: location.pathname } }); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { navigate(`/quiz/${confirmDialog.mode}/${confirmDialog.quizId}`, { state: { returnToQuizPath: resolvedReturnToPath } }); setConfirmDialog({ open: false, quizId: null, mode: null }); }}>
                 {t("common.confirm", "Confirm")}
               </Button>
             </DialogFooter>
