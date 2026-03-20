@@ -62,6 +62,50 @@ function WorkspaceProfileStepThree({
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
   const showRoadmap = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
 
+  const getAdaptationOptionClasses = (value, active) => {
+    if (value === 'FLEXIBLE') {
+      return active
+        ? isDarkMode
+          ? {
+            container: 'border-emerald-300/60 bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_18px_45px_-26px_rgba(16,185,129,0.55)]',
+            description: 'text-white/85',
+          }
+          : {
+            container: 'border-emerald-400/50 bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_18px_45px_-26px_rgba(16,185,129,0.45)]',
+            description: 'text-white/85',
+          }
+        : isDarkMode
+          ? {
+            container: 'border-emerald-400/20 bg-emerald-500/10 text-white hover:bg-emerald-500/15',
+            description: 'text-emerald-100/75',
+          }
+          : {
+            container: 'border-emerald-200 bg-emerald-50 text-slate-900 hover:bg-emerald-100/80',
+            description: 'text-emerald-800/75',
+          };
+    }
+
+    return active
+      ? isDarkMode
+        ? {
+          container: 'border-sky-300/60 bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_18px_45px_-26px_rgba(59,130,246,0.55)]',
+          description: 'text-white/85',
+        }
+        : {
+          container: 'border-sky-400/50 bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-[0_18px_45px_-26px_rgba(59,130,246,0.45)]',
+          description: 'text-white/85',
+        }
+      : isDarkMode
+        ? {
+          container: 'border-sky-400/20 bg-sky-500/10 text-white hover:bg-sky-500/15',
+          description: 'text-sky-100/75',
+        }
+        : {
+          container: 'border-sky-200 bg-sky-50 text-slate-900 hover:bg-sky-100/80',
+          description: 'text-sky-800/75',
+        };
+  };
+
   return (
     <div className="space-y-6">
       <section
@@ -118,11 +162,12 @@ function WorkspaceProfileStepThree({
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4">
+          <div className="mt-5 grid gap-4">
             <FieldBlock label={t('workspace.profileConfig.fields.adaptationMode')} error={errors.adaptationMode} required>
               <div className="grid gap-3 md:grid-cols-2">
                 {ADAPTATION_MODE_OPTIONS.map((item) => {
                   const active = values.adaptationMode === item.value;
+                  const optionClass = getAdaptationOptionClasses(item.value, active);
 
                   return (
                     <button
@@ -132,18 +177,14 @@ function WorkspaceProfileStepThree({
                       onClick={() => onFieldChange('adaptationMode', item.value)}
                       className={cn(
                         'rounded-[24px] border p-4 text-left transition-all',
-                        active
-                          ? `border-transparent bg-gradient-to-br ${item.accent} text-white`
-                          : isDarkMode
-                            ? 'border-white/10 bg-white/[0.03]'
-                            : 'border-slate-200 bg-slate-50'
+                        optionClass.container
                       )}
                     >
                       <div className="flex items-start gap-3">
                         <Gauge className="mt-0.5 h-4 w-4 shrink-0" />
                         <div>
                           <p className="text-sm font-semibold">{t(`workspace.profileConfig.adaptationMode.${item.value}.title`)}</p>
-                          <p className={cn('mt-1 text-xs leading-5', active ? 'text-white/80' : mutedClass)}>
+                          <p className={cn('mt-1 text-xs leading-5', optionClass.description)}>
                             {t(`workspace.profileConfig.adaptationMode.${item.value}.description`)}
                           </p>
                         </div>

@@ -97,7 +97,7 @@ function AIQuizTab({
             )}
           </div>
           <div>
-            <label className={labelCls}>{t("workspace.quiz.aiConfig.customPromptLabel", "vui lòng nhập yêu cầu của bạn")}</label>
+            <label className={labelCls}>{t("workspace.quiz.aiConfig.customPromptLabel", "Vui lòng nhập yêu cầu của bạn")}</label>
             <textarea 
               className={`${inputCls} min-h-[60px] resize-none`}
               placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")} 
