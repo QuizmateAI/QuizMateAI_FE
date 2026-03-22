@@ -1400,6 +1400,7 @@
         "selectedMaterialsCount": "Đang sử dụng {{count}} tài liệu được chọn từ Sources panel.",
         "noSelectedMaterials": "Chưa chọn tài liệu trong Sources panel. Bạn vẫn có thể tạo bằng Prompt.",
         "difficultyLevel": "Mức độ khó",
+        "difficultyPreviewTitle": "Phân bổ độ khó",
         "customSelfConfig": "Tùy chỉnh (Tự cấu hình)",
         "difficultyUnitByCount": "Đơn vị độ khó theo số lượng",
         "questionTypeUnitByCount": "Đơn vị loại câu hỏi theo số lượng",

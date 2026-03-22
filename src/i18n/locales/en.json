@@ -1403,6 +1403,7 @@
         "selectedMaterialsCount": "Using {{count}} selected material(s) from Sources panel.",
         "noSelectedMaterials": "No material selected in Sources panel. You can still generate by using Prompt only.",
         "difficultyLevel": "Difficulty Level",
+        "difficultyPreviewTitle": "Difficulty distribution",
         "customSelfConfig": "Custom (Self-config)",
         "difficultyUnitByCount": "Difficulty unit by count",
         "questionTypeUnitByCount": "Question type unit by count",
