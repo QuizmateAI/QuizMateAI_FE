@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   AlertTriangle,
   ClipboardList,
+  CheckCircle2,
   FilePenLine,
   GraduationCap,
   Loader2,
@@ -11,9 +12,40 @@ import {
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  getBeginnerScopeLabel,
+  isAbsoluteBeginnerLevel,
+  isJapaneseLearningScope,
+} from './profileWizardBeginnerUtils';
 
 function normalizeText(value) {
   return (value ?? '').toString().trim();
+}
+
+function mergeUniqueSuggestions(...lists) {
+  const merged = [];
+  const seen = new Set();
+
+  lists.flat().forEach((item) => {
+    const value = normalizeText(item);
+    if (!value) return;
+
+    const key = normalizeForCompare(value);
+    if (seen.has(key)) return;
+
+    seen.add(key);
+    merged.push(value);
+  });
+
+  return merged;
+}
+
+/**
+ * Normalize text for comparison: lowercase, trim, collapse whitespace.
+ * Used to match exam names from different AI calls that may differ in casing/spacing.
+ */
+function normalizeForCompare(value) {
+  return (value ?? '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 function buildTemplateNotesFromStructure(structure) {
@@ -40,6 +72,44 @@ function buildTemplateNotesFromStructure(structure) {
   });
 
   return lines.join('\n');
+}
+
+function buildPopularTemplateKey(template) {
+  const templateId = normalizeText(template?.templateId);
+  const templateName = normalizeText(template?.templateName) || normalizeText(template?.examName) || 'Template';
+  const examName = normalizeText(template?.examName);
+  const duration = Number(template?.structure?.totalDurationMinutes) || 0;
+  const recommendedCount = Number(template?.structure?.recommendedTotalQuestions) || 0;
+
+  return [templateId || templateName, examName, duration, recommendedCount].join('::');
+}
+
+function buildPopularTemplateMeta(template) {
+  if (!template) return null;
+
+  return {
+    key: buildPopularTemplateKey(template),
+    templateName: normalizeText(template?.templateName) || normalizeText(template?.examName) || 'Template',
+    examName: normalizeText(template?.examName) || '',
+  };
+}
+
+function matchesPopularTemplateSelection(template, values) {
+  if (!template || !values) return false;
+
+  const examNameMatches = normalizeForCompare(template?.examName) === normalizeForCompare(values.mockExamName);
+  if (!examNameMatches) return false;
+
+  const duration = Number(template?.structure?.totalDurationMinutes) || null;
+  const recommendedCount = Number(template?.structure?.recommendedTotalQuestions) || null;
+  const notes = buildTemplateNotesFromStructure(template?.structure);
+
+  const durationAndCountMatch = Boolean(duration && recommendedCount)
+    && Number(values.templateDurationMinutes) === duration
+    && Number(values.templateQuestionCount) === recommendedCount;
+  const notesMatch = Boolean(notes) && normalizeText(values.templateNotes) === notes;
+
+  return durationAndCountMatch || notesMatch;
 }
 
 function FieldBlock({
@@ -165,6 +235,31 @@ function WorkspaceProfileStepTwo({
     return translated === key ? fallback : translated;
   };
 
+  const purposeTitles = {
+    STUDY_NEW: translateStepTwo('workspace.profileConfig.purpose.STUDY_NEW.title', 'Học mới'),
+    REVIEW: translateStepTwo('workspace.profileConfig.purpose.REVIEW.title', 'Ôn tập'),
+    MOCK_TEST: translateStepTwo('workspace.profileConfig.purpose.MOCK_TEST.title', 'Mock test'),
+  };
+
+  const purposeModeLabels = {
+    STUDY_NEW: translateStepTwo('workspace.profileConfig.stepTwo.purposeModeLabel.STUDY_NEW', 'học mới'),
+    REVIEW: translateStepTwo('workspace.profileConfig.stepTwo.purposeModeLabel.REVIEW', 'ôn tập'),
+    MOCK_TEST: translateStepTwo('workspace.profileConfig.stepTwo.purposeModeLabel.MOCK_TEST', 'mock test'),
+  };
+
+  const humanizeConsistencyText = (value) => {
+    let text = normalizeText(value);
+    if (!text) return '';
+
+    Object.entries(purposeModeLabels).forEach(([purposeKey, purposeLabel]) => {
+      text = text.replace(new RegExp(`Chế độ học\\s+${purposeKey}\\b`, 'g'), `Chế độ ${purposeLabel}`);
+      text = text.replace(new RegExp(`Che do hoc\\s+${purposeKey}\\b`, 'g'), `Che do ${purposeLabel}`);
+      text = text.replace(new RegExp(`\\b${purposeKey}\\b`, 'g'), purposeTitles[purposeKey]);
+    });
+
+    return text;
+  };
+
   const learningGoalLabel = t(`workspace.profileConfig.fields.learningGoalByPurpose.${values.workspacePurpose}`);
   const learningGoalPlaceholder = t(`workspace.profileConfig.placeholders.learningGoalByPurpose.${values.workspacePurpose}`);
 
@@ -181,12 +276,87 @@ function WorkspaceProfileStepTwo({
 
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
 
-  const requireStrengthFields =
-      values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST';
-
   const hasCurrentLevel = values.currentLevel.trim().length > 0;
+  const isBeginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
+  const beginnerScopeLabel = getBeginnerScopeLabel(
+    values,
+    translateStepTwo('workspace.profileConfig.stepTwo.beginnerFallbackScope', 'kiến thức này')
+  );
+  const isJapaneseBeginnerScope = isJapaneseLearningScope(values.knowledgeInput, values.inferredDomain);
+  const requireStrengthFields =
+      (values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !isBeginnerMode;
   const hasStrengthWeaknessContext =
       values.strongAreas.trim().length > 0 && values.weakAreas.trim().length > 0;
+  const beginnerStrongSuggestions = isBeginnerMode
+    ? [
+      translateStepTwo(
+        'workspace.profileConfig.stepTwo.beginnerStrongSuggestion1',
+        `Hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}.`,
+        { scope: beginnerScopeLabel }
+      ),
+    ].filter(Boolean)
+    : [];
+  const beginnerWeakSuggestions = isBeginnerMode
+    ? [
+      translateStepTwo(
+        'workspace.profileConfig.stepTwo.beginnerWeakSuggestion1',
+        `Hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}.`,
+        { scope: beginnerScopeLabel }
+      ),
+    ].filter(Boolean)
+    : [];
+  const beginnerLearningGoalSuggestions = isBeginnerMode
+    ? (
+      isJapaneseBeginnerScope
+        ? [
+          translateStepTwo(
+            'workspace.profileConfig.stepTwo.beginnerLearningGoalSuggestionJapanese1',
+            'Nắm hiragana, katakana và từ vựng cơ bản trước khi lên mục tiêu cao hơn.'
+          ),
+          translateStepTwo(
+            'workspace.profileConfig.stepTwo.beginnerLearningGoalSuggestionJapanese2',
+            'Làm quen mẫu câu và phản xạ tiếng Nhật sơ cấp trong những tuần đầu.'
+          ),
+        ]
+        : [
+          translateStepTwo(
+            'workspace.profileConfig.stepTwo.beginnerLearningGoalSuggestion1',
+            `Làm quen nền tảng cơ bản của ${beginnerScopeLabel} trước khi tăng độ khó.`,
+            { scope: beginnerScopeLabel }
+          ),
+          translateStepTwo(
+            'workspace.profileConfig.stepTwo.beginnerLearningGoalSuggestion2',
+            `Xây lộ trình nhập môn vững cho ${beginnerScopeLabel} trong giai đoạn đầu.`,
+            { scope: beginnerScopeLabel }
+          ),
+        ]
+    ).filter(Boolean)
+    : [];
+  const effectiveStrongSuggestions = isBeginnerMode
+    ? mergeUniqueSuggestions(beginnerStrongSuggestions, fieldSuggestions?.strongAreaSuggestions)
+    : fieldSuggestions?.strongAreaSuggestions;
+  const effectiveWeakSuggestions = isBeginnerMode
+    ? mergeUniqueSuggestions(beginnerWeakSuggestions, fieldSuggestions?.weakAreaSuggestions)
+    : fieldSuggestions?.weakAreaSuggestions;
+  const effectiveLearningGoalSuggestions = hasStrengthWeaknessContext
+    ? fieldSuggestions?.learningGoalSuggestions
+    : isBeginnerMode
+      ? beginnerLearningGoalSuggestions
+      : [];
+  const strongAreasPlaceholder = isBeginnerMode
+    ? translateStepTwo(
+      'workspace.profileConfig.placeholders.beginnerStrongAreas',
+      `VD: hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}...`,
+      { scope: beginnerScopeLabel }
+    )
+    : t('workspace.profileConfig.placeholders.strongAreas');
+  const weakAreasPlaceholder = isBeginnerMode
+    ? translateStepTwo(
+      'workspace.profileConfig.placeholders.beginnerWeakAreas',
+      `VD: hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}...`,
+      { scope: beginnerScopeLabel }
+    )
+    : t('workspace.profileConfig.placeholders.weakAreas');
 
   const sugLabel = fieldSuggestionStatus === 'loading'
       ? 'Quizmate AI đang gợi ý...'
@@ -198,6 +368,7 @@ function WorkspaceProfileStepTwo({
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
   const [examConfigTab, setExamConfigTab] = useState('popular'); // popular | custom
   const [selectedPopularExamName, setSelectedPopularExamName] = useState('');
+  const [selectedPopularTemplateOverride, setSelectedPopularTemplateOverride] = useState(null);
   const hasTemplatePreview = templateStatus === 'success' && Boolean(templatePreview);
   const examNameSuggestions = Array.isArray(fieldSuggestions?.examNameSuggestions) ? fieldSuggestions.examNameSuggestions.filter(Boolean) : [];
   const normalizedExamTemplates = Array.isArray(examTemplateSuggestions) ? examTemplateSuggestions.filter(Boolean) : [];
@@ -205,23 +376,30 @@ function WorkspaceProfileStepTwo({
     ? examNameSuggestions
     : Array.from(new Set(normalizedExamTemplates.map((item) => normalizeText(item?.examName)).filter(Boolean)));
   const effectiveSelectedPopularExam = selectedPopularExamName || availablePopularExamNames[0] || '';
-  const filteredPopularTemplates = normalizedExamTemplates.filter((tpl) => normalizeText(tpl?.examName) === normalizeText(effectiveSelectedPopularExam));
+  const filteredPopularTemplates = normalizedExamTemplates.filter((tpl) => normalizeForCompare(tpl?.examName) === normalizeForCompare(effectiveSelectedPopularExam));
+  const inferredSelectedPopularTemplate = normalizedExamTemplates.find((tpl) => matchesPopularTemplateSelection(tpl, values)) || null;
+  const activeSelectedPopularTemplateOverride = selectedPopularTemplateOverride?.key
+    && normalizedExamTemplates.some((tpl) => buildPopularTemplateKey(tpl) === selectedPopularTemplateOverride.key)
+    ? selectedPopularTemplateOverride
+    : null;
+  const selectedPopularTemplate = activeSelectedPopularTemplateOverride || buildPopularTemplateMeta(inferredSelectedPopularTemplate);
 
-  const aiOverallMessage = normalizeText(consistencyResult?.message || '');
+  const aiOverallMessage = humanizeConsistencyText(consistencyResult?.message || '');
+  const aiAlignmentHighlights = normalizeStringList(consistencyResult?.alignmentHighlights).map(humanizeConsistencyText);
   const aiOverallIssues = normalizeStringList(
     consistencyResult?.issues
     || consistencyResult?.issueList
     || consistencyResult?.warnings
-  );
+  ).map(humanizeConsistencyText);
   const aiOverallRecommendations = normalizeStringList(
     consistencyResult?.recommendations
     || consistencyResult?.recommendationList
     || consistencyResult?.suggestions
-  );
+  ).map(humanizeConsistencyText);
   const aiQuizConstraintWarnings = normalizeStringList(
     consistencyResult?.quizConstraintWarnings
     || consistencyResult?.quizConstraints
-  );
+  ).map(humanizeConsistencyText);
 
   return (
       <div className="space-y-6">
@@ -315,6 +493,23 @@ function WorkspaceProfileStepTwo({
                             'workspace.profileConfig.stepTwo.waitForCurrentLevelDescription',
                             'Sau khi bạn mô tả trình độ hiện tại, Quizmate AI sẽ gợi ý điểm mạnh và điểm yếu sát hơn với kiến thức đã chọn.'
                         )}
+                      />
+                  </div>
+              ) : null}
+
+              {hasCurrentLevel && isBeginnerMode ? (
+                  <div className="mt-4">
+                    <GuidanceNote
+                        isDarkMode={isDarkMode}
+                        title={translateStepTwo(
+                            'workspace.profileConfig.stepTwo.beginnerContextTitle',
+                            'Bạn đang ở giai đoạn mới bắt đầu'
+                        )}
+                        description={translateStepTwo(
+                            'workspace.profileConfig.stepTwo.beginnerContextDescription',
+                            `Ở giai đoạn này bạn chưa cần có điểm mạnh hoặc điểm yếu rõ ràng trong ${beginnerScopeLabel}. Bạn có thể ghi ngắn gọn là đang bắt đầu từ nền tảng, sau đó bổ sung dần khi đã học được một thời gian.`,
+                            { scope: beginnerScopeLabel }
+                        )}
                     />
                   </div>
               ) : null}
@@ -327,18 +522,18 @@ function WorkspaceProfileStepTwo({
                 >
                 <textarea
                     rows={3}
-                    value={values.strongAreas}
-                    disabled={disabled}
-                    onChange={(event) => onFieldChange('strongAreas', event.target.value)}
-                    placeholder={t('workspace.profileConfig.placeholders.strongAreas')}
-                    className={inputClass}
-                />
+                     value={values.strongAreas}
+                     disabled={disabled}
+                     onChange={(event) => onFieldChange('strongAreas', event.target.value)}
+                    placeholder={strongAreasPlaceholder}
+                     className={inputClass}
+                 />
                   {hasCurrentLevel ? (
-                      <SuggestionChips
-                          suggestions={fieldSuggestions?.strongAreaSuggestions}
-                          isDarkMode={isDarkMode}
-                          onSelect={(val) => onApplySuggestion?.('strongAreas', val)}
-                          label={sugLabel}
+                       <SuggestionChips
+                           suggestions={effectiveStrongSuggestions}
+                           isDarkMode={isDarkMode}
+                           onSelect={(val) => onApplySuggestion?.('strongAreas', val)}
+                           label={sugLabel}
                       />
                   ) : null}
                 </FieldBlock>
@@ -350,18 +545,18 @@ function WorkspaceProfileStepTwo({
                 >
                 <textarea
                     rows={3}
-                    value={values.weakAreas}
-                    disabled={disabled}
-                    onChange={(event) => onFieldChange('weakAreas', event.target.value)}
-                    placeholder={t('workspace.profileConfig.placeholders.weakAreas')}
-                    className={inputClass}
-                />
+                     value={values.weakAreas}
+                     disabled={disabled}
+                     onChange={(event) => onFieldChange('weakAreas', event.target.value)}
+                    placeholder={weakAreasPlaceholder}
+                     className={inputClass}
+                 />
                   {hasCurrentLevel ? (
-                      <SuggestionChips
-                          suggestions={fieldSuggestions?.weakAreaSuggestions}
-                          isDarkMode={isDarkMode}
-                          onSelect={(val) => onApplySuggestion?.('weakAreas', val)}
-                          label={sugLabel}
+                       <SuggestionChips
+                           suggestions={effectiveWeakSuggestions}
+                           isDarkMode={isDarkMode}
+                           onSelect={(val) => onApplySuggestion?.('weakAreas', val)}
+                           label={sugLabel}
                       />
                   ) : null}
                 </FieldBlock>
@@ -380,12 +575,21 @@ function WorkspaceProfileStepTwo({
                       <GuidanceNote
                           isDarkMode={isDarkMode}
                           title={translateStepTwo(
-                              'workspace.profileConfig.stepTwo.waitForGoalTitle',
-                              'Bổ sung điểm mạnh và điểm yếu để Quizmate AI gợi ý mục tiêu'
+                              isBeginnerMode
+                                ? 'workspace.profileConfig.stepTwo.beginnerWaitForGoalTitle'
+                                : 'workspace.profileConfig.stepTwo.waitForGoalTitle',
+                              isBeginnerMode
+                                ? 'Bạn vẫn có thể đặt mục tiêu học tập ngay từ đầu'
+                                : 'Bổ sung điểm mạnh và điểm yếu để Quizmate AI gợi ý mục tiêu'
                           )}
                           description={translateStepTwo(
-                              'workspace.profileConfig.stepTwo.waitForGoalDescription',
-                              'Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, Quizmate AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.'
+                              isBeginnerMode
+                                ? 'workspace.profileConfig.stepTwo.beginnerWaitForGoalDescription'
+                                : 'workspace.profileConfig.stepTwo.waitForGoalDescription',
+                              isBeginnerMode
+                                ? `Nếu chưa có điểm mạnh hoặc điểm yếu rõ ràng trong ${beginnerScopeLabel}, hãy mô tả ngắn gọn là bạn đang xây nền tảng cơ bản. Quizmate AI vẫn có thể gợi ý mục tiêu để bạn bắt đầu đúng hướng.`
+                                : 'Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, Quizmate AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.',
+                              { scope: beginnerScopeLabel }
                           )}
                       />
                     </div>
@@ -398,10 +602,10 @@ function WorkspaceProfileStepTwo({
                     onChange={(event) => onFieldChange('learningGoal', event.target.value)}
                     placeholder={learningGoalPlaceholder}
                     className={inputClass}
-                />
-                {hasStrengthWeaknessContext ? (
-                    <SuggestionChips
-                        suggestions={fieldSuggestions?.learningGoalSuggestions}
+                 />
+                {(hasStrengthWeaknessContext || isBeginnerMode) ? (
+                     <SuggestionChips
+                        suggestions={effectiveLearningGoalSuggestions}
                         isDarkMode={isDarkMode}
                         onSelect={(val) => onApplySuggestion?.('learningGoal', val)}
                         label={sugLabel}
@@ -475,8 +679,13 @@ function WorkspaceProfileStepTwo({
                         'Đánh giá tổng quan sẽ xuất hiện sau khi bạn điền đủ dữ liệu'
                     )}
                     description={translateStepTwo(
-                        'workspace.profileConfig.stepTwo.overallReviewPendingDescription',
-                        'Hãy điền trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập. Sau đó Quizmate AI sẽ kiểm tra xem toàn bộ phần step 2 đã bám đúng kiến thức và lĩnh vực bạn chọn hay chưa.'
+                        isBeginnerMode
+                          ? 'workspace.profileConfig.stepTwo.beginnerOverallReviewPendingDescription'
+                          : 'workspace.profileConfig.stepTwo.overallReviewPendingDescription',
+                        isBeginnerMode
+                          ? `Hãy điền trình độ hiện tại và mục tiêu học tập. Nếu bạn mới bắt đầu, phần điểm mạnh và điểm yếu có thể để trống hoặc mô tả là đang xây nền tảng cơ bản trong ${beginnerScopeLabel}.`
+                          : 'Hãy điền trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập. Sau đó Quizmate AI sẽ kiểm tra xem toàn bộ phần step 2 đã bám đúng kiến thức và lĩnh vực bạn chọn hay chưa.',
+                        { scope: beginnerScopeLabel }
                     )}
                 />
               </div>
@@ -484,15 +693,15 @@ function WorkspaceProfileStepTwo({
 
           {consistencyStatus !== 'loading' && consistencyResult ? (
               <div className="mt-4">
-                <GuidanceNote
-                    isDarkMode={isDarkMode}
-                    tone={overallReviewTone}
-                    icon={consistencyResult.isConsistent ? Sparkles : AlertTriangle}
-                    title={
-                        consistencyResult.message
-                        || translateStepTwo(
-                            'workspace.profileConfig.stepTwo.overallReviewTitle',
-                            'Đánh giá tổng quan của Quizmate AI'
+                  <GuidanceNote
+                      isDarkMode={isDarkMode}
+                      tone={overallReviewTone}
+                      icon={consistencyResult.isConsistent ? Sparkles : AlertTriangle}
+                      title={
+                        aiOverallMessage
+                          || translateStepTwo(
+                              'workspace.profileConfig.stepTwo.overallReviewTitle',
+                              'Đánh giá tổng quan của Quizmate AI'
                         )
                     }
                     description={translateStepTwo(
@@ -513,27 +722,27 @@ function WorkspaceProfileStepTwo({
                                 : 'border-amber-200 bg-amber-50 text-amber-900'
                     )}
                 >
-                  {normalizeStringList(consistencyResult.alignmentHighlights).length > 0 ? (
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.08em]">
-                          {translateStepTwo(
-                              'workspace.profileConfig.stepTwo.alignmentHighlightsTitle',
-                              'Những điểm đang khớp'
-                          )}
-                        </p>
-                        <ul className="mt-2 space-y-1">
-                          {normalizeStringList(consistencyResult.alignmentHighlights).map((item, idx) => (
-                              <li key={`${item}-${idx}`} className="text-xs leading-5">• {item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                  ) : null}
+                  {aiAlignmentHighlights.length > 0 ? (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em]">
+                            {translateStepTwo(
+                                'workspace.profileConfig.stepTwo.alignmentHighlightsTitle',
+                                'Những điểm đang khớp'
+                            )}
+                          </p>
+                          <ul className="mt-2 space-y-1">
+                          {aiAlignmentHighlights.map((item, idx) => (
+                                <li key={`${item}-${idx}`} className="text-xs leading-5">• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                    ) : null}
 
-                  {aiOverallIssues.length > 0 ? (
-                      <div className={cn(normalizeStringList(consistencyResult.alignmentHighlights).length > 0 ? 'mt-4' : '')}>
-                        <p className="text-xs font-semibold uppercase tracking-[0.08em]">
-                          {translateStepTwo(
-                              'workspace.profileConfig.stepTwo.issuesTitle',
+                    {aiOverallIssues.length > 0 ? (
+                      <div className={cn(aiAlignmentHighlights.length > 0 ? 'mt-4' : '')}>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em]">
+                            {translateStepTwo(
+                                'workspace.profileConfig.stepTwo.issuesTitle',
                               'Điểm cần xem lại'
                           )}
                         </p>
@@ -545,13 +754,13 @@ function WorkspaceProfileStepTwo({
                       </div>
                   ) : null}
 
-                  {aiOverallRecommendations.length > 0 ? (
-                      <div
-                          className={cn(
-                              (normalizeStringList(consistencyResult.alignmentHighlights).length > 0 || aiOverallIssues.length > 0)
-                                  ? 'mt-4'
-                                  : ''
-                          )}
+                    {aiOverallRecommendations.length > 0 ? (
+                        <div
+                            className={cn(
+                              (aiAlignmentHighlights.length > 0 || aiOverallIssues.length > 0)
+                                    ? 'mt-4'
+                                    : ''
+                            )}
                       >
                         <p className="text-xs font-semibold uppercase tracking-[0.08em]">
                           {translateStepTwo(
@@ -567,13 +776,13 @@ function WorkspaceProfileStepTwo({
                       </div>
                   ) : null}
 
-                  {aiQuizConstraintWarnings.length > 0 ? (
-                    <div
-                      className={cn(
-                        (normalizeStringList(consistencyResult.alignmentHighlights).length > 0 || aiOverallIssues.length > 0 || aiOverallRecommendations.length > 0)
-                          ? 'mt-4'
-                          : ''
-                      )}
+                    {aiQuizConstraintWarnings.length > 0 ? (
+                      <div
+                        className={cn(
+                          (aiAlignmentHighlights.length > 0 || aiOverallIssues.length > 0 || aiOverallRecommendations.length > 0)
+                            ? 'mt-4'
+                            : ''
+                        )}
                     >
                       <p className="text-xs font-semibold uppercase tracking-[0.08em]">
                         {translateStepTwo(
@@ -604,26 +813,26 @@ function WorkspaceProfileStepTwo({
               >
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">
-                      {consistencyResult.message || 'Quizmate AI phát hiện một số vấn đề'}
-                    </p>
-                    <ul className="mt-2 space-y-1">
-                      {consistencyResult.issues.map((issue, idx) => (
-                          <li key={idx} className="text-xs leading-5">• {issue}</li>
-                      ))}
-                    </ul>
-                    {consistencyResult.recommendations?.length > 0 ? (
-                        <div className="mt-3">
-                          <p className={cn('text-xs font-semibold', isDarkMode ? 'text-cyan-300' : 'text-cyan-700')}>
-                            Đề xuất:
-                          </p>
-                          <ul className="mt-1 space-y-1">
-                            {consistencyResult.recommendations.map((rec, idx) => (
-                                <li key={idx} className="text-xs leading-5">→ {rec}</li>
-                            ))}
-                          </ul>
-                        </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">
+                        {aiOverallMessage || 'Quizmate AI phát hiện một số vấn đề'}
+                      </p>
+                      <ul className="mt-2 space-y-1">
+                        {aiOverallIssues.map((issue, idx) => (
+                            <li key={idx} className="text-xs leading-5">• {issue}</li>
+                        ))}
+                      </ul>
+                      {aiOverallRecommendations.length > 0 ? (
+                          <div className="mt-3">
+                            <p className={cn('text-xs font-semibold', isDarkMode ? 'text-cyan-300' : 'text-cyan-700')}>
+                              Đề xuất:
+                            </p>
+                            <ul className="mt-1 space-y-1">
+                              {aiOverallRecommendations.map((rec, idx) => (
+                                  <li key={idx} className="text-xs leading-5">→ {rec}</li>
+                              ))}
+                            </ul>
+                          </div>
                     ) : null}
                   </div>
                 </div>
@@ -762,7 +971,7 @@ function WorkspaceProfileStepTwo({
                 ) : (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {availablePopularExamNames.map((name) => {
-                      const active = normalizeText(name) === normalizeText(effectiveSelectedPopularExam);
+                      const active = normalizeForCompare(name) === normalizeForCompare(effectiveSelectedPopularExam);
                       return (
                         <button
                           key={name}
@@ -792,6 +1001,33 @@ function WorkspaceProfileStepTwo({
                   <p className="mt-3 text-sm font-medium text-red-400">{errors.mockExamName}</p>
                 ) : null}
 
+                <div
+                  className={cn(
+                    'mt-6 rounded-[20px] border px-4 py-3',
+                    selectedPopularTemplate
+                      ? isDarkMode
+                        ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100'
+                        : 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                      : isDarkMode
+                        ? 'border-white/10 bg-white/[0.03] text-slate-300'
+                        : 'border-slate-200 bg-slate-50 text-slate-700'
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className={cn('mt-0.5 h-4 w-4 shrink-0', selectedPopularTemplate ? 'text-emerald-500' : mutedClass)} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">
+                        {selectedPopularTemplate ? `Đang áp dụng: ${selectedPopularTemplate.templateName}` : 'Chưa áp dụng template nào'}
+                      </p>
+                      <p className={cn('mt-1 text-xs leading-5', selectedPopularTemplate ? '' : mutedClass)}>
+                        {selectedPopularTemplate
+                          ? `Template cho ${selectedPopularTemplate.examName || effectiveSelectedPopularExam} đang được dùng để điền cấu hình đề thi ở form bên dưới.`
+                          : 'Bấm "Dùng template này" để auto điền thời lượng, số câu và ghi chú cấu trúc.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {effectiveSelectedPopularExam ? (
                   <div className="mt-6">
                     <p className="text-sm font-semibold">Templates cho {effectiveSelectedPopularExam}</p>
@@ -806,18 +1042,39 @@ function WorkspaceProfileStepTwo({
                           const recommendedCount = Number(tpl?.structure?.recommendedTotalQuestions) || null;
                           const overview = normalizeText(tpl?.structure?.overview);
                           const templateName = normalizeText(tpl?.templateName) || normalizeText(tpl?.examName) || 'Template';
+                          const templateKey = buildPopularTemplateKey(tpl);
+                          const isSelectedTemplate = selectedPopularTemplate?.key === templateKey;
 
                           return (
                             <div
                               key={`${tpl?.templateId ?? templateName}-${tpl?.examName ?? ''}`}
                               className={cn(
-                                'rounded-[22px] border p-4 sm:p-5',
-                                isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50/60'
+                                'rounded-[22px] border p-4 transition-all sm:p-5',
+                                isSelectedTemplate
+                                  ? isDarkMode
+                                    ? 'border-emerald-400/40 bg-emerald-500/10 shadow-[0_0_0_1px_rgba(52,211,153,0.16)]'
+                                    : 'border-emerald-300 bg-emerald-50/80 shadow-sm'
+                                  : isDarkMode
+                                    ? 'border-white/10 bg-white/[0.03]'
+                                    : 'border-slate-200 bg-slate-50/60'
                               )}
                             >
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                  <p className="text-sm font-bold">{templateName}</p>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-sm font-bold">{templateName}</p>
+                                    {isSelectedTemplate ? (
+                                      <span
+                                        className={cn(
+                                          'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                                          isDarkMode ? 'bg-emerald-400/15 text-emerald-200' : 'bg-emerald-100 text-emerald-800'
+                                        )}
+                                      >
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        Đang chọn
+                                      </span>
+                                    ) : null}
+                                  </div>
                                   {overview ? (
                                     <p className={cn('mt-1 text-sm leading-6', mutedClass)}>
                                       {overview}
@@ -845,9 +1102,11 @@ function WorkspaceProfileStepTwo({
                                 <div className="flex items-center gap-2">
                                   <Button
                                     type="button"
-                                    variant="outline"
+                                    variant={isSelectedTemplate ? 'default' : 'outline'}
+                                    aria-pressed={isSelectedTemplate}
                                     disabled={disabled}
                                     onClick={() => {
+                                      setSelectedPopularTemplateOverride(buildPopularTemplateMeta(tpl));
                                       // Apply minimal mapping into current fields for convenience.
                                       onFieldChange('mockExamName', normalizeText(tpl?.examName) || values.mockExamName);
                                       if (duration) onFieldChange('templateDurationMinutes', duration);
@@ -858,10 +1117,16 @@ function WorkspaceProfileStepTwo({
                                     }}
                                     className={cn(
                                       'rounded-full',
-                                      isDarkMode ? 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]' : 'bg-white'
+                                      isSelectedTemplate
+                                        ? isDarkMode
+                                          ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+                                          : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                                        : isDarkMode
+                                          ? 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06]'
+                                          : 'bg-white'
                                     )}
                                   >
-                                    Dùng template này
+                                    {isSelectedTemplate ? 'Đang dùng template này' : 'Dùng template này'}
                                   </Button>
                                 </div>
                               </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@/i18n';
 import IndividualWorkspaceProfileConfigDialog from '@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog';
@@ -269,7 +269,21 @@ async function moveToStepThree() {
 
 async function clickConfirmButton() {
   await act(async () => {
-    fireEvent.click(findButtonByText(i18n.t('confirm'), { exact: true, includeDisabled: true }));
+    fireEvent.click(findButtonByText('Xác nhận', { exact: true, includeDisabled: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+
+  await act(async () => {
+    fireEvent.click(findButtonByText(i18n.t('workspace.profileConfig.actions.confirmProfileUse'), { exact: true, includeDisabled: true }));
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+async function openConfirmProfilePopup() {
+  await act(async () => {
+    fireEvent.click(findButtonByText('Xác nhận', { exact: true, includeDisabled: true }));
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -399,7 +413,9 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
     await flushStepTwoAiSuggestions();
 
-    expect(screen.getByText(i18n.t('workspace.profileConfig.stepTwo.strengthWeaknessTitle'))).toBeInTheDocument();
+    expect(
+      screen.getByText((content) => content.includes('Điểm mạnh và điểm yếu'))
+    ).toBeInTheDocument();
     expect(screen.getByText('Chữ Hán cơ bản')).toBeInTheDocument();
     expect(screen.getByText('Ngữ pháp N4 dễ nhầm')).toBeInTheDocument();
     expect(screen.queryByText('Khắc phục Ngữ pháp N4 dễ nhầm để học chắc N4.')).not.toBeInTheDocument();
@@ -869,6 +885,112 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
+  it('asks for confirmation before applying the profile on the final confirm action', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['Probability & Statistics', 'Mathematics', 'STEM']),
+    });
+
+    const { onSave, onConfirm } = renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.REVIEW.title'),
+      knowledge: 'xac suat thong ke co ban',
+      expectedDomainText: 'Probability & Statistics',
+      roadmapChoiceText: i18n.t('workspace.profileConfig.common.no'),
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da hoc xac suat co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('REVIEW')), {
+      target: { value: 'On lai de thi cuoi ky' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Cong thuc co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Bai toan xac suat tong hop' },
+    });
+
+    await flushStepTwoAiSuggestions();
+    await openConfirmProfilePopup();
+
+    const confirmDialog = screen.getByRole('dialog', {
+      name: i18n.t('workspace.profileConfig.confirmProfileDialog.title'),
+    });
+
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.description'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.purpose'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.knowledgeDomain'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.currentLevel'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.strengthWeakness'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.learningGoal'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.roadmapConfig'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.purpose.REVIEW.title'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText('xac suat thong ke co ban')).toBeInTheDocument();
+    expect(within(confirmDialog).getByText('Probability & Statistics')).toBeInTheDocument();
+    expect(within(confirmDialog).getByText('Da hoc xac suat co ban')).toBeInTheDocument();
+    expect(within(confirmDialog).getByText('Cong thuc co ban')).toBeInTheDocument();
+    expect(within(confirmDialog).getByText('Bai toan xac suat tong hop')).toBeInTheDocument();
+    expect(within(confirmDialog).getByText('On lai de thi cuoi ky')).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.roadmapDisabled'))).toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(within(confirmDialog).getByRole('button', { name: i18n.t('workspace.profileConfig.actions.cancel') }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole('heading', { name: i18n.t('workspace.profileConfig.confirmProfileDialog.title') })).not.toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('shows roadmap configuration details in the confirmation popup when the roadmap step is enabled', async () => {
+    const { onSave, onConfirm } = renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
+      knowledge: 'React hooks nang cao',
+      expectedDomainText: 'React',
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da biet React co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
+      target: { value: 'Xay dung mot project React co lo trinh ro rang.' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Tach component ro rang' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Toi uu performance voi hook nang cao' },
+    });
+
+    await flushStepTwoAiSuggestions();
+    await moveToStepThree();
+    await openConfirmProfilePopup();
+
+    const confirmDialog = screen.getByRole('dialog', {
+      name: i18n.t('workspace.profileConfig.confirmProfileDialog.title'),
+    });
+
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.roadmapConfig'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.adaptationMode.BALANCED.title'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.roadmapSpeedMode'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.roadmapSpeedMode.STANDARD.title'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.estimatedTotalDays'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.estimatedTotalDays', { value: 30 }))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.recommendedMinutesPerDay'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.recommendedMinutesPerDay', { value: 90 }))).toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
   it('keeps the final confirm disabled on step 2 until Quizmate AI finishes the overall review', async () => {
     const consistencyDeferred = createDeferred();
 
@@ -990,6 +1112,62 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       mockExamName: 'IELTS Academic',
     }));
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('does not require strengths and weaknesses for absolute beginners in MOCK_TEST mode', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['Tiếng Nhật', 'JLPT']),
+      fieldSuggestionResponse: createFieldSuggestionResponse({
+        currentLevelSuggestions: ['Mới bắt đầu học tiếng Nhật'],
+        strongAreaSuggestions: ['Chữ Hán cơ bản'],
+        weakAreaSuggestions: ['Ngữ pháp N5'],
+        learningGoalSuggestions: ['Nắm nền tảng sơ cấp trong 6 tuần đầu.'],
+      }),
+      consistencyResponse: createConsistencyResponse({
+        message: 'Thông tin hiện tại phù hợp với giai đoạn mới bắt đầu.',
+      }),
+    });
+
+    const onSave = vi.fn()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ deferred: true });
+
+    renderDialog({ onSave });
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.MOCK_TEST.title'),
+      knowledge: 'Tiếng Nhật nhập môn',
+      expectedDomainText: 'Tiếng Nhật',
+      roadmapChoiceText: i18n.t('workspace.profileConfig.common.no'),
+    });
+
+    clickMockTestStepTwoTab('mocktest');
+    clickButtonByText('Custom');
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.privateExamName')), {
+      target: { value: 'JLPT N5 Starter' },
+    });
+
+    clickMockTestStepTwoTab('profile');
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Mới bắt đầu học tiếng Nhật' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('MOCK_TEST')), {
+      target: { value: 'Làm quen cấu trúc đề và xây nền tảng N5 cơ bản.' },
+    });
+
+    await flushStepTwoAiSuggestions();
+    await clickConfirmButton();
+
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.validation.strongAreasRequired'))).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.validation.weakAreasRequired'))).not.toBeInTheDocument();
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSave).toHaveBeenNthCalledWith(2, 2, expect.objectContaining({
+      workspacePurpose: 'MOCK_TEST',
+      mockExamName: 'JLPT N5 Starter',
+      currentLevel: 'Mới bắt đầu học tiếng Nhật',
+      strongAreas: null,
+      weakAreas: null,
+    }));
   });
 
   it('requires strengths and weaknesses for REVIEW', async () => {
