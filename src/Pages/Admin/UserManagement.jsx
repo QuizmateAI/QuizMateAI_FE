@@ -122,12 +122,14 @@ function UserManagement() {
     showSuccess('Cập nhật trạng thái người dùng thành công');
   };
 
-  // Lọc users theo search term
-  const filteredUsers = users.filter(user => 
-    user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Lọc users theo search term và chỉ hiển thị role USER (ẩn ADMIN và SUPER_ADMIN)
+  const filteredUsers = users
+    .filter(user => user.role === 'USER')
+    .filter(user => 
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   // Format ngày tạo
   const formatDate = (dateString) => {

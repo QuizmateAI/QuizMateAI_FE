@@ -36,7 +36,7 @@ function createCopy(t, language) {
     contextTitle: translateOrFallback(
       t,
       'workspace.profileConfig.stepUpload.contextTitle',
-      isEnglish ? 'Current profile context' : 'Ngữ cảnh hồ sơ hiện tại'
+      isEnglish ? 'Current profile context' : 'Ngữ cảnh hồ sơ cá nhân'
     ),
     contextDescription: translateOrFallback(
       t,
