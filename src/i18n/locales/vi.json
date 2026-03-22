@@ -831,19 +831,42 @@
         "uploading": "Đang tải lên...",
         "generatingTemplate": "Template đang được tạo...",
         "generateTemplate": "Tạo xem trước bản mẫu thi thử",
-        "customTargetScore": "Tự nhập điểm"
+        "customTargetScore": "Tự nhập điểm",
+        "confirmProfileUse": "Xác nhận sử dụng hồ sơ này"
+      },
+      "confirmProfileDialog": {
+        "title": "Xác nhận sử dụng hồ sơ này",
+        "description": "Bạn đã chắc chắn sử dụng hồ sơ này chưa? Sau khi xác nhận, hệ thống sẽ lưu cấu hình hiện tại cho không gian học tập.",
+        "summaryLabel": "Hồ sơ sẽ được áp dụng",
+        "emptyValue": "Chưa thiết lập",
+        "roadmapDisabled": "Không bật lộ trình cho hồ sơ này.",
+        "sections": {
+          "purpose": "Mục đích sử dụng",
+          "knowledgeDomain": "Kiến thức - lĩnh vực",
+          "currentLevel": "Trình độ hiện tại",
+          "strengthWeakness": "Điểm mạnh và điểm yếu",
+          "learningGoal": "Mục tiêu",
+          "roadmapConfig": "Các config của lộ trình"
+        },
+        "values": {
+          "estimatedTotalDays": "{{value}} ngày",
+          "recommendedMinutesPerDay": "{{value}} phút/ngày"
+        }
       },
       "steps": {
         "1": {
           "title": "Bước 1",
+          "stepperLabel": "Mục đích học tập",
           "description": "Chọn mục đích sử dụng không gian Học tập và để Quizmate AI đánh giá kiến thức."
         },
         "2": {
           "title": "Bước 2",
-          "description": "Bổ sung trình độ hiện tại, mục tiêu và thông tin mock test nếu cần."
+          "stepperLabel": "Hồ sơ cá nhân",
+          "description": "Bổ sung trình độ cá nhân, mục tiêu và thông tin mock test nếu cần."
         },
         "3": {
           "title": "Bước 3",
+          "stepperLabel": "Cấu hình lộ trình",
           "description": "Tải tài liệu lên và rà lại xem nội dung đã khớp với hồ sơ học tập hay chưa."
         },
         "4": {
@@ -889,7 +912,7 @@
         "selectedDomainTag": "Đã chọn",
         "noDomainSuggestionTitle": "Quizmate AI chưa có đủ lĩnh vực để bạn chọn.",
         "noDomainSuggestionDescription": "Hãy nhập rõ hơn tên ngôn ngữ, kỳ thi hoặc mảng kiến thức cụ thể hơn. Nếu đây là một cấp độ như N1 hoặc N4, hệ thống sẽ ưu tiên suy ra các lĩnh vực liên quan ngay khi có đủ tín hiệu.",
-        "primaryDomainLockedHint": "Chỉ chọn từ gợi ý Quizmate AI",
+        "primaryDomainLockedHint": "Lựa chọn từ gợi ý Quizmate AI",
         "domainReason": {
           "closest": "Khớp trực tiếp với tín hiệu \"{{signal}}\" trong kiến thức \"{{knowledge}}\", nên đây là domain sát nhất với nội dung bạn đang học.",
           "group": "Tín hiệu \"{{signal}}\" thuộc cùng nhóm với lĩnh vực \"{{domain}}\", nên lựa chọn này vẫn bám rất gần với kiến thức bạn nhập.",
@@ -907,7 +930,6 @@
         "analysisHighlightsTitle": "Quizmate AI đã kiểm tra",
         "analysisRefinementTitle": "Bạn có thể nhập lại theo hướng này",
         "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
-        "roadmapDescription": "Tùy chọn này chỉ xuất hiện với luồng ôn tập và mock test.",
         "enableRoadmap": "Có, tạo lộ trình kèm theo",
         "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại"
       },
@@ -931,21 +953,40 @@
         "contextDescription": "Mọi gợi ý ở bước này sẽ dựa trên kiến thức \"{{knowledge}}\" trong lĩnh vực \"{{domain}}\". Hãy mô tả đúng năng lực trong phạm vi này, không phải điểm mạnh tổng quát của bạn.",
         "currentLevelTitle": "1. Trình độ hiện tại",
         "currentLevelDescription": "Hãy mô tả trình độ hiện tại theo đúng kiến thức và lĩnh vực đã chọn, ví dụ nền tảng N5, đã biết chữ Hán cơ bản, đang yếu ngữ pháp N4.",
-        "strengthWeaknessTitle": "2. Điểm mạnh và điểm yếu trong đúng phạm vi này",
+        "strengthWeaknessTitle": "2. Điểm mạnh và điểm yếu trong phạm vi kiến thức ",
         "strengthWeaknessDescription": "Điểm mạnh và điểm yếu ở đây phải nói về các mảng con trực tiếp thuộc kiến thức bạn đang học, ví dụ ngữ pháp, từ vựng, đọc hiểu, chữ Hán; không nên nêu một môn khác như Toán.",
         "waitForCurrentLevelTitle": "Điền trình độ hiện tại trước",
         "waitForCurrentLevelDescription": "Sau khi bạn mô tả trình độ hiện tại, AI sẽ gợi ý điểm mạnh và điểm yếu sát hơn với kiến thức đã chọn.",
+        "beginnerFallbackScope": "kiến thức này",
+        "beginnerContextTitle": "Bạn đang ở giai đoạn mới bắt đầu",
+        "beginnerContextDescription": "Ở giai đoạn này bạn chưa cần có điểm mạnh hoặc điểm yếu rõ ràng trong {{scope}}. Bạn có thể ghi ngắn gọn là đang bắt đầu từ nền tảng, sau đó bổ sung dần khi đã học được một thời gian.",
+        "beginnerStrongSuggestion1": "Hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học {{scope}}.",
+        "beginnerStrongSuggestion2": "Đang xây nền tảng cơ bản cho {{scope}} từ đầu.",
+        "beginnerStrongSuggestion3": "Sẵn sàng học đều và bám theo lộ trình nhập môn của {{scope}}.",
+        "beginnerWeakSuggestion1": "Hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học {{scope}}.",
+        "beginnerWeakSuggestion2": "Chưa quen thuật ngữ, dạng bài hoặc kỹ năng nền tảng trong {{scope}}.",
+        "beginnerWeakSuggestion3": "Cần thêm thời gian để hình thành phản xạ và thói quen học cơ bản.",
+        "beginnerWeakSuggestionJapanese1": "Hiện còn yếu phần nền tảng của {{scope}}, đặc biệt là hiragana, katakana, từ vựng và mẫu câu cơ bản.",
+        "beginnerWeakSuggestionJapanese2": "Chưa quen nghe, đọc và phản xạ với tiếng Nhật cơ bản trong {{scope}}.",
+        "beginnerWeakSuggestionJapanese3": "Cần thời gian để ghi nhớ chữ, từ vựng và ngữ pháp nhập môn.",
         "learningGoalTitle": "3. Mục tiêu học tập",
         "learningGoalDescription": "Mục tiêu học tập nên đi từ trình độ hiện tại sang đúng phần kiến thức bạn đang học. AI chỉ gợi ý sát hơn sau khi đã có trình độ hiện tại, điểm mạnh và điểm yếu.",
         "waitForGoalTitle": "Bổ sung điểm mạnh và điểm yếu để AI gợi ý mục tiêu",
         "waitForGoalDescription": "Khi đã có trình độ hiện tại, điểm mạnh và điểm yếu đúng ngữ cảnh, AI sẽ gợi ý mục tiêu học tập cụ thể hơn. Bạn vẫn có thể tự nhập mục tiêu theo nhu cầu thực tế của mình.",
+        "beginnerWaitForGoalTitle": "Bạn vẫn có thể đặt mục tiêu học tập ngay từ đầu",
+        "beginnerWaitForGoalDescription": "Nếu chưa có điểm mạnh hoặc điểm yếu rõ ràng trong {{scope}}, hãy mô tả ngắn gọn là bạn đang xây nền tảng cơ bản. AI vẫn có thể gợi ý mục tiêu để bạn bắt đầu đúng hướng.",
+        "beginnerLearningGoalSuggestion1": "Làm quen nền tảng cơ bản của {{scope}} trước khi tăng độ khó.",
+        "beginnerLearningGoalSuggestion2": "Xây lộ trình nhập môn vững cho {{scope}} trong giai đoạn đầu.",
+        "beginnerLearningGoalSuggestionJapanese1": "Nắm hiragana, katakana và từ vựng cơ bản trước khi lên mục tiêu cao hơn.",
+        "beginnerLearningGoalSuggestionJapanese2": "Làm quen mẫu câu và phản xạ tiếng Nhật sơ cấp trong những tuần đầu.",
         "fieldSuggestionLoading": "AI đang phân tích bước 2 và cập nhật gợi ý theo đúng ngữ cảnh bạn đã nhập...",
-        "overallReviewTitle": "Đánh giá tổng quan của AI",
-        "overallReviewLoadingTitle": "AI đang đánh giá tổng quan",
+        "overallReviewTitle": "Đánh giá tổng quan của Quizmate AI",
+        "overallReviewLoadingTitle": "Quizmate AI đang đánh giá tổng quan",
         "overallReviewLoadingDescription": "Hệ thống đang kiểm tra xem trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập đã bám đúng kiến thức bạn chọn hay chưa.",
         "overallReviewPendingTitle": "Đánh giá tổng quan sẽ xuất hiện sau khi bạn điền đủ dữ liệu",
         "overallReviewPendingDescription": "Hãy điền trình độ hiện tại, điểm mạnh, điểm yếu và mục tiêu học tập. Sau đó AI sẽ kiểm tra xem toàn bộ phần step 2 đã bám đúng kiến thức và lĩnh vực bạn chọn hay chưa.",
-        "aiRecommendationNotice": "Đây là gợi ý tham khảo của AI, bạn có thể chỉnh lại theo ngữ cảnh thực tế của mình.",
+        "beginnerOverallReviewPendingDescription": "Hãy điền trình độ hiện tại và mục tiêu học tập. Nếu bạn mới bắt đầu, phần điểm mạnh và điểm yếu có thể để trống hoặc mô tả là đang xây nền tảng cơ bản trong {{scope}}.",
+        "aiRecommendationNotice": "Đây là gợi ý tham khảo của Quizmate AI, bạn có thể chỉnh lại theo ngữ cảnh thực tế của mình.",
         "alignmentHighlightsTitle": "Những điểm đang khớp",
         "issuesTitle": "Điểm cần xem lại",
         "recommendationsTitle": "Gợi ý tinh chỉnh"
@@ -1017,6 +1058,9 @@
         },
         "strongAreas": "VD: đọc hiểu nhanh, ghi nhớ tốt, nền tảng coding khá...",
         "weakAreas": "VD: ngữ pháp, phân bổ thời gian, câu hỏi vận dụng cao...",
+        "beginnerStrongAreas": "VD: hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học {{scope}}...",
+        "beginnerWeakAreas": "VD: hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học {{scope}}...",
+        "beginnerWeakAreasJapanese": "VD: hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học {{scope}}...",
         "publicExamSearch": "Tìm theo tên kỳ thi như IELTS, TOEIC, JLPT...",
         "privateExamName": "Nhập tên kỳ thi hoặc format riêng của bạn...",
         "templatePrompt": "VD: Tạo đề thiên về reading và writing, mức khó tăng dần, có phần chữa lỗi điển hình...",
@@ -1400,6 +1444,7 @@
         "selectedMaterialsCount": "Đang sử dụng {{count}} tài liệu được chọn từ Sources panel.",
         "noSelectedMaterials": "Chưa chọn tài liệu trong Sources panel. Bạn vẫn có thể tạo bằng Prompt.",
         "difficultyLevel": "Mức độ khó",
+        "difficultyPreviewTitle": "Phân bổ độ khó",
         "customSelfConfig": "Tùy chỉnh (Tự cấu hình)",
         "difficultyUnitByCount": "Đơn vị độ khó theo số lượng",
         "questionTypeUnitByCount": "Đơn vị loại câu hỏi theo số lượng",

@@ -696,13 +696,20 @@ function WorkspacePage() {
 	const finalizeBackgroundMockTestProfile = useCallback(async () => {
 		if (!workspaceId || !mockTestAutoFinalizePayloadRef.current) return null;
 
-		const finalizedProfile = extractProfileData(
-			await saveIndividualWorkspaceRoadmapConfigStep(workspaceId, mockTestAutoFinalizePayloadRef.current)
+		try {
+			await saveIndividualWorkspaceRoadmapConfigStep(workspaceId, mockTestAutoFinalizePayloadRef.current);
+		} catch (err) {
+			console.warn("saveIndividualWorkspaceRoadmapConfigStep during background finalization skipped or failed:", err);
+		}
+
+		// Confirm onboarding to transition workspace from PROFILE_DONE → DONE
+		const confirmedProfile = extractProfileData(
+			await confirmIndividualWorkspaceProfile(workspaceId)
 		);
 
-		if (finalizedProfile) {
-			setWorkspaceProfile(finalizedProfile);
-			setIsProfileConfigured(isProfileOnboardingDone(finalizedProfile));
+		if (confirmedProfile) {
+			setWorkspaceProfile(confirmedProfile);
+			setIsProfileConfigured(isProfileOnboardingDone(confirmedProfile));
 		}
 
 		mockTestShouldCloseAfterStartRef.current = false;
@@ -719,7 +726,7 @@ function WorkspacePage() {
 			)
 		);
 		navigate(`/workspace/${workspaceId}`, { replace: true });
-		return finalizedProfile;
+		return confirmedProfile;
 	}, [workspaceId, fetchWorkspaceDetail, navigate, showSuccess, t]);
 
 	const startMockTestGenerationPolling = useCallback(async () => {

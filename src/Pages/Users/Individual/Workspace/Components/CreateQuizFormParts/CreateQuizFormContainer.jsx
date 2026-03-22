@@ -1031,6 +1031,28 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const totalScoreDisplay = Math.round(questions.reduce((s, q) => s + (q.point || 0), 0) * 100) / 100;
   const unlockedCount = questions.filter(q => !q.isLocked).length;
 
+  // Difficulty preview (AI config): always render as a 100% stacked bar for clearer understanding.
+  const selectedDifficultyDef = difficultyDefs.find((d) => d.id === selectedDifficultyId);
+  const difficultyPreviewRaw = selectedDifficultyId === "CUSTOM"
+    ? {
+        easy: Math.max(0, Number(customDifficulty.easy) || 0),
+        medium: Math.max(0, Number(customDifficulty.medium) || 0),
+        hard: Math.max(0, Number(customDifficulty.hard) || 0),
+      }
+    : {
+        easy: Math.max(0, Number(selectedDifficultyDef?.easyRatio) || 0),
+        medium: Math.max(0, Number(selectedDifficultyDef?.mediumRatio) || 0),
+        hard: Math.max(0, Number(selectedDifficultyDef?.hardRatio) || 0),
+      };
+  const difficultyRawTotal = difficultyPreviewRaw.easy + difficultyPreviewRaw.medium + difficultyPreviewRaw.hard;
+  const difficultyBarBase = difficultyRawTotal > 0 ? difficultyRawTotal : 1;
+  const difficultyPreviewPercent = {
+    easy: (difficultyPreviewRaw.easy / difficultyBarBase) * 100,
+    medium: (difficultyPreviewRaw.medium / difficultyBarBase) * 100,
+    hard: (difficultyPreviewRaw.hard / difficultyBarBase) * 100,
+  };
+  const difficultyValueUnit = questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%";
+
   return (
     <div id="create-quiz-header" className="flex flex-col h-full scroll-mt-20">
       {/* Header với nút quay lại */}
@@ -1809,6 +1831,56 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                     ))}
                  </div>
                )}
+
+               <div className={`mt-4 p-3 rounded-lg border ${isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-gray-200 bg-gray-50"}`}>
+                 <div className="flex items-center justify-between gap-2 mb-2">
+                   <span className={`text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+                     {t("workspace.quiz.aiConfig.difficultyPreviewTitle")}
+                   </span>
+                   <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                     100%
+                   </span>
+                 </div>
+
+                 <div className="w-full h-3 rounded-full overflow-hidden flex">
+                   <div
+                     className="h-full bg-green-500 transition-all duration-300"
+                     style={{ width: `${difficultyPreviewPercent.easy}%` }}
+                     title={`${t("workspace.quiz.difficultyLevels.easy")}: ${Math.round(difficultyPreviewPercent.easy)}%`}
+                   />
+                   <div
+                     className="h-full bg-amber-500 transition-all duration-300"
+                     style={{ width: `${difficultyPreviewPercent.medium}%` }}
+                     title={`${t("workspace.quiz.difficultyLevels.medium")}: ${Math.round(difficultyPreviewPercent.medium)}%`}
+                   />
+                   <div
+                     className="h-full bg-red-500 transition-all duration-300"
+                     style={{ width: `${difficultyPreviewPercent.hard}%` }}
+                     title={`${t("workspace.quiz.difficultyLevels.hard")}: ${Math.round(difficultyPreviewPercent.hard)}%`}
+                   />
+                 </div>
+
+                 <div className="mt-2 grid grid-cols-3 gap-2">
+                   <div className="flex items-center gap-1.5 min-w-0">
+                     <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
+                     <span className={`text-[11px] truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+                       {t("workspace.quiz.difficultyLevels.easy")}: {difficultyPreviewRaw.easy}{difficultyValueUnit} ({Math.round(difficultyPreviewPercent.easy)}%)
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-1.5 min-w-0">
+                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                     <span className={`text-[11px] truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+                       {t("workspace.quiz.difficultyLevels.medium")}: {difficultyPreviewRaw.medium}{difficultyValueUnit} ({Math.round(difficultyPreviewPercent.medium)}%)
+                     </span>
+                   </div>
+                   <div className="flex items-center gap-1.5 min-w-0">
+                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
+                     <span className={`text-[11px] truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+                       {t("workspace.quiz.difficultyLevels.hard")}: {difficultyPreviewRaw.hard}{difficultyValueUnit} ({Math.round(difficultyPreviewPercent.hard)}%)
+                     </span>
+                   </div>
+                 </div>
+               </div>
              </div>
 
              {/* 5. Question Types & Bloom Skills */}
