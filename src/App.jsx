@@ -23,6 +23,7 @@ const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/
 
 // Admin
 const AdminLayout = lazy(() => import('./Pages/Admin/AdminLayout'));
+const AdminDashboard = lazy(() => import('./Pages/Admin/AdminDashboard'));
 const UserManagement = lazy(() => import('./Pages/Admin/UserManagement'));
 const GroupManagement = lazy(() => import('./Pages/Admin/GroupManagement'));
 const PlanManagement = lazy(() => import('./Pages/Admin/PlanManagement'));
@@ -40,6 +41,7 @@ const VnPayReturnRedirect = lazy(() => import('./Pages/Payment/VnPayReturnRedire
 
 // Super Admin
 const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'));
+const SuperAdminDashboard = lazy(() => import('./Pages/SuperAdmin/SuperAdminDashboard'));
 const AdminManagement = lazy(() => import('./Pages/SuperAdmin/AdminManagement'));
 const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
@@ -86,7 +88,7 @@ function App() {
          {/* Route dành riêng cho Super Admin */}
          <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
           <Route path="/super-admin" element={<SuperAdminLayout />} >
-            <Route index element={<UserManagement />} />
+            <Route index element={<SuperAdminDashboard />} />
             <Route path="admins" element={<AdminManagement />} />
             <Route path="users/:userId" element={<UserDetailPage />} />
             <Route path="users" element={<UserManagement />} />
@@ -100,7 +102,7 @@ function App() {
         {/* Route dành riêng cho Admin - Super Admin không được vào */}
         <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />} >
-            <Route index element={<UserManagement />} />
+            <Route index element={<AdminDashboard />} />
             <Route path="users/:userId" element={<UserDetailPage />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="groups/:groupId" element={<GroupDetailPage />} />

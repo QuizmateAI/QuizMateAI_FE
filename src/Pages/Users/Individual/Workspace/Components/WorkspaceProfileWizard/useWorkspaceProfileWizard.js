@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   generateTemplateSuggestion,
 } from './mockProfileWizardData';
+import { isAbsoluteBeginnerLevel } from './profileWizardBeginnerUtils';
 import {
   analyzeKnowledge,
   suggestProfileFields,
@@ -374,14 +375,18 @@ function buildConsistencyPayload(values) {
 }
 
 function shouldRunLiveConsistency(values) {
+  const beginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
+
   return Boolean(
     values.knowledgeInput.trim()
     && values.inferredDomain.trim()
     && values.workspacePurpose
     && values.currentLevel.trim()
     && values.learningGoal.trim()
-    && values.strongAreas.trim()
-    && values.weakAreas.trim()
+    && (
+      beginnerMode
+      || (values.strongAreas.trim() && values.weakAreas.trim())
+    )
   );
 }
 
@@ -1200,12 +1205,14 @@ export function useWorkspaceProfileWizard({
     }
 
     if (targetStep === 2) {
+      const beginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
+
       if (!values.currentLevel.trim()) nextErrors.currentLevel = t('workspace.profileConfig.validation.currentLevelRequired');
       if (!values.learningGoal.trim()) nextErrors.learningGoal = t('workspace.profileConfig.validation.learningGoalRequired');
-      if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !values.strongAreas.trim()) {
+      if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !beginnerMode && !values.strongAreas.trim()) {
         nextErrors.strongAreas = t('workspace.profileConfig.validation.strongAreasRequired');
       }
-      if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !values.weakAreas.trim()) {
+      if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !beginnerMode && !values.weakAreas.trim()) {
         nextErrors.weakAreas = t('workspace.profileConfig.validation.weakAreasRequired');
       }
 
@@ -1389,10 +1396,15 @@ export function useWorkspaceProfileWizard({
     return Object.keys(validateStep(targetStep)).length === 0;
   }
 
+  function showValidationErrors(targetStep = step) {
+    const stepErrors = validateStep(targetStep);
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  }
+
   async function handleSubmit() {
     if (isReadOnly) return;
     const finalStep = totalSteps;
-    const shouldConfirmAfterSubmit = values.workspacePurpose !== 'MOCK_TEST';
 
     if (step === 2 && isWaitingForOverallReview) {
       return { ok: false };
@@ -1402,7 +1414,7 @@ export function useWorkspaceProfileWizard({
       setSaveError('');
       return {
         ok: true,
-        shouldConfirm: shouldConfirmAfterSubmit,
+        shouldConfirm: true,
       };
     }
 
@@ -1411,6 +1423,12 @@ export function useWorkspaceProfileWizard({
     if (!saveState.ok) {
       return saveState;
     }
+
+    const shouldConfirmAfterSubmit = !(
+      finalStep === 2
+      && values.workspacePurpose === 'MOCK_TEST'
+      && saveState.result?.deferred
+    );
 
     return {
       ...saveState,
@@ -1499,6 +1517,7 @@ export function useWorkspaceProfileWizard({
     goToStep,
     handleSubmit,
     isStepComplete,
+    showValidationErrors,
     applySuggestion,
     retryKnowledgeAnalysis,
   };

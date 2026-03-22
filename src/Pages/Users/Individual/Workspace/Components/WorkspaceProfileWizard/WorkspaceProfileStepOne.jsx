@@ -144,6 +144,58 @@ function WorkspaceProfileStepOne({
     : isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700';
   const AnalysisStatusIcon = knowledgeAnalysis?.warning ? AlertTriangle : CheckCircle2;
 
+  const getRoadmapOptionTheme = (enabled, active) => {
+    if (enabled) {
+      return active
+        ? isDarkMode
+          ? {
+            container: 'border-emerald-300/50 bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_18px_45px_-26px_rgba(16,185,129,0.55)]',
+            description: 'text-white/85',
+            icon: 'text-white',
+          }
+          : {
+            container: 'border-emerald-400/50 bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_18px_45px_-26px_rgba(16,185,129,0.42)]',
+            description: 'text-white/85',
+            icon: 'text-white',
+          }
+        : isDarkMode
+          ? {
+            container: 'border-emerald-400/20 bg-emerald-500/10 text-white hover:bg-emerald-500/15',
+            description: 'text-emerald-100/75',
+            icon: 'text-emerald-300',
+          }
+          : {
+            container: 'border-emerald-200 bg-emerald-50 text-slate-900 hover:bg-emerald-100/80',
+            description: 'text-emerald-800/75',
+            icon: 'text-emerald-500',
+          };
+    }
+
+    return active
+      ? isDarkMode
+        ? {
+          container: 'border-amber-300/45 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-[0_18px_45px_-26px_rgba(245,158,11,0.55)]',
+          description: 'text-white/85',
+          icon: 'text-white',
+        }
+        : {
+          container: 'border-amber-400/45 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-[0_18px_45px_-26px_rgba(245,158,11,0.38)]',
+          description: 'text-white/85',
+          icon: 'text-white',
+        }
+      : isDarkMode
+        ? {
+          container: 'border-amber-400/20 bg-amber-500/10 text-white hover:bg-amber-500/15',
+          description: 'text-amber-100/75',
+          icon: 'text-amber-300',
+        }
+        : {
+          container: 'border-amber-200 bg-amber-50 text-slate-900 hover:bg-amber-100/80',
+          description: 'text-amber-800/75',
+          icon: 'text-amber-500',
+        };
+  };
+
   return (
     <div className="space-y-6">
       <section className={cn('rounded-[26px] border p-4 sm:p-5', surfaceClass)}>
@@ -547,13 +599,13 @@ function WorkspaceProfileStepOne({
             </div>
             <div>
               <h3 className="text-lg font-semibold">{t('workspace.profileConfig.stepOne.roadmapQuestion')}</h3>
-              <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{t('workspace.profileConfig.stepOne.roadmapDescription')}</p>
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
             {[true, false].map((item) => {
               const active = values.enableRoadmap === item;
+              const optionTheme = getRoadmapOptionTheme(item, active);
 
               return (
                 <button
@@ -563,13 +615,7 @@ function WorkspaceProfileStepOne({
                   onClick={() => onFieldChange('enableRoadmap', item)}
                   className={cn(
                     'rounded-[24px] border p-4 text-left transition-all',
-                    active
-                      ? isDarkMode
-                        ? 'border-violet-400/50 bg-violet-500/10'
-                        : 'border-violet-300 bg-violet-50'
-                      : isDarkMode
-                        ? 'border-white/10 bg-white/[0.03]'
-                        : 'border-slate-200 bg-slate-50'
+                    optionTheme.container
                   )}
                 >
                   <div className="flex items-center justify-between gap-4">
@@ -577,13 +623,13 @@ function WorkspaceProfileStepOne({
                       <p className="text-sm font-semibold">
                         {item ? t('workspace.profileConfig.common.yes') : t('workspace.profileConfig.common.no')}
                       </p>
-                      <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
+                      <p className={cn('mt-1 text-xs leading-5', optionTheme.description)}>
                         {item
                           ? t('workspace.profileConfig.stepOne.enableRoadmap')
                           : t('workspace.profileConfig.stepOne.skipRoadmap')}
                       </p>
                     </div>
-                    {active ? <CheckCircle2 className="h-5 w-5 text-violet-400" /> : null}
+                    {active ? <CheckCircle2 className={cn('h-5 w-5', optionTheme.icon)} /> : null}
                   </div>
                 </button>
               );
