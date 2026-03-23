@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from "@/Components/ui/button";
 import { Globe, Grid3x3, List, Moon, Settings, Sun, CreditCard } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.webp";
@@ -16,8 +16,76 @@ import { useGroup } from '@/hooks/useGroup';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { useToast } from '@/context/ToastContext';
 
+function normalizeHomeTab(value) {
+  return value === 'group' ? 'group' : 'workspace';
+}
+
+function isGroupWorkspace(workspace) {
+  return String(workspace?.workspaceKind || '').toUpperCase() === 'GROUP';
+}
+
+function toTimestamp(value) {
+  if (!value) return 0;
+  const parsedValue = new Date(value);
+  return Number.isNaN(parsedValue.getTime()) ? 0 : parsedValue.getTime();
+}
+
+function createOwnedGroupFallback(workspace) {
+  const normalizedTitle = workspace?.displayTitle ?? workspace?.name ?? '';
+  const memberCount = Number(workspace?.memberCount);
+
+  return {
+    ...workspace,
+    workspaceId: workspace?.workspaceId ?? null,
+    groupName: normalizedTitle,
+    displayTitle: normalizedTitle,
+    name: normalizedTitle,
+    memberRole: 'LEADER',
+    description: workspace?.description ?? '',
+    memberCount: Number.isFinite(memberCount) && memberCount > 0 ? memberCount : 1,
+    joinedAt: workspace?.createdAt ?? null,
+    createdAt: workspace?.createdAt ?? null,
+  };
+}
+
+function mergeGroupsWithOwnedWorkspaces(groups = [], workspaces = []) {
+  const mergedGroups = new Map();
+
+  workspaces
+    .filter(isGroupWorkspace)
+    .forEach((workspace) => {
+      if (!workspace?.workspaceId) return;
+      mergedGroups.set(String(workspace.workspaceId), createOwnedGroupFallback(workspace));
+    });
+
+  groups.forEach((group) => {
+    const workspaceId = group?.workspaceId ?? group?.id;
+    if (!workspaceId) return;
+
+    const existingGroup = mergedGroups.get(String(workspaceId));
+    mergedGroups.set(String(workspaceId), {
+      ...existingGroup,
+      ...group,
+      workspaceId,
+      groupName: group?.groupName ?? existingGroup?.groupName ?? existingGroup?.displayTitle ?? existingGroup?.name ?? '',
+      displayTitle: group?.displayTitle ?? group?.groupName ?? existingGroup?.displayTitle ?? existingGroup?.groupName ?? '',
+      name: group?.name ?? group?.groupName ?? existingGroup?.name ?? existingGroup?.groupName ?? '',
+      description: group?.description ?? existingGroup?.description ?? '',
+      memberRole: group?.memberRole ?? existingGroup?.memberRole ?? 'MEMBER',
+      memberCount: Number.isFinite(Number(group?.memberCount))
+        ? Number(group.memberCount)
+        : (existingGroup?.memberCount ?? 0),
+      joinedAt: group?.joinedAt ?? existingGroup?.joinedAt ?? group?.createdAt ?? existingGroup?.createdAt ?? null,
+      createdAt: group?.createdAt ?? existingGroup?.createdAt ?? null,
+    });
+  });
+
+  return Array.from(mergedGroups.values()).sort((left, right) =>
+    toTimestamp(right?.joinedAt || right?.createdAt) - toTimestamp(left?.joinedAt || left?.createdAt)
+  );
+}
+
 function HomePage() {
-  const [activeTab, setActiveTab] = useState('workspace');
   const [viewMode, setViewMode] = useState('grid');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
@@ -25,7 +93,9 @@ function HomePage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigateWithLoading();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { showError, showSuccess } = useToast();
+  const activeTab = normalizeHomeTab(searchParams.get('tab'));
 
   // Prefetch cả workspace VÀ groups ngay khi load trang → chuyển tab instant (<1s)
   const {
@@ -33,16 +103,16 @@ function HomePage() {
     loading,
     pagination,
     createWorkspace,
+    createGroupWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,
     changePageSize,
   } = useWorkspace({ enabled: true });
+  const { groups, loading: groupsLoading } = useGroup({ enabled: true });
+  const mergedGroups = mergeGroupsWithOwnedWorkspaces(groups, workspaces);
+  const groupTabLoading = (groupsLoading || loading) && mergedGroups.length === 0;
 
-  const {
-    groups,
-    loading: groupLoading,
-  } = useGroup({ enabled: true });
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -61,7 +131,7 @@ function HomePage() {
   const handleOpenCreate = async () => {
     try {
       showSuccess(t('home.workspace.creating') || 'Đang tạo workspace...');
-      const newWorkspace = await createWorkspace({ title: null, description: null });
+      const newWorkspace = await createWorkspace({ title: null });
       if (newWorkspace?.workspaceId) {
         showSuccess(t('home.workspace.createSuccess') || 'Tạo workspace thành công!');
         navigate(`/workspace/${newWorkspace.workspaceId}`, { state: { openProfileConfig: true } });
@@ -72,8 +142,17 @@ function HomePage() {
   };
 
   // Nhảy thẳng vào trang group workspace mới
-  const handleOpenCreateGroup = () => {
-    navigate('/group-workspace/new');
+  const handleOpenCreateGroup = async () => {
+    try {
+      showSuccess(t('home.group.creating') || 'Äang táº¡o group workspace...');
+      const newGroupWorkspace = await createGroupWorkspace({ title: null });
+      if (!newGroupWorkspace?.workspaceId) {
+        throw new Error(t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
+      }
+      navigate(`/group-workspace/${newGroupWorkspace.workspaceId}`, { state: { openProfileConfig: true } });
+    } catch (err) {
+      showError(err?.message || t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
+    }
   };
 
   // Mở dialog sửa workspace
@@ -95,7 +174,12 @@ function HomePage() {
 
   // Xử lý xóa workspace
   const handleDelete = async (workspaceId) => {
-    await removeWorkspace(workspaceId);
+    try {
+      await removeWorkspace(workspaceId);
+      showSuccess(t('home.workspace.deleteSuccess') || 'Xóa workspace thành công!');
+    } catch (err) {
+      showError(err?.message || t('home.workspace.deleteError') || 'Không thể xóa workspace');
+    }
   };
 
   // Nếu được gọi từ GroupWorkspace với yêu cầu tạo workspace → nhảy sang trang tạo
@@ -104,6 +188,26 @@ function HomePage() {
       navigate('/workspace/new', { replace: true });
     }
   }, [location.state, navigate]);
+
+  useEffect(() => {
+    const currentTab = searchParams.get('tab');
+    if (currentTab === 'workspace' || currentTab === 'group') {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', 'workspace');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const handleTabChange = (nextTab) => {
+    const normalizedTab = normalizeHomeTab(nextTab);
+    if (normalizedTab === activeTab) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', normalizedTab);
+    setSearchParams(nextParams);
+  };
 
   useEffect(() => {
     if (!isSettingsOpen) {
@@ -124,11 +228,15 @@ function HomePage() {
   // Logic nghiệp vụ: hiển thị nội dung theo tab đang chọn
   const renderTabContent = () => {
     if (activeTab === 'workspace') {
+      // Chỉ hiển thị Individual workspace ở tab workspace
+      const individualWorkspaces = workspaces.filter(
+        (ws) => !ws.workspaceKind || ws.workspaceKind === 'INDIVIDUAL'
+      );
       return (
         <UserWorkspace
           viewMode={viewMode}
           isDarkMode={isDarkMode}
-          workspaces={workspaces}
+          workspaces={individualWorkspaces}
           loading={loading}
           pagination={pagination}
           onPageChange={changePage}
@@ -145,19 +253,22 @@ function HomePage() {
         <UserGroup
           viewMode={viewMode}
           isDarkMode={isDarkMode}
-          groups={groups}
-          loading={groupLoading}
+          groups={mergedGroups}
+          loading={groupTabLoading}
           onOpenCreate={handleOpenCreateGroup}
         />
       );
     }
 
-    // Default: hiển thị workspace
+    // Default: hiển thị individual workspace
+    const individualWorkspacesDefault = workspaces.filter(
+      (ws) => !ws.workspaceKind || ws.workspaceKind === 'INDIVIDUAL'
+    );
     return (
       <UserWorkspace
         viewMode={viewMode}
         isDarkMode={isDarkMode}
-        workspaces={workspaces}
+        workspaces={individualWorkspacesDefault}
         loading={loading}
         pagination={pagination}
         onPageChange={changePage}
@@ -262,7 +373,7 @@ function HomePage() {
             isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-gray-50 border-gray-200'
           }`}>
             <button 
-              onClick={() => setActiveTab('workspace')}
+              onClick={() => handleTabChange('workspace')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === 'workspace' 
                   ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'
@@ -272,7 +383,7 @@ function HomePage() {
               {t('home.tabs.workspace')}
             </button>
             <button 
-              onClick={() => setActiveTab('group')}
+              onClick={() => handleTabChange('group')}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === 'group'
                   ? isDarkMode ? 'bg-slate-800 text-blue-300' : 'bg-blue-50 text-blue-700'

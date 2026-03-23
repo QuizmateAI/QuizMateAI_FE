@@ -4,7 +4,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import PaymentMethods from './PaymentMethods';
 
-export default function PaymentSidebar({ plan, groupId, needGroupSelect = false }) {
+export default function PaymentSidebar({ plan, workspaceId, needGroupSelect = false }) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
 
@@ -72,7 +72,7 @@ export default function PaymentSidebar({ plan, groupId, needGroupSelect = false 
             <p className="text-sm">{t('payment.selectGroupFirst')}</p>
           </div>
         ) : (
-          <PaymentMethods planId={plan.planId} planType={plan.type} groupId={groupId} />
+          <PaymentMethods planId={plan.planId} planType={plan.type} workspaceId={workspaceId} />
         )}
 
         {/* Security note */}

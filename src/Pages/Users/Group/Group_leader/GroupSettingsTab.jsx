@@ -1,24 +1,27 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Settings,
-  Pencil,
-  Loader2,
-  Trash2,
   AlertTriangle,
-  Info,
   Check,
+  Fingerprint,
+  Info,
+  Loader2,
+  Pencil,
+  Radar,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
 } from 'lucide-react';
 import api from '@/api/api';
 
-// Tab Cài đặt: Đổi tên nhóm, mô tả, xóa nhóm (chỉ leader)
 function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated }) {
   const { t, i18n } = useTranslation();
-  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const currentLang = i18n.language;
+  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
 
   const [isEditing, setIsEditing] = useState(false);
   const [groupName, setGroupName] = useState(group?.groupName || '');
-  const [description, setDescription] = useState(group?.description || '');
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -26,33 +29,69 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
 
-  // Khởi tạo lại khi group thay đổi
-  React.useEffect(() => {
-    if (group) {
-      setGroupName(group.groupName || '');
-      setDescription(group.description || '');
-    }
+  useEffect(() => {
+    if (!group) return;
+    setGroupName(group.groupName || '');
   }, [group]);
 
-  // Lưu thay đổi tên/mô tả
+  const shellClass = isDarkMode
+    ? 'border-white/10 bg-[#08131a]/92 text-white'
+    : 'border-white/80 bg-white/82 text-slate-900';
+  const softCardClass = isDarkMode
+    ? 'border-white/10 bg-white/[0.04]'
+    : 'border-white/80 bg-white/78';
+  const eyebrowClass = isDarkMode ? 'text-slate-500' : 'text-slate-500';
+  const subtleTextClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
+  const inputClass = `w-full rounded-[20px] border px-4 py-3 text-sm outline-none transition-all ${
+    isDarkMode
+      ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-slate-500 focus:border-cyan-400/35 focus:bg-white/[0.06]'
+      : 'border-white/80 bg-white text-slate-900 placeholder:text-slate-400 focus:border-cyan-200 focus:bg-white'
+  }`;
+
+  const confirmationPhrase = useMemo(() => `delete ${group?.groupName || ''}`, [group?.groupName]);
+  const governanceSignals = [
+    {
+      label: currentLang === 'en' ? 'Identity state' : 'Trạng thái nhận diện',
+      value: group?.groupName ? (currentLang === 'en' ? 'Aligned' : 'Ổn định') : (currentLang === 'en' ? 'Needs setup' : 'Cần thiết lập'),
+      note: currentLang === 'en' ? 'the group name anchors this room' : 'tên nhóm là dấu hiệu nhận diện chính của không gian',
+      icon: Fingerprint,
+      tone: isDarkMode ? 'text-cyan-200 bg-cyan-400/10' : 'text-cyan-700 bg-cyan-50',
+    },
+    {
+      label: currentLang === 'en' ? 'Governance lane' : 'Làn quản trị',
+      value: isLeader ? (currentLang === 'en' ? 'Leader access' : 'Quyền trưởng nhóm') : (currentLang === 'en' ? 'Read only' : 'Chỉ theo dõi'),
+      note: currentLang === 'en' ? 'who can actively reshape the group' : 'ai đang có quyền thay đổi nhóm',
+      icon: ShieldCheck,
+      tone: isDarkMode ? 'text-emerald-200 bg-emerald-400/10' : 'text-emerald-700 bg-emerald-50',
+    },
+    {
+      label: currentLang === 'en' ? 'Subject axis' : 'Trục nội dung',
+      value: group?.subjectName || group?.topicName || '—',
+      note: currentLang === 'en' ? 'the academic direction of this room' : 'hướng nội dung chính của không gian này',
+      icon: Radar,
+      tone: isDarkMode ? 'text-amber-200 bg-amber-400/10' : 'text-amber-700 bg-amber-50',
+      isText: true,
+    },
+  ];
+
   const handleSave = useCallback(async () => {
     if (!groupName.trim()) {
       setErrorMsg(t('home.group.nameRequired'));
       return;
     }
+
     setSaving(true);
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      // Gọi API cập nhật nhóm (giả định endpoint PUT /group/{id})
-      await api.put(`/group/${group.groupId}`, {
+      await api.put(`/group/${group.workspaceId}`, {
         groupName: groupName.trim(),
-        description: description.trim(),
       });
       setIsEditing(false);
       setSuccessMsg(t('groupManage.settings.saveSuccess'));
-      if (onGroupUpdated) await onGroupUpdated();
-      // Ẩn message sau 3s
+      if (onGroupUpdated) {
+        await onGroupUpdated();
+      }
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
       setErrorMsg(t('groupManage.settings.saveError'));
@@ -60,14 +99,14 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated }) {
     } finally {
       setSaving(false);
     }
-  }, [groupName, description, group, onGroupUpdated, t]);
+  }, [group, groupName, onGroupUpdated, t]);
 
-  // Xóa nhóm
   const handleDelete = useCallback(async () => {
+    if (!group?.workspaceId) return;
+
     setDeleting(true);
     try {
-      await api.delete(`/group/${group.groupId}`);
-      // Redirect ra trang home sau khi xóa
+      await api.delete(`/group/${group.workspaceId}`);
       window.location.href = '/home';
     } catch (err) {
       setErrorMsg(t('groupManage.settings.deleteError'));
@@ -76,248 +115,326 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated }) {
     }
   }, [group, t]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setGroupName(group?.groupName || '');
-    setDescription(group?.description || '');
     setIsEditing(false);
     setErrorMsg('');
-  };
-
-  const cardClass = `rounded-2xl border transition-colors duration-300 ${
-    isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-200'
-  }`;
-
-  const inputClass = `w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all ${
-    isDarkMode
-      ? 'bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500'
-      : 'bg-white border-gray-200 text-gray-900 focus:border-blue-500 placeholder:text-gray-400'
-  }`;
+  }, [group]);
 
   return (
-    <div className={`space-y-6 animate-in fade-in duration-300 max-w-2xl mx-auto ${fontClass}`}>
-      {/* Thông báo thành công */}
-      {successMsg && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm ${
-          isDarkMode ? 'bg-green-950/30 border-green-800/50 text-green-400' : 'bg-green-50 border-green-200 text-green-700'
-        }`}>
-          <Check className="w-4 h-4" />
+    <div className={`space-y-6 animate-in fade-in duration-300 ${fontClass}`}>
+      {successMsg ? (
+        <div className={`flex items-center gap-2 rounded-[22px] border px-4 py-3 text-sm ${isDarkMode ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+          <Check className="h-4 w-4" />
           {successMsg}
         </div>
-      )}
+      ) : null}
 
-      {/* Thông báo lỗi */}
-      {errorMsg && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm ${
-          isDarkMode ? 'bg-red-950/30 border-red-800/50 text-red-400' : 'bg-red-50 border-red-200 text-red-700'
-        }`}>
-          <AlertTriangle className="w-4 h-4" />
+      {errorMsg ? (
+        <div className={`flex items-center gap-2 rounded-[22px] border px-4 py-3 text-sm ${isDarkMode ? 'border-red-400/20 bg-red-400/10 text-red-200' : 'border-red-200 bg-red-50 text-red-700'}`}>
+          <AlertTriangle className="h-4 w-4" />
           {errorMsg}
         </div>
-      )}
+      ) : null}
 
-      {/* Thông tin nhóm */}
-      <div className={`${cardClass} p-6`}>
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Info className={`w-5 h-5 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`} />
-            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {t('groupManage.settings.groupInfo')}
-            </h3>
+      <section className={`relative overflow-hidden rounded-[30px] border p-6 lg:p-7 ${shellClass}`}>
+        <div
+          className={`pointer-events-none absolute inset-0 ${
+            isDarkMode
+              ? 'bg-[linear-gradient(135deg,rgba(255,255,255,0.04),transparent_32%),radial-gradient(circle_at_80%_18%,rgba(34,197,94,0.12),transparent_18%),radial-gradient(circle_at_12%_18%,rgba(6,182,212,0.14),transparent_22%)]'
+              : 'bg-[linear-gradient(135deg,rgba(255,255,255,0.76),transparent_32%),radial-gradient(circle_at_80%_18%,rgba(34,197,94,0.10),transparent_18%),radial-gradient(circle_at_12%_18%,rgba(6,182,212,0.10),transparent_22%)]'
+          }`}
+        />
+
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] ${isDarkMode ? 'border-cyan-400/25 bg-cyan-400/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700'}`}>
+                {currentLang === 'en' ? 'Governance deck' : 'Boong quản trị'}
+              </span>
+              <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200' : 'border-white/80 bg-white/80 text-slate-700'}`}>
+                {currentLang === 'en' ? 'Identity and guardrails' : 'Nhận diện và quy chuẩn'}
+              </span>
+            </div>
+
+            <h2 className={`mt-4 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              {currentLang === 'en' ? 'Shape the room without breaking the rhythm' : 'Tinh chỉnh không gian mà vẫn giữ đúng nhịp vận hành'}
+            </h2>
+            <p className={`mt-3 max-w-3xl text-sm leading-6 ${subtleTextClass}`}>
+              {currentLang === 'en'
+                ? 'This surface is for naming the collective, clarifying its purpose, and protecting the lifecycle of the workspace.'
+                : 'Đây là nơi định danh nhóm, làm rõ mục đích hoạt động và giữ các quyết định quan trọng của không gian học tập thật có kiểm soát.'}
+            </p>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {governanceSignals.map((signal) => {
+                const Icon = signal.icon;
+                return (
+                  <div key={signal.label} className={`rounded-[24px] border p-4 ${softCardClass}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${signal.tone}`}>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
+                        {signal.label}
+                      </span>
+                    </div>
+                    <p className={`mt-4 ${signal.isText ? 'text-xl' : 'text-2xl'} font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {signal.value}
+                    </p>
+                    <p className={`mt-2 text-sm ${subtleTextClass}`}>
+                      {signal.note}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          {isLeader && !isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-all active:scale-95 ${
-                isDarkMode ? 'text-blue-400 hover:bg-blue-950/30' : 'text-blue-600 hover:bg-blue-50'
-              }`}
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              {t('groupManage.settings.edit')}
-            </button>
-          )}
+
+          <div className="xl:w-[320px] xl:flex-none">
+            <div className={`rounded-[26px] border p-5 ${softCardClass}`}>
+              <div className="flex items-center gap-2">
+                <Sparkles className={`h-4 w-4 ${isDarkMode ? 'text-cyan-200' : 'text-cyan-700'}`} />
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
+                  {currentLang === 'en' ? 'Control note' : 'Ghi chú điều phối'}
+                </p>
+              </div>
+              <p className={`mt-4 text-sm leading-6 ${subtleTextClass}`}>
+                {isLeader
+                  ? (currentLang === 'en'
+                    ? 'Edit only what improves clarity. The best group settings feel invisible because everyone understands the room instantly.'
+                    : 'Chỉ thay đổi những gì giúp nhóm rõ ràng hơn. Một cấu hình tốt là khi mọi người hiểu không gian này gần như ngay lập tức.')
+                  : (currentLang === 'en'
+                    ? 'You can review how the group is configured here, while structural edits stay with the leader.'
+                    : 'Bạn có thể theo dõi cấu hình nhóm tại đây, còn các thay đổi cấu trúc vẫn thuộc quyền của trưởng nhóm.')}
+              </p>
+
+              <div className={`mt-5 rounded-[22px] border px-4 py-4 ${isDarkMode ? 'border-white/10 bg-black/20' : 'border-white/80 bg-white'}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
+                  {currentLang === 'en' ? 'Workspace fingerprint' : 'Dấu vân tay không gian'}
+                </p>
+                <p className={`mt-3 break-all text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                  #{group?.workspaceId || '—'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <div className="space-y-4">
-          {/* Tên nhóm */}
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.group.groupName')}
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                className={inputClass}
-                placeholder={t('home.group.groupNamePlaceholder')}
-              />
-            ) : (
-              <p className={`text-sm py-3 px-4 rounded-xl ${
-                isDarkMode ? 'bg-slate-800/50 text-slate-200' : 'bg-gray-50 text-gray-800'
-              }`}>
-                {group?.groupName || '—'}
-              </p>
-            )}
-          </div>
-
-          {/* Mô tả */}
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.group.description')}
-            </label>
-            {isEditing ? (
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className={`${inputClass} resize-none`}
-                placeholder={t('home.group.descriptionPlaceholder')}
-              />
-            ) : (
-              <p className={`text-sm py-3 px-4 rounded-xl min-h-[60px] ${
-                isDarkMode ? 'bg-slate-800/50 text-slate-200' : 'bg-gray-50 text-gray-800'
-              }`}>
-                {group?.description || t('groupManage.dashboard.noDescription')}
-              </p>
-            )}
-          </div>
-
-          {/* Thông tin chỉ đọc: Topic, Subject */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                {t('groupManage.dashboard.topic')}
-              </label>
-              <p className={`text-sm py-3 px-4 rounded-xl ${
-                isDarkMode ? 'bg-slate-800/50 text-slate-400' : 'bg-gray-50 text-gray-500'
-              }`}>
-                {group?.topicName || '—'}
-              </p>
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className={`rounded-[30px] border p-6 ${shellClass}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Info className={`h-5 w-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+              <div>
+                <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {t('groupManage.settings.groupInfo')}
+                </h3>
+                <p className={`mt-1 text-sm ${subtleTextClass}`}>
+                  {currentLang === 'en' ? 'Name and identity markers' : 'Tên gọi và các dấu hiệu nhận diện'}
+                </p>
+              </div>
             </div>
-            <div>
-              <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                {t('groupManage.settings.subject')}
-              </label>
-              <p className={`text-sm py-3 px-4 rounded-xl ${
-                isDarkMode ? 'bg-slate-800/50 text-slate-400' : 'bg-gray-50 text-gray-500'
-              }`}>
-                {group?.subjectName || '—'}
-              </p>
-            </div>
-          </div>
 
-          {/* Nút lưu / hủy */}
-          {isEditing && (
-            <div className="flex items-center gap-3 pt-2">
+            {isLeader && !isEditing ? (
               <button
-                onClick={handleCancel}
-                className={`px-5 py-2.5 text-sm rounded-xl border transition-all active:scale-95 ${
-                  isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                onClick={() => setIsEditing(true)}
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all active:scale-95 ${
+                  isDarkMode
+                    ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.10]'
+                    : 'border-white bg-white text-slate-700 hover:bg-white'
                 }`}
               >
-                {t('home.group.cancel')}
+                <Pencil className="h-4 w-4" />
+                {t('groupManage.settings.edit')}
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-5 py-2.5 text-sm rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-600/20 disabled:opacity-50 flex items-center gap-2"
-              >
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t('groupManage.settings.save')}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Vùng nguy hiểm - Xóa nhóm (chỉ leader) */}
-      {isLeader && (
-        <div className={`rounded-2xl border-2 transition-colors duration-300 ${
-          isDarkMode ? 'border-red-900/50 bg-red-950/10' : 'border-red-100 bg-red-50/30'
-        } p-6`}>
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className={`w-5 h-5 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
-            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-red-400' : 'text-red-700'}`}>
-              {t('groupManage.settings.dangerZone')}
-            </h3>
+            ) : null}
           </div>
-          <p className={`text-sm mb-4 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            {t('groupManage.settings.deleteWarning')}
-          </p>
 
-          {!showDeleteConfirm ? (
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm rounded-xl border-2 font-medium transition-all active:scale-95 ${
-                isDarkMode
-                  ? 'border-red-800 text-red-400 hover:bg-red-950/30'
-                  : 'border-red-200 text-red-600 hover:bg-red-50'
-              }`}
-            >
-              <Trash2 className="w-4 h-4" />
-              {t('groupManage.settings.deleteGroup')}
-            </button>
-          ) : (
-            <div className={`flex flex-col gap-4 p-4 rounded-xl border ${
-              isDarkMode ? 'bg-red-950/20 border-red-900/50' : 'bg-red-50 border-red-200'
-            }`}>
-              <div className="space-y-2">
-                <p className={`text-sm font-medium ${isDarkMode ? 'text-red-300' : 'text-red-700'}`}>
-                  {t('groupManage.settings.deleteConfirm')}
-                </p>
-                <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                  {i18n.language === 'en' 
-                    ? <>To confirm, please type <span className="font-bold select-all">delete {group.groupName}</span> below:</>
-                    : <>Để xác nhận, vui lòng nhập <span className="font-bold select-all">delete {group.groupName}</span> vào ô bên dưới:</>}
-                </p>
+          <div className="mt-6 space-y-5">
+            <div>
+              <label className={`mb-2 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                {t('home.group.groupName')}
+              </label>
+              {isEditing ? (
                 <input
                   type="text"
-                  value={deleteConfirmationInput}
-                  onChange={(e) => setDeleteConfirmationInput(e.target.value)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-all ${
-                    isDarkMode
-                      ? 'bg-slate-900 border-red-800/50 text-white focus:border-red-500 placeholder:text-slate-500'
-                      : 'bg-white border-red-200 text-gray-900 focus:border-red-500 placeholder:text-gray-400'
-                  }`}
-                  placeholder={`delete ${group.groupName}`}
+                  value={groupName}
+                  onChange={(event) => setGroupName(event.target.value)}
+                  className={inputClass}
+                  placeholder={t('home.group.groupNamePlaceholder')}
                 />
-              </div>
+              ) : (
+                <div className={`rounded-[22px] border px-4 py-3 ${softCardClass}`}>
+                  <p className={`text-sm ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                    {group?.groupName || '—'}
+                  </p>
+                </div>
+              )}
+            </div>
 
-              <div className="flex justify-end gap-3">
+            {isEditing ? (
+              <div className="flex flex-wrap items-center gap-3">
                 <button
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setDeleteConfirmationInput('');
-                  }}
-                  className={`px-4 py-2 text-sm rounded-xl border transition-all active:scale-95 ${
-                    isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  onClick={handleCancel}
+                  className={`rounded-full border px-5 py-2.5 text-sm font-medium transition-all active:scale-95 ${
+                    isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]' : 'border-white bg-white text-slate-700 hover:bg-white'
                   }`}
                 >
                   {t('home.group.cancel')}
                 </button>
                 <button
-                  onClick={handleDelete}
-                  disabled={deleteConfirmationInput !== `delete ${group.groupName}` || deleting}
-                  className="px-4 py-2 text-sm rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-600/20 transition-all hover:bg-cyan-700 active:scale-95 disabled:opacity-50"
                 >
-                  {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t('groupManage.settings.confirmDelete')}
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('groupManage.settings.save')}
                 </button>
               </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="space-y-6">
+          <div className={`rounded-[30px] border p-6 ${shellClass}`}>
+            <div className="flex items-center gap-2">
+              <Settings className={`h-5 w-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+              <div>
+                <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {currentLang === 'en' ? 'Guardrails' : 'Hàng rào vận hành'}
+                </h3>
+                <p className={`mt-1 text-sm ${subtleTextClass}`}>
+                  {currentLang === 'en' ? 'Stable metadata that frames how the group is understood' : 'Các dữ liệu ổn định định nghĩa cách mọi người hiểu về nhóm'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              <div className={`rounded-[22px] border p-4 ${softCardClass}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
+                  {t('groupManage.dashboard.topic')}
+                </p>
+                <p className={`mt-3 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {group?.topicName || '—'}
+                </p>
+              </div>
+
+              <div className={`rounded-[22px] border p-4 ${softCardClass}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
+                  {t('groupManage.settings.subject')}
+                </p>
+                <p className={`mt-3 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {group?.subjectName || '—'}
+                </p>
+              </div>
+
+              <div className={`rounded-[22px] border p-4 ${softCardClass}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
+                  {currentLang === 'en' ? 'Change authority' : 'Quyền thay đổi'}
+                </p>
+                <p className={`mt-3 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {isLeader ? t('home.group.leader') : t('home.group.member')}
+                </p>
+                <p className={`mt-2 text-sm ${subtleTextClass}`}>
+                  {isLeader
+                    ? (currentLang === 'en' ? 'You can rename, reposition, or remove this group.' : 'Bạn có thể đổi tên, tinh chỉnh hoặc xóa nhóm này.')
+                    : t('groupManage.settings.leaderOnly')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {isLeader ? (
+            <div className={`rounded-[30px] border p-6 ${isDarkMode ? 'border-red-400/20 bg-red-500/10 text-white' : 'border-red-200 bg-red-50/80 text-slate-900'}`}>
+              <div className="flex items-start gap-3">
+                <span className={`mt-0.5 flex h-11 w-11 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-red-400/10 text-red-200' : 'bg-red-100 text-red-700'}`}>
+                  <Trash2 className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-red-200/80' : 'text-red-600'}`}>
+                    {t('groupManage.settings.dangerZone')}
+                  </p>
+                  <h3 className={`mt-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-red-800'}`}>
+                    {currentLang === 'en' ? 'Retire this group carefully' : 'Kết thúc nhóm này một cách có kiểm soát'}
+                  </h3>
+                  <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-red-100/85' : 'text-red-700'}`}>
+                    {t('groupManage.settings.deleteWarning')}
+                  </p>
+                </div>
+              </div>
+
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className={`mt-5 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-all active:scale-95 ${
+                    isDarkMode ? 'border-red-300/25 bg-red-400/10 text-red-100 hover:bg-red-400/15' : 'border-red-200 bg-white text-red-700 hover:bg-red-50'
+                  }`}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  {t('groupManage.settings.deleteGroup')}
+                </button>
+              ) : (
+                <div className={`mt-5 rounded-[24px] border p-5 ${isDarkMode ? 'border-red-300/15 bg-black/20' : 'border-red-200 bg-white'}`}>
+                  <p className={`text-sm font-semibold ${isDarkMode ? 'text-red-100' : 'text-red-700'}`}>
+                    {t('groupManage.settings.deleteConfirm')}
+                  </p>
+                  <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-red-100/80' : 'text-slate-600'}`}>
+                    {currentLang === 'en'
+                      ? <>Type <span className="font-bold">{confirmationPhrase}</span> to confirm permanent removal.</>
+                      : <>Nhập <span className="font-bold">{confirmationPhrase}</span> để xác nhận xóa vĩnh viễn.</>}
+                  </p>
+
+                  <input
+                    type="text"
+                    value={deleteConfirmationInput}
+                    onChange={(event) => setDeleteConfirmationInput(event.target.value)}
+                    className={`mt-4 w-full rounded-[18px] border px-4 py-3 text-sm outline-none transition-all ${
+                      isDarkMode
+                        ? 'border-red-300/15 bg-white/[0.04] text-white placeholder:text-slate-500 focus:border-red-300/30'
+                        : 'border-red-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-red-300'
+                    }`}
+                    placeholder={confirmationPhrase}
+                  />
+
+                  <div className="mt-5 flex flex-wrap justify-end gap-3">
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeleteConfirmationInput('');
+                      }}
+                      className={`rounded-full border px-4 py-2 text-sm font-medium transition-all active:scale-95 ${
+                        isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.10]' : 'border-gray-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {t('home.group.cancel')}
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleteConfirmationInput !== confirmationPhrase || deleting}
+                      className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                      {t('groupManage.settings.confirmDelete')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={`rounded-[30px] border p-6 text-center ${shellClass}`}>
+              <ShieldCheck className={`mx-auto h-10 w-10 ${isDarkMode ? 'text-slate-600' : 'text-slate-300'}`} />
+              <p className={`mt-4 text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {currentLang === 'en' ? 'Leader-only controls' : 'Khu vực dành cho trưởng nhóm'}
+              </p>
+              <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>
+                {t('groupManage.settings.leaderOnly')}
+              </p>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Nếu không phải leader, hiển thị thông báo */}
-      {!isLeader && (
-        <div className={`${cardClass} p-6 text-center`}>
-          <Settings className={`w-10 h-10 mx-auto mb-3 ${isDarkMode ? 'text-slate-700' : 'text-gray-300'}`} />
-          <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            {t('groupManage.settings.leaderOnly')}
-          </p>
-        </div>
-      )}
+        </section>
+      </div>
     </div>
   );
 }

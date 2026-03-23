@@ -40,7 +40,6 @@ function CreateNewDialog({
 
   // Group fields
   const [groupName, setGroupName] = useState('');
-  const [description, setDescription] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -62,7 +61,6 @@ function CreateNewDialog({
       setWsTitle('');
       setWsDescription('');
       setGroupName('');
-      setDescription('');
       setTopicId('');
       setSubjectId('');
       setErrors({});
@@ -111,7 +109,6 @@ function CreateNewDialog({
           topicId: Number(topicId),
           ...(subjectId ? { subjectId: Number(subjectId) } : {}),
           groupName: groupName.trim(),
-          description: description.trim(),
         });
       }
       onOpenChange(false);
@@ -245,7 +242,7 @@ function CreateNewDialog({
             </>
           )}
 
-          {/* Form group: Tên nhóm + Mô tả */}
+          {/* Form group: Tên nhóm */}
           {mode === 'group' && (
             <>
               <div>
@@ -261,19 +258,6 @@ function CreateNewDialog({
                   autoFocus
                 />
                 {errors.groupName && <p className="text-red-500 text-xs mt-1">{errors.groupName}</p>}
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                  {t('home.group.description')}
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t('home.group.descriptionPlaceholder')}
-                  rows={2}
-                  className={`${inputBase} resize-none`}
-                />
               </div>
             </>
           )}
