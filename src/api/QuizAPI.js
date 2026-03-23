@@ -154,6 +154,12 @@ export const getAttemptAssessment = async (attemptId) => {
   return response;
 };
 
+// Lấy danh sách recommendation PENDING của workspace cá nhân
+export const getPendingRecommendations = async (workspaceId) => {
+  const response = await api.get(`/workspace-assessments/pending-recommendations?workspaceId=${workspaceId}`);
+  return response;
+};
+
 // Tạo quiz từ workspace assessment (tái sử dụng pipeline AI quiz)
 export const generateQuizFromWorkspaceAssessment = async (assessmentId) => {
   const response = await api.post(`/workspace-assessments/${assessmentId}/generate-quiz`);

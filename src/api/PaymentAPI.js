@@ -9,14 +9,18 @@ export const getPurchasablePlans = (type) => {
   return api.get('/plan/purchasable', { params: { type } });
 };
 
-export const createMomoPayment = (planId, groupId = null) => {
-  const params = groupId ? { groupId } : {};
-  return api.post(`/momo/create/${planId}`, null, { params });
+export const createMomoPayment = (planId, workspaceId = null) => {
+  if (workspaceId) {
+    return api.post(`/momo/create-workspace/${workspaceId}`);
+  }
+  return api.post(`/momo/create/${planId}`);
 };
 
-export const createVnPayPayment = (planId, groupId = null) => {
-  const params = groupId ? { groupId } : {};
-  return api.post(`/vnpay/create/${planId}`, null, { params });
+export const createVnPayPayment = (planId, workspaceId = null) => {
+  if (workspaceId) {
+    return api.post(`/vnpay/create-workspace/${workspaceId}`);
+  }
+  return api.post(`/vnpay/create/${planId}`);
 };
 
 // Credit wallet payments

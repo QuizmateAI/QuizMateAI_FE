@@ -173,14 +173,14 @@ function UserDetailPage() {
     }
   };
 
-  const fetchGroupDetail = async (groupId) => {
-    if (groupDetails[groupId]) return;
+  const fetchGroupDetail = async (workspaceId) => {
+    if (groupDetails[workspaceId]) return;
     try {
-      const res = await getGroupDetail(groupId);
+      const res = await getGroupDetail(workspaceId);
       const data = res?.data ?? res;
-      setGroupDetails((prev) => ({ ...prev, [groupId]: data }));
+      setGroupDetails((prev) => ({ ...prev, [workspaceId]: data }));
     } catch (err) {
-      setGroupDetails((prev) => ({ ...prev, [groupId]: null }));
+      setGroupDetails((prev) => ({ ...prev, [workspaceId]: null }));
     }
   };
 
@@ -365,12 +365,12 @@ function UserDetailPage() {
               ) : (
                 groups.map((g) => (
                   <div
-                    key={g.groupId}
+                    key={g.workspaceId}
                     className={`rounded-xl border overflow-hidden ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
                   >
                     <div
                       className="flex items-center justify-between gap-4 p-4 cursor-pointer hover:bg-slate-700/30 transition-colors"
-                      onClick={() => setExpandedGroup(expandedGroup === g.groupId ? null : g.groupId)}
+                      onClick={() => setExpandedGroup(expandedGroup === g.workspaceId ? null : g.workspaceId)}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <UsersRound className="w-5 h-5 text-indigo-500 flex-shrink-0" />
@@ -379,23 +379,23 @@ function UserDetailPage() {
                           <p className="text-sm text-slate-500">{g.topicName} • {g.memberCount ?? 0} {t('userDetail.members')}</p>
                         </div>
                       </div>
-                      {(g.description || (expandedGroup === g.groupId && groupDetails[g.groupId]?.description)) && (
+                      {(g.description || (expandedGroup === g.workspaceId && groupDetails[g.workspaceId]?.description)) && (
                         <p className={`text-sm flex-1 text-right line-clamp-2 max-w-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                          {g.description || groupDetails[g.groupId]?.description}
+                          {g.description || groupDetails[g.workspaceId]?.description}
                         </p>
                       )}
-                      {expandedGroup === g.groupId ? (
+                      {expandedGroup === g.workspaceId ? (
                         <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
                       ) : (
                         <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
                       )}
                     </div>
-                    {expandedGroup === g.groupId && (
+                    {expandedGroup === g.workspaceId && (
                       <div className={`p-4 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-                        {groupDetails[g.groupId] === undefined ? (
+                        {groupDetails[g.workspaceId] === undefined ? (
                           <ListSpinner variant="inline" />
-                        ) : groupDetails[g.groupId] ? (
-                          <GroupExpandContent group={groupDetails[g.groupId]} isDarkMode={isDarkMode} t={t} />
+                        ) : groupDetails[g.workspaceId] ? (
+                          <GroupExpandContent group={groupDetails[g.workspaceId]} isDarkMode={isDarkMode} t={t} />
                         ) : (
                           <p className="text-sm text-slate-400">{t('userDetail.noDetail')}</p>
                         )}

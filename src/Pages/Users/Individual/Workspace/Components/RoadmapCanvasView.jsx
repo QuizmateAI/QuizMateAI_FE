@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Rows3, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
+import { BookOpen, BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
@@ -147,7 +147,6 @@ function buildLayout(phases, phaseOffsets, knowledgeOffsets) {
 function RoadmapCanvasView({
   isDarkMode = false,
   workspaceId = null,
-  groupId = null,
   onCreateRoadmap,
   onCreateRoadmapPhases,
   onCreatePhaseKnowledge,
@@ -190,7 +189,7 @@ function RoadmapCanvasView({
   const loadRoadmap = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await getRoadmapGraph({ workspaceId, groupId });
+      const response = await getRoadmapGraph({ workspaceId });
       const nextRoadmap = response?.data?.data ?? null;
       const storedCanvasView = nextRoadmap?.roadmapId
         ? localStorage.getItem(`roadmap_${nextRoadmap.roadmapId}_canvasView`)
@@ -219,7 +218,7 @@ function RoadmapCanvasView({
     } finally {
       setLoading(false);
     }
-  }, [forcedCanvasView, groupId, onCanvasViewChange, workspaceId]);
+  }, [forcedCanvasView, workspaceId, onCanvasViewChange]);
 
   useEffect(() => {
     if (!forcedCanvasView) return;

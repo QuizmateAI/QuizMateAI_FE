@@ -90,7 +90,7 @@ describe("Payment test cases execution", () => {
     expect(screen.getByText("Premium Yearly - 999000")).toBeInTheDocument();
   });
 
-  it("TC_PAY_02: routes to payment with planId and groupId for group upgrade", async () => {
+  it("TC_PAY_02: routes to payment with planId and workspaceId for group upgrade", async () => {
     const onOpenChange = vi.fn();
 
     getPurchasablePlans.mockResolvedValue({
@@ -102,14 +102,14 @@ describe("Payment test cases execution", () => {
         open
         onOpenChange={onOpenChange}
         planType="GROUP"
-        preSelectedGroupId={123}
+        preSelectedWorkspaceId={123}
       />
     );
 
     fireEvent.click(await screen.findByRole("button", { name: "Group Pro - 499000" }));
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(mockNavigate).toHaveBeenCalledWith("/payment?planId=7&groupId=123");
+    expect(mockNavigate).toHaveBeenCalledWith("/payment?planId=7&workspaceId=123");
   });
 
   it("TC_PAY_03: shows success result details from payment callback params", async () => {

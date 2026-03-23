@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { unwrapApiData } from '@/Utils/apiResponse';
 import {
   getWorkspacesByUser,
   createWorkspace as createWorkspaceAPI,
+  createGroupWorkspace as createGroupWorkspaceAPI,
   updateWorkspace as updateWorkspaceAPI,
   deleteIndividualWorkspace as deleteWorkspaceAPI,
   getWorkspaceById,
@@ -70,6 +72,7 @@ function normalizeWorkspaceList(payload) {
 }
 
 const WORKSPACES_QUERY_KEY = ['workspaces'];
+const GROUPS_QUERY_KEY = ['groups'];
 
 // Hook quản lý toàn bộ logic workspace: CRUD (dùng React Query cho fetch)
 export function useWorkspace(options = {}) {
@@ -84,7 +87,7 @@ export function useWorkspace(options = {}) {
     queryKey: [...WORKSPACES_QUERY_KEY, page, size],
     queryFn: async () => {
       const res = await getWorkspacesByUser(page, size);
-      const responseData = res.data || {};
+      const responseData = unwrapApiData(res) || {};
       if (Array.isArray(responseData)) {
         const normalized = normalizeWorkspaceArray(responseData);
         return { workspaces: normalized, pagination: { page: 0, size: normalized.length, totalPages: 1, totalElements: normalized.length } };
@@ -125,7 +128,7 @@ export function useWorkspace(options = {}) {
     setWorkspaceDetailLoading(true);
     try {
       const res = await getWorkspaceById(workspaceId);
-      const workspace = normalizeWorkspace(res.data || null);
+      const workspace = normalizeWorkspace(unwrapApiData(res) || null);
       setCurrentWorkspace(workspace);
       return workspace;
     } catch (err) {
@@ -152,13 +155,23 @@ export function useWorkspace(options = {}) {
   const createWorkspace = useCallback(async (data) => {
     const res = await createWorkspaceAPI(data);
     await queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
-    return normalizeWorkspace(res.data);
+    return normalizeWorkspace(unwrapApiData(res));
+  }, [queryClient]);
+
+  // Tạo group workspace mới
+  const createGroupWorkspace = useCallback(async (data) => {
+    const res = await createGroupWorkspaceAPI(data);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY }),
+    ]);
+    return normalizeWorkspace(unwrapApiData(res));
   }, [queryClient]);
 
   // Cập nhật workspace
   const editWorkspace = useCallback(async (workspaceId, data) => {
     const res = await updateWorkspaceAPI(workspaceId, data);
-    const updatedWorkspace = normalizeWorkspace(res.data || {});
+    const updatedWorkspace = normalizeWorkspace(unwrapApiData(res) || {});
     queryClient.setQueryData([...WORKSPACES_QUERY_KEY, page, size], (old) => {
       if (!old) return old;
       return {
@@ -190,6 +203,7 @@ export function useWorkspace(options = {}) {
     fetchWorkspaces,
     fetchWorkspaceDetail,
     createWorkspace,
+    createGroupWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,

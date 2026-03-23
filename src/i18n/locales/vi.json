@@ -1482,6 +1482,8 @@
           "IMAGED_BASED": "Dựa trên hình ảnh"
         },
         "bloomSkills": "Kỹ năng Bloom",
+        "bloomInfo": "Tham chiếu thang Bloom",
+        "bloomInfoAlt": "Biểu đồ thang Bloom taxonomy",
         "countUnit": "câu",
         "selectQuestionType": "Chọn loại câu hỏi",
         "selectBloomSkill": "Chọn bloom skill",
@@ -1537,6 +1539,22 @@
       "generateAI": "Tạo bằng AI",
       "generating": "AI đang tạo...",
       "questions": "câu hỏi",
+      "aiRecommendations": {
+        "button": "Gợi ý của AI",
+        "title": "Gợi ý Quiz từ AI",
+        "desc": "Dựa trên kết quả học tập của bạn, AI gợi ý các bài quiz phù hợp.",
+        "inlineTitle": "Các chủ đề AI gợi ý",
+        "inlineDesc": "Bấm vào tiêu đề để xem chi tiết trước khi tạo quiz.",
+        "inlineCreateQuiz": "Dùng gợi ý này để tạo quiz",
+        "inlineGenerating": "Đang tạo quiz...",
+        "hideDetail": "Ẩn",
+        "loading": "Đang tải gợi ý...",
+        "empty": "Chưa có gợi ý nào từ AI. Hãy hoàn thành thêm quiz để nhận gợi ý!",
+        "loadFailed": "Không thể tải danh sách gợi ý. Vui lòng thử lại.",
+        "generateFailed": "Tạo quiz thất bại. Vui lòng thử lại.",
+        "generating": "Đang tạo quiz...",
+        "createQuiz": "Tạo Quiz"
+      },
       "header": {
         "english": "English",
         "vietnamese": "Tiếng Việt",

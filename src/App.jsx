@@ -20,6 +20,7 @@ const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
 const WorkspacePage = lazy(() => import('./Pages/Users/Individual/Workspace/WorkspacePage'));
 const GroupWorkspacePage = lazy(() => import('./Pages/Users/Group/GroupWorkspacePage'));
 const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/GroupManagementPage'));
+const AcceptInvitationPage = lazy(() => import('./Pages/Users/Group/AcceptInvitationPage'));
 
 // Admin
 const AdminLayout = lazy(() => import('./Pages/Admin/AdminLayout'));
@@ -59,6 +60,7 @@ function App() {
         page của role đó */}
         {/* VNPay return: nếu request trúng frontend thay vì backend thì redirect sang backend */}
         <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
+        <Route path="/accept-invite" element={<AcceptInvitationPage />} />
 
         <Route element={<PublicRoute />}>
         <Route path="/" element={<LandingPage />} />
@@ -77,9 +79,9 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
           <Route path="/workspace/:workspaceId/*" element={<WorkspacePage />} />
-          <Route path="/group-workspace/:groupId" element={<GroupWorkspacePage />} />
-          <Route path="/group-workspace/:groupId/*" element={<GroupWorkspacePage />} />
-          <Route path="/group-manage/:groupId" element={<GroupManagementPage />} />
+          <Route path="/group-workspace/:workspaceId" element={<GroupWorkspacePage />} />
+          <Route path="/group-workspace/:workspaceId/*" element={<GroupWorkspacePage />} />
+          <Route path="/group-manage/:workspaceId" element={<GroupManagementPage />} />
           <Route path="/quiz/practice/:quizId" element={<PracticeQuizPage />} />
           <Route path="/quiz/exam/:quizId" element={<ExamQuizPage />} />
           <Route path="/quiz/result/:attemptId" element={<QuizResultPage />} />
@@ -92,7 +94,7 @@ function App() {
             <Route path="admins" element={<AdminManagement />} />
             <Route path="users/:userId" element={<UserDetailPage />} />
             <Route path="users" element={<UserManagement />} />
-            <Route path="groups/:groupId" element={<GroupDetailPage />} />
+            <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
               <Route path="plan" element={<PlanManagement />} />
             <Route path="credit" element={<CreditPackageManagement />} />
@@ -105,7 +107,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="users/:userId" element={<UserDetailPage />} />
             <Route path="users" element={<UserManagement />} />
-            <Route path="groups/:groupId" element={<GroupDetailPage />} />
+            <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
             <Route path="groups" element={<GroupManagement />} />
               <Route path="plan" element={<PlanManagement />} />
             <Route path="credit" element={<CreditPackageManagement />} />

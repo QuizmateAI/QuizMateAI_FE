@@ -154,3 +154,42 @@ html {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* ── Custom Scrollbar for Group Setup Form ── */
+.custom-scrollbar-group-setup {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.4) transparent;
+}
+
+.dark .custom-scrollbar-group-setup {
+  scrollbar-color: rgb(34 211 238 / 0.3) transparent;
+}
+
+.custom-scrollbar-group-setup::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar-group-setup::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar-group-setup::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.4);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar-group-setup::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184 / 0.6);
+}
+
+.dark .custom-scrollbar-group-setup::-webkit-scrollbar-thumb {
+  background: rgb(34 211 238 / 0.3);
+}
+
+.dark .custom-scrollbar-group-setup::-webkit-scrollbar-thumb:hover {
+  background: rgb(34 211 238 / 0.5);
+}

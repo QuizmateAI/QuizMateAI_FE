@@ -11,7 +11,7 @@ const METHODS = [
   { id: 'vnpay', alt: 'VNPay', logo: VnpayLogo },
 ];
 
-export default function PaymentMethods({ planId, planType, groupId }) {
+export default function PaymentMethods({ planId, planType, workspaceId }) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const [selected, setSelected] = useState(null);
@@ -24,10 +24,10 @@ export default function PaymentMethods({ planId, planType, groupId }) {
     setError('');
 
     try {
-      const gId = planType === 'GROUP' ? groupId : null;
+      const targetWorkspaceId = planType === 'GROUP' ? workspaceId : null;
 
       if (selected === 'momo') {
-        const res = await createMomoPayment(planId, gId);
+        const res = await createMomoPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         if (payUrl) {
           window.location.href = payUrl;
@@ -35,7 +35,7 @@ export default function PaymentMethods({ planId, planType, groupId }) {
         }
         setError(t('payment.momoError'));
       } else if (selected === 'vnpay') {
-        const res = await createVnPayPayment(planId, gId);
+        const res = await createVnPayPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         if (payUrl) {
           window.location.href = payUrl;
@@ -48,7 +48,7 @@ export default function PaymentMethods({ planId, planType, groupId }) {
     } finally {
       setLoading(false);
     }
-  }, [selected, planId, planType, groupId, t]);
+  }, [selected, planId, planType, workspaceId, t]);
 
   return (
     <div>

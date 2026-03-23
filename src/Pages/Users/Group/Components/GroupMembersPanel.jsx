@@ -15,7 +15,7 @@ import {
 // Panel hiển thị danh sách thành viên nhóm với quản lý role/upload
 function GroupMembersPanel({
   isDarkMode = false,
-  groupId,
+  workspaceId,
   currentUserRole,
   fetchMembers,
   onGrantUpload,
@@ -36,17 +36,17 @@ function GroupMembersPanel({
 
   // Tải danh sách thành viên
   const loadMembers = useCallback(async () => {
-    if (!groupId) return;
+    if (!workspaceId) return;
     setLoading(true);
     try {
-      const data = await fetchMembers(groupId);
+      const data = await fetchMembers(workspaceId);
       setMembers(data);
     } catch (err) {
       console.error('Lỗi khi tải danh sách thành viên:', err);
     } finally {
       setLoading(false);
     }
-  }, [groupId, fetchMembers]);
+  }, [workspaceId, fetchMembers]);
 
   useEffect(() => {
     loadMembers();
@@ -63,9 +63,9 @@ function GroupMembersPanel({
   const handleToggleUpload = async (member) => {
     try {
       if (member.canUpload) {
-        await onRevokeUpload(groupId, member.userId);
+        await onRevokeUpload(workspaceId, member.userId);
       } else {
-        await onGrantUpload(groupId, member.userId);
+        await onGrantUpload(workspaceId, member.userId);
       }
       await loadMembers();
     } catch (err) {
@@ -77,7 +77,7 @@ function GroupMembersPanel({
   // Xử lý đổi vai trò
   const handleChangeRole = async (member, newRole) => {
     try {
-      await onUpdateRole(groupId, member.userId, newRole);
+      await onUpdateRole(workspaceId, member.userId, newRole);
       await loadMembers();
     } catch (err) {
       console.error('Lỗi khi đổi vai trò:', err);
@@ -88,7 +88,7 @@ function GroupMembersPanel({
   // Xử lý xóa thành viên
   const handleRemove = async (member) => {
     try {
-      await onRemoveMember(groupId, member.userId);
+      await onRemoveMember(workspaceId, member.userId);
       setMembers((prev) => prev.filter((m) => m.userId !== member.userId));
     } catch (err) {
       console.error('Lỗi khi xóa thành viên:', err);
