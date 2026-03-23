@@ -6,7 +6,6 @@ import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
 import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
-import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 
 function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
   const match = pathname.match(/^\/workspace\/(\d+)/);
@@ -348,7 +347,8 @@ function QuizListView({
             {filtered.map((quiz) => {
               const ss = STATUS_STYLES[quiz.status] || STATUS_STYLES.DRAFT;
               const is = INTENT_STYLES[quiz.quizIntent] || {};
-              const completed = hasQuizCompleted(quiz.quizId);
+              const myAttempted = quiz?.myAttempted === true;
+              const myPassed = quiz?.myPassed === true;
               const durationInMinutes = getDurationInMinutes(quiz);
               return (
                 <div
@@ -411,16 +411,22 @@ function QuizListView({
                               : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
                           </span>
                         )}
-                        {quiz.status !== "DRAFT" && quiz.status !== "PROCESSING" && (
-                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${completed
-                            ? (isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-700")
-                            : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")
-                          }`}>
-                            {completed
-                              ? t("workspace.quiz.completed", "Đã làm")
-                              : t("workspace.quiz.notCompleted", "Chưa làm")}
-                          </span>
-                        )}
+                        <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${myAttempted
+                          ? (isDarkMode ? "bg-cyan-950/40 text-cyan-300" : "bg-cyan-100 text-cyan-700")
+                          : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")
+                        }`}>
+                          {myAttempted
+                            ? t("workspace.quiz.myAttemptedTrue", "Đã làm")
+                            : t("workspace.quiz.myAttemptedFalse", "Chưa làm")}
+                        </span>
+                        <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${myPassed
+                          ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                          : (isDarkMode ? "bg-amber-950/40 text-amber-300" : "bg-amber-100 text-amber-700")
+                        }`}>
+                          {myPassed
+                            ? t("workspace.quiz.myPassedTrue", "Đã đậu")
+                            : t("workspace.quiz.myPassedFalse", "Chưa đậu")}
+                        </span>
                       </div>
 
                       <div className="flex items-center justify-end gap-2.5">

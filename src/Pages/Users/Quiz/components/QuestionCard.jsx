@@ -49,8 +49,14 @@ export default function QuestionCard({
       : [];
   const textAnswer = typeof answerValue === 'string' ? answerValue : '';
   const correctTextAnswers = getCorrectTextAnswers(question);
+  const gradingStatus = String(question?.gradingStatus || '').toUpperCase();
+  const isPendingGrading = gradingStatus === 'PENDING';
 
   const isFullyCorrect = useMemo(() => {
+    if (isPendingGrading) {
+      return false;
+    }
+
     if (typeof question.isCorrect === 'boolean') {
       return question.isCorrect;
     }
@@ -65,7 +71,7 @@ export default function QuestionCard({
 
     const correctIds = question.answers.filter(a => a.isCorrect).map(a => a.id);
     return correctIds.length === normalizedSelectedAnswers.length && correctIds.every(id => normalizedSelectedAnswers.includes(id));
-  }, [question.answers, question.isCorrect, isTextQuestion, textAnswer, correctTextAnswers, normalizedSelectedAnswers]);
+  }, [question.answers, question.isCorrect, isPendingGrading, isTextQuestion, textAnswer, correctTextAnswers, normalizedSelectedAnswers]);
 
   const getStateClass = (answer) => {
     if (showResult) {
@@ -109,12 +115,17 @@ export default function QuestionCard({
           {showResult && (
             <div className={cn(
               'rounded-lg border px-3 py-2 text-sm',
-              isFullyCorrect
-                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-400'
-                : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400',
+              isPendingGrading
+                ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300'
+                : (isFullyCorrect
+                  ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-400'
+                  : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400'),
             )}>
               <p><span className="font-semibold">Câu trả lời của bạn:</span> {textAnswer.trim() || 'Chưa trả lời'}</p>
-              <p><span className="font-semibold">Đáp án đúng:</span> {correctTextAnswers.length ? correctTextAnswers.join(' / ') : 'Không có dữ liệu'}</p>
+              {isPendingGrading
+                ? <p><span className="font-semibold">Trạng thái:</span> Đang chấm bởi AI...</p>
+                : <p><span className="font-semibold">Đáp án đúng:</span> {correctTextAnswers.length ? correctTextAnswers.join(' / ') : 'Không có dữ liệu'}</p>
+              }
             </div>
           )}
         </div>
@@ -143,7 +154,9 @@ export default function QuestionCard({
 
       {showResult && (
         <div className="mt-3">
-          {isTextQuestion
+          {isPendingGrading
+            ? <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">… Đang chấm bởi AI</span>
+            : isTextQuestion
             ? (!textAnswer.trim()
                 ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer provided</span>
                 : isFullyCorrect

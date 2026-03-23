@@ -18,7 +18,7 @@ import PostLearningListView from "./PostLearningListView";
 import CreatePostLearningForm from "./CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onCreatePhaseKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, isGeneratingRoadmapPhases = false, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onCreatePhaseKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, isGeneratingRoadmapPhases = false, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -85,6 +85,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             forcedCanvasView={roadmapCanvasView}
             onCanvasViewChange={setRoadmapCanvasView}
             selectedPhaseId={selectedRoadmapPhaseId}
+            progressTracking={progressTracking}
           />
         );
       case "quiz":
@@ -129,7 +130,20 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
               {t("workspace.roadmap.title", "Roadmap")}
             </p>
-            <div className="inline-flex items-center gap-1 rounded-full border p-1">
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => onCreateRoadmapPhases?.()}
+                title="Làm mới quy trình tạo phase (dev only)"
+                className={`h-8 rounded-full px-3 ${isDarkMode ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700" : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"} border`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span className={`text-xs ml-1 ${fontClass}`}>Refresh</span>
+              </Button>
+              <div className="inline-flex items-center gap-1 rounded-full border p-1">
               <Button
                 type="button"
                 size="sm"
@@ -150,6 +164,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
                 <Map className="w-4 h-4 mr-1.5" />
                 <span className={fontClass}>View 2</span>
               </Button>
+              </div>
             </div>
           </div>
         ) : null}

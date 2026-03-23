@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from "@/Components/ui/dialog";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 import SourceDetailView from "./SourceDetailView";
+import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 
 // Format MIME type thành tên file type ngắn gọn
 function formatFileType(type) {
@@ -30,12 +31,19 @@ function getSourceIcon(type) {
   return <FileText className="w-4 h-4 text-gray-500" />;
 }
 
-function getSourceDisplayIcon(source) {
+function getSourceDisplayIcon(source, progressTracking = null) {
   const status = source?.status?.toUpperCase();
   if (status === "ERROR") return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />;
   if (status === "WARN" || status === "WARNED") return <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />;
   if (status === "REJECT" || status === "REJECTED") return <Ban className="w-4 h-4 text-red-600 shrink-0" />;
-  if (status === "PROCESSING") return <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />;
+  if (status === "PROCESSING") {
+    const materialId = source?.id;
+    const percent = progressTracking?.getMaterialProgress?.(materialId) ?? 0;
+    if (percent > 0) {
+      return <CircularProgressLoader percent={Math.min(percent, 100)} size="sm" color="blue" showSpinner={true} />;
+    }
+    return <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />;
+  }
   return getSourceIcon(source?.type);
 }
 
@@ -67,7 +75,8 @@ function SourcesPanel({
   isCollapsed = false, 
   onToggleCollapse,
   selectedIds: propSelectedIds,
-  onSelectionChange
+  onSelectionChange,
+  progressTracking = null
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -273,7 +282,7 @@ function SourcesPanel({
               }`}
               title={!canOpenSourceDetail(source) ? "Tài liệu đang được xử lý, vui lòng đợi." : undefined}
             >
-              {getSourceDisplayIcon(source)}
+              {getSourceDisplayIcon(source, progressTracking)}
             </button>
           ))}
         </div>
@@ -427,7 +436,7 @@ function SourcesPanel({
                     title={!canOpenSourceDetail(source) ? (source.status?.toUpperCase() === "REJECT" ? "Tài liệu không liên quan đến học tập" : "Tài liệu đang được xử lý, vui lòng đợi.") : undefined}
                   >
                     {/* Icon trạng thái: ERROR (chấm than), WARN (chấm than vàng), REJECT (ban), PROCESSING (spinner), hoặc icon file thông thường */}
-                    {getSourceDisplayIcon(source)}
+                    {getSourceDisplayIcon(source, progressTracking)}
                     <div className="min-w-0 flex-1 text-left">
                       <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{source.name}</p>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -449,7 +458,7 @@ function SourcesPanel({
                         )}
                         {source.status?.toUpperCase() === "PROCESSING" && (
                           <span className={`inline-flex items-center text-xs ${isDarkMode ? "text-blue-400" : "text-blue-500"}`}>
-                            Đang tải lên...
+                            Đang tải lên... {progressTracking?.getMaterialProgress?.(source?.id) ?? 0}%
                           </span>
                         )}
                         {!source.status || ["ACTIVE"].includes(source.status?.toUpperCase()) ? (
