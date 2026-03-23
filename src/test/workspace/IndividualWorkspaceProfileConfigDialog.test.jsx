@@ -264,7 +264,7 @@ async function moveToStepThree() {
     await Promise.resolve();
   });
 
-  expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).toBeInTheDocument();
+  expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).toBeInTheDocument();
 }
 
 async function clickConfirmButton() {
@@ -538,7 +538,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(validateProfileConsistency).toHaveBeenCalled();
     expect(getFooterPrimaryButton()).toBeDisabled();
     expect(getFooterPrimaryButton()).toHaveTextContent(i18n.t('workspace.profileConfig.stepTwo.overallReviewLoadingTitle'));
-    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
     expect(onSave).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -844,6 +844,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       3,
       expect.objectContaining({
         workspacePurpose: 'STUDY_NEW',
+        knowledgeLoad: expect.any(String),
         adaptationMode: expect.any(String),
         roadmapSpeedMode: expect.any(String),
       })
@@ -979,6 +980,8 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.sections.roadmapConfig'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.knowledgeLoad'))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.knowledgeLoad.BASIC.title'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.adaptationMode.BALANCED.title'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.roadmapSpeedMode'))).toBeInTheDocument();
@@ -986,9 +989,56 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.estimatedTotalDays'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.estimatedTotalDays', { value: 30 }))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.recommendedMinutesPerDay'))).toBeInTheDocument();
-    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.recommendedMinutesPerDay', { value: 90 }))).toBeInTheDocument();
+    expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.recommendedMinutesPerDay', { value: 60 }))).toBeInTheDocument();
     expect(onSave).toHaveBeenCalledTimes(2);
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('automatically reclassifies roadmap speed when the user extends the estimated study days', async () => {
+    const { onSave } = renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
+      knowledge: 'React hooks nang cao',
+      expectedDomainText: 'React',
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da biet React co ban va dang hoc hook nang cao' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
+      target: { value: 'Hoc co he thong de xay dung project React on dinh hon.' },
+    });
+
+    await moveToStepThree();
+
+    clickButtonByText(i18n.t('workspace.profileConfig.knowledgeLoad.INTERMEDIATE.title'));
+    clickButtonByText(i18n.t('workspace.profileConfig.roadmapSpeedMode.FAST.title'));
+
+    const [estimatedDaysInput, recommendedMinutesInput] = screen.getAllByRole('spinbutton');
+    expect(estimatedDaysInput).toHaveValue(30);
+    expect(recommendedMinutesInput).toHaveValue(140);
+
+    fireEvent.change(estimatedDaysInput, {
+      target: { value: '60' },
+    });
+
+    expect(recommendedMinutesInput).toHaveValue(70);
+
+    await clickConfirmButton();
+
+    expect(onSave).toHaveBeenCalledTimes(3);
+    expect(onSave).toHaveBeenNthCalledWith(
+      3,
+      3,
+      expect.objectContaining({
+        workspacePurpose: 'STUDY_NEW',
+        knowledgeLoad: 'INTERMEDIATE',
+        roadmapSpeedMode: 'STANDARD',
+        estimatedTotalDays: 60,
+        recommendedMinutesPerDay: 70,
+      })
+    );
   });
 
   it('keeps the final confirm disabled on step 2 until Quizmate AI finishes the overall review', async () => {
@@ -1454,7 +1504,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).toBeInTheDocument();
     expect(screen.getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
   });
 
@@ -1490,7 +1540,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
-    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
     expect(screen.getAllByText(i18n.t('workspace.profileConfig.footerHint', { current: 2, total: 2 })).length).toBeGreaterThan(0);
   });
 
@@ -1524,6 +1574,6 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
-    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.summaryTitle'))).not.toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
   });
 });

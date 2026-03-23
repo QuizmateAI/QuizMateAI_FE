@@ -6,11 +6,129 @@ export const ADAPTATION_MODE_OPTIONS = [
   { value: 'BALANCED', accent: 'from-sky-500 to-blue-600' },
 ];
 
+export const KNOWLEDGE_LOAD_OPTIONS = [
+  { value: 'BASIC', accent: 'from-cyan-500 to-sky-500' },
+  { value: 'INTERMEDIATE', accent: 'from-blue-500 to-indigo-500' },
+  { value: 'ADVANCED', accent: 'from-violet-500 to-fuchsia-500' },
+];
+
 export const ROADMAP_SPEED_OPTIONS = [
   { value: 'SLOW', accent: 'bg-emerald-500/15 text-emerald-300' },
   { value: 'STANDARD', accent: 'bg-sky-500/15 text-sky-300' },
   { value: 'FAST', accent: 'bg-amber-500/15 text-amber-300' },
 ];
+
+const ROADMAP_DAY_RECOMMENDATIONS = {
+  BASIC: {
+    FAST: 20,
+    STANDARD: 30,
+    SLOW: 45,
+  },
+  INTERMEDIATE: {
+    FAST: 30,
+    STANDARD: 60,
+    SLOW: 90,
+  },
+  ADVANCED: {
+    FAST: 45,
+    STANDARD: 90,
+    SLOW: 135,
+  },
+};
+
+const ROADMAP_TOTAL_MINUTES = {
+  BASIC: 1800,
+  INTERMEDIATE: 4200,
+  ADVANCED: 7200,
+};
+
+const ROADMAP_SPEED_PRIORITY = {
+  STANDARD: 0,
+  SLOW: 1,
+  FAST: 2,
+};
+
+export function normalizeKnowledgeLoad(value) {
+  if (value === 'INTERMEDIATE') return 'INTERMEDIATE';
+  if (value === 'ADVANCED') return 'ADVANCED';
+  if (value === 'FULL') return 'ADVANCED';
+  return 'BASIC';
+}
+
+export function getRecommendedRoadmapDays(knowledgeLoad, roadmapSpeedMode) {
+  const normalizedKnowledgeLoad = normalizeKnowledgeLoad(knowledgeLoad);
+  const normalizedRoadmapSpeedMode =
+    roadmapSpeedMode === 'SLOW'
+      ? 'SLOW'
+      : roadmapSpeedMode === 'FAST'
+        ? 'FAST'
+        : 'STANDARD';
+
+  return ROADMAP_DAY_RECOMMENDATIONS[normalizedKnowledgeLoad][normalizedRoadmapSpeedMode];
+}
+
+export function getRecommendedRoadmapMinutesPerDay(knowledgeLoad, rawDays) {
+  const normalizedKnowledgeLoad = normalizeKnowledgeLoad(knowledgeLoad);
+  const parsedDays = Number(rawDays);
+  const fallbackDays = ROADMAP_DAY_RECOMMENDATIONS[normalizedKnowledgeLoad].STANDARD;
+  const safeDays = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : fallbackDays;
+  const rawMinutesPerDay = ROADMAP_TOTAL_MINUTES[normalizedKnowledgeLoad] / safeDays;
+
+  return Math.max(15, Math.round(rawMinutesPerDay / 5) * 5);
+}
+
+export function inferRoadmapSpeedModeFromDays(knowledgeLoad, rawDays) {
+  const parsedDays = Number(rawDays);
+
+  if (!Number.isFinite(parsedDays) || parsedDays <= 0) {
+    return 'STANDARD';
+  }
+
+  const normalizedKnowledgeLoad = normalizeKnowledgeLoad(knowledgeLoad);
+  const candidates = Object.entries(ROADMAP_DAY_RECOMMENDATIONS[normalizedKnowledgeLoad]);
+  candidates.sort((left, right) => {
+    const distanceDelta = Math.abs(left[1] - parsedDays) - Math.abs(right[1] - parsedDays);
+
+    if (distanceDelta !== 0) {
+      return distanceDelta;
+    }
+
+    return ROADMAP_SPEED_PRIORITY[left[0]] - ROADMAP_SPEED_PRIORITY[right[0]];
+  });
+
+  return candidates[0]?.[0] || 'STANDARD';
+}
+
+export function inferKnowledgeLoadFromRoadmapConfig(roadmapSpeedMode, rawDays) {
+  const normalizedRoadmapSpeedMode =
+    roadmapSpeedMode === 'SLOW'
+      ? 'SLOW'
+      : roadmapSpeedMode === 'FAST'
+        ? 'FAST'
+        : 'STANDARD';
+  const parsedDays = Number(rawDays);
+
+  if (!Number.isFinite(parsedDays) || parsedDays <= 0) {
+    return 'BASIC';
+  }
+
+  const candidates = Object.entries(ROADMAP_DAY_RECOMMENDATIONS).map(([knowledgeLoad, dayMap]) => ({
+    knowledgeLoad,
+    recommendedDays: dayMap[normalizedRoadmapSpeedMode],
+  }));
+
+  candidates.sort((left, right) => {
+    const distanceDelta = Math.abs(left.recommendedDays - parsedDays) - Math.abs(right.recommendedDays - parsedDays);
+
+    if (distanceDelta !== 0) {
+      return distanceDelta;
+    }
+
+    return left.recommendedDays - right.recommendedDays;
+  });
+
+  return candidates[0]?.knowledgeLoad || 'BASIC';
+}
 
 export const TEMPLATE_FORMAT_OPTIONS = ['FULL_EXAM', 'SECTION_BASED', 'PRACTICE_SET'];
 
