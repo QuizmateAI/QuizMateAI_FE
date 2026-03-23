@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/Components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText, CheckCircle2, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { createFullQuiz } from "@/api/QuizAPI";
+import { createFullQuiz, getPendingRecommendations, generateQuizFromWorkspaceAssessment } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { generateAIQuiz, getQuestionTypes, getDifficultyDefinitions, getBloomSkills } from "@/api/AIAPI";
 import QuickCreateDialog from "../QuickCreateDialog";
+import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -116,12 +117,67 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [questionValidationErrors, setQuestionValidationErrors] = useState({});
+  const [inlineRecommendations, setInlineRecommendations] = useState([]);
+  const [inlineRecLoading, setInlineRecLoading] = useState(false);
+  const [inlineRecError, setInlineRecError] = useState("");
+  const [expandedRecId, setExpandedRecId] = useState(null);
+  const [inlineRecGeneratingId, setInlineRecGeneratingId] = useState(null);
 
   useEffect(() => {
     if (selectedMaterialIds.length > 0) {
       setFieldErrors((prev) => ({ ...prev, selectedMaterialIds: "" }));
     }
   }, [selectedMaterialIds.length]);
+
+  useEffect(() => {
+    if (!defaultContextId) {
+      setInlineRecommendations([]);
+      setExpandedRecId(null);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchInlineRecommendations = async () => {
+      setInlineRecLoading(true);
+      setInlineRecError("");
+      try {
+        const res = await getPendingRecommendations(defaultContextId);
+        if (cancelled) return;
+        const data = res?.data || res || [];
+        const next = Array.isArray(data) ? data.slice(0, 5) : [];
+        setInlineRecommendations(next);
+        setExpandedRecId((prev) => (next.some((item) => item.assessmentId === prev) ? prev : null));
+      } catch (e) {
+        if (cancelled) return;
+        console.error("Failed to load inline AI recommendations:", e);
+        setInlineRecError(e?.message || t("workspace.quiz.aiRecommendations.loadFailed"));
+      } finally {
+        if (!cancelled) setInlineRecLoading(false);
+      }
+    };
+
+    fetchInlineRecommendations();
+    return () => {
+      cancelled = true;
+    };
+  }, [defaultContextId, t]);
+
+  const handleGenerateFromInlineRecommendation = useCallback(async (assessmentId) => {
+    if (!assessmentId) return;
+    setInlineRecGeneratingId(assessmentId);
+    setInlineRecError("");
+
+    try {
+      const result = await generateQuizFromWorkspaceAssessment(assessmentId);
+      const quizData = result?.data || result;
+      await onCreateQuiz?.(quizData);
+    } catch (e) {
+      console.error("Failed to generate quiz from inline recommendation:", e);
+      setInlineRecError(e?.message || t("workspace.quiz.aiRecommendations.generateFailed"));
+    } finally {
+      setInlineRecGeneratingId(null);
+    }
+  }, [onCreateQuiz, t]);
 
   // State quản lý vị trí tạo quiz — luôn là KNOWLEDGE
   const [selectedContextId, setSelectedContextId] = useState("");
@@ -1060,7 +1116,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1">
           <BadgeCheck className="w-5 h-5 text-blue-500" />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
             {t("workspace.quiz.createTitle")}
@@ -1075,6 +1131,132 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
 
         <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
           {t("workspace.quiz.validation.requiredFieldsHint")}
+        </div>
+
+        <div className={`rounded-2xl border p-4 md:p-5 ${isDarkMode ? "border-violet-700/50 bg-gradient-to-br from-violet-950/35 to-slate-900" : "border-violet-200 bg-gradient-to-br from-violet-50 to-white"}`}>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="min-w-0">
+              <p className={`text-base font-semibold ${isDarkMode ? "text-violet-200" : "text-violet-800"} ${fontClass}`}>
+                {t("workspace.quiz.aiRecommendations.inlineTitle")}
+              </p>
+              <p className={`text-sm mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+                {t("workspace.quiz.aiRecommendations.inlineDesc")}
+              </p>
+            </div>
+            <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center ${isDarkMode ? "bg-violet-500/20" : "bg-violet-100"}`}>
+              <Sparkles className={`w-4.5 h-4.5 ${isDarkMode ? "text-violet-300" : "text-violet-600"}`} />
+            </div>
+          </div>
+
+          {inlineRecLoading && (
+            <div className={`text-xs flex items-center gap-2 ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {t("workspace.quiz.aiRecommendations.loading")}
+            </div>
+          )}
+
+          {!inlineRecLoading && inlineRecError && (
+            <div className={`text-xs px-2.5 py-2 rounded-lg ${isDarkMode ? "bg-red-950/25 text-red-300 border border-red-900/40" : "bg-red-50 text-red-600 border border-red-200"} ${fontClass}`}>
+              {inlineRecError}
+            </div>
+          )}
+
+          {!inlineRecLoading && !inlineRecError && inlineRecommendations.length > 0 && (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {inlineRecommendations.map((rec) => {
+                  const isActive = expandedRecId === rec.assessmentId;
+                  return (
+                    <button
+                      key={rec.assessmentId}
+                      type="button"
+                      onClick={() => setExpandedRecId(rec.assessmentId)}
+                      className={`text-sm px-3 py-2 rounded-xl border font-medium transition-all active:scale-95 ${isActive
+                        ? (isDarkMode ? "bg-violet-600/25 border-violet-500 text-violet-100 shadow-sm shadow-violet-900/30" : "bg-violet-100 border-violet-300 text-violet-700")
+                        : (isDarkMode ? "bg-slate-800 border-slate-700 text-slate-200 hover:border-violet-500/40" : "bg-white border-gray-200 text-gray-700 hover:border-violet-300")
+                      } ${fontClass}`}
+                    >
+                      {rec.displayTitle}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {expandedRecId && (() => {
+                const activeRec = inlineRecommendations.find((rec) => rec.assessmentId === expandedRecId);
+                if (!activeRec) return null;
+
+                return (
+                  <div className={`mt-4 p-4 rounded-xl border ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
+                        {activeRec.displayTitle}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedRecId(null)}
+                        className={`text-[11px] px-2 py-1 rounded-md border transition-colors ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-600 hover:bg-gray-100"} ${fontClass}`}
+                      >
+                        {t("workspace.quiz.aiRecommendations.hideDetail")}
+                      </button>
+                    </div>
+
+                    {activeRec.displayReason && (
+                      <p className={`text-sm mt-2 leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+                        {activeRec.displayReason}
+                      </p>
+                    )}
+
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                        {activeRec.questionCount} {t("workspace.quiz.questions")}
+                      </span>
+                    </div>
+
+                    {Array.isArray(activeRec.focusTopics) && activeRec.focusTopics.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {activeRec.focusTopics.map((topic, idx) => (
+                          <span
+                            key={`${activeRec.assessmentId}-${idx}`}
+                            className={`text-[11px] px-2 py-0.5 rounded-full border ${isDarkMode ? "bg-slate-800 border-slate-700 text-slate-300" : "bg-gray-50 border-gray-200 text-gray-600"}`}
+                          >
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-3">
+                      <Button
+                        type="button"
+                        onClick={() => handleGenerateFromInlineRecommendation(activeRec.assessmentId)}
+                        disabled={inlineRecGeneratingId !== null}
+                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {inlineRecGeneratingId === activeRec.assessmentId ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            {t("workspace.quiz.aiRecommendations.inlineGenerating")}
+                          </>
+                        ) : (
+                          <>
+                            <Rocket className="w-4 h-4 mr-2" />
+                            {t("workspace.quiz.aiRecommendations.inlineCreateQuiz")}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          )}
+
+          {!inlineRecLoading && !inlineRecError && inlineRecommendations.length === 0 && (
+            <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+              {t("workspace.quiz.aiRecommendations.empty")}
+            </p>
+          )}
         </div>
 
         {/* Tab chọn chế độ */}
@@ -1956,6 +2138,27 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                  <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
                    <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
                       <BrainCircuit className="w-4 h-4 text-teal-500"/> {t("workspace.quiz.aiConfig.bloomSkills")}
+                      <div className="relative group/bloom-info">
+                        <button
+                          type="button"
+                          className={`inline-flex items-center justify-center w-5 h-5 rounded-full border transition-colors ${isDarkMode ? "border-slate-700 text-slate-400 hover:text-teal-300 hover:border-teal-500/50" : "border-gray-300 text-gray-500 hover:text-teal-600 hover:border-teal-400"}`}
+                          aria-label={t("workspace.quiz.aiConfig.bloomInfo")}
+                          title={t("workspace.quiz.aiConfig.bloomInfo")}
+                        >
+                          <Info className="w-3.5 h-3.5" />
+                        </button>
+
+                        <div className={`hidden group-hover/bloom-info:block group-focus-within/bloom-info:block absolute left-0 top-7 z-50 w-[320px] md:w-[420px] p-2 rounded-xl border shadow-xl ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`}>
+                          <p className={`text-xs font-medium mb-1 ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                            {t("workspace.quiz.aiConfig.bloomInfo")}
+                          </p>
+                          <img
+                            src={bloomTaxonomyImage}
+                            alt={t("workspace.quiz.aiConfig.bloomInfoAlt")}
+                            className="w-full h-auto rounded-lg border border-slate-200/30"
+                          />
+                        </div>
+                      </div>
                    </h3>
                    <div className="mb-3 flex items-center gap-2">
                      <input type="checkbox" checked={bloomUnit} onChange={(e) => setBloomUnit(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
