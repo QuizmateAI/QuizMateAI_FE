@@ -78,6 +78,7 @@ export default function QuizResultPage() {
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
   const autoKnowledgeTriggerAttemptedRef = useRef(false);
+  const pendingResultPollingRef = useRef(null);
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
@@ -284,6 +285,11 @@ export default function QuizResultPage() {
 
     return result.questions.map((attemptQuestion, index) => {
       const detailQuestion = questionMap.get(attemptQuestion.questionId);
+      const gradingStatus = String(attemptQuestion?.gradingStatus || '').toUpperCase();
+      const evaluatedCorrect =
+        typeof attemptQuestion?.correct === 'boolean'
+          ? attemptQuestion.correct
+          : (typeof attemptQuestion?.isCorrect === 'boolean' ? attemptQuestion.isCorrect : null);
 
       return {
         id: attemptQuestion.questionId,
@@ -294,11 +300,20 @@ export default function QuizResultPage() {
         answers: detailQuestion?.answers || [],
         selectedAnswerIds: attemptQuestion.selectedAnswerIds || [],
         textAnswer: attemptQuestion.textAnswer || '',
-        isCorrect: attemptQuestion.correct,
+        isCorrect: evaluatedCorrect,
+        gradingStatus,
         questionScore: attemptQuestion.questionScore || 0,
       };
     });
   }, [result, quizDetails]);
+
+  const pendingGradingCount = useMemo(() => {
+    const fromResult = Number(result?.pendingGradingQuestionCount);
+    if (Number.isInteger(fromResult) && fromResult >= 0) {
+      return fromResult;
+    }
+    return reviewQuestions.filter((question) => String(question?.gradingStatus || '').toUpperCase() === 'PENDING').length;
+  }, [result?.pendingGradingQuestionCount, reviewQuestions]);
 
   const handleBack = useCallback(() => {
     if (directQuizDetailBackPath) {
@@ -335,6 +350,99 @@ export default function QuizResultPage() {
 
     questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [currentPage, itemsPerPage]);
+
+  const canTriggerKnowledgeAfterPreLearning = preLearningGenerationContext.isPreLearningQuiz
+    && preLearningGenerationContext.isCompletedAttempt
+    && preLearningGenerationContext.isValidRoadmapContext;
+
+  const handleGenerateKnowledgeAfterPreLearning = useCallback(async () => {
+    const { roadmapId, phaseId, workspaceId } = preLearningGenerationContext;
+    if (!canTriggerKnowledgeAfterPreLearning || generatingKnowledge || knowledgeGenerationTriggered) return;
+
+    setGeneratingKnowledge(true);
+    try {
+      markPhaseContentGenerating(workspaceId, phaseId);
+      await generateRoadmapPhaseContent({
+        roadmapId,
+        phaseId,
+        skipPreLearning: false,
+      });
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(preLearningGenerateDedupeKey, '1');
+      }
+
+      setKnowledgeGenerationTriggered(true);
+      showSuccess(t('workspace.quiz.result.generateKnowledgeSuccess', 'Đã gửi yêu cầu tạo knowledge cho phase này.'));
+    } catch (error) {
+      unmarkPhaseContentGenerating(workspaceId, phaseId);
+      console.error('Failed to generate roadmap phase content after pre-learning:', error);
+      showError(error?.message || t('workspace.quiz.result.generateKnowledgeFail', 'Tạo knowledge thất bại. Vui lòng thử lại.'));
+    } finally {
+      setGeneratingKnowledge(false);
+    }
+  }, [
+    canTriggerKnowledgeAfterPreLearning,
+    generatingKnowledge,
+    knowledgeGenerationTriggered,
+    preLearningGenerateDedupeKey,
+    preLearningGenerationContext,
+    showError,
+    showSuccess,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (!knowledgeGenerationHydrated) return;
+    if (!canTriggerKnowledgeAfterPreLearning) return;
+    if (knowledgeGenerationTriggered || generatingKnowledge) return;
+    if (autoKnowledgeTriggerAttemptedRef.current) return;
+
+    autoKnowledgeTriggerAttemptedRef.current = true;
+    void handleGenerateKnowledgeAfterPreLearning();
+  }, [
+    canTriggerKnowledgeAfterPreLearning,
+    generatingKnowledge,
+    handleGenerateKnowledgeAfterPreLearning,
+    knowledgeGenerationHydrated,
+    knowledgeGenerationTriggered,
+  ]);
+
+  useEffect(() => {
+    if (!attemptId) return undefined;
+    if (!result) return undefined;
+    if (pendingGradingCount <= 0) return undefined;
+
+    let cancelled = false;
+    pendingResultPollingRef.current = globalThis.setInterval(async () => {
+      try {
+        const res = await getAttemptResult(attemptId);
+        if (cancelled) return;
+
+        const latestResult = res?.data || null;
+        if (!latestResult) return;
+        setResult(latestResult);
+
+        const latestPending = Number(latestResult?.pendingGradingQuestionCount);
+        if (Number.isInteger(latestPending) && latestPending <= 0 && pendingResultPollingRef.current) {
+          globalThis.clearInterval(pendingResultPollingRef.current);
+          pendingResultPollingRef.current = null;
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed polling attempt result while grading pending:', error);
+        }
+      }
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      if (pendingResultPollingRef.current) {
+        globalThis.clearInterval(pendingResultPollingRef.current);
+        pendingResultPollingRef.current = null;
+      }
+    };
+  }, [attemptId, pendingGradingCount, result]);
 
   if (loading) {
     return (
@@ -403,63 +511,6 @@ export default function QuizResultPage() {
       setGeneratingQuiz(false);
     }
   };
-
-  const canTriggerKnowledgeAfterPreLearning = preLearningGenerationContext.isPreLearningQuiz
-    && preLearningGenerationContext.isCompletedAttempt
-    && preLearningGenerationContext.isValidRoadmapContext;
-
-  const handleGenerateKnowledgeAfterPreLearning = useCallback(async () => {
-    const { roadmapId, phaseId, workspaceId } = preLearningGenerationContext;
-    if (!canTriggerKnowledgeAfterPreLearning || generatingKnowledge || knowledgeGenerationTriggered) return;
-
-    setGeneratingKnowledge(true);
-    try {
-      markPhaseContentGenerating(workspaceId, phaseId);
-      await generateRoadmapPhaseContent({
-        roadmapId,
-        phaseId,
-        skipPreLearning: false,
-      });
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(preLearningGenerateDedupeKey, '1');
-      }
-
-      setKnowledgeGenerationTriggered(true);
-      showSuccess(t('workspace.quiz.result.generateKnowledgeSuccess', 'Đã gửi yêu cầu tạo knowledge cho phase này.'));
-    } catch (error) {
-      unmarkPhaseContentGenerating(workspaceId, phaseId);
-      console.error('Failed to generate roadmap phase content after pre-learning:', error);
-      showError(error?.message || t('workspace.quiz.result.generateKnowledgeFail', 'Tạo knowledge thất bại. Vui lòng thử lại.'));
-    } finally {
-      setGeneratingKnowledge(false);
-    }
-  }, [
-    canTriggerKnowledgeAfterPreLearning,
-    generatingKnowledge,
-    knowledgeGenerationTriggered,
-    preLearningGenerateDedupeKey,
-    preLearningGenerationContext,
-    showError,
-    showSuccess,
-    t,
-  ]);
-
-  useEffect(() => {
-    if (!knowledgeGenerationHydrated) return;
-    if (!canTriggerKnowledgeAfterPreLearning) return;
-    if (knowledgeGenerationTriggered || generatingKnowledge) return;
-    if (autoKnowledgeTriggerAttemptedRef.current) return;
-
-    autoKnowledgeTriggerAttemptedRef.current = true;
-    void handleGenerateKnowledgeAfterPreLearning();
-  }, [
-    canTriggerKnowledgeAfterPreLearning,
-    generatingKnowledge,
-    handleGenerateKnowledgeAfterPreLearning,
-    knowledgeGenerationHydrated,
-    knowledgeGenerationTriggered,
-  ]);
 
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
@@ -620,6 +671,11 @@ export default function QuizResultPage() {
                 <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
               </Button>
             </div>
+            {pendingGradingCount > 0 && (
+              <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+                {t('workspace.quiz.result.pendingGradingNotice', 'Một số câu tự luận đang được AI chấm. Kết quả sẽ tự cập nhật.')}
+              </p>
+            )}
           </div>
         )}
 
@@ -637,14 +693,18 @@ export default function QuizResultPage() {
             <div className="space-y-4">
               {reviewQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
                 const globalIdx = (currentPage - 1) * itemsPerPage + idx;
+                const isPending = String(q?.gradingStatus || '').toUpperCase() === 'PENDING';
+                const isCorrect = q.isCorrect === true;
                 return (
                 <div key={q.id} className="relative" ref={el => { if (el) questionRefs.current[globalIdx] = el; }}>
                   {/* Correct/incorrect badge */}
                   <div className={cn(
                     'absolute -left-2 -top-2 z-10 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
-                    q.isCorrect ? 'bg-emerald-500' : 'bg-red-500'
+                    isPending
+                      ? 'bg-amber-500'
+                      : (isCorrect ? 'bg-emerald-500' : 'bg-red-500')
                   )}>
-                    {q.isCorrect ? '✓' : '✗'}
+                    {isPending ? '…' : (isCorrect ? '✓' : '✗')}
                   </div>
                   <QuestionCard
                     question={q}
@@ -688,17 +748,18 @@ export default function QuizResultPage() {
 
                 <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-300">
-                    {t('workspace.quiz.result.correct', 'Correct')}: {reviewQuestions.filter((question) => question?.isCorrect).length}
+                    {t('workspace.quiz.result.correct', 'Correct')}: {reviewQuestions.filter((question) => question?.isCorrect === true).length}
                   </div>
                   <div className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/30 dark:text-rose-300">
-                    {t('workspace.quiz.result.wrong', 'Wrong')}: {reviewQuestions.filter((question) => !question?.isCorrect).length}
+                    {t('workspace.quiz.result.wrong', 'Wrong')}: {reviewQuestions.filter((question) => question?.isCorrect === false).length}
                   </div>
                 </div>
 
                 <div className="grid max-h-[58vh] grid-cols-5 gap-2 overflow-y-auto pr-1 pb-1">
                   {navQuestions.map((q, idx) => {
                     const globalIdx = navStartIndex + idx;
-                    const isCorrect = q.isCorrect;
+                    const isPending = String(q?.gradingStatus || '').toUpperCase() === 'PENDING';
+                    const isCorrect = q.isCorrect === true;
                     const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
                     return (
                       <button
@@ -706,9 +767,11 @@ export default function QuizResultPage() {
                         onClick={() => jumpToQuestion(globalIdx)}
                         className={cn(
                           'h-9 w-9 rounded-lg border text-xs font-semibold transition-all duration-200 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900',
-                          isCorrect
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
-                            : 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
+                          isPending
+                            ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
+                            : (isCorrect
+                              ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
+                              : 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35'),
                           inCurrentPage
                             ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900'
                             : ''
