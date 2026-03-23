@@ -1486,6 +1486,8 @@
           "IMAGED_BASED": "Image based"
         },
         "bloomSkills": "Bloom Skills",
+        "bloomInfo": "Bloom taxonomy reference",
+        "bloomInfoAlt": "Bloom taxonomy chart",
         "countUnit": "count",
         "selectQuestionType": "Select question type",
         "selectBloomSkill": "Select bloom skill",
@@ -1541,6 +1543,22 @@
       "generateAI": "Generate with AI",
       "generating": "AI is generating...",
       "questions": "questions",
+      "aiRecommendations": {
+        "button": "AI Suggestions",
+        "title": "AI Quiz Suggestions",
+        "desc": "Based on your learning results, AI suggests quizzes tailored for you.",
+        "inlineTitle": "Suggested Topics From AI",
+        "inlineDesc": "Click a title to preview details before generating a quiz.",
+        "inlineCreateQuiz": "Use this suggestion to create quiz",
+        "inlineGenerating": "Creating quiz...",
+        "hideDetail": "Hide",
+        "loading": "Loading suggestions...",
+        "empty": "No AI suggestions yet. Complete more quizzes to receive recommendations!",
+        "loadFailed": "Failed to load suggestions. Please try again.",
+        "generateFailed": "Failed to generate quiz. Please try again.",
+        "generating": "Generating quiz...",
+        "createQuiz": "Create Quiz"
+      },
       "header": {
         "english": "English",
         "vietnamese": "Tiếng Việt",
