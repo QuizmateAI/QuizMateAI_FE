@@ -28,7 +28,7 @@
 - Automated coverage:
 1. Render upgrade dialog in GROUP mode with pre-selected group.
 2. Select upgrade action from plan card.
-3. Verify redirect URL contains planId and groupId.
+3. Verify redirect URL contains planId and workspaceId.
 - Result note: Redirect generated correctly to payment route with expected query params.
 
 ### TC_PAY_03 (Success)

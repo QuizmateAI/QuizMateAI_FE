@@ -195,15 +195,15 @@ function GroupManagement() {
                 ) : filteredGroups.length > 0 ? (
                   filteredGroups.map((group) => (
                     <TableRow 
-                      key={group.groupId ?? group.id} 
-                      onClick={() => navigate(`${basePath}/groups/${group.groupId ?? group.id}`)}
+                      key={group.workspaceId ?? group.id} 
+                      onClick={() => navigate(`${basePath}/groups/${group.workspaceId ?? group.id}`)}
                       className={`border-b transition-colors cursor-pointer ${
                         isDarkMode 
                           ? 'border-slate-800 hover:bg-slate-800/50' 
                           : 'border-slate-100 hover:bg-slate-50/50'
                       }`}
                     >
-                      <TableCell className="font-bold text-blue-600 dark:text-blue-400 text-left">{group.groupId ?? group.id}</TableCell>
+                      <TableCell className="font-bold text-blue-600 dark:text-blue-400 text-left">{group.workspaceId ?? group.id}</TableCell>
                       <TableCell className={`font-semibold text-left ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         <div className="flex items-center gap-2">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -239,7 +239,7 @@ function GroupManagement() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className={`w-48 ${isDarkMode ? 'bg-slate-800 border-slate-700' : ''}`}>
                             <DropdownMenuItem 
-                              onClick={() => navigate(`${basePath}/groups/${group.groupId ?? group.id}`)}
+                              onClick={() => navigate(`${basePath}/groups/${group.workspaceId ?? group.id}`)}
                               className="cursor-pointer"
                             >
                               <Eye className="w-4 h-4 mr-2 text-blue-500" />

@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 function CreateGroupInfoDialog({ open, onOpenChange, topics, topicsLoading, onCreate, isDarkMode }) {
   const { t, i18n } = useTranslation();
@@ -18,20 +18,12 @@ function CreateGroupInfoDialog({ open, onOpenChange, topics, topicsLoading, onCr
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [groupName, setGroupName] = useState('');
-  const [description, setDescription] = useState('');
-  const [topicId, setTopicId] = useState('');
-  const [subjectId, setSubjectId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const selectedTopic = topics.find((tp) => tp.topicId === Number(topicId));
-  const subjects = selectedTopic?.subjects || [];
-
-  useEffect(() => { setSubjectId(''); }, [topicId]);
-
   useEffect(() => {
     if (!open) {
-      setGroupName(''); setDescription(''); setTopicId(''); setSubjectId('');
+      setGroupName('');
       setErrors({}); setSubmitting(false);
     }
   }, [open]);
@@ -51,7 +43,6 @@ function CreateGroupInfoDialog({ open, onOpenChange, topics, topicsLoading, onCr
   const validate = () => {
     const newErrors = {};
     if (!groupName.trim()) newErrors.groupName = t('home.group.nameRequired');
-    if (!topicId) newErrors.topicId = t('home.group.topicRequired');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -62,10 +53,7 @@ function CreateGroupInfoDialog({ open, onOpenChange, topics, topicsLoading, onCr
     setSubmitting(true);
     try {
       await onCreate({
-        topicId: Number(topicId),
-        ...(subjectId ? { subjectId: Number(subjectId) } : {}),
-        groupName: groupName.trim(),
-        description: description.trim(),
+        name: groupName.trim(),
       });
     } catch (err) {
       showError(err?.message || t('home.group.createError'));
@@ -104,63 +92,6 @@ function CreateGroupInfoDialog({ open, onOpenChange, topics, topicsLoading, onCr
               autoFocus
             />
             {errors.groupName && <p className="text-red-500 text-xs mt-1">{errors.groupName}</p>}
-          </div>
-
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.group.description')}
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('home.group.descriptionPlaceholder')}
-              rows={2}
-              className={`${inputBase} resize-none`}
-            />
-          </div>
-
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.group.topicLabel')}
-            </label>
-            <div className="relative">
-              <select
-                value={topicId}
-                onChange={(e) => setTopicId(e.target.value)}
-                className={`${selectBase} ${errors.topicId ? 'border-red-500' : ''}`}
-                disabled={topicsLoading}
-              >
-                <option value="">{topicsLoading ? '...' : t('home.group.topicPlaceholder')}</option>
-                {topics.map((topic) => (
-                  <option key={topic.topicId} value={topic.topicId}>{topic.title}</option>
-                ))}
-              </select>
-              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
-            </div>
-            {errors.topicId && <p className="text-red-500 text-xs mt-1">{errors.topicId}</p>}
-          </div>
-
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.group.subjectLabel')}{' '}
-              <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
-            </label>
-            <div className="relative">
-              <select
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-                className={`${selectBase} ${!topicId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!topicId || topicsLoading}
-              >
-                <option value="">
-                  {!topicId ? t('home.group.selectTopicFirst') : t('home.group.subjectPlaceholder')}
-                </option>
-                {subjects.map((sub) => (
-                  <option key={sub.subjectId} value={sub.subjectId}>{sub.title}</option>
-                ))}
-              </select>
-              <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
-            </div>
           </div>
 
           <DialogFooter className="pt-2">

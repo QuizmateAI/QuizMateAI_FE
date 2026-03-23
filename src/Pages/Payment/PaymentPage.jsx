@@ -60,7 +60,7 @@ export default function PaymentPage() {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null);
 
   const { groups } = useGroup({ enabled: true });
   const leaderGroups = groups.filter((g) => g.memberRole === 'LEADER');
@@ -83,7 +83,7 @@ export default function PaymentPage() {
   }, [isSettingsOpen]);
 
   const planId = searchParams.get('planId');
-  const groupId = searchParams.get('groupId') || selectedGroupId;
+  const workspaceId = searchParams.get('workspaceId') || selectedWorkspaceId;
   const planTypeParam = searchParams.get('planType');
 
   useEffect(() => {
@@ -104,9 +104,9 @@ export default function PaymentPage() {
 
   const noPlanId = !planId;
   const isGroupPlan = plan?.type === 'GROUP' || planTypeParam === 'GROUP';
-  const needGroupSelect = isGroupPlan && !searchParams.get('groupId');
+  const needGroupSelect = isGroupPlan && !searchParams.get('workspaceId');
 
-  const selectedGroup = groups.find((g) => String(g.groupId) === String(groupId));
+  const selectedGroup = groups.find((g) => String(g.workspaceId) === String(workspaceId));
 
   return (
     <div className={`min-h-screen ${fontClass} transition-colors ${
@@ -260,11 +260,11 @@ export default function PaymentPage() {
                     <div className="space-y-2">
                       {leaderGroups.map((g) => (
                         <button
-                          key={g.groupId}
+                          key={g.workspaceId}
                           type="button"
-                          onClick={() => setSelectedGroupId((prev) => prev === g.groupId ? null : g.groupId)}
+                          onClick={() => setSelectedWorkspaceId((prev) => prev === g.workspaceId ? null : g.workspaceId)}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer ${
-                            selectedGroupId === g.groupId
+                            selectedWorkspaceId === g.workspaceId
                               ? isDarkMode
                                 ? 'bg-blue-600/20 border-blue-500 border ring-1 ring-blue-500/30'
                                 : 'bg-blue-50 border-blue-300 border ring-1 ring-blue-200'
@@ -278,7 +278,7 @@ export default function PaymentPage() {
                           <span className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                             {g.memberCount || 0} {t('home.labels.membersUnit')}
                           </span>
-                          {selectedGroupId === g.groupId && (
+                          {selectedWorkspaceId === g.workspaceId && (
                             <ChevronRight className={`w-4 h-4 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                           )}
                         </button>
@@ -289,7 +289,7 @@ export default function PaymentPage() {
               )}
 
               {/* Hiển thị nhóm đã chọn */}
-              {isGroupPlan && groupId && selectedGroup && (
+              {isGroupPlan && workspaceId && selectedGroup && (
                 <div className={`mt-6 rounded-2xl p-4 flex items-center gap-3 ${
                   isDarkMode ? 'bg-slate-800/60 ring-1 ring-slate-700' : 'bg-blue-50 ring-1 ring-blue-200'
                 }`}>
@@ -307,7 +307,7 @@ export default function PaymentPage() {
             </div>
             <div className="w-full lg:w-[400px] shrink-0">
               <div className="lg:sticky lg:top-24">
-                <PaymentSidebar plan={plan} groupId={groupId} needGroupSelect={needGroupSelect && !selectedGroupId} />
+                <PaymentSidebar plan={plan} workspaceId={workspaceId} needGroupSelect={needGroupSelect && !selectedWorkspaceId} />
               </div>
             </div>
           </div>

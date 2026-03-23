@@ -37,8 +37,8 @@ export const getUserSubscription = async (userId) => {
   return response;
 };
 
-export const getGroupSubscription = async (groupId) => {
-  const response = await api.get(`/management/groups/${groupId}/subscription`);
+export const getGroupSubscription = async (workspaceId) => {
+  const response = await api.get(`/management/groups/${workspaceId}/subscription`);
   return response;
 };
 
@@ -48,8 +48,8 @@ export const getAllGroups = async (page = 0, size = 10) => {
   return response;
 };
 
-export const getGroupDetail = async (groupId) => {
-  const response = await api.get(`/management/groups/${groupId}`);
+export const getGroupDetail = async (workspaceId) => {
+  const response = await api.get(`/management/groups/${workspaceId}`);
   return response;
 };
 
@@ -103,8 +103,8 @@ export const getAuditLogs = async (actorId, action, page = 0, size = 50) => {
   return response;
 };
 
-export const getGroupLogs = async (groupId) => {
-  const response = await api.get(`/management/groups/${groupId}/logs`);
+export const getGroupLogs = async (workspaceId) => {
+  const response = await api.get(`/management/groups/${workspaceId}/logs`);
   return response;
 };
 

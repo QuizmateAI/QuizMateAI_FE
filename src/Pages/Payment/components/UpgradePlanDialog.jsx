@@ -15,14 +15,14 @@ import PlanCard from "@/Pages/Users/Profile/Components/PlanCard";
  *  - open / onOpenChange: điều khiển dialog
  *  - planType: "INDIVIDUAL" | "GROUP"
  *  - groups: danh sách nhóm mà user là LEADER (chỉ cần khi planType === "GROUP")
- *  - preSelectedGroupId: nếu đã biết groupId (từ GroupWorkspace)
+ *  - preSelectedWorkspaceId: nếu đã biết workspaceId (từ GroupWorkspace)
  */
 export default function UpgradePlanDialog({
   open,
   onOpenChange,
   planType = "INDIVIDUAL",
   groups = [],
-  preSelectedGroupId = null,
+  preSelectedWorkspaceId = null,
 }) {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
@@ -32,10 +32,10 @@ export default function UpgradePlanDialog({
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedGroupId, setSelectedGroupId] = useState(preSelectedGroupId);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(preSelectedWorkspaceId);
 
   const isGroup = planType === "GROUP";
-  const needGroupSelect = isGroup && !preSelectedGroupId;
+  const needGroupSelect = isGroup && !preSelectedWorkspaceId;
 
   // Fetch plans khi mở dialog
   useEffect(() => {
@@ -64,11 +64,11 @@ export default function UpgradePlanDialog({
   // Reset group selection khi mở / đổi type
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSelectedGroupId(preSelectedGroupId);
+      setSelectedWorkspaceId(preSelectedWorkspaceId);
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [open, preSelectedGroupId]);
+  }, [open, preSelectedWorkspaceId]);
 
   const leaderGroups = useMemo(
     () => groups.filter((g) => g.memberRole === "LEADER"),
@@ -77,14 +77,14 @@ export default function UpgradePlanDialog({
 
   const handleUpgrade = useCallback(
     (plan) => {
-      const groupParam = isGroup ? selectedGroupId : null;
+      const groupParam = isGroup ? selectedWorkspaceId : null;
       const url = groupParam
-        ? `/payment?planId=${plan.planId}&groupId=${groupParam}`
+        ? `/payment?planId=${plan.planId}&workspaceId=${groupParam}`
         : `/payment?planId=${plan.planId}`;
       onOpenChange(false);
       navigate(url);
     },
-    [isGroup, selectedGroupId, navigate, onOpenChange],
+    [isGroup, selectedWorkspaceId, navigate, onOpenChange],
   );
 
   const titleIcon = isGroup
@@ -130,11 +130,11 @@ export default function UpgradePlanDialog({
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {leaderGroups.map((g) => (
                   <button
-                    key={g.groupId}
+                    key={g.workspaceId}
                     type="button"
-                    onClick={() => setSelectedGroupId(g.groupId)}
+                    onClick={() => setSelectedWorkspaceId(g.workspaceId)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all cursor-pointer ${
-                      selectedGroupId === g.groupId
+                      selectedWorkspaceId === g.workspaceId
                         ? isDarkMode
                           ? "bg-blue-600/20 border-blue-500 border ring-1 ring-blue-500/30"
                           : "bg-blue-50 border-blue-300 border ring-1 ring-blue-200"
@@ -148,7 +148,7 @@ export default function UpgradePlanDialog({
                     <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
                       {g.memberCount || 0} {t("home.labels.membersUnit")}
                     </span>
-                    {selectedGroupId === g.groupId && (
+                    {selectedWorkspaceId === g.workspaceId && (
                       <ChevronRight className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
                     )}
                   </button>
@@ -180,7 +180,7 @@ export default function UpgradePlanDialog({
                 plan={plan}
                 highlight={idx === 0 && plans.length > 1}
                 onUpgrade={handleUpgrade}
-                disabled={needGroupSelect && !selectedGroupId}
+                disabled={needGroupSelect && !selectedWorkspaceId}
               />
             ))}
           </div>

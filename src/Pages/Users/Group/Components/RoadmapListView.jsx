@@ -8,7 +8,6 @@ import {
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import {
-  getRoadmapsByGroup,
   getRoadmapsByWorkspace,
   getPhasesByRoadmap,
   getKnowledgesByPhase,
@@ -45,7 +44,6 @@ function RoadmapListView({
   isDarkMode,
   onCreateRoadmap,
   createdItems = [],
-  groupId = null,
   workspaceId = null,
 }) {
   const { t, i18n } = useTranslation();
@@ -81,12 +79,10 @@ function RoadmapListView({
 
   /* ==================== FETCH DATA (chỉ roadmap/phase/knowledge dùng API thật) ==================== */
   const fetchRoadmaps = useCallback(async () => {
-    if (!groupId && !workspaceId) { setRoadmaps([]); return; }
+    if (!workspaceId) { setRoadmaps([]); return; }
     setLoading(true);
     try {
-      const res = groupId
-        ? await getRoadmapsByGroup(groupId, 0, 50)
-        : await getRoadmapsByWorkspace(workspaceId, 0, 50);
+      const res = await getRoadmapsByWorkspace(workspaceId, 0, 50);
       const content = res?.data?.data?.content || res?.data?.content || [];
       setRoadmaps(content.map((rm) => ({
         id: rm.roadmapId, name: rm.title, description: rm.description,
@@ -95,7 +91,7 @@ function RoadmapListView({
       })));
     } catch { /* giữ state cũ */ }
     finally { setLoading(false); }
-  }, [groupId, workspaceId]);
+  }, [workspaceId]);
 
   useEffect(() => { fetchRoadmaps(); }, [fetchRoadmaps, createdItems.length]);
 

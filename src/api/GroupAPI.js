@@ -6,45 +6,51 @@ export const getMyJoinedGroups = async () => {
   return response;
 };
 
-// Tạo nhóm mới
+// Tạo nhóm mới (dùng endpoint tạo group workspace)
 export const createGroup = async (data) => {
-  const response = await api.post('/group/create', data);
+  const response = await api.post('/workspace/create/group', data);
   return response;
 };
 
 // Lấy danh sách thành viên của nhóm (có phân trang)
-export const getGroupMembers = async (groupId, page = 0, size = 50) => {
-  const response = await api.get(`/group/${groupId}/members?page=${page}&size=${size}`);
+export const getGroupMembers = async (workspaceId, page = 0, size = 50) => {
+  const response = await api.get(`/group/${workspaceId}/members?page=${page}&size=${size}`);
   return response;
 };
 
 // Leader cấp quyền upload cho thành viên (tối đa 3 member)
-export const grantUpload = async (groupId, memberId) => {
-  const response = await api.post(`/group/${groupId}/members/${memberId}/grant-upload`);
+export const grantUpload = async (workspaceId, memberId) => {
+  const response = await api.post(`/group/${workspaceId}/members/${memberId}/grant-upload`);
   return response;
 };
 
 // Leader thu hồi quyền upload của thành viên
-export const revokeUpload = async (groupId, memberId) => {
-  const response = await api.delete(`/group/${groupId}/members/${memberId}/grant-upload`);
+export const revokeUpload = async (workspaceId, memberId) => {
+  const response = await api.delete(`/group/${workspaceId}/members/${memberId}/grant-upload`);
   return response;
 };
 
 // Leader cập nhật vai trò thành viên
-export const updateMemberRole = async (groupId, memberId, roleName) => {
-  const response = await api.put(`/group/${groupId}/members/${memberId}/role?roleName=${roleName}`);
+export const updateMemberRole = async (workspaceId, memberId, roleName) => {
+  const response = await api.put(`/group/${workspaceId}/members/${memberId}/role?roleName=${roleName}`);
   return response;
 };
 
 // Leader mời thành viên vào nhóm bằng email
-export const inviteMember = async (groupId, email) => {
-  const response = await api.post(`/group/${groupId}/invitation`, { email });
+export const inviteMember = async (workspaceId, email) => {
+  const response = await api.post(`/group/${workspaceId}/invitation`, { email });
   return response;
 };
 
 // Lấy danh sách lời mời đang chờ của nhóm (count + list)
-export const getPendingInvitations = async (groupId) => {
-  const response = await api.get(`/group/${groupId}/invitations`);
+export const getPendingInvitations = async (workspaceId) => {
+  const response = await api.get(`/group/${workspaceId}/invitations`);
+  return response;
+};
+
+// Lấy activity log của nhóm
+export const getGroupLogs = async (workspaceId) => {
+  const response = await api.get(`/group/${workspaceId}/logs`);
   return response;
 };
 
@@ -55,7 +61,7 @@ export const acceptInvitation = async (token) => {
 };
 
 // Leader xóa thành viên khỏi nhóm
-export const removeMember = async (groupId, memberId) => {
-  const response = await api.delete(`/group/${groupId}/members/${memberId}`);
+export const removeMember = async (workspaceId, memberId) => {
+  const response = await api.delete(`/group/${workspaceId}/members/${memberId}`);
   return response;
 };

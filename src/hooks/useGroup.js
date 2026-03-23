@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { unwrapApiData } from '@/Utils/apiResponse';
 import {
   getMyJoinedGroups,
   createGroup as createGroupAPI,
@@ -9,6 +10,7 @@ import {
   updateMemberRole as updateMemberRoleAPI,
   inviteMember as inviteMemberAPI,
   getPendingInvitations as getPendingInvitationsAPI,
+  getGroupLogs as getGroupLogsAPI,
   removeMember as removeMemberAPI,
 } from '@/api/GroupAPI';
 
@@ -23,7 +25,28 @@ export function useGroup(options = {}) {
     queryKey: GROUPS_QUERY_KEY,
     queryFn: async () => {
       const res = await getMyJoinedGroups();
-      return res.data || [];
+      const rawGroups = unwrapApiData(res) ?? [];
+      return Array.isArray(rawGroups)
+        ? rawGroups.map((group) => {
+          const memberRole = String(group?.memberRole || 'MEMBER').toUpperCase();
+          const normalizedTitle = group?.groupName ?? group?.displayTitle ?? group?.name ?? '';
+          const normalizedCount = Number(group?.memberCount);
+
+          return {
+            ...group,
+            workspaceId: group?.workspaceId ?? group?.id ?? null,
+            groupName: normalizedTitle,
+            displayTitle: normalizedTitle,
+            name: normalizedTitle,
+            memberRole,
+            description: group?.description ?? '',
+            memberCount: Number.isFinite(normalizedCount) ? normalizedCount : 0,
+            status: group?.status ?? group?.memberStatus ?? null,
+            joinedAt: group?.joinedAt ?? null,
+            createdAt: group?.createdAt ?? null,
+          };
+        })
+        : [];
     },
     enabled,
   });
@@ -34,45 +57,53 @@ export function useGroup(options = {}) {
   const createGroup = useCallback(async (data) => {
     const res = await createGroupAPI(data);
     await queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY });
-    return res.data;
+    return unwrapApiData(res);
   }, [queryClient]);
 
   // Lấy danh sách thành viên của nhóm
-  const fetchMembers = useCallback(async (groupId, page = 0, size = 50) => {
-    const res = await getGroupMembersAPI(groupId, page, size);
-    return res.data?.content || [];
+  const fetchMembers = useCallback(async (workspaceId, page = 0, size = 50) => {
+    const res = await getGroupMembersAPI(workspaceId, page, size);
+    const pageData = unwrapApiData(res);
+    return Array.isArray(pageData?.content) ? pageData.content : [];
   }, []);
 
   // Cấp quyền upload cho thành viên
-  const grantUpload = useCallback(async (groupId, memberId) => {
-    await grantUploadAPI(groupId, memberId);
+  const grantUpload = useCallback(async (workspaceId, memberId) => {
+    await grantUploadAPI(workspaceId, memberId);
   }, []);
 
   // Thu hồi quyền upload
-  const revokeUpload = useCallback(async (groupId, memberId) => {
-    await revokeUploadAPI(groupId, memberId);
+  const revokeUpload = useCallback(async (workspaceId, memberId) => {
+    await revokeUploadAPI(workspaceId, memberId);
   }, []);
 
   // Cập nhật vai trò thành viên
-  const updateMemberRole = useCallback(async (groupId, memberId, roleName) => {
-    await updateMemberRoleAPI(groupId, memberId, roleName);
+  const updateMemberRole = useCallback(async (workspaceId, memberId, roleName) => {
+    await updateMemberRoleAPI(workspaceId, memberId, roleName);
   }, []);
 
   // Mời thành viên bằng email
-  const inviteMember = useCallback(async (groupId, email) => {
-    const res = await inviteMemberAPI(groupId, email);
-    return res.data;
+  const inviteMember = useCallback(async (workspaceId, email) => {
+    const res = await inviteMemberAPI(workspaceId, email);
+    return unwrapApiData(res);
   }, []);
 
   // Lấy danh sách lời mời đang chờ (count + invitations)
-  const fetchPendingInvitations = useCallback(async (groupId) => {
-    const res = await getPendingInvitationsAPI(groupId);
-    return res?.data || { count: 0, invitations: [] };
+  const fetchPendingInvitations = useCallback(async (workspaceId) => {
+    const res = await getPendingInvitationsAPI(workspaceId);
+    return unwrapApiData(res) || { count: 0, invitations: [] };
+  }, []);
+
+  // Lấy activity log của nhóm
+  const fetchGroupLogs = useCallback(async (workspaceId) => {
+    const res = await getGroupLogsAPI(workspaceId);
+    const payload = unwrapApiData(res);
+    return Array.isArray(payload) ? payload : [];
   }, []);
 
   // Xóa thành viên khỏi nhóm
-  const removeMember = useCallback(async (groupId, memberId) => {
-    await removeMemberAPI(groupId, memberId);
+  const removeMember = useCallback(async (workspaceId, memberId) => {
+    await removeMemberAPI(workspaceId, memberId);
   }, []);
 
   return {
@@ -87,6 +118,7 @@ export function useGroup(options = {}) {
     updateMemberRole,
     inviteMember,
     fetchPendingInvitations,
+    fetchGroupLogs,
     removeMember,
   };
 }
