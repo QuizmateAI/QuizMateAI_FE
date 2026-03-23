@@ -869,7 +869,7 @@
         "3": {
           "title": "Step 3",
           "stepperLabel": "Roadmap setup",
-          "description": "Upload your materials and confirm they match the learning profile above."
+          "description": "Finalize the knowledge amount, study pace, and estimated number of days for the roadmap."
         },
         "4": {
           "title": "Step 4",
@@ -1000,7 +1000,14 @@
         "improvementTitle": "AI-recommended improvement areas",
         "improvementDescription": "Choose one or more areas for AI to prioritize in the roadmap, review plan, or mock test.",
         "roadmapTitle": "Roadmap setup",
-        "roadmapDescription": "Choose how AI adapts, how fast the roadmap moves, and the daily workload.",
+        "roadmapDescription": "Separate how much knowledge you want to cover from how quickly you want to absorb it, how many days you plan to study, and how many minutes you should spend each day.",
+        "knowledgeLoadHint": "Knowledge amount defines how much content you want to learn. Study speed only defines the time pace, while the system spreads that workload across recommended days and minutes per day.",
+        "scheduleInsightTitle": "Pacing analysis",
+        "scheduleInsightSuggested": "With the current setup, Quizmate AI recommends about {{days}} days at the {{speed}} pace to cover the selected amount of knowledge.",
+        "scheduleInsightAdjusted": "You entered {{days}} days, so the system automatically mapped this to the {{speed}} pace. The nearest suggested baseline is {{recommendedDays}} days.",
+        "minutesInsightTitle": "Daily study load",
+        "minutesInsightSuggested": "To spread the workload evenly across {{days}} days, Quizmate AI recommends about {{minutes}} minutes/day.",
+        "minutesInsightAdjusted": "You are currently setting {{minutes}} minutes/day. For this setup, the balanced recommendation is about {{recommendedMinutes}} minutes/day.",
         "noRoadmapTitle": "Roadmap generation is turned off",
         "noRoadmapDescription": "The wizard will still save your goals, focus areas, and mock-test information.",
         "mockGoalTitle": "Target score and exam date",
@@ -1039,10 +1046,11 @@
         "templateFormat": "Template format",
         "templateDurationMinutes": "Exam duration (minutes)",
         "templateQuestionCount": "Question count",
+        "knowledgeLoad": "Knowledge amount",
         "adaptationMode": "Adaptation mode",
         "roadmapSpeedMode": "Roadmap speed mode",
         "estimatedTotalDays": "Estimated total days",
-        "recommendedMinutesPerDay": "Recommended minutes per day",
+        "recommendedMinutesPerDay": "Suggested minutes per day",
         "targetScore": "Target score",
         "customTargetScore": "Custom target score",
         "targetScoreScale": "Score scale",
@@ -1085,6 +1093,20 @@
         "questions": "Questions / tasks",
         "scoring": "Scoring",
         "support": "Quizmate AI support"
+      },
+      "knowledgeLoad": {
+        "BASIC": {
+          "title": "Basic",
+          "description": "Focus on core foundations, key terms, and the minimum required concepts."
+        },
+        "INTERMEDIATE": {
+          "title": "Intermediate",
+          "description": "Cover the foundations plus the common real-world applications you are expected to use."
+        },
+        "ADVANCED": {
+          "title": "Advanced",
+          "description": "Go deeper into harder cases, edge cases, and higher-complexity material."
+        }
       },
       "adaptationMode": {
         "FLEXIBLE": {
@@ -1130,6 +1152,7 @@
         "publicExamRequired": "Please choose a public exam.",
         "privateExamRequired": "Please enter the private exam name.",
         "improvementFocusRequired": "Please choose at least one improvement area.",
+        "knowledgeLoadRequired": "Please choose the amount of knowledge to cover.",
         "adaptationModeRequired": "Please choose an adaptation mode.",
         "roadmapSpeedModeRequired": "Please choose a roadmap speed mode.",
         "estimatedTotalDaysRequired": "Please enter a total number of days greater than 0.",
