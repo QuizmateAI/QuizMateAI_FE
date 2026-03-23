@@ -162,6 +162,7 @@ function RoadmapCanvasView({
   forcedCanvasView = null,
   onCanvasViewChange,
   selectedPhaseId = null,
+  progressTracking = null,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -686,6 +687,7 @@ function RoadmapCanvasView({
         generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
         generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
         quizRefreshToken={reloadToken}
+        progressTracking={progressTracking}
       />
     );
   }
