@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AlertTriangle, ClipboardList, Clock, FolderOpen, Loader2, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { deleteQuiz, getQuizzesByScope } from "@/api/QuizAPI";
-import { getRoadmapsByGroup, getRoadmapsByWorkspace } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace } from "@/api/RoadmapAPI";
 import { useToast } from "@/context/ToastContext";
 
 function formatShortDate(dateStr) {
@@ -54,8 +54,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
         return;
       }
 
-      const loadRoadmaps = contextType === "GROUP" ? getRoadmapsByGroup : getRoadmapsByWorkspace;
-      const roadmapRes = await loadRoadmaps(contextId, 0, 100);
+      const roadmapRes = await getRoadmapsByWorkspace(contextId, 0, 100);
       const roadmaps = roadmapRes.data?.content || roadmapRes.data || [];
       const allRoadmapIds = roadmaps.map((roadmap) => roadmap.roadmapId || roadmap.id);
       setRoadmapIds(allRoadmapIds);

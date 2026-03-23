@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import { Search, X, GraduationCap, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace, getPhasesByRoadmap } from "@/api/RoadmapAPI";
 import { useToast } from "@/context/ToastContext";
 
 // Hàm format ngày giờ ngắn gọn
@@ -43,9 +43,8 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
     if (!contextId) return;
     setLoading(true);
     try {
-      // Tải roadmaps theo context (workspace hoặc group)
-      const loadRoadmaps = contextType === "GROUP" ? getRoadmapsByGroup : getRoadmapsByWorkspace;
-      const roadmapRes = await loadRoadmaps(contextId, 0, 100);
+      // Tải roadmaps theo workspace hiện tại
+      const roadmapRes = await getRoadmapsByWorkspace(contextId, 0, 100);
       const roadmaps = roadmapRes.data?.content || roadmapRes.data || [];
 
       // Tải phases cho từng roadmap

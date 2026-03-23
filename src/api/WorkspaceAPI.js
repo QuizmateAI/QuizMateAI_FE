@@ -381,7 +381,7 @@ export function normalizeGroupWorkspaceProfile(profile) {
   return {
     ...profile,
     currentStep: Number(profile.currentStep) || 1,
-    totalSteps: Number(profile.totalSteps) || 3,
+    totalSteps: Number(profile.totalSteps) || 2,
     onboardingCompleted: Boolean(profile.onboardingCompleted),
   };
 }
@@ -395,7 +395,6 @@ export const saveGroupBasicStep = async (workspaceId, data) => {
   const payload = {
     groupName: trimToNullSafe(data.groupName),
     rules: trimToNullSafe(data.rules),
-    groupPurpose: data.groupPurpose || null,
     defaultRoleOnJoin: trimToNullSafe(data.defaultRoleOnJoin),
   };
   const response = await api.put(`/workspace-profile/group/${workspaceId}/steps/basic`, payload);
@@ -406,12 +405,11 @@ export const saveGroupConfigStep = async (workspaceId, data) => {
   const payload = {
     domain: trimToNullSafe(data.domain),
     knowledge: trimToNullSafe(data.knowledge),
-    defaultLevel: trimToNullSafe(data.defaultLevel),
     learningMode: data.learningMode || null,
-    roadmapEnabled: data.roadmapEnabled ?? null,
+    roadmapEnabled: Boolean(data.roadmapEnabled),
     groupLearningGoal: trimToNullSafe(data.groupLearningGoal),
     examName: trimToNullSafe(data.examName),
-    preLearningRequired: data.preLearningRequired ?? true,
+    preLearningRequired: Boolean(data.preLearningRequired),
   };
   const response = await api.put(`/workspace-profile/group/${workspaceId}/steps/config`, payload);
   return response;

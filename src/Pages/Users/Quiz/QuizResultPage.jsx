@@ -671,11 +671,6 @@ export default function QuizResultPage() {
                 <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
               </Button>
             </div>
-            {pendingGradingCount > 0 && (
-              <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
-                {t('workspace.quiz.result.pendingGradingNotice', 'Một số câu tự luận đang được AI chấm. Kết quả sẽ tự cập nhật.')}
-              </p>
-            )}
           </div>
         )}
 
