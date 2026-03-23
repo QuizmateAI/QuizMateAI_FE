@@ -1127,12 +1127,17 @@ function WorkspacePage() {
 				const phase = (roadmapData?.phases || []).find((item) => Number(item?.phaseId) === normalizedPhaseId);
 				const knowledges = phase?.knowledges || [];
 				const hasKnowledge = knowledges.length > 0;
-				const hasPre = (phase?.preLearningQuizzes || []).length > 0;
-				const hasPost = (phase?.postLearningQuizzes || []).length > 0;
-				const hasKnowledgeQuiz = knowledges.some((knowledge) => (knowledge?.quizzes || []).length > 0);
+				const allKnowledgeQuizzesReady = hasKnowledge
+					&& knowledges.every((knowledge) => (knowledge?.quizzes || []).length > 0);
 
-				if (hasKnowledge && (hasPre || hasPost || hasKnowledgeQuiz)) {
+				if (hasKnowledge && !allKnowledgeQuizzesReady) {
+					void triggerKnowledgeQuizGenerationForPhase(normalizedPhaseId);
+				}
+
+				// Chỉ exit khi tất cả knowledge quizzes sẵn sàng
+				if (hasKnowledge && allKnowledgeQuizzesReady) {
 					setGeneratingKnowledgePhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+					setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
 					bumpRoadmapReloadToken();
 					return;
 				}
@@ -1144,9 +1149,14 @@ function WorkspacePage() {
 		} finally {
 			if (phaseContentPollingRef.current[normalizedPhaseId] === runId) {
 				setGeneratingKnowledgePhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+				setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
 			}
 		}
-	}, [bumpRoadmapReloadToken, workspaceId]);
+	}, [
+		bumpRoadmapReloadToken,
+		triggerKnowledgeQuizGenerationForPhase,
+		workspaceId,
+	]);
 
 	useEffect(() => {
 		if (!workspaceId || generatingKnowledgePhaseIds.length === 0) return;
@@ -1275,11 +1285,17 @@ function WorkspacePage() {
 		}
 	}
 
-	const triggerKnowledgeQuizGenerationForPhase = useCallback(async (phaseId) => {
+	async function triggerKnowledgeQuizGenerationForPhase(phaseId) {
 		if (!workspaceId || !phaseId) return;
 		const normalizedPhaseId = Number(phaseId);
 		if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
 		if (knowledgeQuizGenerationRequestedRef.current[normalizedPhaseId] === true) return;
+
+		// Bắt đầu set flag generating - để UI hiển thị placeholder loading ngay lập tức
+		setGeneratingKnowledgeQuizPhaseIds((current) => {
+			if (current.includes(normalizedPhaseId)) return current;
+			return [...current, normalizedPhaseId];
+		});
 
 		try {
 			const roadmapId = roadmapAiRoadmapId || await resolveLatestRoadmapId();
@@ -1341,13 +1357,7 @@ function WorkspacePage() {
 			setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
 			showError(error?.message || "Tạo knowledge-quiz cho phase thất bại.");
 		}
-	}, [
-		resolveLatestRoadmapId,
-		roadmapAiRoadmapId,
-		showError,
-		startKnowledgeQuizPolling,
-		workspaceId,
-	]);
+	}
 
 	const startPreLearningPolling = useCallback(async (phaseId) => {
 		if (!workspaceId || !phaseId) return;
