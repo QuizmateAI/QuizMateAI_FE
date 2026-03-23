@@ -14,6 +14,7 @@ import { Globe, Moon, Settings, Sun, UserCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useProgressTracking } from "@/hooks/useProgressTracking";
 import {
 	getIndividualWorkspaceProfile,
 	saveIndividualWorkspaceBasicStep,
@@ -194,6 +195,7 @@ function WorkspacePage() {
 	const [mockTestGenerationElapsedSeconds, setMockTestGenerationElapsedSeconds] = useState(0);
 
 	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace } = useWorkspace();
+	const progressTracking = useProgressTracking();
 	const isMountedRef = useRef(true);
 	const mockTestPollingActiveRef = useRef(false);
 	const mockTestPollingRunRef = useRef(0);
@@ -1585,7 +1587,32 @@ function WorkspacePage() {
 		},
 		onProgress: (progress) => {
 			const status = String(progress?.status || "").toUpperCase();
-			const progressData = progress?.data || {};
+			const progressData = (progress?.data && typeof progress.data === "object")
+				? progress.data
+				: (progress || {});
+			const progressPhaseId = Number(progressData?.phaseId ?? progress?.phaseId);
+			const progressRoadmapId = Number(progressData?.roadmapId ?? progress?.roadmapId);
+			const progressPercent = Number(progress?.percent ?? progress?.progressPercent ?? 0);
+			const websocketTaskId = progress?.websocketTaskId ?? progress?.taskId;
+			const materialId = Number(progress?.materialId ?? 0);
+
+			// Cập nhật progress tracking cho task và material
+			if (websocketTaskId) {
+				progressTracking.updateTaskProgress(websocketTaskId, progressPercent);
+			}
+			if (materialId > 0) {
+				progressTracking.updateMaterialProgress(materialId, progressPercent);
+			}
+			if (progressPhaseId > 0 && progressPercent > 0) {
+				// Tự động nhận diện loại progress dựa trên status
+				if (status.includes("PRE_LEARNING")) {
+					progressTracking.updatePreLearningProgress(progressPhaseId, progressPercent);
+				} else if (status.includes("KNOWLEDGE")) {
+					progressTracking.updateKnowledgeProgress(progressPhaseId, progressPercent);
+				} else if (status.includes("POST_LEARNING")) {
+					progressTracking.updatePostLearningProgress(progressPhaseId, progressPercent);
+				}
+			}
 
 			if (status === "ROADMAP_STRUCTURE_STARTED" || status === "ROADMAP_STRUCTURE_PROCESSING") {
 				setIsGeneratingRoadmapStructure(true);
@@ -1593,9 +1620,9 @@ function WorkspacePage() {
 				return;
 			}
 
-			if (status === "ROADMAP_STRUCTURE_COMPLETED") {
+			if (status === "ROADMAP_STRUCTURE_COMPLETED" || status === "ROADMAP_COMPLETED") {
 				setIsGeneratingRoadmapStructure(false);
-				setRoadmapAiRoadmapId(Number(progressData?.roadmapId) || roadmapAiRoadmapId);
+				setRoadmapAiRoadmapId(progressRoadmapId || roadmapAiRoadmapId);
 				focusRoadmapViewSafely();
 				bumpRoadmapReloadToken();
 				return;
@@ -1610,7 +1637,7 @@ function WorkspacePage() {
 			if (status === "ROADMAP_PHASES_COMPLETED") {
 				stopPhaseGenerationPolling();
 				setIsGeneratingRoadmapPhases(false);
-				const completedRoadmapId = Number(progressData?.roadmapId) || roadmapAiRoadmapId;
+				const completedRoadmapId = progressRoadmapId || roadmapAiRoadmapId;
 				setRoadmapAiRoadmapId(completedRoadmapId);
 				focusRoadmapViewSafely();
 				bumpRoadmapReloadToken();
@@ -1621,7 +1648,7 @@ function WorkspacePage() {
 			}
 
 			if (status === "ROADMAP_PHASE_CONTENT_COMPLETED") {
-				const phaseId = Number(progressData?.phaseId);
+				const phaseId = progressPhaseId;
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					stopPhaseContentPolling(phaseId);
 					setGeneratingKnowledgePhaseIds((current) => current.filter((id) => id !== phaseId));
@@ -1631,10 +1658,11 @@ function WorkspacePage() {
 					});
 					void triggerKnowledgeQuizGenerationForPhase(phaseId);
 				} else {
-					setGeneratingKnowledgePhaseIds([]);
-					setGeneratingKnowledgeQuizPhaseIds([]);
-					knowledgeQuizGenerationRequestedRef.current = {};
-					knowledgeQuizPollingRef.current = {};
+					// WS roadmap payload có thể không có phaseId, fallback sang polling các phase đang generate.
+					const fallbackPhaseIds = normalizePositiveIds(generatingKnowledgePhaseIds);
+					fallbackPhaseIds.forEach((id) => {
+						startPhaseContentPolling(id);
+					});
 				}
 				focusRoadmapViewSafely();
 				bumpRoadmapReloadToken();
@@ -1642,7 +1670,7 @@ function WorkspacePage() {
 			}
 
 			if (status === "ROADMAP_KNOWLEDGE_QUIZ_COMPLETED") {
-				const phaseId = Number(progressData?.phaseId);
+				const phaseId = progressPhaseId;
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					knowledgeQuizGenerationRequestedRef.current[phaseId] = false;
 					Object.keys(knowledgeQuizGenerationRequestedByKnowledgeRef.current).forEach((key) => {
@@ -1651,6 +1679,11 @@ function WorkspacePage() {
 						}
 					});
 					setGeneratingKnowledgeQuizPhaseIds((current) => current.filter((id) => id !== phaseId));
+				} else {
+					const fallbackPhaseIds = normalizePositiveIds(generatingKnowledgeQuizPhaseIds);
+					fallbackPhaseIds.forEach((id) => {
+						startKnowledgeQuizPolling(id);
+					});
 				}
 				focusRoadmapViewSafely();
 				bumpRoadmapReloadToken();
@@ -1658,7 +1691,7 @@ function WorkspacePage() {
 			}
 
 			if (status === "ROADMAP_KNOWLEDGE_QUIZ_STARTED" || status === "ROADMAP_KNOWLEDGE_QUIZ_PROCESSING") {
-				const phaseId = Number(progressData?.phaseId);
+				const phaseId = progressPhaseId;
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					setGeneratingKnowledgeQuizPhaseIds((current) => {
 						if (current.includes(phaseId)) return current;
@@ -1670,7 +1703,7 @@ function WorkspacePage() {
 			}
 
 			if (status === "ROADMAP_PHASE_CONTENT_STARTED" || status === "ROADMAP_PHASE_CONTENT_PROCESSING") {
-				const phaseId = Number(progressData?.phaseId);
+				const phaseId = progressPhaseId;
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					setGeneratingKnowledgePhaseIds((current) => {
 						if (current.includes(phaseId)) return current;
@@ -1682,7 +1715,7 @@ function WorkspacePage() {
 			}
 
 			if (status === "ROADMAP_PRE_LEARNING_STARTED" || status === "ROADMAP_PRE_LEARNING_PROCESSING") {
-				const phaseId = Number(progressData?.phaseId);
+				const phaseId = progressPhaseId;
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					setGeneratingPreLearningPhaseIds((current) => {
 						if (current.includes(phaseId)) return current;
@@ -1694,7 +1727,7 @@ function WorkspacePage() {
 			}
 
 			if (status === "ROADMAP_PRE_LEARNING_COMPLETED") {
-				const phaseId = Number(progressData?.phaseId);
+				const phaseId = progressPhaseId;
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					setGeneratingPreLearningPhaseIds((current) => {
 						if (current.includes(phaseId)) return current;
@@ -1702,8 +1735,10 @@ function WorkspacePage() {
 					});
 					startPreLearningPolling(phaseId);
 				} else {
-					setGeneratingPreLearningPhaseIds([]);
-					preLearningPollingRef.current = {};
+					const fallbackPhaseIds = normalizePositiveIds(generatingPreLearningPhaseIds);
+					fallbackPhaseIds.forEach((id) => {
+						startPreLearningPolling(id);
+					});
 				}
 				focusRoadmapViewSafely();
 				bumpRoadmapReloadToken();
@@ -1711,8 +1746,8 @@ function WorkspacePage() {
 			}
 
 			if (status === "ERROR") {
-				const phaseId = Number(progressData?.phaseId);
-				const roadmapId = Number(progressData?.roadmapId);
+				const phaseId = progressPhaseId;
+				const roadmapId = progressRoadmapId;
 
 				if (Number.isInteger(phaseId) && phaseId > 0) {
 					knowledgeQuizGenerationRequestedRef.current[phaseId] = false;
@@ -2448,6 +2483,7 @@ function WorkspacePage() {
 									shouldDisableRoadmap={shouldDisableRoadmap}
 									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
 									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
+									progressTracking={progressTracking}
 								/>
 							</div>
 
@@ -2468,6 +2504,7 @@ function WorkspacePage() {
 												}}
 												isCollapsed={false}
 												onToggleCollapse={handleToggleSourcesCollapse}
+												progressTracking={progressTracking}
 											/>
 										</div>
 										<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
@@ -2522,6 +2559,7 @@ function WorkspacePage() {
 											}}
 											isCollapsed={isSourcesCollapsed}
 											onToggleCollapse={handleToggleSourcesCollapse}
+											progressTracking={progressTracking}
 										/>
 									</div>
 									<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
@@ -2590,6 +2628,7 @@ function WorkspacePage() {
 									shouldDisableRoadmap={shouldDisableRoadmap}
 									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
 									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
+									progressTracking={progressTracking}
 								/>
 							</div>
 

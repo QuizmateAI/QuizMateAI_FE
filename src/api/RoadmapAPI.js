@@ -21,14 +21,107 @@ function getCanvasPreference(roadmapId) {
 
 function mapQuizNode(quiz) {
   return {
-    id: quiz?.quizId,
+    quizId: quiz?.quizId ?? quiz?.id ?? null,
+    id: quiz?.quizId ?? quiz?.id ?? null,
+    roadmapId: quiz?.roadmapId ?? null,
+    workspaceId: quiz?.workspaceId ?? null,
+    phaseId: quiz?.phaseId ?? null,
+    knowledgeId: quiz?.knowledgeId ?? null,
     title: quiz?.title || 'Quiz',
-    questionCount: Number(quiz?.totalQuestion) || 0,
+    questionCount: Number(quiz?.totalQuestion ?? quiz?.questionCount ?? quiz?.totalQuestions ?? 0) || 0,
     duration: Number(quiz?.duration) || 0,
     maxAttempt: quiz?.maxAttempt ?? null,
     passScore: quiz?.passScore ?? null,
+    maxScore: quiz?.maxScore ?? null,
+    timerMode: quiz?.timerMode ?? null,
+    editable: quiz?.editable ?? null,
+    myAttempted: quiz?.myAttempted ?? null,
+    myPassed: quiz?.myPassed ?? null,
+    createVia: quiz?.createVia ?? null,
+    createdAt: quiz?.createdAt ?? null,
+    overallDifficulty: quiz?.overallDifficulty ?? null,
+    materialIds: toArray(quiz?.materialIds),
     status: quiz?.status || null,
     quizIntent: quiz?.quizIntent || null,
+  };
+}
+
+function extractApiPayload(response) {
+  if (response && typeof response === 'object' && 'data' in response) {
+    return response.data;
+  }
+  return response;
+}
+
+function mergeRoadmapQuizzes(mappedRoadmap, roadmapQuizzes = []) {
+  if (!mappedRoadmap) return mappedRoadmap;
+
+  const normalizedQuizzes = toArray(roadmapQuizzes).map(mapQuizNode);
+  const phaseQuizGroups = normalizedQuizzes.reduce((acc, quiz) => {
+    const phaseId = Number(quiz?.phaseId);
+    if (!Number.isInteger(phaseId) || phaseId <= 0) return acc;
+    const intent = String(quiz?.quizIntent || '').toUpperCase();
+    if (!acc[phaseId]) acc[phaseId] = { preLearning: [], postLearning: [], byKnowledge: {} };
+
+    if (intent === 'PRE_LEARNING') {
+      acc[phaseId].preLearning.push(quiz);
+      return acc;
+    }
+
+    if (intent === 'POST_LEARNING') {
+      acc[phaseId].postLearning.push(quiz);
+      return acc;
+    }
+
+    const knowledgeId = Number(quiz?.knowledgeId);
+    if (Number.isInteger(knowledgeId) && knowledgeId > 0) {
+      if (!acc[phaseId].byKnowledge[knowledgeId]) acc[phaseId].byKnowledge[knowledgeId] = [];
+      acc[phaseId].byKnowledge[knowledgeId].push(quiz);
+    }
+
+    return acc;
+  }, {});
+
+  const phases = toArray(mappedRoadmap?.phases).map((phase) => {
+    const phaseId = Number(phase?.phaseId);
+    const grouped = phaseQuizGroups[phaseId] || { preLearning: [], postLearning: [], byKnowledge: {} };
+
+    const knowledges = toArray(phase?.knowledges).map((knowledge) => {
+      const knowledgeId = Number(knowledge?.knowledgeId);
+      const mergedQuizzes = grouped.byKnowledge[knowledgeId] || toArray(knowledge?.quizzes);
+      return {
+        ...knowledge,
+        quizzes: mergedQuizzes,
+      };
+    });
+
+    const preLearningQuizzes = grouped.preLearning.length > 0 ? grouped.preLearning : toArray(phase?.preLearningQuizzes);
+    const postLearningQuizzes = grouped.postLearning.length > 0 ? grouped.postLearning : toArray(phase?.postLearningQuizzes);
+
+    return {
+      ...phase,
+      knowledges,
+      preLearningQuizzes,
+      postLearningQuizzes,
+      preLearning: preLearningQuizzes[0] || null,
+      postLearning: postLearningQuizzes[0] || null,
+    };
+  });
+
+  const stats = phases.reduce((accumulator, phase) => {
+    accumulator.phaseCount += 1;
+    accumulator.knowledgeCount += toArray(phase.knowledges).length;
+    accumulator.quizCount += toArray(phase.preLearningQuizzes).length;
+    accumulator.quizCount += toArray(phase.postLearningQuizzes).length;
+    accumulator.quizCount += toArray(phase.knowledges).reduce((sum, knowledge) => sum + toArray(knowledge.quizzes).length, 0);
+    accumulator.flashcardCount += toArray(phase.knowledges).reduce((sum, knowledge) => sum + toArray(knowledge.flashcards).length, 0);
+    return accumulator;
+  }, { phaseCount: 0, knowledgeCount: 0, quizCount: 0, flashcardCount: 0 });
+
+  return {
+    ...mappedRoadmap,
+    phases,
+    stats,
   };
 }
 
@@ -107,9 +200,18 @@ export const getRoadmapGraph = async ({ workspaceId = null, groupId = null } = {
         return buildMockResponse(null);
       }
 
-      const structureResponse = await api.get(`/roadmaps/${roadmapId}/structure`);
-      const mappedRoadmap = mapRoadmapStructureToCanvas(structureResponse);
-      return buildMockResponse(mappedRoadmap);
+      const [structureResponse, roadmapQuizResponse] = await Promise.all([
+        api.get(`/roadmaps/${roadmapId}/structure`),
+        api.get(`/quiz/getByRoadmap/${roadmapId}`).catch(() => null),
+      ]);
+
+      const structurePayload = extractApiPayload(structureResponse);
+      const mappedRoadmap = mapRoadmapStructureToCanvas(structurePayload);
+
+      const roadmapQuizPayload = roadmapQuizResponse ? extractApiPayload(roadmapQuizResponse) : [];
+      const enrichedRoadmap = mergeRoadmapQuizzes(mappedRoadmap, roadmapQuizPayload);
+
+      return buildMockResponse(enrichedRoadmap);
     } catch (error) {
       console.error('Failed to fetch roadmap structure:', error);
       return buildMockResponse(null);
