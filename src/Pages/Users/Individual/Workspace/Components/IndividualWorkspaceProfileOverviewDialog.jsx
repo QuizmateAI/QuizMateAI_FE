@@ -18,6 +18,7 @@ import {
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
+import { getRecommendedRoadmapMinutesPerDay } from './WorkspaceProfileWizard/mockProfileWizardData';
 
 function translateOrFallback(t, key, fallback) {
   const translated = t(key);
@@ -43,6 +44,13 @@ function readText(value, fallback = '') {
 function formatProfileValue(value, fallback) {
   const normalized = readText(value, '');
   return normalized || fallback;
+}
+
+function normalizeKnowledgeLoadValue(value) {
+  if (value === 'INTERMEDIATE') return 'INTERMEDIATE';
+  if (value === 'ADVANCED') return 'ADVANCED';
+  if (value === 'FULL') return 'ADVANCED';
+  return value === 'BASIC' ? 'BASIC' : '';
 }
 
 function getOverviewTone(tone, isDarkMode) {
@@ -274,11 +282,25 @@ function IndividualWorkspaceProfileOverviewDialog({
   const domainSummary = formatProfileValue(profile?.inferredDomain || profile?.domain || profile?.customDomain, fallbackEmpty);
   const currentLevelSummary = formatProfileValue(profile?.currentLevel || profile?.customCurrentLevel, fallbackEmpty);
   const learningGoalSummary = formatProfileValue(profile?.learningGoal, fallbackEmpty);
+  const roadmapSpeedModeKey = profile?.roadmapSpeedMode || (profile?.speedMode === 'MEDIUM' ? 'STANDARD' : profile?.speedMode);
+  const normalizedKnowledgeLoad = normalizeKnowledgeLoadValue(profile?.knowledgeLoad);
+  const knowledgeLoadSummary = normalizedKnowledgeLoad
+    ? t(`workspace.profileConfig.knowledgeLoad.${normalizedKnowledgeLoad}.title`)
+    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'));
+  const speedSummary = roadmapSpeedModeKey
+    ? t(`workspace.profileConfig.roadmapSpeedMode.${roadmapSpeedModeKey}.title`)
+    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'));
   const daysSummary = profile?.estimatedTotalDays
     ? `${profile.estimatedTotalDays} ${i18n.language === 'en' ? 'days' : 'ngày'}`
     : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt');
-  const minutesSummary = (profile?.recommendedMinutesPerDay ?? profile?.estimatedMinutesPerDay)
-    ? `${profile?.recommendedMinutesPerDay ?? profile?.estimatedMinutesPerDay} ${i18n.language === 'en' ? 'minutes/day' : 'phút/ngày'}`
+  const recommendedMinutesValue =
+    profile?.recommendedMinutesPerDay
+    ?? profile?.estimatedMinutesPerDay
+    ?? (normalizedKnowledgeLoad && profile?.estimatedTotalDays
+      ? getRecommendedRoadmapMinutesPerDay(normalizedKnowledgeLoad, profile.estimatedTotalDays)
+      : null);
+  const minutesSummary = recommendedMinutesValue
+    ? `${recommendedMinutesValue} ${i18n.language === 'en' ? 'minutes/day' : 'phút/ngày'}`
     : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt');
 
   const title = translateOrFallback(
@@ -410,8 +432,9 @@ function IndividualWorkspaceProfileOverviewDialog({
               className="h-full"
             >
               <div className="grid gap-4 md:grid-cols-2">
+                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeLoad', 'Knowledge amount')} value={knowledgeLoadSummary} isDarkMode={isDarkMode} tone="roadmap" />
                 <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Adaptation mode')} value={profile?.adaptationMode ? t(`workspace.profileConfig.adaptationMode.${profile.adaptationMode === 'STRICT' ? 'BALANCED' : profile.adaptationMode}.title`) : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} tone="roadmap" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', 'Roadmap speed')} value={profile?.roadmapSpeedMode || profile?.speedMode ? t(`workspace.profileConfig.roadmapSpeedMode.${profile?.roadmapSpeedMode || (profile?.speedMode === 'MEDIUM' ? 'STANDARD' : profile?.speedMode)}.title`) : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} tone="roadmap" />
+                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', 'Roadmap speed')} value={speedSummary} isDarkMode={isDarkMode} tone="roadmap" />
                 <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', 'Estimated total days')} value={daysSummary} isDarkMode={isDarkMode} tone="roadmap" />
                 <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.recommendedMinutesPerDay', 'Recommended minutes per day')} value={minutesSummary} isDarkMode={isDarkMode} tone="roadmap" />
               </div>
@@ -464,7 +487,7 @@ function IndividualWorkspaceProfileOverviewDialog({
                   />
                   <OverviewField
                     label={translateOrFallback(t, 'workspace.profileOverview.summaryPaceLabel', i18n.language === 'en' ? 'Learning pace' : 'Nhịp học')}
-                    value={`${daysSummary} • ${minutesSummary}`}
+                    value={`${knowledgeLoadSummary} • ${speedSummary} • ${daysSummary} • ${minutesSummary}`}
                     isDarkMode={isDarkMode}
                     tone="summary"
                   />
