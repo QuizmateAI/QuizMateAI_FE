@@ -42,7 +42,8 @@ function InviteMemberDialog({ open, onOpenChange, onInvite, isDarkMode }) {
       await onInvite(email.trim());
       onOpenChange(false);
     } catch (err) {
-      setError(t('home.group.inviteError'));
+      const serverMsg = err?.response?.data?.message || err?.message;
+      setError(serverMsg || t('home.group.inviteError'));
     } finally {
       setSubmitting(false);
     }

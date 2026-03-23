@@ -3,13 +3,12 @@ import { useTranslation } from "react-i18next";
 import {
   Search, X, Plus, ChevronRight, GitBranch, Folder, FileText,
   BadgeCheck, CreditCard, FolderOpen, Clock, Loader2, Trash2,
-  Pencil, GraduationCap, ClipboardList, Check,
+  Pencil, Check,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useToast } from "@/context/ToastContext";
 import {
-  getRoadmapsByGroup,
   getRoadmapsByWorkspace,
   getPhasesByRoadmap,
   getKnowledgesByPhase,
@@ -52,7 +51,6 @@ function RoadmapListView({
   isDarkMode,
   onCreateRoadmap,
   createdItems = [],
-  groupId = null,
   workspaceId = null,
   onNavigateToCreateMockTest,
   onNavigateToCreatePostLearning,
@@ -79,10 +77,9 @@ function RoadmapListView({
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  // Dữ liệu API — quiz, flashcard, post-learning, mock test (dùng API thật)
+  // Dữ liệu API — quiz và flashcard ở cấp knowledge
   const [quizzes, setQuizzes] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
-  // Removed postLearnings, mockTests - using QuizListView
 
   // Inline add (thêm phase / knowledge / quiz / flashcard)
   const [addingType, setAddingType] = useState(null);
@@ -98,12 +95,10 @@ function RoadmapListView({
 
   /* ==================== FETCH DATA (chỉ roadmap/phase/knowledge dùng API thật) ==================== */
   const fetchRoadmaps = useCallback(async () => {
-    if (!groupId && !workspaceId) { setRoadmaps([]); return; }
+    if (!workspaceId) { setRoadmaps([]); return; }
     setLoading(true);
     try {
-      const res = groupId
-        ? await getRoadmapsByGroup(groupId, 0, 50)
-        : await getRoadmapsByWorkspace(workspaceId, 0, 50);
+      const res = await getRoadmapsByWorkspace(workspaceId, 0, 50);
       const content = res?.data?.data?.content || res?.data?.content || [];
       setRoadmaps(content.map((rm) => ({
         id: rm.roadmapId, name: rm.title, description: rm.description,
@@ -112,7 +107,7 @@ function RoadmapListView({
       })));
     } catch { /* giữ state cũ */ }
     finally { setLoading(false); }
-  }, [groupId, workspaceId]);
+  }, [workspaceId]);
 
   useEffect(() => { fetchRoadmaps(); }, [fetchRoadmaps, createdItems.length]);
 
@@ -143,7 +138,50 @@ function RoadmapListView({
     finally { setLoading(false); }
   }, []);
 
-  /* Quiz fetches replaced by QuizListView components */
+  const fetchQuizzesAndFlashcards = useCallback(async (knowledgeId) => {
+    if (!knowledgeId) {
+      setQuizzes([]);
+      setFlashcards([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const [quizRes, flashcardRes] = await Promise.all([
+        getQuizzesByScope("KNOWLEDGE", Number(knowledgeId)),
+        getFlashcardsByScope("KNOWLEDGE", Number(knowledgeId)),
+      ]);
+
+      const quizItems = Array.isArray(quizRes?.data)
+        ? quizRes.data
+        : Array.isArray(quizRes?.data?.content)
+          ? quizRes.data.content
+          : [];
+      const flashcardItems = Array.isArray(flashcardRes?.data)
+        ? flashcardRes.data
+        : Array.isArray(flashcardRes?.data?.content)
+          ? flashcardRes.data.content
+          : [];
+
+      setQuizzes(quizItems.map((quiz) => ({
+        ...quiz,
+        id: quiz.quizId ?? quiz.id,
+        name: quiz.title ?? quiz.name ?? "Quiz",
+        itemType: "quiz",
+      })));
+      setFlashcards(flashcardItems.map((flashcard) => ({
+        ...flashcard,
+        id: flashcard.flashcardSetId ?? flashcard.id,
+        name: flashcard.flashcardSetName ?? flashcard.name ?? "Flashcard",
+        itemType: "flashcard",
+      })));
+    } catch {
+      setQuizzes([]);
+      setFlashcards([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   /* ==================== NAVIGATION (drill-down / breadcrumb) ==================== */
   const allRoadmaps = useMemo(() => {
@@ -179,14 +217,10 @@ function RoadmapListView({
       setPath((p) => [...p, { id: item.id, name: item.name, data: item }]);
       setSearchQuery("");
       await fetchPhases(item.id);
-      // Mock test — tải từ API khi vào roadmap
-      await fetchMockTests(item.id);
     } else if (depth === 1) {
       setPath((p) => [...p, { id: item.id, name: item.name, data: item }]);
       setSearchQuery("");
       await fetchKnowledges(item.id);
-      // Post-learning — tải từ API khi vào phase
-      await fetchPostLearnings(item.id);
     } else if (depth === 2) {
       // Drill vào knowledge → tải quiz + flashcard từ API
       setPath((p) => [...p, { id: item.id, name: item.name, data: item }]);
@@ -198,20 +232,18 @@ function RoadmapListView({
   const goTo = async (idx) => {
     if (idx === 0) {
       setPath([]); setSearchQuery(""); setPhases([]); setKnowledges([]);
-      setQuizzes([]); setFlashcards([]); setPostLearnings([]); setMockTests([]);
+      setQuizzes([]); setFlashcards([]);
     } else if (idx === 1) {
       setPath((p) => p.slice(0, 1)); setSearchQuery(""); setKnowledges([]);
-      setQuizzes([]); setFlashcards([]); setPostLearnings([]);
+      setQuizzes([]); setFlashcards([]);
       if (path[0]) {
         await fetchPhases(path[0].id);
-        await fetchMockTests(path[0].id);
       }
     } else if (idx === 2) {
       setPath((p) => p.slice(0, 2)); setSearchQuery("");
       setQuizzes([]); setFlashcards([]);
       if (path[1]) {
         await fetchKnowledges(path[1].id);
-        await fetchPostLearnings(path[1].id);
       }
     } else {
       setPath((p) => p.slice(0, idx)); setSearchQuery("");
@@ -245,8 +277,9 @@ function RoadmapListView({
           await deleteQuizAPI(quizId);
           setQuizzes((prev) => prev.filter((q) => (q.quizId ?? q.id) !== quizId));
         } else if (item.itemType === "flashcard") {
-          await deleteFlashcardSet(item.id);
-          setFlashcards((prev) => prev.filter((f) => f.id !== item.id));
+          const flashcardSetId = item.flashcardSetId ?? item.id;
+          await deleteFlashcardSet(flashcardSetId);
+          setFlashcards((prev) => prev.filter((f) => (f.flashcardSetId ?? f.id) !== flashcardSetId));
         }
       }
     } catch (err) {
@@ -318,121 +351,6 @@ function RoadmapListView({
     if (depth === 1) return item.description || "";
     if (depth === 2) return item.description || "";
     return "";
-  };
-
-  /* ---------- Special Card (MockTest / PostLearning) với API thật ---------- */
-  const renderSpecialCard = (type) => {
-    const isMock = type === "mockTest";
-    const entities = isMock ? mockTests : postLearnings;
-    const Icon = isMock ? ClipboardList : GraduationCap;
-    const title = isMock ? t("workspace.mockTest.title") : t("workspace.roadmap.postLearning");
-    const noItemsKey = isMock ? "workspace.roadmap.noMockTestYet" : "workspace.roadmap.noPostLearningYet";
-
-    // Đã có entities — hiện danh sách + actions
-    if (entities.length > 0) {
-      return (
-        <div className="mb-3 space-y-2">
-          {entities.map((entity) => (
-            <div key={entity.id} className={`rounded-xl border-2 p-4 transition-all ${
-              isMock
-                ? isDarkMode ? "border-purple-700/50 bg-purple-950/20" : "border-purple-300 bg-purple-50"
-                : isDarkMode ? "border-orange-700/50 bg-orange-950/20" : "border-orange-300 bg-orange-50"
-            }`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isMock
-                    ? isDarkMode ? "bg-purple-950/50" : "bg-purple-100"
-                    : isDarkMode ? "bg-orange-950/50" : "bg-orange-100"
-                }`}>
-                  <Icon className={`w-5 h-5 ${isMock ? "text-purple-500" : "text-orange-500"}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                    {entity.name || title}
-                  </p>
-                  <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    {entity.status || "ACTIVE"}
-                    {entity.createdAt && ` · ${formatShortDate(entity.createdAt)}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm"
-                    onClick={() => isMock ? onViewMockTest?.(entity) : onViewPostLearning?.(entity)}
-                    className={`rounded-full text-xs h-8 px-4 transition-all active:scale-95 ${
-                      isMock
-                        ? "bg-purple-600 hover:bg-purple-700 text-white"
-                        : "bg-orange-500 hover:bg-orange-600 text-white"
-                    }`}>
-                    {t("workspace.listView.start")}
-                  </Button>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      const quizId = resolveQuizId(entity);
-                      setDeletingId(quizId ?? entity.id);
-                      try {
-                        if (!quizId) {
-                          showError(t("workspace.quiz.deleteFail", "Không thể xác định quiz để xóa"));
-                          return;
-                        }
-                        await deleteQuizAPI(quizId);
-                        if (isMock) {
-                          setMockTests((prev) => prev.filter((m) => (m.quizId ?? m.id) !== quizId));
-                        } else {
-                          setPostLearnings((prev) => prev.filter((p) => (p.quizId ?? p.id) !== quizId));
-                        }
-                      } catch (err) {
-                        showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
-                      }
-                      finally { setDeletingId(null); }
-                    }}
-                    className={`p-1.5 rounded-lg transition-all ${
-                      isDarkMode ? "hover:bg-red-950/50 text-red-400" : "hover:bg-red-50 text-red-500"
-                    }`}
-                  >
-                    {deletingId === (resolveQuizId(entity) ?? entity.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    // Chưa có entity — hiện nút tạo mới
-    return (
-      <div className={`rounded-xl border-2 border-dashed p-4 mb-3 transition-all ${
-        isMock
-          ? isDarkMode ? "border-purple-700/30 bg-purple-950/10" : "border-purple-200 bg-purple-50/50"
-          : isDarkMode ? "border-orange-700/30 bg-orange-950/10" : "border-orange-200 bg-orange-50/50"
-      }`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-            isMock
-              ? isDarkMode ? "bg-purple-950/30" : "bg-purple-100/70"
-              : isDarkMode ? "bg-orange-950/30" : "bg-orange-100/70"
-          }`}>
-            <Icon className={`w-5 h-5 ${isMock ? "text-purple-400" : "text-orange-400"}`} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{title}</p>
-            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-              {t(noItemsKey)}
-            </p>
-          </div>
-          <Button size="sm" onClick={() => isMock ? onNavigateToCreateMockTest?.() : onNavigateToCreatePostLearning?.()}
-            className={`rounded-full text-xs h-8 px-4 transition-all active:scale-95 ${
-              isMock
-                ? "bg-purple-600 hover:bg-purple-700 text-white"
-                : "bg-orange-500 hover:bg-orange-600 text-white"
-            }`}>
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            {t("workspace.listView.create")}
-          </Button>
-        </div>
-      </div>
-    );
   };
 
   /* ---------- Inline add row ---------- */

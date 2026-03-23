@@ -3,7 +3,7 @@ import { Button } from "@/Components/ui/button";
 import { Plus, Loader2, BadgeCheck, ArrowLeft, Save, Rocket, AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz } from "@/api/QuizAPI";
-import { getRoadmapsByGroup, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmap, createPhase, createKnowledge } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmap, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace } from "@/api/MaterialAPI";
 import { generateAIQuiz, getQuestionTypes, getDifficultyDefinitions, getBloomSkills } from "@/api/AIAPI";
 import { getWorkspacesByUser } from "@/api/WorkspaceAPI";
@@ -110,7 +110,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [attachToRoadmap, setAttachToRoadmap] = useState(false);
   const [contextLoading, setContextLoading] = useState(false);
 
-  // Dữ liệu cascade dropdown: roadmap → phase → knowledge (từ group hiện tại)
+  // Dữ liệu cascade dropdown: roadmap → phase → knowledge (từ workspace hiện tại)
   const [roadmaps, setRoadmaps] = useState([]);
   const [phases, setPhases] = useState([]);
   const [knowledges, setKnowledges] = useState([]);
@@ -125,12 +125,12 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   // State quản lý dialog tạo nhanh
   const [quickCreateType, setQuickCreateType] = useState(null); // "roadmap" | "phase" | "knowledge" | null
 
-  // Tải danh sách roadmap từ group hiện tại
+  // Tải danh sách roadmap từ workspace hiện tại
   const loadRoadmaps = useCallback(async () => {
     if (!defaultContextId) return;
     setContextLoading(true);
     try {
-      const res = await getRoadmapsByGroup(defaultContextId, 0, 100);
+      const res = await getRoadmapsByWorkspace(defaultContextId, 0, 100);
       setRoadmaps(res.data?.content || res.data || []);
     } catch (e) {
       console.error("Lỗi tải roadmaps:", e);
@@ -233,7 +233,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
 
   // Hàm tạo nhanh — bind parentId rồi truyền cho QuickCreateDialog
   const getQuickCreateFn = () => {
-    if (quickCreateType === "roadmap") return (data) => createRoadmap({ ...data, groupId: defaultContextId });
+    if (quickCreateType === "roadmap") return (data) => createRoadmap({ ...data, workspaceId: defaultContextId });
     if (quickCreateType === "phase") return (data) => createPhase(selectedRoadmapId, data);
     if (quickCreateType === "knowledge") return (data) => createKnowledge(selectedPhaseId, data);
     return null;

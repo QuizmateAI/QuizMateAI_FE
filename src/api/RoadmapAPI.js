@@ -184,8 +184,8 @@ function mapRoadmapStructureToCanvas(structure) {
   };
 }
 
-export const getRoadmapGraph = async ({ workspaceId = null, groupId = null } = {}) => {
-  if (!workspaceId && !groupId) {
+export const getRoadmapGraph = async ({ workspaceId = null } = {}) => {
+  if (!workspaceId) {
     return buildMockResponse(null);
   }
 
@@ -218,19 +218,18 @@ export const getRoadmapGraph = async ({ workspaceId = null, groupId = null } = {
     }
   }
 
-  // Group fallback remains mock until group roadmap structure endpoint is aligned.
-  return buildMockResponse(getStoredRoadmap({ workspaceId, groupId }));
+  return buildMockResponse(getStoredRoadmap({ workspaceId }));
 };
 
 // ==================== ROADMAP ====================
 
-// Tạo roadmap general cho group — POST /roadmap/create/group/{groupId}
+// Tạo roadmap cho workspace
 export const createRoadmap = async (data) => {
   // Real API reference:
-  // return api.post(`/roadmap/create/group/${data.groupId}`, data);
-  const groupId = Number(data.groupId);
-  const graph = buildSeedRoadmapGraph(data, { groupId });
-  return buildMockResponse(setStoredRoadmap({ groupId }, graph));
+  // return api.post(`/roadmap/create/workspace/${data.workspaceId}`, data);
+  const workspaceId = Number(data.workspaceId);
+  const graph = buildSeedRoadmapGraph(data, { workspaceId });
+  return buildMockResponse(setStoredRoadmap({ workspaceId }, graph));
 };
 
 // Tạo roadmap general cho workspace cá nhân — POST /roadmap/create/workspace/{workspaceId}
@@ -240,15 +239,6 @@ export const createRoadmapForWorkspace = async (data) => {
   const workspaceId = Number(data.workspaceId);
   const graph = buildSeedRoadmapGraph(data, { workspaceId });
   return buildMockResponse(setStoredRoadmap({ workspaceId }, graph));
-};
-
-// Lấy danh sách roadmap của group (có phân trang)
-export const getRoadmapsByGroup = async (groupId, page = 0, size = 10) => {
-  // Real API reference:
-  // return api.get(`/roadmap/group/${groupId}`, { params: { page, size } });
-  const roadmap = getStoredRoadmap({ groupId });
-  const content = roadmap ? [mapGraphToRoadmapListItem(roadmap)] : [];
-  return buildMockResponse({ content, page, size, totalElements: content.length });
 };
 
 // Lấy danh sách roadmap của workspace cá nhân (có phân trang)
@@ -588,17 +578,11 @@ function nextMockId(prefix) {
   return id;
 }
 
-function getScopeKey({ workspaceId = null, groupId = null } = {}) {
-  if (groupId !== null && groupId !== undefined && !Number.isNaN(groupId)) {
-    return `group:${groupId}`;
-  }
+function getScopeKey({ workspaceId = null } = {}) {
   return `workspace:${workspaceId}`;
 }
 
-function getScopeLabel({ workspaceId = null, groupId = null } = {}) {
-  if (groupId !== null && groupId !== undefined && !Number.isNaN(groupId)) {
-    return `Group ${groupId}`;
-  }
+function getScopeLabel({ workspaceId = null } = {}) {
   return `Workspace ${workspaceId ?? 'Demo'}`;
 }
 
@@ -665,9 +649,9 @@ function buildPhaseMock(phase, roadmapId, phaseIndex) {
   };
 }
 
-function buildSeedRoadmapGraph(payload = {}, { workspaceId = null, groupId = null } = {}) {
-  const scopeLabel = getScopeLabel({ workspaceId, groupId });
-  const roadmapId = nextMockId(groupId ? 'group-roadmap' : 'workspace-roadmap');
+function buildSeedRoadmapGraph(payload = {}, { workspaceId = null } = {}) {
+  const scopeLabel = getScopeLabel({ workspaceId });
+  const roadmapId = nextMockId('workspace-roadmap');
   const graph = deepClone(ROADMAP_GRAPH_SEED);
   const phases = graph.phases.map((phase, phaseIndex) => {
     const phaseId = nextMockId('phase');
