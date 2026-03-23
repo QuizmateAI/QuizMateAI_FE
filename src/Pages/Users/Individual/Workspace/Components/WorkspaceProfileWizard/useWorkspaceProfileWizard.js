@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   generateTemplateSuggestion,
+  getRecommendedRoadmapDays,
+  getRecommendedRoadmapMinutesPerDay,
+  inferKnowledgeLoadFromRoadmapConfig,
+  inferRoadmapSpeedModeFromDays,
+  normalizeKnowledgeLoad,
 } from './mockProfileWizardData';
 import { isAbsoluteBeginnerLevel } from './profileWizardBeginnerUtils';
 import {
@@ -77,7 +82,9 @@ function hasRoadmapStepData(initialData) {
   if (!initialData || typeof initialData !== 'object') return false;
 
   return Boolean(
-    hasTextValue(initialData?.adaptationMode)
+    hasTextValue(initialData?.knowledgeLoad)
+    || hasTextValue(initialData?.roadmapKnowledgeLoad)
+    || hasTextValue(initialData?.adaptationMode)
     || hasTextValue(initialData?.speedMode)
     || hasTextValue(initialData?.roadmapSpeedMode)
     || Number(initialData?.estimatedTotalDays) > 0
@@ -108,7 +115,19 @@ function createInitialValues(initialData) {
         : hasExistingProfile
           ? 'STUDY_NEW'
           : '');
-
+  const roadmapSpeedMode = normalizeRoadmapSpeedMode(
+    ensureString(initialData?.roadmapSpeedMode || initialData?.speedMode || 'STANDARD')
+  );
+  const knowledgeLoad = normalizeKnowledgeLoad(
+    ensureString(
+      initialData?.knowledgeLoad
+      || inferKnowledgeLoadFromRoadmapConfig(initialData?.roadmapSpeedMode || initialData?.speedMode, initialData?.estimatedTotalDays)
+      || 'BASIC'
+    )
+  );
+  const recommendedRoadmapDays = getRecommendedRoadmapDays(knowledgeLoad, roadmapSpeedMode);
+  const estimatedTotalDays = ensureNumber(initialData?.estimatedTotalDays, recommendedRoadmapDays);
+  const recommendedMinutesPerDay = getRecommendedRoadmapMinutesPerDay(knowledgeLoad, estimatedTotalDays);
 
   return {
     workspacePurpose: purpose,
@@ -121,6 +140,7 @@ function createInitialValues(initialData) {
       initialData?.roadmapEnabled ??
       Boolean(
         purpose === 'STUDY_NEW' ||
+        initialData?.knowledgeLoad ||
         initialData?.adaptationMode ||
         initialData?.speedMode ||
         initialData?.roadmapSpeedMode ||
@@ -138,10 +158,11 @@ function createInitialValues(initialData) {
     templateQuestionCount: ensureNumber(initialData?.templateQuestionCount, 60),
     templateNotes: ensureString(initialData?.templateNotes || ''),
     templateTotalSectionPoints: ensureNumber(initialData?.templateTotalSectionPoints, 100),
+    knowledgeLoad,
     adaptationMode: normalizeAdaptationMode(ensureString(initialData?.adaptationMode || 'BALANCED')),
-    roadmapSpeedMode: normalizeRoadmapSpeedMode(ensureString(initialData?.roadmapSpeedMode || initialData?.speedMode || 'STANDARD')),
-    estimatedTotalDays: ensureNumber(initialData?.estimatedTotalDays, 30),
-    recommendedMinutesPerDay: ensureNumber(initialData?.recommendedMinutesPerDay ?? initialData?.estimatedMinutesPerDay, 90),
+    roadmapSpeedMode,
+    estimatedTotalDays,
+    recommendedMinutesPerDay: ensureNumber(initialData?.recommendedMinutesPerDay ?? initialData?.estimatedMinutesPerDay, recommendedMinutesPerDay),
   };
 }
 
@@ -207,6 +228,42 @@ function normalizeRoadmapSpeedMode(value) {
   if (value === 'SLOW') return 'SLOW';
   if (value === 'FAST') return 'FAST';
   return 'STANDARD';
+}
+
+function syncRoadmapConfigFields(currentValues, field, value) {
+  const nextKnowledgeLoad =
+    field === 'knowledgeLoad'
+      ? normalizeKnowledgeLoad(value)
+      : normalizeKnowledgeLoad(currentValues.knowledgeLoad);
+
+  let nextRoadmapSpeedMode =
+    field === 'roadmapSpeedMode'
+      ? normalizeRoadmapSpeedMode(value)
+      : normalizeRoadmapSpeedMode(currentValues.roadmapSpeedMode);
+
+  let nextEstimatedTotalDays =
+    field === 'estimatedTotalDays'
+      ? value
+      : currentValues.estimatedTotalDays;
+  let nextRecommendedMinutesPerDay =
+    field === 'recommendedMinutesPerDay'
+      ? value
+      : currentValues.recommendedMinutesPerDay;
+
+  if (field === 'knowledgeLoad' || field === 'roadmapSpeedMode') {
+    nextEstimatedTotalDays = getRecommendedRoadmapDays(nextKnowledgeLoad, nextRoadmapSpeedMode);
+    nextRecommendedMinutesPerDay = getRecommendedRoadmapMinutesPerDay(nextKnowledgeLoad, nextEstimatedTotalDays);
+  } else if (field === 'estimatedTotalDays' && validatePositiveNumber(value)) {
+    nextRoadmapSpeedMode = inferRoadmapSpeedModeFromDays(nextKnowledgeLoad, value);
+    nextRecommendedMinutesPerDay = getRecommendedRoadmapMinutesPerDay(nextKnowledgeLoad, value);
+  }
+
+  return {
+    knowledgeLoad: nextKnowledgeLoad,
+    roadmapSpeedMode: nextRoadmapSpeedMode,
+    estimatedTotalDays: nextEstimatedTotalDays,
+    recommendedMinutesPerDay: nextRecommendedMinutesPerDay,
+  };
 }
 
 function translateOrFallback(t, key, fallback) {
@@ -406,6 +463,7 @@ function buildPayload(values) {
     learningGoal: values.learningGoal.trim(),
     strongAreas: values.strongAreas.trim() || null,
     weakAreas: values.weakAreas.trim() || null,
+    knowledgeLoad: shouldShowRoadmapFields(values) ? values.knowledgeLoad || null : null,
     adaptationMode: shouldShowRoadmapFields(values) ? values.adaptationMode || null : null,
     roadmapSpeedMode: shouldShowRoadmapFields(values) ? values.roadmapSpeedMode || null : null,
     estimatedTotalDays: shouldShowRoadmapFields(values) ? Number(values.estimatedTotalDays) || null : null,
@@ -562,6 +620,7 @@ function buildStepSnapshot(stepNumber, values) {
   if (stepNumber === 3) {
     return {
       showRoadmapFields: shouldShowRoadmapFields(values),
+      knowledgeLoad: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.knowledgeLoad) : '',
       adaptationMode: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.adaptationMode) : '',
       roadmapSpeedMode: shouldShowRoadmapFields(values) ? normalizeSnapshotText(values.roadmapSpeedMode) : '',
       estimatedTotalDays: shouldShowRoadmapFields(values) ? normalizeSnapshotNumber(values.estimatedTotalDays) : null,
@@ -1071,6 +1130,7 @@ export function useWorkspaceProfileWizard({
 
   function updateField(field, value) {
     setValues((current) => {
+      const roadmapConfigPatch = syncRoadmapConfigFields(current, field, value);
       const enableRoadmapNext =
         field === 'enableRoadmap'
           ? Boolean(value)
@@ -1081,6 +1141,7 @@ export function useWorkspaceProfileWizard({
         ...current,
         [field]: value,
         enableRoadmap: enableRoadmapNext,
+        ...roadmapConfigPatch,
       };
 
       const savedBasic = savedStepSnapshotsRef.current?.[1];
@@ -1126,10 +1187,11 @@ export function useWorkspaceProfileWizard({
           templateQuestionCount: 60,
           templateNotes: '',
           templateTotalSectionPoints: 100,
+          knowledgeLoad: 'BASIC',
           adaptationMode: 'BALANCED',
           roadmapSpeedMode: 'STANDARD',
-          estimatedTotalDays: 30,
-          recommendedMinutesPerDay: 90,
+          estimatedTotalDays: getRecommendedRoadmapDays('BASIC', 'STANDARD'),
+          recommendedMinutesPerDay: getRecommendedRoadmapMinutesPerDay('BASIC', getRecommendedRoadmapDays('BASIC', 'STANDARD')),
         };
       }
 
@@ -1225,6 +1287,7 @@ export function useWorkspaceProfileWizard({
 
     if (targetStep === 3) {
       if (shouldShowRoadmapFields(values)) {
+        if (!values.knowledgeLoad) nextErrors.knowledgeLoad = t('workspace.profileConfig.validation.knowledgeLoadRequired');
         if (!values.adaptationMode) nextErrors.adaptationMode = t('workspace.profileConfig.validation.adaptationModeRequired');
         if (!values.roadmapSpeedMode) nextErrors.roadmapSpeedMode = t('workspace.profileConfig.validation.roadmapSpeedModeRequired');
         if (!validatePositiveNumber(values.estimatedTotalDays)) {

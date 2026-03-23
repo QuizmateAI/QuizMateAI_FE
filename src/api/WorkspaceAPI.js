@@ -31,6 +31,13 @@ function extractApiData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
 }
 
+function normalizeRoadmapKnowledgeLoad(value) {
+  if (value === 'INTERMEDIATE') return 'INTERMEDIATE';
+  if (value === 'ADVANCED') return 'ADVANCED';
+  if (value === 'FULL') return 'ADVANCED';
+  return value === 'BASIC' ? 'BASIC' : '';
+}
+
 function deriveCurrentStep(profile) {
   const setupStatus = profile?.workspaceSetupStatus;
   if (setupStatus === 'DONE') return 3;
@@ -64,6 +71,7 @@ export function normalizeIndividualWorkspaceProfile(profile) {
     mockExamCatalogId,
     mockExamMode,
     mockExamName: profile.mockExamName ?? profile.examName ?? '',
+    knowledgeLoad: normalizeRoadmapKnowledgeLoad(profile.knowledgeLoad ?? profile.roadmapKnowledgeLoad ?? ''),
     roadmapSpeedMode:
       profile.roadmapSpeedMode
       || (profile.speedMode === 'MEDIUM' ? 'STANDARD' : profile.speedMode || ''),
@@ -216,6 +224,7 @@ function buildRoadmapConfigStepRequest(payload) {
   }
 
   return {
+    knowledgeLoad: payload.knowledgeLoad || null,
     adaptationMode: mapAdaptationMode(payload.adaptationMode),
     speedMode: mapRoadmapSpeedMode(payload.roadmapSpeedMode),
     estimatedTotalDays: Number(payload.estimatedTotalDays) || null,
@@ -250,7 +259,7 @@ export const getWorkspacesByUser = async (page = 0, size = 10) => {
   return response;
 };
 
-// Tạo workspace mới
+// Tạo individual workspace mới
 export const createWorkspace = async (data) => {
   const payload = { ...(data || {}) };
   if (payload.title !== undefined && payload.name === undefined) {
@@ -259,6 +268,18 @@ export const createWorkspace = async (data) => {
   delete payload.title;
 
   const response = await api.post('/workspace/create/individual', payload);
+  return response;
+};
+
+// Tạo group workspace mới
+export const createGroupWorkspace = async (data) => {
+  const payload = { ...(data || {}) };
+  if (payload.title !== undefined && payload.name === undefined) {
+    payload.name = payload.title;
+  }
+  delete payload.title;
+
+  const response = await api.post('/workspace/create/group', payload);
   return response;
 };
 
@@ -296,11 +317,6 @@ export const getRoadmapsByWorkspace = async (workspaceId, page = 0, size = 10) =
   return response;
 };
 
-// Lấy danh sách topics (có phân trang)
-export const getAllTopics = async (page = 0, size = 100) => {
-  const response = await api.get(`/topic/all?page=${page}&size=${size}`);
-  return response;
-};
 
 export const saveIndividualWorkspaceBasicStep = async (workspaceId, data) => {
   const response = await api.put(`/workspace-profile/individual/${workspaceId}/steps/basic`, buildBasicStepRequest(data));
@@ -350,5 +366,58 @@ export const configureIndividualWorkspaceProfile = async (workspaceId, data) => 
 // Lấy Profile Cá nhân của Workspace
 export const getIndividualWorkspaceProfile = async (workspaceId) => {
   const response = await api.get(`/workspace-profile/individual/${workspaceId}`);
+  return response;
+};
+
+// ====== Group Workspace Profile ======
+
+function trimToNullSafe(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+export function normalizeGroupWorkspaceProfile(profile) {
+  if (!profile || typeof profile !== 'object') return null;
+
+  return {
+    ...profile,
+    currentStep: Number(profile.currentStep) || 1,
+    totalSteps: Number(profile.totalSteps) || 3,
+    onboardingCompleted: Boolean(profile.onboardingCompleted),
+  };
+}
+
+export const getGroupWorkspaceProfile = async (workspaceId) => {
+  const response = await api.get(`/workspace-profile/group/${workspaceId}`);
+  return response;
+};
+
+export const saveGroupBasicStep = async (workspaceId, data) => {
+  const payload = {
+    groupName: trimToNullSafe(data.groupName),
+    rules: trimToNullSafe(data.rules),
+    groupPurpose: data.groupPurpose || null,
+    defaultRoleOnJoin: trimToNullSafe(data.defaultRoleOnJoin),
+  };
+  const response = await api.put(`/workspace-profile/group/${workspaceId}/steps/basic`, payload);
+  return response;
+};
+
+export const saveGroupConfigStep = async (workspaceId, data) => {
+  const payload = {
+    domain: trimToNullSafe(data.domain),
+    knowledge: trimToNullSafe(data.knowledge),
+    defaultLevel: trimToNullSafe(data.defaultLevel),
+    learningMode: data.learningMode || null,
+    roadmapEnabled: data.roadmapEnabled ?? null,
+    groupLearningGoal: trimToNullSafe(data.groupLearningGoal),
+    examName: trimToNullSafe(data.examName),
+    preLearningRequired: data.preLearningRequired ?? true,
+  };
+  const response = await api.put(`/workspace-profile/group/${workspaceId}/steps/config`, payload);
+  return response;
+};
+
+export const confirmGroupWorkspaceProfile = async (workspaceId) => {
+  const response = await api.post(`/workspace-profile/group/${workspaceId}/steps/confirm`);
   return response;
 };

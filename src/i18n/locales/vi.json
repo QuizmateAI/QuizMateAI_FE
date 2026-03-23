@@ -867,7 +867,7 @@
         "3": {
           "title": "Bước 3",
           "stepperLabel": "Cấu hình lộ trình",
-          "description": "Tải tài liệu lên và rà lại xem nội dung đã khớp với hồ sơ học tập hay chưa."
+          "description": "Chốt lượng kiến thức cần học, tốc độ học và số ngày dự kiến cho lộ trình."
         },
         "4": {
           "title": "Bước 4",
@@ -997,7 +997,14 @@
         "improvementTitle": "Quizmate AI gợi ý phần cần cải thiện",
         "improvementDescription": "Chọn một hoặc nhiều phần để Quizmate AI ưu tiên trong lộ trình, kế hoạch ôn tập hoặc mock test.",
         "roadmapTitle": "Thiết lập lộ trình",
-        "roadmapDescription": "Chọn cách Quizmate AI thích ứng, tốc độ học và khối lượng học mỗi ngày.",
+        "roadmapDescription": "Tách riêng lượng kiến thức cần học, tốc độ tiếp thu, số ngày dự kiến và số phút mỗi ngày để lộ trình phản ánh đúng mục tiêu của bạn.",
+        "knowledgeLoadHint": "Lượng kiến thức xác định bạn muốn học bao nhiêu. Tốc độ học chỉ quyết định nhịp thời gian, còn hệ thống sẽ giãn đều khối lượng này qua số ngày và số phút học mỗi ngày.",
+        "scheduleInsightTitle": "Phân tích nhịp học",
+        "scheduleInsightSuggested": "Với lựa chọn hiện tại, Quizmate AI đang gợi ý khoảng {{days}} ngày ở tốc độ {{speed}} để phủ đúng lượng kiến thức đã chọn.",
+        "scheduleInsightAdjusted": "Bạn đang nhập {{days}} ngày nên hệ thống tự quy đổi về tốc độ {{speed}}. Mốc gợi ý gần nhất là {{recommendedDays}} ngày.",
+        "minutesInsightTitle": "Phân bổ thời lượng mỗi ngày",
+        "minutesInsightSuggested": "Để giãn đều lượng kiến thức cần học trong {{days}} ngày, Quizmate AI gợi ý khoảng {{minutes}} phút/ngày.",
+        "minutesInsightAdjusted": "Bạn đang đặt {{minutes}} phút/ngày. Với cấu hình hiện tại, mốc gợi ý để giãn đều khối lượng học là khoảng {{recommendedMinutes}} phút/ngày.",
         "noRoadmapTitle": "Bạn đã chọn không tạo Lộ trình",
         "noRoadmapDescription": "Wizard vẫn lưu mục tiêu, phần cần cải thiện và thông tin mock test của bạn.",
         "mockGoalTitle": "Mục tiêu điểm số và ngày thi",
@@ -1036,10 +1043,11 @@
         "templateFormat": "Định dạng mẫu",
         "templateDurationMinutes": "Thời lượng đề (phút)",
         "templateQuestionCount": "Số câu hỏi",
+        "knowledgeLoad": "Lượng kiến thức cần học",
         "adaptationMode": "Chế độ thích ứng",
         "roadmapSpeedMode": "Tốc độ Lộ trình",
         "estimatedTotalDays": "Số ngày dự kiến",
-        "recommendedMinutesPerDay": "Số phút học mỗi ngày",
+        "recommendedMinutesPerDay": "Số phút học gợi ý mỗi ngày",
         "targetScore": "Điểm mục tiêu",
         "customTargetScore": "Điểm mục tiêu tùy chỉnh",
         "targetScoreScale": "Thang điểm",
@@ -1083,6 +1091,20 @@
         "scoring": "Cách tính điểm",
         "support": "Quizmate AI hỗ trợ"
       },
+      "knowledgeLoad": {
+        "BASIC": {
+          "title": "Cơ bản",
+          "description": "Tập trung vào nền tảng cốt lõi, thuật ngữ chính và các phần bắt buộc phải nắm."
+        },
+        "INTERMEDIATE": {
+          "title": "Trung cấp",
+          "description": "Học đầy đủ phần nền tảng và các ứng dụng phổ biến ở mức sử dụng thực tế."
+        },
+        "ADVANCED": {
+          "title": "Nâng cao",
+          "description": "Đi sâu vào các tình huống khó, ngoại lệ và phần kiến thức có độ phức tạp cao."
+        }
+      },
       "adaptationMode": {
         "FLEXIBLE": {
           "title": "Linh hoạt",
@@ -1125,6 +1147,7 @@
         "publicExamRequired": "Vui lòng chọn một kỳ thi public.",
         "privateExamRequired": "Vui lòng nhập tên kỳ thi private.",
         "improvementFocusRequired": "Vui lòng chọn ít nhất một phần cần cải thiện.",
+        "knowledgeLoadRequired": "Vui lòng chọn lượng kiến thức cần học.",
         "adaptationModeRequired": "Vui lòng chọn chế độ thích ứng.",
         "roadmapSpeedModeRequired": "Vui lòng chọn tốc độ Lộ trình.",
         "estimatedTotalDaysRequired": "Vui lòng nhập số ngày dự kiến lớn hơn 0.",
