@@ -169,6 +169,17 @@ function createConfirmationSummary(t, values) {
   const roadmapItems = shouldShowRoadmapConfig
     ? [
       {
+        id: 'knowledgeLoad',
+        label: translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeLoad', 'Knowledge amount'),
+        value: values.knowledgeLoad
+          ? translateOrFallback(
+            t,
+            `workspace.profileConfig.knowledgeLoad.${values.knowledgeLoad}.title`,
+            normalizeDisplayValue(values.knowledgeLoad)
+          )
+          : emptyValueLabel,
+      },
+      {
         id: 'adaptationMode',
         label: translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Chế độ thích ứng'),
         value: values.adaptationMode
