@@ -3,7 +3,7 @@ import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, GraduationCap, ArrowLeft, RefreshCw, Save, Rocket, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz, getQuizzesByScope } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace, getRoadmapsByGroup, getPhasesByRoadmap } from "@/api/RoadmapAPI";
+import { getRoadmapsByWorkspace, getPhasesByRoadmap } from "@/api/RoadmapAPI";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -60,15 +60,14 @@ function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBa
     if (!contextId) return;
     setRoadmapLoading(true);
     try {
-      const loadFn = contextType === "GROUP" ? getRoadmapsByGroup : getRoadmapsByWorkspace;
-      const res = await loadFn(contextId, 0, 100);
+      const res = await getRoadmapsByWorkspace(contextId, 0, 100);
       setRoadmaps(res.data?.content || res.data || []);
     } catch (e) {
       console.error("Lỗi tải roadmaps:", e);
     } finally {
       setRoadmapLoading(false);
     }
-  }, [contextType, contextId]);
+  }, [contextId]);
 
   useEffect(() => { loadRoadmaps(); }, [loadRoadmaps]);
 

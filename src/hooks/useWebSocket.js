@@ -25,7 +25,6 @@ function normalizeMaterialPayload(payload) {
  * Hook quản lý WebSocket connection cho realtime updates (STOMP over SockJS)
  * @param {Object} options - WebSocket options
  * @param {string} options.workspaceId - ID của workspace cần theo dõi
- * @param {string} options.groupId - ID của group cần theo dõi (optional)
  * @param {Function} options.onMaterialUploaded - Callback khi có tài liệu mới được upload
  * @param {Function} options.onMaterialDeleted - Callback khi có tài liệu bị xóa
  * @param {Function} options.onMaterialUpdated - Callback khi có tài liệu được cập nhật
@@ -34,7 +33,6 @@ function normalizeMaterialPayload(payload) {
  */
 export function useWebSocket({
   workspaceId,
-  groupId,
   onMaterialUploaded,
   onMaterialDeleted,
   onMaterialUpdated,
@@ -78,8 +76,7 @@ export function useWebSocket({
 
   // Kết nối WebSocket
   useEffect(() => {
-    // Không kết nối nếu disabled hoặc không có workspace/group ID
-    if (!enabled || (!workspaceId && !groupId)) {
+    if (!enabled || !workspaceId) {
       return;
     }
 
@@ -113,9 +110,6 @@ export function useWebSocket({
         console.log("🔔 Subscribed channel: /user/queue/progress");
         if (workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/material`);
-        }
-        if (groupId) {
-          console.log(`🔔 Subscribed channel: /topic/group/${groupId}/material`);
         }
         setIsConnected(true);
 
@@ -218,43 +212,6 @@ export function useWebSocket({
           );
           subscriptionsRef.current.push(workspaceSubscription);
         }
-
-        // Subscribe to group material updates
-        if (groupId) {
-          const groupSubscription = stompClient.subscribe(
-            `/topic/group/${groupId}/material`,
-            (message) => {
-              try {
-                console.log("📨 Raw WebSocket message received (GROUP):", message.body);
-                const data = normalizeMaterialPayload(JSON.parse(message.body));
-                console.log("📤 Group material update (parsed):", data);
-                console.log("   - Type:", data.type);
-                console.log("   - Status:", data.status);
-                console.log("   - Material ID:", data.materialId);
-                
-                // Xử lý theo type của message
-                if (data.type === "UPLOADED" || data.status === "UPLOADED" || data.status === "ACTIVE") {
-                  console.log("✅ Triggering onMaterialUploaded callback (GROUP)");
-                  setLastMessage({ type: "material:uploaded", data, timestamp: Date.now() });
-                  callbackRefs.current.onMaterialUploaded?.(data);
-                } else if (data.type === "DELETED" || data.status === "DELETED") {
-                  console.log("🗑️ Triggering onMaterialDeleted callback (GROUP)");
-                  setLastMessage({ type: "material:deleted", data, timestamp: Date.now() });
-                  callbackRefs.current.onMaterialDeleted?.(data);
-                } else if (data.type === "UPDATED" || ["UPDATED", "PROCESSING", "ERROR", "WARN", "REJECT"].includes(data.status)) {
-                  console.log("🔄 Triggering onMaterialUpdated callback (GROUP)");
-                  setLastMessage({ type: "material:updated", data, timestamp: Date.now() });
-                  callbackRefs.current.onMaterialUpdated?.(data);
-                } else {
-                  console.warn("⚠️ Unknown message type/status (GROUP):", { type: data.type, status: data.status });
-                }
-              } catch (err) {
-                console.error("Failed to parse group material message:", err);
-              }
-            }
-          );
-          subscriptionsRef.current.push(groupSubscription);
-        }
       },
 
       onDisconnect: () => {
@@ -305,7 +262,7 @@ export function useWebSocket({
       }
       stompClientRef.current = null;
     };
-  }, [workspaceId, groupId, enabled, getAuthToken]);
+  }, [workspaceId, enabled, getAuthToken]);
 
   // Gửi message qua WebSocket
   const send = useCallback((destination, body) => {

@@ -15,7 +15,7 @@ import {
   getGroupSubscription,
   getGroupLogs,
 } from '@/api/ManagementSystemAPI';
-import { getRoadmapsByGroup } from '@/api/RoadmapAPI';
+import { getRoadmapsByWorkspace } from '@/api/RoadmapAPI';
 
 const TABS = [
   { id: 'overview', labelKey: 'groupDetail.tabs.overview', icon: LayoutDashboard },
@@ -26,7 +26,7 @@ const TABS = [
 ];
 
 function GroupDetailPage() {
-  const { groupId } = useParams();
+  const { workspaceId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const basePath = location.pathname.includes('super-admin') ? '/super-admin' : '/admin';
@@ -52,7 +52,7 @@ function GroupDetailPage() {
 
   const fetchGroup = async () => {
     try {
-      const res = await getGroupDetail(groupId);
+      const res = await getGroupDetail(workspaceId);
       setGroup(res?.data ?? res);
     } catch (err) {
       setError(err?.message || 'Không thể tải thông tin nhóm');
@@ -61,7 +61,7 @@ function GroupDetailPage() {
 
   const fetchSubscription = async () => {
     try {
-      const res = await getGroupSubscription(groupId);
+      const res = await getGroupSubscription(workspaceId);
       setSubscription(res?.data ?? res);
     } catch (err) {
       console.error('Fetch subscription:', err);
@@ -71,7 +71,7 @@ function GroupDetailPage() {
 
   const fetchRoadmaps = async () => {
     try {
-      const res = await getRoadmapsByGroup(groupId, 0, 50);
+      const res = await getRoadmapsByWorkspace(workspaceId, 0, 50);
       const data = res?.data ?? res;
       const list = data?.content ?? (Array.isArray(data) ? data : []);
       setRoadmaps(list);
@@ -83,7 +83,7 @@ function GroupDetailPage() {
 
   const fetchLogs = async () => {
     try {
-      const res = await getGroupLogs(groupId);
+      const res = await getGroupLogs(workspaceId);
       const data = res?.data ?? res;
       setLogs(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -99,7 +99,7 @@ function GroupDetailPage() {
       fetchGroup().finally(() => setLoading(false));
     }, 0);
     return () => clearTimeout(timer);
-  }, [groupId]);
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!group) return;
