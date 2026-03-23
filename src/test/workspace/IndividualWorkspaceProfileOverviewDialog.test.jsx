@@ -34,6 +34,7 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
           templateDurationMinutes: 90,
           templateQuestionCount: 60,
           templatePrompt: 'Mo phong de that va co phan nhan xet loi',
+          knowledgeLoad: 'ADVANCED',
           adaptationMode: 'FLEXIBLE',
           roadmapSpeedMode: 'STANDARD',
           estimatedTotalDays: 45,
@@ -58,6 +59,8 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
     expect(screen.getByRole('heading', { name: /bối cảnh của bạn/i })).toBeInTheDocument();
     expect(screen.getAllByText('Doc de nhanh').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Task response').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Nâng cao').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Tiêu chuẩn').length).toBeGreaterThan(0);
     expect(screen.getAllByText('45 ngày').length).toBeGreaterThan(0);
     expect(screen.getAllByText('90 phút/ngày').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/đã hoàn tất/i).length).toBeGreaterThan(0);
