@@ -8,7 +8,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAllUsers, getAllPlans } from '@/api/ManagementSystemAPI';
+import { getAdminOverviewStats } from '@/api/ManagementSystemAPI';
 
 function AdminDashboard() {
   const { t, i18n } = useTranslation();
@@ -27,22 +27,14 @@ function AdminDashboard() {
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      const [usersRes, plansRes] = await Promise.allSettled([
-        getAllUsers(),
-        getAllPlans(),
-      ]);
-
-      const usersRaw = usersRes.status === 'fulfilled' ? (usersRes.value?.data ?? usersRes.value) : [];
-      const users = Array.isArray(usersRaw) ? usersRaw : usersRaw?.content ? usersRaw.content : [];
-      const plansRaw = plansRes.status === 'fulfilled' ? (plansRes.value?.data ?? plansRes.value) : [];
-      const plans = Array.isArray(plansRaw) ? plansRaw : [];
-      const activePlans = plans.filter(p => (p.status || '').toUpperCase() === 'ACTIVE').length;
+      const res = await getAdminOverviewStats();
+      const data = res?.data ?? res ?? {};
 
       setStats({
-        totalUsers: users.length,
-        totalPlans: plans.length,
-        activeSubs: activePlans,
-        aiTokensUsed: 0,
+        totalUsers: Number(data.totalUsers || 0),
+        totalPlans: Number(data.totalPlans || 0),
+        activeSubs: Number(data.activePlans || 0),
+        aiTokensUsed: Number(data.aiTokensUsed || 0),
       });
     } catch (err) {
       console.error('Dashboard fetch error:', err);

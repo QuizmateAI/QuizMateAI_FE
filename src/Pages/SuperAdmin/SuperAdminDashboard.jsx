@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { getAllSystemUsers } from '@/api/ManagementSystemAPI';
+import { getSystemOverviewStats } from '@/api/ManagementSystemAPI';
 
 function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
@@ -33,16 +33,13 @@ function SuperAdminDashboard() {
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      const res = await getAllSystemUsers();
-      const data = res?.data ?? res;
-      const users = Array.isArray(data) ? data : [];
-      const admins = users.filter((u) => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN');
-      const regularUsers = users.filter((u) => u.role === 'USER');
+      const res = await getSystemOverviewStats();
+      const data = res?.data ?? res ?? {};
       setStats({
-        totalAdmins: admins.length,
-        totalUsers: users.length,
-        userCount: regularUsers.length,
-        adminCount: admins.length,
+        totalAdmins: Number(data.totalAdmins || 0),
+        totalUsers: Number(data.totalUsers || 0),
+        userCount: Number(data.userCount || 0),
+        adminCount: Number(data.adminCount || 0),
       });
     } catch (err) {
       console.error('Fetch stats error:', err);

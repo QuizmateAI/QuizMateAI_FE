@@ -6,6 +6,7 @@ import {
   CreditCard, LogOut,
   PanelLeftClose, Coins
 } from 'lucide-react';
+import { Banknote } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
 import { useTranslation } from 'react-i18next';
@@ -40,7 +41,7 @@ const ALL_MENU_ITEMS = [
     icon: CreditCard,
     labelKey: 'sidebar.subscriptions',
     path: '/admin/plan',
-    requiredPerm: 'subscription:read',
+    requiredPerm: 'plan:write',
     matchPrefix: true,
   },
   {
@@ -48,6 +49,13 @@ const ALL_MENU_ITEMS = [
     labelKey: 'sidebar.creditPackages',
     path: '/admin/credit',
     requiredPerm: 'credit-package:read',
+    matchPrefix: true,
+  },
+  {
+    icon: Banknote,
+    labelKey: 'sidebar.payments',
+    path: '/admin/payments',
+    requiredPerm: 'payment:read',
     matchPrefix: true,
   },
 ];

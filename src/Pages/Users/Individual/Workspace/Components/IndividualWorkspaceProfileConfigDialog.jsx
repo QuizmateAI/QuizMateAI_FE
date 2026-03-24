@@ -634,13 +634,19 @@ function IndividualWorkspaceProfileConfigDialog({
                 />
                 <div
                   className={cn(
-                    'pointer-events-none absolute left-[6%] top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,#0ea5e9_0%,#f97316_52%,#22c55e_100%)] shadow-[0_0_18px_rgba(14,165,233,0.25)] transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]'
+                    'pointer-events-none absolute left-[6%] top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,#0ea5e9_0%,#f97316_52%,#22c55e_100%)] shadow-[0_0_18px_rgba(14,165,233,0.25)] transition-all duration-700'
                   )}
-                  style={{ width: `${progressFraction * 88}%` }}
+                  style={{
+                    width: `${progressFraction * 88}%`,
+                    transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
                 />
                 <div
-                  className="pointer-events-none absolute left-[6%] top-1/2 h-[8px] -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(14,165,233,0.18)_0%,rgba(249,115,22,0.18)_52%,rgba(34,197,94,0.18)_100%)] blur-md transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                  style={{ width: `${progressFraction * 88}%` }}
+                  className="pointer-events-none absolute left-[6%] top-1/2 h-[8px] -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,rgba(14,165,233,0.18)_0%,rgba(249,115,22,0.18)_52%,rgba(34,197,94,0.18)_100%)] blur-md transition-all duration-700"
+                  style={{
+                    width: `${progressFraction * 88}%`,
+                    transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
                 />
 
                 {stepIds.map((item) => {
@@ -692,17 +698,19 @@ function IndividualWorkspaceProfileConfigDialog({
                           <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
                             <StepIcon
                               className={cn(
-                                'h-11 w-11 shrink-0 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                                'h-11 w-11 shrink-0 transition-all duration-500',
                                 active ? 'scale-[1.08]' : complete ? 'scale-[1.03]' : 'opacity-95'
                               )}
+                              style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
                             />
                           </div>
                         ) : (
                           <div
                             className={cn(
-                              'relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                              'relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-all duration-500',
                               circleClass
                             )}
+                            style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
                           >
                             <StepIcon className={cn('h-4.5 w-4.5 transition-transform duration-500', active ? 'scale-110' : '')} />
                           </div>
