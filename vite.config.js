@@ -19,15 +19,10 @@ export default defineConfig({
       emitWarning: true,
       emitError: true,
     }),
-    // Gzip compression for production
     compression({
-      algorithm: 'gzip',
+      algorithms: ['gzip', 'brotliCompress'],
       exclude: [/\.(br)$/, /\.(gz)$/],
-    }),
-    // Brotli compression (smaller than gzip)
-    compression({
-      algorithm: 'brotliCompress',
-      exclude: [/\.(br)$/, /\.(gz)$/],
+      threshold: 1024,
     }),
   ],
   test: {
@@ -67,7 +62,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Vendor chunks - split large dependencies
-          'vendor-react': ['react', 'react-dom'],
           'vendor-router': ['react-router-dom'],
           'vendor-i18n': ['i18next', 'react-i18next'],
           'vendor-ui': [

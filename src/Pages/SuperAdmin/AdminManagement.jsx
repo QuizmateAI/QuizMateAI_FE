@@ -32,6 +32,7 @@ import {
   getAllSystemUsers,
   createAdmin,
   listPermissions,
+  getAdminAllowedPermissions,
   getUserPermissions,
   syncUserPermissions,
 } from '@/api/ManagementSystemAPI';
@@ -43,21 +44,16 @@ import {
   filterRemovedLearningConfigPermissions,
 } from '@/lib/learningConfigAdminFilters';
 
-const ADMIN_ALLOWED_CODES = [
-  'user:read', 'user:status_update',
-  'subscription:read', 'subscription:write',
-  'payment:read', 'payment:write', 'material:moderate', 'audit:read',
-  'group:read_all',
-];
-
 const PERM_CATEGORIES = [
   { prefix: 'user:',              label: 'Users',          icon: Users,         color: 'text-blue-400',    bg: 'from-blue-500 to-blue-600' },
   { prefix: 'group:',             label: 'Groups',         icon: UsersRound,    color: 'text-violet-400',  bg: 'from-violet-500 to-purple-600' },
   { prefix: 'plan:',              label: 'Plans',          icon: Package,       color: 'text-cyan-400',    bg: 'from-cyan-500 to-teal-500' },
   { prefix: 'subscription:',      label: 'Subscriptions',  icon: CreditCard,    color: 'text-emerald-400', bg: 'from-emerald-500 to-green-600' },
+  { prefix: 'credit-package:',    label: 'Credit Packs',   icon: CreditCard,    color: 'text-sky-400',     bg: 'from-sky-500 to-blue-600' },
   { prefix: 'payment:',           label: 'Payments',       icon: Banknote,      color: 'text-amber-400',   bg: 'from-amber-500 to-orange-500' },
   { prefix: 'material:',          label: 'Materials',      icon: FileText,      color: 'text-rose-400',    bg: 'from-rose-500 to-pink-600' },
   { prefix: 'audit:',             label: 'Audit',          icon: ClipboardList, color: 'text-indigo-400',  bg: 'from-indigo-500 to-blue-600' },
+  { prefix: 'system-settings:',   label: 'Settings',       icon: ShieldCheck,   color: 'text-fuchsia-400', bg: 'from-fuchsia-500 to-pink-600' },
 ];
 
 const getPermAction = (code) => {
@@ -162,14 +158,19 @@ function AdminManagement() {
     setIsRbacOpen(true);
     setIsRbacLoading(true);
     try {
-      const [permRes, userPermRes] = await Promise.all([
+      const [permRes, allowedPermRes, userPermRes] = await Promise.all([
         listPermissions(),
+        getAdminAllowedPermissions(),
         admin.role === 'ADMIN' ? getUserPermissions(admin.id) : Promise.resolve({ data: [] }),
       ]);
       const permPageData = permRes?.data ?? permRes;
       const allPerms = Array.isArray(permPageData?.content) ? permPageData.content : (Array.isArray(permPageData) ? permPageData : []);
+      const allowedPermData = allowedPermRes?.data ?? allowedPermRes;
+      const allowedPermCodes = new Set(
+        (Array.isArray(allowedPermData) ? allowedPermData : []).map((code) => String(code).toLowerCase())
+      );
       const adminPerms = filterRemovedLearningConfigPermissions(allPerms).filter((p) =>
-        ADMIN_ALLOWED_CODES.includes(p.code?.toLowerCase())
+        allowedPermCodes.has(String(p.code).toLowerCase())
       );
       setPermissions(adminPerms);
 

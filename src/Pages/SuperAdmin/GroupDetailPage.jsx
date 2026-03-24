@@ -41,6 +41,7 @@ function GroupDetailPage() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const subscriptionPlanName = subscription?.plan?.displayName || subscription?.plan?.planName;
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -188,7 +189,7 @@ function GroupDetailPage() {
               </div>
               <div className={`flex-1 min-w-[140px] p-3 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                 <p className="text-xs text-slate-500 mb-0.5">{t('groupDetail.subscription')}</p>
-                <p className="text-base font-semibold">{subscription?.plan?.planName ?? t('groupDetail.noPlan')}</p>
+                <p className="text-base font-semibold">{subscriptionPlanName ?? t('groupDetail.noPlan')}</p>
               </div>
               <div className={`flex-1 min-w-[140px] p-3 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                 <p className="text-xs text-slate-500 mb-0.5">{t('groupDetail.createdAt')}</p>
@@ -316,7 +317,7 @@ function GroupDetailPage() {
               ) : (
                 <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                   <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {subscription.plan?.planName}
+                    {subscription.plan?.displayName || subscription.plan?.planName}
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
