@@ -18,7 +18,7 @@ import PostLearningListView from "./PostLearningListView";
 import CreatePostLearningForm from "./CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onCreatePhaseKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, isGeneratingRoadmapPhases = false, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onCreatePhaseKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -28,7 +28,9 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
     if (actionKey === "roadmap") return shouldDisableRoadmap;
     return false;
   }, [shouldDisableFlashcard, shouldDisableQuiz, shouldDisableRoadmap]);
-  const areAllQuickActionsDisabled = getIsActionDisabled("roadmap")
+  // Không ẩn roadmap action ở ChatPanel: nếu không đủ điều kiện thì hiển thị dạng disabled để đồng bộ Studio Panel
+  const isRoadmapQuickActionDisabled = !showRoadmapAction || getIsActionDisabled("roadmap");
+  const areAllQuickActionsDisabled = isRoadmapQuickActionDisabled
     && getIsActionDisabled("quiz")
     && getIsActionDisabled("flashcard");
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
@@ -76,6 +78,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             isStudyNewRoadmap={isStudyNewRoadmap}
             onViewQuiz={onViewQuiz}
             isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+            roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
             generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
             generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
             generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
@@ -277,7 +280,9 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
               description: t("workspace.studio.actions.createFlashcard"),
             },
           ].map((mode) => {
-            const isDisabled = getIsActionDisabled(mode.key);
+            const isDisabled = mode.key === "roadmap"
+              ? isRoadmapQuickActionDisabled
+              : getIsActionDisabled(mode.key);
             return (
             <Button
               key={mode.key}

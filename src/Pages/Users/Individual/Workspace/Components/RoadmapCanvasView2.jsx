@@ -324,12 +324,6 @@ function RoadmapCanvasView2({
           const normalizedPhaseId = Number(phase.phaseId);
           const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
           const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
-          const isProcessingPhase = normalizedPhaseStatus === "PROCESSING";
-          const phaseStatusLabel = isCompletedPhase
-            ? t("workspace.quiz.statusLabels.COMPLETED", "Completed")
-            : isProcessingPhase
-            ? t("workspace.quiz.statusLabels.PROCESSING", "Processing")
-            : t("workspace.quiz.statusLabels.ACTIVE", "Active");
           const isGeneratingPhaseContent = generatingKnowledgePhaseIds.includes(Number(phase.phaseId));
           const isGeneratingKnowledgeQuiz = generatingKnowledgeQuizPhaseIds.includes(Number(phase.phaseId));
           const isGeneratingKnowledge = isGeneratingPhaseContent || isGeneratingKnowledgeQuiz;
@@ -338,6 +332,19 @@ function RoadmapCanvasView2({
           const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
           const phasePostLearningPercent = progressTracking?.getPostLearningProgress(normalizedPhaseId) ?? 0;
           const phaseProcessingPercent = Math.max(phaseKnowledgePercent, phasePreLearningPercent, phasePostLearningPercent, 0);
+          const hasPendingProgress = phaseProcessingPercent > 0 && phaseProcessingPercent < 100;
+          const isProcessingPhase = !isCompletedPhase && (
+            normalizedPhaseStatus === "PROCESSING"
+            || isGeneratingPhaseContent
+            || isGeneratingKnowledgeQuiz
+            || isGeneratingPreLearning
+            || hasPendingProgress
+          );
+          const phaseStatusLabel = isCompletedPhase
+            ? t("workspace.quiz.statusLabels.COMPLETED", "Completed")
+            : isProcessingPhase
+            ? t("workspace.quiz.statusLabels.PROCESSING", "Processing")
+            : t("workspace.quiz.statusLabels.ACTIVE", "Active");
           const hasKnowledge = (phase.knowledges || []).length > 0;
           const hasPreLearning = (phase.preLearningQuizzes || []).length > 0;
           const hasPostLearning = (phase.postLearningQuizzes || []).length > 0;

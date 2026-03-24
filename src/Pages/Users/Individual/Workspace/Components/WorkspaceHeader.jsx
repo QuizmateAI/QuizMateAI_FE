@@ -58,7 +58,7 @@ function WorkspaceHeader({
   };
 
   return (
-    <header className={`w-full h-16 border-b transition-colors duration-300 ${isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"}`}>
+    <header className={`relative z-[110] w-full h-16 border-b transition-colors duration-300 ${isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"}`}>
       <div className="max-w-[1740px] mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div
