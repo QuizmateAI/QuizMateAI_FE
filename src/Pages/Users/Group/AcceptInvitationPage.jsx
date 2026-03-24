@@ -1,15 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { acceptInvitation } from '@/api/GroupAPI';
 import { useToast } from '@/context/ToastContext';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+
+const pendingInvitationRequests = new Map();
+
+function acceptInvitationOnce(token) {
+  if (!pendingInvitationRequests.has(token)) {
+    const request = acceptInvitation(token).finally(() => {
+      pendingInvitationRequests.delete(token);
+    });
+    pendingInvitationRequests.set(token, request);
+  }
+
+  return pendingInvitationRequests.get(token);
+}
 
 const AcceptInvitationPage = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { showSuccess, showError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -24,19 +35,36 @@ const AcceptInvitationPage = () => {
       return;
     }
 
+    setLoading(true);
+    setSuccess(false);
+    setMessage('');
+
+    let isActive = true;
+
     const processAccept = async () => {
       try {
-        const response = await acceptInvitation(token);
-        if (response.data?.statusCode === 200) {
+        // Lời mời là thao tác one-time, cần dùng chung promise để tránh consume token 2 lần trong StrictMode.
+        const response = await acceptInvitationOnce(token);
+        if (!isActive) {
+          return;
+        }
+
+        if (response?.statusCode === 200 || response?.statusCode === 0) {
+          const successMessage = response?.message || 'Chấp nhận lời mời nhóm thành công!';
           setSuccess(true);
-          setMessage(response.data?.message || 'Chấp nhận lời mời nhóm thành công!');
-          showSuccess(response.data?.message || 'Chấp nhận lời mời thành công!');
+          setMessage(successMessage);
+          showSuccess(successMessage);
         } else {
+          const errorMessage = response?.message || 'Có lỗi xảy ra khi xác nhận lời mời.';
           setSuccess(false);
-          setMessage(response.data?.message || 'Có lỗi xảy ra khi xác nhận lời mời.');
-          showError(response.data?.message || 'Có lỗi xảy ra.');
+          setMessage(errorMessage);
+          showError(errorMessage);
         }
       } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
         setSuccess(false);
         const errMsg =
           error?.message ||
@@ -46,12 +74,18 @@ const AcceptInvitationPage = () => {
         setMessage(errMsg);
         showError(errMsg);
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
     processAccept();
-  }, [token]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [token, showSuccess, showError]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4">

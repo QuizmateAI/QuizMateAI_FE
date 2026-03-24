@@ -11,7 +11,8 @@
     "adminAccounts": "Admin Accounts",
     "rbac": "RBAC System",
     "subscriptions": "Subscriptions",
-    "creditPackages": "Credit Packs"
+    "creditPackages": "Credit Packs",
+    "payments": "Payments"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -61,6 +62,86 @@
     },
     "syncSuccess": "Permissions synced successfully.",
     "syncError": "Failed to sync permissions."
+  },
+  "adminPayments": {
+    "desc": "Look up transactions by order ID, user, workspace, or payment status.",
+    "filterTitle": "Payment Filters",
+    "placeholders": {
+      "orderId": "Exact order ID",
+      "userId": "User ID",
+      "workspaceId": "Workspace ID"
+    },
+    "fields": {
+      "userId": "User ID",
+      "workspaceId": "Workspace ID"
+    },
+    "allStatuses": "All statuses",
+    "search": "Search",
+    "listTitle": "Transaction List",
+    "summary": "{{count}} transactions",
+    "table": {
+      "orderId": "Order ID",
+      "user": "User",
+      "target": "Target",
+      "amount": "Amount",
+      "method": "Method",
+      "status": "Status",
+      "time": "Time",
+      "actions": "Actions"
+    },
+    "empty": "No matching transactions found.",
+    "pagination": {
+      "page": "Page {{current}}/{{total}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "permissionDenied": "Your account does not have permission to view payment transactions.",
+    "errors": {
+      "loadList": "Unable to load payment transactions",
+      "loadDetail": "Unable to load payment details"
+    },
+    "validation": {
+      "positiveInteger": "{{field}} must be a positive integer"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed",
+      "CANCELLED": "Cancelled"
+    },
+    "targetTypes": {
+      "USER_PLAN": "Individual plan",
+      "WORKSPACE_PLAN": "Group plan",
+      "USER_CREDIT": "Individual credit",
+      "WORKSPACE_CREDIT": "Group credit",
+      "WORKSPACE_SLOT": "Group slot"
+    },
+    "targetSummary": {
+      "workspace": "WS #{{id}}",
+      "chargedUser": "Charged User #{{id}}"
+    },
+    "detail": {
+      "action": "Details",
+      "title": "Payment Details {{orderId}}",
+      "desc": "Review the full transaction details and billed target information.",
+      "fields": {
+        "paymentId": "Payment ID",
+        "orderId": "Order ID",
+        "payerUser": "Payer User",
+        "chargedUser": "Charged User",
+        "workspace": "Workspace",
+        "targetType": "Target Type",
+        "userSubscription": "User Subscription",
+        "groupSubscription": "Group Subscription",
+        "amount": "Amount",
+        "method": "Method",
+        "status": "Status",
+        "createdAt": "Created At",
+        "paidAt": "Paid At",
+        "expiresAt": "Expires At",
+        "payUrl": "Pay URL"
+      }
+    }
   },
   "topicManagement": {
     "title": "Topic & Field Management",
