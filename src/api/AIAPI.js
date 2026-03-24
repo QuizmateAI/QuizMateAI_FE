@@ -54,3 +54,33 @@ export const generateRoadmapKnowledgeQuiz = async (data) => {
   return response;
 };
 
+// Lay danh sach tai lieu de xuat da luu theo workspace
+export const getSuggestedResources = async (workspaceId, page = 0, size = 10) => {
+  const response = await api.get('/ai/resources:suggested', {
+    params: {
+      workspaceId: Number(workspaceId),
+      page,
+      size,
+    },
+  });
+  return response;
+};
+
+// Goi AI de de xuat tai lieu hoc tap theo profile workspace
+export const suggestResourcesByWorkspace = async ({ workspaceId, limit = 5 }) => {
+  const response = await api.post('/ai/resources:suggest', {
+    workspaceId: Number(workspaceId),
+    limit,
+  });
+  return response;
+};
+
+// Import cac tai lieu de xuat vao danh sach materials cua workspace
+export const importSuggestedResources = async ({ workspaceId, suggestionIds = [] }) => {
+  const response = await api.post('/ai/resources:suggested/import', {
+    workspaceId: Number(workspaceId),
+    suggestionIds,
+  });
+  return response;
+};
+
