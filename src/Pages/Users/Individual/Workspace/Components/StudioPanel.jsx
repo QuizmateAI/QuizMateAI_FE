@@ -46,6 +46,8 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
   const highlightKey = getActiveKey(activeView);
+  const visibleActions = STUDIO_ACTIONS;
+  const visibleAccessHistory = accessHistory;
 
 	// Xác định nút nào nên disabled
 	const getIsActionDisabled = (actionKey) => {
@@ -96,7 +98,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
         </div>
 
         <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
-          {STUDIO_ACTIONS.map((action) => {
+          {visibleActions.map((action) => {
             const Icon = action.icon;
             const isDisabled = getIsActionDisabled(action.key);
             return (
@@ -128,10 +130,10 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
           })}
 
           {/* Hiển thị icon lịch sử truy cập khi thu gọn */}
-          {accessHistory.length > 0 && (
+          {visibleAccessHistory.length > 0 && (
             <>
               <div className={`w-8 border-t my-1 ${isDarkMode ? "border-slate-700" : "border-gray-200"}`} />
-              {accessHistory.slice(0, 5).map((item, i) => {
+              {visibleAccessHistory.slice(0, 5).map((item, i) => {
                 const { icon: OutputIcon, color } = getOutputIcon(item.type);
                 return (
                   <div
@@ -179,7 +181,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
 
       {/* Các nút hành động */}
       <div className="p-3 space-y-2">
-        {STUDIO_ACTIONS.map((action) => {
+        {visibleActions.map((action) => {
           const Icon = action.icon;
           const isDisabled = getIsActionDisabled(action.key);
           return (
@@ -221,7 +223,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
             {t("workspace.studio.accessHistory")}
           </p>
         </div>
-        {accessHistory.length === 0 ? (
+        {visibleAccessHistory.length === 0 ? (
           <div className="text-center py-6">
             <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
               {t("workspace.studio.noHistory")}
@@ -229,7 +231,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
           </div>
         ) : (
           <div className="space-y-2">
-            {accessHistory.map((item, i) => {
+            {visibleAccessHistory.map((item, i) => {
               const { icon: OutputIcon, color, bg } = getOutputIcon(item.type);
               return (
                 <div key={i} onClick={() => onAction?.(item.actionKey)} className={`rounded-lg px-3 py-2.5 flex items-center gap-3 text-sm cursor-pointer transition-colors ${

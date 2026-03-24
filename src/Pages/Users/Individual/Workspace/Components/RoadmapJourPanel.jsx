@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import { CheckCircle2, ChevronDown, ChevronsLeft, Loader2, Map } from "lucide-react";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
+import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 
 function RoadmapJourPanel({
   isDarkMode = false,
@@ -12,6 +13,11 @@ function RoadmapJourPanel({
   onSelectPhase,
   reloadToken = 0,
   isGeneratingRoadmapPhases = false,
+  roadmapPhaseGenerationProgress = 0,
+  progressTracking = null,
+  generatingKnowledgePhaseIds = [],
+  generatingKnowledgeQuizPhaseIds = [],
+  generatingPreLearningPhaseIds = [],
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -102,8 +108,12 @@ function RoadmapJourPanel({
           </div>
         ) : isGeneratingRoadmapPhases ? (
           <div className={`rounded-2xl border px-4 py-5 ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-300 bg-slate-50"}`}>
-            <div className="flex items-center gap-2">
-              <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+            <div className="flex items-center gap-3">
+              <CircularProgressLoader
+                percent={Math.max(0, Math.min(100, Number(roadmapPhaseGenerationProgress) || 0))}
+                size="sm"
+                color="blue"
+              />
               <p className={`text-sm ${fontClass} ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
                 {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi AI tạo phase")}
               </p>
@@ -140,10 +150,27 @@ function RoadmapJourPanel({
                 <div className={`border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
                   <div className="px-2 py-2 space-y-1">
                     {phases.map((phase, index) => {
+                      const normalizedPhaseId = Number(phase?.phaseId);
                       const active = effectiveSelectedPhaseId === phase.phaseId;
                       const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
                       const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
-                      const isProcessingPhase = normalizedPhaseStatus === "PROCESSING";
+                      const phaseKnowledgePercent = progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0;
+                      const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
+                      const phasePostLearningPercent = progressTracking?.getPostLearningProgress(normalizedPhaseId) ?? 0;
+                      const phaseProcessingPercent = Math.max(
+                        Number(phaseKnowledgePercent) || 0,
+                        Number(phasePreLearningPercent) || 0,
+                        Number(phasePostLearningPercent) || 0,
+                        0
+                      );
+                      const isGeneratingByClientState = generatingKnowledgePhaseIds.includes(normalizedPhaseId)
+                        || generatingKnowledgeQuizPhaseIds.includes(normalizedPhaseId)
+                        || generatingPreLearningPhaseIds.includes(normalizedPhaseId);
+                      const isProcessingPhase = !isCompletedPhase && (
+                        normalizedPhaseStatus === "PROCESSING"
+                        || isGeneratingByClientState
+                        || (phaseProcessingPercent > 0 && phaseProcessingPercent < 100)
+                      );
                       return (
                         <button
                           key={phase.phaseId}
@@ -163,7 +190,12 @@ function RoadmapJourPanel({
                           {isCompletedPhase ? (
                             <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                           ) : isProcessingPhase ? (
-                            <Loader2 className="w-4 h-4 text-amber-500 shrink-0 animate-spin" />
+                            <CircularProgressLoader
+                              percent={Math.max(0, Math.min(100, Number(phaseProcessingPercent) || 0))}
+                              size="sm"
+                              color="amber"
+                              className="scale-[0.55] -my-2 -mx-1 shrink-0"
+                            />
                           ) : (
                             <div className={`w-4 h-4 shrink-0 rounded-full border-2 ${isDarkMode ? "border-slate-500" : "border-slate-300"}`} />
                           )}

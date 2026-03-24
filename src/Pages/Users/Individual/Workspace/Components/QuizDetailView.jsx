@@ -365,11 +365,13 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
               {/* Action Buttons in Overview */}
               {isActiveQuiz && (
                 <div className={`mt-4 pt-4 border-t flex flex-row items-center gap-3 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-                  <Button onClick={() => setConfirmDialog({ open: true, mode: 'practice' })} variant="outline"
-                    className={`flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl transition-all active:scale-95 ${isDarkMode ? "border-blue-800/60 bg-blue-900/20 text-blue-400 hover:bg-blue-900/40" : "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
-                    <Play className="w-4 h-4" />
-                    <span className="font-medium">{t("workspace.quiz.practice", "Practice mode")}</span>
-                  </Button>
+                  {!isRoadmapQuizSource ? (
+                    <Button onClick={() => setConfirmDialog({ open: true, mode: 'practice' })} variant="outline"
+                      className={`flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl transition-all active:scale-95 ${isDarkMode ? "border-blue-800/60 bg-blue-900/20 text-blue-400 hover:bg-blue-900/40" : "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
+                      <Play className="w-4 h-4" />
+                      <span className="font-medium">{t("workspace.quiz.practice", "Practice mode")}</span>
+                    </Button>
+                  ) : null}
                   <Button onClick={() => setConfirmDialog({ open: true, mode: 'exam' })} className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all active:scale-95 shadow-sm">
                     <ClipboardCheck className="w-4 h-4" />
                     <span className="font-medium">{t("workspace.quiz.exam", "Exam mode")}</span>

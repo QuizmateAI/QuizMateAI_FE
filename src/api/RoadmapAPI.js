@@ -221,6 +221,17 @@ export const getRoadmapGraph = async ({ workspaceId = null } = {}) => {
   return buildMockResponse(getStoredRoadmap({ workspaceId }));
 };
 
+// Lấy cấu trúc roadmap theo roadmapId từ backend thật.
+// Hàm này không swallow lỗi để caller có thể xử lý 404 cụ thể.
+export const getRoadmapStructureById = async (roadmapId) => {
+  const normalizedRoadmapId = Number(roadmapId);
+  if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+    return null;
+  }
+
+  return api.get(`/roadmaps/${normalizedRoadmapId}/structure`);
+};
+
 // ==================== ROADMAP ====================
 
 // Tạo roadmap cho workspace

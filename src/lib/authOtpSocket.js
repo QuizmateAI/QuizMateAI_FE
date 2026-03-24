@@ -17,10 +17,11 @@ export function waitForOtpStatus(email, sendOtpRequest, options = {}) {
     const topic = `/topic/otp/${email}`;
     const client = new Client({
       webSocketFactory: () => new SockJS(wsUrl),
-      reconnectDelay: 0,
+      reconnectDelay: 1500,
     });
 
     let settled = false;
+    let otpRequestSent = false;
     let subscription;
     let timeoutId;
 
@@ -50,6 +51,11 @@ export function waitForOtpStatus(email, sendOtpRequest, options = {}) {
     };
 
     client.onConnect = async () => {
+      if (subscription) {
+        subscription.unsubscribe();
+        subscription = undefined;
+      }
+
       subscription = client.subscribe(topic, (message) => {
         if (settled) {
           return;
@@ -65,23 +71,30 @@ export function waitForOtpStatus(email, sendOtpRequest, options = {}) {
         }
       });
 
-      try {
-        const response = await sendOtpRequest();
+      if (!otpRequestSent) {
+        otpRequestSent = true;
+        try {
+          const response = await sendOtpRequest();
 
-        if (![0, 200, 202].includes(response.statusCode)) {
-          fail(response.message || 'Gửi OTP thất bại, vui lòng thử lại');
+          if (![0, 200, 202].includes(response.statusCode)) {
+            fail(response.message || 'Gửi OTP thất bại, vui lòng thử lại');
+          }
+        } catch (error) {
+          fail(error?.message || 'Gửi OTP thất bại, vui lòng thử lại');
         }
-      } catch (error) {
-        fail(error?.message || 'Gửi OTP thất bại, vui lòng thử lại');
       }
     };
 
     client.onStompError = (frame) => {
-      fail(frame.headers?.message || 'Kết nối WebSocket gửi OTP gặp lỗi');
+      const message = frame.headers?.message || 'Kết nối WebSocket gửi OTP gặp lỗi';
+      if (/401|403|unauthorized|forbidden/i.test(message)) {
+        fail(message);
+      }
     };
 
     client.onWebSocketError = () => {
-      fail('Không thể kết nối WebSocket để nhận trạng thái OTP');
+      if (settled) return;
+      console.warn('WebSocket OTP dang reconnect...');
     };
 
     timeoutId = setTimeout(() => {

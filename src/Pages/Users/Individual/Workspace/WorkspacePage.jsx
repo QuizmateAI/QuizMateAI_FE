@@ -24,7 +24,7 @@ import {
 	confirmIndividualWorkspaceProfile,
 } from "@/api/WorkspaceAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { createRoadmapForWorkspace, getRoadmapGraph } from "@/api/RoadmapAPI";
+import { createRoadmapForWorkspace, getRoadmapGraph, getRoadmapStructureById } from "@/api/RoadmapAPI";
 import { generateRoadmapKnowledgeQuiz, generateRoadmapPhaseContent, generateRoadmapPhases, generateRoadmapPreLearning } from "@/api/AIAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
 import { getQuizzesByScope } from "@/api/QuizAPI";
@@ -129,6 +129,10 @@ function normalizePositiveIds(ids = []) {
 		.filter((id) => Number.isInteger(id) && id > 0)));
 }
 
+function clampPercent(value) {
+	return Math.max(0, Math.min(100, Number(value) || 0));
+}
+
 function isActiveMaterial(material) {
 	return String(material?.status || "").toUpperCase() === "ACTIVE";
 }
@@ -140,6 +144,17 @@ function translateOrFallbackWithOptions(t, key, options, fallback) {
 
 function getProfilePurpose(profileData) {
 	return profileData?.workspacePurpose || profileData?.learningMode || "";
+}
+
+function normalizeRoadmapEnabledValue(value) {
+	if (typeof value === "boolean") return value;
+	if (typeof value === "number") return value === 1;
+	if (typeof value === "string") {
+		const normalized = value.trim().toLowerCase();
+		if (normalized === "true" || normalized === "1") return true;
+		if (normalized === "false" || normalized === "0") return false;
+	}
+	return null;
 }
 
 function isMockTestGenerationInProgress(profileData) {
@@ -195,7 +210,10 @@ function WorkspacePage() {
 	const [mockTestGenerationElapsedSeconds, setMockTestGenerationElapsedSeconds] = useState(0);
 
 	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace } = useWorkspace();
-	const progressTracking = useProgressTracking();
+	const progressTracking = useProgressTracking({
+		scopeKey: workspaceId ? `workspace:${workspaceId}` : null,
+	});
+	const reconcileMaterialProgress = progressTracking.reconcileMaterialProgress;
 	const isMountedRef = useRef(true);
 	const mockTestPollingActiveRef = useRef(false);
 	const mockTestPollingRunRef = useRef(0);
@@ -247,9 +265,13 @@ function WorkspacePage() {
 	const [phaseGenerateDialogDefaultIds, setPhaseGenerateDialogDefaultIds] = useState([]);
 	const [roadmapAiRoadmapId, setRoadmapAiRoadmapId] = useState(null);
 	const [roadmapHasPhases, setRoadmapHasPhases] = useState(false);
+	const [isRoadmapStructureMissing, setIsRoadmapStructureMissing] = useState(false);
+	const [roadmapEnabledState, setRoadmapEnabledState] = useState(null);
 	const [hasExistingWorkspaceQuiz, setHasExistingWorkspaceQuiz] = useState(false);
 	const [hasExistingWorkspaceFlashcard, setHasExistingWorkspaceFlashcard] = useState(false);
 	const [isGeneratingRoadmapPhases, setIsGeneratingRoadmapPhases] = useState(false);
+	const [roadmapPhaseGenerationProgress, setRoadmapPhaseGenerationProgress] = useState(0);
+	const [roadmapPhaseGenerationTaskId, setRoadmapPhaseGenerationTaskId] = useState(null);
 	const [isGeneratingRoadmapStructure, setIsGeneratingRoadmapStructure] = useState(false);
 	const [isSubmittingRoadmapPhaseRequest, setIsSubmittingRoadmapPhaseRequest] = useState(false);
 	const [generatingKnowledgePhaseIds, setGeneratingKnowledgePhaseIds] = useState([]);
@@ -261,6 +283,7 @@ function WorkspacePage() {
 	const phaseGenerationPollingRef = useRef({ runId: 0, active: false });
 	const phaseContentPollingRef = useRef({});
 	const preLearningPollingRef = useRef({});
+	const roadmapStructureSyncRunRef = useRef(0);
 	const nonStudyPreLearningAutoRunRef = useRef({ runId: 0, active: false });
 	const knowledgeQuizPollingRef = useRef({});
 	const knowledgeQuizGenerationRequestedRef = useRef({});
@@ -299,6 +322,12 @@ function WorkspacePage() {
 		if (isOnWorkspaceQuizRoute) return;
 		setActiveView("roadmap");
 	}, [isOnWorkspaceQuizRoute]);
+	const effectiveRoadmapPhaseGenerationProgress = useMemo(() => {
+		const progressFromTask = roadmapPhaseGenerationTaskId
+			? Number(progressTracking?.progressByTaskId?.[roadmapPhaseGenerationTaskId] ?? 0)
+			: 0;
+		return clampPercent(progressFromTask > 0 ? progressFromTask : roadmapPhaseGenerationProgress);
+	}, [progressTracking?.progressByTaskId, roadmapPhaseGenerationProgress, roadmapPhaseGenerationTaskId]);
 
 	useEffect(() => {
 		if (!workspaceId) {
@@ -355,8 +384,64 @@ function WorkspacePage() {
 	const shouldDisableFlashcard = !hasAtLeastOneActiveSource && !hasExistingWorkspaceFlashcard;
 	const shouldDisableCreateQuiz = !hasAtLeastOneActiveSource;
 	const shouldDisableCreateFlashcard = !hasAtLeastOneActiveSource;
-	const shouldDisableRoadmap = !hasAtLeastOneActiveSource && !roadmapHasPhases;
+	const roadmapEnabledFromProfile = normalizeRoadmapEnabledValue(
+		workspaceProfile?.roadmapEnabled ?? workspaceProfile?.data?.roadmapEnabled
+	);
+	const resolvedRoadmapEnabled = roadmapEnabledFromProfile === true;
+	const hasRoadmapPhases = roadmapHasPhases;
+	// Điều kiện roadmap theo thứ tự 1 -> 3:
+	// 1) roadmapEnabled từ profile phải là true
+	// 2) workspace phải có tài liệu ACTIVE
+	// 3) roadmap structure không bị missing
+	const passRoadmapCondition1 = resolvedRoadmapEnabled;
+	const passRoadmapCondition2 = hasAtLeastOneActiveSource;
+	const passRoadmapCondition3 = !isRoadmapStructureMissing;
+	const shouldShowRoadmapAction = hasRoadmapPhases || (passRoadmapCondition1 && passRoadmapCondition2 && passRoadmapCondition3);
+	const shouldDisableRoadmap = !shouldShowRoadmapAction;
+	// Riêng nút roadmap ở Studio: kiểm tra theo thứ tự
+	// 0) Nếu đã có phase thì luôn hiện bình thường (không disable)
+	// 1) Phải có tài liệu ACTIVE
+	// 2) roadmapEnabled từ profile phải là true
+	// 3) roadmap structure không bị missing
+	const shouldDisableRoadmapForStudio = hasRoadmapPhases
+		? false
+		: (!hasAtLeastOneActiveSource || !passRoadmapCondition1 || !passRoadmapCondition3);
 	const isStudyNewRoadmap = getProfilePurpose(workspaceProfile) === "STUDY_NEW";
+
+	useEffect(() => {
+		console.log("[RoadmapGate][WorkspacePage] Profile snapshot", {
+			workspaceId,
+			hasWorkspaceProfile: Boolean(workspaceProfile),
+			roadmapEnabledRaw: workspaceProfile?.roadmapEnabled,
+			roadmapEnabledNested: workspaceProfile?.data?.roadmapEnabled,
+			roadmapEnabledFromProfile,
+			roadmapEnabledState,
+		});
+	}, [workspaceId, workspaceProfile, roadmapEnabledFromProfile, roadmapEnabledState]);
+
+	useEffect(() => {
+		console.log("[RoadmapGate][WorkspacePage] Decision", {
+			workspaceId,
+			passRoadmapCondition1,
+			passRoadmapCondition2,
+			passRoadmapCondition3,
+			hasRoadmapPhases,
+			isRoadmapStructureMissing,
+			shouldShowRoadmapAction,
+			shouldDisableRoadmap,
+			shouldDisableRoadmapForStudio,
+		});
+	}, [
+		workspaceId,
+		passRoadmapCondition1,
+		passRoadmapCondition2,
+		passRoadmapCondition3,
+		hasRoadmapPhases,
+		isRoadmapStructureMissing,
+		shouldShowRoadmapAction,
+		shouldDisableRoadmap,
+		shouldDisableRoadmapForStudio,
+	]);
 
 	const resolveCollapsedStateByWidth = useCallback((layoutWidth, sourcesCollapsed, studioCollapsed) => {
 		let nextSourcesCollapsed = sourcesCollapsed;
@@ -822,6 +907,18 @@ function WorkspacePage() {
 	}, [workspaceProfile]);
 
 	useEffect(() => {
+		const normalizedRoadmapEnabled = normalizeRoadmapEnabledValue(
+			workspaceProfile?.roadmapEnabled ?? workspaceProfile?.data?.roadmapEnabled
+		);
+		if (normalizedRoadmapEnabled === null) return;
+		setRoadmapEnabledState(normalizedRoadmapEnabled);
+	}, [workspaceProfile]);
+
+	useEffect(() => {
+		setRoadmapEnabledState(null);
+	}, [workspaceId]);
+
+	useEffect(() => {
 		phaseGenerationPollingRef.current.runId += 1;
 		phaseGenerationPollingRef.current.active = false;
 		phaseContentPollingRef.current = {};
@@ -913,12 +1010,27 @@ function WorkspacePage() {
 		if (!workspaceId) return;
 
 		let cancelled = false;
+		const syncRunId = roadmapStructureSyncRunRef.current + 1;
+		roadmapStructureSyncRunRef.current = syncRunId;
 		const syncRoadmapPhaseGeneratingStatus = async () => {
-			try {
-				const response = await getRoadmapGraph({ workspaceId });
-				if (cancelled) return;
+			if (cancelled || roadmapStructureSyncRunRef.current !== syncRunId) return;
+			const normalizedRoadmapId = Number(roadmapAiRoadmapId);
+			if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+				if (cancelled || roadmapStructureSyncRunRef.current !== syncRunId) return;
+				setIsRoadmapStructureMissing(true);
+				setRoadmapHasPhases(false);
+				setIsGeneratingRoadmapPhases(false);
+				setRoadmapPhaseGenerationTaskId(null);
+				setRoadmapPhaseGenerationProgress(0);
+				stopPhaseGenerationPolling();
+				return;
+			}
 
-				const roadmapData = response?.data?.data ?? null;
+			try {
+				const roadmapData = await getRoadmapStructureById(normalizedRoadmapId);
+				if (cancelled || roadmapStructureSyncRunRef.current !== syncRunId) return;
+
+				setIsRoadmapStructureMissing(false);
 				const roadmapStatus = String(roadmapData?.status || "").toUpperCase();
 				const isProcessing = roadmapStatus === "PROCESSING";
 				const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
@@ -943,6 +1055,12 @@ function WorkspacePage() {
 				);
 				
 				setIsGeneratingRoadmapPhases(isProcessing);
+				if (isProcessing) {
+					setRoadmapPhaseGenerationProgress((current) => (current > 0 ? current : 0));
+				} else {
+					setRoadmapPhaseGenerationTaskId(null);
+					setRoadmapPhaseGenerationProgress(0);
+				}
 				setRoadmapHasPhases(phases.length > 0);
 
 				if (inferredPhaseContentGeneratingIds.length > 0) {
@@ -963,6 +1081,17 @@ function WorkspacePage() {
 					stopPhaseGenerationPolling();
 				}
 			} catch (error) {
+				if (cancelled || roadmapStructureSyncRunRef.current !== syncRunId) return;
+				const statusCode = Number(error?.statusCode ?? error?.status ?? 0);
+				if (statusCode === 404) {
+					setIsRoadmapStructureMissing(true);
+					setRoadmapHasPhases(false);
+					setIsGeneratingRoadmapPhases(false);
+					setRoadmapPhaseGenerationTaskId(null);
+					setRoadmapPhaseGenerationProgress(0);
+					stopPhaseGenerationPolling();
+					return;
+				}
 				console.error("Failed to sync roadmap phase generating status:", error);
 			}
 		};
@@ -971,7 +1100,7 @@ function WorkspacePage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [workspaceId, roadmapReloadToken, stopPhaseGenerationPolling]);
+	}, [workspaceId, roadmapAiRoadmapId, roadmapReloadToken, stopPhaseGenerationPolling]);
 
 	const isMockTestAwaitingBackend = mockTestGenerationState === "pending" && mockTestGenerationProgress >= 92;
 	const isMockTestTakingLongerThanExpected = isMockTestAwaitingBackend && mockTestGenerationElapsedSeconds >= 20;
@@ -1051,13 +1180,21 @@ function WorkspacePage() {
 				}))
 				: [];
 
+			const processingMaterialIds = mappedSources
+				.filter((item) => {
+					const normalizedStatus = String(item?.status || '').toUpperCase();
+					return ['PROCESSING', 'UPLOADING', 'PENDING', 'QUEUED'].includes(normalizedStatus);
+				})
+				.map((item) => item.id);
+			reconcileMaterialProgress(processingMaterialIds);
+
 			setSources(mappedSources);
 			return mappedSources;
 		} catch (err) {
 			console.error("âŒ [fetchSources] Failed to fetch materials:", err);
 			return [];
 		}
-	}, [workspaceId]);
+	}, [workspaceId, reconcileMaterialProgress]);
 
 	const resolveLatestRoadmapId = useCallback(async () => {
 		if (!workspaceId) return null;
@@ -1089,6 +1226,8 @@ function WorkspacePage() {
 				if (phases.length > 0) {
 					const completedRoadmapId = Number(roadmapData?.roadmapId) || roadmapId;
 					setIsGeneratingRoadmapPhases(false);
+					setRoadmapPhaseGenerationProgress(100);
+					setRoadmapPhaseGenerationTaskId(null);
 					setRoadmapAiRoadmapId(completedRoadmapId);
 					bumpRoadmapReloadToken();
 					if (!isStudyNewRoadmap) {
@@ -1104,6 +1243,7 @@ function WorkspacePage() {
 			if (phaseGenerationPollingRef.current.runId === runId) {
 				phaseGenerationPollingRef.current.active = false;
 				setIsGeneratingRoadmapPhases(false);
+				setRoadmapPhaseGenerationTaskId(null);
 			}
 		}
 	}, [
@@ -1463,10 +1603,18 @@ function WorkspacePage() {
 				return;
 			}
 
-			await generateRoadmapPhases({
+			setRoadmapPhaseGenerationProgress(0);
+			setRoadmapPhaseGenerationTaskId(null);
+			const roadmapPhaseResponse = await generateRoadmapPhases({
 				roadmapId,
 				materialIds: selectedMaterialIds,
 			});
+			const roadmapPhasePayload = roadmapPhaseResponse?.data?.data || roadmapPhaseResponse?.data || roadmapPhaseResponse;
+			const responseTaskId = roadmapPhasePayload?.websocketTaskId ?? roadmapPhasePayload?.taskId;
+			if (responseTaskId) {
+				setRoadmapPhaseGenerationTaskId(responseTaskId);
+			}
+			setRoadmapPhaseGenerationProgress(clampPercent(roadmapPhasePayload?.percent ?? roadmapPhasePayload?.progressPercent ?? 0));
 
 			setRoadmapAiRoadmapId(roadmapId);
 			setPhaseGenerateDialogOpen(false);
@@ -1590,11 +1738,29 @@ function WorkspacePage() {
 			const progressData = (progress?.data && typeof progress.data === "object")
 				? progress.data
 				: (progress || {});
-			const progressPhaseId = Number(progressData?.phaseId ?? progress?.phaseId);
-			const progressRoadmapId = Number(progressData?.roadmapId ?? progress?.roadmapId);
-			const progressPercent = Number(progress?.percent ?? progress?.progressPercent ?? 0);
+			const progressPhaseId = Number(
+				progressData?.phaseId
+				?? progressData?.phase_id
+				?? progress?.phaseId
+				?? progress?.phase_id
+			);
+			const progressRoadmapId = Number(
+				progressData?.roadmapId
+				?? progressData?.roadmap_id
+				?? progress?.roadmapId
+				?? progress?.roadmap_id
+			);
+			const progressPercent = clampPercent(
+				progress?.percent
+				?? progress?.progressPercent
+				?? progressData?.percent
+				?? progressData?.progressPercent
+				?? 0
+			);
 			const websocketTaskId = progress?.websocketTaskId ?? progress?.taskId;
-			const materialId = Number(progress?.materialId ?? 0);
+			const materialId = Number(progress?.materialId ?? progress?.material_id ?? 0);
+			const progressStep = String(progress?.step ?? progressData?.step ?? "").toUpperCase();
+			const progressMessage = String(progress?.message ?? progressData?.message ?? "").toUpperCase();
 
 			// Cập nhật progress tracking cho task và material
 			if (websocketTaskId) {
@@ -1603,14 +1769,31 @@ function WorkspacePage() {
 			if (materialId > 0) {
 				progressTracking.updateMaterialProgress(materialId, progressPercent);
 			}
-			if (progressPhaseId > 0 && progressPercent > 0) {
-				// Tự động nhận diện loại progress dựa trên status
-				if (status.includes("PRE_LEARNING")) {
-					progressTracking.updatePreLearningProgress(progressPhaseId, progressPercent);
-				} else if (status.includes("KNOWLEDGE")) {
-					progressTracking.updateKnowledgeProgress(progressPhaseId, progressPercent);
-				} else if (status.includes("POST_LEARNING")) {
-					progressTracking.updatePostLearningProgress(progressPhaseId, progressPercent);
+			if (progressPercent > 0) {
+				const isPreLearningSignal = status.includes("PRE_LEARNING")
+					|| progressStep.includes("PRE_LEARNING")
+					|| progressMessage.includes("PRE-LEARNING")
+					|| progressMessage.includes("PRE LEARNING");
+				const isKnowledgeSignal = status.includes("KNOWLEDGE") || progressStep.includes("KNOWLEDGE");
+				const isPostLearningSignal = status.includes("POST_LEARNING") || progressStep.includes("POST_LEARNING");
+
+				let inferredPhaseId = progressPhaseId;
+				if ((!Number.isInteger(inferredPhaseId) || inferredPhaseId <= 0)
+					&& generatingPreLearningPhaseIds.length === 1
+					&& !isKnowledgeSignal
+					&& !isPostLearningSignal) {
+					// Một số payload PROCESSING không trả phaseId, fallback phase pre-learning đang generate.
+					inferredPhaseId = Number(generatingPreLearningPhaseIds[0]);
+				}
+
+				if (Number.isInteger(inferredPhaseId) && inferredPhaseId > 0) {
+					if (isPreLearningSignal || generatingPreLearningPhaseIds.includes(inferredPhaseId)) {
+						progressTracking.updatePreLearningProgress(inferredPhaseId, progressPercent);
+					} else if (isKnowledgeSignal || generatingKnowledgePhaseIds.includes(inferredPhaseId)) {
+						progressTracking.updateKnowledgeProgress(inferredPhaseId, progressPercent);
+					} else if (isPostLearningSignal) {
+						progressTracking.updatePostLearningProgress(inferredPhaseId, progressPercent);
+					}
 				}
 			}
 
@@ -1630,6 +1813,13 @@ function WorkspacePage() {
 
 			if (status === "ROADMAP_PHASES_PROCESSING") {
 				setIsGeneratingRoadmapPhases(true);
+				if (websocketTaskId) {
+					setRoadmapPhaseGenerationTaskId(websocketTaskId);
+				}
+				setRoadmapPhaseGenerationProgress((current) => {
+					if (progressPercent > 0) return progressPercent;
+					return current;
+				});
 				focusRoadmapViewSafely();
 				return;
 			}
@@ -1637,6 +1827,8 @@ function WorkspacePage() {
 			if (status === "ROADMAP_PHASES_COMPLETED") {
 				stopPhaseGenerationPolling();
 				setIsGeneratingRoadmapPhases(false);
+				setRoadmapPhaseGenerationProgress(100);
+				setRoadmapPhaseGenerationTaskId(null);
 				const completedRoadmapId = progressRoadmapId || roadmapAiRoadmapId;
 				setRoadmapAiRoadmapId(completedRoadmapId);
 				focusRoadmapViewSafely();
@@ -1804,6 +1996,12 @@ function WorkspacePage() {
 				// Kiá»ƒm tra xem profile Ä‘Ã£ Ä‘Æ°á»£c config hay chÆ°a:
 				// Hiá»‡n táº¡i: chá»‰ cáº§n cÃ³ learningGoal (báº¯t buá»™c) lÃ  coi nhÆ° Ä‘Ã£ cáº¥u hÃ¬nh
 				const profileData = profileRes?.data?.data || profileRes?.data || null;
+				console.log("[RoadmapGate][WorkspacePage] Initial profile fetch", {
+					workspaceId,
+					rawProfileResponse: profileRes,
+					resolvedProfileData: profileData,
+					resolvedRoadmapEnabled: profileData?.roadmapEnabled,
+				});
 				const isConfigured = isProfileOnboardingDone(profileData);
 				const storedMockTestGeneration = readStoredMockTestGeneration();
 
@@ -2099,8 +2297,21 @@ function WorkspacePage() {
         }
 	}, [fetchSources]);
 
+	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€” ghi nháº­n má»—i láº§n truy cáº­p list view
+	const addAccessHistory = useCallback((name, type, actionKey) => {
+		setAccessHistory((prev) => {
+			// XÃ³a trÃ¹ng náº¿u Ä‘Ã£ cÃ³ item cÃ¹ng actionKey
+			const filtered = prev.filter((item) => item.actionKey !== actionKey);
+			return [{ name, type, actionKey, accessedAt: new Date().toISOString() }, ...filtered].slice(0, 20);
+		});
+	}, []);
+
 	// Xá»­ lÃ½ action tá»« Studio Panel â€” hiá»ƒn thá»‹ form inline trong ChatPanel
 	const handleStudioAction = useCallback((actionKey) => {
+		if (actionKey === "roadmap" && shouldDisableRoadmapForStudio) {
+			return;
+		}
+
 		// Ghi lá»‹ch sá»­ truy cáº­p khi ngÆ°á»i dÃ¹ng má»Ÿ list view
 		const viewTypeMap = { roadmap: "Roadmap", quiz: "Quiz", flashcard: "Flashcard", mockTest: "MockTest" };
 		if (viewTypeMap[actionKey]) {
@@ -2113,7 +2324,7 @@ function WorkspacePage() {
 		if (actionKey !== "roadmap") {
 			setSelectedRoadmapPhaseId(null);
 		}
-	}, []);
+	}, [addAccessHistory, shouldDisableRoadmapForStudio]);
 
 	const handleSelectRoadmapPhase = useCallback((phaseId, options = {}) => {
 		const normalizedPhaseId = Number(phaseId);
@@ -2126,15 +2337,6 @@ function WorkspacePage() {
 		setSelectedQuiz(null);
 		setQuizBackTarget(null);
 		setActiveView("roadmap");
-	}, []);
-
-	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€” ghi nháº­n má»—i láº§n truy cáº­p list view
-	const addAccessHistory = useCallback((name, type, actionKey) => {
-		setAccessHistory((prev) => {
-			// XÃ³a trÃ¹ng náº¿u Ä‘Ã£ cÃ³ item cÃ¹ng actionKey
-			const filtered = prev.filter((item) => item.actionKey !== actionKey);
-			return [{ name, type, actionKey, accessedAt: new Date().toISOString() }, ...filtered].slice(0, 20);
-		});
 	}, []);
 
 	// Xá»­ lÃ½ táº¡o quiz â€” callback khi CreateQuizForm hoÃ n táº¥t API multi-step
@@ -2264,7 +2466,7 @@ function WorkspacePage() {
 	}, []);
 
 	const settingsMenu = (
-		<div ref={settingsRef} className="relative">
+		<div ref={settingsRef} className="relative z-[140]">
 			<Button
 				variant="outline"
 				type="button"
@@ -2284,7 +2486,7 @@ function WorkspacePage() {
 			{isSettingsOpen ? (
 				<div
 					role="menu"
-					className={`absolute right-0 mt-2 w-56 rounded-xl border shadow-lg overflow-hidden transition-colors duration-300 ${
+					className={`absolute right-0 z-[150] mt-2 w-56 rounded-xl border shadow-lg overflow-hidden transition-colors duration-300 ${
 						isDarkMode ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-gray-200 text-gray-800"
 					}`}
 				>
@@ -2460,6 +2662,7 @@ function WorkspacePage() {
 											onCreatePhasePreLearning={handleCreatePhasePreLearning}
 											isStudyNewRoadmap={isStudyNewRoadmap}
 											isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+											roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
 											generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
 											generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
 											generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
@@ -2480,7 +2683,8 @@ function WorkspacePage() {
 									onSaveMockTest={handleSaveMockTest}
 									shouldDisableQuiz={shouldDisableQuiz}
 									shouldDisableFlashcard={shouldDisableFlashcard}
-									shouldDisableRoadmap={shouldDisableRoadmap}
+									shouldDisableRoadmap={shouldDisableRoadmapForStudio}
+									showRoadmapAction={shouldShowRoadmapAction}
 									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
 									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
 									progressTracking={progressTracking}
@@ -2515,6 +2719,11 @@ function WorkspacePage() {
 												onSelectPhase={handleSelectRoadmapPhase}
 												reloadToken={roadmapReloadToken}
 												isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+												roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
+												progressTracking={progressTracking}
+												generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+												generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+												generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
 												isCollapsed={false}
 												onToggleCollapse={handleToggleSourcesCollapse}
 											/>
@@ -2532,7 +2741,8 @@ function WorkspacePage() {
 										activeView={activeView}
 										shouldDisableQuiz={shouldDisableQuiz}
 										shouldDisableFlashcard={shouldDisableFlashcard}
-										shouldDisableRoadmap={shouldDisableRoadmap}
+										shouldDisableRoadmap={shouldDisableRoadmapForStudio}
+										showRoadmapAction={shouldShowRoadmapAction}
 									/>
 								</div>
 							</div>
@@ -2570,6 +2780,11 @@ function WorkspacePage() {
 											onSelectPhase={handleSelectRoadmapPhase}
 											reloadToken={roadmapReloadToken}
 											isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+											roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
+											progressTracking={progressTracking}
+											generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+											generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+											generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
 											isCollapsed={isSourcesCollapsed}
 											onToggleCollapse={handleToggleSourcesCollapse}
 										/>
@@ -2605,6 +2820,7 @@ function WorkspacePage() {
 									onCreatePhasePreLearning={handleCreatePhasePreLearning}
 									isStudyNewRoadmap={isStudyNewRoadmap}
 									isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+									roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
 									generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
 									generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
 									generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
@@ -2625,7 +2841,8 @@ function WorkspacePage() {
 									onSaveMockTest={handleSaveMockTest}
 									shouldDisableQuiz={shouldDisableQuiz}
 									shouldDisableFlashcard={shouldDisableFlashcard}
-									shouldDisableRoadmap={shouldDisableRoadmap}
+									shouldDisableRoadmap={shouldDisableRoadmapForStudio}
+									showRoadmapAction={shouldShowRoadmapAction}
 									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
 									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
 									progressTracking={progressTracking}
@@ -2655,7 +2872,8 @@ function WorkspacePage() {
 									activeView={activeView}
 									shouldDisableQuiz={shouldDisableQuiz}
 									shouldDisableFlashcard={shouldDisableFlashcard}
-									shouldDisableRoadmap={shouldDisableRoadmap}
+									shouldDisableRoadmap={shouldDisableRoadmapForStudio}
+									showRoadmapAction={shouldShowRoadmapAction}
 								/>
 							</div>
 						</div>
@@ -2669,6 +2887,8 @@ function WorkspacePage() {
 				onOpenChange={setUploadDialogOpen}
 				isDarkMode={isDarkMode}
 				onUploadFiles={handleUploadFiles}
+				workspaceId={workspaceId}
+				onSuggestedImported={fetchSources}
 			/>
 
 			<RoadmapPhaseGenerateDialog

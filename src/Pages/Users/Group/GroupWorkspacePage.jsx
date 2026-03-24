@@ -705,6 +705,8 @@ function GroupWorkspacePage() {
         onOpenChange={setUploadDialogOpen}
         isDarkMode={isDarkMode}
         onUploadFiles={handleUploadFiles}
+        workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
+        onSuggestedImported={fetchSources}
       />
 
       <InviteMemberDialog
