@@ -2,6 +2,50 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
+const ACTIVE_WS_REGISTRY_KEY = "quizmate_active_websockets_v1";
+
+function readActiveWebSocketRegistry() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.sessionStorage.getItem(ACTIVE_WS_REGISTRY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.error("Khong the doc websocket registry:", error);
+    return {};
+  }
+}
+
+function writeActiveWebSocketRegistry(nextValue) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(ACTIVE_WS_REGISTRY_KEY, JSON.stringify(nextValue || {}));
+  } catch (error) {
+    console.error("Khong the ghi websocket registry:", error);
+  }
+}
+
+function registerActiveSocket(connectionKey, metadata = {}) {
+  if (!connectionKey) return false;
+  const registry = readActiveWebSocketRegistry();
+  const existed = Boolean(registry[connectionKey]);
+  registry[connectionKey] = {
+    ...metadata,
+    updatedAt: Date.now(),
+  };
+  writeActiveWebSocketRegistry(registry);
+  return existed;
+}
+
+function unregisterActiveSocket(connectionKey) {
+  if (!connectionKey) return;
+  const registry = readActiveWebSocketRegistry();
+  if (!registry[connectionKey]) return;
+  delete registry[connectionKey];
+  writeActiveWebSocketRegistry(registry);
+}
+
 function normalizeStatus(status) {
   if (!status) return status;
   const upper = String(status).toUpperCase();
@@ -42,6 +86,8 @@ export function useWebSocket({
   const stompClientRef = useRef(null);
   const subscriptionsRef = useRef([]);
   const isDeactivatingRef = useRef(false);
+  const shouldKeepRegistryOnCleanupRef = useRef(false);
+  const hasRequestedResyncRef = useRef(false);
   const callbackRefs = useRef({
     onMaterialUploaded,
     onMaterialDeleted,
@@ -50,6 +96,7 @@ export function useWebSocket({
   });
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
+  const connectionKey = workspaceId ? `workspace:${workspaceId}` : null;
 
   useEffect(() => {
     callbackRefs.current = {
@@ -79,6 +126,19 @@ export function useWebSocket({
     if (!enabled || !workspaceId) {
       return;
     }
+
+    shouldKeepRegistryOnCleanupRef.current = false;
+    hasRequestedResyncRef.current = false;
+
+    const restoredFromRegistry = registerActiveSocket(connectionKey, {
+      workspaceId,
+      type: "workspace",
+    });
+
+    const handleBeforeUnload = () => {
+      shouldKeepRegistryOnCleanupRef.current = true;
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:8080/ws-quiz";
     const token = getAuthToken();
@@ -112,6 +172,17 @@ export function useWebSocket({
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/material`);
         }
         setIsConnected(true);
+
+        if (!hasRequestedResyncRef.current) {
+          hasRequestedResyncRef.current = true;
+          callbackRefs.current.onMaterialUpdated?.({
+            type: "SOCKET_RESTORED",
+            status: "SYNC_REQUIRED",
+            workspaceId,
+            restoredFromRegistry,
+            timestamp: Date.now(),
+          });
+        }
 
         // Subscribe to personal progress updates
         const progressSubscription = stompClient.subscribe(
@@ -244,6 +315,11 @@ export function useWebSocket({
     // Cleanup khi component unmount
     return () => {
       isDeactivatingRef.current = true;
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+
+      if (!shouldKeepRegistryOnCleanupRef.current) {
+        unregisterActiveSocket(connectionKey);
+      }
 
       // Unsubscribe all subscriptions
       subscriptionsRef.current.forEach((subscription) => {
@@ -262,7 +338,7 @@ export function useWebSocket({
       }
       stompClientRef.current = null;
     };
-  }, [workspaceId, enabled, getAuthToken]);
+  }, [workspaceId, enabled, getAuthToken, connectionKey]);
 
   // Gửi message qua WebSocket
   const send = useCallback((destination, body) => {

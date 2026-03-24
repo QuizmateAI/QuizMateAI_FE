@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { BookOpen, BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
 import RoadmapCanvasView2 from "./RoadmapCanvasView2";
 
@@ -154,6 +155,7 @@ function RoadmapCanvasView({
   isStudyNewRoadmap = false,
   onViewQuiz,
   isGeneratingRoadmapPhases = false,
+  roadmapPhaseGenerationProgress = 0,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
   generatingPreLearningPhaseIds = [],
@@ -627,7 +629,12 @@ function RoadmapCanvasView({
     return (
       <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-300" : "bg-white text-gray-700"}`}>
         <div className="max-w-xl text-center">
-          <Loader2 className={`w-8 h-8 animate-spin mx-auto ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+          <CircularProgressLoader
+            percent={Math.max(0, Math.min(100, Number(roadmapPhaseGenerationProgress) || 0))}
+            size="lg"
+            color="blue"
+            className="mx-auto"
+          />
           <p className={`mt-4 text-lg font-semibold ${fontClass}`}>
             {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi AI tạo phase")}
           </p>

@@ -175,6 +175,13 @@ function QuizListView({
       sourcePhaseId,
     };
   }, [contextId, contextType, location.pathname, resolvedReturnToPath]);
+  const isRoadmapQuizListContext = useMemo(() => {
+    const normalizedContextType = String(contextType || "").toUpperCase();
+    const isRoadmapContextType = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContextType);
+    const isRoadmapPath = /\/workspace\/\d+\/roadmap(?:\/|$|\?)/.test(String(resolvedReturnToPath || ""))
+      || /\/workspace\/\d+\/roadmap(?:\/|$)/.test(String(location.pathname || ""));
+    return isRoadmapContextType || isRoadmapPath;
+  }, [contextType, location.pathname, resolvedReturnToPath]);
 
   // Lấy danh sách quiz từ API theo context hiện tại (workspace/roadmap/phase/knowledge)
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
@@ -432,14 +439,16 @@ function QuizListView({
                       <div className="flex items-center justify-end gap-2.5">
                         {quiz.status === "ACTIVE" && (
                           <>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'practice' }); }}
-                              className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-blue-950/40 text-blue-300" : "hover:bg-blue-100 text-blue-700"}`}
-                              title={t("workspace.quiz.practice", "Practice")}
-                            >
-                              <Play className="w-5 h-5" />
-                              <span>{t("workspace.quiz.actionButtons.practice", "Practice")}</span>
-                            </button>
+                            {!isRoadmapQuizListContext ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'practice' }); }}
+                                className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-blue-950/40 text-blue-300" : "hover:bg-blue-100 text-blue-700"}`}
+                                title={t("workspace.quiz.practice", "Practice")}
+                              >
+                                <Play className="w-5 h-5" />
+                                <span>{t("workspace.quiz.actionButtons.practice", "Practice")}</span>
+                              </button>
+                            ) : null}
                             <button
                               onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'exam' }); }}
                               className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-emerald-950/40 text-emerald-300" : "hover:bg-emerald-100 text-emerald-700"}`}
