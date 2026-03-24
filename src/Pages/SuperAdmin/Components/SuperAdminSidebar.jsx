@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   Users, UsersRound,
-  PanelLeftClose, LogOut, Shield, CreditCard, Coins
+  PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -46,9 +46,21 @@ const menuItems = [
     matchPrefix: true,
   },
   {
+    icon: Banknote,
+    labelKey: 'sidebar.payments',
+    path: '/super-admin/payments',
+    matchPrefix: true,
+  },
+  {
     icon: Shield,
     labelKey: 'sidebar.adminAccounts',
     path: '/super-admin/admins',
+    matchPrefix: true,
+  },
+  {
+    icon: Shield,
+    labelKey: 'rbac.title',
+    path: '/super-admin/rbac',
     matchPrefix: true,
   },
 ];

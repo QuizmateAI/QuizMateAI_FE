@@ -11,7 +11,8 @@
     "adminAccounts": "Tài khoản Admin",
     "rbac": "Phân quyền RBAC",
     "subscriptions": "Quản lý Plan",
-    "creditPackages": "Gói Credit"
+    "creditPackages": "Gói Credit",
+    "payments": "Thanh toán"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -61,6 +62,86 @@
     },
     "syncSuccess": "Đã đồng bộ quyền thành công.",
     "syncError": "Không thể đồng bộ quyền."
+  },
+  "adminPayments": {
+    "desc": "Tra cứu giao dịch theo mã đơn, user, workspace hoặc trạng thái thanh toán.",
+    "filterTitle": "Bộ lọc thanh toán",
+    "placeholders": {
+      "orderId": "Order ID chính xác",
+      "userId": "User ID",
+      "workspaceId": "Workspace ID"
+    },
+    "fields": {
+      "userId": "User ID",
+      "workspaceId": "Workspace ID"
+    },
+    "allStatuses": "Tất cả trạng thái",
+    "search": "Tìm kiếm",
+    "listTitle": "Danh sách giao dịch",
+    "summary": "{{count}} giao dịch",
+    "table": {
+      "orderId": "Order ID",
+      "user": "User",
+      "target": "Mục tiêu",
+      "amount": "Số tiền",
+      "method": "Phương thức",
+      "status": "Trạng thái",
+      "time": "Thời gian",
+      "actions": "Hành động"
+    },
+    "empty": "Không có giao dịch phù hợp.",
+    "pagination": {
+      "page": "Trang {{current}}/{{total}}",
+      "previous": "Trước",
+      "next": "Sau"
+    },
+    "permissionDenied": "Tài khoản của bạn chưa có quyền xem giao dịch thanh toán.",
+    "errors": {
+      "loadList": "Không thể tải danh sách thanh toán",
+      "loadDetail": "Không thể tải chi tiết thanh toán"
+    },
+    "validation": {
+      "positiveInteger": "{{field}} phải là số nguyên dương"
+    },
+    "status": {
+      "PENDING": "Chờ xử lý",
+      "COMPLETED": "Hoàn tất",
+      "FAILED": "Thất bại",
+      "CANCELLED": "Đã hủy"
+    },
+    "targetTypes": {
+      "USER_PLAN": "Gói cá nhân",
+      "WORKSPACE_PLAN": "Gói nhóm",
+      "USER_CREDIT": "Credit cá nhân",
+      "WORKSPACE_CREDIT": "Credit nhóm",
+      "WORKSPACE_SLOT": "Slot nhóm"
+    },
+    "targetSummary": {
+      "workspace": "WS #{{id}}",
+      "chargedUser": "User tính phí #{{id}}"
+    },
+    "detail": {
+      "action": "Chi tiết",
+      "title": "Chi tiết giao dịch {{orderId}}",
+      "desc": "Xem toàn bộ thông tin giao dịch thanh toán và đối tượng bị tính phí.",
+      "fields": {
+        "paymentId": "Payment ID",
+        "orderId": "Order ID",
+        "payerUser": "User thanh toán",
+        "chargedUser": "User bị tính phí",
+        "workspace": "Workspace",
+        "targetType": "Loại mục tiêu",
+        "userSubscription": "User Subscription",
+        "groupSubscription": "Group Subscription",
+        "amount": "Số tiền",
+        "method": "Phương thức",
+        "status": "Trạng thái",
+        "createdAt": "Tạo lúc",
+        "paidAt": "Thanh toán lúc",
+        "expiresAt": "Hết hạn lúc",
+        "payUrl": "Pay URL"
+      }
+    }
   },
   "topicManagement": {
     "title": "Quản lý chủ đề và lĩnh vực",

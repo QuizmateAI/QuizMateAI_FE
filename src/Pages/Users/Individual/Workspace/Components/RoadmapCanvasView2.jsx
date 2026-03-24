@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
@@ -26,7 +26,6 @@ function RoadmapCanvasView2({
 }) {
   const { t } = useTranslation();
   const [openPhaseId, setOpenPhaseId] = useState(null);
-  const [openKnowledgeMap, setOpenKnowledgeMap] = useState({});
   const getDefaultOpenKnowledgeMap = (phaseList = []) => {
     return (phaseList || []).reduce((accumulator, phase) => {
       const phaseId = Number(phase?.phaseId);
@@ -58,61 +57,53 @@ function RoadmapCanvasView2({
     return [...rawPhases].sort((a, b) => Number(a?.phaseIndex ?? 0) - Number(b?.phaseIndex ?? 0));
   }, [roadmap?.phases]);
 
-  useEffect(() => {
-    if (!knowledgeDropdownStorageKey || typeof window === "undefined") {
-      setOpenKnowledgeMap({});
-      return;
+  const getPersistedKnowledgeMap = (storageKey) => {
+    if (!storageKey || typeof window === "undefined") {
+      return {};
     }
 
     try {
-      const raw = window.sessionStorage.getItem(knowledgeDropdownStorageKey);
+      const raw = window.sessionStorage.getItem(storageKey);
       if (!raw) {
-        setOpenKnowledgeMap(getDefaultOpenKnowledgeMap(phases));
-        return;
+        return {};
       }
 
       const parsed = JSON.parse(raw);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        setOpenKnowledgeMap(getDefaultOpenKnowledgeMap(phases));
-        return;
+        return {};
       }
 
-      const normalized = Object.entries(parsed).reduce((accumulator, [key, value]) => {
-        if (value === true) {
-          accumulator[key] = true;
+      return Object.entries(parsed).reduce((accumulator, [key, value]) => {
+        if (typeof value === "boolean") {
+          accumulator[key] = value;
         }
         return accumulator;
       }, {});
-
-      setOpenKnowledgeMap({
-        ...getDefaultOpenKnowledgeMap(phases),
-        ...normalized,
-      });
     } catch (error) {
       console.error("Không thể khôi phục trạng thái dropdown knowledge:", error);
-      setOpenKnowledgeMap(getDefaultOpenKnowledgeMap(phases));
+      return {};
     }
-  }, [knowledgeDropdownStorageKey, phases]);
+  };
 
-  useEffect(() => {
-    if (!Array.isArray(phases) || phases.length === 0) return;
-
-    const defaultOpenMap = getDefaultOpenKnowledgeMap(phases);
-    setOpenKnowledgeMap((current) => ({
-      ...defaultOpenMap,
-      ...current,
-    }));
-  }, [phases]);
-
-  useEffect(() => {
-    if (!knowledgeDropdownStorageKey || typeof window === "undefined") return;
-
-    try {
-      window.sessionStorage.setItem(knowledgeDropdownStorageKey, JSON.stringify(openKnowledgeMap));
-    } catch (error) {
-      console.error("Không thể lưu trạng thái dropdown knowledge:", error);
+  const defaultOpenKnowledgeMap = useMemo(() => getDefaultOpenKnowledgeMap(phases), [phases]);
+  const [persistedKnowledgeState, setPersistedKnowledgeState] = useState(() => ({
+    key: knowledgeDropdownStorageKey,
+    map: getPersistedKnowledgeMap(knowledgeDropdownStorageKey),
+  }));
+  const persistedKnowledgeMap = useMemo(() => {
+    if (persistedKnowledgeState.key === knowledgeDropdownStorageKey) {
+      return persistedKnowledgeState.map;
     }
-  }, [knowledgeDropdownStorageKey, openKnowledgeMap]);
+
+    return getPersistedKnowledgeMap(knowledgeDropdownStorageKey);
+  }, [knowledgeDropdownStorageKey, persistedKnowledgeState]);
+  const openKnowledgeMap = useMemo(
+    () => ({
+      ...defaultOpenKnowledgeMap,
+      ...persistedKnowledgeMap,
+    }),
+    [defaultOpenKnowledgeMap, persistedKnowledgeMap]
+  );
 
   const fallbackPhaseId = phases[0]?.phaseId ?? null;
   const hasSelectedPhaseFromSidebar = phases.some((phase) => phase.phaseId === selectedPhaseId);
@@ -129,7 +120,23 @@ function RoadmapCanvasView2({
 
   const toggleKnowledge = (phaseId, knowledgeId) => {
     const key = `${phaseId}:${knowledgeId}`;
-    setOpenKnowledgeMap((current) => ({ ...current, [key]: !current[key] }));
+    const nextKnowledgeMap = {
+      ...openKnowledgeMap,
+      [key]: !openKnowledgeMap[key],
+    };
+
+    if (knowledgeDropdownStorageKey && typeof window !== "undefined") {
+      try {
+        window.sessionStorage.setItem(knowledgeDropdownStorageKey, JSON.stringify(nextKnowledgeMap));
+      } catch (error) {
+        console.error("Không thể lưu trạng thái dropdown knowledge:", error);
+      }
+    }
+
+    setPersistedKnowledgeState({
+      key: knowledgeDropdownStorageKey,
+      map: nextKnowledgeMap,
+    });
   };
 
   const renderLoadingPlaceholder = (message, compact = false, percent = 0, color = "blue") => {

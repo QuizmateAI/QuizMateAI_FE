@@ -98,6 +98,7 @@ function UserDetailPage() {
   const [groupDetails, setGroupDetails] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const subscriptionPlanName = subscription?.plan?.displayName || subscription?.plan?.planName;
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -297,7 +298,7 @@ function UserDetailPage() {
               </div>
               <div className={`flex-1 min-w-[140px] p-3 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                 <p className="text-xs text-slate-500 mb-0.5">{t('userDetail.subscription')}</p>
-                <p className="text-base font-semibold">{subscription?.plan?.planName ?? t('userDetail.noPlan')}</p>
+                <p className="text-base font-semibold">{subscriptionPlanName ?? t('userDetail.noPlan')}</p>
               </div>
               <div className={`flex-1 min-w-[140px] p-3 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                 <p className="text-xs text-slate-500 mb-0.5">{t('userDetail.createdAt')}</p>
@@ -324,7 +325,7 @@ function UserDetailPage() {
                         <FolderKanban className="w-5 h-5 text-blue-500" />
                         <div>
                           <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{ws.displayTitle || ws.title || ws.name || t('home.workspace.untitledTitle')}</p>
-                          <p className="text-sm text-slate-500">{ws.subject?.title} • {ws.status}</p>
+                          <p className="text-sm text-slate-500">{[ws.workspaceKind, ws.status].filter(Boolean).join(' • ')}</p>
                         </div>
                       </div>
                       {expandedWorkspace === ws.workspaceId ? (
@@ -376,7 +377,7 @@ function UserDetailPage() {
                         <UsersRound className="w-5 h-5 text-indigo-500 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className={`font-semibold truncate ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{g.groupName}</p>
-                          <p className="text-sm text-slate-500">{g.topicName} • {g.memberCount ?? 0} {t('userDetail.members')}</p>
+                          <p className="text-sm text-slate-500">{g.memberCount ?? 0} {t('userDetail.members')}</p>
                         </div>
                       </div>
                       {(g.description || (expandedGroup === g.workspaceId && groupDetails[g.workspaceId]?.description)) && (
@@ -451,7 +452,7 @@ function UserDetailPage() {
               ) : (
                 <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                   <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {subscription.plan?.planName}
+                    {subscription.plan?.displayName || subscription.plan?.planName}
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>

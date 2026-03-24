@@ -63,8 +63,53 @@ export const getAllSystemUsers = async (page = 0, size = 100) => {
   return response;
 };
 
+export const getAdminOverviewStats = async () => {
+  const response = await api.get('/management/stats/admin-overview');
+  return response;
+};
+
+export const getSystemOverviewStats = async () => {
+  const response = await api.get('/management/stats/system-overview');
+  return response;
+};
+
+export const listRoles = async () => {
+  const response = await api.get('/rbac/system/roles');
+  return response;
+};
+
+export const createRole = async (data) => {
+  const response = await api.post('/rbac/system/roles', data);
+  return response;
+};
+
+export const syncRolePermissions = async (roleId, permissionCodes) => {
+  const response = await api.put(`/rbac/system/roles/${roleId}/permissions`, { permissionCodes });
+  return response;
+};
+
+export const grantPermissionToRole = async (roleId, permissionId) => {
+  const response = await api.post(`/rbac/system/roles/${roleId}/permissions/${permissionId}`);
+  return response;
+};
+
+export const revokePermissionFromRole = async (roleId, permissionId) => {
+  const response = await api.delete(`/rbac/system/roles/${roleId}/permissions/${permissionId}`);
+  return response;
+};
+
+export const deleteRole = async (roleId) => {
+  const response = await api.delete(`/rbac/system/roles/${roleId}`);
+  return response;
+};
+
 export const listPermissions = async (page = 0, size = 100) => {
   const response = await api.get(`/rbac/system/permissions?page=${page}&size=${size}`);
+  return response;
+};
+
+export const getAdminAllowedPermissions = async () => {
+  const response = await api.get('/rbac/system/admin-allowed-permissions');
   return response;
 };
 
@@ -198,6 +243,22 @@ export const getPurchaseableCreditPackages = async () => {
 // Payment APIs — maps to PaymentController (/api/payment/...)
 export const getUserPayments = async (page = 0, size = 10) => {
   const response = await api.get(`/payment/user?page=${page}&size=${size}`);
+  return response;
+};
+
+export const getAdminPayments = async ({ page = 0, size = 10, userId, workspaceId, status } = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', page);
+  params.append('size', size);
+  if (userId != null) params.append('userId', String(userId));
+  if (workspaceId != null) params.append('workspaceId', String(workspaceId));
+  if (status) params.append('status', String(status));
+  const response = await api.get(`/payment/admin?${params.toString()}`);
+  return response;
+};
+
+export const getAdminPaymentByOrderId = async (orderId) => {
+  const response = await api.get(`/payment/admin/${encodeURIComponent(orderId)}`);
   return response;
 };
 
