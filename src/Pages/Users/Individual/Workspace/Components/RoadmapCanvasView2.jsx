@@ -354,30 +354,7 @@ function RoadmapCanvasView2({
             && isGeneratingPreLearning
             && !shouldShowPreLearningDecision;
           const shouldShowPostLearningPlaceholder = !hasPostLearning && isGeneratingPhaseContent;
-          const totalKnowledgeCount = (phase.knowledges || []).length;
-          const passedKnowledgeCount = (phase.knowledges || []).reduce((count, knowledge) => {
-            const reviewQuizzes = (knowledge?.quizzes || []).filter(
-              (quiz) => String(quiz?.quizIntent || "").toUpperCase() === "REVIEW"
-            );
-
-            const hasPassedReviewQuiz = reviewQuizzes.some((quiz) => {
-              return quiz?.myPassed === true;
-            });
-
-            return hasPassedReviewQuiz ? count + 1 : count;
-          }, 0);
-          const allKnowledgeSatisfiedForPostLearning = (phase.knowledges || []).every((knowledge) => {
-            const reviewQuizzes = (knowledge?.quizzes || []).filter(
-              (quiz) => String(quiz?.quizIntent || "").toUpperCase() === "REVIEW"
-            );
-
-            if (reviewQuizzes.length === 0) return false;
-
-            return reviewQuizzes.some((quiz) => {
-              return quiz?.myPassed === true;
-            });
-          });
-          const shouldLockPostLearning = hasPostLearning && !allKnowledgeSatisfiedForPostLearning;
+          const shouldLockPostLearning = false;
           return (
             <div key={phase.phaseId} className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white"}`}>
               <button
@@ -512,32 +489,19 @@ function RoadmapCanvasView2({
                         <p className={`text-xs mb-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
                           {t("workspace.roadmap.postLearningHelper", "Hoàn thành post-learning để đánh giá mức độ nắm vững kiến thức sau khi học phase này.")}
                         </p>
-                        <p className={`text-xs mb-2 ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
-                          {t("workspace.roadmap.postLearningProgress", "Tiến độ mở khóa: {{passed}}/{{total}} knowledge đã đạt điều kiện.", {
-                            passed: passedKnowledgeCount,
-                            total: totalKnowledgeCount,
-                          })}
-                        </p>
-                        {shouldLockPostLearning ? (
-                          <p className={`text-xs mb-2 ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
-                            {t("workspace.roadmap.postLearningLocked", "Mỗi knowledge cần đạt điểm qua ở ít nhất 1 quiz ôn tập để mở post-learning.")}
-                          </p>
-                        ) : null}
-                        <div className={shouldLockPostLearning ? "opacity-50 pointer-events-none select-none" : ""}>
-                          <QuizListView
-                            isDarkMode={isDarkMode}
-                            contextType="PHASE"
-                            contextId={phase.phaseId}
-                            onCreateQuiz={() => onCreatePhaseKnowledge?.(phase.phaseId)}
-                            onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
-                            embedded
-                            hideCreateButton
-                            title={t("workspace.roadmap.canvas.postLearning", "Post-learning")}
-                            intentFilter={["POST_LEARNING"]}
-                            refreshToken={quizRefreshToken}
-                            returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
-                          />
-                        </div>
+                        <QuizListView
+                          isDarkMode={isDarkMode}
+                          contextType="PHASE"
+                          contextId={phase.phaseId}
+                          onCreateQuiz={() => onCreatePhaseKnowledge?.(phase.phaseId)}
+                          onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
+                          embedded
+                          hideCreateButton
+                          title={t("workspace.roadmap.canvas.postLearning", "Post-learning")}
+                          intentFilter={["POST_LEARNING"]}
+                          refreshToken={quizRefreshToken}
+                          returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
+                        />
                       </div>
                     </div>
                   ) : shouldShowPostLearningPlaceholder ? (

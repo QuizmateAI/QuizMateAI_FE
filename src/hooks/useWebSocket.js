@@ -81,6 +81,7 @@ export function useWebSocket({
   onMaterialDeleted,
   onMaterialUpdated,
   onProgress,
+  onQuizAttemptGrading,
   enabled = true,
 } = {}) {
   const stompClientRef = useRef(null);
@@ -93,6 +94,7 @@ export function useWebSocket({
     onMaterialDeleted,
     onMaterialUpdated,
     onProgress,
+    onQuizAttemptGrading,
   });
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
@@ -104,8 +106,9 @@ export function useWebSocket({
       onMaterialDeleted,
       onMaterialUpdated,
       onProgress,
+      onQuizAttemptGrading,
     };
-  }, [onMaterialUploaded, onMaterialDeleted, onMaterialUpdated, onProgress]);
+  }, [onMaterialUploaded, onMaterialDeleted, onMaterialUpdated, onProgress, onQuizAttemptGrading]);
 
   // Lấy token từ localStorage
   const getAuthToken = useCallback(() => {
@@ -168,6 +171,7 @@ export function useWebSocket({
         isDeactivatingRef.current = false;
         console.log("✅ STOMP WebSocket connected");
         console.log("🔔 Subscribed channel: /user/queue/progress");
+        console.log("🔔 Subscribed channel: /user/queue/quiz-attempt-grading");
         if (workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/material`);
         }
@@ -245,6 +249,21 @@ export function useWebSocket({
           }
         );
         subscriptionsRef.current.push(progressSubscription);
+
+        const gradingSubscription = stompClient.subscribe(
+          "/user/queue/quiz-attempt-grading",
+          (message) => {
+            try {
+              const response = JSON.parse(message.body);
+              console.log("🧪 Quiz attempt grading event:", response);
+              setLastMessage({ type: "quiz:attempt-grading", data: response, timestamp: Date.now() });
+              callbackRefs.current.onQuizAttemptGrading?.(response);
+            } catch (err) {
+              console.error("Failed to parse quiz attempt grading message:", err);
+            }
+          }
+        );
+        subscriptionsRef.current.push(gradingSubscription);
 
         // Subscribe to workspace material updates
         if (workspaceId) {

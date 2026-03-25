@@ -55,7 +55,7 @@ export const generateRoadmapKnowledgeQuiz = async (data) => {
 };
 
 // Lay danh sach tai lieu de xuat da luu theo workspace
-export const getSuggestedResources = async (workspaceId, page = 0, size = 10) => {
+export const getSuggestedResources = async (workspaceId, page = 0, size = 15) => {
   const response = await api.get('/ai/resources:suggested', {
     params: {
       workspaceId: Number(workspaceId),
