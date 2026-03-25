@@ -163,6 +163,8 @@ function RoadmapCanvasView({
   forcedCanvasView = null,
   onCanvasViewChange,
   selectedPhaseId = null,
+  disableCreate = false,
+  hideCreateButton = false,
   progressTracking = null,
 }) {
   const { t, i18n } = useTranslation();
@@ -659,16 +661,18 @@ function RoadmapCanvasView({
           <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
             {t("workspace.roadmap.emptyRoadmapDescription", "Tạo phase bằng AI để bắt đầu lộ trình học từ tài liệu của bạn.")}
           </p>
-          <div className="mt-6 flex items-center justify-center">
-            <Button
-              type="button"
-              disabled={isCreatingRoadmap}
-              onClick={() => onCreateRoadmapPhases?.()}
-              className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
-            >
-              {t("workspace.roadmap.createPhaseButton", "Tạo phase")}
-            </Button>
-          </div>
+          {!hideCreateButton && (
+            <div className="mt-6 flex items-center justify-center">
+              <Button
+                type="button"
+                disabled={isCreatingRoadmap || disableCreate}
+                onClick={() => onCreateRoadmapPhases?.()}
+                className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
+              >
+                {t("workspace.roadmap.createPhaseButton", "Tạo phase")}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft, CreditCard, Plus, Trash2, Edit3, Save, X, Loader2, ToggleLeft, ToggleRight
+  ArrowLeft, CreditCard, Plus, Trash2, Edit3, Save, X, Loader2, ToggleLeft, ToggleRight, Users
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -19,7 +19,7 @@ const STATUS_STYLES = {
 };
 
 // Component hiển thị chi tiết flashcard set — quản lý items, đổi tên, đổi trạng thái
-function FlashcardDetailView({ isDarkMode, flashcard, onBack }) {
+function FlashcardDetailView({ isDarkMode, flashcard, onBack, hideEditButton, contextType }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
@@ -241,18 +241,31 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack }) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Đổi trạng thái */}
-          <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={statusSaving}
-            className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-            {statusSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> :
-              detail.status === "ACTIVE" ? <ToggleRight className="w-3.5 h-3.5 mr-1 text-emerald-500" /> : <ToggleLeft className="w-3.5 h-3.5 mr-1" />}
-            {detail.status === "ACTIVE" ? t("workspace.flashcard.deactivate") : t("workspace.flashcard.activate")}
-          </Button>
-          {/* Thêm item */}
-          <Button size="sm" onClick={() => setShowAddForm(true)}
-            className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs h-8">
-            <Plus className="w-3.5 h-3.5 mr-1" /> {t("workspace.flashcard.addItem")}
-          </Button>
+          {!hideEditButton && (
+            <>
+              {/* Đổi trạng thái */}
+              <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={statusSaving}
+                className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
+                {statusSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> :
+                  detail.status === "ACTIVE" ? <ToggleRight className="w-3.5 h-3.5 mr-1 text-emerald-500" /> : <ToggleLeft className="w-3.5 h-3.5 mr-1" />}
+                {detail.status === "ACTIVE" ? t("workspace.flashcard.deactivate") : t("workspace.flashcard.activate")}
+              </Button>
+              {/* Thêm item */}
+              <Button size="sm" onClick={() => setShowAddForm(true)}
+                className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs h-8">
+                <Plus className="w-3.5 h-3.5 mr-1" /> {t("workspace.flashcard.addItem")}
+              </Button>
+            </>
+          )}
+
+          {!hideEditButton && contextType === "GROUP" && (
+            <Button
+              className="bg-violet-600 hover:bg-violet-700 text-white text-xs h-8 px-3 ml-2"
+              onClick={() => alert("Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!")}
+            >
+              <Users className="w-3.5 h-3.5 mr-1" /> Assign
+            </Button>
+          )}
         </div>
       </div>
 
