@@ -709,6 +709,37 @@
       "confirmDelete": "Yes, delete",
       "deleteError": "Failed to delete group.",
       "leaderOnly": "Only the group leader can modify settings."
+    },
+    "notifications": {
+      "title": "Group Notifications",
+      "subtitle": "Leaders approve announcements, contributors can draft, and members read published items.",
+      "createTitle": "Create announcement",
+      "titlePlaceholder": "Announcement title",
+      "contentPlaceholder": "Write announcement details...",
+      "publishNow": "Publish now",
+      "submitForApproval": "Submit for approval",
+      "pendingApprovals": "Pending approvals",
+      "noPending": "No pending announcements.",
+      "by": "By",
+      "publisher": "Publisher",
+      "waitingForApproval": "Waiting for approval",
+      "approve": "Approve",
+      "publishedTitle": "Published notifications",
+      "noPublished": "No published announcements yet.",
+      "publishedBadge": "Published",
+      "awaitingApproval": "Awaiting approval",
+      "pendingBadge": "Pending",
+      "seed": {
+        "roadmapTitle": "Roadmap checkpoint opened",
+        "roadmapContent": "A new checkpoint is open this week. Please complete pre-learning before Friday.",
+        "quizTitle": "Quiz lane update",
+        "quizContent": "Contributor proposed a quiz refresh for the reading practice set."
+      },
+      "toast": {
+        "published": "Notification published.",
+        "submitted": "Notification submitted for leader approval.",
+        "approved": "Notification approved and published."
+      }
     }
   },
   "home": {
