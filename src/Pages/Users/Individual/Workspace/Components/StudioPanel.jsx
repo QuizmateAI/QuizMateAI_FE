@@ -40,17 +40,19 @@ function formatAccessTime(dateStr, t) {
 }
 
 // Panel chứa các nút chức năng chính của workspace
-function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isCollapsed = false, onToggleCollapse, activeView = null, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false }) {
+function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isCollapsed = false, onToggleCollapse, activeView = null, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, hideAccessHistory = false, customActions = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
   const highlightKey = getActiveKey(activeView);
-  const visibleActions = STUDIO_ACTIONS;
+  const visibleActions = customActions || STUDIO_ACTIONS;
   const visibleAccessHistory = accessHistory;
 
 	// Xác định nút nào nên disabled
 	const getIsActionDisabled = (actionKey) => {
+    const action = visibleActions.find((item) => item.key === actionKey);
+    if (action?.disabled) return true;
 		if (actionKey === "quiz") return shouldDisableQuiz;
 		if (actionKey === "flashcard") return shouldDisableFlashcard;
 		if (actionKey === "roadmap") return shouldDisableRoadmap;
@@ -110,7 +112,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
                   setHoverTooltip(null);
                   onAction?.(action.key);
                 }}
-                onMouseEnter={(event) => showTooltip(event, t(`workspace.studio.actions.${action.key}`))}
+                onMouseEnter={(event) => showTooltip(event, action.label || t(`workspace.studio.actions.${action.key}`))}
                 onMouseLeave={() => setHoverTooltip(null)}
                 className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
                   isDisabled
@@ -207,7 +209,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
                 <Icon className={`w-4.5 h-4.5 ${isDisabled ? "text-gray-400" : action.color}`} />
               </div>
               <span className={`text-sm font-medium flex-1 ${isDisabled ? "text-gray-400" : isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                {t(`workspace.studio.actions.${action.key}`)}
+                {action.label || t(`workspace.studio.actions.${action.key}`)}
               </span>
               {!isDisabled && <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />}
             </button>
@@ -216,6 +218,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
       </div>
 
       {/* Khu vực hiển thị lịch sử truy cập */}
+      {!hideAccessHistory && (
       <div className={`flex-1 px-4 pb-4 overflow-y-auto border-t mt-1 pt-3 ${isDarkMode ? "border-slate-800" : "border-gray-100"}`}>
         <div className="flex items-center gap-1.5 mb-2">
           <History className={`w-3.5 h-3.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
@@ -253,6 +256,7 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
           </div>
         )}
       </div>
+    )}
     </aside>
   );
 }
