@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star,
-  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List
+  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/Components/ui/dialog";
@@ -72,7 +72,7 @@ function getDurationInMinutes(quiz) {
 }
 
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
-function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contextType = "WORKSPACE", contextId: _contextId }) {
+function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contextType = "WORKSPACE", contextId: _contextId, hideEditButton = false }) {
   const { t, i18n } = useTranslation();
   const { showSuccess, showError } = useToast();
   const location = useLocation();
@@ -251,12 +251,14 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isActiveQuiz && (
+          {!hideEditButton && !isActiveQuiz && (
             <>
-              <Button onClick={() => onEdit?.(effectiveQuiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
-                <Edit3 className="w-4 h-4" />
-                <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
-              </Button>
+              {onEdit && (
+                <Button onClick={() => onEdit?.(effectiveQuiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
+                  <Edit3 className="w-4 h-4" />
+                  <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
+                </Button>
+              )}
               {canActivate && (
                 <Button
                   onClick={handleActivateQuiz}
@@ -268,6 +270,17 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                 </Button>
               )}
             </>
+          )}
+          {!hideEditButton && _contextType === "GROUP" && (
+            <Button
+              className="bg-violet-600 hover:bg-violet-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"
+              onClick={() => {
+                alert(t("workspace.quiz.detail.assign", "Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!"));
+              }}
+            >
+              <Users className="w-4 h-4" />
+              <span className="text-sm">{t("workspace.quiz.detail.assign", "Assign")}</span>
+            </Button>
           )}
         </div>
       </div>
