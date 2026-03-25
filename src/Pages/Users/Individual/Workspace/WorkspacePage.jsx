@@ -1180,7 +1180,12 @@ function WorkspacePage() {
 				}))
 				: [];
 
-			const processingMaterialIds = mappedSources
+			const visibleSources = mappedSources.filter((item) => {
+				const normalizedStatus = String(item?.status || "").toUpperCase();
+				return normalizedStatus !== "DELETED";
+			});
+
+			const processingMaterialIds = visibleSources
 				.filter((item) => {
 					const normalizedStatus = String(item?.status || '').toUpperCase();
 					return ['PROCESSING', 'UPLOADING', 'PENDING', 'QUEUED'].includes(normalizedStatus);
@@ -1188,8 +1193,8 @@ function WorkspacePage() {
 				.map((item) => item.id);
 			reconcileMaterialProgress(processingMaterialIds);
 
-			setSources(mappedSources);
-			return mappedSources;
+			setSources(visibleSources);
+			return visibleSources;
 		} catch (err) {
 			console.error("âŒ [fetchSources] Failed to fetch materials:", err);
 			return [];
@@ -1658,11 +1663,11 @@ function WorkspacePage() {
 				return [...current, normalizedPhaseId];
 			});
 
-			await generateRoadmapPhaseContent({
-				roadmapId,
-				phaseId: normalizedPhaseId,
-				skipPreLearning,
-			});
+			// await generateRoadmapPhaseContent({
+			// 	roadmapId,
+			// 	phaseId: normalizedPhaseId,
+			// 	skipPreLearning,
+			// });
 
 			setActiveView("roadmap");
 			bumpRoadmapReloadToken();
