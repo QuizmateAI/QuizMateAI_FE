@@ -69,31 +69,7 @@ function GroupWorkspacePage() {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [selectedFlashcard, setSelectedFlashcard] = useState(null);
   const [selectedMockTest, setSelectedMockTest] = useState(null);
-  const [notifications, setNotifications] = useState(() => {
-    const now = Date.now();
-    return [
-      {
-        id: 1,
-        title: 'Roadmap checkpoint opened',
-        content: 'New checkpoint is now open for this week. Please complete pre-learning before Friday.',
-        status: 'PUBLISHED',
-        authorRole: 'LEADER',
-        publisherRole: 'LEADER',
-        publishedAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-        createdAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: 2,
-        title: 'Quiz lane update',
-        content: 'Contributor proposed a quiz refresh for reading practice set.',
-        status: 'PENDING',
-        authorRole: 'CONTRIBUTOR',
-        publisherRole: null,
-        publishedAt: null,
-        createdAt: new Date(now - 30 * 60 * 1000).toISOString(),
-      },
-    ];
-  });
+  const [notifications, setNotifications] = useState([]);
   const [sources, setSources] = useState([]);
   const [selectedSourceIds, setSelectedSourceIds] = useState([]);
   const [createdItems, setCreatedItems] = useState([]);
@@ -157,6 +133,33 @@ function GroupWorkspacePage() {
   const pageShellClass = isDarkMode
     ? 'bg-[#06131a] text-white'
     : 'bg-[linear-gradient(180deg,#fffaf0_0%,#f4fbf7_46%,#eef6ff_100%)] text-slate-900';
+
+  useEffect(() => {
+    if (notifications.length > 0) return;
+    const now = Date.now();
+    setNotifications([
+      {
+        id: 1,
+        title: t('groupManage.notifications.seed.roadmapTitle'),
+        content: t('groupManage.notifications.seed.roadmapContent'),
+        status: 'PUBLISHED',
+        authorRole: 'LEADER',
+        publisherRole: 'LEADER',
+        publishedAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 2,
+        title: t('groupManage.notifications.seed.quizTitle'),
+        content: t('groupManage.notifications.seed.quizContent'),
+        status: 'PENDING',
+        authorRole: 'CONTRIBUTOR',
+        publisherRole: null,
+        publishedAt: null,
+        createdAt: new Date(now - 30 * 60 * 1000).toISOString(),
+      },
+    ]);
+  }, [notifications.length, t]);
 
   useEffect(() => {
     if (isCreating || !workspaceId || workspaceId === 'new') return;
@@ -406,11 +409,11 @@ function GroupWorkspacePage() {
       ...prev,
     ]);
     if (publishImmediately) {
-      showInfo(currentLang === 'en' ? 'Notification published.' : 'Thông báo đã được đăng.');
+      showInfo(t('groupManage.notifications.toast.published'));
       return;
     }
-    showInfo(currentLang === 'en' ? 'Notification submitted for leader approval.' : 'Thông báo đã gửi leader duyệt.');
-  }, [currentLang, showInfo]);
+    showInfo(t('groupManage.notifications.toast.submitted'));
+  }, [showInfo, t]);
 
   const handleApproveNotification = useCallback((notificationId) => {
     if (!isLeader) return;
@@ -419,8 +422,8 @@ function GroupWorkspacePage() {
         ? { ...item, status: 'PUBLISHED', publisherRole: 'LEADER', publishedAt: new Date().toISOString() }
         : item
     )));
-    showInfo(currentLang === 'en' ? 'Notification approved and published.' : 'Đã duyệt và đăng thông báo.');
-  }, [isLeader, currentLang, showInfo]);
+    showInfo(t('groupManage.notifications.toast.approved'));
+  }, [isLeader, showInfo, t]);
 
   const handleCreateQuiz = useCallback(async () => {
     if (!canCreateContent) {
