@@ -9,7 +9,7 @@ function GroupNotificationsTab({
   onCreateNotification,
   onApproveNotification,
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -17,6 +17,12 @@ function GroupNotificationsTab({
   const isLeader = roleKey === 'LEADER';
   const isContributor = roleKey === 'CONTRIBUTOR';
   const canCreate = isLeader || isContributor;
+
+  const roleLabelMap = {
+    LEADER: t('home.group.leader'),
+    CONTRIBUTOR: t('home.group.contributor'),
+    MEMBER: t('home.group.member'),
+  };
 
   const publishedNotifications = useMemo(
     () => notifications.filter((item) => item.status === 'PUBLISHED'),
@@ -44,17 +50,15 @@ function GroupNotificationsTab({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {currentLang === 'en' ? 'Group Notifications' : 'Thông báo nhóm'}
+              {t('groupManage.notifications.title')}
             </h3>
             <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              {currentLang === 'en'
-                ? 'Leaders approve announcements, contributors can draft, members only read published items.'
-                : 'Leader duyệt thông báo, contributor có thể tạo nháp, member chỉ xem thông báo đã duyệt.'}
+              {t('groupManage.notifications.subtitle')}
             </p>
           </div>
           <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
             <Bell className="h-3.5 w-3.5" />
-            {roleKey}
+            {roleLabelMap[roleKey] || roleKey}
           </span>
         </div>
       </section>
@@ -62,20 +66,20 @@ function GroupNotificationsTab({
       {canCreate ? (
         <section className={`rounded-xl border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
           <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-            {currentLang === 'en' ? 'Create announcement' : 'Tạo thông báo'}
+            {t('groupManage.notifications.createTitle')}
           </h4>
           <div className="mt-3 space-y-3">
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder={currentLang === 'en' ? 'Announcement title' : 'Tiêu đề thông báo'}
+              placeholder={t('groupManage.notifications.titlePlaceholder')}
               className={`w-full rounded-lg border px-3 py-2 text-sm outline-none ${isDarkMode ? 'border-white/10 bg-slate-900 text-slate-100 placeholder:text-slate-500' : 'border-slate-200 bg-white text-slate-800 placeholder:text-slate-400'}`}
             />
             <textarea
               rows={3}
               value={content}
               onChange={(event) => setContent(event.target.value)}
-              placeholder={currentLang === 'en' ? 'Write announcement details...' : 'Nhập nội dung thông báo...'}
+              placeholder={t('groupManage.notifications.contentPlaceholder')}
               className={`w-full rounded-lg border px-3 py-2 text-sm outline-none resize-none ${isDarkMode ? 'border-white/10 bg-slate-900 text-slate-100 placeholder:text-slate-500' : 'border-slate-200 bg-white text-slate-800 placeholder:text-slate-400'}`}
             />
             <button
@@ -86,8 +90,8 @@ function GroupNotificationsTab({
             >
               <Send className="h-4 w-4" />
               {isLeader
-                ? (currentLang === 'en' ? 'Publish now' : 'Đăng ngay')
-                : (currentLang === 'en' ? 'Submit for approval' : 'Gửi duyệt')}
+                ? t('groupManage.notifications.publishNow')
+                : t('groupManage.notifications.submitForApproval')}
             </button>
           </div>
         </section>
@@ -96,12 +100,12 @@ function GroupNotificationsTab({
       {isLeader ? (
         <section className={`rounded-xl border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
           <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-            {currentLang === 'en' ? 'Pending approvals' : 'Thông báo chờ duyệt'}
+            {t('groupManage.notifications.pendingApprovals')}
           </h4>
           <div className="mt-3 space-y-2">
             {pendingNotifications.length === 0 ? (
               <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                {currentLang === 'en' ? 'No pending announcements.' : 'Không có thông báo chờ duyệt.'}
+                {t('groupManage.notifications.noPending')}
               </p>
             ) : (
               pendingNotifications.map((item) => (
@@ -111,10 +115,10 @@ function GroupNotificationsTab({
                       <p className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>{item.title}</p>
                       <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{item.content}</p>
                       <p className={`mt-2 text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                        {currentLang === 'en' ? 'By' : 'Tạo bởi'} {item.authorRole} • {new Date(item.createdAt).toLocaleString()}
+                        {t('groupManage.notifications.by')} {roleLabelMap[item.authorRole] || item.authorRole} • {new Date(item.createdAt).toLocaleString()}
                       </p>
                       <p className={`mt-1 text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                        {currentLang === 'en' ? 'Publisher' : 'Publisher'}: {item.publisherRole || (currentLang === 'en' ? 'Waiting for approval' : 'Đang chờ duyệt')}
+                        {t('groupManage.notifications.publisher')}: {item.publisherRole ? (roleLabelMap[item.publisherRole] || item.publisherRole) : t('groupManage.notifications.waitingForApproval')}
                       </p>
                     </div>
                     <button
@@ -123,7 +127,7 @@ function GroupNotificationsTab({
                       className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      {currentLang === 'en' ? 'Approve' : 'Duyệt'}
+                      {t('groupManage.notifications.approve')}
                     </button>
                   </div>
                 </article>
@@ -135,12 +139,12 @@ function GroupNotificationsTab({
 
       <section className={`rounded-xl border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
         <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-          {currentLang === 'en' ? 'Published notifications' : 'Thông báo đã đăng'}
+          {t('groupManage.notifications.publishedTitle')}
         </h4>
         <div className="mt-3 space-y-2">
           {visibleNotifications.filter((item) => item.status === 'PUBLISHED').length === 0 ? (
             <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              {currentLang === 'en' ? 'No published announcements yet.' : 'Chưa có thông báo đã đăng.'}
+              {t('groupManage.notifications.noPublished')}
             </p>
           ) : (
             visibleNotifications
@@ -155,13 +159,13 @@ function GroupNotificationsTab({
                         {new Date(item.createdAt).toLocaleString()}
                       </p>
                       <p className={`mt-1 text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                        {currentLang === 'en' ? 'Publisher' : 'Publisher'}: {item.publisherRole || '—'}
+                        {t('groupManage.notifications.publisher')}: {item.publisherRole ? (roleLabelMap[item.publisherRole] || item.publisherRole) : '—'}
                         {item.publishedAt ? ` • ${new Date(item.publishedAt).toLocaleString()}` : ''}
                       </p>
                     </div>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? 'bg-emerald-500/20 text-emerald-200' : 'bg-emerald-100 text-emerald-700'}`}>
                       <CheckCircle2 className="h-3.5 w-3.5" />
-                      {currentLang === 'en' ? 'Published' : 'Đã đăng'}
+                      {t('groupManage.notifications.publishedBadge')}
                     </span>
                   </div>
                 </article>
@@ -173,7 +177,7 @@ function GroupNotificationsTab({
       {!isLeader && isContributor && pendingNotifications.length > 0 ? (
         <section className={`rounded-xl border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
           <h4 className={`text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-            {currentLang === 'en' ? 'Awaiting approval' : 'Đang chờ leader duyệt'}
+            {t('groupManage.notifications.awaitingApproval')}
           </h4>
           <div className="mt-3 space-y-2">
             {pendingNotifications.map((item) => (
@@ -182,7 +186,7 @@ function GroupNotificationsTab({
                   <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{item.title}</p>
                   <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-100 text-amber-700'}`}>
                     <Clock3 className="h-3.5 w-3.5" />
-                    {currentLang === 'en' ? 'Pending' : 'Chờ duyệt'}
+                    {t('groupManage.notifications.pendingBadge')}
                   </span>
                 </div>
               </article>
