@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
-import { getQuizzesByScope, deleteQuiz } from "@/api/QuizAPI";
+import { getQuizzesByScope, deleteQuiz, getQuizById } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 
 function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
@@ -177,6 +177,11 @@ function QuizListView({
   const [deletingId, setDeletingId] = useState(null);
   const [sharingQuizId, setSharingQuizId] = useState(null);
   const [examStartQuiz, setExamStartQuiz] = useState(null);
+  const fetchGuardRef = useRef({
+    inFlight: false,
+    lastKey: "",
+    lastFetchedAt: 0,
+  });
 
   const resolvedReturnToPath = useMemo(() => {
     if (returnToPath) return returnToPath;
@@ -249,6 +254,20 @@ function QuizListView({
       return;
     }
 
+    const requestKey = `${String(contextType || "").toUpperCase()}:${Number(scopeId) || scopeId}:${Array.isArray(intentFilter) ? intentFilter.join(",") : "ALL"}`;
+    const now = Date.now();
+    const isDuplicateBurst = silent
+      && fetchGuardRef.current.lastKey === requestKey
+      && (now - fetchGuardRef.current.lastFetchedAt) < 800;
+
+    if (fetchGuardRef.current.inFlight || isDuplicateBurst) {
+      return;
+    }
+
+    fetchGuardRef.current.inFlight = true;
+    fetchGuardRef.current.lastKey = requestKey;
+    fetchGuardRef.current.lastFetchedAt = now;
+
     if (!silent) setLoading(true);
     try {
       const res = await getQuizzesByScope(contextType, scopeId);
@@ -275,6 +294,8 @@ function QuizListView({
       console.error("Lỗi khi lấy danh sách quiz:", err);
       if (!silent) setQuizzes([]);
     } finally {
+      fetchGuardRef.current.inFlight = false;
+      fetchGuardRef.current.lastFetchedAt = Date.now();
       if (!silent) setLoading(false);
     }
   }, [contextId, contextType, intentFilter]);
@@ -290,17 +311,60 @@ function QuizListView({
     fetchQuizzes({ silent: true, scopeId: contextId });
   }, [contextId, fetchQuizzes, refreshToken]);
 
-  // Chỉ polling khi còn quiz PROCESSING, và polling silent để tránh lag cả màn.
+  // Chỉ polling quiz đang PROCESSING theo quizId để tránh gọi lại cả danh sách.
   useEffect(() => {
-    const hasProcessingQuiz = quizzes.some((q) => String(q?.status || "").toUpperCase() === "PROCESSING");
-    if (!hasProcessingQuiz) return undefined;
+    const processingQuizIds = quizzes
+      .filter((q) => String(q?.status || "").toUpperCase() === "PROCESSING")
+      .map((q) => Number(q?.quizId))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (processingQuizIds.length === 0) return undefined;
 
     const timer = setInterval(() => {
-      fetchQuizzes({ silent: true });
+      void (async () => {
+        const responses = await Promise.all(
+          processingQuizIds.map((quizId) => getQuizById(quizId).catch(() => null))
+        );
+
+        const updatesById = responses.reduce((acc, response) => {
+          const payload = response?.data?.data || response?.data || null;
+          const quizId = Number(payload?.quizId);
+          if (Number.isInteger(quizId) && quizId > 0) {
+            acc[quizId] = payload;
+          }
+          return acc;
+        }, {});
+
+        if (Object.keys(updatesById).length === 0) return;
+
+        setQuizzes((current) => {
+          let hasChange = false;
+          const next = current.map((quiz) => {
+            const quizId = Number(quiz?.quizId);
+            const incoming = updatesById[quizId];
+            if (!incoming) return quiz;
+
+            if (
+              incoming.status !== quiz.status
+              || incoming.updatedAt !== quiz.updatedAt
+              || incoming.title !== quiz.title
+              || incoming.myAttempted !== quiz.myAttempted
+              || incoming.myPassed !== quiz.myPassed
+            ) {
+              hasChange = true;
+              return { ...quiz, ...incoming };
+            }
+
+            return quiz;
+          });
+
+          return hasChange ? next : current;
+        });
+      })();
     }, 4000);
 
     return () => clearInterval(timer);
-  }, [quizzes, fetchQuizzes]);
+  }, [quizzes]);
 
   // Xử lý xóa quiz
   const handleDeleteQuiz = useCallback(async (e, quizId) => {

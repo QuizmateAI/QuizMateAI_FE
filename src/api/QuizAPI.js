@@ -64,6 +64,12 @@ export const deleteQuiz = async (quizId) => {
   return response;
 };
 
+// Lấy thông tin quiz theo quizId
+export const getQuizById = async (quizId) => {
+  const response = await api.get(`/quiz/${quizId}`);
+  return response;
+};
+
 // ==================== QUIZ SECTION ====================
 
 // Lấy toàn bộ section thuộc một quiz
