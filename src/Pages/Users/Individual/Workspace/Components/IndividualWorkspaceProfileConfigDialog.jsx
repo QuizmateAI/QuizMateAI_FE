@@ -181,7 +181,7 @@ function createConfirmationSummary(t, values) {
       },
       {
         id: 'adaptationMode',
-        label: translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Chế độ thích ứng'),
+        label: translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Loại lộ trình'),
         value: values.adaptationMode
           ? translateOrFallback(
             t,

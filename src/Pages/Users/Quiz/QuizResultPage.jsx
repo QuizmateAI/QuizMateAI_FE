@@ -784,69 +784,70 @@ export default function QuizResultPage() {
                     </div>
                   )}
 
-                  {canTriggerKnowledgeAfterPreLearning && (
-                    <div className="rounded-xl border border-blue-200/80 dark:border-blue-700/70 bg-blue-50/70 dark:bg-blue-900/20 p-4 space-y-3">
-                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                        {t('workspace.quiz.result.preLearningDecisionTitle', 'Quyết định sau Pre-learning')}
-                      </p>
-
-                      {loadingCurrentPhase && (
-                        <p className="text-sm text-blue-700/90 dark:text-blue-300/90">
-                          {t('workspace.quiz.result.loadingCurrentPhase', 'Đang kiểm tra phase hiện tại...')}
-                        </p>
-                      )}
-
-                      {!loadingCurrentPhase && canShowSkipDecision && (
-                        <div className="space-y-3">
-                          <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                            {t('workspace.quiz.result.skipPhaseEligibleHint', 'Bạn đã đủ điều kiện để bỏ qua giai đoạn này. Bạn muốn bỏ qua hay tiếp tục luyện tập?')}
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-2">
-                            <Button
-                              type="button"
-                              disabled={submittingSkipDecision || generatingKnowledge}
-                              onClick={() => void handleSkipDecision(true)}
-                              className="min-w-[180px] gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                            >
-                              {(submittingSkipDecision && !generatingKnowledge)
-                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : <CheckCircle2 className="w-4 h-4" />}
-                              {t('workspace.quiz.result.skipPhaseAction', 'Bỏ qua phase')}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={submittingSkipDecision || generatingKnowledge || knowledgeGenerationTriggered}
-                              onClick={() => void handleSkipDecision(false)}
-                              className="min-w-[220px] gap-2"
-                            >
-                              {(generatingKnowledge || submittingSkipDecision)
-                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                : <WandSparkles className="w-4 h-4" />}
-                              {knowledgeGenerationTriggered
-                                ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
-                                : t('workspace.quiz.result.continuePracticeAction', 'Tiếp tục luyện tập')}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {!loadingCurrentPhase && !canShowSkipDecision && (
-                        <Button
-                          type="button"
-                          onClick={handleGenerateKnowledgeAfterPreLearning}
-                          disabled={generatingKnowledge || knowledgeGenerationTriggered || submittingSkipDecision}
-                          className="min-w-[220px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
-                          {generatingKnowledge ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
-                          {knowledgeGenerationTriggered
-                            ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
-                            : t('workspace.quiz.result.generateKnowledgeAction', 'Tạo knowledge luyện tập')}
-                        </Button>
-                      )}
-                    </div>
-                  )}
                   </div>
+                )}
+              </div>
+            )}
+
+            {canTriggerKnowledgeAfterPreLearning && isAssessmentReady && (
+              <div className="rounded-xl border border-blue-200/80 dark:border-blue-700/70 bg-blue-50/70 dark:bg-blue-900/20 p-4 mb-6 text-left space-y-3">
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                  {t('workspace.quiz.result.preLearningDecisionTitle', 'Quyết định sau Pre-learning')}
+                </p>
+
+                {loadingCurrentPhase && (
+                  <p className="text-sm text-blue-700/90 dark:text-blue-300/90">
+                    {t('workspace.quiz.result.loadingCurrentPhase', 'Đang kiểm tra phase hiện tại...')}
+                  </p>
+                )}
+
+                {!loadingCurrentPhase && canShowSkipDecision && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                      {t('workspace.quiz.result.skipPhaseEligibleHint', 'Bạn đã đủ điều kiện để bỏ qua giai đoạn này. Bạn muốn bỏ qua hay tiếp tục luyện tập?')}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        type="button"
+                        disabled={submittingSkipDecision || generatingKnowledge}
+                        onClick={() => void handleSkipDecision(true)}
+                        className="min-w-[180px] gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {(submittingSkipDecision && !generatingKnowledge)
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <CheckCircle2 className="w-4 h-4" />}
+                        {t('workspace.quiz.result.skipPhaseAction', 'Bỏ qua phase')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={submittingSkipDecision || generatingKnowledge || knowledgeGenerationTriggered}
+                        onClick={() => void handleSkipDecision(false)}
+                        className="min-w-[220px] gap-2"
+                      >
+                        {(generatingKnowledge || submittingSkipDecision)
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <WandSparkles className="w-4 h-4" />}
+                        {knowledgeGenerationTriggered
+                          ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
+                          : t('workspace.quiz.result.continuePracticeAction', 'Tiếp tục luyện tập')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!loadingCurrentPhase && !canShowSkipDecision && (
+                  <Button
+                    type="button"
+                    onClick={handleGenerateKnowledgeAfterPreLearning}
+                    disabled={generatingKnowledge || knowledgeGenerationTriggered || submittingSkipDecision}
+                    className="min-w-[220px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {generatingKnowledge ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
+                    {knowledgeGenerationTriggered
+                      ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
+                      : t('workspace.quiz.result.generateKnowledgeAction', 'Tạo knowledge luyện tập')}
+                  </Button>
                 )}
               </div>
             )}
