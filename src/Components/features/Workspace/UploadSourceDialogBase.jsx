@@ -89,6 +89,9 @@ function UploadSourceDialogBase({
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
   const [importingSuggestions, setImportingSuggestions] = useState(false);
   const selectedSuggestionCount = selectedSuggestionIds.length;
+  const hasUserSelectedFiles = selectedFiles.length > 0;
+  const hasSelectedSuggestedResources = selectedSuggestionCount > 0;
+  const canUploadAllSources = hasUserSelectedFiles && hasSelectedSuggestedResources;
 
   const visibleSuggestedResources = useMemo(
     () => suggestedResources.slice(0, SUGGESTED_RESOURCES_LIMIT),
@@ -174,7 +177,7 @@ function UploadSourceDialogBase({
     }
   };
 
-  const handleImportSuggestions = async () => {
+  const handleImportSuggestions = async ({ closeAfterImport = true } = {}) => {
     if (!normalizedWorkspaceId || selectedSuggestionIds.length === 0) return;
 
     setImportingSuggestions(true);
@@ -186,15 +189,18 @@ function UploadSourceDialogBase({
       setSelectedSuggestionIds([]);
       await onSuggestedImported?.();
       showInfo(t("workspace.upload.suggestImportSuccess"));
-      onOpenChange(false);
+      if (closeAfterImport) {
+        onOpenChange(false);
+      }
     } catch (error) {
       showError(error?.message || t("workspace.upload.suggestImportError"));
+      throw error;
     } finally {
       setImportingSuggestions(false);
     }
   };
 
-  const handleUpload = async () => {
+  const handleUploadUserFiles = async () => {
     setUploading(true);
     try {
       if (selectedFiles.length > 0) {
@@ -204,6 +210,23 @@ function UploadSourceDialogBase({
       onOpenChange(false);
     } catch {
       // Lỗi xử lý ở component cha
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadAllSources = async () => {
+    if (!canUploadAllSources || uploading || importingSuggestions) return;
+
+    setUploading(true);
+    try {
+      await onUploadFiles?.(selectedFiles);
+      setSelectedFiles([]);
+      await handleImportSuggestions({ closeAfterImport: false });
+      showSuccess(t("workspace.upload.uploadAllSuccess"));
+      onOpenChange(false);
+    } catch {
+      // Lỗi đã được hiển thị tại nguồn gọi API
     } finally {
       setUploading(false);
     }
@@ -417,6 +440,20 @@ function UploadSourceDialogBase({
             </div>
               )}
 
+              {hasUserSelectedFiles && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleUploadUserFiles}
+                    disabled={uploading || importingSuggestions || !hasUserSelectedFiles}
+                    className="bg-[#2563EB] hover:bg-blue-700 text-white"
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
+                    {t("workspace.upload.uploadUserFiles")}
+                  </Button>
+                </div>
+              )}
+
               {showSuggestedPanel && (
             <div className={`rounded-2xl border p-3 ${isDarkMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-slate-50"}`}>
               <div className="flex items-center justify-between gap-2 mb-3">
@@ -510,20 +547,21 @@ function UploadSourceDialogBase({
                 </div>
               )}
 
-              {selectedSuggestionCount > 0 && (
-                <div className="pt-3">
+                </div>
+              )}
+
+              {showSuggestedPanel && selectedSuggestionCount > 0 && (
+                <div className="flex justify-end">
                   <Button
                     type="button"
-                    onClick={handleImportSuggestions}
+                    onClick={() => handleImportSuggestions()}
                     disabled={importingSuggestions || uploading}
-                    className="w-full bg-[#2563EB] hover:bg-blue-700 text-white"
+                    className="bg-[#2563EB] hover:bg-blue-700 text-white"
                   >
                     {importingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
                     {t("workspace.upload.importSuggested")}
                   </Button>
                 </div>
-              )}
-            </div>
               )}
             </div>
 
@@ -544,12 +582,12 @@ function UploadSourceDialogBase({
                 </Button>
                 <Button
                   type="button"
-                  onClick={handleUpload}
-                  disabled={uploading || selectedFiles.length === 0}
+                  onClick={handleUploadAllSources}
+                  disabled={uploading || importingSuggestions || !canUploadAllSources}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white"
                 >
                   {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
-                  {uploading ? t("workspace.upload.uploading") : t("workspace.upload.tabFile")}
+                  {uploading ? t("workspace.upload.uploading") : t("workspace.upload.uploadAllSources")}
                 </Button>
               </div>
             </div>

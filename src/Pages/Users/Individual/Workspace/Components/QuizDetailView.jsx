@@ -13,6 +13,10 @@ import {
 import { useToast } from "@/context/ToastContext";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 
+const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
+const quizDetailCache = new Map();
+const quizDetailInFlight = new Map();
+
 // Cấu hình màu badge trạng thái quiz
 const STATUS_STYLES = {
   ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
@@ -95,6 +99,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [examStartOpen, setExamStartOpen] = useState(false);
+  const detailRequestRunRef = React.useRef(0);
 
   const canViewAnswers = hasQuizCompleted(quiz?.quizId) || currentStatus === "DRAFT";
 
@@ -105,50 +110,122 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   // Lấy toàn bộ dữ liệu quiz chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {
     if (!quiz?.quizId) return;
+
+    const cacheKey = `${quiz.quizId}:${canViewAnswers ? "withAnswers" : "withoutAnswers"}`;
+    const cachedEntry = quizDetailCache.get(cacheKey);
+    const now = Date.now();
+
+    if (cachedEntry && (now - cachedEntry.at) < QUIZ_DETAIL_CACHE_TTL_MS) {
+      setQuizMeta(cachedEntry.data.quizMeta);
+      setCurrentStatus(cachedEntry.data.currentStatus);
+      setSections(cachedEntry.data.sections);
+      setExpandedSections(cachedEntry.data.expandedSections);
+      setQuestionsMap(cachedEntry.data.questionsMap);
+      setAnswersMap(cachedEntry.data.answersMap);
+      setLoading(false);
+      return;
+    }
+
+    const runId = detailRequestRunRef.current + 1;
+    detailRequestRunRef.current = runId;
     setLoading(true);
-    setQuizMeta(null);
-    try {
+
+    const inFlightPromise = quizDetailInFlight.get(cacheKey);
+    if (inFlightPromise) {
+      try {
+        const payload = await inFlightPromise;
+        if (detailRequestRunRef.current !== runId) return;
+        setQuizMeta(payload.quizMeta);
+        setCurrentStatus(payload.currentStatus);
+        setSections(payload.sections);
+        setExpandedSections(payload.expandedSections);
+        setQuestionsMap(payload.questionsMap);
+        setAnswersMap(payload.answersMap);
+      } catch (err) {
+        console.error("Lỗi khi tải chi tiết quiz (dedupe):", err);
+      } finally {
+        if (detailRequestRunRef.current === runId) {
+          setLoading(false);
+        }
+      }
+      return;
+    }
+
+    const requestPromise = (async () => {
+      let nextQuizMeta = null;
+      let nextStatus = quiz?.status || "DRAFT";
+      let nextSections = [];
+      let nextExpandedSections = {};
+      let nextQuestionsMap = {};
+      let nextAnswersMap = {};
+
       // Nếu quiz chỉ có quizId (thiếu metadata như khi back từ kết quả), fetch thông tin đầy đủ
       if (!quiz?.title) {
         const fullRes = await getQuizFull(quiz.quizId);
         if (fullRes?.data) {
-          setQuizMeta(fullRes.data);
-          setCurrentStatus(fullRes.data.status || "DRAFT");
+          nextQuizMeta = fullRes.data;
+          nextStatus = fullRes.data.status || "DRAFT";
         }
       }
 
       // Bước 1: Lấy sections
       const sectRes = await getSectionsByQuiz(quiz.quizId);
       const sectionList = sectRes.data || [];
-      setSections(sectionList);
+      nextSections = sectionList;
 
       // Tự động mở rộng section đầu tiên
       if (sectionList.length > 0) {
-        setExpandedSections({ [sectionList[0].sectionId]: true });
+        nextExpandedSections = { [sectionList[0].sectionId]: true };
       }
 
       // Bước 2: Lấy questions cho mỗi section
-      const qMap = {};
-      const aMap = {};
       for (const section of sectionList) {
         const qRes = await getQuestionsBySection(section.sectionId);
         const questions = qRes.data || [];
-        qMap[section.sectionId] = questions;
+        nextQuestionsMap[section.sectionId] = questions;
 
         // Chỉ lấy đáp án sau khi user đã hoàn thành bài để tránh lộ đáp án sớm.
         if (canViewAnswers) {
           for (const question of questions) {
             const aRes = await getAnswersByQuestion(question.questionId);
-            aMap[question.questionId] = aRes.data || [];
+            nextAnswersMap[question.questionId] = aRes.data || [];
           }
         }
       }
-      setQuestionsMap(qMap);
-      setAnswersMap(aMap);
+
+      return {
+        quizMeta: nextQuizMeta,
+        currentStatus: nextStatus,
+        sections: nextSections,
+        expandedSections: nextExpandedSections,
+        questionsMap: nextQuestionsMap,
+        answersMap: nextAnswersMap,
+      };
+    })();
+
+    quizDetailInFlight.set(cacheKey, requestPromise);
+    try {
+      const payload = await requestPromise;
+      if (detailRequestRunRef.current !== runId) return;
+
+      quizDetailCache.set(cacheKey, {
+        at: Date.now(),
+        data: payload,
+      });
+
+      setQuizMeta(payload.quizMeta);
+      setCurrentStatus(payload.currentStatus);
+      setSections(payload.sections);
+      setExpandedSections(payload.expandedSections);
+      setQuestionsMap(payload.questionsMap);
+      setAnswersMap(payload.answersMap);
     } catch (err) {
       console.error("Lỗi khi tải chi tiết quiz:", err);
     } finally {
-      setLoading(false);
+      quizDetailInFlight.delete(cacheKey);
+      if (detailRequestRunRef.current === runId) {
+        setLoading(false);
+      }
     }
   }, [quiz?.quizId, canViewAnswers]);
 
