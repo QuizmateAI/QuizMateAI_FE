@@ -225,7 +225,11 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const effectiveQuiz = quizMeta || quiz;
   const effectiveContextType = String(effectiveQuiz?.contextType || "").toUpperCase();
   const isRoadmapRouteSource = /\/workspace\/\d+\/roadmap(?:\/|$)/.test(location.pathname);
-  const isRoadmapQuizSource = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(effectiveContextType) || isRoadmapRouteSource;
+  const isRoadmapQuizByData = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(effectiveContextType)
+    || Number(effectiveQuiz?.roadmapId) > 0
+    || Number(effectiveQuiz?.phaseId) > 0
+    || Number(effectiveQuiz?.knowledgeId) > 0;
+  const isRoadmapQuizSource = isRoadmapQuizByData || isRoadmapRouteSource;
   const resultSourceState = {
     sourceView: isRoadmapQuizSource ? "roadmap" : "quiz-panel",
     sourceWorkspaceId: Number(effectiveQuiz?.workspaceId) || null,
@@ -378,7 +382,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
               {/* Action Buttons in Overview */}
               {isActiveQuiz && (
                 <div className={`mt-4 pt-4 border-t flex flex-row items-center gap-3 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-                  {!isRoadmapQuizSource ? (
+                  {!isRoadmapQuizByData ? (
                     <Button onClick={() => setConfirmDialog({ open: true, mode: 'practice' })} variant="outline"
                       className={`flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl transition-all active:scale-95 ${isDarkMode ? "border-blue-800/60 bg-blue-900/20 text-blue-400 hover:bg-blue-900/40" : "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
                       <Play className="w-4 h-4" />
