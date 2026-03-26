@@ -1,8 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import QuizListView from "./QuizListView";
+import { useToast } from "@/context/ToastContext";
+import { getAttemptAssessment, getQuizHistory } from "@/api/QuizAPI";
+import { getCurrentRoadmapPhaseProgress, submitRoadmapPhaseSkipDecision } from "@/api/RoadmapPhaseAPI";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -17,6 +20,7 @@ function RoadmapCanvasView2({
   isDarkMode = false,
   fontClass = "font-sans",
   selectedPhaseId = null,
+  onPhaseFocus,
   onCreatePhaseKnowledge,
   onCreateKnowledgeQuizForKnowledge,
   onCreatePhasePreLearning,
@@ -25,6 +29,7 @@ function RoadmapCanvasView2({
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
   generatingKnowledgeQuizKnowledgeKeys = [],
+  knowledgeQuizRefreshByKnowledgeKey = {},
   generatingPreLearningPhaseIds = [],
   skipPreLearningPhaseIds = [],
   quizRefreshToken = 0,
@@ -33,7 +38,23 @@ function RoadmapCanvasView2({
   onShareQuiz,
 }) {
   const { t } = useTranslation();
+  const { showError, showSuccess } = useToast();
   const [openPhaseId, setOpenPhaseId] = useState(null);
+  const [decisionState, setDecisionState] = useState({
+    phaseId: null,
+    loadingAssessment: false,
+    assessmentStatus: "NOT_AVAILABLE",
+    assessmentData: null,
+    loadingCurrentPhase: false,
+    currentPhaseProgress: null,
+  });
+  const [submittingSkipDecision, setSubmittingSkipDecision] = useState(false);
+  const [decisionHandledPhaseIds, setDecisionHandledPhaseIds] = useState([]);
+  const preLearningDecisionFetchRef = useRef({
+    inFlightKey: null,
+    lastLoadedKey: null,
+    lastLoadedAt: 0,
+  });
   const getDefaultOpenKnowledgeMap = (phaseList = []) => {
     return (phaseList || []).reduce((accumulator, phase) => {
       const phaseId = Number(phase?.phaseId);
@@ -88,7 +109,7 @@ function RoadmapCanvasView2({
         return accumulator;
       }, {});
     } catch (error) {
-      console.error("Không thể khôi phục trạng thái dropdown knowledge:", error);
+      console.error("Failed to restore knowledge dropdown state:", error);
       return {};
     }
   };
@@ -122,8 +143,190 @@ function RoadmapCanvasView2({
     : fallbackPhaseId;
   const activePhase = phases.find((phase) => phase.phaseId === effectiveOpenPhaseId) || null;
 
+  const loadPreLearningDecisionState = useCallback(async (phase) => {
+    const normalizedPhaseId = Number(phase?.phaseId);
+    const normalizedRoadmapId = Number(roadmap?.roadmapId);
+    const normalizedWorkspaceId = Number(roadmap?.workspaceId);
+    const hasValidContext = Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0
+      && Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+      && Number.isInteger(normalizedWorkspaceId) && normalizedWorkspaceId > 0;
+
+    const preLearningQuizzes = Array.isArray(phase?.preLearningQuizzes) ? phase.preLearningQuizzes : [];
+    const attemptedPreLearningQuiz = preLearningQuizzes
+      .filter((quiz) => quiz?.myAttempted === true)
+      .sort((a, b) => {
+        const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+        const bTime = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+        return bTime - aTime;
+      })[0] || null;
+
+    if (!hasValidContext || !attemptedPreLearningQuiz?.quizId) {
+      setDecisionState({
+        phaseId: normalizedPhaseId,
+        loadingAssessment: false,
+        assessmentStatus: "NOT_AVAILABLE",
+        assessmentData: null,
+        loadingCurrentPhase: false,
+        currentPhaseProgress: null,
+      });
+      return;
+    }
+
+    const requestKey = `${normalizedRoadmapId}:${normalizedPhaseId}:${Number(attemptedPreLearningQuiz?.quizId)}`;
+    const now = Date.now();
+    if (preLearningDecisionFetchRef.current.inFlightKey === requestKey) {
+      return;
+    }
+    if (
+      preLearningDecisionFetchRef.current.lastLoadedKey === requestKey
+      && (now - preLearningDecisionFetchRef.current.lastLoadedAt) < 1200
+    ) {
+      return;
+    }
+
+    preLearningDecisionFetchRef.current.inFlightKey = requestKey;
+
+    setDecisionState({
+      phaseId: normalizedPhaseId,
+      loadingAssessment: true,
+      assessmentStatus: "NOT_AVAILABLE",
+      assessmentData: null,
+      loadingCurrentPhase: false,
+      currentPhaseProgress: null,
+    });
+
+    try {
+      const historyResponse = await getQuizHistory(attemptedPreLearningQuiz.quizId);
+      const attempts = Array.isArray(historyResponse?.data) ? historyResponse.data : [];
+      const latestCompletedAttempt = attempts
+        .filter((attempt) => String(attempt?.status || "").toUpperCase() === "COMPLETED")
+        .sort((a, b) => {
+          const aTime = new Date(a?.submittedAt || a?.createdAt || 0).getTime();
+          const bTime = new Date(b?.submittedAt || b?.createdAt || 0).getTime();
+          if (aTime !== bTime) return bTime - aTime;
+          return Number(b?.attemptId || 0) - Number(a?.attemptId || 0);
+        })[0] || null;
+
+      const latestAttemptId = Number(latestCompletedAttempt?.attemptId);
+      if (!Number.isInteger(latestAttemptId) || latestAttemptId <= 0) {
+        setDecisionState((current) => ({
+          ...current,
+          phaseId: normalizedPhaseId,
+          loadingAssessment: false,
+          assessmentStatus: "NOT_AVAILABLE",
+          assessmentData: null,
+        }));
+        return;
+      }
+
+      const assessmentResponse = await getAttemptAssessment(latestAttemptId);
+      const assessmentPayload = assessmentResponse?.data?.data || assessmentResponse?.data || null;
+      const assessmentStatus = assessmentPayload?.status || "NOT_AVAILABLE";
+      const assessmentData = assessmentStatus === "READY" ? assessmentPayload : null;
+
+      setDecisionState((current) => ({
+        ...current,
+        phaseId: normalizedPhaseId,
+        loadingAssessment: false,
+        assessmentStatus,
+        assessmentData,
+      }));
+
+      const isAssessmentReady = assessmentStatus === "READY" && Boolean(assessmentData);
+      if (!isAssessmentReady) return;
+
+      setDecisionState((current) => ({
+        ...current,
+        phaseId: normalizedPhaseId,
+        loadingCurrentPhase: true,
+      }));
+
+      const phaseProgressResponse = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+      const phaseProgressPayload = phaseProgressResponse?.data?.data || phaseProgressResponse?.data || null;
+
+      setDecisionState((current) => ({
+        ...current,
+        phaseId: normalizedPhaseId,
+        loadingCurrentPhase: false,
+        currentPhaseProgress: phaseProgressPayload,
+      }));
+    } catch (error) {
+      console.error("Failed to load post pre-learning decision state:", error);
+      setDecisionState((current) => ({
+        ...current,
+        phaseId: normalizedPhaseId,
+        loadingAssessment: false,
+        loadingCurrentPhase: false,
+        assessmentStatus: "NOT_AVAILABLE",
+        assessmentData: null,
+        currentPhaseProgress: null,
+      }));
+    } finally {
+      preLearningDecisionFetchRef.current.lastLoadedKey = requestKey;
+      preLearningDecisionFetchRef.current.lastLoadedAt = Date.now();
+      preLearningDecisionFetchRef.current.inFlightKey = null;
+    }
+  }, [roadmap?.roadmapId, roadmap?.workspaceId]);
+
+  useEffect(() => {
+    if (!activePhase) return;
+
+    const normalizedPhaseId = Number(activePhase?.phaseId);
+    const hasPreLearning = (activePhase?.preLearningQuizzes || []).length > 0;
+    const hasKnowledge = (activePhase?.knowledges || []).length > 0;
+    const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);
+
+    if (!isStudyNewRoadmap || !hasPreLearning || hasKnowledge || isSkipPreLearningPhase) {
+      setDecisionState({
+        phaseId: normalizedPhaseId,
+        loadingAssessment: false,
+        assessmentStatus: "NOT_AVAILABLE",
+        assessmentData: null,
+        loadingCurrentPhase: false,
+        currentPhaseProgress: null,
+      });
+      return;
+    }
+
+    void loadPreLearningDecisionState(activePhase);
+  }, [
+    activePhase,
+    isStudyNewRoadmap,
+    loadPreLearningDecisionState,
+    skipPreLearningPhaseIds,
+  ]);
+
+  const handleRoadmapPreLearningDecision = useCallback(async (phaseId, skipped) => {
+    const normalizedPhaseId = Number(phaseId);
+    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0 || submittingSkipDecision) return;
+
+    setSubmittingSkipDecision(true);
+    try {
+      if (skipped) {
+        await submitRoadmapPhaseSkipDecision(normalizedPhaseId, true);
+        setDecisionHandledPhaseIds((current) => Array.from(new Set([...current, normalizedPhaseId])));
+        showSuccess(t("workspace.quiz.result.skipPhaseSuccess", "Current phase has been skipped successfully."));
+        return;
+      }
+
+      await onCreatePhaseKnowledge?.(normalizedPhaseId, { skipPreLearning: false });
+      setDecisionHandledPhaseIds((current) => Array.from(new Set([...current, normalizedPhaseId])));
+    } catch (error) {
+      console.error("Failed to update pre-learning decision:", error);
+      showError(error?.message || t("workspace.quiz.result.skipPhaseFail", "Could not update skip decision for this phase."));
+    } finally {
+      setSubmittingSkipDecision(false);
+    }
+  }, [onCreatePhaseKnowledge, showError, showSuccess, submittingSkipDecision, t]);
+
   const togglePhase = (phaseId) => {
-    setOpenPhaseId((current) => (current === phaseId ? null : phaseId));
+    setOpenPhaseId((current) => {
+      const next = current === phaseId ? null : phaseId;
+      if (next) {
+        onPhaseFocus?.(next, { preserveActiveView: true });
+      }
+      return next;
+    });
   };
 
   const toggleKnowledge = (phaseId, knowledgeId) => {
@@ -137,7 +340,7 @@ function RoadmapCanvasView2({
       try {
         window.sessionStorage.setItem(knowledgeDropdownStorageKey, JSON.stringify(nextKnowledgeMap));
       } catch (error) {
-        console.error("Không thể lưu trạng thái dropdown knowledge:", error);
+        console.error("Failed to save knowledge dropdown state:", error);
       }
     }
 
@@ -246,15 +449,18 @@ function RoadmapCanvasView2({
     const normalizedPhaseId = Number(phase?.phaseId);
     const knowledgeId = Number(knowledge?.knowledgeId);
     const knowledgeQuizRequestKey = `${normalizedPhaseId}:${knowledgeId}`;
+    const targetedKnowledgeRefreshToken = Number(knowledgeQuizRefreshByKnowledgeKey?.[knowledgeQuizRequestKey] || 0);
     const isGeneratingKnowledgeQuiz = generatingKnowledgeQuizKnowledgeKeys.includes(knowledgeQuizRequestKey);
     const canCreateKnowledgeQuiz = Number.isInteger(knowledgeId) && knowledgeId > 0;
     const quizzes = knowledge?.quizzes || [];
     const hasQuizzes = quizzes.length > 0;
+    const shouldRenderKnowledgeQuizList = hasQuizzes || targetedKnowledgeRefreshToken > 0;
     const flashcards = knowledge?.flashcards || [];
     const hasFlashcards = flashcards.length > 0;
 
     return (
       <div className={`border-t pt-2 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
+
         {hasQuizzes || isGeneratingKnowledgeQuiz || canCreateKnowledgeQuiz ? (
           <div className={`${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
             <div className="px-4 pt-2 pb-1 flex items-center justify-between gap-2">
@@ -270,14 +476,14 @@ function RoadmapCanvasView2({
                   className="h-7 px-2.5 text-xs bg-[#2563EB] hover:bg-blue-700 text-white transition-all active:scale-95"
                 >
                   <Sparkles className="w-3 h-3 mr-1" />
-                  {t("workspace.roadmap.createKnowledgeQuiz", "Tạo quiz")}
+                  {t("workspace.roadmap.createKnowledgeQuiz", "Create quiz")}
                 </Button>
               ) : null}
             </div>
             <div className="px-4 pb-2">
               {isGeneratingKnowledgeQuiz && !hasQuizzes ? (
                 renderLoadingPlaceholder(
-                  t("workspace.roadmap.generatingKnowledgeQuiz", "AI đang tạo quiz cho knowledge..."),
+                  t("workspace.roadmap.generatingKnowledgeQuiz", "AI is generating quiz for this knowledge..."),
                   true,
                   progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0
                 )
@@ -286,13 +492,13 @@ function RoadmapCanvasView2({
                   {isGeneratingKnowledgeQuiz ? (
                     <div className="mb-2">
                       {renderLoadingPlaceholder(
-                        t("workspace.roadmap.generatingKnowledgeQuiz", "AI đang tạo quiz cho knowledge..."),
+                        t("workspace.roadmap.generatingKnowledgeQuiz", "AI is generating quiz for this knowledge..."),
                         true,
                         progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0
                       )}
                     </div>
                   ) : null}
-                  {hasQuizzes ? (
+                  {shouldRenderKnowledgeQuizList ? (
                     <QuizListView
                       isDarkMode={isDarkMode}
                       contextType="KNOWLEDGE"
@@ -302,12 +508,12 @@ function RoadmapCanvasView2({
                       embedded
                       hideCreateButton
                       title={t("workspace.roadmap.canvas.quiz", "Quiz")}
-                      refreshToken={quizRefreshToken}
+                      refreshToken={(Number(quizRefreshToken) || 0) + targetedKnowledgeRefreshToken}
                       returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
                     />
                   ) : !isGeneratingKnowledgeQuiz ? (
                     <p className={`px-1 py-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                      {t("workspace.roadmap.noQuizYet", "Chưa có quiz")}
+                      {t("workspace.roadmap.noQuizYet", "No quiz created yet")}
                     </p>
                   ) : null}
                 </>
@@ -333,7 +539,7 @@ function RoadmapCanvasView2({
   if (!roadmap) {
     return (
       <div className={`h-full flex items-center justify-center ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-slate-100 text-slate-600"}`}>
-        <p className={fontClass}>{t("workspace.roadmap.noRoadmapYet", "Chưa có roadmap")}</p>
+        <p className={fontClass}>{t("workspace.roadmap.noRoadmapYet", "No roadmap yet")}</p>
       </div>
     );
   }
@@ -351,6 +557,18 @@ function RoadmapCanvasView2({
                 {roadmap.description}
               </p>
             ) : null}
+            <div className={`mt-2 flex flex-wrap items-center gap-2 text-[11px] ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+              {Number(roadmap?.estimatedTotalDays) > 0 ? (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-800" : "bg-white border border-slate-200"}`}>
+                  {t("workspace.roadmap.totalDays", "Total days")}: {Number(roadmap?.estimatedTotalDays)}
+                </span>
+              ) : null}
+              {Number(roadmap?.estimatedMinutesPerDay) > 0 ? (
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-800" : "bg-white border border-slate-200"}`}>
+                  {t("workspace.roadmap.minutesPerDay", "Minutes/day")}: {Number(roadmap?.estimatedMinutesPerDay)}
+                </span>
+              ) : null}
+            </div>
           </div>
           {onShareRoadmap && roadmap?.roadmapId ? (
             <Button
@@ -410,6 +628,22 @@ function RoadmapCanvasView2({
             && !hasKnowledge
             && !isGeneratingKnowledge;
           const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);
+          const isOpenPhase = Number(effectiveOpenPhaseId) === normalizedPhaseId;
+          const isDecisionHandled = decisionHandledPhaseIds.includes(normalizedPhaseId);
+          const isPhaseDecisionReady = isOpenPhase
+            && decisionState.phaseId === normalizedPhaseId
+            && decisionState.assessmentStatus === "READY"
+            && Boolean(decisionState.assessmentData);
+          const canRenderPreLearningDecisionCard = isStudyNewRoadmap
+            && hasPreLearning
+            && !hasKnowledge
+            && !isSkipPreLearningPhase
+            && isPhaseDecisionReady;
+          const isGeneratingKnowledgeForPhase = generatingKnowledgePhaseIds.includes(normalizedPhaseId)
+            || generatingKnowledgeQuizPhaseIds.includes(normalizedPhaseId);
+          const canShowSkipDecision = canRenderPreLearningDecisionCard
+            && decisionState.currentPhaseProgress?.skipable === true
+            && !isDecisionHandled;
           const shouldShowPreLearningDecision = isStudyNewRoadmap && !hasPreLearning && !hasKnowledge;
           const shouldShowKnowledgePlaceholder = !hasKnowledge && isGeneratingPhaseContent;
           const shouldShowPreLearningPlaceholder = !hasPreLearning
@@ -433,6 +667,9 @@ function RoadmapCanvasView2({
                   <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{phase.description}</p>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
+                    {phase?.durationLabel || `${Number(phase?.estimatedDays) || 0} ${t("workspace.roadmap.days", "days")} • ${Number(phase?.estimatedMinutesPerDay) || 0} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`}
+                  </span>
                   <span className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${
                     isCompletedPhase
                       ? (isDarkMode ? "bg-emerald-950/60 text-emerald-300" : "bg-green-100 text-green-800")
@@ -462,7 +699,7 @@ function RoadmapCanvasView2({
                         {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
                       </h4>
                       <p className={`text-xs mb-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                        {t("workspace.roadmap.preLearningHelper", "Vui lòng làm bài pre-learning để AI tạo lộ trình đúng với trình độ của bạn.")}
+                        {t("workspace.roadmap.preLearningHelper", "Please complete pre-learning so AI can tailor the roadmap to your level.")}
                       </p>
                       <QuizListView
                         isDarkMode={isDarkMode}
@@ -479,10 +716,77 @@ function RoadmapCanvasView2({
                         returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
                       />
 
+                      {canRenderPreLearningDecisionCard ? (
+                        <div className={`mt-3 rounded-lg border p-4 ${isDarkMode ? "border-blue-700/70 bg-blue-900/20" : "border-blue-200 bg-blue-50/70"}`}>
+                          <p className={`text-sm font-semibold ${isDarkMode ? "text-blue-200" : "text-blue-800"} ${fontClass}`}>
+                            {t("workspace.quiz.result.preLearningDecisionTitle", "Decision after Pre-learning")}
+                          </p>
+
+                          {decisionState.loadingCurrentPhase ? (
+                            <p className={`mt-2 text-sm ${isDarkMode ? "text-blue-300/90" : "text-blue-700/90"} ${fontClass}`}>
+                              {t("workspace.quiz.result.loadingCurrentPhase", "Checking your current phase...")}
+                            </p>
+                          ) : null}
+
+                          {!decisionState.loadingCurrentPhase && canShowSkipDecision ? (
+                            <div className="mt-3 space-y-3">
+                              <p className={`text-sm leading-relaxed ${isDarkMode ? "text-slate-200" : "text-slate-700"} ${fontClass}`}>
+                                {t("workspace.quiz.result.skipPhaseEligibleHint", "You are eligible to skip this phase. Do you want to skip or continue practicing?")}
+                              </p>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  type="button"
+                                  disabled={submittingSkipDecision || isGeneratingKnowledgeForPhase}
+                                  onClick={() => void handleRoadmapPreLearningDecision(normalizedPhaseId, true)}
+                                  className="min-w-[180px] gap-2 bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-95"
+                                >
+                                  {(submittingSkipDecision && !isGeneratingKnowledgeForPhase)
+                                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                                    : <CheckCircle2 className="w-4 h-4" />}
+                                  {t("workspace.quiz.result.skipPhaseAction", "Skip this phase")}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  disabled={submittingSkipDecision || isGeneratingKnowledgeForPhase || isDecisionHandled}
+                                  onClick={() => void handleRoadmapPreLearningDecision(normalizedPhaseId, false)}
+                                  className="min-w-[220px] gap-2 transition-all active:scale-95"
+                                >
+                                  {(submittingSkipDecision || isGeneratingKnowledgeForPhase)
+                                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                                    : <Sparkles className="w-4 h-4" />}
+                                  {isDecisionHandled
+                                    ? t("workspace.quiz.result.generateKnowledgeDone", "Knowledge request sent")
+                                    : t("workspace.quiz.result.continuePracticeAction", "Continue practicing")}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {!decisionState.loadingCurrentPhase && !canShowSkipDecision ? (
+                            <div className="mt-3">
+                              <Button
+                                type="button"
+                                onClick={() => void handleRoadmapPreLearningDecision(normalizedPhaseId, false)}
+                                disabled={submittingSkipDecision || isGeneratingKnowledgeForPhase || isDecisionHandled}
+                                className="min-w-[220px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white transition-all active:scale-95"
+                              >
+                                {(submittingSkipDecision || isGeneratingKnowledgeForPhase)
+                                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                                  : <Sparkles className="w-4 h-4" />}
+                                {isDecisionHandled
+                                  ? t("workspace.quiz.result.generateKnowledgeDone", "Knowledge request sent")
+                                  : t("workspace.quiz.result.generateKnowledgeAction", "Generate practice knowledge")}
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+
                       {/* {shouldShowCreatePhaseContentAction ? (
                         <details className={`mt-3 rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-50"}`}>
                           <summary className={`cursor-pointer list-none px-3 py-2 text-xs font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
-                            {t("workspace.roadmap.nextStepTitle", "Bước tiếp theo")}
+                            {t("workspace.roadmap.nextStepTitle", "Next step")}
                           </summary>
                           <div className="px-3 pb-3">
                             <Button
@@ -490,7 +794,7 @@ function RoadmapCanvasView2({
                               onClick={() => onCreatePhaseKnowledge?.(phase.phaseId)}
                               className="w-full bg-[#2563EB] hover:bg-blue-700 text-white transition-all active:scale-95"
                             >
-                              {t("workspace.roadmap.createKnowledgeAndPostLearning", "Tạo knowledge và post-learning")}
+                              {t("workspace.roadmap.createKnowledgeAndPostLearning", "Generate knowledge and post-learning")}
                             </Button>
                           </div>
                         </details>
@@ -502,7 +806,7 @@ function RoadmapCanvasView2({
                           {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
                         </h4>
                         {renderLoadingPlaceholder(
-                          t("workspace.roadmap.generatingPreLearning", "AI đang tạo pre-learning cho phase này..."),
+                          t("workspace.roadmap.generatingPreLearning", "AI is generating pre-learning for this phase..."),
                           false,
                           progressTracking?.getPreLearningProgress(Number(phase?.phaseId)) ?? 0
                         )}
@@ -518,6 +822,15 @@ function RoadmapCanvasView2({
                         {(phase.knowledges || []).map((knowledge) => {
                           const knowledgeKey = `${phase.phaseId}:${knowledge.knowledgeId}`;
                           const isKnowledgeOpen = Boolean(openKnowledgeMap[knowledgeKey]);
+                          const knowledgeTargetDay = Number(knowledge?.targetDayIndex) || 0;
+                          const knowledgePlannedMinutes = Number(knowledge?.plannedStudyMinutes) || 0;
+                          const knowledgeTimeLabel = knowledgeTargetDay > 0 && knowledgePlannedMinutes > 0
+                            ? `${t("workspace.roadmap.day", "Day")} ${knowledgeTargetDay} • ${knowledgePlannedMinutes} ${t("workspace.roadmap.minutes", "min")}`
+                            : knowledgeTargetDay > 0
+                            ? `${t("workspace.roadmap.day", "Day")} ${knowledgeTargetDay}`
+                            : knowledgePlannedMinutes > 0
+                            ? `${knowledgePlannedMinutes} ${t("workspace.roadmap.minutes", "min")}`
+                            : "";
                           return (
                             <div key={knowledge.knowledgeId} className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/30 hover:bg-slate-900/40" : "border-slate-200 bg-slate-50/50 hover:bg-slate-100 transition-colors"}`}>
                               <button
@@ -526,7 +839,14 @@ function RoadmapCanvasView2({
                                 className="w-full px-4 py-2.5 flex items-center justify-between gap-3 text-left"
                               >
                                 <div className="min-w-0 flex-1">
-                                  <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>{knowledge.title}</p>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>{knowledge.title}</p>
+                                    {knowledgeTimeLabel ? (
+                                      <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
+                                        {knowledgeTimeLabel}
+                                      </span>
+                                    ) : null}
+                                  </div>
                                 </div>
                                 <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isKnowledgeOpen ? "rotate-180" : "rotate-0"} ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
                               </button>
@@ -549,7 +869,7 @@ function RoadmapCanvasView2({
                         {t("workspace.roadmap.canvas.knowledge", "Knowledge")}
                       </h4>
                       {renderLoadingPlaceholder(
-                        t("workspace.roadmap.generatingKnowledge", "Vui lòng đợi AI tạo knowledge cho phase này..."),
+                        t("workspace.roadmap.generatingKnowledge", "Please wait while AI generates knowledge for this phase..."),
                         false,
                         progressTracking?.getKnowledgeProgress(Number(phase?.phaseId)) ?? 0
                       )}
@@ -563,17 +883,17 @@ function RoadmapCanvasView2({
                           {t("workspace.roadmap.canvas.postLearning", "Post-learning")}
                         </h4>
                         <p className={`text-xs mb-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                          {t("workspace.roadmap.postLearningHelper", "Hoàn thành post-learning để đánh giá mức độ nắm vững kiến thức sau khi học phase này.")}
+                          {t("workspace.roadmap.postLearningHelper", "Complete post-learning to evaluate your mastery after finishing this phase.")}
                         </p>
                         <p className={`text-xs mb-2 ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
-                          {t("workspace.roadmap.postLearningProgress", "Tiến độ mở khóa: {{passed}}/{{total}} knowledge đã đạt điều kiện.", {
+                          {t("workspace.roadmap.postLearningProgress", "Unlock progress: {{passed}}/{{total}} knowledge items are eligible.", {
                             passed: passedKnowledgeCount,
                             total: totalKnowledgeCount,
                           })}
                         </p>
                         {shouldLockPostLearning ? (
                           <p className={`text-xs mb-2 ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
-                            {t("workspace.roadmap.postLearningLocked", "Mỗi knowledge cần đạt điểm qua ở ít nhất 1 quiz ôn tập để mở post-learning.")}
+                            {t("workspace.roadmap.postLearningLocked", "Each knowledge item must pass at least one practice quiz to unlock post-learning.")}
                           </p>
                         ) : null}
                         <div className={shouldLockPostLearning ? "opacity-50 pointer-events-none select-none" : ""}>
@@ -592,19 +912,6 @@ function RoadmapCanvasView2({
                             returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
                           />
                         </div>
-                        <QuizListView
-                          isDarkMode={isDarkMode}
-                          contextType="PHASE"
-                          contextId={phase.phaseId}
-                          onCreateQuiz={() => onCreatePhaseKnowledge?.(phase.phaseId)}
-                          onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
-                          embedded
-                          hideCreateButton
-                          title={t("workspace.roadmap.canvas.postLearning", "Post-learning")}
-                          intentFilter={["POST_LEARNING"]}
-                          refreshToken={quizRefreshToken}
-                          returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
-                        />
                       </div>
                     </div>
                   ) : shouldShowPostLearningPlaceholder ? (
@@ -613,7 +920,7 @@ function RoadmapCanvasView2({
                         {t("workspace.roadmap.canvas.postLearning", "Post-learning")}
                       </h4>
                       {renderLoadingPlaceholder(
-                        t("workspace.roadmap.generatingPostLearning", "AI đang tạo post-learning cho phase này..."),
+                        t("workspace.roadmap.generatingPostLearning", "AI is generating post-learning for this phase..."),
                         false,
                         progressTracking?.getPostLearningProgress(Number(phase?.phaseId)) ?? 0
                       )}
@@ -626,26 +933,26 @@ function RoadmapCanvasView2({
                         {isGeneratingKnowledge ? (
                           <div className="space-y-2">
                             {isGeneratingPhaseContent ? renderLoadingPlaceholder(
-                              t("workspace.roadmap.generatingKnowledge", "Vui lòng đợi AI tạo knowledge cho phase này..."),
+                              t("workspace.roadmap.generatingKnowledge", "Please wait while AI generates knowledge for this phase..."),
                               true,
                               phaseKnowledgePercent
                             ) : null}
                             {isGeneratingKnowledgeQuiz ? renderLoadingPlaceholder(
-                              t("workspace.roadmap.generatingKnowledgeQuiz", "AI đang tạo quiz cho knowledge..."),
+                              t("workspace.roadmap.generatingKnowledgeQuiz", "AI is generating quiz for this knowledge..."),
                               true,
                               phaseKnowledgePercent
                             ) : null}
                           </div>
                         ) : isGeneratingPreLearning ? (
                           renderLoadingPlaceholder(
-                            t("workspace.roadmap.generatingPreLearning", "AI đang tạo pre-learning cho phase này..."),
+                            t("workspace.roadmap.generatingPreLearning", "AI is generating pre-learning for this phase..."),
                             true,
                             phasePreLearningPercent
                           )
                         ) : (
                           <div className="flex flex-col gap-3">
                             <p className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
-                              {t("workspace.roadmap.preLearningPrompt", "Bạn muốn bắt đầu phase này theo cách nào?")}
+                              {t("workspace.roadmap.preLearningPrompt", "How would you like to start this phase?")}
                             </p>
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                               <Button
@@ -654,18 +961,18 @@ function RoadmapCanvasView2({
                                 onClick={() => onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false })}
                                 className={`${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
                               >
-                                {t("workspace.roadmap.studyNew.hasFoundation", "Tôi đã có nền tảng của giai đoạn này")}
+                                {t("workspace.roadmap.studyNew.hasFoundation", "I already have foundation in this phase")}
                               </Button>
                               <Button
                                 type="button"
                                 onClick={() => onCreatePhaseKnowledge?.(phase.phaseId, { skipPreLearning: true })}
                                 className="bg-[#2563EB] hover:bg-blue-700 text-white"
                               >
-                                {t("workspace.roadmap.studyNew.noBackground", "Tôi chưa biết gì về giai đoạn này")}
+                                {t("workspace.roadmap.studyNew.noBackground", "I am new to this phase")}
                               </Button>
                             </div>
                             <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-500"} ${fontClass}`}>
-                              {t("workspace.roadmap.studyNew.preLearningNote", "Nếu đạt từ 90% ở pre-learning, bạn có thể được bỏ qua phase này.")}
+                              {t("workspace.roadmap.studyNew.preLearningNote", "If you score 90%+ in pre-learning, this phase may be skipped.")}
                             </p>
                           </div>
                         )}
@@ -678,12 +985,12 @@ function RoadmapCanvasView2({
                       <div className={`rounded-lg border p-4 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
                         <div className="space-y-2">
                           {isGeneratingPhaseContent ? renderLoadingPlaceholder(
-                            t("workspace.roadmap.generatingKnowledge", "Vui lòng đợi AI tạo knowledge cho phase này..."),
+                            t("workspace.roadmap.generatingKnowledge", "Please wait while AI generates knowledge for this phase..."),
                             true,
                             phaseKnowledgePercent
                           ) : null}
                           {isGeneratingKnowledgeQuiz ? renderLoadingPlaceholder(
-                            t("workspace.roadmap.generatingKnowledgeQuiz", "AI đang tạo quiz cho knowledge..."),
+                            t("workspace.roadmap.generatingKnowledgeQuiz", "AI is generating quiz for this knowledge..."),
                             true,
                             phaseKnowledgePercent
                           ) : null}
@@ -696,12 +1003,12 @@ function RoadmapCanvasView2({
                     <div className={`border-t px-4 py-3 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
                       <div className="space-y-1">
                         {isGeneratingPhaseContent ? renderLoadingPlaceholder(
-                          t("workspace.roadmap.generatingKnowledge", "Vui lòng đợi AI tạo knowledge cho phase này..."),
+                          t("workspace.roadmap.generatingKnowledge", "Please wait while AI generates knowledge for this phase..."),
                           true,
                           phaseKnowledgePercent
                         ) : null}
                         {isGeneratingKnowledgeQuiz ? renderLoadingPlaceholder(
-                          t("workspace.roadmap.generatingKnowledgeQuiz", "AI đang tạo quiz cho knowledge..."),
+                          t("workspace.roadmap.generatingKnowledgeQuiz", "AI is generating quiz for this knowledge..."),
                           true,
                           phaseKnowledgePercent
                         ) : null}

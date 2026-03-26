@@ -150,6 +150,7 @@ function RoadmapCanvasView({
   workspaceId = null,
   onCreateRoadmap,
   onCreateRoadmapPhases,
+  onRoadmapPhaseFocus,
   onCreatePhaseKnowledge,
   onCreateKnowledgeQuizForKnowledge,
   onCreatePhasePreLearning,
@@ -160,6 +161,7 @@ function RoadmapCanvasView({
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
   generatingKnowledgeQuizKnowledgeKeys = [],
+  knowledgeQuizRefreshByKey = {},
   generatingPreLearningPhaseIds = [],
   skipPreLearningPhaseIds = [],
   reloadToken = 0,
@@ -189,14 +191,24 @@ function RoadmapCanvasView({
   const [isExpandedClosing, setIsExpandedClosing] = useState(false);
   const [isCreatingRoadmap, setIsCreatingRoadmap] = useState(false);
   const [transform, setTransform] = useState({ x: -CENTER_X + 520, y: -CENTER_Y + 390, scale: 1 });
+  const hasLoadedRoadmapRef = useRef(false);
+  const roadmapRef = useRef(null);
+
+  useEffect(() => {
+    roadmapRef.current = roadmap;
+  }, [roadmap]);
 
   const persistCanvasView = useCallback((roadmapId, canvasView) => {
     if (!roadmapId || !canvasView) return;
     localStorage.setItem(`roadmap_${roadmapId}_canvasView`, canvasView);
   }, []);
 
-  const loadRoadmap = useCallback(async () => {
-    setLoading(true);
+  const loadRoadmap = useCallback(async ({ soft = false } = {}) => {
+    const shouldKeepViewportState = soft && hasLoadedRoadmapRef.current && Boolean(roadmapRef.current);
+    if (!shouldKeepViewportState) {
+      setLoading(true);
+    }
+
     try {
       const response = await getRoadmapGraph({ workspaceId });
       const nextRoadmap = response?.data?.data ?? null;
@@ -214,20 +226,27 @@ function RoadmapCanvasView({
       if (mergedRoadmap?.canvasView) {
         onCanvasViewChange?.(mergedRoadmap.canvasView);
       }
-      const firstKnowledgeIds = nextRoadmap?.phases?.reduce((accumulator, phase) => {
-        if (phase.knowledges?.[0]?.knowledgeId) {
-          accumulator[phase.knowledges[0].knowledgeId] = true;
-        }
-        return accumulator;
-      }, {});
-      setExpandedKnowledges(firstKnowledgeIds ?? {});
-      setPhaseOffsets({});
-      setKnowledgeOffsets({});
-      hasInitializedOverviewRef.current = false;
+
+      if (!shouldKeepViewportState) {
+        const firstKnowledgeIds = nextRoadmap?.phases?.reduce((accumulator, phase) => {
+          if (phase.knowledges?.[0]?.knowledgeId) {
+            accumulator[phase.knowledges[0].knowledgeId] = true;
+          }
+          return accumulator;
+        }, {});
+        setExpandedKnowledges(firstKnowledgeIds ?? {});
+        setPhaseOffsets({});
+        setKnowledgeOffsets({});
+        hasInitializedOverviewRef.current = false;
+      }
+
+      hasLoadedRoadmapRef.current = true;
     } finally {
-      setLoading(false);
+      if (!shouldKeepViewportState) {
+        setLoading(false);
+      }
     }
-  }, [forcedCanvasView, workspaceId, onCanvasViewChange]);
+  }, [forcedCanvasView, onCanvasViewChange, workspaceId]);
 
   useEffect(() => {
     if (!forcedCanvasView) return;
@@ -315,7 +334,7 @@ function RoadmapCanvasView({
   };
 
   useEffect(() => {
-    loadRoadmap();
+    loadRoadmap({ soft: hasLoadedRoadmapRef.current });
   }, [loadRoadmap, reloadToken]);
 
   const layout = useMemo(() => buildLayout(roadmap?.phases ?? [], phaseOffsets, knowledgeOffsets), [knowledgeOffsets, phaseOffsets, roadmap]);
@@ -622,10 +641,10 @@ function RoadmapCanvasView({
         <div className="max-w-xl text-center">
           <Loader2 className={`w-8 h-8 animate-spin mx-auto ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
           <p className={`mt-4 text-lg font-semibold ${fontClass}`}>
-            {t("workspace.roadmap.loading.title", "Đang tải roadmap")}
+            {t("workspace.roadmap.loading.title", "Loading roadmap")}
           </p>
           <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-            {t("workspace.roadmap.loading.description", "Vui lòng đợi AI tạo title, description và cấu trúc roadmap")}
+            {t("workspace.roadmap.loading.description", "Please wait while AI generates roadmap title, description, and structure")}
           </p>
         </div>
       </div>
@@ -643,10 +662,10 @@ function RoadmapCanvasView({
             className="mx-auto"
           />
           <p className={`mt-4 text-lg font-semibold ${fontClass}`}>
-            {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi AI tạo phase")}
+            {t("workspace.roadmap.phaseGenerating.title", "Please wait while AI generates phases")}
           </p>
           <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-            {t("workspace.roadmap.phaseGenerating.description", "Hệ thống đang tạo danh sách phase từ tài liệu đã chọn.")}
+            {t("workspace.roadmap.phaseGenerating.description", "The system is generating phase list from selected materials.")}
           </p>
         </div>
       </div>
@@ -661,10 +680,10 @@ function RoadmapCanvasView({
             <BookOpen className="w-8 h-8" />
           </div>
           <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-            {t("workspace.roadmap.emptyRoadmapTitle", "Chào mừng đến với roadmap")}
+            {t("workspace.roadmap.emptyRoadmapTitle", "Welcome to roadmap")}
           </p>
           <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-            {t("workspace.roadmap.emptyRoadmapDescription", "Tạo phase bằng AI để bắt đầu lộ trình học từ tài liệu của bạn.")}
+            {t("workspace.roadmap.emptyRoadmapDescription", "Generate phases with AI to start your learning roadmap from selected materials.")}
           </p>
           {!hideCreateButton && (
             <div className="mt-6 flex items-center justify-center">
@@ -674,7 +693,7 @@ function RoadmapCanvasView({
                 onClick={() => onCreateRoadmapPhases?.()}
                 className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
               >
-                {t("workspace.roadmap.createPhaseButton", "Tạo phase")}
+                {t("workspace.roadmap.createPhaseButton", "Create phases")}
               </Button>
             </div>
           )}
@@ -694,6 +713,7 @@ function RoadmapCanvasView({
         isDarkMode={isDarkMode}
         fontClass={fontClass}
         selectedPhaseId={selectedPhaseId}
+        onPhaseFocus={onRoadmapPhaseFocus}
         onCreatePhaseKnowledge={onCreatePhaseKnowledge}
         onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
         onCreatePhasePreLearning={onCreatePhasePreLearning}
@@ -702,6 +722,7 @@ function RoadmapCanvasView({
         generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
         generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
         generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
+        knowledgeQuizRefreshByKnowledgeKey={knowledgeQuizRefreshByKey}
         generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
         skipPreLearningPhaseIds={skipPreLearningPhaseIds}
         quizRefreshToken={reloadToken}
@@ -888,6 +909,18 @@ function RoadmapCanvasView({
                 {labels.estimatedDuration}
               </p>
               <p data-no-pan="true" className={`mt-1 text-sm font-medium select-text cursor-text ${fontClass}`}>{roadmap.estimatedDuration}</p>
+              <div className={`mt-2 flex flex-wrap items-center gap-2 text-xs ${fontClass}`}>
+                {Number(roadmap?.estimatedTotalDays) > 0 ? (
+                  <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-700 text-slate-200" : "bg-white border border-slate-200 text-gray-700"}`}>
+                    {t("workspace.roadmap.totalDays", "Total days")}: {Number(roadmap?.estimatedTotalDays)}
+                  </span>
+                ) : null}
+                {Number(roadmap?.estimatedMinutesPerDay) > 0 ? (
+                  <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-700 text-slate-200" : "bg-white border border-slate-200 text-gray-700"}`}>
+                    {t("workspace.roadmap.minutesPerDay", "Minutes/day")}: {Number(roadmap?.estimatedMinutesPerDay)}
+                  </span>
+                ) : null}
+              </div>
             </div>
           </div>
 
@@ -922,6 +955,18 @@ function RoadmapCanvasView({
                 <p data-no-pan="true" className={`mt-3 text-sm leading-6 select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
                   {phase.description}
                 </p>
+                <div className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${fontClass}`}>
+                  {Number(phase?.estimatedDays) > 0 ? (
+                    <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-gray-700"}`}>
+                      {t("workspace.roadmap.phaseEstimatedDays", "Days")}: {Number(phase?.estimatedDays)}
+                    </span>
+                  ) : null}
+                  {Number(phase?.estimatedMinutesPerDay) > 0 ? (
+                    <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-gray-700"}`}>
+                      {t("workspace.roadmap.phaseMinutesPerDay", "Minutes/day")}: {Number(phase?.estimatedMinutesPerDay)}
+                    </span>
+                  ) : null}
+                </div>
                 <div className={`mt-4 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-amber-900/50 bg-amber-950/30" : "border-amber-100 bg-amber-50"}`}>
                   <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
                     {labels.postLearning}
@@ -937,6 +982,15 @@ function RoadmapCanvasView({
 
               {(phase.knowledges ?? []).map((knowledge) => {
                 const isExpanded = Boolean(expandedKnowledges[knowledge.knowledgeId]);
+                const knowledgeTargetDay = Number(knowledge?.targetDayIndex) || 0;
+                const knowledgePlannedMinutes = Number(knowledge?.plannedStudyMinutes) || 0;
+                const knowledgeTimeLabel = knowledgeTargetDay > 0 && knowledgePlannedMinutes > 0
+                  ? `${t("workspace.roadmap.day", "Day")} ${knowledgeTargetDay} • ${knowledgePlannedMinutes} ${t("workspace.roadmap.minutes", "min")}`
+                  : knowledgeTargetDay > 0
+                  ? `${t("workspace.roadmap.day", "Day")} ${knowledgeTargetDay}`
+                  : knowledgePlannedMinutes > 0
+                  ? `${knowledgePlannedMinutes} ${t("workspace.roadmap.minutes", "min")}`
+                  : "";
                 return (
                   <div
                     key={knowledge.knowledgeId}
@@ -962,6 +1016,11 @@ function RoadmapCanvasView({
                               <p data-no-pan="true" className={`mt-1 text-xs leading-5 select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
                                 {knowledge.description}
                               </p>
+                              {knowledgeTimeLabel ? (
+                                <span data-no-pan="true" className={`mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
+                                  {knowledgeTimeLabel}
+                                </span>
+                              ) : null}
                             </div>
                           </div>
                         </button>

@@ -134,6 +134,8 @@ function mapRoadmapStructureToCanvas(structure) {
       phaseId: knowledge?.phaseId,
       title: knowledge?.title || 'Knowledge',
       description: knowledge?.description || '',
+      targetDayIndex: Number(knowledge?.targetDayIndex) || 0,
+      plannedStudyMinutes: Number(knowledge?.plannedStudyMinutes) || 0,
       quizzes: toArray(knowledge?.quizzes).map(mapQuizNode),
       // Structure API currently does not include flashcards.
       flashcards: [],
@@ -200,16 +202,13 @@ export const getRoadmapGraph = async ({ workspaceId = null } = {}) => {
         return buildMockResponse(null);
       }
 
-      const [structureResponse, roadmapQuizResponse] = await Promise.all([
-        api.get(`/roadmaps/${roadmapId}/structure`),
-        api.get(`/quiz/getByRoadmap/${roadmapId}`).catch(() => null),
-      ]);
+      const structureResponse = await api.get(`/roadmaps/${roadmapId}/structure`);
 
       const structurePayload = extractApiPayload(structureResponse);
       const mappedRoadmap = mapRoadmapStructureToCanvas(structurePayload);
 
-      const roadmapQuizPayload = roadmapQuizResponse ? extractApiPayload(roadmapQuizResponse) : [];
-      const enrichedRoadmap = mergeRoadmapQuizzes(mappedRoadmap, roadmapQuizPayload);
+      // Chỉ dùng structure để tránh gọi lặp endpoint quiz theo roadmap.
+      const enrichedRoadmap = mergeRoadmapQuizzes(mappedRoadmap, []);
 
       return buildMockResponse(enrichedRoadmap);
     } catch (error) {
