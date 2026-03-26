@@ -150,6 +150,11 @@ export function getAttemptRemainingSeconds(timeoutAt, fallbackSeconds = 0) {
 export function buildSavePayload(answers) {
   return Object.entries(answers)
     .reduce((payload, [questionId, answerValue]) => {
+      const normalizedQuestionId = Number(questionId);
+      if (!Number.isFinite(normalizedQuestionId)) {
+        return payload;
+      }
+
       const selectedAnswerIds = Array.isArray(answerValue)
         ? answerValue.filter(answerId => answerId != null)
         : [];
@@ -162,12 +167,9 @@ export function buildSavePayload(answers) {
         ? answerValue.selectedAnswerIds.filter(answerId => answerId != null)
         : selectedAnswerIds;
 
-      if (normalizedSelectedAnswerIds.length === 0 && !textAnswer) {
-        return payload;
-      }
-
+      // Keep empty answers in the payload so the backend can clear previously saved data.
       payload.push({
-        questionId: Number(questionId),
+        questionId: normalizedQuestionId,
         selectedAnswerIds: normalizedSelectedAnswerIds,
         textAnswer: textAnswer || null,
       });

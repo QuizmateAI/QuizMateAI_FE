@@ -746,7 +746,8 @@
     "tabs": {
       "all": "All",
       "workspace": "My workspaces",
-      "group": "My groups"
+      "group": "My groups",
+      "community": "Community"
     },
     "view": {
       "grid": "Grid view",
@@ -755,7 +756,8 @@
     "actions": {
       "create": "Create new",
       "createWorkspace": "Create new workspace",
-      "createGroup": "Create group"
+      "createGroup": "Create group",
+      "share": "Share"
     },
     "search": {
       "workspacePlaceholder": "Search workspaces...",
@@ -881,6 +883,34 @@
       "subject": "Subject",
       "edit": "Edit",
       "confirmDeleteName": "You are about to delete"
+    },
+    "community": {
+      "title": "Shared learning spaces",
+      "subtitle": "Discover personal and group workspaces that are being cloned the most, then turn them into your own private study workspace.",
+      "recommendationsTitle": "Recommended for you",
+      "trendingTitle": "Trending now",
+      "clone": "Clone to me",
+      "cloned": "Already cloned",
+      "shareSuccess": "Shared to community successfully.",
+      "shareError": "Unable to share this item right now.",
+      "cloneSuccess": "Personal workspace created from the community share.",
+      "cloneError": "Unable to clone this community share right now.",
+      "owner": "Shared by {{owner}}",
+      "starCount": "{{count}} stars",
+      "quizCount": "{{count}} quizzes",
+      "materialCount": "{{count}} materials",
+      "emptyDescription": "No extra description was provided for this share.",
+      "empty": "No community shares yet. Share a workspace to seed the feed.",
+      "types": {
+        "WORKSPACE": "Workspace",
+        "QUIZ": "Quiz",
+        "MATERIAL": "Material",
+        "ROADMAP": "Roadmap"
+      },
+      "kinds": {
+        "INDIVIDUAL": "Personal",
+        "GROUP": "Group"
+      }
     },
     "pagination": {
       "showing": "Showing {{start}} - {{end}} of {{total}}",
@@ -1403,7 +1433,15 @@
       "examModeLabel": "Exam Type",
       "examModeType1": "Timed Exam",
       "examModeType2": "Sequential Timed Exam",
+      "examModeType1Short": "Timed total",
+      "examModeType2Short": "Per question",
       "minutes": "min",
+      "practice": "Practice",
+      "exam": "Exam",
+      "chooseMode": "Choose a quiz mode",
+      "chooseModeDescription": "How do you want to start this quiz?",
+      "confirmPractice": "Start this quiz in practice mode?",
+      "confirmExam": "Start this quiz in exam mode?",
       "addQuestion": "Add question",
       "totalQuestions": "Total questions",
       "maxScore": "Max score",
@@ -1453,7 +1491,22 @@
         "delete": "Delete",
         "deleting": "Deleting..."
       },
+      "communityPublic": "Public",
+      "communityPublicLong": "Published to community",
+      "privateShort": "Private",
+      "privateLong": "Currently private",
+      "makePublic": "Publish quiz to community",
+      "makePublicShort": "Publish",
+      "makePrivate": "Move quiz back to private",
+      "makePrivateShort": "Make private",
+      "myAttemptedTrue": "Attempted",
+      "myAttemptedFalse": "Not attempted",
+      "myPassedTrue": "Passed",
+      "myPassedFalse": "Not passed",
+      "sharedToCommunitySuccess": "Quiz shared to the community.",
+      "unsharedFromCommunitySuccess": "Quiz moved back to private.",
       "deleteQuestion": "Delete",
+      "deleteFail": "Unable to delete this quiz right now.",
       "loading": "Loading quizzes...",
       "types": {
         "multipleChoice": "Multiple Choice",
@@ -1489,11 +1542,93 @@
         "PROCESSING": "Processing",
         "ERROR": "Error"
       },
+      "activeReadyLabel": "Ready to take",
       "statusFilter": {
         "all": "All",
         "ACTIVE": "Active",
         "DRAFT": "Draft",
-        "COMPLETED": "Completed"
+        "COMPLETED": "Done"
+      },
+      "communityRecommendations": {
+        "title": "Matching quizzes for this workspace",
+        "description": "Quizmate AI found a few community quizzes that fit the current learning behavior here. If one looks right, you can clone it straight into this workspace.",
+        "defaultQuizTitle": "Community quiz",
+        "cloneAction": "Clone to this workspace",
+        "cloneSuccess": "Quiz cloned into this workspace.",
+        "cloneError": "Unable to clone this quiz right now.",
+        "cloneCount": "{{count}} clones",
+        "durationMinutes": "{{count}} min",
+        "recommendationCount": "{{count}} matching quizzes",
+        "moreCount": "+{{count}} more suggestions",
+        "bucket": {
+          "buildFoundation": "Build foundation",
+          "fixWeakAreas": "Fix weak areas",
+          "continueLearningPath": "Continue learning path",
+          "challengeYourself": "Challenge yourself"
+        },
+        "metrics": {
+          "title": "Recommendation effectiveness",
+          "description": "Thirty-day funnel for quizzes recommended in this workspace.",
+          "windowDays": "Last {{count}} days",
+          "impressions": "Impressions",
+          "clones": "Clones",
+          "started": "Started",
+          "passed": "Passed",
+          "impressionToClone": "Impression -> Clone",
+          "cloneToStarted": "Clone -> Started",
+          "startedToPassed": "Started -> Passed",
+          "comparison": {
+            "title": "Offline lexical vs semantic comparison",
+            "description": "Based on served recommendation snapshots: how many positive outcomes lexical-only would keep, and how many semantic signals actually rescued.",
+            "requests": "{{count}} measured requests",
+            "cloneLabel": "Clone",
+            "startedLabel": "Started",
+            "passedLabel": "Passed",
+            "hybrid": "Hybrid",
+            "lexicalShadow": "Lexical shadow",
+            "semanticRescued": "Semantic rescued",
+            "captureRate": "Lexical keeps"
+          },
+          "samples": {
+            "title": "Recent sample requests",
+            "description": "Inspect concrete requests to see which quizzes semantic rescued, what the lexical rank was, and how far each one converted.",
+            "requests": "{{count}} recent requests",
+            "filters": {
+              "all": "All",
+              "rescued": "Semantic rescued only",
+              "converted": "Converted only"
+            },
+            "requestLabel": "Request",
+            "expandHint": "Open for details",
+            "servedCount": "{{count}} quizzes served",
+            "cloneCount": "{{count}} clones",
+            "startedCount": "{{count}} started",
+            "passedCount": "{{count}} passed",
+            "rescued": "Semantic rescued",
+            "retained": "Lexical also retained",
+            "servedRank": "Served #{{count}}",
+            "lexicalRank": "Lexical {{rank}}",
+            "lexicalOutsideTop": "outside lexical top",
+            "semanticFit": "Semantic fit {{value}}",
+            "semanticSimilarity": "Similarity {{value}}",
+            "rescuedExplanation": "Semantic lifted this quiz because lexical rank {{lexicalRank}} would sit outside the {{servedCount}} served slots.",
+            "retainedExplanation": "This quiz stayed inside lexical top at rank {{lexicalRank}}, so lexical-only could also have shown it.",
+            "convertPassed": "Downstream outcome: cloned, started, and passed.",
+            "convertStarted": "Downstream outcome: cloned and started, but no pass event yet.",
+            "convertCloned": "Downstream outcome: cloned, but no start event yet.",
+            "convertNone": "No downstream conversion has been recorded for this quiz yet.",
+            "emptyRescued": "No requests with semantic rescued candidates were found in this time window.",
+            "emptyConverted": "No requests with downstream conversion were found in this time window.",
+            "hybridScore": "Hybrid score",
+            "lexicalScore": "Lexical score",
+            "outcome": {
+              "none": "Not converted",
+              "cloned": "Cloned",
+              "started": "Started",
+              "passed": "Passed"
+            }
+          }
+        }
       },
       "validation": {
         "nameRequired": "Please enter a quiz name.",
@@ -1740,6 +1875,9 @@
         "aiAssessment": "AI Assessment",
         "backToQuiz": "Back to Quiz",
         "backToScore": "Back to Score",
+        "assessmentSection": "AI insights",
+        "recommendationsSection": "Next recommendations",
+        "actionsSection": "Next actions",
         "questionList": "Question list",
         "noReviewData": "No detailed data available to review this attempt."
       }

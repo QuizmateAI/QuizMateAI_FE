@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal, Download, PenLine } from "lucide-react";
+import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal, Download, PenLine, Share2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
 import { renameMaterial } from "@/api/MaterialAPI";
@@ -64,6 +64,11 @@ function canDeleteSource(source) {
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
+function canShareSource(source) {
+  const status = source?.status?.toUpperCase();
+  return status === "ACTIVE";
+}
+
 // Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
 function SourcesPanel({ 
   isDarkMode = false, 
@@ -71,6 +76,7 @@ function SourcesPanel({
   onAddSource, 
   onRemoveSource, 
   onRemoveMultiple, 
+  onShareSource,
   onSourceUpdated, 
   isCollapsed = false, 
   onToggleCollapse,
@@ -506,6 +512,23 @@ function SourcesPanel({
                         <div className={`absolute right-0 top-8 z-[120] w-36 rounded-lg shadow-lg border py-1 ${
                           isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
                         }`}>
+                          {canShareSource(source) && onShareSource ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(null);
+                                setHoveredId(null);
+                                onShareSource(source);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                isDarkMode ? "text-slate-200 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50"
+                              } ${fontClass}`}
+                            >
+                              <Share2 className="w-4 h-4" />
+                              {t("home.actions.share", "Share")}
+                            </button>
+                          ) : null}
                           {isActive && source.storageURL && (
                             <button
                               type="button"

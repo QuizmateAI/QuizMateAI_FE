@@ -1,6 +1,7 @@
 import { useReducer, useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import QuestionCard from './QuestionCard';
@@ -120,6 +121,7 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
   const [isFinished, setIsFinished] = useState(false);
   const [nextLoading, setNextLoading] = useState(false);
   const [nextError, setNextError] = useState('');
+  const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   // Track which question index has already been handled on timeout
   const handledTimeUpForIndexRef = useRef(-1);
   const submittingRef = useRef(false);
@@ -242,21 +244,7 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
     const selected = qId ? answers[qId] : undefined;
 
     if (currentIndex >= total - 1) {
-      const saveResult = await saveQuestionAnswer(qId, selected);
-      if (saveResult && !saveResult.ok) {
-        setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
-        setNextLoading(false);
-        return;
-      }
-      if (!submittingRef.current) {
-        submittingRef.current = true;
-        setIsFinished(true);
-        const submitOk = await onSubmit?.();
-        if (!submitOk) {
-          submittingRef.current = false;
-          setIsFinished(false);
-        }
-      }
+      setConfirmSubmitOpen(true);
       setNextLoading(false);
       return;
     }
@@ -270,6 +258,38 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
       }
     });
   }, [currentIndex, total, onSubmit, currentQuestion?.id, answers, saveQuestionAnswer, t]);
+
+  const handleConfirmSubmit = useCallback(async () => {
+    if (nextLoading) return;
+
+    setNextLoading(true);
+    setNextError('');
+
+    const qId = currentQuestion?.id;
+    const selected = qId ? answers[qId] : undefined;
+    const saveResult = await saveQuestionAnswer(qId, selected);
+
+    if (saveResult && !saveResult.ok) {
+      setNextError(saveResult?.error?.message || t('workspace.quiz.examActions.saveAnswerFailed', 'Failed to save answer. Please try again.'));
+      setNextLoading(false);
+      return;
+    }
+
+    if (!submittingRef.current) {
+      submittingRef.current = true;
+      setIsFinished(true);
+      const submitOk = await onSubmit?.();
+      if (!submitOk) {
+        submittingRef.current = false;
+        setIsFinished(false);
+        setNextLoading(false);
+        return;
+      }
+    }
+
+    setConfirmSubmitOpen(false);
+    setNextLoading(false);
+  }, [answers, currentQuestion?.id, nextLoading, onSubmit, saveQuestionAnswer, t]);
 
   if (isFinished) {
     return (
@@ -320,6 +340,30 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
       {(nextError || submitError) && (
         <p className="text-sm text-red-600 dark:text-red-400 mt-2 text-right">{nextError || submitError}</p>
       )}
+
+      <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
+        <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-700">
+          <DialogHeader>
+            <DialogTitle>{t('workspace.quiz.examActions.confirmSubmitTitle', 'Stop and submit your exam?')}</DialogTitle>
+            <DialogDescription>
+              {t('workspace.quiz.examActions.confirmSubmitDescription', 'Your current answers will be submitted immediately.')}
+            </DialogDescription>
+          </DialogHeader>
+          {(nextError || submitError) && (
+            <p className="text-sm text-red-600 dark:text-red-400">{nextError || submitError}</p>
+          )}
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setConfirmSubmitOpen(false)} disabled={nextLoading}>
+              {t('workspace.quiz.common.cancel', 'Cancel')}
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleConfirmSubmit} disabled={nextLoading}>
+              {nextLoading
+                ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t('workspace.quiz.examActions.processingAction', 'Processing...')}</span>
+                : t('workspace.quiz.examActions.submitButton', 'Submit Exam')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -27,13 +27,14 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { createRoadmapForWorkspace, getRoadmapGraph, getRoadmapStructureById } from "@/api/RoadmapAPI";
 import { generateRoadmapKnowledgeQuiz, generateRoadmapPhaseContent, generateRoadmapPhases, generateRoadmapPreLearning } from "@/api/AIAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
-import { getQuizzesByScope } from "@/api/QuizAPI";
+import { getQuizzesByScope, shareQuizToCommunity } from "@/api/QuizAPI";
 import { getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 
 const VIEW_TO_PATH = {
 	roadmap: "roadmap",
 	quiz: "quiz",
+	communityQuiz: "quiz/community",
 	flashcard: "flashcard",
 	mockTest: "mock-test",
 	postLearning: "post-learning",
@@ -2371,6 +2372,19 @@ function WorkspacePage() {
 		setActiveView("quiz");
 	}, []);
 
+	const handleShareQuiz = useCallback(async (quiz) => {
+		const quizId = Number(quiz?.quizId);
+		if (!Number.isInteger(quizId) || quizId <= 0) return;
+
+		const shouldShare = quiz?.communityShared !== true;
+		await shareQuizToCommunity(quizId, shouldShare);
+		showSuccess(
+			shouldShare
+				? t("workspace.quiz.sharedToCommunitySuccess", "Đã chia sẻ quiz lên cộng đồng.")
+				: t("workspace.quiz.unsharedFromCommunitySuccess", "Đã chuyển quiz về private.")
+		);
+	}, [showSuccess, t]);
+
 	// Xá»­ lÃ½ xem chi tiáº¿t quiz â€” khi click vÃ o quiz trong danh sÃ¡ch
 	const handleViewQuiz = useCallback((quiz, options = null) => {
 		const backTarget = options?.backTarget || null;
@@ -2703,6 +2717,7 @@ function WorkspacePage() {
 									onViewQuiz={handleViewQuiz}
 									onEditQuiz={handleEditQuiz}
 									onSaveQuiz={handleSaveQuiz}
+									onShareQuiz={handleShareQuiz}
 									selectedFlashcard={selectedFlashcard}
 									onViewFlashcard={handleViewFlashcard}
 									onDeleteFlashcard={handleDeleteFlashcard}
@@ -2792,7 +2807,7 @@ function WorkspacePage() {
 											onAddSource={handleUploadClickSafe}
 											onRemoveSource={handleRemoveSource}
 											onRemoveMultiple={handleRemoveMultipleSources}
-											selectedIds={selectedSourceIds}
+												selectedIds={selectedSourceIds}
 											onSelectionChange={setSelectedSourceIds}
 											onSourceUpdated={(updatedSource) => {
 												setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
@@ -2866,6 +2881,7 @@ function WorkspacePage() {
 									onViewQuiz={handleViewQuiz}
 									onEditQuiz={handleEditQuiz}
 									onSaveQuiz={handleSaveQuiz}
+									onShareQuiz={handleShareQuiz}
 									selectedFlashcard={selectedFlashcard}
 									onViewFlashcard={handleViewFlashcard}
 									onDeleteFlashcard={handleDeleteFlashcard}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/Components/ui/input';
 import { getCorrectTextAnswers } from '../utils/quizTransform';
@@ -35,7 +35,31 @@ function normalizeTextValue(value) {
     .toLowerCase();
 }
 
-export default function QuestionCard({
+function isSameAnswerValue(left, right) {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    const leftValues = Array.isArray(left) ? left : [];
+    const rightValues = Array.isArray(right) ? right : [];
+    if (leftValues.length !== rightValues.length) return false;
+    return leftValues.every((value, index) => value === rightValues[index]);
+  }
+
+  return String(left ?? '') === String(right ?? '');
+}
+
+function areQuestionCardPropsEqual(prevProps, nextProps) {
+  return (
+    prevProps.question === nextProps.question
+    && prevProps.questionNumber === nextProps.questionNumber
+    && prevProps.totalQuestions === nextProps.totalQuestions
+    && prevProps.showResult === nextProps.showResult
+    && prevProps.showExplanation === nextProps.showExplanation
+    && prevProps.disabled === nextProps.disabled
+    && isSameAnswerValue(prevProps.answerValue, nextProps.answerValue)
+    && isSameAnswerValue(prevProps.selectedAnswers, nextProps.selectedAnswers)
+  );
+}
+
+const QuestionCard = memo(function QuestionCard({
   question, questionNumber, totalQuestions,
   answerValue, selectedAnswers = [], onSelectAnswer, onTextAnswerChange,
   showResult = false, showExplanation = false, disabled = false,
@@ -180,4 +204,6 @@ export default function QuestionCard({
       )}
     </div>
   );
-}
+}, areQuestionCardPropsEqual);
+
+export default QuestionCard;

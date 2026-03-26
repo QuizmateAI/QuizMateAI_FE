@@ -746,7 +746,8 @@
     "tabs": {
       "all": "Tất cả",
       "workspace": "Không gian học tập của tôi",
-      "group": "Nhóm của tôi"
+      "group": "Nhóm của tôi",
+      "community": "Cộng đồng"
     },
     "view": {
       "grid": "Chế độ lưới",
@@ -755,7 +756,8 @@
     "actions": {
       "create": "Tạo mới",
       "createWorkspace": "Tạo không gian học tập mới",
-      "createGroup": "Tạo nhóm"
+      "createGroup": "Tạo nhóm",
+      "share": "Chia sẻ"
     },
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
@@ -881,6 +883,34 @@
       "subject": "Môn học",
       "edit": "Chỉnh sửa",
       "confirmDeleteName": "Bạn sắp xóa"
+    },
+    "community": {
+      "title": "Không gian học tập được chia sẻ",
+      "subtitle": "Khám phá các workspace cá nhân hoặc nhóm đang được clone nhiều nhất, rồi biến chúng thành workspace riêng của bạn.",
+      "recommendationsTitle": "Gợi ý dành cho bạn",
+      "trendingTitle": "Đang thịnh hành",
+      "clone": "Clone về máy học",
+      "cloned": "Đã clone",
+      "shareSuccess": "Đã chia sẻ lên cộng đồng.",
+      "shareError": "Hiện chưa thể chia sẻ mục này.",
+      "cloneSuccess": "Đã tạo workspace cá nhân từ community share.",
+      "cloneError": "Hiện chưa thể clone community share này.",
+      "owner": "Chia sẻ bởi {{owner}}",
+      "starCount": "{{count}} sao",
+      "quizCount": "{{count}} quiz",
+      "materialCount": "{{count}} tài liệu",
+      "emptyDescription": "Mục chia sẻ này chưa có mô tả thêm.",
+      "empty": "Chưa có community share nào. Hãy chia sẻ một workspace để bắt đầu.",
+      "types": {
+        "WORKSPACE": "Workspace",
+        "QUIZ": "Quiz",
+        "MATERIAL": "Tài liệu",
+        "ROADMAP": "Roadmap"
+      },
+      "kinds": {
+        "INDIVIDUAL": "Cá nhân",
+        "GROUP": "Nhóm"
+      }
     },
     "pagination": {
       "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",
@@ -1395,13 +1425,21 @@
       "timerMode": "Chế độ tổng thời gian",
       "timerModeHintOn": "Tất cả câu hỏi dùng chung thời gian tổng",
       "timerModeHintOff": "Mỗi câu hỏi có thời gian riêng",
-      "examModeLabel": "Loại Exam",
-      "examModeType1": "Exam giới hạn thời gian tổng",
-      "examModeType2": "Exam theo từng câu",
-      "minutes": "phút",
-      "addQuestion": "Thêm câu hỏi",
-      "totalQuestions": "Tổng số câu hỏi",
-      "maxScore": "Tổng điểm",
+        "examModeLabel": "Loại Exam",
+        "examModeType1": "Exam giới hạn thời gian tổng",
+        "examModeType2": "Exam theo từng câu",
+        "examModeType1Short": "Giới hạn thời gian tổng",
+        "examModeType2Short": "Theo từng câu",
+        "minutes": "phút",
+        "practice": "Luyện tập",
+        "exam": "Thi",
+        "chooseMode": "Chọn chế độ làm quiz",
+        "chooseModeDescription": "Bạn muốn bắt đầu quiz này ở chế độ nào?",
+        "confirmPractice": "Xác nhận bắt đầu ở chế độ luyện tập?",
+        "confirmExam": "Xác nhận bắt đầu ở chế độ thi?",
+        "addQuestion": "Thêm câu hỏi",
+        "totalQuestions": "Tổng số câu hỏi",
+        "maxScore": "Tổng điểm",
       "navigator": {
         "title": "Điều hướng câu hỏi",
         "pts": "điểm",
@@ -1442,14 +1480,29 @@
       "correctAnswer": "Đáp án đúng",
       "correctAnswerLabel": "Đáp án đúng",
       "deleteQuiz": "Xóa quiz",
-      "actionButtons": {
-        "practice": "Luyện tập",
-        "exam": "Thi",
-        "delete": "Xóa",
-        "deleting": "Đang xóa..."
-      },
-      "deleteQuestion": "Xóa",
-      "loading": "Đang tải danh sách quiz...",
+        "actionButtons": {
+          "practice": "Luyện tập",
+          "exam": "Thi",
+          "delete": "Xóa",
+          "deleting": "Đang xóa..."
+        },
+        "communityPublic": "Công khai",
+        "communityPublicLong": "Đã Công khai  lên cộng đồng",
+        "privateShort": "Riêng tư",
+        "privateLong": "Đang ở chế độ riêng tư",
+        "makePublic": "Đưa quiz lên cộng đồng",
+        "makePublicShort": "Công khai",
+        "makePrivate": "Chuyển quiz về riêng tư",
+        "makePrivateShort": "Riêng tư",
+        "myAttemptedTrue": "Đã làm",
+        "myAttemptedFalse": "Chưa làm",
+        "myPassedTrue": "Đã đậu",
+        "myPassedFalse": "Chưa đậu",
+        "sharedToCommunitySuccess": "Đã chia sẻ quiz lên cộng đồng.",
+        "unsharedFromCommunitySuccess": "Đã chuyển quiz về riêng tư.",
+        "deleteQuestion": "Xóa",
+        "deleteFail": "Không thể xóa quiz lúc này.",
+        "loading": "Đang tải danh sách quiz...",
       "types": {
         "multipleChoice": "Trắc nghiệm một đáp án",
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
@@ -1484,11 +1537,93 @@
         "PROCESSING": "Đang xử lý",
         "ERROR": "Lỗi"
       },
+      "activeReadyLabel": "Quiz có thể làm",
       "statusFilter": {
         "all": "Tất cả",
         "ACTIVE": "Đang hoạt động",
         "DRAFT": "Bản nháp",
-        "COMPLETED": "Đã hoàn thành"
+        "COMPLETED": "Đã làm"
+      },
+      "communityRecommendations": {
+        "title": "Quiz phù hợp cho workspace này",
+        "description": "Quizmate AI đã tìm thấy vài quiz cộng đồng khá khớp với hành vi học hiện tại. Nếu thấy hợp, bạn có thể clone thẳng về workspace này.",
+        "defaultQuizTitle": "Quiz cộng đồng",
+        "cloneAction": "Clone về workspace này",
+        "cloneSuccess": "Đã clone quiz vào workspace này.",
+        "cloneError": "Clone quiz thất bại.",
+        "cloneCount": "{{count}} lượt clone",
+        "durationMinutes": "{{count}} phút",
+        "recommendationCount": "{{count}} quiz phù hợp",
+        "moreCount": "+{{count}} gợi ý khác",
+        "bucket": {
+          "buildFoundation": "Tiếp tục làm quen",
+          "fixWeakAreas": "Củng cố điểm yếu",
+          "continueLearningPath": "Đi tiếp lộ trình",
+          "challengeYourself": "Tăng độ khó"
+        },
+        "metrics": {
+          "title": "Hiệu quả gợi ý quiz",
+          "description": "Funnel 30 ngày gần đây của quiz được gợi ý trong workspace này.",
+          "windowDays": "{{count}} ngày gần đây",
+          "impressions": "Impression",
+          "clones": "Clone",
+          "started": "Bắt đầu làm",
+          "passed": "Đã đậu",
+          "impressionToClone": "Impression -> Clone",
+          "cloneToStarted": "Clone -> Bắt đầu",
+          "startedToPassed": "Bắt đầu -> Đậu",
+          "comparison": {
+            "title": "So sánh offline lexical vs semantic",
+            "description": "Dựa trên request snapshot đã serve: lexical-only sẽ giữ lại được bao nhiêu positive outcome, và semantic đã cứu thêm bao nhiêu.",
+            "requests": "{{count}} request đã đo",
+            "cloneLabel": "Clone",
+            "startedLabel": "Bắt đầu",
+            "passedLabel": "Đậu",
+            "hybrid": "Hybrid",
+            "lexicalShadow": "Lexical shadow",
+            "semanticRescued": "Semantic cứu thêm",
+            "captureRate": "Lexical giữ lại"
+          },
+          "samples": {
+            "title": "Sample requests gần đây",
+            "description": "Soi từng request cụ thể để xem quiz nào được semantic kéo lên, lexical rank bao nhiêu và conversion đi đến stage nào.",
+            "requests": "{{count}} request gần đây",
+            "filters": {
+              "all": "Tất cả",
+              "rescued": "Semantic rescued only",
+              "converted": "Converted only"
+            },
+            "requestLabel": "Request",
+            "expandHint": "Mở để xem chi tiết",
+            "servedCount": "{{count}} quiz đã serve",
+            "cloneCount": "{{count}} clone",
+            "startedCount": "{{count}} bắt đầu",
+            "passedCount": "{{count}} đậu",
+            "rescued": "Semantic rescued",
+            "retained": "Lexical cũng giữ lại",
+            "servedRank": "Served #{{count}}",
+            "lexicalRank": "Lexical {{rank}}",
+            "lexicalOutsideTop": "ngoài top lexical",
+            "semanticFit": "Semantic fit {{value}}",
+            "semanticSimilarity": "Similarity {{value}}",
+            "rescuedExplanation": "Quiz này được semantic kéo lên vì lexical rank {{lexicalRank}} sẽ nằm ngoài {{servedCount}} slot đã serve.",
+            "retainedExplanation": "Quiz này vẫn nằm trong top lexical ở rank {{lexicalRank}}, nên lexical-only cũng có thể hiển thị nó.",
+            "convertPassed": "Downstream outcome: đã clone, bắt đầu làm và đậu.",
+            "convertStarted": "Downstream outcome: đã clone và bắt đầu làm, nhưng chưa có pass event.",
+            "convertCloned": "Downstream outcome: đã clone, nhưng chưa có start event.",
+            "convertNone": "Chưa ghi nhận downstream conversion cho quiz này.",
+            "emptyRescued": "Chưa có request nào có semantic rescued trong khoảng thời gian này.",
+            "emptyConverted": "Chưa có request nào có downstream conversion trong khoảng thời gian này.",
+            "hybridScore": "Hybrid score",
+            "lexicalScore": "Lexical score",
+            "outcome": {
+              "none": "Chưa convert",
+              "cloned": "Đã clone",
+              "started": "Đã bắt đầu",
+              "passed": "Đã đậu"
+            }
+          }
+        }
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
@@ -1736,6 +1871,9 @@
         "aiAssessment": "Đánh giá của AI",
         "backToQuiz": "Quay lại Quiz",
         "backToScore": "Quay lại điểm",
+        "assessmentSection": "Nhận xét của Quizmate AI",
+        "recommendationsSection": "Gợi ý tiếp theo",
+        "actionsSection": "Hành động tiếp theo",
         "questionList": "Danh sách câu",
         "noReviewData": "Không có dữ liệu chi tiết để review bài làm."
       }

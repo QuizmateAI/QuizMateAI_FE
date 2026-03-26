@@ -18,6 +18,7 @@ export default function QuestionNavPanel({
   onJumpToQuestion,
   onSave,
   onSubmit,
+  onRequestSubmit,
   currentPage = 1,
   onPageChange,
   isSaveLoading = false,
@@ -36,6 +37,7 @@ export default function QuestionNavPanel({
   const safeNavPage = Math.min(Math.max(1, currentPage), totalPages);
   const navStartIndex = (safeNavPage - 1) * itemsPerPage;
   const navQuestions = questions.slice(navStartIndex, navStartIndex + itemsPerPage);
+  const submitHandler = onRequestSubmit || onSubmit;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md shadow-slate-900/10 dark:shadow-blue-900/50 border border-slate-200 dark:border-slate-700 sticky top-4">
@@ -112,7 +114,7 @@ export default function QuestionNavPanel({
             {saveMessage}
           </p>
         )}
-        <Button onClick={onSubmit} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white" disabled={isSubmitLoading}>
+        <Button onClick={submitHandler} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white" disabled={isSubmitLoading}>
           {isSubmitLoading
             ? <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{t?.('workspace.quiz.examActions.submitting', 'Submitting...') || 'Submitting...'}</span>
             : (t?.('workspace.quiz.examActions.submitButton', 'Submit Exam') || 'Submit Exam')}
