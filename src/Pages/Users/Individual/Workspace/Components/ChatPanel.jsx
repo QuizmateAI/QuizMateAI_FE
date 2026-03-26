@@ -18,7 +18,7 @@ import PostLearningListView from "./PostLearningListView";
 import CreatePostLearningForm from "./CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onCreatePhaseKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onCreatePhaseKnowledge, onCreateKnowledgeQuizForKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingKnowledgeQuizKnowledgeKeys = [], generatingPreLearningPhaseIds = [], skipPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -74,6 +74,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             onCreateRoadmap={onCreateRoadmap}
             onCreateRoadmapPhases={onCreateRoadmapPhases}
             onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+            onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
             onCreatePhasePreLearning={onCreatePhasePreLearning}
             isStudyNewRoadmap={isStudyNewRoadmap}
             onViewQuiz={onViewQuiz}
@@ -81,7 +82,9 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
             generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
             generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+            generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
             generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+            skipPreLearningPhaseIds={skipPreLearningPhaseIds}
             reloadToken={roadmapReloadToken}
             createdItems={createdRoadmaps}
             workspaceId={workspaceId}

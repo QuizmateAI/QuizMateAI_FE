@@ -175,13 +175,14 @@ function QuizListView({
       sourcePhaseId,
     };
   }, [contextId, contextType, location.pathname, resolvedReturnToPath]);
-  const isRoadmapQuizListContext = useMemo(() => {
-    const normalizedContextType = String(contextType || "").toUpperCase();
-    const isRoadmapContextType = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContextType);
-    const isRoadmapPath = /\/workspace\/\d+\/roadmap(?:\/|$|\?)/.test(String(resolvedReturnToPath || ""))
-      || /\/workspace\/\d+\/roadmap(?:\/|$)/.test(String(location.pathname || ""));
-    return isRoadmapContextType || isRoadmapPath;
-  }, [contextType, location.pathname, resolvedReturnToPath]);
+  const isRoadmapQuiz = useCallback((quiz) => {
+    const normalizedContext = String(quiz?.contextType || "").toUpperCase();
+    if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContext)) return true;
+    if (Number(quiz?.roadmapId) > 0) return true;
+    if (Number(quiz?.phaseId) > 0) return true;
+    if (Number(quiz?.knowledgeId) > 0) return true;
+    return false;
+  }, []);
 
   // Lấy danh sách quiz từ API theo context hiện tại (workspace/roadmap/phase/knowledge)
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
@@ -439,7 +440,7 @@ function QuizListView({
                       <div className="flex items-center justify-end gap-2.5">
                         {quiz.status === "ACTIVE" && (
                           <>
-                            {!isRoadmapQuizListContext ? (
+                            {!isRoadmapQuiz(quiz) ? (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.quizId, mode: 'practice' }); }}
                                 className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-blue-950/40 text-blue-300" : "hover:bg-blue-100 text-blue-700"}`}

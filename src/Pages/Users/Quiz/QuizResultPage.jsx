@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
 import { getAttemptResult, getQuizFull, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
 import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
@@ -314,6 +315,49 @@ export default function QuizResultPage() {
     }
     return reviewQuestions.filter((question) => String(question?.gradingStatus || '').toUpperCase() === 'PENDING').length;
   }, [result?.pendingGradingQuestionCount, reviewQuestions]);
+  const isGradingPending = pendingGradingCount > 0;
+
+  const refreshAttemptResult = useCallback(async () => {
+    if (!attemptId) return;
+    try {
+      const res = await getAttemptResult(attemptId);
+      const latestResult = res?.data || null;
+      if (latestResult) {
+        setResult(latestResult);
+      }
+      return latestResult;
+    } catch (error) {
+      console.error('Failed to refresh attempt result from grading event:', error);
+    }
+    return null;
+  }, [attemptId]);
+
+  const handleQuizAttemptGrading = useCallback((event) => {
+    if (!event) return;
+    const eventAttemptId = Number(event?.attemptId);
+    if (!Number.isInteger(eventAttemptId) || eventAttemptId !== Number(attemptId)) return;
+
+    const pendingCount = Number(event?.pendingGradingQuestionCount);
+    const status = String(event?.status || '').toUpperCase();
+    const isDone = event?.allGradingFinished === true
+      || (Number.isInteger(pendingCount) && pendingCount <= 0)
+      || status === 'COMPLETED'
+      || status === 'COMPLETED_WITH_ERRORS';
+
+    if (isDone) {
+      void refreshAttemptResult();
+    }
+  }, [attemptId, refreshAttemptResult]);
+
+  const wsWorkspaceId = Number.isInteger(normalizedWorkspaceId) && normalizedWorkspaceId > 0
+    ? normalizedWorkspaceId
+    : undefined;
+
+  const { isConnected: isQuizGradingSocketConnected } = useWebSocket({
+    workspaceId: wsWorkspaceId,
+    enabled: Boolean(attemptId) && isGradingPending,
+    onQuizAttemptGrading: handleQuizAttemptGrading,
+  });
 
   const handleBack = useCallback(() => {
     if (directQuizDetailBackPath) {
@@ -414,15 +458,11 @@ export default function QuizResultPage() {
     if (pendingGradingCount <= 0) return undefined;
 
     let cancelled = false;
+    const pollingIntervalMs = isQuizGradingSocketConnected ? 8000 : 2500;
     pendingResultPollingRef.current = globalThis.setInterval(async () => {
       try {
-        const res = await getAttemptResult(attemptId);
+        const latestResult = await refreshAttemptResult();
         if (cancelled) return;
-
-        const latestResult = res?.data || null;
-        if (!latestResult) return;
-        setResult(latestResult);
-
         const latestPending = Number(latestResult?.pendingGradingQuestionCount);
         if (Number.isInteger(latestPending) && latestPending <= 0 && pendingResultPollingRef.current) {
           globalThis.clearInterval(pendingResultPollingRef.current);
@@ -433,7 +473,7 @@ export default function QuizResultPage() {
           console.error('Failed polling attempt result while grading pending:', error);
         }
       }
-    }, 2500);
+    }, pollingIntervalMs);
 
     return () => {
       cancelled = true;
@@ -442,7 +482,7 @@ export default function QuizResultPage() {
         pendingResultPollingRef.current = null;
       }
     };
-  }, [attemptId, pendingGradingCount, result]);
+  }, [attemptId, pendingGradingCount, result, refreshAttemptResult, isQuizGradingSocketConnected]);
 
   if (loading) {
     return (
@@ -478,16 +518,23 @@ export default function QuizResultPage() {
   const scoreValue = Number(result.maxScore) > 0 ? `${result.score ?? 0}/${result.maxScore}` : `${result.score ?? 0}`;
   const correctValue = `${correctQuestion}/${totalQuestion}`;
   const answeredValue = `${result.answeredQuestion ?? 0}/${totalQuestion}`;
+  const gradingProgressText = t('workspace.quiz.result.gradingProgress', 'Đang chấm: {{pending}}/{{total}}', {
+    pending: pendingGradingCount,
+    total: totalQuestion,
+  });
   const timeTakenSeconds = getTimeTakenSeconds(result.startedAt, result.completedAt, result.timeoutAt);
   const totalPages = Math.max(1, Math.ceil(reviewQuestions.length / itemsPerPage));
   const safeNavPage = Math.min(currentPage, totalPages);
   const navStartIndex = (safeNavPage - 1) * itemsPerPage;
   const navQuestions = reviewQuestions.slice(navStartIndex, navStartIndex + itemsPerPage);
-  const resultTitle = passed == null
-    ? t('workspace.quiz.result.quizCompleted', 'Quiz Completed')
-    : passed
-      ? t('workspace.quiz.result.congratulations', 'Congratulations!')
-      : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
+  const resolvedPassed = isGradingPending ? null : passed;
+  const resultTitle = isGradingPending
+    ? t('workspace.quiz.result.gradingTitle', 'AI đang chấm điểm')
+    : resolvedPassed == null
+      ? t('workspace.quiz.result.quizCompleted', 'Quiz Completed')
+      : resolvedPassed
+        ? t('workspace.quiz.result.congratulations', 'Congratulations!')
+        : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
   const aiSummary = assessmentData?.summary;
   const aiStrengths = Array.isArray(assessmentData?.strengths) ? assessmentData.strengths : [];
   const aiWeaknesses = Array.isArray(assessmentData?.weaknesses) ? assessmentData.weaknesses : [];
@@ -521,30 +568,46 @@ export default function QuizResultPage() {
         {!reviewMode && (
           <div className={cn(
             'rounded-2xl p-8 mb-6 text-center border shadow-lg',
-            passed == null
+            resolvedPassed == null
               ? 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800 shadow-blue-900/10 dark:shadow-blue-900/30'
-              : passed
+              : resolvedPassed
               ? 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200 dark:border-emerald-800 shadow-emerald-900/10 dark:shadow-emerald-900/30'
               : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-red-200 dark:border-red-800 shadow-red-900/10 dark:shadow-red-900/30'
           )}>
             <div className="mb-4">
-              {passed == null
+              {isGradingPending
+                ? <Loader2 className="w-16 h-16 mx-auto text-blue-500 dark:text-blue-400 animate-spin" />
+                : resolvedPassed == null
                 ? <BarChart3 className="w-16 h-16 mx-auto text-blue-500 dark:text-blue-400" />
-                : passed
+                : resolvedPassed
                 ? <Trophy className="w-16 h-16 mx-auto text-emerald-500 dark:text-emerald-400" />
                 : <XCircle className="w-16 h-16 mx-auto text-red-500 dark:text-red-400" />}
             </div>
 
             <h1 className={cn(
               'text-3xl font-bold mb-2',
-              passed == null
+              resolvedPassed == null
                 ? 'text-blue-700 dark:text-blue-300'
-                : passed
+                : resolvedPassed
                   ? 'text-emerald-700 dark:text-emerald-300'
                   : 'text-red-700 dark:text-red-300',
             )}>
               {resultTitle}
             </h1>
+
+            {isGradingPending && (
+              <p className="text-sm text-blue-600 dark:text-blue-300 mb-2">
+                {t('workspace.quiz.result.reviewPending', 'AI đang chấm bài của bạn, vui lòng đợi...')}
+              </p>
+            )}
+
+            {isGradingPending && (
+              <div className="mb-4 flex items-center justify-center">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                  {gradingProgressText}
+                </span>
+              </div>
+            )}
 
             <p className="text-slate-600 dark:text-slate-300 mb-6">Attempt #{result.attemptId} • Quiz #{result.quizId}</p>
 
@@ -562,32 +625,29 @@ export default function QuizResultPage() {
               {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">{t('workspace.quiz.result.passScore', 'Pass Score')}: {result.passScore}</span>}
             </div>
 
-            <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
-                  <Sparkles className="w-4 h-4" />
-                  {t('workspace.quiz.result.aiAssessment', 'AI Assessment')}
-                </h3>
-                <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
-                  <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
-                  {t('workspace.quiz.result.refreshAssessment', 'Refresh')}
-                </Button>
-              </div>
+            {assessmentStatus !== 'NOT_AVAILABLE' && (
+              <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                  <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
+                    <Sparkles className="w-4 h-4" />
+                    {t('workspace.quiz.result.aiAssessment', 'Đánh giá của AI')}
+                  </h3>
+                  <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
+                    <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
+                    {t('workspace.quiz.result.refreshAssessment', 'Refresh')}
+                  </Button>
+                </div>
 
-              {(assessmentLoading && !assessmentData) && (
-                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
-              )}
+                {(assessmentLoading && !assessmentData) && (
+                  <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
+                )}
 
-              {assessmentStatus === 'NOT_AVAILABLE' && !assessmentLoading && (
-                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentNotAvailable', 'Hiện chưa có đánh giá AI cho lần làm bài này.')}</div>
-              )}
+                {assessmentStatus === 'PROCESSING' && (
+                  <div className="text-sm text-amber-600 dark:text-amber-400">{t('workspace.quiz.result.assessmentProcessing', 'Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.')}</div>
+                )}
 
-              {assessmentStatus === 'PROCESSING' && (
-                <div className="text-sm text-amber-600 dark:text-amber-400">{t('workspace.quiz.result.assessmentProcessing', 'Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.')}</div>
-              )}
-
-              {assessmentStatus === 'READY' && assessmentData && (
-                <div className="space-y-4">
+                {assessmentStatus === 'READY' && assessmentData && (
+                  <div className="space-y-4">
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
                     {aiSummary || t('workspace.quiz.result.assessmentNoSummary', 'Chưa có tóm tắt đánh giá AI.')}
                   </p>
@@ -646,9 +706,10 @@ export default function QuizResultPage() {
                       </Button>
                     </div>
                   )}
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
