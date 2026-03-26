@@ -151,6 +151,7 @@ function RoadmapCanvasView({
   onCreateRoadmap,
   onCreateRoadmapPhases,
   onCreatePhaseKnowledge,
+  onCreateKnowledgeQuizForKnowledge,
   onCreatePhasePreLearning,
   isStudyNewRoadmap = false,
   onViewQuiz,
@@ -158,7 +159,9 @@ function RoadmapCanvasView({
   roadmapPhaseGenerationProgress = 0,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
+  generatingKnowledgeQuizKnowledgeKeys = [],
   generatingPreLearningPhaseIds = [],
+  skipPreLearningPhaseIds = [],
   reloadToken = 0,
   forcedCanvasView = null,
   onCanvasViewChange,
@@ -690,12 +693,15 @@ function RoadmapCanvasView({
         fontClass={fontClass}
         selectedPhaseId={selectedPhaseId}
         onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+        onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
         onCreatePhasePreLearning={onCreatePhasePreLearning}
         isStudyNewRoadmap={isStudyNewRoadmap}
         onViewQuiz={onViewQuiz}
         generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
         generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+        generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
         generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+        skipPreLearningPhaseIds={skipPreLearningPhaseIds}
         quizRefreshToken={reloadToken}
         progressTracking={progressTracking}
       />

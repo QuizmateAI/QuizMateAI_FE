@@ -46,6 +46,8 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
   const [filterType, setFilterType] = useState("all");
   const [confirmDialog, setConfirmDialog] = useState({ open: false, quizId: null, mode: null });
 
+  const isRoadmapQuiz = (quiz) => ["roadmap", "phase", "knowledge"].includes(String(quiz?.belongTo || "").toLowerCase());
+
   // Gộp mock data với các item đã tạo từ form
   const allQuizzes = useMemo(() => [...MOCK_QUIZZES, ...createdItems], [createdItems]);
 
@@ -130,13 +132,15 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
                     )}
                     {quiz.status === "ACTIVE" && (
                       <>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.id, mode: 'practice' }); }}
-                          className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-blue-950/30 text-blue-400" : "hover:bg-blue-50 text-blue-600"}`}
-                          title={t("workspace.quiz.practice", "Practice")}
-                        >
-                          <Play className="w-3.5 h-3.5" />
-                        </button>
+                        {!isRoadmapQuiz(quiz) ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.id, mode: 'practice' }); }}
+                            className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-blue-950/30 text-blue-400" : "hover:bg-blue-50 text-blue-600"}`}
+                            title={t("workspace.quiz.practice", "Practice")}
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                          </button>
+                        ) : null}
                         <button
                           onClick={(e) => { e.stopPropagation(); setConfirmDialog({ open: true, quizId: quiz.id, mode: 'exam' }); }}
                           className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-emerald-950/30 text-emerald-400" : "hover:bg-emerald-50 text-emerald-600"}`}

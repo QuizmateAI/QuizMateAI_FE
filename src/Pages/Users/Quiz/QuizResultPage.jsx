@@ -8,7 +8,7 @@ import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
 import { getAttemptResult, getQuizFull, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
-// import { generateRoadmapPhaseContent } from '@/api/AIAPI';
+import { generateRoadmapPhaseContent } from '@/api/AIAPI';
 import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 
@@ -406,11 +406,11 @@ export default function QuizResultPage() {
     setGeneratingKnowledge(true);
     try {
       markPhaseContentGenerating(workspaceId, phaseId);
-      // await generateRoadmapPhaseContent({
-      //   roadmapId,
-      //   phaseId,
-      //   skipPreLearning: false,
-      // });
+      await generateRoadmapPhaseContent({
+        roadmapId,
+        phaseId,
+        skipPreLearning: false,
+      });
 
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(preLearningGenerateDedupeKey, '1');
