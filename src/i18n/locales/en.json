@@ -2042,6 +2042,12 @@
       "postLearningDesc": "Complete all knowledge items to unlock post-learning.",
       "quizDesc": "Practice quiz questions for this knowledge topic.",
       "flashcardDesc": "Study flashcards for this knowledge topic.",
+      "preLearningPrompt": "How would you like to start this phase?",
+      "studyNew": {
+        "hasFoundation": "I already have foundation in this phase",
+        "noBackground": "I am new to this phase",
+        "preLearningNote": "If you score 90%+ in pre-learning, this phase may be skipped."
+      },
       "startPostLearning": "You can now start the post-learning test!",
       "addQuiz": "Add Quiz",
       "addFlashcard": "Add Flashcard",
