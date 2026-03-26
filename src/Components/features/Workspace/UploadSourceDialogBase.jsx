@@ -12,10 +12,12 @@ import {
   FileText,
   Image,
   Film,
+  ArrowLeft,
   X,
   Loader2,
   Sparkles,
   Link2,
+  Youtube,
   CheckSquare,
   Square,
   ExternalLink,
@@ -25,8 +27,11 @@ import {
   getSuggestedResources,
   suggestResourcesByWorkspace,
   importSuggestedResources,
+  processYoutubeResource,
 } from "@/api/AIAPI";
 import { useToast } from "@/context/ToastContext";
+
+const SUGGESTED_RESOURCES_LIMIT = 5;
 
 function normalizeWorkspaceId(workspaceId) {
   const id = Number(workspaceId);
@@ -72,6 +77,9 @@ function UploadSourceDialogBase({
   const [dragOver, setDragOver] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [processingWebLink, setProcessingWebLink] = useState(false);
+  const [webUrl, setWebUrl] = useState("");
+  const [showWebInput, setShowWebInput] = useState(false);
   const fileInputRef = useRef(null);
 
   const [showSuggestedPanel, setShowSuggestedPanel] = useState(false);
@@ -81,6 +89,11 @@ function UploadSourceDialogBase({
   const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
   const [importingSuggestions, setImportingSuggestions] = useState(false);
   const selectedSuggestionCount = selectedSuggestionIds.length;
+
+  const visibleSuggestedResources = useMemo(
+    () => suggestedResources.slice(0, SUGGESTED_RESOURCES_LIMIT),
+    [suggestedResources],
+  );
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files || []);
@@ -92,6 +105,41 @@ function UploadSourceDialogBase({
     setDragOver(false);
     const files = Array.from(e.dataTransfer.files || []);
     setSelectedFiles((prev) => [...prev, ...files]);
+  };
+
+  const handleAddWebUrl = async () => {
+    const urls = String(webUrl || "")
+      .split(/\s+/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (urls.length === 0) {
+      showError(t("workspace.upload.urlRequired", "Vui lòng nhập đường dẫn trang YouTube."));
+      return;
+    }
+    if (!normalizedWorkspaceId) {
+      showError(t("workspace.upload.suggestMissingWorkspace"));
+      return;
+    }
+
+    setProcessingWebLink(true);
+    try {
+      await Promise.all(
+        urls.map((url) => processYoutubeResource({
+          url,
+          workspaceId: normalizedWorkspaceId,
+        })),
+      );
+      setWebUrl("");
+      setShowWebInput(false);
+      await onSuggestedImported?.();
+      showSuccess(t("workspace.upload.webYoutubeSuccess", "Đã gửi link để hệ thống xử lý."));
+      onOpenChange(false);
+    } catch (error) {
+      showError(error?.message || t("workspace.upload.webYoutubeError", "Không thể xử lý link trang YouTube."));
+    } finally {
+      setProcessingWebLink(false);
+    }
   };
 
   const removeFile = (index) => {
@@ -113,36 +161,16 @@ function UploadSourceDialogBase({
 
     setLoadingSuggestions(true);
     try {
-      const response = await getSuggestedResources(normalizedWorkspaceId);
-      const list = extractSuggestedList(response);
+      const response = await getSuggestedResources(normalizedWorkspaceId, 0, SUGGESTED_RESOURCES_LIMIT);
+      const list = extractSuggestedList(response).slice(0, SUGGESTED_RESOURCES_LIMIT);
       setSuggestedResources(list);
       setSelectedSuggestionIds((prev) => prev.filter((id) => list.some((item) => Number(item?.suggestionId) === Number(id))));
+      return list;
     } catch (error) {
       showError(error?.message || t("workspace.upload.suggestLoadError"));
+      return [];
     } finally {
       setLoadingSuggestions(false);
-    }
-  };
-
-  const handleGenerateSuggestions = async () => {
-    if (!normalizedWorkspaceId) {
-      showError(t("workspace.upload.suggestMissingWorkspace"));
-      return;
-    }
-
-    if (suggestedResources.length >= 15) {
-      return;
-    }
-
-    setGeneratingSuggestions(true);
-    try {
-      await suggestResourcesByWorkspace({ workspaceId: normalizedWorkspaceId });
-      await loadSuggestedResources();
-      showSuccess(t("workspace.upload.suggestGenerateSuccess"));
-    } catch (error) {
-      showError(error?.message || t("workspace.upload.suggestGenerateError"));
-    } finally {
-      setGeneratingSuggestions(false);
     }
   };
 
@@ -185,6 +213,8 @@ function UploadSourceDialogBase({
     if (!val) {
       setSelectedFiles([]);
       setShowSuggestedPanel(false);
+      setShowWebInput(false);
+      setWebUrl("");
       setSelectedSuggestionIds([]);
       setSuggestedResources([]);
     }
@@ -203,8 +233,36 @@ function UploadSourceDialogBase({
 
   useEffect(() => {
     if (!open || !showSuggestedPanel) return;
-    loadSuggestedResources();
-  }, [open, showSuggestedPanel]);
+
+    let isMounted = true;
+    const bootstrapSuggestions = async () => {
+      const list = await loadSuggestedResources();
+      if (!isMounted || list.length > 0) return;
+
+      setGeneratingSuggestions(true);
+      try {
+        await suggestResourcesByWorkspace({
+          workspaceId: normalizedWorkspaceId,
+          limit: SUGGESTED_RESOURCES_LIMIT,
+        });
+        if (!isMounted) return;
+        await loadSuggestedResources();
+      } catch (error) {
+        if (!isMounted) return;
+        showError(error?.message || t("workspace.upload.suggestGenerateError"));
+      } finally {
+        if (isMounted) {
+          setGeneratingSuggestions(false);
+        }
+      }
+    };
+
+    bootstrapSuggestions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, showSuggestedPanel, normalizedWorkspaceId]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -212,37 +270,132 @@ function UploadSourceDialogBase({
         isDarkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-gray-200 text-gray-900"
       }`}>
         <DialogHeader>
-          <DialogTitle className={fontClass}>{t("workspace.upload.title")}</DialogTitle>
+          <DialogTitle className={fontClass}>
+            {showWebInput
+              ? t("workspace.upload.webYoutubeTitle", "URL trang YouTube")
+              : t("workspace.upload.title")}
+          </DialogTitle>
           <DialogDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
-            {t("workspace.upload.dragDrop")} / {t("workspace.upload.orBrowse")}
+            {showWebInput
+              ? t("workspace.upload.webYoutubeDescription", "Dán URL trang YouTube vào bên dưới để tải lên dưới dạng một nguồn trong Workspace.")
+              : `${t("workspace.upload.dragDrop")} / ${t("workspace.upload.orBrowse")}`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div
-            className={`border-2 border-dashed rounded-2xl px-6 py-8 text-center cursor-pointer transition-all ${
-              dragOver
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                : isDarkMode ? "border-slate-700 bg-slate-900/60 hover:border-slate-600" : "border-gray-300 bg-slate-50 hover:border-gray-400"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div className={`mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-white text-slate-500"}`}>
-              <UploadCloud className="w-7 h-7" />
-            </div>
-            <p className={`text-base font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{t("workspace.upload.dragDrop")}</p>
-            <p className={`text-sm mt-1 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>{t("workspace.upload.orBrowse")}</p>
-            <p className={`text-xs mt-3 leading-5 ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>{t("workspace.upload.supportedFormats")}</p>
-            <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.png,.mp3,.mp4" className="hidden" onChange={handleFileSelect} />
-          </div>
+        {showWebInput ? (
+          <div className="space-y-3">
+            {/* <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setShowWebInput(false)}
+                className={`inline-flex items-center gap-2 ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="text-base font-semibold leading-none">{t("workspace.upload.webYoutubeTitle", "URL trang YouTube")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWebInput(false)}
+                className={`p-1 rounded-md transition-all ${isDarkMode ? "hover:bg-slate-800" : "hover:bg-slate-100"}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div> */}
 
-          {selectedFiles.length > 0 && (
+            <textarea
+              value={webUrl}
+              onChange={(event) => setWebUrl(event.target.value)}
+              placeholder={t("workspace.upload.urlPlaceholderLong", "Dán liên kết bất kỳ")}
+              className={`w-full min-h-[180px] rounded-xl border px-3 py-2.5 text-sm resize-y outline-none transition-all ${
+                isDarkMode
+                  ? "border-blue-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
+                  : "border-blue-500 bg-white text-slate-900 placeholder:text-slate-500 focus:border-blue-600"
+              }`}
+            />
+
+            <ul className={`list-disc pl-5 space-y-1 text-sm ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
+              <li>{t("workspace.upload.webYoutubeNote1", "Để thêm nhiều URL, hãy phân tách bằng dấu cách hoặc dòng mới.")}</li>
+              <li>{t("workspace.upload.webYoutubeNote2", "Hiện chỉ nhập được văn bản hiển thị trên trang YouTube.")}</li>
+              <li>{t("workspace.upload.webYoutubeNote3", "Không hỗ trợ bài viết có tính phí.")}</li>
+              <li>{t("workspace.upload.webYoutubeNote4", "Hiện chỉ nhập được bản chép lời của video trên YouTube.")}</li>
+              <li>{t("workspace.upload.webYoutubeNote5", "Chỉ hỗ trợ video công khai trên YouTube.")}</li>
+            </ul>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowWebInput(false)}
+                className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+              >
+                {t("workspace.upload.cancel")}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAddWebUrl}
+                disabled={processingWebLink || String(webUrl || "").trim().length === 0}
+                className="min-w-[120px] h-10 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-300 disabled:text-slate-600"
+              >
+                {processingWebLink ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {t("workspace.upload.insertUrl", "Chèn")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div
+                className={`border-2 border-dashed rounded-2xl px-6 py-8 text-center transition-all ${
+                  dragOver
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                    : isDarkMode ? "border-slate-700 bg-slate-900/60 hover:border-slate-600" : "border-gray-300 bg-slate-50 hover:border-gray-400"
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+              >
+                <div className={`mx-auto mb-4 w-14 h-14 rounded-full flex items-center justify-center ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-white text-slate-500"}`}>
+                  <UploadCloud className="w-7 h-7" />
+                </div>
+                <p className={`text-base font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{t("workspace.upload.dragDrop")}</p>
+                <p className={`text-sm mt-1 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                  {t("workspace.upload.dragOnlyHint", "Chỉ kéo và thả tệp vào khung này")}
+                </p>
+                <p className={`text-xs mt-3 leading-5 ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>{t("workspace.upload.supportedFormats")}</p>
+
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-[420px] mx-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || importingSuggestions || processingWebLink}
+                    className={`h-12 rounded-full transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
+                  >
+                    <UploadCloud className="w-4 h-4 mr-2" />
+                    {t("workspace.upload.uploadFileButton", "Tải tệp lên")}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowWebInput(true)}
+                    disabled={uploading || importingSuggestions || processingWebLink}
+                    className={`h-12 rounded-full transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
+                  >
+                    <span className="inline-flex items-center mr-2">
+                      <Link2 className="w-4 h-4" />
+                      <Youtube className="w-4 h-4 -ml-1 text-red-500" />
+                    </span>
+                    {t("workspace.upload.webYoutubeButton", "Liên kết YouTube")}
+                  </Button>
+                </div>
+                <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.png,.mp3,.mp4" className="hidden" onChange={handleFileSelect} />
+              </div>
+
+              {selectedFiles.length > 0 && (
             <div className={`rounded-xl border ${isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"}`}>
               <div className={`px-3 py-2 border-b text-xs font-medium ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-500"}`}>
                 {selectedFiles.length} {t("workspace.sources.title", "Tài liệu")}
@@ -262,9 +415,9 @@ function UploadSourceDialogBase({
               ))}
               </div>
             </div>
-          )}
+              )}
 
-          {showSuggestedPanel && (
+              {showSuggestedPanel && (
             <div className={`rounded-2xl border p-3 ${isDarkMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-slate-50"}`}>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="min-w-0">
@@ -272,22 +425,10 @@ function UploadSourceDialogBase({
                     {t("workspace.upload.suggestedResourcesTitle")}
                   </h4>
                   <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                    {selectedSuggestionCount}/{suggestedResources.length}
+                    {selectedSuggestionCount}/{visibleSuggestedResources.length}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {suggestedResources.length > 0 && suggestedResources.length < 15 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleGenerateSuggestions}
-                      disabled={loadingSuggestions || generatingSuggestions || importingSuggestions}
-                      className={`transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
-                    >
-                      {generatingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                      {t("workspace.upload.suggestMore")}
-                    </Button>
-                  )}
                   <Button
                     type="button"
                     variant="outline"
@@ -301,25 +442,17 @@ function UploadSourceDialogBase({
                 </div>
               </div>
 
-              {loadingSuggestions ? (
+              {loadingSuggestions || generatingSuggestions ? (
                 <div className="h-28 flex items-center justify-center">
                   <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
                 </div>
-              ) : suggestedResources.length === 0 ? (
-                <div className={`h-32 rounded-xl border flex items-center justify-center ${isDarkMode ? "border-slate-800 bg-slate-950/50" : "border-slate-200 bg-white"}`}>
-                  <Button
-                    type="button"
-                    onClick={handleGenerateSuggestions}
-                    disabled={generatingSuggestions || importingSuggestions}
-                    className="bg-[#2563EB] hover:bg-blue-700 text-white"
-                  >
-                    {generatingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                    {t("workspace.upload.getSuggestedResources")}
-                  </Button>
+              ) : visibleSuggestedResources.length === 0 ? (
+                <div className={`h-32 rounded-xl border flex items-center justify-center text-sm ${isDarkMode ? "border-slate-800 bg-slate-950/50 text-slate-400" : "border-slate-200 bg-white text-slate-500"}`}>
+                  {t("workspace.upload.noData")}
                 </div>
               ) : (
                 <div className="max-h-72 overflow-y-auto pr-2 space-y-2">
-                  {suggestedResources.map((item, index) => {
+                  {visibleSuggestedResources.map((item, index) => {
                     const suggestionId = Number(item?.suggestionId ?? item?.suggestId);
                     const isChecked = selectedSuggestionIds.includes(suggestionId);
                     const typeLabel = getSuggestedTypeLabel(item);
@@ -391,36 +524,39 @@ function UploadSourceDialogBase({
                 </div>
               )}
             </div>
-          )}
-        </div>
+              )}
+            </div>
 
-        <div className="flex items-center justify-between gap-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowSuggestedPanel((prev) => !prev)}
-            className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            {t("workspace.upload.suggestMore")}
-          </Button>
+            <div className="flex items-center justify-between gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowSuggestedPanel((prev) => !prev)}
+                className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {t("workspace.upload.suggestMore")}
+              </Button>
 
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-              {t("workspace.upload.cancel")}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleUpload}
-              disabled={uploading || selectedFiles.length === 0}
-              className="bg-[#2563EB] hover:bg-blue-700 text-white"
-            >
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
-              {uploading ? t("workspace.upload.uploading") : t("workspace.upload.tabFile")}
-            </Button>
-          </div>
-        </div>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
+                  {t("workspace.upload.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleUpload}
+                  disabled={uploading || selectedFiles.length === 0}
+                  className="bg-[#2563EB] hover:bg-blue-700 text-white"
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
+                  {uploading ? t("workspace.upload.uploading") : t("workspace.upload.tabFile")}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </DialogContent>
+
     </Dialog>
   );
 }

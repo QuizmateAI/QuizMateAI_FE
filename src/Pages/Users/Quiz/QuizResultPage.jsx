@@ -9,6 +9,7 @@ import QuizHeader from './components/QuizHeader';
 import { getAttemptResult, getQuizFull, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
+import { getCurrentRoadmapPhaseProgress, submitRoadmapPhaseSkipDecision } from '@/api/RoadmapPhaseAPI';
 import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 
@@ -88,12 +89,14 @@ export default function QuizResultPage() {
   const [assessmentLoading, setAssessmentLoading] = useState(false);
   const [generatingQuiz, setGeneratingQuiz] = useState(false);
   const [generatingKnowledge, setGeneratingKnowledge] = useState(false);
+  const [loadingCurrentPhase, setLoadingCurrentPhase] = useState(false);
+  const [currentPhaseProgress, setCurrentPhaseProgress] = useState(null);
+  const [submittingSkipDecision, setSubmittingSkipDecision] = useState(false);
   const [knowledgeGenerationTriggered, setKnowledgeGenerationTriggered] = useState(false);
   const [knowledgeGenerationHydrated, setKnowledgeGenerationHydrated] = useState(false);
   const itemsPerPage = 20;
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
-  const autoKnowledgeTriggerAttemptedRef = useRef(false);
   const pendingResultPollingRef = useRef(null);
 
   // quizId passed via navigation state for "back to quiz" button
@@ -256,7 +259,6 @@ export default function QuizResultPage() {
     const triggered = window.localStorage.getItem(preLearningGenerateDedupeKey) === '1';
     setKnowledgeGenerationTriggered(triggered);
     setKnowledgeGenerationHydrated(true);
-    autoKnowledgeTriggerAttemptedRef.current = false;
   }, [preLearningGenerateDedupeKey]);
   const fetchAssessment = useCallback(async () => {
     if (!attemptId) return;
@@ -414,6 +416,26 @@ export default function QuizResultPage() {
     && preLearningGenerationContext.isCompletedAttempt
     && preLearningGenerationContext.isValidRoadmapContext;
 
+  const isAssessmentReady = assessmentStatus === 'READY' && Boolean(assessmentData);
+
+  const fetchCurrentRoadmapPhase = useCallback(async () => {
+    if (!canTriggerKnowledgeAfterPreLearning || !isAssessmentReady) return null;
+
+    setLoadingCurrentPhase(true);
+    try {
+      const response = await getCurrentRoadmapPhaseProgress(preLearningGenerationContext.roadmapId);
+      const payload = response?.data?.data || response?.data || null;
+      setCurrentPhaseProgress(payload);
+      return payload;
+    } catch (error) {
+      console.error('Failed to load current roadmap phase progress:', error);
+      setCurrentPhaseProgress(null);
+      return null;
+    } finally {
+      setLoadingCurrentPhase(false);
+    }
+  }, [canTriggerKnowledgeAfterPreLearning, isAssessmentReady, preLearningGenerationContext.roadmapId]);
+
   const handleGenerateKnowledgeAfterPreLearning = useCallback(async () => {
     const { roadmapId, phaseId, workspaceId } = preLearningGenerationContext;
     if (!canTriggerKnowledgeAfterPreLearning || generatingKnowledge || knowledgeGenerationTriggered) return;
@@ -454,17 +476,69 @@ export default function QuizResultPage() {
   useEffect(() => {
     if (!knowledgeGenerationHydrated) return;
     if (!canTriggerKnowledgeAfterPreLearning) return;
-    if (knowledgeGenerationTriggered || generatingKnowledge) return;
-    if (autoKnowledgeTriggerAttemptedRef.current) return;
+    if (!isAssessmentReady) return;
 
-    autoKnowledgeTriggerAttemptedRef.current = true;
-    void handleGenerateKnowledgeAfterPreLearning();
+    void fetchCurrentRoadmapPhase();
   }, [
     canTriggerKnowledgeAfterPreLearning,
-    generatingKnowledge,
-    handleGenerateKnowledgeAfterPreLearning,
+    fetchCurrentRoadmapPhase,
+    isAssessmentReady,
     knowledgeGenerationHydrated,
-    knowledgeGenerationTriggered,
+  ]);
+
+  const canShowSkipDecision = canTriggerKnowledgeAfterPreLearning
+    && isAssessmentReady
+    && currentPhaseProgress?.skipable === true
+    && !knowledgeGenerationTriggered;
+
+  const handleSkipDecision = useCallback(async (skipped) => {
+    if (!canTriggerKnowledgeAfterPreLearning || submittingSkipDecision) return;
+
+    const phaseId = Number(currentPhaseProgress?.phaseId ?? preLearningGenerationContext.phaseId);
+    if (!Number.isInteger(phaseId) || phaseId <= 0) {
+      showError(t('workspace.quiz.result.skipDecisionMissingPhase', 'Không xác định được phase để cập nhật quyết định.'));
+      return;
+    }
+
+    setSubmittingSkipDecision(true);
+    try {
+      await submitRoadmapPhaseSkipDecision(phaseId, skipped);
+
+      if (skipped) {
+        showSuccess(t('workspace.quiz.result.skipPhaseSuccess', 'Đã bỏ qua phase hiện tại.')); 
+        const latestCurrent = await fetchCurrentRoadmapPhase();
+        const nextPhaseId = Number(latestCurrent?.phaseId);
+        const workspaceId = Number(preLearningGenerationContext.workspaceId);
+
+        if (Number.isInteger(workspaceId) && workspaceId > 0 && Number.isInteger(nextPhaseId) && nextPhaseId > 0) {
+          navigate(`/workspace/${workspaceId}/roadmap?phaseId=${nextPhaseId}`, { replace: true });
+          return;
+        }
+
+        handleBack();
+        return;
+      }
+
+      await handleGenerateKnowledgeAfterPreLearning();
+    } catch (error) {
+      console.error('Failed to submit skip decision:', error);
+      showError(error?.message || t('workspace.quiz.result.skipPhaseFail', 'Không thể cập nhật quyết định skip phase.'));
+    } finally {
+      setSubmittingSkipDecision(false);
+    }
+  }, [
+    canTriggerKnowledgeAfterPreLearning,
+    submittingSkipDecision,
+    currentPhaseProgress?.phaseId,
+    preLearningGenerationContext.phaseId,
+    preLearningGenerationContext.workspaceId,
+    showError,
+    t,
+    showSuccess,
+    fetchCurrentRoadmapPhase,
+    navigate,
+    handleBack,
+    handleGenerateKnowledgeAfterPreLearning,
   ]);
 
   useEffect(() => {
@@ -709,6 +783,69 @@ export default function QuizResultPage() {
                       </Button>
                     </div>
                   )}
+
+                  {canTriggerKnowledgeAfterPreLearning && (
+                    <div className="rounded-xl border border-blue-200/80 dark:border-blue-700/70 bg-blue-50/70 dark:bg-blue-900/20 p-4 space-y-3">
+                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                        {t('workspace.quiz.result.preLearningDecisionTitle', 'Quyết định sau Pre-learning')}
+                      </p>
+
+                      {loadingCurrentPhase && (
+                        <p className="text-sm text-blue-700/90 dark:text-blue-300/90">
+                          {t('workspace.quiz.result.loadingCurrentPhase', 'Đang kiểm tra phase hiện tại...')}
+                        </p>
+                      )}
+
+                      {!loadingCurrentPhase && canShowSkipDecision && (
+                        <div className="space-y-3">
+                          <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                            {t('workspace.quiz.result.skipPhaseEligibleHint', 'Bạn đã đủ điều kiện để bỏ qua giai đoạn này. Bạn muốn bỏ qua hay tiếp tục luyện tập?')}
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button
+                              type="button"
+                              disabled={submittingSkipDecision || generatingKnowledge}
+                              onClick={() => void handleSkipDecision(true)}
+                              className="min-w-[180px] gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                              {(submittingSkipDecision && !generatingKnowledge)
+                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                : <CheckCircle2 className="w-4 h-4" />}
+                              {t('workspace.quiz.result.skipPhaseAction', 'Bỏ qua phase')}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={submittingSkipDecision || generatingKnowledge || knowledgeGenerationTriggered}
+                              onClick={() => void handleSkipDecision(false)}
+                              className="min-w-[220px] gap-2"
+                            >
+                              {(generatingKnowledge || submittingSkipDecision)
+                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                : <WandSparkles className="w-4 h-4" />}
+                              {knowledgeGenerationTriggered
+                                ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
+                                : t('workspace.quiz.result.continuePracticeAction', 'Tiếp tục luyện tập')}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {!loadingCurrentPhase && !canShowSkipDecision && (
+                        <Button
+                          type="button"
+                          onClick={handleGenerateKnowledgeAfterPreLearning}
+                          disabled={generatingKnowledge || knowledgeGenerationTriggered || submittingSkipDecision}
+                          className="min-w-[220px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          {generatingKnowledge ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
+                          {knowledgeGenerationTriggered
+                            ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
+                            : t('workspace.quiz.result.generateKnowledgeAction', 'Tạo knowledge luyện tập')}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   </div>
                 )}
               </div>
@@ -717,18 +854,6 @@ export default function QuizResultPage() {
             {/* Action buttons */}
             <SectionDivider />
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {canTriggerKnowledgeAfterPreLearning && (
-                <Button
-                  onClick={handleGenerateKnowledgeAfterPreLearning}
-                  disabled={generatingKnowledge || knowledgeGenerationTriggered}
-                  className="min-w-[200px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {generatingKnowledge ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
-                  {knowledgeGenerationTriggered
-                    ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
-                    : t('workspace.quiz.result.generatingKnowledge', 'Đang tạo knowledge...')}
-                </Button>
-              )}
               <Button onClick={handleBack} className="min-w-[160px] gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                 <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
               </Button>
