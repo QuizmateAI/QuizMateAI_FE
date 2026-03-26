@@ -18,7 +18,7 @@ import PostLearningListView from "@/Pages/Users/Individual/Workspace/Components/
 import CreatePostLearningForm from "@/Pages/Users/Individual/Workspace/Components/CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning }) {
+function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER" }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -45,13 +45,15 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
               {t("workspace.chat.emptyDesc")}
             </p>
           </div>
-          <Button
-            onClick={onUploadClick}
-            className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10 flex items-center gap-2"
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span className={fontClass}>{t("workspace.chat.upload")}</span>
-          </Button>
+          {!readOnly && (
+            <Button
+              onClick={onUploadClick}
+              className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10 flex items-center gap-2"
+            >
+              <UploadCloud className="w-4 h-4" />
+              <span className={fontClass}>{t("workspace.chat.uploadBtn")}</span>
+            </Button>
+          )}
         </div>
       </section>
     );
@@ -119,15 +121,15 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
 
     switch (activeView) {
       case "roadmap":
-        return <RoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} createdItems={createdRoadmaps} workspaceId={workspaceId} />;
+        return <RoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} />;
       case "quiz":
-        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="GROUP" contextId={workspaceId} />;
+        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
       case "flashcard":
-        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} />;
+        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
       case "mockTest":
-        return <MockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} />;
+        return <MockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
       case "postLearning":
-        return <PostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="GROUP" contextId={workspaceId} />;
+        return <PostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
       default:
         return null;
     }
@@ -146,15 +148,29 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
 
   // Khi đang hiển thị form tạo nội dung — render inline thay vì popup
   const renderActiveContent = () => {
+    // If readOnly is true, block "create/edit" paths, but allow viewing details
+    if (readOnly && ['createQuiz', 'createFlashcard', 'editQuiz', 'createMockTest', 'createPostLearning', 'editMockTest'].includes(activeView)) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 text-center h-full">
+          <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            Không có quyền truy cập
+          </h3>
+          <p className={`text-sm max-w-md ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            Bạn không có quyền tạo hoặc chỉnh sửa nội dung trong Group này.
+          </p>
+        </div>
+      );
+    }
+    
     switch (activeView) {
       case "createQuiz":
         return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
       case "createFlashcard":
         return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} />;
       case "flashcardDetail":
-        return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
+        return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} hideEditButton={readOnly} contextType="GROUP" /> : null;
       case "quizDetail":
-        return selectedQuiz ? <QuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="GROUP" contextId={workspaceId} /> : null;
+        return selectedQuiz ? <QuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={readOnly ? undefined : onEditQuiz} contextType="GROUP" contextId={workspaceId} hideEditButton={readOnly} /> : null;
       case "editQuiz":
         return selectedQuiz ? <EditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="GROUP" contextId={workspaceId} /> : null;
       case "createMockTest":
@@ -162,7 +178,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
       case "createPostLearning":
         return <CreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
       case "mockTestDetail":
-        return selectedMockTest ? <MockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
+        return selectedMockTest ? <MockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={readOnly ? undefined : onEditMockTest} hideEditButton={readOnly} contextType="GROUP" /> : null;
       case "editMockTest":
         return selectedMockTest ? <EditMockTestForm isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onSave={onSaveMockTest} /> : null;
       default:

@@ -117,6 +117,37 @@
       "WORKSPACE_SLOT": "Slot nhóm"
     },
     "targetSummary": {
+    },
+    "notifications": {
+      "title": "Thông báo nhóm",
+      "subtitle": "Trưởng nhóm duyệt thông báo, cộng tác viên tạo nháp, thành viên xem bản đã xuất bản.",
+      "createTitle": "Tạo thông báo",
+      "titlePlaceholder": "Tiêu đề thông báo",
+      "contentPlaceholder": "Nhập nội dung thông báo...",
+      "publishNow": "Đăng ngay",
+      "submitForApproval": "Gửi duyệt",
+      "pendingApprovals": "Thông báo chờ duyệt",
+      "noPending": "Không có thông báo chờ duyệt.",
+      "by": "Bởi",
+      "publisher": "Người xuất bản",
+      "waitingForApproval": "Đang chờ duyệt",
+      "approve": "Duyệt",
+      "publishedTitle": "Thông báo đã xuất bản",
+      "noPublished": "Chưa có thông báo nào được xuất bản.",
+      "publishedBadge": "Đã xuất bản",
+      "awaitingApproval": "Đang chờ duyệt",
+      "pendingBadge": "Chờ duyệt",
+      "seed": {
+        "roadmapTitle": "Mở mốc lộ trình mới",
+        "roadmapContent": "Một mốc lộ trình mới đã mở trong tuần này. Vui lòng hoàn thành phần tự học trước thứ Sáu.",
+        "quizTitle": "Cập nhật luồng bài quiz",
+        "quizContent": "Cộng tác viên đã đề xuất làm mới bộ quiz luyện đọc."
+      },
+      "toast": {
+        "published": "Thông báo đã được xuất bản.",
+        "submitted": "Thông báo đã được gửi để trưởng nhóm duyệt.",
+        "approved": "Thông báo đã được duyệt và xuất bản."
+      },
       "workspace": "WS #{{id}}",
       "chargedUser": "User tính phí #{{id}}"
     },

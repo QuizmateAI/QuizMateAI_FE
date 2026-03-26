@@ -26,6 +26,7 @@ const NAV_ITEMS = [
 ];
 
 function GroupSidebar({
+  role = 'MEMBER',
   isDarkMode = false,
   activeSection = 'dashboard',
   onSectionChange,
@@ -38,6 +39,18 @@ function GroupSidebar({
   const { i18n } = useTranslation();
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+
+  // Filter nav items based on role
+  const filteredNavItems = NAV_ITEMS.filter((item) => {
+    // If you're a MEMBER, you don't need 'members' management, maybe just viewing so you could keep it or hide it.
+    // For now, let's say MEMBER cannot see 'members'.
+    if (role === 'MEMBER') {
+      return !['members'].includes(item.id);
+    }
+    return true;
+  });
+
+  const canSeeSettings = role === 'LEADER';
 
   const shellClass = isDarkMode
     ? 'bg-[#0a1620]/95 border-white/10 text-white'
@@ -73,7 +86,7 @@ function GroupSidebar({
         <div className={`w-8 h-px my-1 ${isDarkMode ? 'bg-white/10' : 'bg-slate-200'}`} />
 
         {/* Nav items */}
-        {NAV_ITEMS.map((item) => {
+        {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
           return (
@@ -96,18 +109,20 @@ function GroupSidebar({
         <div className="flex-1" />
 
         {/* Settings */}
-        <button
-          type="button"
-          onClick={() => onSectionChange?.('settings')}
-          title={currentLang === 'en' ? 'Settings' : 'Cài đặt'}
-          className={`flex items-center justify-center w-11 h-11 rounded-2xl border transition-all duration-200 ${
-            activeSection === 'settings'
-              ? `${activeItemClass} bg-slate-500/10`
-              : `${idleItemClass} ${hoverClass}`
-          }`}
-        >
-          <Settings className={`h-5 w-5 ${activeSection === 'settings' ? 'text-slate-500' : mutedClass}`} />
-        </button>
+        {canSeeSettings && (
+          <button
+            type="button"
+            onClick={() => onSectionChange?.('settings')}
+            title={currentLang === 'en' ? 'Settings' : 'Cài đặt'}
+            className={`flex items-center justify-center w-11 h-11 rounded-2xl border transition-all duration-200 ${
+              activeSection === 'settings'
+                ? `${activeItemClass} bg-slate-500/10`
+                : `${idleItemClass} ${hoverClass}`
+            }`}
+          >
+            <Settings className={`h-5 w-5 ${activeSection === 'settings' ? 'text-slate-500' : mutedClass}`} />
+          </button>
+        )}
       </aside>
     );
   }
@@ -141,7 +156,7 @@ function GroupSidebar({
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-        {NAV_ITEMS.map((item) => {
+        {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
           const label = currentLang === 'en' ? item.labelEn : item.labelVi;
@@ -176,30 +191,32 @@ function GroupSidebar({
       <div className={`mx-4 h-px ${isDarkMode ? 'bg-white/10' : 'bg-slate-100'}`} />
 
       {/* Bottom: Settings */}
-      <div className="px-3 py-3">
-        <button
-          type="button"
-          onClick={() => onSectionChange?.('settings')}
-          className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all duration-200 ${
-            activeSection === 'settings'
-              ? activeItemClass
-              : `${idleItemClass} ${hoverClass}`
-          }`}
-        >
-          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-            activeSection === 'settings' ? 'bg-slate-500/10' : (isDarkMode ? 'bg-white/[0.04]' : 'bg-slate-50')
-          }`}>
-            <Settings className={`h-[18px] w-[18px] ${activeSection === 'settings' ? 'text-slate-500' : mutedClass}`} />
-          </span>
-          <span className={`text-sm font-medium ${
-            activeSection === 'settings'
-              ? (isDarkMode ? 'text-white' : 'text-slate-900')
-              : (isDarkMode ? 'text-slate-300' : 'text-slate-600')
-          }`}>
-            {currentLang === 'en' ? 'Settings' : 'Cài đặt'}
-          </span>
-        </button>
-      </div>
+      {canSeeSettings && (
+        <div className="px-3 py-3">
+          <button
+            type="button"
+            onClick={() => onSectionChange?.('settings')}
+            className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all duration-200 ${
+              activeSection === 'settings'
+                ? activeItemClass
+                : `${idleItemClass} ${hoverClass}`
+            }`}
+          >
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+              activeSection === 'settings' ? 'bg-slate-500/10' : (isDarkMode ? 'bg-white/[0.04]' : 'bg-slate-50')
+            }`}>
+              <Settings className={`h-[18px] w-[18px] ${activeSection === 'settings' ? 'text-slate-500' : mutedClass}`} />
+            </span>
+            <span className={`text-sm font-medium ${
+              activeSection === 'settings'
+                ? (isDarkMode ? 'text-white' : 'text-slate-900')
+                : (isDarkMode ? 'text-slate-300' : 'text-slate-600')
+            }`}>
+              {currentLang === 'en' ? 'Settings' : 'Cài đặt'}
+            </span>
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

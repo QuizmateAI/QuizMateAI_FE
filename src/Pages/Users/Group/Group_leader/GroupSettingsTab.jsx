@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import api from '@/api/api';
 
-function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated }) {
+function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated, compactMode = false }) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
@@ -120,6 +120,78 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated }) {
     setIsEditing(false);
     setErrorMsg('');
   }, [group]);
+
+  if (compactMode) {
+    return (
+      <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
+        {successMsg ? (
+          <div className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${isDarkMode ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+            <Check className="h-4 w-4" />
+            {successMsg}
+          </div>
+        ) : null}
+
+        {errorMsg ? (
+          <div className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${isDarkMode ? 'border-red-400/20 bg-red-400/10 text-red-200' : 'border-red-200 bg-red-50 text-red-700'}`}>
+            <AlertTriangle className="h-4 w-4" />
+            {errorMsg}
+          </div>
+        ) : null}
+
+        <section className={`rounded-2xl border p-5 ${shellClass}`}>
+          <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {currentLang === 'en' ? 'Workspace settings' : 'Cài đặt workspace'}
+          </h3>
+          <p className={`mt-1 text-sm ${subtleTextClass}`}>
+            {currentLang === 'en' ? 'Keep identity clear and editable for the leader.' : 'Giữ định danh rõ ràng và cho phép leader chỉnh sửa khi cần.'}
+          </p>
+
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className={`mb-2 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                {t('home.group.groupName')}
+              </label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={groupName}
+                  onChange={(event) => setGroupName(event.target.value)}
+                  className={inputClass}
+                  placeholder={t('home.group.groupNamePlaceholder')}
+                />
+              ) : (
+                <div className={`rounded-xl border px-4 py-3 ${softCardClass}`}>
+                  <p className={`text-sm ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>{group?.groupName || '—'}</p>
+                </div>
+              )}
+            </div>
+
+            {isLeader && !isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.10]' : 'border-white bg-white text-slate-700 hover:bg-white'}`}
+              >
+                <Pencil className="h-4 w-4" />
+                {t('groupManage.settings.edit')}
+              </button>
+            ) : null}
+
+            {isEditing ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <button onClick={handleCancel} className={`rounded-full border px-5 py-2.5 text-sm font-medium ${isDarkMode ? 'border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]' : 'border-white bg-white text-slate-700 hover:bg-white'}`}>
+                  {t('home.group.cancel')}
+                </button>
+                <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-50">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('groupManage.settings.save')}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className={`space-y-6 animate-in fade-in duration-300 ${fontClass}`}>
