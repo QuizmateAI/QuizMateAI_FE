@@ -7,6 +7,7 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ChevronDown,
+  Share2,
   Sparkles,
 } from "lucide-react";
 
@@ -389,8 +390,13 @@ function RoadmapCanvasView2({
             ? t("workspace.quiz.statusLabels.PROCESSING", "Processing")
             : t("workspace.quiz.statusLabels.ACTIVE", "Active");
           const hasKnowledge = (phase.knowledges || []).length > 0;
+          const knowledgeItems = phase.knowledges || [];
           const hasPreLearning = (phase.preLearningQuizzes || []).length > 0;
           const hasPostLearning = (phase.postLearningQuizzes || []).length > 0;
+          const totalKnowledgeCount = knowledgeItems.length;
+          const passedKnowledgeCount = knowledgeItems.filter((knowledge) =>
+            (knowledge?.quizzes || []).some((quiz) => quiz?.myPassed === true)
+          ).length;
           const preLearningQuizzes = phase.preLearningQuizzes || [];
           const hasAttemptedPreLearning = preLearningQuizzes.some((quiz) => {
             const attempted = quiz?.myAttempted === true;
