@@ -313,7 +313,7 @@ function IndividualWorkspaceProfileOverviewDialog({
     'workspace.profileOverview.description',
     i18n.language === 'en'
       ? 'Review what this workspace was configured to learn, how it is scoped, and how roadmap or exam settings were set up.'
-      : 'Xem lại workspace này đã được cấu hình để học gì, phạm vi ra sao và roadmap hoặc kỳ thi đã được thiết lập như thế nào.'
+      : 'Xem lại Không gian học tập đã được cấu hình để học gì, phạm vi ra sao và lộ trình hoặc kỳ thi đã được thiết lập như thế nào.'
   );
 
   return (

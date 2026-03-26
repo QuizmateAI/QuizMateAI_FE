@@ -311,6 +311,36 @@ export const getWorkspaceById = async (workspaceId) => {
   return response;
 };
 
+export const getWorkspaceQuizRecommendations = async (workspaceId) => {
+  const response = await api.get(`/workspace/${workspaceId}/quiz-recommendations`);
+  return response;
+};
+
+export const getWorkspaceCommunityQuizzes = async (workspaceId) => {
+  const response = await api.get(`/workspace/${workspaceId}/community-quizzes`);
+  return response;
+};
+
+export const logWorkspaceQuizRecommendationEvents = async (workspaceId, data) => {
+  const response = await api.post(`/workspace/${workspaceId}/quiz-recommendations/events`, data);
+  return response;
+};
+
+export const getWorkspaceQuizRecommendationMetrics = async (workspaceId, days = 30) => {
+  const response = await api.get(`/workspace/${workspaceId}/quiz-recommendations/metrics?days=${days}`);
+  return response;
+};
+
+export const getWorkspaceQuizRecommendationOfflineComparison = async (workspaceId, days = 30) => {
+  const response = await api.get(`/workspace/${workspaceId}/quiz-recommendations/offline-comparison?days=${days}`);
+  return response;
+};
+
+export const getWorkspaceQuizRecommendationSampleRequests = async (workspaceId, days = 30, limit = 8) => {
+  const response = await api.get(`/workspace/${workspaceId}/quiz-recommendations/sample-requests?days=${days}&limit=${limit}`);
+  return response;
+};
+
 // Lấy danh sách roadmap của workspace (có phân trang)
 export const getRoadmapsByWorkspace = async (workspaceId, page = 0, size = 10) => {
   const response = await api.get(`/roadmap/workspace/${workspaceId}?page=${page}&size=${size}`);

@@ -17,7 +17,8 @@ import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { useToast } from '@/context/ToastContext';
 
 function normalizeHomeTab(value) {
-  return value === 'group' ? 'group' : 'workspace';
+  if (value === 'group') return 'group';
+  return 'workspace';
 }
 
 function isGroupWorkspace(workspace) {
