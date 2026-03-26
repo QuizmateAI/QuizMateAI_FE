@@ -52,6 +52,21 @@ function unmarkPhaseContentGenerating(workspaceId, phaseId) {
   }
 }
 
+function SectionDivider({ label, className = '' }) {
+  return (
+    <div className={cn('relative my-6', className)}>
+      <div className="absolute inset-0 flex items-center">
+        <div className="w-full border-t border-slate-200/80 dark:border-slate-700/80" />
+      </div>
+      <div className="relative flex justify-center">
+        <span className="rounded-full border border-slate-200/80 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/85 dark:text-slate-400">
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function QuizResultPage() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
@@ -567,8 +582,8 @@ export default function QuizResultPage() {
         {/* Score card */}
         {!reviewMode && (
           <div className={cn(
-            'rounded-2xl p-8 mb-6 text-center border shadow-lg',
-            resolvedPassed == null
+            'rounded-2xl p-8 mb-6 text-center border-2 shadow-xl',
+            passed == null
               ? 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800 shadow-blue-900/10 dark:shadow-blue-900/30'
               : resolvedPassed
               ? 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-emerald-200 dark:border-emerald-800 shadow-emerald-900/10 dark:shadow-emerald-900/30'
@@ -595,35 +610,23 @@ export default function QuizResultPage() {
               {resultTitle}
             </h1>
 
-            {isGradingPending && (
-              <p className="text-sm text-blue-600 dark:text-blue-300 mb-2">
-                {t('workspace.quiz.result.reviewPending', 'AI đang chấm bài của bạn, vui lòng đợi...')}
-              </p>
-            )}
-
-            {isGradingPending && (
-              <div className="mb-4 flex items-center justify-center">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
-                  {gradingProgressText}
-                </span>
+            <div className="mx-auto mb-6 max-w-4xl rounded-2xl border border-white/70 bg-white/45 p-4 shadow-inner shadow-white/60 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-900/25 dark:shadow-slate-950/20">
+              {/* Score display */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto">
+                {/* <ScoreStat label="Score" value={scoreValue} icon={BarChart3} /> */}
+                <ScoreStat label={t('workspace.quiz.result.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
+                <ScoreStat label={t('workspace.quiz.result.answered', 'Answered')} value={answeredValue} icon={Eye} />
+                <ScoreStat label={t('workspace.quiz.result.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
               </div>
-            )}
 
-            <p className="text-slate-600 dark:text-slate-300 mb-6">Attempt #{result.attemptId} • Quiz #{result.quizId}</p>
-
-            {/* Score display */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto mb-6">
-              {/* <ScoreStat label="Score" value={scoreValue} icon={BarChart3} /> */}
-              <ScoreStat label={t('workspace.quiz.result.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
-              <ScoreStat label={t('workspace.quiz.result.answered', 'Answered')} value={answeredValue} icon={Eye} />
-              <ScoreStat label={t('workspace.quiz.result.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
+                <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
+                {result.passScore != null && <span className="rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-300">{t('workspace.quiz.result.passScore', 'Pass Score')}: {result.passScore}</span>}
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-6 text-xs text-slate-500 dark:text-slate-400">
-              {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
-              <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
-              {result.passScore != null && <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">{t('workspace.quiz.result.passScore', 'Pass Score')}: {result.passScore}</span>}
-            </div>
+            <SectionDivider label={t('workspace.quiz.result.assessmentSection', 'Nhận xét của Quizmate AI')} />
 
             {assessmentStatus !== 'NOT_AVAILABLE' && (
               <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
@@ -690,7 +693,7 @@ export default function QuizResultPage() {
 
                   {nextQuizPlan && (
                     <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
-                      <p className="font-medium text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.nextQuizPlan', 'Kế hoạch quiz tiếp theo')}</p>
+                      <p className="font-medium text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.nextQuizPlan', 'Kế hoạch cho bài quiz tiếp theo')}</p>
                       <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{nextQuizPlan?.goal}</p>
                       {nextQuizPlan?.reason && (
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{nextQuizPlan.reason}</p>
@@ -712,6 +715,7 @@ export default function QuizResultPage() {
             )}
 
             {/* Action buttons */}
+            <SectionDivider />
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               {canTriggerKnowledgeAfterPreLearning && (
                 <Button
@@ -725,11 +729,11 @@ export default function QuizResultPage() {
                     : t('workspace.quiz.result.generatingKnowledge', 'Đang tạo knowledge...')}
                 </Button>
               )}
-              <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2" disabled={reviewQuestions.length === 0}>
-                <Eye className="w-4 h-4" /> {t('workspace.quiz.result.reviewAnswers', 'Review Answers')}
-              </Button>
               <Button onClick={handleBack} className="min-w-[160px] gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                 <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
+              </Button>
+              <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2" disabled={reviewQuestions.length === 0}>
+                <Eye className="w-4 h-4" /> {t('workspace.quiz.result.reviewAnswers', 'Review Answers')}
               </Button>
             </div>
           </div>
@@ -887,10 +891,14 @@ export default function QuizResultPage() {
 
 function ScoreStat({ label, value, icon: Icon }) {
   return (
-    <div className="flex flex-col items-center p-3 bg-white/60 dark:bg-slate-800/60 rounded-xl">
-      {Icon && <Icon className="w-5 h-5 text-slate-500 dark:text-slate-400 mb-1" />}
+    <div className="flex flex-col items-center rounded-2xl border-2 border-slate-300/95 bg-white p-5 shadow-md shadow-slate-900/5 dark:border-slate-700/80 dark:bg-slate-900/80 dark:shadow-slate-950/20">
+      {Icon && (
+        <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          <Icon className="h-4.5 w-4.5" />
+        </div>
+      )}
       <span className="text-lg font-bold text-slate-800 dark:text-slate-100">{value}</span>
-      <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
     </div>
   );
 }

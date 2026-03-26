@@ -17,10 +17,45 @@ import {
 
 const ROADMAP_FLOW_TOTAL_STEPS = 3;
 const NO_ROADMAP_FLOW_TOTAL_STEPS = 2;
-const ANALYSIS_DEBOUNCE_MS = 800;
-const FIELD_SUGGESTION_DEBOUNCE_MS = 500;
-const EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS = 600;
-const CONSISTENCY_DEBOUNCE_MS = 700;
+const ANALYSIS_DEBOUNCE_MS = 900;
+const FIELD_SUGGESTION_DEBOUNCE_MS = 700;
+const EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS = 700;
+const CONSISTENCY_DEBOUNCE_MS = 1000;
+const LIVE_ALLOWED_INPUT_REGEX = /^[\p{L}\p{M}\p{N}\s.,:;!?()[\]/'"&+#%+-]*$/u;
+const SHORT_KNOWLEDGE_TOKEN_REGEX = /^[\p{L}\p{M}\p{N}#+./-]{2,5}$/u;
+const REPEATED_CHARACTER_REGEX = /(.)\1{5,}/u;
+const LIVE_INPUT_RULES = {
+  knowledgeInput: {
+    minCompactLength: 3,
+    minMeaningfulChars: 3,
+    allowShortToken: true,
+  },
+  inferredDomain: {
+    minCompactLength: 2,
+    minMeaningfulChars: 2,
+  },
+  currentLevel: {
+    minCompactLength: 4,
+    minMeaningfulChars: 4,
+  },
+  learningGoal: {
+    minCompactLength: 10,
+    minMeaningfulChars: 10,
+  },
+  strongAreas: {
+    minCompactLength: 4,
+    minMeaningfulChars: 4,
+  },
+  weakAreas: {
+    minCompactLength: 4,
+    minMeaningfulChars: 4,
+  },
+  mockExamName: {
+    minCompactLength: 3,
+    minMeaningfulChars: 3,
+    allowShortToken: true,
+  },
+};
 
 function ensureString(value, fallback = '') {
   return typeof value === 'string' ? value : fallback;
@@ -48,6 +83,103 @@ function hasTextValue(value) {
   }
 
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function normalizeLiveInput(value) {
+  return ensureString(value).replace(/\r\n/g, '\n').trim();
+}
+
+function getCompactLiveInputLength(value) {
+  return normalizeLiveInput(value).replace(/\s+/g, '').length;
+}
+
+function countMeaningfulLiveChars(value) {
+  return (normalizeLiveInput(value).match(/[\p{L}\p{M}\p{N}+#]/gu) || []).length;
+}
+
+function hasInvalidLiveCharacters(value) {
+  const normalizedValue = normalizeLiveInput(value);
+  return normalizedValue.length > 0 && !LIVE_ALLOWED_INPUT_REGEX.test(normalizedValue);
+}
+
+function isRepeatedNoiseText(value) {
+  const compactValue = normalizeLiveInput(value).replace(/\s+/g, '');
+  return compactValue.length > 0 && REPEATED_CHARACTER_REGEX.test(compactValue);
+}
+
+function isShortSemanticToken(value) {
+  const compactValue = normalizeLiveInput(value).replace(/\s+/g, '');
+  return SHORT_KNOWLEDGE_TOKEN_REGEX.test(compactValue);
+}
+
+function evaluateLiveInputValue(value, rule = {}) {
+  const normalizedValue = normalizeLiveInput(value);
+
+  if (!normalizedValue) {
+    return {
+      status: 'empty',
+      normalizedValue,
+      reason: '',
+    };
+  }
+
+  if (hasInvalidLiveCharacters(normalizedValue)) {
+    return {
+      status: 'invalid',
+      normalizedValue,
+      reason: 'invalidCharacters',
+    };
+  }
+
+  if (isRepeatedNoiseText(normalizedValue)) {
+    return {
+      status: 'invalid',
+      normalizedValue,
+      reason: 'noise',
+    };
+  }
+
+  const compactLength = getCompactLiveInputLength(normalizedValue);
+  const meaningfulChars = countMeaningfulLiveChars(normalizedValue);
+
+  if (rule.allowShortToken && isShortSemanticToken(normalizedValue)) {
+    return {
+      status: 'ready',
+      normalizedValue,
+      reason: '',
+    };
+  }
+
+  if (
+    compactLength < (rule.minCompactLength || 1)
+    || meaningfulChars < (rule.minMeaningfulChars || 1)
+  ) {
+    return {
+      status: 'invalid',
+      normalizedValue,
+      reason: 'tooShort',
+    };
+  }
+
+  return {
+    status: 'ready',
+    normalizedValue,
+    reason: '',
+  };
+}
+
+function getLiveFieldEvaluation(field, value) {
+  return evaluateLiveInputValue(value, LIVE_INPUT_RULES[field] || {});
+}
+
+function getReadyLiveFieldValue(field, value) {
+  const evaluation = getLiveFieldEvaluation(field, value);
+  return evaluation.status === 'ready' ? evaluation.normalizedValue : '';
+}
+
+function hasBlockingLiveFieldValue(field, value) {
+  const evaluation = getLiveFieldEvaluation(field, value);
+  return evaluation.status === 'invalid';
 }
 
 function hasBasicStepData(initialData) {
@@ -401,48 +533,72 @@ function splitProfileFieldValues(value) {
 }
 
 function buildFieldSuggestionPayload(values) {
+  const readyKnowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
+  const readyDomain = getReadyLiveFieldValue('inferredDomain', values.inferredDomain);
+  const readyCurrentLevel = getReadyLiveFieldValue('currentLevel', values.currentLevel);
+  const readyStrongAreas = getReadyLiveFieldValue('strongAreas', values.strongAreas);
+  const readyWeakAreas = getReadyLiveFieldValue('weakAreas', values.weakAreas);
+
   return {
-    knowledge: values.knowledgeInput.trim(),
-    domain: values.inferredDomain.trim(),
+    knowledge: readyKnowledge,
+    domain: readyDomain,
     learningMode: mapLearningModeForApi(values.workspacePurpose),
-    currentLevel: values.currentLevel.trim() || null,
-    strongAreas: splitProfileFieldValues(values.strongAreas),
-    weakAreas: splitProfileFieldValues(values.weakAreas),
+    currentLevel: readyCurrentLevel || null,
+    strongAreas: splitProfileFieldValues(readyStrongAreas),
+    weakAreas: splitProfileFieldValues(readyWeakAreas),
   };
 }
 
 function buildExamTemplateSuggestionPayload(values) {
   return {
-    knowledge: values.knowledgeInput.trim(),
-    domain: values.inferredDomain.trim(),
+    knowledge: getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput),
+    domain: getReadyLiveFieldValue('inferredDomain', values.inferredDomain),
   };
 }
 
 function buildConsistencyPayload(values) {
+  const readyKnowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
+  const readyDomain = getReadyLiveFieldValue('inferredDomain', values.inferredDomain);
+  const readyCurrentLevel = getReadyLiveFieldValue('currentLevel', values.currentLevel);
+  const readyLearningGoal = getReadyLiveFieldValue('learningGoal', values.learningGoal);
+  const readyMockExamName = getReadyLiveFieldValue('mockExamName', values.mockExamName);
+  const readyStrongAreas = getReadyLiveFieldValue('strongAreas', values.strongAreas);
+  const readyWeakAreas = getReadyLiveFieldValue('weakAreas', values.weakAreas);
+
   return {
-    knowledge: values.knowledgeInput.trim(),
-    domain: values.inferredDomain,
+    knowledge: readyKnowledge,
+    domain: readyDomain,
     learningMode: mapLearningModeForApi(values.workspacePurpose),
-    currentLevel: values.currentLevel.trim() || null,
-    learningGoal: values.learningGoal.trim() || null,
-    examName: values.mockExamName?.trim() || null,
-    strongAreas: splitProfileFieldValues(values.strongAreas),
-    weakAreas: splitProfileFieldValues(values.weakAreas),
+    currentLevel: readyCurrentLevel || null,
+    learningGoal: readyLearningGoal || null,
+    examName: readyMockExamName || null,
+    strongAreas: splitProfileFieldValues(readyStrongAreas),
+    weakAreas: splitProfileFieldValues(readyWeakAreas),
   };
 }
 
 function shouldRunLiveConsistency(values) {
   const beginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
+  const hasReadyKnowledge = Boolean(getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput));
+  const hasReadyDomain = Boolean(getReadyLiveFieldValue('inferredDomain', values.inferredDomain));
+  const hasReadyCurrentLevel = Boolean(getReadyLiveFieldValue('currentLevel', values.currentLevel));
+  const hasReadyLearningGoal = Boolean(getReadyLiveFieldValue('learningGoal', values.learningGoal));
+  const hasReadyStrongAreas = Boolean(getReadyLiveFieldValue('strongAreas', values.strongAreas));
+  const hasReadyWeakAreas = Boolean(getReadyLiveFieldValue('weakAreas', values.weakAreas));
+  const hasReadyMockExamName =
+    values.workspacePurpose !== 'MOCK_TEST'
+    || Boolean(getReadyLiveFieldValue('mockExamName', values.mockExamName));
 
   return Boolean(
-    values.knowledgeInput.trim()
-    && values.inferredDomain.trim()
+    hasReadyKnowledge
+    && hasReadyDomain
     && values.workspacePurpose
-    && values.currentLevel.trim()
-    && values.learningGoal.trim()
+    && hasReadyCurrentLevel
+    && hasReadyLearningGoal
+    && hasReadyMockExamName
     && (
       beginnerMode
-      || (values.strongAreas.trim() && values.weakAreas.trim())
+      || (hasReadyStrongAreas && hasReadyWeakAreas)
     )
   );
 }
@@ -673,6 +829,125 @@ function mapLearningModeForApi(purpose) {
   return 'STUDY_NEW';
 }
 
+function getLiveFieldErrorMessage(field, value, t) {
+  const evaluation = getLiveFieldEvaluation(field, value);
+
+  if (evaluation.status !== 'invalid') {
+    return '';
+  }
+
+  if (evaluation.reason === 'invalidCharacters') {
+    return translateOrFallback(
+      t,
+      `workspace.profileConfig.validation.${field}InvalidCharacters`,
+      'Chỉ dùng chữ, số và các dấu câu cơ bản. Ký tự không hợp lệ sẽ không được gửi lên AI.'
+    );
+  }
+
+  if (evaluation.reason === 'noise') {
+    return translateOrFallback(
+      t,
+      `workspace.profileConfig.validation.${field}Noise`,
+      'Nội dung đang có quá nhiều ký tự lặp hoặc ký hiệu. Hãy nhập rõ hơn trước khi hệ thống gọi AI.'
+    );
+  }
+
+  switch (field) {
+    case 'knowledgeInput':
+      return translateOrFallback(
+        t,
+        'workspace.profileConfig.validation.knowledgeInputTooShort',
+        'Nhập ít nhất 3 ký tự có nghĩa để AI phân tích kiến thức.'
+      );
+    case 'currentLevel':
+      return translateOrFallback(
+        t,
+        'workspace.profileConfig.validation.currentLevelTooShort',
+        'Mô tả trình độ hiện tại tối thiểu 4 ký tự có nghĩa.'
+      );
+    case 'learningGoal':
+      return translateOrFallback(
+        t,
+        'workspace.profileConfig.validation.learningGoalTooShort',
+        'Mục tiêu học tập nên có ít nhất 10 ký tự có nghĩa trước khi gửi AI.'
+      );
+    case 'strongAreas':
+      return translateOrFallback(
+        t,
+        'workspace.profileConfig.validation.strongAreasTooShort',
+        'Điểm mạnh nên có ít nhất 4 ký tự có nghĩa.'
+      );
+    case 'weakAreas':
+      return translateOrFallback(
+        t,
+        'workspace.profileConfig.validation.weakAreasTooShort',
+        'Điểm yếu nên có ít nhất 4 ký tự có nghĩa.'
+      );
+    case 'mockExamName':
+      return translateOrFallback(
+        t,
+        'workspace.profileConfig.validation.mockExamNameTooShort',
+        'Tên đề thi nên có ít nhất 3 ký tự có nghĩa.'
+      );
+    case 'inferredDomain':
+      return translateOrFallback(
+        t,
+        'workspace.profileConfig.validation.inferredDomainTooShort',
+        'Lĩnh vực cần có ít nhất 2 ký tự có nghĩa.'
+      );
+    default:
+      return translateOrFallback(
+        t,
+        `workspace.profileConfig.validation.${field}TooShort`,
+        'Nội dung còn quá ngắn để gửi AI.'
+      );
+  }
+}
+
+function buildLiveValidationErrors(values, t) {
+  const nextErrors = {};
+
+  ['knowledgeInput', 'currentLevel', 'learningGoal', 'strongAreas', 'weakAreas', 'mockExamName'].forEach((field) => {
+    if (!hasTextValue(values?.[field])) {
+      return;
+    }
+
+    const message = getLiveFieldErrorMessage(field, values[field], t);
+    if (message) {
+      nextErrors[field] = message;
+    }
+  });
+
+  return nextErrors;
+}
+
+function canFetchFieldSuggestions(values) {
+  if (!values.workspacePurpose) {
+    return false;
+  }
+
+  if (!getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput)) {
+    return false;
+  }
+
+  if (!getReadyLiveFieldValue('inferredDomain', values.inferredDomain)) {
+    return false;
+  }
+
+  return !(
+    hasBlockingLiveFieldValue('currentLevel', values.currentLevel)
+    || hasBlockingLiveFieldValue('strongAreas', values.strongAreas)
+    || hasBlockingLiveFieldValue('weakAreas', values.weakAreas)
+  );
+}
+
+function canFetchExamTemplateSuggestions(values) {
+  return Boolean(
+    getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput)
+    && getReadyLiveFieldValue('inferredDomain', values.inferredDomain)
+  );
+}
+
 export function useWorkspaceProfileWizard({
   open,
   initialData,
@@ -707,6 +982,11 @@ export function useWorkspaceProfileWizard({
   const [examTemplateSuggestionStatus, setExamTemplateSuggestionStatus] = useState('idle');
   const [consistencyResult, setConsistencyResult] = useState(null);
   const [consistencyStatus, setConsistencyStatus] = useState('idle');
+  const liveValidationErrors = buildLiveValidationErrors(values, t);
+  const mergedErrors = {
+    ...errors,
+    ...liveValidationErrors,
+  };
 
   const analysisTimerRef = useRef(null);
   const analysisAbortRef = useRef(null);
@@ -728,6 +1008,9 @@ export function useWorkspaceProfileWizard({
 
   const needsKnowledgeDescription =
     analysisStatus === 'success' && knowledgeAnalysis?.tooBroad === true;
+  const canRequestKnowledgeAnalysis = Boolean(getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput));
+  const canRequestFieldSuggestion = canFetchFieldSuggestions(values);
+  const canRequestExamTemplateSuggestion = canFetchExamTemplateSuggestions(values);
   const shouldAwaitOverallReview = step === 2 && shouldRunLiveConsistency(values);
   const currentConsistencyFingerprint = shouldAwaitOverallReview
     ? buildConsistencyFingerprint(values)
@@ -799,7 +1082,7 @@ export function useWorkspaceProfileWizard({
     setExamTemplateSuggestionStatus('idle');
     setConsistencyResult(null);
     setConsistencyStatus('idle');
-    setAnalysisStatus(nextValues.knowledgeInput ? 'loading' : 'idle');
+    setAnalysisStatus(getReadyLiveFieldValue('knowledgeInput', nextValues.knowledgeInput) ? 'loading' : 'idle');
     const canPrimeMockTemplate = nextValues.workspacePurpose === 'MOCK_TEST' && nextValues.mockExamName;
     setTemplateStatus(nextValues.templatePrompt || canPrimeMockTemplate ? 'success' : 'idle');
     setTemplatePreview(
@@ -837,13 +1120,13 @@ export function useWorkspaceProfileWizard({
     clearTimeout(analysisTimerRef.current);
     analysisAbortRef.current?.abort();
 
-    const trimmedKnowledge = values.knowledgeInput.trim();
+    const trimmedKnowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
     const analysisFingerprint = buildRequestFingerprint({
       knowledge: trimmedKnowledge,
       retry: analysisRetryTick,
     });
 
-    if (!trimmedKnowledge) {
+    if (!canRequestKnowledgeAnalysis) {
       analysisFingerprintRef.current = '';
       setAnalysisStatus('idle');
       setDomainOptions([]);
@@ -906,7 +1189,7 @@ export function useWorkspaceProfileWizard({
       clearTimeout(analysisTimerRef.current);
       analysisAbortRef.current?.abort();
     };
-  }, [open, values.knowledgeInput, analysisRetryTick, t]);
+  }, [open, values.knowledgeInput, analysisRetryTick, t, canRequestKnowledgeAnalysis]);
 
   // ─── Auto-fetch field suggestions when entering Step 2 ───
   const fetchFieldSuggestions = useCallback(
@@ -993,7 +1276,7 @@ export function useWorkspaceProfileWizard({
   );
 
   const prefetchMockTestStepTwoAiSignals = useCallback(() => {
-    if (!values.knowledgeInput.trim() || !values.inferredDomain.trim()) {
+    if (!canFetchFieldSuggestions(values) || !canFetchExamTemplateSuggestions(values)) {
       return;
     }
 
@@ -1020,14 +1303,23 @@ export function useWorkspaceProfileWizard({
       return;
     }
 
-    const payload = buildFieldSuggestionPayload(values);
-    fieldSuggestionTimerRef.current = setTimeout(() => {
-      fetchFieldSuggestions(payload);
-    }, FIELD_SUGGESTION_DEBOUNCE_MS);
+    if (canRequestFieldSuggestion) {
+      const payload = buildFieldSuggestionPayload(values);
+      fieldSuggestionTimerRef.current = setTimeout(() => {
+        fetchFieldSuggestions(payload);
+      }, FIELD_SUGGESTION_DEBOUNCE_MS);
+    } else {
+      fieldSuggestionTimerRef.current = null;
+      if (!getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput) || !getReadyLiveFieldValue('inferredDomain', values.inferredDomain)) {
+        fieldSuggestionFingerprintRef.current = '';
+        setFieldSuggestions(null);
+      }
+      setFieldSuggestionStatus('idle');
+    }
 
-    if (values.workspacePurpose === 'MOCK_TEST') {
-      const knowledge = values.knowledgeInput.trim();
-      const domain = values.inferredDomain.trim();
+    if (values.workspacePurpose === 'MOCK_TEST' && canRequestExamTemplateSuggestion) {
+      const knowledge = getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput);
+      const domain = getReadyLiveFieldValue('inferredDomain', values.inferredDomain);
       examTemplateSuggestionTimerRef.current = setTimeout(() => {
         fetchExamTemplateSuggestions({ knowledge, domain });
       }, EXAM_TEMPLATE_SUGGESTION_DEBOUNCE_MS);
@@ -1053,6 +1345,8 @@ export function useWorkspaceProfileWizard({
     values.currentLevel,
     values.strongAreas,
     values.weakAreas,
+    canRequestFieldSuggestion,
+    canRequestExamTemplateSuggestion,
   ]);
 
   const runConsistencyValidation = useCallback(
@@ -1236,8 +1530,20 @@ export function useWorkspaceProfileWizard({
     const nextErrors = {};
 
     if (targetStep === 1) {
+      const knowledgeInputError = getLiveFieldErrorMessage('knowledgeInput', values.knowledgeInput, t);
+      const knowledgeReady = Boolean(getReadyLiveFieldValue('knowledgeInput', values.knowledgeInput));
+
       if (!values.workspacePurpose) nextErrors.workspacePurpose = t('workspace.profileConfig.validation.purposeRequired');
-      if (!values.knowledgeInput.trim()) nextErrors.knowledgeInput = t('workspace.profileConfig.validation.knowledgeRequired');
+      if (!values.knowledgeInput.trim()) {
+        nextErrors.knowledgeInput = t('workspace.profileConfig.validation.knowledgeRequired');
+      } else if (knowledgeInputError) {
+        nextErrors.knowledgeInput = knowledgeInputError;
+      }
+
+      if (!knowledgeReady) {
+        return nextErrors;
+      }
+
       if (analysisStatus === 'loading') {
         nextErrors.inferredDomain = translateOrFallback(
           t,
@@ -1268,19 +1574,38 @@ export function useWorkspaceProfileWizard({
 
     if (targetStep === 2) {
       const beginnerMode = isAbsoluteBeginnerLevel(values.currentLevel);
+      const currentLevelError = getLiveFieldErrorMessage('currentLevel', values.currentLevel, t);
+      const learningGoalError = getLiveFieldErrorMessage('learningGoal', values.learningGoal, t);
+      const strongAreasError = getLiveFieldErrorMessage('strongAreas', values.strongAreas, t);
+      const weakAreasError = getLiveFieldErrorMessage('weakAreas', values.weakAreas, t);
+      const mockExamNameError = getLiveFieldErrorMessage('mockExamName', values.mockExamName, t);
 
-      if (!values.currentLevel.trim()) nextErrors.currentLevel = t('workspace.profileConfig.validation.currentLevelRequired');
-      if (!values.learningGoal.trim()) nextErrors.learningGoal = t('workspace.profileConfig.validation.learningGoalRequired');
+      if (!values.currentLevel.trim()) {
+        nextErrors.currentLevel = t('workspace.profileConfig.validation.currentLevelRequired');
+      } else if (currentLevelError) {
+        nextErrors.currentLevel = currentLevelError;
+      }
+      if (!values.learningGoal.trim()) {
+        nextErrors.learningGoal = t('workspace.profileConfig.validation.learningGoalRequired');
+      } else if (learningGoalError) {
+        nextErrors.learningGoal = learningGoalError;
+      }
       if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !beginnerMode && !values.strongAreas.trim()) {
         nextErrors.strongAreas = t('workspace.profileConfig.validation.strongAreasRequired');
+      } else if (values.strongAreas.trim() && strongAreasError) {
+        nextErrors.strongAreas = strongAreasError;
       }
       if ((values.workspacePurpose === 'REVIEW' || values.workspacePurpose === 'MOCK_TEST') && !beginnerMode && !values.weakAreas.trim()) {
         nextErrors.weakAreas = t('workspace.profileConfig.validation.weakAreasRequired');
+      } else if (values.weakAreas.trim() && weakAreasError) {
+        nextErrors.weakAreas = weakAreasError;
       }
 
       if (values.workspacePurpose === 'MOCK_TEST') {
         if (!values.mockExamName?.trim()) {
           nextErrors.mockExamName = t('workspace.profileConfig.validation.privateExamRequired');
+        } else if (mockExamNameError) {
+          nextErrors.mockExamName = mockExamNameError;
         }
       }
     }
@@ -1523,7 +1848,7 @@ export function useWorkspaceProfileWizard({
     step,
     maxUnlockedStep,
     values,
-    errors,
+    errors: mergedErrors,
     saveError,
     statusNotice:
       isWaitingForOverallReview

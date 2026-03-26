@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import {
   Crown,
+  ExternalLink,
   FolderOpen,
   Plus,
   Search,
+  Share2,
   Shield,
   Sparkles,
   Users,
@@ -103,7 +105,7 @@ const formatDateLabel = (value, currentLang) => {
   }).format(parsedDate);
 };
 
-function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate }) {
+function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, onShareGroup }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language === "en" ? "en" : "vi";
@@ -133,6 +135,8 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
   const handleNavigateGroup = (group) => {
     navigate(`/group-workspace/${group.workspaceId}`);
   };
+
+  const canShareGroup = (group) => getNormalizedRole(group?.memberRole) === "LEADER";
 
   const renderMetaPill = (theme, content) => (
     <span
@@ -276,7 +280,22 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
                     {createdAtLabel}
                   </span>
 
-                  <span className="flex items-center justify-end">
+                  <span className="flex items-center justify-end gap-2">
+                    {canShareGroup(group) && typeof onShareGroup === "function" ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onShareGroup(group);
+                        }}
+                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                          isDarkMode ? "text-slate-400 hover:bg-slate-800 hover:text-white" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                        }`}
+                        title={t("home.actions.share")}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    ) : null}
                     <ExternalLink className={`w-4 h-4 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
                   </span>
                 </div>
@@ -333,11 +352,28 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate })
                   }`}>
                     <RoleIcon className={`w-5 h-5 ${isDarkMode ? theme.iconColorDark : theme.iconColorLight}`} />
                   </div>
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${
-                    isDarkMode ? theme.badgeDark : theme.badgeLight
-                  }`}>
-                    {roleLabel}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {canShareGroup(group) ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onShareGroup(group);
+                        }}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
+                          isDarkMode ? "bg-slate-800 text-slate-300 hover:text-white" : "bg-slate-100 text-slate-600 hover:text-slate-900"
+                        }`}
+                        title={t("home.actions.share")}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    ) : null}
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold ${
+                      isDarkMode ? theme.badgeDark : theme.badgeLight
+                    }`}>
+                      {roleLabel}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="relative mt-5">
