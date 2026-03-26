@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, RefreshCw, FolderTree, Search } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -15,23 +15,109 @@ import {
 } from '@/Components/ui/table';
 import AdminPagination from '@/Pages/Admin/components/AdminPagination';
 import ListSpinner from '@/Components/ui/ListSpinner';
+import api from '@/api/api';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { useTopic } from '@/hooks/useTopic';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 const PAGE_SIZE = 10;
+const TOPIC_STORAGE_KEY = 'quizmateai.custom_topics';
+
+function normalizeField(field) {
+  return {
+    fieldId: Number(field?.fieldId || 0),
+    title: String(field?.title || '').trim(),
+    code: String(field?.code || '').trim(),
+  };
+}
+
+function normalizeTopic(topic) {
+  return {
+    topicId: Number(topic?.topicId || 0),
+    title: String(topic?.title || '').trim(),
+    code: String(topic?.code || '').trim(),
+    fields: Array.isArray(topic?.fields) ? topic.fields.map(normalizeField).filter((field) => field.title) : [],
+  };
+}
+
+function readStoredTopics() {
+  try {
+    const raw = localStorage.getItem(TOPIC_STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.map(normalizeTopic).filter((topic) => topic.title);
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredTopics(topics) {
+  try {
+    localStorage.setItem(TOPIC_STORAGE_KEY, JSON.stringify(topics));
+  } catch {
+    // Bỏ qua lỗi localStorage để không chặn thao tác quản trị.
+  }
+}
+
+function mergeTopics(baseTopics, overlayTopics) {
+  const topicMap = new Map();
+
+  const upsertTopic = (topic) => {
+    const normalizedTopic = normalizeTopic(topic);
+    if (!normalizedTopic.title) return;
+
+    const topicKey = normalizedTopic.topicId > 0
+      ? `id:${normalizedTopic.topicId}`
+      : `title:${normalizedTopic.title.toLowerCase()}`;
+    const existingTopic = topicMap.get(topicKey);
+
+    if (!existingTopic) {
+      topicMap.set(topicKey, normalizedTopic);
+      return;
+    }
+
+    const fieldMap = new Map();
+    [...existingTopic.fields, ...normalizedTopic.fields].forEach((field) => {
+      const normalizedField = normalizeField(field);
+      if (!normalizedField.title) return;
+
+      const fieldKey = normalizedField.fieldId > 0
+        ? `id:${normalizedField.fieldId}`
+        : `title:${normalizedField.title.toLowerCase()}`;
+      if (!fieldMap.has(fieldKey)) {
+        fieldMap.set(fieldKey, normalizedField);
+      }
+    });
+
+    topicMap.set(topicKey, {
+      ...existingTopic,
+      ...normalizedTopic,
+      fields: Array.from(fieldMap.values()),
+    });
+  };
+
+  (Array.isArray(baseTopics) ? baseTopics : []).forEach(upsertTopic);
+  (Array.isArray(overlayTopics) ? overlayTopics : []).forEach(upsertTopic);
+
+  return Array.from(topicMap.values());
+}
 
 function TopicManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showSuccess, showError } = useToast();
-  const getFriendlyError = (err, fallbackKey) => {
+  const [topics, setTopics] = useState([]);
+  const [topicsLoading, setTopicsLoading] = useState(false);
+  const getFriendlyError = useCallback((err, fallbackKey) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
+    const rawMessage = String(err?.message || '').trim();
+    if (rawMessage) return rawMessage;
     return t(fallbackKey);
-  };
-  const { topics, topicsLoading, fetchTopics, createTopic, createField } = useTopic();
+  }, [t]);
   const [newTopicTitle, setNewTopicTitle] = useState('');
   const [newTopicCode, setNewTopicCode] = useState('');
   const [selectedTopicId, setSelectedTopicId] = useState('');
@@ -46,6 +132,117 @@ function TopicManagement() {
   const [error, setError] = useState('');
 
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+
+  const fetchTopics = useCallback(async () => {
+    setTopicsLoading(true);
+    setError('');
+    try {
+      const response = await api.get('/topic/all');
+      const serverTopics = Array.isArray(response?.data) ? response.data : [];
+      const storedTopics = readStoredTopics();
+      setTopics(mergeTopics(serverTopics, storedTopics));
+    } catch (err) {
+      const storedTopics = readStoredTopics();
+      setTopics(storedTopics);
+      setError(getFriendlyError(err, 'topicManagement.topicCreateError'));
+    } finally {
+      setTopicsLoading(false);
+    }
+  }, [getFriendlyError]);
+
+  const createTopic = useCallback(async (title, code) => {
+    const trimmedTitle = String(title || '').trim();
+    if (!trimmedTitle) {
+      throw new Error('Vui lòng nhập tên topic.');
+    }
+
+    const topicExists = topics.some(
+      (topic) => String(topic?.title || '').trim().toLowerCase() === trimmedTitle.toLowerCase()
+    );
+    if (topicExists) {
+      throw new Error('Topic này đã tồn tại.');
+    }
+
+    const maxTopicId = topics.reduce((currentMax, topic) => {
+      const topicId = Number(topic?.topicId || 0);
+      return topicId > currentMax ? topicId : currentMax;
+    }, 0);
+
+    const createdTopic = {
+      topicId: maxTopicId + 1,
+      title: trimmedTitle,
+      code: String(code || '').trim(),
+      fields: [],
+    };
+
+    const storedTopics = readStoredTopics();
+    const nextStoredTopics = mergeTopics(storedTopics, [createdTopic]);
+    writeStoredTopics(nextStoredTopics);
+    setTopics((currentTopics) => mergeTopics(currentTopics, [createdTopic]));
+
+    return createdTopic;
+  }, [topics]);
+
+  const createField = useCallback(async (topicId, title, code) => {
+    const normalizedTopicId = Number(topicId);
+    const trimmedTitle = String(title || '').trim();
+
+    if (!normalizedTopicId) {
+      throw new Error('Vui lòng chọn topic trước.');
+    }
+    if (!trimmedTitle) {
+      throw new Error('Vui lòng nhập tên field.');
+    }
+
+    const targetTopic = topics.find((topic) => Number(topic?.topicId) === normalizedTopicId);
+    if (!targetTopic) {
+      throw new Error('Không tìm thấy topic đã chọn.');
+    }
+
+    const currentFields = Array.isArray(targetTopic.fields) ? targetTopic.fields : [];
+    const fieldExists = currentFields.some(
+      (field) => String(field?.title || '').trim().toLowerCase() === trimmedTitle.toLowerCase()
+    );
+    if (fieldExists) {
+      throw new Error('Field này đã tồn tại trong topic.');
+    }
+
+    const maxFieldId = currentFields.reduce((currentMax, field) => {
+      const fieldId = Number(field?.fieldId || 0);
+      return fieldId > currentMax ? fieldId : currentMax;
+    }, 0);
+    const createdField = {
+      fieldId: maxFieldId + 1,
+      title: trimmedTitle,
+      code: String(code || '').trim(),
+    };
+
+    const storedTopics = readStoredTopics();
+    const patchTopic = {
+      topicId: targetTopic.topicId,
+      title: targetTopic.title,
+      code: targetTopic.code || '',
+      fields: [createdField],
+    };
+    const nextStoredTopics = mergeTopics(storedTopics, [patchTopic]);
+    writeStoredTopics(nextStoredTopics);
+
+    setTopics((currentTopics) =>
+      currentTopics.map((topic) => {
+        if (Number(topic?.topicId) !== normalizedTopicId) {
+          return topic;
+        }
+
+        const nextFields = Array.isArray(topic.fields) ? [...topic.fields, createdField] : [createdField];
+        return {
+          ...topic,
+          fields: nextFields,
+        };
+      })
+    );
+
+    return createdField;
+  }, [topics]);
 
   useEffect(() => {
     fetchTopics();
