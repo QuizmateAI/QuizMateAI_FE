@@ -130,6 +130,10 @@ function UploadSourceDialogBase({
       return;
     }
 
+    if (suggestedResources.length >= 15) {
+      return;
+    }
+
     setGeneratingSuggestions(true);
     try {
       await suggestResourcesByWorkspace({ workspaceId: normalizedWorkspaceId });
@@ -271,16 +275,30 @@ function UploadSourceDialogBase({
                     {selectedSuggestionCount}/{suggestedResources.length}
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={loadSuggestedResources}
-                  disabled={loadingSuggestions || generatingSuggestions || importingSuggestions}
-                  className={`shrink-0 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
-                >
-                  {loadingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  {t("workspace.upload.refreshSuggested")}
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {suggestedResources.length > 0 && suggestedResources.length < 15 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGenerateSuggestions}
+                      disabled={loadingSuggestions || generatingSuggestions || importingSuggestions}
+                      className={`transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
+                    >
+                      {generatingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                      {t("workspace.upload.suggestMore")}
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={loadSuggestedResources}
+                    disabled={loadingSuggestions || generatingSuggestions || importingSuggestions}
+                    className={`transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
+                  >
+                    {loadingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {t("workspace.upload.refreshSuggested")}
+                  </Button>
+                </div>
               </div>
 
               {loadingSuggestions ? (
