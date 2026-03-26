@@ -84,3 +84,12 @@ export const importSuggestedResources = async ({ workspaceId, suggestionIds = []
   return response;
 };
 
+// Xu ly link YouTube/Web thanh material va trigger AI pipeline nhu upload file
+export const processYoutubeResource = async ({ url, workspaceId }) => {
+  const response = await api.post('/ai/youtube:processed', {
+    url,
+    workspaceId: Number(workspaceId),
+  });
+  return response;
+};
+

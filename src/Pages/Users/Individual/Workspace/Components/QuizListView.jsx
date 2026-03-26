@@ -432,6 +432,13 @@ function QuizListView({
               const isCommunityShared = quiz?.communityShared === true;
               const visibilityMeta = resolveVisibilityMeta(isCommunityShared, isDarkMode, t);
               const VisibilityIcon = visibilityMeta.icon;
+              const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
+              const normalizedIntent = String(quiz?.quizIntent || "").toUpperCase();
+              const shouldHideRoadmapIntentBadge = isRoadmapContextQuiz
+                && ["PRE_LEARNING", "PRACTICE", "REVIEW"].includes(normalizedIntent);
+              const shouldHideActiveStatusBadge = isRoadmapContextQuiz && String(quiz?.status || "").toUpperCase() === "ACTIVE";
+              const shouldHideAttemptedBadge = isRoadmapContextQuiz;
+              const shouldHideRoadmapVisibility = isRoadmapContextQuiz;
               const durationInMinutes = getDurationInMinutes(quiz);
               const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
               const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
@@ -486,12 +493,14 @@ function QuizListView({
                               ? t("workspace.quiz.myPassedTrue", "Đã đậu")
                               : t("workspace.quiz.myPassedFalse", "Chưa đậu")}
                           </span>
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                            isDarkMode ? visibilityMeta.darkClassName : visibilityMeta.lightClassName
-                          }`}>
-                            <VisibilityIcon className="w-3 h-3" />
-                            {visibilityMeta.shortLabel}
-                          </span>
+                          {!shouldHideRoadmapVisibility ? (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              isDarkMode ? visibilityMeta.darkClassName : visibilityMeta.lightClassName
+                            }`}>
+                              <VisibilityIcon className="w-3 h-3" />
+                              {visibilityMeta.shortLabel}
+                            </span>
+                          ) : null}
                         </div>
 
                         {typeof quiz.timerMode === "boolean" && (
@@ -518,23 +527,43 @@ function QuizListView({
                   >
                     <div className="h-full flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 flex-wrap">
-                        {quiz.quizIntent && (
+                        {quiz.quizIntent && !shouldHideRoadmapIntentBadge && (
                           <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${isDarkMode ? is.dark || "bg-slate-800 text-slate-400" : is.light || "bg-gray-100 text-gray-500"}`}>
                             {t(`workspace.quiz.intentLabels.${quiz.quizIntent}`)}
                           </span>
                         )}
-                        <span className={`text-sm px-3.5 py-1.5 rounded-full font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
-                          {quiz.status === "ACTIVE"
-                            ? t("workspace.quiz.activeReadyLabel", "Quiz có thể làm")
-                            : t(`workspace.quiz.statusLabels.${quiz.status}`)}
-                        </span>
-                        <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${myAttempted
-                          ? (isDarkMode ? "bg-cyan-950/40 text-cyan-300" : "bg-cyan-100 text-cyan-700")
-                          : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")
+                        {!shouldHideActiveStatusBadge ? (
+                          <span className={`text-sm px-3.5 py-1.5 rounded-full font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
+                            {t(`workspace.quiz.statusLabels.${quiz.status}`)}
+                          </span>
+                        ) : null}
+                        {typeof quiz.timerMode === "boolean" && (
+                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${quiz.timerMode
+                            ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
+                            : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                          }`}>
+                            {quiz.timerMode
+                              ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
+                              : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                          </span>
+                        )}
+                        {!shouldHideAttemptedBadge ? (
+                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${myAttempted
+                            ? (isDarkMode ? "bg-cyan-950/40 text-cyan-300" : "bg-cyan-100 text-cyan-700")
+                            : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")
+                          }`}>
+                            {myAttempted
+                              ? t("workspace.quiz.myAttemptedTrue", "Đã làm")
+                              : t("workspace.quiz.myAttemptedFalse", "Chưa làm")}
+                          </span>
+                        ) : null}
+                        <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${myPassed
+                          ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                          : (isDarkMode ? "bg-amber-950/40 text-amber-300" : "bg-amber-100 text-amber-700")
                         }`}>
-                          {myAttempted
-                            ? t("workspace.quiz.myAttemptedTrue", "Đã làm")
-                            : t("workspace.quiz.myAttemptedFalse", "Chưa làm")}
+                          {myPassed
+                            ? t("workspace.quiz.myPassedTrue", "Đã đậu")
+                            : t("workspace.quiz.myPassedFalse", "Chưa đậu")}
                         </span>
                       </div>
 
@@ -561,7 +590,7 @@ function QuizListView({
                             </button>
                           </>
                         )}
-                        {onShareQuiz ? (
+                        {onShareQuiz && !shouldHideRoadmapVisibility ? (
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
