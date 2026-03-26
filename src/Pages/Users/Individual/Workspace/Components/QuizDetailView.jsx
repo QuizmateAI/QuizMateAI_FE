@@ -230,6 +230,10 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     || Number(effectiveQuiz?.phaseId) > 0
     || Number(effectiveQuiz?.knowledgeId) > 0;
   const isRoadmapQuizSource = isRoadmapQuizByData || isRoadmapRouteSource;
+  const normalizedIntent = String(effectiveQuiz?.quizIntent || "").toUpperCase();
+  const shouldHideRoadmapIntentBadge = isRoadmapQuizSource
+    && ["PRE_LEARNING", "PRACTICE", "REVIEW"].includes(normalizedIntent);
+  const shouldHideRoadmapActiveStatusBadge = isRoadmapQuizSource && String(currentStatus || "").toUpperCase() === "ACTIVE";
   const resultSourceState = {
     sourceView: isRoadmapQuizSource ? "roadmap" : "quiz-panel",
     sourceWorkspaceId: Number(effectiveQuiz?.workspaceId) || null,
@@ -355,14 +359,16 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
               <div className="flex items-start justify-between mb-3">
                 <h3 className={`text-lg font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>{effectiveQuiz?.title}</h3>
                 <div className="flex items-center gap-2">
-                  {effectiveQuiz?.quizIntent && (
+                  {effectiveQuiz?.quizIntent && !shouldHideRoadmapIntentBadge && (
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? is.dark || "" : is.light || ""}`}>
                       {t(`workspace.quiz.intentLabels.${effectiveQuiz.quizIntent}`)}
                     </span>
                   )}
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
-                    {t(`workspace.quiz.statusLabels.${currentStatus}`)}
-                  </span>
+                  {!shouldHideRoadmapActiveStatusBadge ? (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
+                      {t(`workspace.quiz.statusLabels.${currentStatus}`)}
+                    </span>
+                  ) : null}
                   {typeof effectiveQuiz?.timerMode === "boolean" && (
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${effectiveQuiz.timerMode
                       ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")

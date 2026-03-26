@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Share2,
+  Loader2,
   Sparkles,
 } from "lucide-react";
 
@@ -442,12 +443,7 @@ function RoadmapCanvasView2({
                     {isCompletedPhase ? (
                       <CheckCircle2 className="w-3.5 h-3.5" />
                     ) : isProcessingPhase ? (
-                      <CircularProgressLoader
-                        percent={phaseProcessingPercent}
-                        size="sm"
-                        color="amber"
-                        className="scale-[0.55] -my-2 -mx-1"
-                      />
+                      <Loader2 className="w-3.5 h-3.5 text-yellow-500 animate-spin" />
                     ) : (
                       <div className="w-2 h-2 rounded-full bg-current" />
                     )}
@@ -483,7 +479,7 @@ function RoadmapCanvasView2({
                         returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
                       />
 
-                      {shouldShowCreatePhaseContentAction ? (
+                      {/* {shouldShowCreatePhaseContentAction ? (
                         <details className={`mt-3 rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/30" : "border-slate-200 bg-slate-50"}`}>
                           <summary className={`cursor-pointer list-none px-3 py-2 text-xs font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
                             {t("workspace.roadmap.nextStepTitle", "Bước tiếp theo")}
@@ -498,7 +494,7 @@ function RoadmapCanvasView2({
                             </Button>
                           </div>
                         </details>
-                      ) : null}
+                      ) : null} */}
                     </div>
                     ) : shouldShowPreLearningPlaceholder ? (
                       <div>
