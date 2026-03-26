@@ -27,6 +27,8 @@ function RoadmapCanvasView2({
   skipPreLearningPhaseIds = [],
   quizRefreshToken = 0,
   progressTracking = null,
+  onShareRoadmap,
+  onShareQuiz,
 }) {
   const { t } = useTranslation();
   const [openPhaseId, setOpenPhaseId] = useState(null);
@@ -337,6 +339,29 @@ function RoadmapCanvasView2({
   return (
     <div className={`h-full overflow-y-auto p-4 ${isDarkMode ? "bg-slate-900" : "bg-white"}`}>
       <div className="space-y-3">
+        <div className={`rounded-lg border px-4 py-3 flex items-start justify-between gap-3 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
+          <div className="min-w-0">
+            <p className={`text-sm font-semibold truncate ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+              {roadmap?.title}
+            </p>
+            {roadmap?.description ? (
+              <p className={`mt-1 text-xs line-clamp-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                {roadmap.description}
+              </p>
+            ) : null}
+          </div>
+          {onShareRoadmap && roadmap?.roadmapId ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onShareRoadmap(roadmap)}
+              className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              {t("home.actions.share", "Share")}
+            </Button>
+          ) : null}
+        </div>
         {activePhase ? [activePhase].map((phase) => {
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
@@ -443,6 +468,7 @@ function RoadmapCanvasView2({
                         contextId={phase.phaseId}
                         onCreateQuiz={() => onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false })}
                         onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
+                        onShareQuiz={onShareQuiz}
                         embedded
                         hideCreateButton
                         title={t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
@@ -537,6 +563,33 @@ function RoadmapCanvasView2({
                         <p className={`text-xs mb-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
                           {t("workspace.roadmap.postLearningHelper", "Hoàn thành post-learning để đánh giá mức độ nắm vững kiến thức sau khi học phase này.")}
                         </p>
+                        <p className={`text-xs mb-2 ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
+                          {t("workspace.roadmap.postLearningProgress", "Tiến độ mở khóa: {{passed}}/{{total}} knowledge đã đạt điều kiện.", {
+                            passed: passedKnowledgeCount,
+                            total: totalKnowledgeCount,
+                          })}
+                        </p>
+                        {shouldLockPostLearning ? (
+                          <p className={`text-xs mb-2 ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
+                            {t("workspace.roadmap.postLearningLocked", "Mỗi knowledge cần đạt điểm qua ở ít nhất 1 quiz ôn tập để mở post-learning.")}
+                          </p>
+                        ) : null}
+                        <div className={shouldLockPostLearning ? "opacity-50 pointer-events-none select-none" : ""}>
+                          <QuizListView
+                            isDarkMode={isDarkMode}
+                            contextType="PHASE"
+                            contextId={phase.phaseId}
+                            onCreateQuiz={() => onCreatePhaseKnowledge?.(phase.phaseId)}
+                            onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
+                            onShareQuiz={onShareQuiz}
+                            embedded
+                            hideCreateButton
+                            title={t("workspace.roadmap.canvas.postLearning", "Post-learning")}
+                            intentFilter={["POST_LEARNING"]}
+                            refreshToken={quizRefreshToken}
+                            returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
+                          />
+                        </div>
                         <QuizListView
                           isDarkMode={isDarkMode}
                           contextType="PHASE"

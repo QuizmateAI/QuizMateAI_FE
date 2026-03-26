@@ -115,7 +115,7 @@ function RoadmapJourPanel({
                 color="blue"
               />
               <p className={`text-sm ${fontClass} ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi AI tạo phase")}
+                {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi\n Quizmate AI tạo phase")}
               </p>
             </div>
           </div>

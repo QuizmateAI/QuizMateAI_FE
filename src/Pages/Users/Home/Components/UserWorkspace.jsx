@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, memo, useMemo } from "react";
-import { MoreVertical, Plus, Pencil, Trash2, FolderOpen, Search, X } from "lucide-react";
+import { MoreVertical, Plus, Pencil, Trash2, FolderOpen, Search, Share2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Pagination from "./Pagination";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -55,7 +55,7 @@ function getCardColor(index, isDark) {
 }
 
 // Menu dropdown cho mỗi workspace card - memo để tránh re-render không cần thiết
-const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, isDarkMode }) {
+const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, onShare, isDarkMode }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -84,6 +84,17 @@ const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, isDarkMode
             isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"
           }`}
         >
+          {typeof onShare === "function" ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(false); onShare(); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              {t("home.actions.share")}
+            </button>
+          ) : null}
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
@@ -107,7 +118,7 @@ const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, isDarkMode
 });
 
 // Card workspace - memo để tối ưu render khi list thay đổi
-const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit, onDelete, locale, untitledTitle, noDescription }) {
+const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit, onDelete, onShare, locale, untitledTitle, noDescription }) {
   const navigate = useNavigateWithLoading();
   const cardBg = getCardColor(idx, isDarkMode);
   return (
@@ -119,7 +130,7 @@ const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit,
     >
       <div className="flex items-start justify-between">
         <div className="text-3xl shrink-0">📝</div>
-        <WorkspaceMenu isDarkMode={isDarkMode} onEdit={() => onEdit(ws)} onDelete={() => onDelete(ws)} />
+        <WorkspaceMenu isDarkMode={isDarkMode} onEdit={() => onEdit(ws)} onDelete={() => onDelete(ws)} onShare={typeof onShare === "function" ? () => onShare(ws) : null} />
       </div>
       <div className="flex-1 min-w-0 mt-2">
         <h3 className={`font-medium text-base line-clamp-2 leading-snug ${isDarkMode ? "text-white" : "text-[#1F1F1F]"}`}>
@@ -141,7 +152,7 @@ const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit,
   );
 });
 
-function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, onPageChange, onPageSizeChange, onOpenCreate, onOpenEdit, onOpenDelete }) {
+function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, onPageChange, onPageSizeChange, onOpenCreate, onOpenEdit, onOpenDelete, onShareWorkspace }) {
   const navigate = useNavigateWithLoading();
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -261,6 +272,7 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
                       isDarkMode={isDarkMode}
                       onEdit={() => onOpenEdit(ws)}
                       onDelete={() => onOpenDelete(ws)}
+                      onShare={typeof onShareWorkspace === "function" ? () => onShareWorkspace(ws) : null}
                     />
                   </div>
                 ))}
@@ -319,6 +331,7 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
               isDarkMode={isDarkMode}
               onEdit={onOpenEdit}
               onDelete={onOpenDelete}
+              onShare={onShareWorkspace}
               locale={locale}
               untitledTitle={untitledTitle}
               noDescription={noDescription}

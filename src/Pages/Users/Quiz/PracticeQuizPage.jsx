@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -24,14 +25,26 @@ export default function PracticeQuizPage() {
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
 
-  const [quiz, setQuiz] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [attemptId, setAttemptId] = useState(null);
   const [isStarted, setIsStarted] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const [trackProgress, setTrackProgress] = useState(true);
   const [showResult, setShowResult] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const [confirmStartOpen, setConfirmStartOpen] = useState(true);
+  const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+  const {
+    data: quiz = null,
+    isLoading: loading,
+  } = useQuery({
+    queryKey: ['quiz-full', quizId],
+    queryFn: async () => {
+      const res = await getQuizFull(quizId);
+      return normalizeQuizData(res.data);
+    },
+    enabled: Boolean(quizId),
+    retry: 1,
+  });
   const returnToQuizPath = location.state?.returnToQuizPath
     || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
     || '/home';
@@ -42,20 +55,6 @@ export default function PracticeQuizPage() {
     enabled: isStarted && trackProgress,
   });
 
-  // Fetch full quiz data
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getQuizFull(quizId);
-        setQuiz(normalizeQuizData(res.data));
-      } catch (err) {
-        console.error('Failed to load quiz:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [quizId]);
-
   const currentQuestion = quiz?.questions[currentIndex];
   const total = quiz?.questions.length || 0;
 
@@ -64,7 +63,15 @@ export default function PracticeQuizPage() {
     navigate(returnToQuizPath, { replace: true });
   }, [navigate, returnToQuizPath, isStarted]);
 
+  const handleCloseStartDialog = useCallback(() => {
+    setConfirmStartOpen(false);
+    navigate(returnToQuizPath, { replace: true });
+  }, [navigate, returnToQuizPath]);
+
   const handleStart = useCallback(async () => {
+    if (isStarting) return;
+
+    setIsStarting(true);
     try {
       let res;
       try {
@@ -95,8 +102,10 @@ export default function PracticeQuizPage() {
     } catch (err) {
       console.error('Failed to start attempt:', err);
       showError(err?.message || 'Failed to start quiz attempt');
+    } finally {
+      setIsStarting(false);
     }
-  }, [quizId, initFromSaved, showError, syncSnapshot]);
+  }, [initFromSaved, isStarting, quizId, showError, syncSnapshot]);
 
   const handleSubmit = useCallback(async () => {
     if (!attemptId) return;
@@ -117,6 +126,15 @@ export default function PracticeQuizPage() {
       console.error('Failed to submit:', err);
     }
   }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath]);
+
+  const handleOpenSubmitConfirm = useCallback(() => {
+    setConfirmSubmitOpen(true);
+  }, []);
+
+  const handleConfirmSubmit = useCallback(async () => {
+    setConfirmSubmitOpen(false);
+    await handleSubmit();
+  }, [handleSubmit]);
 
   const handleNext = useCallback(() => {
     setShowResult(false);
@@ -150,46 +168,49 @@ export default function PracticeQuizPage() {
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
         <QuizHeader onBack={handleHeaderBack} title={quiz.title} showConfirm={false} />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg shadow-slate-900/10 dark:shadow-blue-900/50 max-w-md w-full border border-slate-200 dark:border-slate-700">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{quiz.title}</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">{total} questions • Practice Mode</p>
-          {quiz.maxAttempt && <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Max attempts: {quiz.maxAttempt}</p>}
-          <div className="flex items-center justify-between mb-6 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Track Progress</span>
-            <Switch checked={trackProgress} onCheckedChange={setTrackProgress} />
-          </div>
-          <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
-            Starting this quiz will create an attempt and may lock future edits/deletion.
-          </p>
-          <Button onClick={() => setConfirmStartOpen(true)} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
-            Start Quiz
-          </Button>
-        </div>
+        <div className="flex-1 bg-slate-50/60 dark:bg-slate-900/60" />
 
-        <Dialog open={confirmStartOpen} onOpenChange={setConfirmStartOpen}>
-          <DialogContent>
+        <Dialog open={confirmStartOpen}>
+          <DialogContent
+            hideClose
+            className="sm:max-w-md border-slate-200 dark:border-slate-700"
+            onInteractOutside={(event) => event.preventDefault()}
+            onEscapeKeyDown={(event) => event.preventDefault()}
+          >
             <DialogHeader>
-              <DialogTitle>Start Practice Quiz?</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-slate-800 dark:text-slate-100">{quiz.title}</DialogTitle>
               <DialogDescription>
-                A new attempt will be created as soon as you continue.
+                <span className="mt-3 block text-sm text-slate-500 dark:text-slate-400">
+                  {total} questions • Practice Mode
+                </span>
+                {quiz.maxAttempt && (
+                  <span className="mt-2 block text-xs text-slate-400 dark:text-slate-500">
+                    Max attempts: {quiz.maxAttempt}
+                  </span>
+                )}
+                <span className="mt-3 block text-xs text-amber-600 dark:text-amber-400">
+                  Starting this quiz will create an attempt and may lock future edits/deletion.
+                </span>
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmStartOpen(false)}>Cancel</Button>
+            <div className="flex items-center justify-between rounded-lg bg-slate-100 px-3 py-3 dark:bg-slate-700/50">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Track Progress</span>
+              <Switch checked={trackProgress} onCheckedChange={setTrackProgress} />
+            </div>
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button variant="outline" onClick={handleCloseStartDialog}>Back</Button>
               <Button
+                disabled={isStarting}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={async () => {
-                  setConfirmStartOpen(false);
-                  await handleStart();
-                }}
+                onClick={handleStart}
               >
-                Continue
+                {isStarting
+                  ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Starting...</span>
+                  : 'Start Quiz'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
     );
   }
@@ -243,7 +264,7 @@ export default function PracticeQuizPage() {
             ← Back
           </Button>
           {currentIndex >= total - 1 ? (
-            <Button onClick={handleSubmit} className="min-w-[100px] bg-green-600 hover:bg-green-700 text-white">
+            <Button onClick={handleOpenSubmitConfirm} className="min-w-[100px] bg-green-600 hover:bg-green-700 text-white">
               Submit
             </Button>
           ) : (
@@ -254,6 +275,25 @@ export default function PracticeQuizPage() {
         </div>
       </div>
       </div>
+
+      <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
+        <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-700">
+          <DialogHeader>
+            <DialogTitle>{t('workspace.quiz.practiceActions.confirmSubmitTitle', 'Submit this practice attempt?')}</DialogTitle>
+            <DialogDescription>
+              {t('workspace.quiz.practiceActions.confirmSubmitDescription', 'Your current answers will be submitted immediately.')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setConfirmSubmitOpen(false)}>
+              {t('workspace.quiz.common.cancel', 'Cancel')}
+            </Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={handleConfirmSubmit}>
+              {t('workspace.quiz.practiceActions.submitButton', 'Submit')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

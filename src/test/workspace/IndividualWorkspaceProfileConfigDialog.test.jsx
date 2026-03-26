@@ -214,9 +214,9 @@ async function finishKnowledgeAnalysis(knowledgeText, expectedDomainText) {
     target: { value: knowledgeText },
   });
 
-  // Wait for debounce (800ms) + let the promise resolve
+  // Wait for debounce (900ms) + let the promise resolve
   await act(async () => {
-    vi.advanceTimersByTime(900);
+    vi.advanceTimersByTime(1200);
     await vi.runAllTimersAsync();
   });
 
@@ -291,7 +291,7 @@ async function openConfirmProfilePopup() {
 
 async function flushStepTwoAiSuggestions() {
   await act(async () => {
-    vi.advanceTimersByTime(900);
+    vi.advanceTimersByTime(1200);
     await vi.runAllTimersAsync();
   });
 
@@ -530,7 +530,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(800);
+      vi.advanceTimersByTime(1200);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -1077,7 +1077,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(800);
+      vi.advanceTimersByTime(1200);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -1349,7 +1349,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 
@@ -1361,6 +1361,94 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(screen.getAllByText(i18n.t('workspace.profileConfig.messages.mockTemplateGenerating')).length).toBeGreaterThan(0);
     expect(getFooterPrimaryButton()).toBeDisabled();
     expect(getFooterPrimaryButton()).toHaveTextContent(i18n.t('workspace.profileConfig.actions.generatingTemplate'));
+  });
+
+  it('skips knowledge-analysis API calls for invalid live input and only calls AI after the text becomes valid', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['C++', 'Programming']),
+    });
+
+    renderDialog();
+    analyzeKnowledge.mockClear();
+
+    clickButtonByText(i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'));
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput')), {
+      target: { value: '@@' },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1200);
+      await vi.runAllTimersAsync();
+    });
+
+    expect(analyzeKnowledge).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('Chỉ dùng chữ, số và các dấu câu cơ bản. Ký tự không hợp lệ sẽ không được gửi lên AI.')
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput')), {
+      target: { value: 'C++' },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1200);
+      await vi.runAllTimersAsync();
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(analyzeKnowledge).toHaveBeenCalledTimes(1);
+    expect(analyzeKnowledge).toHaveBeenCalledWith('C++', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+  });
+
+  it('waits for a valid current-level description before refetching step-two AI suggestions', async () => {
+    setupApiMocks({
+      analysisResponse: createAnalysisResponse(['React', 'Frontend Development', 'JavaScript']),
+      fieldSuggestionResponse: createFieldSuggestionResponse({
+        currentLevelSuggestions: ['Da biet React co ban'],
+      }),
+    });
+
+    renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
+      knowledge: 'React hooks nang cao',
+      expectedDomainText: 'React',
+    });
+
+    await flushStepTwoAiSuggestions();
+    suggestProfileFields.mockClear();
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'ab' },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1200);
+      await vi.runAllTimersAsync();
+    });
+
+    expect(suggestProfileFields).not.toHaveBeenCalled();
+    expect(screen.getByText('Mô tả trình độ hiện tại tối thiểu 4 ký tự có nghĩa.')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da biet React co ban' },
+    });
+
+    await flushStepTwoAiSuggestions();
+
+    expect(suggestProfileFields).toHaveBeenCalledTimes(1);
+    expect(suggestProfileFields).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        currentLevel: 'Da biet React co ban',
+      }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
   });
 
   it('calls the real analyzeKnowledge API with debounce', async () => {
@@ -1382,7 +1470,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(analyzeKnowledge).not.toHaveBeenCalled();
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 
@@ -1411,7 +1499,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 
@@ -1433,7 +1521,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 
@@ -1463,7 +1551,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 
@@ -1495,7 +1583,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 
@@ -1530,7 +1618,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 
@@ -1564,7 +1652,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(900);
+      vi.advanceTimersByTime(1200);
       await vi.runAllTimersAsync();
     });
 

@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -23,9 +24,8 @@ export default function ExamQuizPage() {
   const { showError } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
+  const shouldAutoStart = location.state?.autoStart === true;
 
-  const [quiz, setQuiz] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [attemptId, setAttemptId] = useState(null);
   const [attemptStartedAt, setAttemptStartedAt] = useState(null);
   const [isStarted, setIsStarted] = useState(false);
@@ -33,18 +33,33 @@ export default function ExamQuizPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [attemptTimeoutAt, setAttemptTimeoutAt] = useState(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
   const [saveMessage, setSaveMessage] = useState('');
-  const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const [confirmStartOpen, setConfirmStartOpen] = useState(() => !shouldAutoStart);
+  const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
-  const totalPages = Math.max(1, Math.ceil((quiz?.questions?.length || 0) / itemsPerPage));
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
   const examLockNotifiedRef = useRef(false);
   const instantSaveTimerRef = useRef(null);
   const instantSaveInFlightRef = useRef(false);
+  const autoStartTriggeredRef = useRef(false);
+  const {
+    data: quiz = null,
+    isLoading: loading,
+  } = useQuery({
+    queryKey: ['quiz-full', quizId],
+    queryFn: async () => {
+      const res = await getQuizFull(quizId);
+      return normalizeQuizData(res.data);
+    },
+    enabled: Boolean(quizId),
+    retry: 1,
+  });
+  const totalPages = Math.max(1, Math.ceil((quiz?.questions?.length || 0) / itemsPerPage));
 
   const resolveEffectiveTimeoutAt = useCallback((attempt, normalizedQuiz) => {
     const timeoutAt = attempt?.timeoutAt || null;
@@ -85,6 +100,11 @@ export default function ExamQuizPage() {
     interval: 5000,
     enabled: isStarted && !isSubmitted && !isPerQuestionMode,
   });
+
+  useEffect(() => {
+    if (!quiz || isStarted) return;
+    setTimeLeft(quiz.totalTime || 0);
+  }, [quiz, isStarted]);
 
   // TOTAL mode: debounce save on answer change to persist faster without blocking UI.
   useEffect(() => {
@@ -131,22 +151,6 @@ export default function ExamQuizPage() {
     return false;
   }, [saveManually, t]);
 
-  // Fetch full quiz data
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await getQuizFull(quizId);
-        const normalized = normalizeQuizData(res.data);
-        setQuiz(normalized);
-        setTimeLeft(normalized?.totalTime || 0);
-      } catch (err) {
-        console.error('Failed to load quiz:', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [quizId]);
-
   const selectAnswer = useCallback((questionId, answerId, isMultiple) => {
     setAnswers(prev => {
       const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
@@ -162,6 +166,9 @@ export default function ExamQuizPage() {
   }, []);
 
   const handleStart = useCallback(async () => {
+    if (isStarting) return;
+
+    setIsStarting(true);
     try {
       let res;
       try {
@@ -194,8 +201,13 @@ export default function ExamQuizPage() {
     } catch (err) {
       console.error('Failed to start attempt:', err);
       showError(err?.message || 'Failed to start exam attempt');
+      if (shouldAutoStart) {
+        navigate(returnToQuizPath, { replace: true });
+      }
+    } finally {
+      setIsStarting(false);
     }
-  }, [quiz, quizId, resolveEffectiveTimeoutAt, showError, syncSnapshot]);
+  }, [isStarting, navigate, quiz, quizId, resolveEffectiveTimeoutAt, returnToQuizPath, shouldAutoStart, showError, syncSnapshot]);
 
   const handleSubmit = useCallback(async () => {
     if (submittingRef.current) return false;
@@ -252,12 +264,29 @@ export default function ExamQuizPage() {
     }
   }, [isStarted, isSubmitted, handleSubmit, navigate, returnToQuizPath]);
 
+  const handleCloseStartDialog = useCallback(() => {
+    setConfirmStartOpen(false);
+    navigate(returnToQuizPath, { replace: true });
+  }, [navigate, returnToQuizPath]);
+
+  const handleOpenSubmitConfirm = useCallback(() => {
+    if (isSubmitted) return;
+    setConfirmSubmitOpen(true);
+  }, [isSubmitted]);
+
+  const handleConfirmSubmit = useCallback(async () => {
+    setConfirmSubmitOpen(false);
+    await handleSubmit();
+  }, [handleSubmit]);
+
   // Lock browser back/forward while exam is ongoing.
   useEffect(() => {
     if (!isStarted || isSubmitted) return;
 
     const onPopState = () => {
-      window.history.pushState(null, '', window.location.href);
+      window.setTimeout(() => {
+        window.history.forward();
+      }, 0);
       if (!examLockNotifiedRef.current) {
         showError('Đang trong bài thi, không thể quay lại hoặc chuyển trang.');
         examLockNotifiedRef.current = true;
@@ -272,7 +301,6 @@ export default function ExamQuizPage() {
       event.returnValue = '';
     };
 
-    window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', onPopState);
     window.addEventListener('beforeunload', onBeforeUnload);
 
@@ -284,30 +312,40 @@ export default function ExamQuizPage() {
 
   // Countdown for TOTAL timer mode
   useEffect(() => {
-    if (!isStarted || isSubmitted || quiz?.timerMode !== 'TOTAL') return;
-    if (!attemptTimeoutAt) {
-      if (timeLeft <= 0) {
-        handleSubmit();
-        return;
-      }
-
-      const fallbackTimer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
-      return () => clearTimeout(fallbackTimer);
-    }
+    if (!isStarted || isSubmitted || quiz?.timerMode !== 'TOTAL' || !attemptTimeoutAt) return;
 
     const syncTimeLeft = () => {
       const remainingSeconds = getAttemptRemainingSeconds(attemptTimeoutAt);
-      setTimeLeft(remainingSeconds);
+      setTimeLeft(prev => (prev === remainingSeconds ? prev : remainingSeconds));
 
       if (remainingSeconds <= 0) {
-        handleSubmit();
+        void handleSubmit();
       }
     };
 
     syncTimeLeft();
     const timer = setInterval(syncTimeLeft, 1000);
     return () => clearInterval(timer);
+  }, [attemptTimeoutAt, isStarted, isSubmitted, quiz?.timerMode, handleSubmit]);
+
+  useEffect(() => {
+    if (!isStarted || isSubmitted || quiz?.timerMode !== 'TOTAL' || attemptTimeoutAt) return;
+    if (timeLeft <= 0) {
+      void handleSubmit();
+      return;
+    }
+
+    const fallbackTimer = setTimeout(() => {
+      setTimeLeft(prev => Math.max(prev - 1, 0));
+    }, 1000);
+    return () => clearTimeout(fallbackTimer);
   }, [attemptTimeoutAt, timeLeft, isStarted, isSubmitted, quiz?.timerMode, handleSubmit]);
+
+  useEffect(() => {
+    if (!shouldAutoStart || loading || !quiz || isStarted || autoStartTriggeredRef.current) return;
+    autoStartTriggeredRef.current = true;
+    void handleStart();
+  }, [handleStart, isStarted, loading, quiz, shouldAutoStart]);
 
   const jumpToQuestion = useCallback((index) => {
     const targetPage = Math.floor(index / itemsPerPage) + 1;
@@ -321,6 +359,35 @@ export default function ExamQuizPage() {
 
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [currentPage, itemsPerPage]);
+
+  const paginatedQuestions = useMemo(() => {
+    if (!quiz?.questions?.length) return [];
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return quiz.questions.slice(startIndex, startIndex + itemsPerPage);
+  }, [quiz?.questions, currentPage]);
+
+  const renderedQuestionCards = useMemo(() => (
+    paginatedQuestions.map((q, idx) => {
+      const globalIdx = (currentPage - 1) * itemsPerPage + idx;
+      return (
+        <div key={q.id} ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }}>
+          <QuestionCard
+            question={q}
+            questionNumber={globalIdx + 1}
+            totalQuestions={quiz.questions.length}
+            answerValue={answers[q.id]}
+            onSelectAnswer={(answerId) => selectAnswer(q.id, answerId, q.type === 'MULTIPLE_CHOICE')}
+            onTextAnswerChange={(value) => updateTextAnswer(q.id, value)}
+          />
+        </div>
+      );
+    })
+  ), [answers, currentPage, itemsPerPage, paginatedQuestions, quiz?.questions.length, selectAnswer, updateTextAnswer]);
+
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0);
+  }, []);
 
   if (loading) {
     return (
@@ -356,55 +423,65 @@ export default function ExamQuizPage() {
     const info = quiz.timerMode === 'TOTAL'
       ? `${Math.floor(quiz.totalTime / 60)} minutes • ${quiz.questions.length} questions`
       : `${quiz.questions.length} questions • Per-question timer`;
+
+    if (!confirmStartOpen) {
+      return (
+        <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center flex-col gap-4', fontClass)} style={quizFontStyle}>
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
+            {t('workspace.quiz.examActions.starting', 'Starting exam...')}
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
         <QuizHeader onBack={handleHeaderBack} title={quiz.title} showConfirm={false} />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg shadow-slate-900/10 dark:shadow-blue-900/50 max-w-md w-full border border-slate-200 dark:border-slate-700">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{quiz.title}</h1>
-          <div className="mb-2">
-            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${isTimedExam
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-            }`}>
-              {isTimedExam
-                ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
-                : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
-            </span>
-          </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-2">{info} • Exam Mode</p>
-          {quiz.maxAttempt && <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Max attempts: {quiz.maxAttempt}</p>}
-          <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
-            Starting this exam will create an attempt and may lock future edits/deletion.
-          </p>
-          <Button onClick={() => setConfirmStartOpen(true)} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white">
-            Start Exam
-          </Button>
-        </div>
+        <div className="flex-1 bg-slate-50/60 dark:bg-slate-900/60" />
 
-        <Dialog open={confirmStartOpen} onOpenChange={setConfirmStartOpen}>
-          <DialogContent>
+        <Dialog open={confirmStartOpen}>
+          <DialogContent
+            hideClose
+            className="sm:max-w-md border-slate-200 dark:border-slate-700"
+            onInteractOutside={(event) => event.preventDefault()}
+            onEscapeKeyDown={(event) => event.preventDefault()}
+          >
             <DialogHeader>
-              <DialogTitle>Start Exam?</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-slate-800 dark:text-slate-100">{quiz.title}</DialogTitle>
               <DialogDescription>
-                A new attempt will be created as soon as you continue.
+                <span className="mt-1 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                  {isTimedExam
+                    ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
+                    : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
+                </span>
+                <span className="mt-3 block text-sm text-slate-500 dark:text-slate-400">
+                  {info} • Exam Mode
+                </span>
+                {quiz.maxAttempt && (
+                  <span className="mt-2 block text-xs text-slate-400 dark:text-slate-500">
+                    Max attempts: {quiz.maxAttempt}
+                  </span>
+                )}
+                <span className="mt-3 block text-xs text-amber-600 dark:text-amber-400">
+                  Starting this exam will create an attempt and may lock future edits/deletion.
+                </span>
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmStartOpen(false)}>Cancel</Button>
+            <DialogFooter className="gap-2 sm:justify-between">
+              <Button variant="outline" onClick={handleCloseStartDialog}>Back</Button>
               <Button
+                disabled={isStarting}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={async () => {
-                  setConfirmStartOpen(false);
-                  await handleStart();
-                }}
+                onClick={handleStart}
               >
-                Continue
+                {isStarting
+                  ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Starting...</span>
+                  : 'Start Exam'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        </div>
       </div>
     );
   }
@@ -463,29 +540,15 @@ export default function ExamQuizPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
           {/* Questions list */}
           <div className="space-y-4">
-            {quiz.questions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
-              const globalIdx = (currentPage - 1) * itemsPerPage + idx;
-              return (
-              <div key={q.id} ref={el => { if (el) questionRefs.current[globalIdx] = el; }}>
-                <QuestionCard
-                  question={q}
-                  questionNumber={globalIdx + 1}
-                  totalQuestions={quiz.questions.length}
-                  answerValue={answers[q.id]}
-                  onSelectAnswer={(answerId) => selectAnswer(q.id, answerId, q.type === 'MULTIPLE_CHOICE')}
-                  onTextAnswerChange={(value) => updateTextAnswer(q.id, value)}
-                />
-              </div>
-            );
-          })}
+            {renderedQuestionCards}
             {quiz.questions.length > itemsPerPage && (
               <div className="flex justify-between items-center mt-6 p-4">
-                <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); window.scrollTo(0,0); }}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
+                <Button variant="outline" disabled={currentPage === 1} onClick={() => handlePageChange(Math.max(1, currentPage - 1))}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
                 <span className="text-sm font-medium text-slate-500">{t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}</span>
-                <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); window.scrollTo(0,0); }}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
+                <Button variant="outline" disabled={currentPage === totalPages} onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
               </div>
             )}
-            <Button onClick={handleSubmit} disabled={isSubmitted} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white text-base py-3">
+            <Button onClick={handleOpenSubmitConfirm} disabled={isSubmitted} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white text-base py-3">
               {isSubmitted
                   ? <span className="inline-flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" />{t('workspace.quiz.examActions.submitting', 'Submitting...')}</span>
                   : t('workspace.quiz.examActions.submitButton', 'Submit Exam')}
@@ -503,12 +566,10 @@ export default function ExamQuizPage() {
               timeLeft={timeLeft}
               onJumpToQuestion={jumpToQuestion}
               currentPage={currentPage}
-              onPageChange={(page) => {
-                setCurrentPage(page);
-                window.scrollTo(0, 0);
-              }}
+              onPageChange={handlePageChange}
               onSave={handleManualSave}
               onSubmit={handleSubmit}
+              onRequestSubmit={handleOpenSubmitConfirm}
               isSaveLoading={saveStatus === 'saving'}
               saveStatus={saveStatus}
               saveMessage={saveMessage}
@@ -520,6 +581,25 @@ export default function ExamQuizPage() {
         </div>
       </div>
       </div>
+
+      <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
+        <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-700">
+          <DialogHeader>
+            <DialogTitle>{t('workspace.quiz.examActions.confirmSubmitTitle', 'Stop and submit your exam?')}</DialogTitle>
+            <DialogDescription>
+              {t('workspace.quiz.examActions.confirmSubmitDescription', 'Your current answers will be submitted immediately.')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setConfirmSubmitOpen(false)}>
+              {t('workspace.quiz.common.cancel', 'Cancel')}
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleConfirmSubmit}>
+              {t('workspace.quiz.examActions.submitButton', 'Submit Exam')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

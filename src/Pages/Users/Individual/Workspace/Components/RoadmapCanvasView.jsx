@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
+import { BookOpen, BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
@@ -169,6 +169,8 @@ function RoadmapCanvasView({
   disableCreate = false,
   hideCreateButton = false,
   progressTracking = null,
+  onShareRoadmap,
+  onShareQuiz,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -704,6 +706,8 @@ function RoadmapCanvasView({
         skipPreLearningPhaseIds={skipPreLearningPhaseIds}
         quizRefreshToken={reloadToken}
         progressTracking={progressTracking}
+        onShareRoadmap={onShareRoadmap}
+        onShareQuiz={onShareQuiz}
       />
     );
   }
@@ -725,6 +729,17 @@ function RoadmapCanvasView({
         </div>
 
         <div className="flex items-center gap-2">
+          {onShareRoadmap && roadmap?.roadmapId ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onShareRoadmap(roadmap)}
+              className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              <span className={fontClass}>{t("home.actions.share", "Share")}</span>
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
