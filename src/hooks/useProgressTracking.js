@@ -80,22 +80,26 @@ export function useProgressTracking(options = {}) {
 	useEffect(() => {
 		hasHydratedRef.current = false;
 		if (!storageKey) {
-			setProgressByTaskId({});
-			setProgressByMaterialId({});
-			setPreLearningProgressByPhaseId({});
-			setKnowledgeProgressByPhaseId({});
-			setPostLearningProgressByPhaseId({});
-			hasHydratedRef.current = true;
+			queueMicrotask(() => {
+				setProgressByTaskId({});
+				setProgressByMaterialId({});
+				setPreLearningProgressByPhaseId({});
+				setKnowledgeProgressByPhaseId({});
+				setPostLearningProgressByPhaseId({});
+				hasHydratedRef.current = true;
+			});
 			return;
 		}
 
 		const snapshot = readProgressSnapshot(storageKey);
-		setProgressByTaskId(snapshot?.progressByTaskId || {});
-		setProgressByMaterialId(snapshot?.progressByMaterialId || {});
-		setPreLearningProgressByPhaseId(snapshot?.preLearningProgressByPhaseId || {});
-		setKnowledgeProgressByPhaseId(snapshot?.knowledgeProgressByPhaseId || {});
-		setPostLearningProgressByPhaseId(snapshot?.postLearningProgressByPhaseId || {});
-		hasHydratedRef.current = true;
+		queueMicrotask(() => {
+			setProgressByTaskId(snapshot?.progressByTaskId || {});
+			setProgressByMaterialId(snapshot?.progressByMaterialId || {});
+			setPreLearningProgressByPhaseId(snapshot?.preLearningProgressByPhaseId || {});
+			setKnowledgeProgressByPhaseId(snapshot?.knowledgeProgressByPhaseId || {});
+			setPostLearningProgressByPhaseId(snapshot?.postLearningProgressByPhaseId || {});
+			hasHydratedRef.current = true;
+		});
 	}, [storageKey]);
 
 	useEffect(() => {

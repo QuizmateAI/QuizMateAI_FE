@@ -67,6 +67,7 @@ function SourcesPanel({
   onToggleCollapse,
   selectedIds: propSelectedIds,
   onSelectionChange,
+  readOnly = false,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -235,17 +236,19 @@ function SourcesPanel({
         </div>
 
         <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={onAddSource}
-            onMouseEnter={(event) => showTooltip(event, t("workspace.sources.addSource"))}
-            onMouseLeave={() => setHoverTooltip(null)}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-              isDarkMode ? "bg-slate-800 text-blue-400 hover:bg-slate-700" : "bg-gray-50 text-blue-500 hover:bg-gray-100"
-            }`}
-          >
-            <Plus className="w-4.5 h-4.5" />
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={onAddSource}
+              onMouseEnter={(event) => showTooltip(event, t("workspace.sources.addSource"))}
+              onMouseLeave={() => setHoverTooltip(null)}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
+                isDarkMode ? "bg-slate-800 text-blue-400 hover:bg-slate-700" : "bg-gray-50 text-blue-500 hover:bg-gray-100"
+              }`}
+            >
+              <Plus className="w-4.5 h-4.5" />
+            </button>
+          )}
 
           {sources.map((source) => (
             <button
@@ -334,17 +337,19 @@ function SourcesPanel({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={onAddSource}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
-              isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <Plus className="w-3 h-3" />
-            <span className={fontClass}>{t("workspace.sources.addSource")}</span>
-          </button>
+          {!readOnly && (
+            <button
+              onClick={onAddSource}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <Plus className="w-3 h-3" />
+              <span className={fontClass}>{t("workspace.sources.addSource")}</span>
+            </button>
+          )}
 
-          {selectedIds.length > 0 && (
+          {!readOnly && selectedIds.length > 0 && (
             <>
               <button onClick={deselectAll} className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} hover:underline`}>
                 {t("workspace.sources.deselectAll")}
@@ -453,7 +458,7 @@ function SourcesPanel({
                   </div>
 
                   {/* Hành động bên phải: REJECT/WARN → nút xóa trực tiếp; đang loading → không hiện gì; còn lại → nút 3 chấm khi hover */}
-                  {(isRejected || isWarn || isError) ? (
+                  {!readOnly && (isRejected || isWarn || isError) ? (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openDeleteDialog(source); }}
@@ -464,7 +469,7 @@ function SourcesPanel({
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  ) : canDeleteSource(source) ? (
+                  ) : canDeleteSource(source) && !readOnly ? (
                   /* Nút 3 chấm — hiện khi hover hoặc menu đang mở */
                   <div className={`relative shrink-0 transition-opacity duration-150 ${showActions ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
                     <button

@@ -26,6 +26,8 @@ const daysUntil = (value) => {
 
 const withinDays = (value, days) => daysAgo(value) <= days;
 
+const shortWeekdayLabel = (date, lang) => new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'vi-VN', { weekday: 'short' }).format(date);
+
 function createMockMembers(now) {
   return [
     { groupMemberId: 101, userId: 101, username: 'thanh.lead', fullName: 'Thanh Nguyen', role: 'LEADER', canUpload: true, joinedAt: new Date(now - 45 * DAY_MS).toISOString() },
@@ -132,7 +134,7 @@ function logLabel(action, lang) {
   return labels[action] || (lang === 'en' ? 'Activity' : 'Hoat dong');
 }
 
-function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, isLeader = false }) {
+function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, isLeader = false, compactMode = false }) {
   const { t, i18n } = useTranslation();
   const { fetchPendingInvitations, fetchGroupLogs } = useGroup({ enabled: false });
   const lang = i18n.language;
@@ -255,6 +257,105 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
     { label: lang === 'en' ? 'Upload ready' : 'San sang upload', value: canUpload, note: `${uploadCoverage}% ${lang === 'en' ? 'can add sources' : 'co the them tai lieu'}`, icon: Upload, tone: isDarkMode ? 'bg-amber-400/10 text-amber-200' : 'bg-amber-50 text-amber-700' },
   ];
 
+  const roleChartData = [
+    { key: 'leader', label: lang === 'en' ? 'Leader' : 'Leader', value: leaders, color: 'bg-amber-500' },
+    { key: 'contributor', label: lang === 'en' ? 'Contributor' : 'Contributor', value: contributors, color: 'bg-cyan-500' },
+    { key: 'member', label: lang === 'en' ? 'Member' : 'Member', value: Math.max(0, totalMembers - leaders - contributors), color: 'bg-emerald-500' },
+  ];
+
+  const maxRoleCount = Math.max(1, ...roleChartData.map((item) => item.value));
+
+  const activityChartData = Array.from({ length: 7 }).map((_, index) => {
+    const offset = 6 - index;
+    const day = new Date(previewNow - offset * DAY_MS);
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+    const dayEnd = dayStart + DAY_MS;
+    const count = logsSource.filter((log) => {
+      const logDate = toSafeDate(log.logTime);
+      if (!logDate) return false;
+      const value = logDate.getTime();
+      return value >= dayStart && value < dayEnd;
+    }).length;
+
+    return {
+      key: `${dayStart}`,
+      label: shortWeekdayLabel(day, lang),
+      count,
+    };
+  });
+
+  const maxActivityCount = Math.max(1, ...activityChartData.map((item) => item.count));
+
+  if (compactMode) {
+    return (
+      <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
+        <section className={`${cardClass} p-5`}>
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>{lang === 'en' ? 'System dashboard' : 'Dashboard hệ thống'}</p>
+          <h2 className={`mt-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardGroup?.groupName || dashboardGroup?.displayTitle || dashboardGroup?.name || 'Group'}</h2>
+          <p className={`mt-2 text-sm ${subtleTextClass}`}>{lang === 'en' ? 'High-level health and activity signals for the group.' : 'Tổng quan sức khỏe và tín hiệu hoạt động của nhóm.'}</p>
+        </section>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div key={stat.label} className={`${cardClass} p-4`}>
+                <div className="flex items-center justify-between">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.tone}`}><Icon className="h-4 w-4" /></span>
+                  <span className={`text-[10px] uppercase tracking-[0.14em] ${eyebrowClass}`}>{lang === 'en' ? 'metric' : 'chỉ số'}</span>
+                </div>
+                <p className={`mt-3 text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{membersLoadingState ? '...' : stat.value}</p>
+                <p className={`mt-1 text-sm ${subtleTextClass}`}>{stat.label}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section className={`${cardClass} p-4`}>
+            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              {lang === 'en' ? 'Role distribution' : 'Phân bố vai trò'}
+            </h3>
+            <div className="mt-3 space-y-3">
+              {roleChartData.map((item) => (
+                <div key={item.key}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>{item.label}</span>
+                    <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{item.value}</span>
+                  </div>
+                  <div className={`h-2 rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                    <div
+                      className={`h-2 rounded-full ${item.color}`}
+                      style={{ width: `${Math.max(6, Math.round((item.value / maxRoleCount) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className={`${cardClass} p-4`}>
+            <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              {lang === 'en' ? '7-day activity trend' : 'Xu hướng hoạt động 7 ngày'}
+            </h3>
+            <div className="mt-3 flex items-end gap-2 h-28">
+              {activityChartData.map((item) => (
+                <div key={item.key} className="flex-1 flex flex-col items-center justify-end gap-1">
+                  <div
+                    className={`w-full rounded-t ${isDarkMode ? 'bg-cyan-400/80' : 'bg-cyan-500/80'}`}
+                    style={{ height: `${Math.max(6, Math.round((item.count / maxActivityCount) * 100))}%` }}
+                    title={`${item.label}: ${item.count}`}
+                  />
+                  <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-6 animate-in fade-in duration-300 ${fontClass}`}>
       <section className={`${cardClass} p-6 lg:p-7`}>
@@ -317,6 +418,55 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
             </div>
           );
         })}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <section className={`${cardClass} p-6`}>
+          <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {lang === 'en' ? 'Role distribution chart' : 'Biểu đồ phân bố vai trò'}
+          </h3>
+          <p className={`mt-1 text-sm ${subtleTextClass}`}>
+            {lang === 'en' ? 'Compare role load across leader, contributor, and member lanes.' : 'So sánh tải vai trò giữa leader, contributor và member.'}
+          </p>
+          <div className="mt-5 space-y-4">
+            {roleChartData.map((item) => (
+              <div key={item.key}>
+                <div className="mb-1 flex items-center justify-between text-xs">
+                  <span className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>{item.label}</span>
+                  <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{item.value}</span>
+                </div>
+                <div className={`h-3 rounded-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                  <div
+                    className={`h-3 rounded-full ${item.color}`}
+                    style={{ width: `${Math.max(8, Math.round((item.value / maxRoleCount) * 100))}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={`${cardClass} p-6`}>
+          <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {lang === 'en' ? 'Weekly activity chart' : 'Biểu đồ hoạt động theo tuần'}
+          </h3>
+          <p className={`mt-1 text-sm ${subtleTextClass}`}>
+            {lang === 'en' ? 'Track event volume from activity logs by day.' : 'Theo dõi số lượng sự kiện theo từng ngày từ activity log.'}
+          </p>
+          <div className="mt-5 flex items-end gap-3 h-44">
+            {activityChartData.map((item) => (
+              <div key={item.key} className="flex-1 flex flex-col items-center justify-end gap-2">
+                <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.count}</span>
+                <div
+                  className={`w-full rounded-t-md ${isDarkMode ? 'bg-cyan-400/80' : 'bg-cyan-500/80'}`}
+                  style={{ height: `${Math.max(8, Math.round((item.count / maxActivityCount) * 100))}%` }}
+                  title={`${item.label}: ${item.count}`}
+                />
+                <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">

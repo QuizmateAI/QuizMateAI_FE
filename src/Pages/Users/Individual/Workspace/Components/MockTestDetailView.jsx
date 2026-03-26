@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft, ClipboardList, Timer, BarChart3, Clock, Loader2, Edit3, Star,
-  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2
+  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Users
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import {
@@ -29,7 +29,7 @@ function formatDate(dateStr) {
  * Component hiển thị chi tiết Mock Test — giao diện tím (purple) để phân biệt với Quiz (xanh dương)
  * Cấu trúc giống QuizDetailView: sections → questions → answers
  */
-function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
+function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton = false, contextType = "WORKSPACE" }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
@@ -122,10 +122,25 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit }) {
             <p className={`text-base font-medium truncate max-w-[300px] ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{quiz?.title}</p>
           </div>
         </div>
-        <Button onClick={() => onEdit?.(quiz)} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
-          <Edit3 className="w-4 h-4" />
-          <span className="text-sm">{t("workspace.mockTest.detail.edit")}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {!hideEditButton && onEdit && (
+            <Button onClick={() => onEdit?.(quiz)} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
+              <Edit3 className="w-4 h-4" />
+              <span className="text-sm">{t("workspace.mockTest.detail.edit")}</span>
+            </Button>
+          )}
+          {!hideEditButton && contextType === "GROUP" && (
+            <Button
+              className="bg-violet-600 hover:bg-violet-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"
+              onClick={() => {
+                alert(t("workspace.quiz.detail.assign", "Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!"));
+              }}
+            >
+              <Users className="w-4 h-4" />
+              <span className="text-sm">{t("workspace.quiz.detail.assign", "Assign")}</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Nội dung chi tiết */}

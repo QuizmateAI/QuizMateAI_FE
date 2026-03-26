@@ -10,7 +10,6 @@ import {
   UserMinus,
   Crown,
   Users,
-  Mail,
   RefreshCw,
   XCircle,
 } from 'lucide-react';
@@ -227,93 +226,77 @@ function GroupMembersTab({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-          {filteredMembers.map((member) => (
-            <article
-              key={member.groupMemberId ?? member.userId}
-              className={`${shellClass} relative overflow-hidden rounded-[28px] border p-5`}
-            >
-              <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${getCardAccentClass(member.role)}`} />
-              <div className="relative">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-[18px] text-sm font-semibold ${
-                      isDarkMode ? 'bg-white/[0.08] text-slate-200' : 'bg-slate-100 text-slate-700'
-                    }`}>
-                      {member.avatar ? (
-                        <img src={member.avatar} alt="" className="h-12 w-12 object-cover" />
-                      ) : (
-                        (member.fullName || member.username || '?').charAt(0).toUpperCase()
-                      )}
-                    </div>
+        <div className={`rounded-[24px] border overflow-hidden ${shellClass}`}>
+          <div className={`grid grid-cols-[minmax(220px,1.2fr)_minmax(180px,1fr)_minmax(180px,1fr)_64px] px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-400 bg-white/[0.03] border-b border-white/10' : 'text-slate-500 bg-slate-50 border-b border-slate-200'}`}>
+            <div>{currentLang === 'en' ? 'Member' : 'Thành viên'}</div>
+            <div>{currentLang === 'en' ? 'Role' : 'Vai trò'}</div>
+            <div>{currentLang === 'en' ? 'Upload Access' : 'Quyền upload'}</div>
+            <div className="text-right">{currentLang === 'en' ? 'Actions' : 'Thao tác'}</div>
+          </div>
 
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className={`truncate text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {member.fullName || member.username}
-                        </p>
-                        {member.isCurrentUser ? (
-                          <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                            isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'
-                          }`}>
-                            {t('home.group.you')}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className={`mt-1 text-xs ${eyebrowClass}`}>
-                        @{member.username}
-                      </p>
-                    </div>
+          <div className="divide-y divide-slate-200 dark:divide-slate-800">
+            {filteredMembers.map((member) => (
+              <div key={member.groupMemberId ?? member.userId} className="grid grid-cols-[minmax(220px,1.2fr)_minmax(180px,1fr)_minmax(180px,1fr)_64px] items-center gap-2 px-4 py-3">
+                <div className="min-w-0 flex items-center gap-3">
+                  <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold ${isDarkMode ? 'bg-white/[0.08] text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
+                    {member.avatar ? (
+                      <img src={member.avatar} alt="" className="h-10 w-10 object-cover" />
+                    ) : (
+                      (member.fullName || member.username || '?').charAt(0).toUpperCase()
+                    )}
                   </div>
+                  <div className="min-w-0">
+                    <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {member.fullName || member.username}
+                    </p>
+                    <p className={`truncate text-xs ${eyebrowClass}`}>{member.email || `@${member.username}`}</p>
+                  </div>
+                </div>
 
+                <div>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(member.role)}`}>
+                    {getRoleIcon(member.role)}
+                    {getRoleLabel(member.role)}
+                  </span>
+                </div>
+
+                <div>
+                  {member.canUpload ? (
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700'}`}>
+                      <Upload className="h-3 w-3" />
+                      {currentLang === 'en' ? 'Can upload' : 'Có thể upload'}
+                    </span>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700'}`}>
+                      <XCircle className="h-3 w-3" />
+                      {currentLang === 'en' ? 'Read & participate' : 'Đọc và tham gia'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
                   {isLeader && !member.isCurrentUser && member.role !== 'LEADER' ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button
-                          className={`rounded-full border p-2 transition-all active:scale-95 ${
-                            isDarkMode
-                              ? 'border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.10]'
-                              : 'border-white bg-white/90 text-slate-600 hover:bg-white'
-                          }`}
-                        >
+                        <button className={`rounded-full border p-2 transition-all active:scale-95 ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.10]' : 'border-white bg-white/90 text-slate-600 hover:bg-white'}`}>
                           <MoreVertical className="h-4 w-4" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className={`w-56 rounded-2xl p-1 shadow-xl ${
-                          isDarkMode ? 'border-white/10 bg-[#09131a] text-slate-300' : 'border-white bg-white text-slate-700'
-                        }`}
-                      >
-                        <DropdownMenuItem
-                          onClick={() => handleToggleUpload(member)}
-                          className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${
-                            isDarkMode ? 'focus:bg-white/[0.06] focus:text-slate-100' : 'focus:bg-slate-50 focus:text-slate-900'
-                          }`}
-                        >
+                      <DropdownMenuContent align="end" className={`w-56 rounded-2xl p-1 shadow-xl ${isDarkMode ? 'border-white/10 bg-[#09131a] text-slate-300' : 'border-white bg-white text-slate-700'}`}>
+                        <DropdownMenuItem onClick={() => handleToggleUpload(member)} className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${isDarkMode ? 'focus:bg-white/[0.06] focus:text-slate-100' : 'focus:bg-slate-50 focus:text-slate-900'}`}>
                           <Upload className="mr-2 h-4 w-4" />
                           {member.canUpload ? t('home.group.revokeUpload') : t('home.group.grantUpload')}
                         </DropdownMenuItem>
 
                         {member.role === 'MEMBER' ? (
-                          <DropdownMenuItem
-                            onClick={() => handleChangeRole(member, 'CONTRIBUTOR')}
-                            className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${
-                              isDarkMode ? 'focus:bg-white/[0.06] focus:text-slate-100' : 'focus:bg-slate-50 focus:text-slate-900'
-                            }`}
-                          >
+                          <DropdownMenuItem onClick={() => handleChangeRole(member, 'CONTRIBUTOR')} className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${isDarkMode ? 'focus:bg-white/[0.06] focus:text-slate-100' : 'focus:bg-slate-50 focus:text-slate-900'}`}>
                             <Shield className="mr-2 h-4 w-4" />
                             {t('home.group.changeRole')} → {t('home.group.contributor')}
                           </DropdownMenuItem>
                         ) : null}
 
                         {member.role === 'CONTRIBUTOR' ? (
-                          <DropdownMenuItem
-                            onClick={() => handleChangeRole(member, 'MEMBER')}
-                            className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${
-                              isDarkMode ? 'focus:bg-white/[0.06] focus:text-slate-100' : 'focus:bg-slate-50 focus:text-slate-900'
-                            }`}
-                          >
+                          <DropdownMenuItem onClick={() => handleChangeRole(member, 'MEMBER')} className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${isDarkMode ? 'focus:bg-white/[0.06] focus:text-slate-100' : 'focus:bg-slate-50 focus:text-slate-900'}`}>
                             <Shield className="mr-2 h-4 w-4" />
                             {t('home.group.changeRole')} → {t('home.group.member')}
                           </DropdownMenuItem>
@@ -321,12 +304,7 @@ function GroupMembersTab({
 
                         <DropdownMenuSeparator className={isDarkMode ? 'my-1 bg-white/10' : 'my-1 bg-slate-100'} />
 
-                        <DropdownMenuItem
-                          onClick={() => setConfirmRemove(member)}
-                          className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${
-                            isDarkMode ? 'text-red-300 focus:bg-red-500/10 focus:text-red-200' : 'text-red-600 focus:bg-red-50 focus:text-red-700'
-                          }`}
-                        >
+                        <DropdownMenuItem onClick={() => setConfirmRemove(member)} className={`cursor-pointer rounded-xl px-3 py-2.5 text-sm ${isDarkMode ? 'text-red-300 focus:bg-red-500/10 focus:text-red-200' : 'text-red-600 focus:bg-red-50 focus:text-red-700'}`}>
                           <UserMinus className="mr-2 h-4 w-4" />
                           {t('home.group.removeMember')}
                         </DropdownMenuItem>
@@ -334,51 +312,9 @@ function GroupMembersTab({
                     </DropdownMenu>
                   ) : null}
                 </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${getRoleBadgeClass(member.role)}`}>
-                    {getRoleIcon(member.role)}
-                    {getRoleLabel(member.role)}
-                  </span>
-                  {member.canUpload ? (
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700'
-                    }`}>
-                      <Upload className="h-3 w-3" />
-                      {currentLang === 'en' ? 'Can upload' : 'Có thể upload'}
-                    </span>
-                  ) : (
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                      isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700'
-                    }`}>
-                      <XCircle className="h-3 w-3" />
-                      {currentLang === 'en' ? 'Read & participate' : 'Đọc và tham gia'}
-                    </span>
-                  )}
-                </div>
-
-                <div className={`mt-5 rounded-[22px] border px-4 py-4 ${secondaryCardClass}`}>
-                  <div className="flex items-center gap-2">
-                    <Mail className={`h-4 w-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-                    <span className={`text-xs font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>
-                      {currentLang === 'en' ? 'Contact lane' : 'Liên hệ'}
-                    </span>
-                  </div>
-                  <p className={`mt-3 break-all text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                    {member.email || '—'}
-                  </p>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <p className={`text-xs ${eyebrowClass}`}>
-                    {member.isCurrentUser
-                      ? (currentLang === 'en' ? 'This card reflects your current access lane.' : 'Thẻ này phản ánh đúng quyền hiện tại của bạn.')
-                      : (currentLang === 'en' ? 'Adjust role or upload permission from the menu.' : 'Điều chỉnh vai trò hoặc quyền upload từ menu thao tác.')}
-                  </p>
-                </div>
               </div>
-            </article>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
