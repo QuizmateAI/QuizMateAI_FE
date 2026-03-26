@@ -190,12 +190,7 @@ function RoadmapJourPanel({
                           {isCompletedPhase ? (
                             <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                           ) : isProcessingPhase ? (
-                            <CircularProgressLoader
-                              percent={Math.max(0, Math.min(100, Number(phaseProcessingPercent) || 0))}
-                              size="sm"
-                              color="amber"
-                              className="scale-[0.55] -my-2 -mx-1 shrink-0"
-                            />
+                            <Loader2 className="w-4 h-4 text-yellow-500 animate-spin shrink-0" />
                           ) : (
                             <div className={`w-4 h-4 shrink-0 rounded-full border-2 ${isDarkMode ? "border-slate-500" : "border-slate-300"}`} />
                           )}
