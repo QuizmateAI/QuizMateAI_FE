@@ -105,6 +105,14 @@ function SourcesPanel({
   // Use prop if provided, else use internal state
   const selectedIds = propSelectedIds !== undefined ? propSelectedIds : internalSelectedIds;
 
+  // Helper: split a filename into base name and extension (including the dot), e.g. "file.pdf" => ["file", ".pdf"]
+  const splitNameExt = (name) => {
+    if (!name) return ["", ""];
+    const m = name.match(/^(.*?)(\.[^.]+)$/);
+    if (m) return [m[1], m[2]];
+    return [name, ""];
+  };
+
   const handleSelectionChange = (newIds) => {
     if (onSelectionChange) {
       onSelectionChange(newIds);
@@ -113,9 +121,13 @@ function SourcesPanel({
     }
   };
 
-  const filtered = sources.filter((s) =>
-    s.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = sources.filter((s) => {
+    const q = search.toLowerCase();
+    const full = s.name?.toLowerCase() || "";
+    const [base] = splitNameExt(s.name);
+    const baseLower = (base || "").toLowerCase();
+    return full.includes(q) || baseLower.includes(q);
+  });
 
   const toggleSelect = (id) => {
     const newIds = selectedIds.includes(id) 
@@ -152,13 +164,15 @@ function SourcesPanel({
 
   const openRenameDialog = (source) => {
     setOpenMenuId(null);
-    setRenameDialog({ id: source.id, name: source.name });
-    setRenameInput(source.name);
+    const [base, ext] = splitNameExt(source.name);
+    setRenameDialog({ id: source.id, name: source.name, displayName: base, ext });
+    setRenameInput(base || "");
   };
 
   const openDeleteDialog = (source) => {
     setOpenMenuId(null);
-    setDeleteDialog({ id: source.id, name: source.name });
+    const [base] = splitNameExt(source.name);
+    setDeleteDialog({ id: source.id, name: source.name, displayName: base });
   };
 
   const handleDownloadSource = async (source) => {
@@ -191,17 +205,29 @@ function SourcesPanel({
     if (!renameDialog || !renameInput.trim()) return;
     setRenameLoading(true);
     try {
-      const res = await renameMaterial(renameDialog.id, renameInput.trim());
-      onSourceUpdated?.({ ...res.data, id: res.data.materialId ?? renameDialog.id, name: res.data.title ?? renameInput.trim() });
+      const finalName = renameInput.trim() + (renameDialog?.ext || "");
+      const res = await renameMaterial(renameDialog.id, finalName);
+
+      // Khắc phục: Lấy data một cách an toàn. 
+      // Nếu API trả về thẳng data, lấy res. Nếu trả về Axios response, lấy res.data
+      const responseData = res?.data || res || {}; 
+
+      onSourceUpdated?.({ 
+        ...responseData, 
+        id: responseData.materialId ?? renameDialog.id, 
+        name: responseData.title ?? finalName,
+      });
+
       showSuccess(t("workspace.sources.renameSuccess"));
       setRenameDialog(null);
-    } catch {
+    } catch (error) {
+      console.error("Lỗi khi đổi tên:", error); 
       showError(t("workspace.sources.loadError"));
     } finally {
       setRenameLoading(false);
     }
   };
-
+  
   const handleDeleteConfirm = async () => {
     if (!deleteDialog) return;
     setDeleteLoading(true);
@@ -269,7 +295,10 @@ function SourcesPanel({
             <Plus className="w-4.5 h-4.5" />
           </button>
 
-          {sources.map((source) => (
+          {sources.map((source) => {
+            const [base] = splitNameExt(source.name);
+            const displayName = base || source.name;
+            return (
             <button
               key={source.id}
               type="button"
@@ -279,7 +308,7 @@ function SourcesPanel({
                 setViewingSource(source);
                 onToggleCollapse();
               }}
-              onMouseEnter={(event) => showTooltip(event, source.name)}
+              onMouseEnter={(event) => showTooltip(event, displayName)}
               onMouseLeave={() => setHoverTooltip(null)}
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
                 canOpenSourceDetail(source)
@@ -290,7 +319,8 @@ function SourcesPanel({
             >
               {getSourceDisplayIcon(source, progressTracking)}
             </button>
-          ))}
+            );
+          })}
         </div>
         {hoverTooltip && (
           <div
@@ -400,6 +430,8 @@ function SourcesPanel({
         ) : (
           <div className="space-y-1">
             {filtered.map((source) => {
+              const [base] = splitNameExt(source.name);
+              const displayName = base || source.name;
               const isSelected = selectedIds.includes(source.id);
               const isRejected = ["REJECT", "REJECTED"].includes(source.status?.toUpperCase());
               const isWarn = ["WARN", "WARNED"].includes(source.status?.toUpperCase());
@@ -444,7 +476,7 @@ function SourcesPanel({
                     {/* Icon trạng thái: ERROR (chấm than), WARN (chấm than vàng), REJECT (ban), PROCESSING (spinner), hoặc icon file thông thường */}
                     {getSourceDisplayIcon(source, progressTracking)}
                     <div className="min-w-0 flex-1 text-left">
-                      <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{source.name}</p>
+                      <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{displayName}</p>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatFileType(source.type)}</span>
                         {source.status?.toUpperCase() === "ERROR" && (
@@ -575,9 +607,9 @@ function SourcesPanel({
 
       {/* Dialog đổi tên tài liệu */}
       <Dialog open={!!renameDialog} onOpenChange={(open) => { if (!open) setRenameDialog(null); }}>
-        <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
+          <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
           <h2 className={`text-base font-semibold mb-4 ${fontClass}`}>
-            {t("workspace.sources.renameDialogTitle", { name: renameDialog?.name ?? "" })}
+            {t("workspace.sources.renameDialogTitle", { name: renameDialog?.displayName ?? renameDialog?.name ?? "" })}
           </h2>
           <div className="space-y-1 mb-6">
             <label className={`text-sm font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
@@ -655,7 +687,7 @@ function SourcesPanel({
             {t("workspace.sources.deleteDialogTitle")}
           </h2>
           <p className={`text-sm mb-6 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-            {t("workspace.sources.deleteDialogDesc", { name: deleteDialog?.name ?? "" })}
+            {t("workspace.sources.deleteDialogDesc", { name: deleteDialog?.displayName ?? deleteDialog?.name ?? "" })}
           </p>
           <div className="flex justify-end gap-2">
             <button
