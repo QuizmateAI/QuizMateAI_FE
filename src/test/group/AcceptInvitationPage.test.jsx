@@ -1,28 +1,29 @@
-import { StrictMode } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AcceptInvitationPage from '@/Pages/Users/Group/AcceptInvitationPage';
-import { acceptInvitation } from '@/api/GroupAPI';
+import { acceptInvitation, previewInvitation } from '@/api/GroupAPI';
 
 const mockNavigate = vi.fn();
 const mockShowSuccess = vi.fn();
 const mockShowError = vi.fn();
+const mockShowInfo = vi.fn();
+
 let mockToken = 'invite-token';
 
 vi.mock('@/api/GroupAPI', () => ({
   acceptInvitation: vi.fn(),
+  previewInvitation: vi.fn(),
+}));
+
+vi.mock('@/api/Authentication', () => ({
+  logout: vi.fn(),
 }));
 
 vi.mock('@/context/ToastContext', () => ({
   useToast: () => ({
     showSuccess: mockShowSuccess,
     showError: mockShowError,
-  }),
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key) => key,
+    showInfo: mockShowInfo,
   }),
 }));
 
@@ -35,44 +36,82 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+const invitationPreview = {
+  workspaceId: 77,
+  groupName: 'IELTS Sprint Team',
+  groupDescription: 'Nhóm học IELTS speaking và reading.',
+  invitedEmail: 'member@example.com',
+  invitedByFullName: 'Thanh Nguyen',
+  invitedByUsername: 'thanh.lead',
+  domain: 'IELTS',
+  learningMode: 'STUDY_NEW',
+  knowledge: 'Reading, Writing',
+  groupLearningGoal: 'Band 7.0',
+  status: 'PENDING',
+  expiredDate: '2026-04-05T10:30:00Z',
+};
+
 describe('AcceptInvitationPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockToken = 'invite-token';
+    window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
-  it('shows success and only accepts the invitation once in StrictMode', async () => {
+  it('shows invalid invitation state when token is missing', async () => {
+    mockToken = null;
+
+    render(<AcceptInvitationPage />);
+
+    expect(await screen.findByText('Không thể mở lời mời')).toBeInTheDocument();
+    expect(screen.getByText('Liên kết mời không hợp lệ. Vui lòng kiểm tra lại email.')).toBeInTheDocument();
+    expect(previewInvitation).not.toHaveBeenCalled();
+    expect(acceptInvitation).not.toHaveBeenCalled();
+  });
+
+  it('loads preview data and asks unauthenticated users to log in before confirming', async () => {
+    previewInvitation.mockResolvedValue({ data: invitationPreview });
+
+    render(<AcceptInvitationPage />);
+
+    expect(await screen.findByRole('button', { name: 'Đăng nhập để xác nhận' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'IELTS Sprint Team' })).toBeInTheDocument();
+    expect(screen.getByText('Học kiến thức mới')).toBeInTheDocument();
+    expect(previewInvitation).toHaveBeenCalledWith('invite-token');
+    expect(acceptInvitation).not.toHaveBeenCalled();
+  });
+
+  it('accepts the invitation for the matching account and redirects to the group workspace', async () => {
+    window.localStorage.setItem('accessToken', 'token');
+    window.localStorage.setItem('user', JSON.stringify({
+      userID: 5,
+      username: 'member',
+      email: 'member@example.com',
+    }));
+
+    previewInvitation.mockResolvedValue({ data: invitationPreview });
     acceptInvitation.mockResolvedValue({
-      statusCode: 200,
-      message: 'Tham gia nhóm thành công!',
+      message: 'Chào mừng bạn đã tham gia nhóm!',
+      data: {
+        ...invitationPreview,
+        invitationStatus: 'ACCEPTED',
+        memberRole: 'MEMBER',
+        joinedAt: '2026-03-27T09:30:00Z',
+      },
     });
 
-    render(
-      <StrictMode>
-        <AcceptInvitationPage />
-      </StrictMode>,
-    );
+    render(<AcceptInvitationPage />);
 
-    expect(await screen.findByText('Thành công!')).toBeInTheDocument();
-    expect(screen.getByText('Tham gia nhóm thành công!')).toBeInTheDocument();
+    const confirmButton = await screen.findByRole('button', { name: 'Xác nhận vào nhóm' });
+    fireEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(acceptInvitation).toHaveBeenCalledTimes(1);
     });
 
-    expect(mockShowSuccess).toHaveBeenCalledWith('Tham gia nhóm thành công!');
-    expect(mockShowError).not.toHaveBeenCalled();
-  });
-
-  it('shows invalid-url state when token is missing', async () => {
-    mockToken = null;
-
-    render(<AcceptInvitationPage />);
-
-    expect(await screen.findByText('Không thể tham gia')).toBeInTheDocument();
-    expect(
-      screen.getByText('URL không hợp lệ. Vui lòng kiểm tra lại đường dẫn trong email.'),
-    ).toBeInTheDocument();
-    expect(acceptInvitation).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem('group-invite-welcome:77')).toContain('IELTS Sprint Team');
+    expect(mockNavigate).toHaveBeenCalledWith('/group-workspace/77?welcome=1', { replace: true });
+    expect(mockShowSuccess).toHaveBeenCalledWith('Chào mừng bạn đã tham gia nhóm!');
   });
 });

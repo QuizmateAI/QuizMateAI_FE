@@ -37,11 +37,14 @@ api.interceptors.response.use(
   (error) => {
     // Xử lý lỗi 401 - Unauthorized (token hết hạn)
     if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      clearUserCache();
-      window.location.href = '/login';
+      const skipAuthRedirect = Boolean(error.config?.skipAuthRedirect);
+      if (!skipAuthRedirect) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        clearUserCache();
+        window.location.href = '/login';
+      }
     }
     
     // Trả về lỗi - ưu tiên chi tiết validation (data.errors) nếu có

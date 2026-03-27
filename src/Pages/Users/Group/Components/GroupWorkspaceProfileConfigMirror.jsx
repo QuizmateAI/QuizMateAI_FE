@@ -242,8 +242,98 @@ function SummaryItem({ label, value, isDarkMode }) {
   );
 }
 
-function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, workspaceId, onComplete }) {
-  const { i18n } = useTranslation();
+function WorkflowStepCard({ stepLabel, title, description, active, complete, icon: Icon, isDarkMode }) {
+  return (
+    <div
+      className={cn(
+        'rounded-[22px] border p-4 transition-all duration-200',
+        complete
+          ? isDarkMode
+            ? 'border-emerald-400/25 bg-emerald-500/10'
+            : 'border-emerald-200 bg-emerald-50/90'
+          : active
+            ? isDarkMode
+              ? 'border-cyan-400/30 bg-cyan-500/10'
+              : 'border-cyan-200 bg-cyan-50/90'
+            : isDarkMode
+              ? 'border-white/10 bg-white/[0.03]'
+              : 'border-slate-200 bg-white'
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <div className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border',
+          complete
+            ? isDarkMode ? 'border-emerald-300/30 bg-emerald-400/15 text-emerald-100' : 'border-emerald-200 bg-white text-emerald-700'
+            : active
+              ? isDarkMode ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
+              : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
+        )}>
+          {complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-75">{stepLabel}</p>
+          <p className="mt-1 text-sm font-semibold">{title}</p>
+          <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ToggleTile({ checked, onChange, title, description, badge, disabled, isDarkMode }) {
+  return (
+    <label
+      className={cn(
+        'flex cursor-pointer items-start gap-3 rounded-[22px] border p-4 transition-all duration-200',
+        checked
+          ? isDarkMode
+            ? 'border-cyan-400/30 bg-cyan-500/10'
+            : 'border-cyan-200 bg-cyan-50/90'
+          : isDarkMode
+            ? 'border-white/10 bg-white/[0.03]'
+            : 'border-slate-200 bg-white',
+        disabled && 'cursor-not-allowed opacity-70'
+      )}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        disabled={disabled}
+        className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+      />
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold">{title}</span>
+          {badge ? (
+            <span className={cn(
+              'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+              isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-600'
+            )}>
+              {badge}
+            </span>
+          ) : null}
+        </span>
+        <span className={cn('mt-1 block text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+          {description}
+        </span>
+      </span>
+    </label>
+  );
+}
+
+function GroupWorkspaceProfileConfigMirror({
+  open,
+  onOpenChange,
+  isDarkMode,
+  workspaceId,
+  onComplete,
+  canClose = true,
+}) {
+  const { t, i18n } = useTranslation();
   const isVi = i18n.language === 'vi';
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const inputClass = cn(
@@ -257,7 +347,6 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
   const [maxUnlockedStep, setMaxUnlockedStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [statusNotice, setStatusNotice] = useState('');
   const [errors, setErrors] = useState({});
@@ -279,19 +368,80 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
   const [preLearningRequired, setPreLearningRequired] = useState(false);
   const analysisTimerRef = useRef(null);
   const analysisAbortRef = useRef(null);
+  const isStudyNewMode = learningMode === 'STUDY_NEW';
 
   const summary = useMemo(() => {
     const role = ROLE_OPTIONS.find((item) => item.value === defaultRoleOnJoin);
     const mode = LEARNING_MODES.find((item) => item.value === learningMode);
     return {
-      role: role ? (isVi ? role.labelVi : role.labelEn) : 'MEMBER',
+      role: role ? (isVi ? role.labelVi : role.labelEn) : (isVi ? ROLE_OPTIONS[0].labelVi : ROLE_OPTIONS[0].labelEn),
       mode: mode ? (isVi ? mode.labelVi : mode.labelEn) : (isVi ? 'Chưa chọn' : 'Not set'),
     };
   }, [defaultRoleOnJoin, learningMode, isVi]);
 
+  const stepTabs = useMemo(() => ([
+    {
+      id: 1,
+      icon: Users,
+      title: t('groupProfileConfig.tabs.basic.title'),
+      description: t('groupProfileConfig.tabs.basic.description'),
+    },
+    {
+      id: 2,
+      icon: BrainCircuit,
+      title: t('groupProfileConfig.tabs.learning.title'),
+      description: t('groupProfileConfig.tabs.learning.description'),
+    },
+  ]), [t]);
+
+  const workflowSteps = useMemo(() => ([
+    {
+      id: 1,
+      icon: BrainCircuit,
+      title: t('groupProfileConfig.stepTwo.workflow.describeTitle'),
+      description: t('groupProfileConfig.stepTwo.workflow.describeDescription'),
+    },
+    {
+      id: 2,
+      icon: Compass,
+      title: t('groupProfileConfig.stepTwo.workflow.domainTitle'),
+      description: t('groupProfileConfig.stepTwo.workflow.domainDescription'),
+    },
+    {
+      id: 3,
+      icon: Sparkles,
+      title: t('groupProfileConfig.stepTwo.workflow.modeTitle'),
+      description: t('groupProfileConfig.stepTwo.workflow.modeDescription'),
+    },
+  ]), [t]);
+
+  const readinessItems = useMemo(() => ([
+    {
+      label: t('groupProfileConfig.stepTwo.ready.knowledge'),
+      ready: Boolean(knowledge.trim()),
+      value: knowledge.trim() || t('groupProfileConfig.stepTwo.ready.pending'),
+    },
+    {
+      label: t('groupProfileConfig.stepTwo.ready.domain'),
+      ready: Boolean(domain.trim()),
+      value: domain.trim() || t('groupProfileConfig.stepTwo.ready.pending'),
+    },
+    {
+      label: t('groupProfileConfig.stepTwo.ready.mode'),
+      ready: Boolean(learningMode),
+      value: summary.mode,
+    },
+  ]), [domain, knowledge, learningMode, summary.mode, t]);
+
   const selectedDomainOption = useMemo(
     () => domainOptions.find((option) => option.label === domain) || null,
     [domainOptions, domain]
+  );
+  const canFinishStepTwo = Boolean(
+    knowledge.trim()
+    && domain.trim()
+    && learningMode
+    && (learningMode !== 'MOCK_TEST' || examName.trim())
   );
 
   const hasAnalysisSummary = analysisStatus === 'success' && Boolean(
@@ -319,7 +469,11 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
         setDomain(profile.domain || '');
         setKnowledge(profile.knowledge || '');
         setLearningMode(profile.learningMode || '');
-        setRoadmapEnabled(Boolean(profile.roadmapEnabled));
+        setRoadmapEnabled(
+          profile.learningMode === 'STUDY_NEW'
+            ? Boolean(profile.roadmapEnabled ?? true)
+            : Boolean(profile.roadmapEnabled)
+        );
         setGroupLearningGoal(profile.groupLearningGoal || '');
         setExamName(profile.examName || '');
         setPreLearningRequired(Boolean(profile.preLearningRequired));
@@ -348,7 +502,6 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
       setSaveError('');
       setStatusNotice('');
       setSubmitting(false);
-      setIsConfirmOpen(false);
       setAnalysisStatus('idle');
       setDomainOptions([]);
       setKnowledgeAnalysis(null);
@@ -426,7 +579,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
   const validateStepOne = () => {
     const nextErrors = {};
     if (!groupName.trim()) {
-      nextErrors.groupName = isVi ? 'Vui lòng nhập tên nhóm.' : 'Please enter a group name.';
+      nextErrors.groupName = t('groupProfileConfig.validation.groupName');
     }
     setErrors((prev) => ({ ...prev, ...nextErrors }));
     return Object.keys(nextErrors).length === 0;
@@ -434,21 +587,21 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
 
   const validateStepTwo = () => {
     const nextErrors = {};
-    if (!knowledge.trim()) nextErrors.knowledge = isVi ? 'Vui lòng mô tả phạm vi kiến thức chung.' : 'Please describe the shared knowledge scope.';
+    if (!knowledge.trim()) nextErrors.knowledge = t('groupProfileConfig.validation.knowledge');
     if (knowledge.trim()) {
       if (analysisStatus === 'loading') {
-        nextErrors.domain = isVi ? 'Quizmate AI đang phân tích lĩnh vực. Vui lòng đợi một chút.' : 'Quizmate AI is still analyzing the domain. Please wait a moment.';
+        nextErrors.domain = t('groupProfileConfig.validation.analysisLoading');
       } else if (analysisStatus === 'error') {
-        nextErrors.domain = isVi ? 'Quizmate AI chưa suy ra được lĩnh vực. Hãy thử phân tích lại.' : 'Quizmate AI could not infer the domain yet. Please retry the analysis.';
+        nextErrors.domain = t('groupProfileConfig.validation.analysisError');
       } else if (analysisStatus !== 'success') {
-        nextErrors.domain = isVi ? 'Vui lòng nhập knowledge để Quizmate AI suy ra lĩnh vực.' : 'Please enter the knowledge scope so Quizmate AI can infer the domain.';
+        nextErrors.domain = t('groupProfileConfig.validation.analysisMissing');
       } else if (!domain.trim()) {
-        nextErrors.domain = isVi ? 'Vui lòng chọn một lĩnh vực từ gợi ý của Quizmate AI.' : 'Please select one domain from the Quizmate AI suggestions.';
+        nextErrors.domain = t('groupProfileConfig.validation.domain');
       }
     }
-    if (!learningMode) nextErrors.learningMode = isVi ? 'Vui lòng chọn chế độ học tập.' : 'Please select a learning mode.';
+    if (!learningMode) nextErrors.learningMode = t('groupProfileConfig.validation.learningMode');
     if (learningMode === 'MOCK_TEST' && !examName.trim()) {
-      nextErrors.examName = isVi ? 'Vui lòng nhập tên kỳ thi.' : 'Please enter the exam name.';
+      nextErrors.examName = t('groupProfileConfig.validation.examName');
     }
     setErrors((prev) => ({ ...prev, ...nextErrors }));
     return Object.keys(nextErrors).length === 0;
@@ -463,22 +616,17 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
       await saveGroupBasicStep(workspaceId, { groupName, rules, defaultRoleOnJoin });
       setStep(2);
       setMaxUnlockedStep(2);
-      setStatusNotice(isVi ? 'Đã lưu thông tin nhóm.' : 'Group basics saved.');
+      setStatusNotice(t('groupProfileConfig.messages.basicsSaved'));
     } catch (error) {
-      setSaveError(getErrorMessage(error, isVi ? 'Không thể lưu thông tin nhóm.' : 'Unable to save the group basics.'));
+      setSaveError(getErrorMessage(error, t('groupProfileConfig.messages.basicsSaveError')));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleShowConfirmDialog = () => {
-    if (!validateStepTwo()) return;
-    setIsConfirmOpen(true);
-  };
-
   const handleConfirmSubmit = async () => {
+    if (!validateStepTwo()) return;
     if (!workspaceId || loading || submitting) {
-      setIsConfirmOpen(false);
       return;
     }
     setSubmitting(true);
@@ -495,15 +643,22 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
         preLearningRequired,
       });
       await confirmGroupWorkspaceProfile(workspaceId);
-      setIsConfirmOpen(false);
-      await Promise.resolve(onComplete?.());
-      onOpenChange(false);
+      setStatusNotice(t('groupProfileConfig.messages.completed'));
+      if (onComplete) {
+        await Promise.resolve(onComplete());
+      } else {
+        onOpenChange(false);
+      }
     } catch (error) {
-      setSaveError(getErrorMessage(error, isVi ? 'Không thể xác nhận cấu hình nhóm.' : 'Unable to confirm the group setup.'));
-      setIsConfirmOpen(false);
+      setSaveError(getErrorMessage(error, t('groupProfileConfig.messages.confirmSaveError')));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDialogOpenChange = (nextOpen) => {
+    if (!canClose && !nextOpen) return;
+    onOpenChange(nextOpen);
   };
 
   const shellClass = isDarkMode ? 'border-slate-800 bg-gradient-to-br from-[#020817] via-[#020817] to-slate-900/50 text-white' : 'border-slate-200 bg-[#f8fbff] text-slate-900';
@@ -518,48 +673,70 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
       : 'border-emerald-200 bg-emerald-50 text-emerald-900';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideClose className={cn('max-h-[92vh] max-w-6xl overflow-hidden rounded-[32px] border p-0 shadow-2xl', shellClass, fontClass)}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogContent
+        hideClose
+        onEscapeKeyDown={canClose ? undefined : (event) => event.preventDefault()}
+        onInteractOutside={canClose ? undefined : (event) => event.preventDefault()}
+        className={cn('max-h-[92vh] max-w-6xl overflow-hidden rounded-[32px] border p-0 shadow-2xl', shellClass, fontClass)}
+      >
         <DialogHeader className="border-b border-inherit px-8 pb-5 pt-5 text-left">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <DialogTitle className="text-[24px] font-bold">
                 {step === 1
-                  ? (isVi ? 'Thiết lập thông tin nhóm và quyền tham gia' : 'Set the group basics and join access')
-                  : (isVi ? 'Thiết lập hồ sơ học tập chung' : 'Configure the shared learning profile')}
+                  ? t('groupProfileConfig.stepOne.title')
+                  : t('groupProfileConfig.stepTwo.title')}
               </DialogTitle>
               <DialogDescription className={cn('mt-2 max-w-3xl text-sm leading-6', mutedClass)}>
                 {step === 1
-                  ? (isVi ? 'Sức chứa tối đa được đồng bộ theo gói group leader đã mua nên chỉ hiển thị để tham chiếu.' : 'The maximum seat limit is managed by the active group plan, so it is shown here as read-only information.')
-                  : (isVi ? 'Bước này chỉ thiết lập mặt bằng chung cho nhóm, không thay thế hồ sơ cá nhân của từng member.' : 'This step defines the shared baseline for the room, not each member profile.')}
+                  ? t('groupProfileConfig.stepOne.description')
+                  : t('groupProfileConfig.stepTwo.description')}
               </DialogDescription>
             </div>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl border', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-slate-200 bg-white text-slate-600')}
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {canClose ? (
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl border', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-slate-200 bg-white text-slate-600')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            {[1, 2].map((item) => {
-              const active = step === item;
-              const unlocked = item <= maxUnlockedStep;
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {stepTabs.map((item) => {
+              const active = step === item.id;
+              const unlocked = item.id <= maxUnlockedStep;
+              const Icon = item.icon;
               return (
                 <button
-                  key={item}
+                  key={item.id}
                   type="button"
                   disabled={!unlocked || loading || submitting}
-                  onClick={() => setStep(item)}
+                  onClick={() => setStep(item.id)}
                   className={cn(
                     'rounded-[24px] border px-4 py-4 text-left transition-all duration-200',
                     active
                       ? isDarkMode ? 'border-cyan-400/40 bg-cyan-500/10' : 'border-cyan-300 bg-cyan-50'
-                      : isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'
+                      : isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white',
+                    !unlocked && 'opacity-60'
                   )}
                 >
-                  <p className="text-sm font-semibold">{item === 1 ? 'Basic & Access' : 'Shared Learning Config'}</p>
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border',
+                      active
+                        ? isDarkMode ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
+                        : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
+                    )}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{item.title}</p>
+                      <p className={cn('mt-1 text-xs leading-5', mutedClass)}>{item.description}</p>
+                    </div>
+                  </div>
                 </button>
               );
             })}
@@ -575,13 +752,13 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
             <section className={cn('rounded-[30px] border p-5', panelClass)}>
               <div className="space-y-7">
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold">{isVi ? 'Tên nhóm' : 'Group Name'} <span className="text-rose-500">*</span></label>
+                  <label className="text-sm font-semibold">{t('groupProfileConfig.stepOne.groupName')} <span className="text-rose-500">*</span></label>
                   <input value={groupName} onChange={(e) => { setGroupName(e.target.value); setErrors((prev) => ({ ...prev, groupName: undefined })); }} className={inputClass} />
                   <FieldError message={errors.groupName} />
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold">{isVi ? 'Vai trò mặc định khi tham gia' : 'Default Role On Join'}</p>
+                  <p className="text-sm font-semibold">{t('groupProfileConfig.stepOne.defaultRole')}</p>
                   <div className="grid gap-3 md:grid-cols-2">
                     {ROLE_OPTIONS.map((item) => (
                       <ChoiceCard
@@ -591,8 +768,8 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                         icon={item.icon}
                         title={isVi ? item.labelVi : item.labelEn}
                         description={item.value === 'MEMBER'
-                          ? (isVi ? 'Phù hợp cho phần lớn người tham gia học.' : 'Best for most learners joining the room.')
-                          : (isVi ? 'Phù hợp cho người cùng đóng góp tài liệu và nội dung.' : 'Best for people who will contribute sources and content.')}
+                          ? t('groupProfileConfig.stepOne.memberDescription')
+                          : t('groupProfileConfig.stepOne.contributorDescription')}
                         disabled={loading || submitting}
                         isDarkMode={isDarkMode}
                       />
@@ -601,7 +778,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-sm font-semibold">{isVi ? 'Luật lệ nhóm' : 'Group Rules'}</label>
+                  <label className="text-sm font-semibold">{t('groupProfileConfig.stepOne.rules')}</label>
                   <textarea value={rules} onChange={(e) => setRules(e.target.value)} className={cn(inputClass, 'min-h-[140px] resize-none')} />
                 </div>
               </div>
@@ -610,8 +787,50 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
             <div className={cn('grid gap-8', step === 2 && 'lg:grid-cols-[minmax(0,1.2fr)_320px]')}>
               <section className={cn('rounded-[30px] border p-5', panelClass)}>
                 <div className="space-y-7">
+                  <div className={cn(
+                    'rounded-[26px] border p-5',
+                    isDarkMode ? 'border-cyan-400/20 bg-cyan-500/8' : 'border-cyan-100 bg-[linear-gradient(135deg,#f0fbff,#f8fdff)]'
+                  )}>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', mutedClass)}>
+                            {t('groupProfileConfig.stepTwo.workflow.eyebrow')}
+                          </p>
+                          <h3 className="mt-2 text-lg font-semibold">{t('groupProfileConfig.stepTwo.workflow.title')}</h3>
+                          <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
+                            {t('groupProfileConfig.stepTwo.workflow.description')}
+                          </p>
+                        </div>
+                        {isStudyNewMode ? (
+                          <span className={cn(
+                            'rounded-full px-3 py-1.5 text-xs font-semibold',
+                            isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
+                          )}>
+                            {t('groupProfileConfig.stepTwo.roadmap.studyNewBadge')}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {workflowSteps.map((item, index) => (
+                          <WorkflowStepCard
+                            key={item.id}
+                            stepLabel={`${t('groupProfileConfig.common.step')} ${index + 1}`}
+                            title={item.title}
+                            description={item.description}
+                            active={(index === 0 && Boolean(knowledge.trim())) || (index === 1 && Boolean(domain.trim())) || (index === 2 && Boolean(learningMode))}
+                            complete={(index === 0 && Boolean(knowledge.trim())) || (index === 1 && Boolean(domain.trim())) || (index === 2 && Boolean(learningMode))}
+                            icon={item.icon}
+                            isDarkMode={isDarkMode}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
-                    <label className="text-sm font-semibold">{isVi ? 'Phạm vi kiến thức chung' : 'Shared Knowledge Scope'} <span className="text-rose-500">*</span></label>
+                    <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.knowledgeLabel')} <span className="text-rose-500">*</span></label>
                     <textarea
                       value={knowledge}
                       onChange={(e) => {
@@ -619,12 +838,11 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                         setDomain('');
                         setErrors((prev) => ({ ...prev, knowledge: undefined, domain: undefined }));
                       }}
-                      className={cn(inputClass, 'min-h-[140px] resize-none')}
+                      className={cn(inputClass, 'min-h-[168px] resize-none')}
+                      placeholder={t('groupProfileConfig.stepTwo.knowledgePlaceholder')}
                     />
                     <p className={cn('text-xs leading-5', mutedClass)}>
-                      {isVi
-                        ? 'Nhập phần knowledge chung mà cả nhóm sẽ học. Quizmate AI sẽ dùng nội dung này để suy ra domain phù hợp.'
-                        : 'Enter the shared knowledge your group will study. Quizmate AI will use it to infer the most relevant domain.'}
+                      {t('groupProfileConfig.stepTwo.knowledgeHint')}
                     </p>
                     <FieldError message={errors.knowledge} />
                   </div>
@@ -636,7 +854,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                     )}>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       <span className="text-sm font-medium">
-                        {isVi ? 'Quizmate AI đang phân tích knowledge để suy ra domain...' : 'Quizmate AI is analyzing the knowledge scope to infer the domain...'}
+                        {t('groupProfileConfig.stepTwo.analysis.loading')}
                       </span>
                     </div>
                   ) : null}
@@ -649,7 +867,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                       <div className="flex items-center gap-3">
                         <AlertTriangle className="h-4 w-4 shrink-0" />
                         <span className="text-sm font-medium">
-                          {isVi ? 'Quizmate AI phân tích knowledge thất bại. Hãy thử lại.' : 'Quizmate AI could not analyze the knowledge scope. Please retry.'}
+                          {t('groupProfileConfig.stepTwo.analysis.error')}
                         </span>
                       </div>
                       <button
@@ -665,7 +883,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                         )}
                       >
                         <RefreshCw className="h-3 w-3" />
-                        {isVi ? 'Thử lại' : 'Retry'}
+                        {t('groupProfileConfig.common.retry')}
                       </button>
                     </div>
                   ) : null}
@@ -686,16 +904,14 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                           {knowledgeAnalysis?.normalizedKnowledge ? (
                             <div className="mt-3">
                               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">
-                                {isVi ? 'AI đang hiểu knowledge này là' : 'AI is interpreting this knowledge as'}
+                                {t('groupProfileConfig.stepTwo.analysis.interpretingLabel')}
                               </p>
                               <p className="mt-1 text-sm leading-6">{knowledgeAnalysis.normalizedKnowledge}</p>
                             </div>
                           ) : null}
                           {knowledgeAnalysis?.tooBroad ? (
                             <p className={cn('mt-3 text-xs font-medium leading-5', isDarkMode ? 'text-amber-100/90' : 'text-amber-900/80')}>
-                              {isVi
-                                ? 'Knowledge này vẫn còn khá rộng. Nếu domain gợi ý chưa đúng, hãy nhập cụ thể hơn về kỹ năng, tài liệu, chủ đề hoặc kỳ thi.'
-                                : 'This knowledge scope is still broad. If the suggested domain is not accurate, refine it with more specific skills, materials, topics, or exams.'}
+                              {t('groupProfileConfig.stepTwo.analysis.tooBroad')}
                             </p>
                           ) : null}
                         </div>
@@ -709,7 +925,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                       isDarkMode ? 'border-slate-700 bg-slate-950/50' : 'border-slate-200 bg-slate-50/80'
                     )}>
                       <p className="mb-3 text-sm font-semibold">
-                        {isVi ? 'Domain được Quizmate AI gợi ý' : 'Quizmate AI suggested domains'} <span className="text-rose-500">*</span>
+                        {t('groupProfileConfig.stepTwo.domainSuggestions')} <span className="text-rose-500">*</span>
                       </p>
                       {domainOptions.length > 0 ? (
                         <div className="space-y-4">
@@ -752,7 +968,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                                         ? isDarkMode ? 'bg-cyan-400/20 text-cyan-100' : 'bg-cyan-100 text-cyan-700'
                                         : isDarkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'
                                     )}>
-                                      {active ? (isVi ? 'Đã chọn' : 'Selected') : (isVi ? 'Chọn' : 'Select')}
+                                      {active ? t('groupProfileConfig.common.selected') : t('groupProfileConfig.common.select')}
                                     </span>
                                   </div>
                                   <p className={cn('mt-1.5 text-sm leading-6', active ? '' : mutedClass)}>
@@ -769,12 +985,10 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                           isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-white text-slate-600'
                         )}>
                           <p className="font-semibold">
-                            {isVi ? 'Quizmate AI chưa có đủ dữ liệu để gợi ý domain.' : 'Quizmate AI does not have enough signal to suggest a domain yet.'}
+                            {t('groupProfileConfig.stepTwo.analysis.emptyDomainTitle')}
                           </p>
                           <p className={cn('mt-1 text-sm', mutedClass)}>
-                            {isVi
-                              ? 'Hãy nhập cụ thể hơn về phạm vi kiến thức, tài liệu, kỹ năng hoặc kỳ thi mà nhóm muốn học chung.'
-                              : 'Try describing the knowledge scope with more specific materials, skills, topics, or exams.'}
+                            {t('groupProfileConfig.stepTwo.analysis.emptyDomainDescription')}
                           </p>
                         </div>
                       )}
@@ -784,7 +998,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
 
                   {domain ? (
                     <div className="space-y-3">
-                      <label className="text-sm font-semibold">{isVi ? 'Domain đã chọn' : 'Selected Domain'} <span className="text-rose-500">*</span></label>
+                      <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.selectedDomain')} <span className="text-rose-500">*</span></label>
                       <div className={cn(
                         'rounded-[22px] border px-4 py-3',
                         isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50'
@@ -792,7 +1006,7 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                         <p className="text-sm font-semibold">{domain}</p>
                         <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
                           {selectedDomainOption?.reason
-                            || (isVi ? 'Domain này sẽ được lưu làm mặt bằng học tập chung của nhóm.' : 'This domain will be stored as the shared learning baseline for the group.')}
+                            || t('groupProfileConfig.stepTwo.selectedDomainHint')}
                         </p>
                       </div>
                     </div>
@@ -801,20 +1015,34 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
                   {analysisStatus !== 'success' ? <FieldError message={errors.domain} /> : null}
 
                   <div className="space-y-3">
-                    <p className="text-sm font-semibold">{isVi ? 'Chế độ học tập' : 'Learning Mode'} <span className="text-rose-500">*</span></p>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.learningMode')} <span className="text-rose-500">*</span></p>
+                      <span className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', mutedClass)}>
+                        {t('groupProfileConfig.stepTwo.modePrompt')}
+                      </span>
+                    </div>
                     <div className="grid gap-3">
                       {LEARNING_MODES.map((item) => (
                         <ChoiceCard
                           key={item.value}
                           active={learningMode === item.value}
-                          onClick={() => { setLearningMode(item.value); setErrors((prev) => ({ ...prev, learningMode: undefined, examName: undefined })); if (item.value !== 'MOCK_TEST') setExamName(''); }}
+                          onClick={() => {
+                            setLearningMode(item.value);
+                            setErrors((prev) => ({ ...prev, learningMode: undefined, examName: undefined }));
+                            if (item.value === 'STUDY_NEW') {
+                              setRoadmapEnabled(true);
+                            }
+                            if (item.value !== 'MOCK_TEST') {
+                              setExamName('');
+                            }
+                          }}
                           icon={item.icon}
                           title={isVi ? item.labelVi : item.labelEn}
                           description={item.value === 'STUDY_NEW'
-                            ? (isVi ? 'Dùng nhóm để học dần theo flow chung.' : 'Use the room to learn progressively with a shared flow.')
+                            ? t('groupProfileConfig.stepTwo.studyNewDescription')
                             : item.value === 'REVIEW'
-                              ? (isVi ? 'Dùng nhóm để ôn tập và vá lỗ hổng.' : 'Use the room for review sessions and gap filling.')
-                              : (isVi ? 'Dùng nhóm để luyện đề và đo tiến độ bằng bài test.' : 'Use the room for mock tests and exam-style progress checks.')}
+                              ? t('groupProfileConfig.stepTwo.reviewDescription')
+                              : t('groupProfileConfig.stepTwo.mockTestDescription')}
                           disabled={loading || submitting}
                           isDarkMode={isDarkMode}
                         />
@@ -825,75 +1053,186 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
 
                   {learningMode === 'MOCK_TEST' ? (
                     <div className="space-y-3">
-                      <label className="text-sm font-semibold">{isVi ? 'Tên kỳ thi' : 'Exam Name'} <span className="text-rose-500">*</span></label>
-                      <input value={examName} onChange={(e) => { setExamName(e.target.value); setErrors((prev) => ({ ...prev, examName: undefined })); }} className={inputClass} />
+                      <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.examName')} <span className="text-rose-500">*</span></label>
+                      <input value={examName} onChange={(e) => { setExamName(e.target.value); setErrors((prev) => ({ ...prev, examName: undefined })); }} className={inputClass} placeholder={t('groupProfileConfig.stepTwo.examNamePlaceholder')} />
                       <FieldError message={errors.examName} />
                     </div>
                   ) : null}
 
                   <div className="space-y-3">
-                    <label className="text-sm font-semibold">{isVi ? 'Mục tiêu nhóm' : 'Group Goal'}</label>
-                    <textarea value={groupLearningGoal} onChange={(e) => setGroupLearningGoal(e.target.value)} className={cn(inputClass, 'min-h-[120px] resize-none')} />
+                    <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.groupGoal')}</label>
+                    <textarea value={groupLearningGoal} onChange={(e) => setGroupLearningGoal(e.target.value)} className={cn(inputClass, 'min-h-[120px] resize-none')} placeholder={t('groupProfileConfig.stepTwo.groupGoalPlaceholder')} />
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label className={cn('rounded-[22px] border p-4', panelClass)}>
-                      <span className="flex items-center gap-3">
-                        <input type="checkbox" checked={roadmapEnabled} onChange={(e) => setRoadmapEnabled(e.target.checked)} />
-                        <span>
-                          <span className="block text-sm font-semibold">{isVi ? 'Bật roadmap chung' : 'Enable Shared Roadmap'}</span>
-                          <span className={cn('block text-xs leading-5', mutedClass)}>{isVi ? 'Tạo nhịp học chung rõ ràng hơn.' : 'Create a clearer shared progression.'}</span>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.learningSwitches')}</p>
+                        <p className={cn('mt-1 text-xs leading-5', mutedClass)}>
+                          {t('groupProfileConfig.stepTwo.learningSwitchesHint')}
+                        </p>
+                      </div>
+                      {isStudyNewMode ? (
+                        <span className={cn(
+                          'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                          isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
+                        )}>
+                          {t('groupProfileConfig.stepTwo.roadmap.studyNewBadge')}
                         </span>
-                      </span>
-                    </label>
-                    <label className={cn('rounded-[22px] border p-4', panelClass)}>
-                      <span className="flex items-center gap-3">
-                        <input type="checkbox" checked={preLearningRequired} onChange={(e) => setPreLearningRequired(e.target.checked)} />
-                        <span>
-                          <span className="block text-sm font-semibold">{isVi ? 'Yêu cầu đánh giá đầu vào' : 'Require Entry Assessment'}</span>
-                          <span className={cn('block text-xs leading-5', mutedClass)}>{isVi ? 'Áp cho thành viên mới vào nhóm.' : 'Apply this to new members joining the room.'}</span>
-                        </span>
-                      </span>
-                    </label>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <ToggleTile
+                        checked={roadmapEnabled}
+                        onChange={setRoadmapEnabled}
+                        title={t('groupProfileConfig.stepTwo.roadmap.title')}
+                        description={isStudyNewMode
+                          ? t('groupProfileConfig.stepTwo.roadmap.studyNewDescription')
+                          : t('groupProfileConfig.stepTwo.roadmap.description')}
+                        badge={isStudyNewMode ? t('groupProfileConfig.stepTwo.roadmap.defaultOn') : null}
+                        isDarkMode={isDarkMode}
+                      />
+                      <ToggleTile
+                        checked={preLearningRequired}
+                        onChange={setPreLearningRequired}
+                        title={t('groupProfileConfig.stepTwo.entryAssessment.title')}
+                        description={t('groupProfileConfig.stepTwo.entryAssessment.description')}
+                        isDarkMode={isDarkMode}
+                      />
+                    </div>
                   </div>
                 </div>
               </section>
 
               {step === 2 && (
                 <aside className={cn('rounded-[30px] border p-5 animate-in fade-in duration-500', panelClass)}>
-                  <p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', mutedClass)}>{isVi ? 'Tóm tắt nhanh' : 'Quick Snapshot'}</p>
-                  
-                  <div className="mt-4 space-y-3">
-                    <SummaryItem 
-                      label={isVi ? 'Vai trò mặc định' : 'Default Role'} 
-                      value={summary.role} 
-                      isDarkMode={isDarkMode} 
-                    />
-                    
-                    <SummaryItem 
-                      label={isVi ? 'Chế độ học tập' : 'Learning Mode'} 
-                      value={summary.mode} 
-                      isDarkMode={isDarkMode} 
-                    />
-                    
-                    {domain && (
-                      <SummaryItem 
-                        label={isVi ? 'Lĩnh vực' : 'Domain'} 
-                        value={domain} 
-                        isDarkMode={isDarkMode} 
-                      />
-                    )}
+                  <p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', mutedClass)}>
+                    {t('groupProfileConfig.stepTwo.sidebar.eyebrow')}
+                  </p>
+                  <h3 className="mt-3 text-lg font-semibold">
+                    {t('groupProfileConfig.stepTwo.sidebar.title')}
+                  </h3>
+
+                  <div className={cn(
+                    'mt-5 rounded-[24px] border p-4',
+                    isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50/80'
+                  )}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.ready.title')}</p>
+                      <span className={cn(
+                        'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                        canFinishStepTwo
+                          ? isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
+                          : isDarkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-600'
+                      )}>
+                        {canFinishStepTwo
+                          ? t('groupProfileConfig.stepTwo.sidebar.readyBadge')
+                          : t('groupProfileConfig.stepTwo.ready.pending')}
+                      </span>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      {readinessItems.map((item) => (
+                        <div
+                          key={item.label}
+                          className={cn(
+                            'flex items-start gap-3 rounded-[18px] border px-3 py-3',
+                            item.ready
+                              ? isDarkMode
+                                ? 'border-emerald-400/15 bg-emerald-500/10'
+                                : 'border-emerald-100 bg-emerald-50/80'
+                              : isDarkMode
+                                ? 'border-white/10 bg-slate-950/50'
+                                : 'border-slate-200 bg-white'
+                          )}
+                        >
+                          <div className={cn(
+                            'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+                            item.ready
+                              ? isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
+                              : isDarkMode ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-500'
+                          )}>
+                            {item.ready ? <CheckCircle2 className="h-4 w-4" /> : <Compass className="h-4 w-4" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] opacity-80">{item.label}</p>
+                            <p className={cn('mt-1 text-sm leading-6', item.ready ? '' : mutedClass)}>{item.value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <p className={cn('mt-4 text-xs leading-5', mutedClass)}>
-                    {analysisStatus === 'loading'
-                      ? (isVi ? 'Quizmate AI đang suy ra domain từ knowledge.' : 'Quizmate AI is inferring the domain from the knowledge scope.')
-                      : analysisStatus === 'error'
-                        ? (isVi ? 'Cần phân tích lại knowledge để có domain đáng tin cậy.' : 'Retry the knowledge analysis to get a reliable domain.')
-                        : domain
-                          ? (isVi ? 'Domain này sẽ được dùng làm baseline chung cho group workspace.' : 'This domain will be used as the shared baseline for the group workspace.')
-                          : (isVi ? 'Nhập knowledge để Quizmate AI gợi ý domain phù hợp.' : 'Enter the knowledge scope so Quizmate AI can suggest a suitable domain.')}
-                  </p>
+                  <div className="mt-5 space-y-3">
+                    <SummaryItem
+                      label={t('groupProfileConfig.stepTwo.sidebar.role')}
+                      value={summary.role}
+                      isDarkMode={isDarkMode}
+                    />
+                    <SummaryItem
+                      label={t('groupProfileConfig.stepTwo.sidebar.mode')}
+                      value={summary.mode}
+                      isDarkMode={isDarkMode}
+                    />
+                    <SummaryItem
+                      label={t('groupProfileConfig.stepTwo.sidebar.domain')}
+                      value={domain || t('groupProfileConfig.stepTwo.ready.pending')}
+                      isDarkMode={isDarkMode}
+                    />
+                    <SummaryItem
+                      label={t('groupProfileConfig.stepTwo.sidebar.roadmap')}
+                      value={roadmapEnabled
+                        ? t('groupProfileConfig.common.enabled')
+                        : t('groupProfileConfig.common.disabled')}
+                      isDarkMode={isDarkMode}
+                    />
+                  </div>
+
+                  <div className={cn(
+                    'mt-5 rounded-[24px] border p-4',
+                    isDarkMode ? 'border-cyan-400/15 bg-cyan-500/10' : 'border-cyan-100 bg-cyan-50/80'
+                  )}>
+                    <p className="text-sm font-semibold">
+                      {selectedDomainOption?.label || t('groupProfileConfig.stepTwo.sidebar.domainPlaceholder')}
+                    </p>
+                    <p className={cn('mt-2 text-xs leading-5', mutedClass)}>
+                      {analysisStatus === 'loading'
+                        ? t('groupProfileConfig.stepTwo.sidebar.loading')
+                        : analysisStatus === 'error'
+                          ? t('groupProfileConfig.stepTwo.sidebar.error')
+                          : domain
+                            ? t('groupProfileConfig.stepTwo.sidebar.ready')
+                            : t('groupProfileConfig.stepTwo.sidebar.default')}
+                    </p>
+                    {selectedDomainOption?.reason ? (
+                      <p className={cn('mt-3 text-sm leading-6', mutedClass)}>
+                        {selectedDomainOption.reason}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className={cn(
+                    'mt-5 rounded-[24px] border p-4',
+                    isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'
+                  )}>
+                    <p className="text-sm font-semibold">
+                      {t('groupProfileConfig.stepTwo.sidebar.afterSaveTitle')}
+                    </p>
+                    <div className="mt-3 space-y-2">
+                      {[1, 2, 3].map((item) => (
+                        <div key={item} className="flex items-start gap-3">
+                          <div className={cn(
+                            'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold',
+                            isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-600'
+                          )}>
+                            {item}
+                          </div>
+                          <p className={cn('text-sm leading-6', mutedClass)}>
+                            {t(`groupProfileConfig.stepTwo.sidebar.afterSaveItem${item === 1 ? 'One' : item === 2 ? 'Two' : 'Three'}`)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </aside>
               )}
             </div>
@@ -907,7 +1246,9 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
             : 'border-slate-200 bg-gradient-to-t from-[#f8fbff] via-[#f8fbff]/95 to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
         )}>
           <div className="space-y-1">
-            <div className={cn('text-xs leading-5', mutedClass)}>{isVi ? `Bước ${step} trên 2` : `Step ${step} of 2`}</div>
+            <div className={cn('text-xs leading-5', mutedClass)}>
+              {t('groupProfileConfig.common.stepCount', { current: step, total: 2 })}
+            </div>
             {saveError ? <p className="text-xs font-medium text-rose-500">{saveError}</p> : null}
             {!saveError && statusNotice ? <p className="text-xs font-medium text-emerald-500">{statusNotice}</p> : null}
           </div>
@@ -916,86 +1257,29 @@ function GroupWorkspaceProfileConfigMirror({ open, onOpenChange, isDarkMode, wor
             {step > 1 ? (
               <Button type="button" variant="ghost" disabled={loading || submitting} onClick={() => setStep(1)} className={cn('rounded-[24px] px-5 transition-all duration-200', isDarkMode ? 'text-slate-200 hover:bg-slate-900' : 'text-slate-700 hover:bg-slate-100')}>
                 <ChevronLeft className="h-4 w-4" />
-                {isVi ? 'Quay lại' : 'Back'}
+                {t('groupProfileConfig.common.back')}
               </Button>
             ) : null}
 
             {step === 1 ? (
               <Button type="button" disabled={loading || submitting} onClick={handleNext} className="rounded-[24px] bg-cyan-600 px-6 text-white transition-all duration-200 hover:bg-cyan-700">
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {submitting ? (isVi ? 'Đang lưu...' : 'Saving...') : (isVi ? 'Tiếp tục' : 'Continue')}
+                {submitting ? t('groupProfileConfig.common.saving') : t('groupProfileConfig.common.continue')}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
-              <Button type="button" disabled={loading || submitting} onClick={handleShowConfirmDialog} className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700">
-                {isVi ? 'Xác nhận' : 'Confirm'}
+              <Button type="button" disabled={loading || submitting} onClick={handleConfirmSubmit} className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700">
+                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {submitting
+                  ? t('groupProfileConfig.common.saving')
+                  : canFinishStepTwo
+                    ? t('groupProfileConfig.common.finish')
+                    : t('groupProfileConfig.common.finishIncomplete')}
               </Button>
             )}
           </div>
         </DialogFooter>
       </DialogContent>
-
-      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <DialogContent className={cn('max-w-3xl rounded-[32px] border p-0 shadow-2xl', isDarkMode ? 'border-slate-700 bg-[#020817] text-white' : 'border-slate-200 bg-white text-slate-900', fontClass)}>
-          <DialogHeader className="px-6 pb-3 pt-6 text-left">
-            <DialogTitle className="text-xl font-bold">{isVi ? 'Xác nhận áp dụng cấu hình nhóm' : 'Confirm this group setup'}</DialogTitle>
-            <DialogDescription className={cn('pt-2 text-sm leading-6', mutedClass)}>
-              {isVi ? 'Sau khi xác nhận, cấu hình này sẽ trở thành mặt bằng chung cho cả nhóm.' : 'Once confirmed, this setup becomes the shared baseline for the room.'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-5 px-6 pb-6">
-            {/* Basic Info Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Users className={cn('h-4 w-4', isDarkMode ? 'text-cyan-400' : 'text-cyan-600')} />
-                <h3 className="text-sm font-bold uppercase tracking-wider">{isVi ? 'Thông tin cơ bản' : 'Basic Info'}</h3>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <SummaryItem label={isVi ? 'Tên nhóm' : 'Group Name'} value={groupName || '-'} isDarkMode={isDarkMode} />
-                <SummaryItem label={isVi ? 'Vai trò mặc định khi tham gia' : 'Default Role On Join'} value={summary.role} isDarkMode={isDarkMode} />
-                <SummaryItem label={isVi ? 'Sức chứa tối đa' : 'Seat Limit'} value={formatSeatLimit(maxMemberOverride, isVi)} isDarkMode={isDarkMode} />
-                <SummaryItem label={isVi ? 'Luật lệ nhóm' : 'Group Rules'} value={rules || (isVi ? 'Chưa thiết lập' : 'Not configured')} isDarkMode={isDarkMode} />
-              </div>
-            </div>
-
-            {/* Learning Config Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <BrainCircuit className={cn('h-4 w-4', isDarkMode ? 'text-cyan-400' : 'text-cyan-600')} />
-                <h3 className="text-sm font-bold uppercase tracking-wider">{isVi ? 'Cấu hình học tập' : 'Learning Config'}</h3>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <SummaryItem label={isVi ? 'Lĩnh vực' : 'Domain'} value={domain || '-'} isDarkMode={isDarkMode} />
-                <SummaryItem label={isVi ? 'Chế độ học tập' : 'Learning Mode'} value={summary.mode} isDarkMode={isDarkMode} />
-                {learningMode === 'MOCK_TEST' && (
-                  <SummaryItem label={isVi ? 'Tên kỳ thi' : 'Exam Name'} value={examName || (isVi ? 'Không áp dụng' : 'Not applicable')} isDarkMode={isDarkMode} />
-                )}
-                <SummaryItem label={isVi ? 'Roadmap chung' : 'Shared Roadmap'} value={roadmapEnabled ? (isVi ? 'Đang bật' : 'Enabled') : (isVi ? 'Đang tắt' : 'Disabled')} isDarkMode={isDarkMode} />
-                <SummaryItem label={isVi ? 'Đánh giá đầu vào' : 'Entry Assessment'} value={preLearningRequired ? (isVi ? 'Yêu cầu' : 'Required') : (isVi ? 'Không yêu cầu' : 'Not required')} isDarkMode={isDarkMode} />
-              </div>
-              <div className="md:col-span-2">
-                <SummaryItem label={isVi ? 'Phạm vi kiến thức' : 'Knowledge Scope'} value={knowledge || '-'} isDarkMode={isDarkMode} />
-              </div>
-              {groupLearningGoal && (
-                <div className="md:col-span-2">
-                  <SummaryItem label={isVi ? 'Mục tiêu nhóm' : 'Group Goal'} value={groupLearningGoal} isDarkMode={isDarkMode} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <DialogFooter className={cn('flex-col-reverse gap-3 border-t px-6 py-4 sm:flex-row sm:justify-end', isDarkMode ? 'border-slate-700 bg-[#020817]' : 'border-slate-200 bg-white')}>
-            <Button type="button" variant="outline" onClick={() => setIsConfirmOpen(false)} disabled={submitting} className={cn('rounded-[24px] px-5 transition-all duration-200', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
-              {isVi ? 'Hủy' : 'Cancel'}
-            </Button>
-            <Button type="button" onClick={handleConfirmSubmit} disabled={loading || submitting} className="rounded-[24px] bg-emerald-600 px-5 text-white transition-all duration-200 hover:bg-emerald-700">
-              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {submitting ? (isVi ? 'Đang lưu...' : 'Saving...') : (isVi ? 'Áp dụng cấu hình này' : 'Apply this setup')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }

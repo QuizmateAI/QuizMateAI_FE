@@ -54,6 +54,14 @@ export const getGroupLogs = async (workspaceId) => {
   return response;
 };
 
+// Xem trước thông tin lời mời vào nhóm
+export const previewInvitation = async (token) => {
+  const response = await api.get(`/group/invitation/preview?token=${token}`, {
+    skipAuthRedirect: true,
+  });
+  return response;
+};
+
 // Chấp nhận lời mời vào nhóm (từ link email)
 export const acceptInvitation = async (token) => {
   const response = await api.get(`/group/invitation/accept?token=${token}`);

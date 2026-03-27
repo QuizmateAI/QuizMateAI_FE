@@ -25,6 +25,7 @@ function RoadmapCanvasView2({
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
   generatingKnowledgeQuizKnowledgeKeys = [],
+  knowledgeQuizRefreshByKnowledgeKey = {},
   generatingPreLearningPhaseIds = [],
   skipPreLearningPhaseIds = [],
   quizRefreshToken = 0,
