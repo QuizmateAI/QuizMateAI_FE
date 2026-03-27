@@ -13,9 +13,18 @@ import {
   Sparkles,
   Trash2,
 } from 'lucide-react';
-import api from '@/api/api';
+import { updateWorkspace } from '@/api/WorkspaceAPI';
+import GroupProfileOverviewPanel from '../Components/GroupProfileOverviewPanel';
 
-function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated, compactMode = false }) {
+function GroupSettingsTab({
+  isDarkMode,
+  group,
+  isLeader,
+  onGroupUpdated,
+  compactMode = false,
+  onOpenProfileConfig,
+  profileEditLocked = false,
+}) {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
@@ -84,8 +93,16 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated, compact
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      await api.put(`/group/${group.workspaceId}`, {
-        groupName: groupName.trim(),
+      const storedUser = JSON.parse(window.localStorage.getItem('user') || 'null');
+      const editorUserId = group?.createdByUserId ?? group?.ownerUserId ?? group?.userId ?? storedUser?.userID;
+      if (!editorUserId) {
+        throw new Error('Missing user id');
+      }
+
+      await updateWorkspace(group.workspaceId, {
+        userId: editorUserId,
+        name: groupName.trim(),
+        description: group?.description || null,
       });
       setIsEditing(false);
       setSuccessMsg(t('groupManage.settings.saveSuccess'));
@@ -104,15 +121,8 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated, compact
   const handleDelete = useCallback(async () => {
     if (!group?.workspaceId) return;
 
-    setDeleting(true);
-    try {
-      await api.delete(`/group/${group.workspaceId}`);
-      window.location.href = '/home';
-    } catch (err) {
-      setErrorMsg(t('groupManage.settings.deleteError'));
-      console.error('Lỗi xóa nhóm:', err);
-      setDeleting(false);
-    }
+    setErrorMsg(t('groupManage.settings.deleteError'));
+    setDeleting(false);
   }, [group, t]);
 
   const handleCancel = useCallback(() => {
@@ -143,7 +153,7 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated, compact
             {currentLang === 'en' ? 'Workspace settings' : 'Cài đặt workspace'}
           </h3>
           <p className={`mt-1 text-sm ${subtleTextClass}`}>
-            {currentLang === 'en' ? 'Keep identity clear and editable for the leader.' : 'Giữ định danh rõ ràng và cho phép leader chỉnh sửa khi cần.'}
+            {currentLang === 'en' ? 'Keep the group identity clear, and let the leader adjust it before materials lock the baseline.' : 'Giữ định danh nhóm rõ ràng, và cho phép leader chỉnh lại trước khi tài liệu khóa mặt bằng chung.'}
           </p>
 
           <div className="mt-4 space-y-3">
@@ -189,6 +199,15 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated, compact
             ) : null}
           </div>
         </section>
+
+        <GroupProfileOverviewPanel
+          group={group}
+          isDarkMode={isDarkMode}
+          isLeader={isLeader}
+          compact
+          onOpenProfileConfig={onOpenProfileConfig}
+          profileEditLocked={profileEditLocked}
+        />
       </div>
     );
   }
@@ -293,6 +312,14 @@ function GroupSettingsTab({ isDarkMode, group, isLeader, onGroupUpdated, compact
           </div>
         </div>
       </section>
+
+      <GroupProfileOverviewPanel
+        group={group}
+        isDarkMode={isDarkMode}
+        isLeader={isLeader}
+        onOpenProfileConfig={onOpenProfileConfig}
+        profileEditLocked={profileEditLocked}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className={`rounded-[30px] border p-6 ${shellClass}`}>

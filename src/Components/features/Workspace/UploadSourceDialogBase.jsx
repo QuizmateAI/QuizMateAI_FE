@@ -12,7 +12,6 @@ import {
   FileText,
   Image,
   Film,
-  ArrowLeft,
   X,
   Loader2,
   Sparkles,

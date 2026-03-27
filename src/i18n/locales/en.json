@@ -2478,6 +2478,133 @@
     "questionNotInQuiz": "Question does not belong to this quiz.",
     "answerNotBelongToQuestion": "Answer does not belong to this question."
   },
+  "groupProfileConfig": {
+    "common": {
+      "step": "Step",
+      "stepCount": "Step {{current}} of {{total}}",
+      "back": "Back",
+      "continue": "Continue",
+      "saving": "Saving...",
+      "retry": "Retry",
+      "select": "Select",
+      "selected": "Selected",
+      "finish": "Save and finish",
+      "finishIncomplete": "Review to finish",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "messages": {
+      "basicsSaved": "Group basics saved.",
+      "basicsSaveError": "Unable to save the group basics.",
+      "confirmSaveError": "Unable to finish the group setup.",
+      "completed": "Group setup has been updated."
+    },
+    "validation": {
+      "groupName": "Please enter a group name.",
+      "knowledge": "Please describe the shared knowledge scope.",
+      "analysisLoading": "Quizmate AI is still analyzing the domain. Please wait a moment.",
+      "analysisError": "Quizmate AI could not infer the domain yet. Please retry the analysis.",
+      "analysisMissing": "Please enter the knowledge scope so Quizmate AI can infer the domain.",
+      "domain": "Please select one domain from the Quizmate AI suggestions.",
+      "learningMode": "Please select a learning mode.",
+      "examName": "Please enter the exam name."
+    },
+    "tabs": {
+      "basic": {
+        "title": "Basics & Access",
+        "description": "Group name, default role, and shared ground rules"
+      },
+      "learning": {
+        "title": "Shared Learning Profile",
+        "description": "Knowledge, domain, and the team learning rhythm"
+      }
+    },
+    "stepOne": {
+      "title": "Set up the group basics",
+      "description": "Name the group, choose the default join role, and add any shared rules if needed.",
+      "groupName": "Group name",
+      "defaultRole": "Default role on join",
+      "memberDescription": "Best for regular learners joining the group.",
+      "contributorDescription": "Best for members who can contribute learning content and activities.",
+      "rules": "Rules or shared notes"
+    },
+    "stepTwo": {
+      "title": "Set up the shared learning profile",
+      "description": "This step defines the shared knowledge scope, the AI domain, and the default learning rhythm for the whole group.",
+      "workflow": {
+        "eyebrow": "Quick design",
+        "title": "Finish the setup in three focused choices",
+        "description": "Describe what the group is learning, pick the AI-suggested domain, and turn on the options that match your learning flow.",
+        "describeTitle": "Describe the knowledge",
+        "describeDescription": "Briefly explain what the group is learning or preparing for.",
+        "domainTitle": "Lock the domain",
+        "domainDescription": "Choose the right baseline so the AI understands this workspace correctly.",
+        "modeTitle": "Choose the learning style",
+        "modeDescription": "Decide whether the group is focused on new learning, review, or mock tests."
+      },
+      "knowledgeLabel": "Shared group knowledge",
+      "knowledgePlaceholder": "Example: Our group is studying JLPT N3 to strengthen grammar, vocabulary, and reading practice by topic.",
+      "knowledgeHint": "The more specific the description is, the better Quizmate AI can suggest the right domain for your group.",
+      "domainSuggestions": "Quizmate AI domain suggestions",
+      "selectedDomain": "Selected domain for this group",
+      "selectedDomainHint": "This domain becomes the shared baseline for roadmap suggestions, quizzes, and learning activities.",
+      "learningMode": "Learning mode",
+      "modePrompt": "Choose the main learning rhythm for the group",
+      "studyNewDescription": "Best when the group is learning new material and needs a clear roadmap.",
+      "reviewDescription": "Best when the group has studied before and wants a structured review flow.",
+      "mockTestDescription": "Best when the group wants to practice exams and track progress with tests.",
+      "examName": "Exam name",
+      "examNamePlaceholder": "Example: JLPT N3 December",
+      "groupGoal": "Group learning goal",
+      "groupGoalPlaceholder": "Example: Finish 20 grammar themes and 1500 vocabulary items in 8 weeks.",
+      "learningSwitches": "Learning options",
+      "learningSwitchesHint": "Turn on a roadmap or entry assessment depending on how your group runs.",
+      "analysis": {
+        "loading": "Quizmate AI is analyzing the knowledge scope to suggest the best domain.",
+        "error": "Quizmate AI could not generate a reliable domain suggestion yet. You can retry now.",
+        "interpretingLabel": "Quizmate AI understands this knowledge as",
+        "tooBroad": "The current knowledge scope is still broad. Add a bit more focus if you want more precise suggestions.",
+        "emptyDomainTitle": "No domain is ready yet",
+        "emptyDomainDescription": "Quizmate AI could not build domain suggestions from the current description. Try adding more detail or rerun the analysis."
+      },
+      "roadmap": {
+        "title": "Enable a shared roadmap",
+        "description": "Create a shared study structure so the whole group has a clearer pace.",
+        "studyNewDescription": "This mode turns the roadmap on by default so the group has a clearer path for new learning.",
+        "studyNewBadge": "Roadmap enabled by default",
+        "defaultOn": "Default on"
+      },
+      "entryAssessment": {
+        "title": "Require an entry assessment",
+        "description": "Apply this to new members before they join the shared learning flow."
+      },
+      "ready": {
+        "title": "Readiness check",
+        "knowledge": "Knowledge",
+        "domain": "Domain",
+        "mode": "Learning mode",
+        "pending": "Still needed"
+      },
+      "sidebar": {
+        "eyebrow": "Control panel",
+        "title": "Quick view before you finish",
+        "readyBadge": "Ready",
+        "loading": "Quizmate AI is inferring the most suitable domain from your knowledge scope.",
+        "error": "Rerun the knowledge analysis to get a more reliable domain baseline.",
+        "ready": "The AI has enough context to use this domain as the shared workspace baseline.",
+        "default": "Once you choose a domain, the AI will use it to suggest the shared roadmap and learning activities.",
+        "domainPlaceholder": "No domain selected yet",
+        "role": "Default role",
+        "mode": "Learning mode",
+        "domain": "Domain",
+        "roadmap": "Shared roadmap",
+        "afterSaveTitle": "What happens after saving?",
+        "afterSaveItemOne": "The workspace uses this domain as the baseline for roadmap, quiz, and flashcard generation.",
+        "afterSaveItemTwo": "The leader can still update the profile while the workspace has no materials.",
+        "afterSaveItemThree": "If materials already exist, remove them from the workspace before updating the profile again."
+      }
+    }
+  },
   "payment": {
     "invoiceTitle": "Payment Invoice",
     "invoiceDesc": "Review your subscription plan and choose a payment method",
