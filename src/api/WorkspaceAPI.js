@@ -408,11 +408,16 @@ function trimToNullSafe(value) {
 export function normalizeGroupWorkspaceProfile(profile) {
   if (!profile || typeof profile !== 'object') return null;
 
+  const materialCount = Number(profile.materialCount);
+  const normalizedMaterialCount = Number.isFinite(materialCount) && materialCount > 0 ? materialCount : 0;
+
   return {
     ...profile,
     currentStep: Number(profile.currentStep) || 1,
     totalSteps: Number(profile.totalSteps) || 2,
     onboardingCompleted: Boolean(profile.onboardingCompleted),
+    materialCount: normalizedMaterialCount,
+    hasMaterials: Boolean(profile.hasMaterials ?? normalizedMaterialCount > 0),
   };
 }
 

@@ -62,10 +62,12 @@ function GroupMembersTab({
 
   const handleToggleUpload = useCallback(async (member) => {
     try {
+      const targetUserId = member.userId;
+      if (!targetUserId) return;
       if (member.canUpload) {
-        await onRevokeUpload(workspaceId, member.groupMemberId);
+        await onRevokeUpload(workspaceId, targetUserId);
       } else {
-        await onGrantUpload(workspaceId, member.groupMemberId);
+        await onGrantUpload(workspaceId, targetUserId);
       }
       await onReload();
     } catch (err) {
@@ -75,7 +77,8 @@ function GroupMembersTab({
 
   const handleChangeRole = useCallback(async (member, newRole) => {
     try {
-      await onUpdateRole(workspaceId, member.groupMemberId, newRole);
+      if (!member.userId) return;
+      await onUpdateRole(workspaceId, member.userId, newRole);
       await onReload();
     } catch (err) {
       console.error('Lỗi đổi vai trò:', err);
@@ -84,7 +87,8 @@ function GroupMembersTab({
 
   const handleRemoveMember = useCallback(async (member) => {
     try {
-      await onRemoveMember(workspaceId, member.groupMemberId);
+      if (!member.userId) return;
+      await onRemoveMember(workspaceId, member.userId);
       await onReload();
     } catch (err) {
       console.error('Lỗi xóa thành viên:', err);

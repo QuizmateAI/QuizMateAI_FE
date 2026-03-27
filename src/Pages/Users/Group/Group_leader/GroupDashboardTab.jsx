@@ -28,55 +28,10 @@ const withinDays = (value, days) => daysAgo(value) <= days;
 
 const shortWeekdayLabel = (date, lang) => new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'vi-VN', { weekday: 'short' }).format(date);
 
-function createMockMembers(now) {
-  return [
-    { groupMemberId: 101, userId: 101, username: 'thanh.lead', fullName: 'Thanh Nguyen', role: 'LEADER', canUpload: true, joinedAt: new Date(now - 45 * DAY_MS).toISOString() },
-    { groupMemberId: 102, userId: 102, username: 'linh.content', fullName: 'Linh Tran', role: 'CONTRIBUTOR', canUpload: true, joinedAt: new Date(now - 16 * DAY_MS).toISOString() },
-    { groupMemberId: 103, userId: 103, username: 'minh.docs', fullName: 'Minh Pham', role: 'CONTRIBUTOR', canUpload: false, joinedAt: new Date(now - 12 * DAY_MS).toISOString() },
-    { groupMemberId: 104, userId: 104, username: 'an.newbie', fullName: 'An Vo', role: 'MEMBER', canUpload: false, joinedAt: new Date(now - 2 * DAY_MS).toISOString() },
-    { groupMemberId: 105, userId: 105, username: 'khanh.quiz', fullName: 'Khanh Le', role: 'MEMBER', canUpload: false, joinedAt: new Date(now - 5 * DAY_MS).toISOString() },
-    { groupMemberId: 106, userId: 106, username: 'ha.review', fullName: 'Ha Do', role: 'MEMBER', canUpload: false, joinedAt: new Date(now - 21 * DAY_MS).toISOString() },
-  ];
-}
-
-function createMockInvitations(now) {
-  return [
-    {
-      invitationId: 9001,
-      invitedEmail: 'study.partner1@gmail.com',
-      invitedByUsername: 'thanh.lead',
-      invitedByFullName: 'Thanh Nguyen',
-      invitedDate: new Date(now - 1 * DAY_MS).toISOString(),
-      expiredDate: new Date(now + 1 * DAY_MS).toISOString(),
-    },
-    {
-      invitationId: 9002,
-      invitedEmail: 'speaker.club2@gmail.com',
-      invitedByUsername: 'thanh.lead',
-      invitedByFullName: 'Thanh Nguyen',
-      invitedDate: new Date(now - 2 * DAY_MS).toISOString(),
-      expiredDate: new Date(now + 3 * DAY_MS).toISOString(),
-    },
-    {
-      invitationId: 9003,
-      invitedEmail: 'mentor.reader3@gmail.com',
-      invitedByUsername: 'linh.content',
-      invitedByFullName: 'Linh Tran',
-      invitedDate: new Date(now - 4 * DAY_MS).toISOString(),
-      expiredDate: new Date(now + 2 * DAY_MS).toISOString(),
-    },
-  ];
-}
-
-function createMockLogs(now) {
-  return [
-    { logId: 5001, actorEmail: 'thanh.lead@gmail.com', action: 'INVITATION_SENT', description: 'Invitation sent to study.partner1@gmail.com', logTime: new Date(now - 8 * 60 * 60 * 1000).toISOString() },
-    { logId: 5002, actorEmail: 'an.newbie@gmail.com', action: 'MEMBER_JOINED', description: 'an.newbie@gmail.com joined the group', logTime: new Date(now - 1 * DAY_MS).toISOString() },
-    { logId: 5003, actorEmail: 'thanh.lead@gmail.com', action: 'INVITATION_SENT', description: 'Invitation sent to speaker.club2@gmail.com', logTime: new Date(now - 2 * DAY_MS).toISOString() },
-    { logId: 5004, actorEmail: 'linh.content@gmail.com', action: 'INVITATION_SENT', description: 'Invitation sent to mentor.reader3@gmail.com', logTime: new Date(now - 4 * DAY_MS).toISOString() },
-    { logId: 5005, actorEmail: 'thanh.lead@gmail.com', action: 'GROUP_CREATED', description: 'Group workspace created', logTime: new Date(now - 45 * DAY_MS).toISOString() },
-  ];
-}
+const startOfDayMs = (value) => {
+  const date = toSafeDate(value);
+  return date ? new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() : null;
+};
 
 function formatDateTime(value, lang, withTime = false) {
   const date = toSafeDate(value);
@@ -140,42 +95,21 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
   const lang = i18n.language;
   const fontClass = lang === 'en' ? 'font-poppins' : 'font-sans';
   const workspaceId = group?.workspaceId;
-  const canPreviewMock = import.meta.env.DEV;
-  const [useMockPreview, setUseMockPreview] = React.useState(canPreviewMock);
-  const [previewNow] = React.useState(() => Date.now());
+  const dashboardTitle = group?.groupName || group?.displayTitle || group?.name || 'Group';
 
   const { data: pending = { count: 0, invitations: [] }, isLoading: pendingLoading } = useQuery({
     queryKey: ['group-pending-invitations', workspaceId],
     queryFn: () => fetchPendingInvitations(workspaceId),
-    enabled: Boolean(isLeader && workspaceId && !useMockPreview),
+    enabled: Boolean(isLeader && workspaceId),
   });
 
   const { data: logs = [], isLoading: logsLoading } = useQuery({
     queryKey: ['group-activity-logs', workspaceId],
     queryFn: () => fetchGroupLogs(workspaceId),
-    enabled: Boolean(workspaceId && !useMockPreview),
+    enabled: Boolean(workspaceId),
   });
 
-  const previewMembers = createMockMembers(previewNow);
-  const previewInvitations = createMockInvitations(previewNow);
-  const previewLogs = createMockLogs(previewNow);
-  const dashboardGroup = useMockPreview
-    ? {
-      ...group,
-      groupName: group?.groupName || group?.displayTitle || group?.name || 'IELTS Sprint Team',
-      displayTitle: group?.displayTitle || group?.groupName || group?.name || 'IELTS Sprint Team',
-      name: group?.name || group?.groupName || group?.displayTitle || 'IELTS Sprint Team',
-    }
-    : group;
-  const dashboardIsLeader = useMockPreview ? true : isLeader;
-  const rosterSource = useMockPreview ? previewMembers : members;
-  const pendingSource = useMockPreview ? { count: previewInvitations.length, invitations: previewInvitations } : pending;
-  const logsSource = useMockPreview ? previewLogs : logs;
-  const membersLoadingState = useMockPreview ? false : membersLoading;
-  const pendingLoadingState = useMockPreview ? false : pendingLoading;
-  const logsLoadingState = useMockPreview ? false : logsLoading;
-
-  const roster = rosterSource.map((member) => ({ ...member, joinedDate: toSafeDate(member.joinedAt) }))
+  const roster = members.map((member) => ({ ...member, joinedDate: toSafeDate(member.joinedAt) }))
     .sort((a, b) => (b.joinedDate?.getTime() ?? 0) - (a.joinedDate?.getTime() ?? 0));
 
   const totalMembers = roster.length;
@@ -185,14 +119,18 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
   const newThisWeek = roster.filter((member) => withinDays(member.joinedAt, RECENT_MEMBER_DAYS)).length;
   const onboardingMembers = roster.filter((member) => member.role === 'MEMBER' && withinDays(member.joinedAt, ONBOARDING_WINDOW_DAYS));
   const contributorNoUpload = roster.filter((member) => member.role === 'CONTRIBUTOR' && !member.canUpload);
-  const openInvitations = dashboardIsLeader ? (Number(pendingSource.count) || 0) : 0;
-  const expiringSoon = pendingSource.invitations.filter((item) => daysUntil(item.expiredDate) <= INVITATION_ALERT_DAYS);
-  const activityThisWeek = logsSource.filter((log) => withinDays(log.logTime, RECENT_MEMBER_DAYS)).length;
+  const openInvitations = isLeader ? (Number(pending.count) || 0) : 0;
+  const expiringSoon = pending.invitations.filter((item) => daysUntil(item.expiredDate) <= INVITATION_ALERT_DAYS);
+  const activityThisWeek = logs.filter((log) => withinDays(log.logTime, RECENT_MEMBER_DAYS)).length;
   const uploadCoverage = totalMembers ? Math.round((canUpload / totalMembers) * 100) : 0;
   const coordinatorCoverage = totalMembers ? Math.round(((leaders + contributors) / totalMembers) * 100) : 0;
+  const latestActivityMs = logs.reduce((latest, log) => {
+    const logDate = toSafeDate(log.logTime);
+    return logDate ? Math.max(latest, logDate.getTime()) : latest;
+  }, 0);
 
   const attentionItems = [];
-  if (dashboardIsLeader && openInvitations > 0) attentionItems.push({
+  if (isLeader && openInvitations > 0) attentionItems.push({
     id: 'open-invitations',
     icon: Mail,
     tone: isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700',
@@ -265,24 +203,26 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
 
   const maxRoleCount = Math.max(1, ...roleChartData.map((item) => item.value));
 
-  const activityChartData = Array.from({ length: 7 }).map((_, index) => {
-    const offset = 6 - index;
-    const day = new Date(previewNow - offset * DAY_MS);
-    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
-    const dayEnd = dayStart + DAY_MS;
-    const count = logsSource.filter((log) => {
-      const logDate = toSafeDate(log.logTime);
-      if (!logDate) return false;
-      const value = logDate.getTime();
-      return value >= dayStart && value < dayEnd;
-    }).length;
+  const activityChartData = latestActivityMs
+    ? Array.from({ length: 7 }).map((_, index) => {
+      const offset = 6 - index;
+      const day = new Date(latestActivityMs - offset * DAY_MS);
+      const dayStart = startOfDayMs(day);
+      const dayEnd = dayStart + DAY_MS;
+      const count = logs.filter((log) => {
+        const logDate = toSafeDate(log.logTime);
+        if (!logDate) return false;
+        const value = logDate.getTime();
+        return value >= dayStart && value < dayEnd;
+      }).length;
 
-    return {
-      key: `${dayStart}`,
-      label: shortWeekdayLabel(day, lang),
-      count,
-    };
-  });
+      return {
+        key: `${dayStart}`,
+        label: shortWeekdayLabel(day, lang),
+        count,
+      };
+    })
+    : [];
 
   const maxActivityCount = Math.max(1, ...activityChartData.map((item) => item.count));
 
@@ -291,7 +231,7 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
         <section className={`${cardClass} p-5`}>
           <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>{lang === 'en' ? 'System dashboard' : 'Dashboard hệ thống'}</p>
-          <h2 className={`mt-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardGroup?.groupName || dashboardGroup?.displayTitle || dashboardGroup?.name || 'Group'}</h2>
+          <h2 className={`mt-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardTitle}</h2>
           <p className={`mt-2 text-sm ${subtleTextClass}`}>{lang === 'en' ? 'High-level health and activity signals for the group.' : 'Tổng quan sức khỏe và tín hiệu hoạt động của nhóm.'}</p>
         </section>
 
@@ -304,7 +244,7 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
                   <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.tone}`}><Icon className="h-4 w-4" /></span>
                   <span className={`text-[10px] uppercase tracking-[0.14em] ${eyebrowClass}`}>{lang === 'en' ? 'metric' : 'chỉ số'}</span>
                 </div>
-                <p className={`mt-3 text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{membersLoadingState ? '...' : stat.value}</p>
+                <p className={`mt-3 text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{membersLoading ? '...' : stat.value}</p>
                 <p className={`mt-1 text-sm ${subtleTextClass}`}>{stat.label}</p>
               </div>
             );
@@ -338,18 +278,24 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
             <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {lang === 'en' ? '7-day activity trend' : 'Xu hướng hoạt động 7 ngày'}
             </h3>
-            <div className="mt-3 flex items-end gap-2 h-28">
-              {activityChartData.map((item) => (
-                <div key={item.key} className="flex-1 flex flex-col items-center justify-end gap-1">
-                  <div
-                    className={`w-full rounded-t ${isDarkMode ? 'bg-cyan-400/80' : 'bg-cyan-500/80'}`}
-                    style={{ height: `${Math.max(6, Math.round((item.count / maxActivityCount) * 100))}%` }}
-                    title={`${item.label}: ${item.count}`}
-                  />
-                  <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</span>
-                </div>
-              ))}
-            </div>
+            {activityChartData.length === 0 ? (
+              <div className={`mt-3 rounded-[20px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>
+                {lang === 'en' ? 'No activity log data yet.' : 'Chua co du lieu activity log.'}
+              </div>
+            ) : (
+              <div className="mt-3 flex items-end gap-2 h-28">
+                {activityChartData.map((item) => (
+                  <div key={item.key} className="flex-1 flex flex-col items-center justify-end gap-1">
+                    <div
+                      className={`w-full rounded-t ${isDarkMode ? 'bg-cyan-400/80' : 'bg-cyan-500/80'}`}
+                      style={{ height: `${Math.max(6, Math.round((item.count / maxActivityCount) * 100))}%` }}
+                      title={`${item.label}: ${item.count}`}
+                    />
+                    <span className={`text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </div>
@@ -362,41 +308,19 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <div>
             <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${eyebrowClass}`}>{lang === 'en' ? 'Group dashboard' : 'Bang theo doi nhom'}</p>
-            <h2 className={`mt-2 truncate text-2xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardGroup?.groupName || dashboardGroup?.displayTitle || dashboardGroup?.name || 'Group'}</h2>
+            <h2 className={`mt-2 truncate text-2xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardTitle}</h2>
             <p className={`mt-3 max-w-3xl text-sm leading-6 ${subtleTextClass}`}>{lang === 'en' ? 'Focus on who needs follow-up, which invitations are still open, and what changed most recently.' : 'Tap trung vao ai can follow-up, loi moi nao dang mo, va nhom vua thay doi dieu gi.'}</p>
-            {canPreviewMock ? (
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${useMockPreview ? (isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700') : (isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700')}`}>
-                  {useMockPreview
-                    ? (lang === 'en' ? 'Mock preview active' : 'Dang xem mock preview')
-                    : (lang === 'en' ? 'Real data mode' : 'Dang xem du lieu that')}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setUseMockPreview((prev) => !prev)}
-                  className={`inline-flex items-center rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition-all active:scale-95 ${
-                    isDarkMode
-                      ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.10]'
-                      : 'border-white/80 bg-white text-slate-700 hover:bg-white'
-                  }`}
-                >
-                  {useMockPreview
-                    ? (lang === 'en' ? 'Show real data' : 'Xem du lieu that')
-                    : (lang === 'en' ? 'Show mock data' : 'Xem mock data')}
-                </button>
-              </div>
-            ) : null}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className={`rounded-[22px] border px-4 py-4 ${innerCardClass}`}>
               <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{lang === 'en' ? 'Invitation queue' : 'Hang doi loi moi'}</p>
-              <p className={`mt-3 text-xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{!dashboardIsLeader ? '—' : pendingLoadingState ? '...' : openInvitations}</p>
-              <p className={`mt-2 text-sm ${subtleTextClass}`}>{!dashboardIsLeader ? (lang === 'en' ? 'leaders only' : 'chi leader xem') : expiringSoon.length > 0 ? `${expiringSoon.length} ${lang === 'en' ? 'expiring soon' : 'sap het han'}` : (lang === 'en' ? 'currently open' : 'dang mo')}</p>
+              <p className={`mt-3 text-xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{!isLeader ? '—' : pendingLoading ? '...' : openInvitations}</p>
+              <p className={`mt-2 text-sm ${subtleTextClass}`}>{!isLeader ? (lang === 'en' ? 'leaders only' : 'chi leader xem') : expiringSoon.length > 0 ? `${expiringSoon.length} ${lang === 'en' ? 'expiring soon' : 'sap het han'}` : (lang === 'en' ? 'currently open' : 'dang mo')}</p>
             </div>
             <div className={`rounded-[22px] border px-4 py-4 ${innerCardClass}`}>
               <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{lang === 'en' ? 'Activity this week' : 'Hoat dong tuan nay'}</p>
-              <p className={`mt-3 text-xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{logsLoadingState ? '...' : activityThisWeek}</p>
+              <p className={`mt-3 text-xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{logsLoading ? '...' : activityThisWeek}</p>
               <p className={`mt-2 text-sm ${subtleTextClass}`}>{lang === 'en' ? 'recent events on log' : 'su kien moi trong log'}</p>
             </div>
           </div>
@@ -412,7 +336,7 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.tone}`}><Icon className="h-5 w-5" /></div>
                 <span className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{lang === 'en' ? 'Tracking' : 'Theo doi'}</span>
               </div>
-              <p className={`text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{membersLoadingState ? '...' : stat.value}</p>
+              <p className={`text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{membersLoading ? '...' : stat.value}</p>
               <p className={`mt-2 text-sm ${subtleTextClass}`}>{stat.label}</p>
               <p className={`mt-4 text-xs leading-5 ${eyebrowClass}`}>{stat.note}</p>
             </div>
@@ -453,19 +377,25 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
           <p className={`mt-1 text-sm ${subtleTextClass}`}>
             {lang === 'en' ? 'Track event volume from activity logs by day.' : 'Theo dõi số lượng sự kiện theo từng ngày từ activity log.'}
           </p>
-          <div className="mt-5 flex items-end gap-3 h-44">
-            {activityChartData.map((item) => (
-              <div key={item.key} className="flex-1 flex flex-col items-center justify-end gap-2">
-                <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.count}</span>
-                <div
-                  className={`w-full rounded-t-md ${isDarkMode ? 'bg-cyan-400/80' : 'bg-cyan-500/80'}`}
-                  style={{ height: `${Math.max(8, Math.round((item.count / maxActivityCount) * 100))}%` }}
-                  title={`${item.label}: ${item.count}`}
-                />
-                <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</span>
-              </div>
-            ))}
-          </div>
+          {activityChartData.length === 0 ? (
+            <div className={`mt-5 rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>
+              {lang === 'en' ? 'No activity log data yet.' : 'Chua co du lieu activity log.'}
+            </div>
+          ) : (
+            <div className="mt-5 flex items-end gap-3 h-44">
+              {activityChartData.map((item) => (
+                <div key={item.key} className="flex-1 flex flex-col items-center justify-end gap-2">
+                  <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.count}</span>
+                  <div
+                    className={`w-full rounded-t-md ${isDarkMode ? 'bg-cyan-400/80' : 'bg-cyan-500/80'}`}
+                    style={{ height: `${Math.max(8, Math.round((item.count / maxActivityCount) * 100))}%` }}
+                    title={`${item.label}: ${item.count}`}
+                  />
+                  <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
@@ -504,13 +434,13 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
           </div>
           <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>{lang === 'en' ? 'See who was invited, when the invitation was sent, and which requests are close to expiry.' : 'Xem ai da duoc moi, gui luc nao, va loi moi nao sap het han.'}</p>
           <div className="mt-5 space-y-3">
-            {!dashboardIsLeader ? (
+            {!isLeader ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Only leaders can review this queue.' : 'Chi leader moi can theo doi hang doi nay.'}</div>
-            ) : pendingLoadingState ? (
+            ) : pendingLoading ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Loading invitations...' : 'Dang tai loi moi...'}</div>
-            ) : pendingSource.invitations.length === 0 ? (
+            ) : pending.invitations.length === 0 ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'No invitations waiting right now.' : 'Hien chua co loi moi nao dang cho.'}</div>
-            ) : pendingSource.invitations.slice(0, 5).map((item) => {
+            ) : pending.invitations.slice(0, 5).map((item) => {
               const expiring = daysUntil(item.expiredDate) <= INVITATION_ALERT_DAYS;
               const badgeClass = expiring ? (isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700') : (isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700');
               return (
@@ -540,7 +470,7 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
             <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{lang === 'en' ? 'Member watchlist' : 'Danh sach theo doi thanh vien'}</h3>
           </div>
           <div className="mt-5 grid gap-3">
-            {membersLoadingState ? (
+            {membersLoading ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Preparing watchlist...' : 'Dang chuan bi watchlist...'}</div>
             ) : watchlist.length === 0 ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'No members to watch yet.' : 'Chua co thanh vien de theo doi.'}</div>
@@ -567,11 +497,11 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
           </div>
           <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>{lang === 'en' ? 'A compact timeline of the most recent changes in the group.' : 'Timeline gon cua cac thay doi gan nhat trong nhom.'}</p>
           <div className="mt-5 space-y-3">
-            {logsLoadingState ? (
+            {logsLoading ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Loading activity log...' : 'Dang tai activity log...'}</div>
-            ) : logsSource.length === 0 ? (
+            ) : logs.length === 0 ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'No group activity recorded yet.' : 'Chua co hoat dong nao duoc ghi lai.'}</div>
-            ) : logsSource.slice(0, 8).map((log) => {
+            ) : logs.slice(0, 8).map((log) => {
               const { icon: Icon, tone } = logMeta(log.action, isDarkMode);
               return (
                 <div key={`${log.logId ?? 'synthetic'}-${log.action}-${log.logTime}-${log.actorEmail ?? 'system'}`} className={`rounded-[22px] border px-4 py-4 ${innerCardClass}`}>
