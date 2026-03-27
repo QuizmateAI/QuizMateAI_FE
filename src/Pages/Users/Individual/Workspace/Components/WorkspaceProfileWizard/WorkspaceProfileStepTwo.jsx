@@ -291,7 +291,7 @@ function WorkspaceProfileStepTwo({
     ? [
       translateStepTwo(
         'workspace.profileConfig.stepTwo.beginnerStrongSuggestion1',
-        `Hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}.`,
+        'Mới bắt đầu học nên chưa xác định được điểm mạnh rõ ràng.',
         { scope: beginnerScopeLabel }
       ),
     ].filter(Boolean)
@@ -300,7 +300,7 @@ function WorkspaceProfileStepTwo({
     ? [
       translateStepTwo(
         'workspace.profileConfig.stepTwo.beginnerWeakSuggestion1',
-        `Hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}.`,
+        'Mới bắt đầu học nên chưa xác định được điểm yếu rõ ràng.',
         { scope: beginnerScopeLabel }
       ),
     ].filter(Boolean)
@@ -346,14 +346,14 @@ function WorkspaceProfileStepTwo({
   const strongAreasPlaceholder = isBeginnerMode
     ? translateStepTwo(
       'workspace.profileConfig.placeholders.beginnerStrongAreas',
-      `VD: hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}...`,
+      'VD: mới bắt đầu học nên chưa xác định được điểm mạnh rõ ràng...',
       { scope: beginnerScopeLabel }
     )
     : t('workspace.profileConfig.placeholders.strongAreas');
   const weakAreasPlaceholder = isBeginnerMode
     ? translateStepTwo(
       'workspace.profileConfig.placeholders.beginnerWeakAreas',
-      `VD: hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học ${beginnerScopeLabel}...`,
+      'VD: mới bắt đầu học nên chưa xác định được điểm yếu rõ ràng...',
       { scope: beginnerScopeLabel }
     )
     : t('workspace.profileConfig.placeholders.weakAreas');
