@@ -2038,6 +2038,12 @@
       "postLearningDesc": "Hoàn thành tất cả Mốc kiến thức để mở bài post-learning.",
       "quizDesc": "Làm bài quiz cho chủ đề kiến thức này.",
       "flashcardDesc": "Ôn tập flashcard cho chủ đề kiến thức này.",
+      "preLearningPrompt": "Bạn muốn bắt đầu giai đoạn này như thế nào?",
+      "studyNew": {
+        "hasFoundation": "Tôi đã có nền tảng cơ bản ở giai đoạn này",
+        "noBackground": "Tôi mới làm quen với giai đoạn này",
+        "preLearningNote": "Nếu bạn đạt 90%+ trong pre-learning, giai đoạn này có thể được bỏ qua."
+      },
       "startPostLearning": "Bạn có thể bắt đầu bài post-learning!",
       "addQuiz": "Thêm bộ câu hỏi",
       "addFlashcard": "Thêm Thẻ ghi nhớ",
