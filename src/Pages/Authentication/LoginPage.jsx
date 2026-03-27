@@ -36,7 +36,7 @@ const LoginPageContent = () => {
   const [view, setView] = useState(location.state?.view || 'login');
 
   // Init Hooks
-  const loginHook = useLogin(navigate, t);
+  const loginHook = useLogin(navigate, location, t);
   const registerHook = useRegister(setView, t);
   const forgotPasswordHook = useForgotPassword(setView, t);
 

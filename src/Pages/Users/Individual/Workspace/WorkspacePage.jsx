@@ -30,6 +30,7 @@ import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/M
 import { getQuizzesByScope, shareQuizToCommunity } from "@/api/QuizAPI";
 import { getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
+import { inferProcessingRoadmapGenerationIds } from "@/Pages/Users/Individual/Workspace/utils/roadmapProcessing";
 
 const VIEW_TO_PATH = {
 	roadmap: "roadmap",
@@ -1104,25 +1105,11 @@ function WorkspacePage() {
 				const roadmapStatus = String(roadmapData?.status || "").toUpperCase();
 				const isProcessing = roadmapStatus === "PROCESSING";
 				const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
-				const processingPhases = phases.filter((phase) => String(phase?.status || "").toUpperCase() === "PROCESSING");
-				const inferredPhaseContentGeneratingIds = normalizePositiveIds(
-					processingPhases
-						.filter((phase) => {
-							const hasPreLearning = (phase?.preLearningQuizzes || []).length > 0;
-							const hasKnowledge = (phase?.knowledges || []).length > 0;
-							return hasPreLearning && !hasKnowledge;
-						})
-						.map((phase) => phase?.phaseId)
-				);
-				const inferredPreLearningGeneratingIds = normalizePositiveIds(
-					processingPhases
-						.filter((phase) => {
-							const hasPreLearning = (phase?.preLearningQuizzes || []).length > 0;
-							const hasKnowledge = (phase?.knowledges || []).length > 0;
-							return !hasPreLearning && !hasKnowledge;
-						})
-						.map((phase) => phase?.phaseId)
-				);
+				const skipPreLearningPhaseIdSet = new Set(normalizePositiveIds(skipPreLearningPhaseIds));
+				const {
+					knowledge: inferredPhaseContentGeneratingIds,
+					preLearning: inferredPreLearningGeneratingIds,
+				} = inferProcessingRoadmapGenerationIds(phases, skipPreLearningPhaseIds);
 				
 				setIsGeneratingRoadmapPhases(isProcessing);
 				if (isProcessing) {
@@ -1142,9 +1129,14 @@ function WorkspacePage() {
 
 				if (inferredPreLearningGeneratingIds.length > 0) {
 					setGeneratingPreLearningPhaseIds((current) => {
-						const merged = new Set([...normalizePositiveIds(current), ...inferredPreLearningGeneratingIds]);
+						const filteredCurrent = normalizePositiveIds(current)
+							.filter((phaseId) => !skipPreLearningPhaseIdSet.has(phaseId));
+						const merged = new Set([...filteredCurrent, ...inferredPreLearningGeneratingIds]);
 						return Array.from(merged);
 					});
+				} else if (skipPreLearningPhaseIdSet.size > 0) {
+					setGeneratingPreLearningPhaseIds((current) => normalizePositiveIds(current)
+						.filter((phaseId) => !skipPreLearningPhaseIdSet.has(phaseId)));
 				}
 
 				if (!isProcessing) {
@@ -1170,7 +1162,7 @@ function WorkspacePage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [workspaceId, roadmapAiRoadmapId, roadmapReloadToken, stopPhaseGenerationPolling]);
+	}, [workspaceId, roadmapAiRoadmapId, roadmapReloadToken, skipPreLearningPhaseIds, stopPhaseGenerationPolling]);
 
 	const isMockTestAwaitingBackend = mockTestGenerationState === "pending" && mockTestGenerationProgress >= 92;
 	const isMockTestTakingLongerThanExpected = isMockTestAwaitingBackend && mockTestGenerationElapsedSeconds >= 20;
@@ -1772,6 +1764,9 @@ function WorkspacePage() {
 			if (status === "ROADMAP_PHASE_CONTENT_STARTED" || status === "ROADMAP_PHASE_CONTENT_PROCESSING") {
 				const phaseId = progressPhaseId;
 				if (Number.isInteger(phaseId) && phaseId > 0) {
+					if (skipPreLearningPhaseIds.includes(phaseId)) {
+						setGeneratingPreLearningPhaseIds((current) => current.filter((id) => id !== phaseId));
+					}
 					setGeneratingKnowledgePhaseIds((current) => {
 						if (current.includes(phaseId)) return current;
 						return [...current, phaseId];

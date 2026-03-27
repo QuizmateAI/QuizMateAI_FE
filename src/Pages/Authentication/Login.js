@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { login, googleLogin } from '@/api/Authentication';
 
-export const useLogin = (navigate, t) => {
+export const useLogin = (navigate, location, t) => {
   const [loginData, setLoginData] = useState({
     username: '',
     password: ''
@@ -25,10 +25,29 @@ export const useLogin = (navigate, t) => {
     password: loginData.password
   });
 
+  const resolveReturnPath = () => {
+    const from = location?.state?.from;
+    if (!from) return null;
+
+    if (typeof from === 'string') {
+      return from;
+    }
+
+    if (from.pathname) {
+      return `${from.pathname}${from.search || ''}${from.hash || ''}`;
+    }
+
+    return null;
+  };
+
   // Hàm điều hướng theo role
   const navigateByRole = (role) => {
     if (role === 'SUPER_ADMIN') return navigate('/super-admin');
     if (role === 'ADMIN') return navigate('/admin');
+    const returnPath = resolveReturnPath();
+    if (returnPath) {
+      return navigate(returnPath, { replace: true });
+    }
     return navigate('/home');
   };
 
