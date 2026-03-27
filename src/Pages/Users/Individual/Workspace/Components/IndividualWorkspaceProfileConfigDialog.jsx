@@ -153,7 +153,7 @@ function createConfirmationSummary(t, values) {
       ? translateOrFallback(
         t,
         'workspace.profileConfig.stepTwo.beginnerStrongSuggestion1',
-        `Hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học ${beginnerScope}.`,
+        'Mới bắt đầu học nên chưa xác định được điểm mạnh rõ ràng.',
         { scope: beginnerScope }
       )
       : emptyValueLabel);
@@ -162,7 +162,7 @@ function createConfirmationSummary(t, values) {
       ? translateOrFallback(
         t,
         'workspace.profileConfig.stepTwo.beginnerWeakSuggestion1',
-        `Hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học ${beginnerScope}.`,
+        'Mới bắt đầu học nên chưa xác định được điểm yếu rõ ràng.',
         { scope: beginnerScope }
       )
       : emptyValueLabel);

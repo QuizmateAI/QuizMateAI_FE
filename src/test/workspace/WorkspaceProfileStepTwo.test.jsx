@@ -120,12 +120,12 @@ describe('WorkspaceProfileStepTwo', () => {
     );
 
     expect(screen.getByText('Bạn đang ở giai đoạn mới bắt đầu')).toBeInTheDocument();
-    expect(screen.getByText('Hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học Tiếng Nhật.')).toBeInTheDocument();
+    expect(screen.getByText('Mới bắt đầu học nên chưa xác định được điểm mạnh rõ ràng.')).toBeInTheDocument();
     expect(screen.getByText('Chữ Hán cơ bản')).toBeInTheDocument();
-    expect(screen.getByText('Hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học Tiếng Nhật.')).toBeInTheDocument();
+    expect(screen.getByText('Mới bắt đầu học nên chưa xác định được điểm yếu rõ ràng.')).toBeInTheDocument();
     expect(screen.getByText('Ngữ pháp N4 dễ nhầm')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('VD: hiện chưa có điểm mạnh rõ ràng vì mới bắt đầu học Tiếng Nhật...')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('VD: hiện chưa có điểm yếu rõ ràng vì mới bắt đầu học Tiếng Nhật...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('VD: mới bắt đầu học nên chưa xác định được điểm mạnh rõ ràng...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('VD: mới bắt đầu học nên chưa xác định được điểm yếu rõ ràng...')).toBeInTheDocument();
     expect(screen.getByText('Bạn vẫn có thể đặt mục tiêu học tập ngay từ đầu')).toBeInTheDocument();
     expect(screen.getByText('Nắm hiragana, katakana và từ vựng cơ bản trước khi lên mục tiêu cao hơn.')).toBeInTheDocument();
   });
