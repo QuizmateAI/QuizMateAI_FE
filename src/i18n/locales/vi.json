@@ -2508,7 +2508,6 @@
       "disabled": "Đang tắt"
     },
     "messages": {
-      "basicsSaved": "Đã lưu thông tin nhóm.",
       "basicsSaveError": "Không thể lưu thông tin nhóm.",
       "confirmSaveError": "Không thể hoàn tất cấu hình nhóm.",
       "completed": "Cấu hình nhóm đã được cập nhật."

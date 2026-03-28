@@ -269,6 +269,8 @@ function IndividualWorkspaceProfileOverviewDialog({
   isDarkMode,
   profile,
   materials = [],
+  onEditProfile,
+  editLocked = false,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -533,17 +535,38 @@ function IndividualWorkspaceProfileOverviewDialog({
 
         <div
           className={cn(
-            'flex items-center justify-end border-t px-5 py-4 sm:px-6',
+            'flex items-center justify-between gap-3 border-t px-5 py-4 sm:px-6',
             isDarkMode ? 'border-slate-800 bg-[#020817]/90' : 'border-slate-200 bg-white/90'
           )}
         >
-          <Button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="rounded-full bg-cyan-600 px-6 text-white hover:bg-cyan-700"
-          >
-            {t('workspace.profileConfig.actions.close')}
-          </Button>
+          <div className={cn('text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+            {editLocked
+              ? (i18n.language === 'en'
+                ? 'This workspace already has materials. Remove them before updating onboarding again.'
+                : 'Workspace này đã có tài liệu. Hãy xóa tài liệu trước khi cập nhật onboarding lại.')
+              : (i18n.language === 'en'
+                ? 'You can update profile workspace when has no materials.'
+                : 'Bạn có thể cập nhật hồ sơ không gian học tập khi chưa có tài liệu.')}
+          </div>
+          <div className="flex items-center gap-3">
+            {onEditProfile ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onEditProfile}
+                className="rounded-full px-6"
+              >
+                {i18n.language === 'en' ? 'Edit ' : 'Chỉnh sửa'}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-full bg-cyan-600 px-6 text-white hover:bg-cyan-700"
+            >
+              {t('workspace.profileConfig.actions.close')}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

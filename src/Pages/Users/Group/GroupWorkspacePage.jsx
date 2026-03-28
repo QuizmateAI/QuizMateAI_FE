@@ -10,6 +10,7 @@ import GroupMembersTab from './Group_leader/GroupMembersTab';
 import GroupSettingsTab from './Group_leader/GroupSettingsTab';
 import ChatPanel from './Components/ChatPanel';
 import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
+import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
 import {
   Activity,
   Bell,
@@ -41,6 +42,7 @@ import { createRoadmap } from '@/api/RoadmapAPI';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from '@/api/MaterialAPI';
 import { getGroupWorkspaceProfile, normalizeGroupWorkspaceProfile } from '@/api/WorkspaceAPI';
+import { getQuizzesByScope, deleteQuiz } from '@/api/QuizAPI';
 import { unwrapApiData } from '@/Utils/apiResponse';
 import { useToast } from '@/context/ToastContext';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
@@ -110,7 +112,7 @@ function GroupWorkspacePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const { showError, showInfo } = useToast();
+  const { showError, showInfo, showSuccess } = useToast();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -139,6 +141,9 @@ function GroupWorkspacePage() {
   const isCreating = workspaceId === 'new';
   const openProfileConfig = Boolean(location.state?.openProfileConfig);
   const [profileConfigOpen, setProfileConfigOpen] = useState(false);
+  const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
+  const [isResettingWorkspaceForProfileUpdate, setIsResettingWorkspaceForProfileUpdate] = useState(false);
+  const [groupHasLearningData, setGroupHasLearningData] = useState(false);
   const [createdGroupWorkspaceId, setCreatedGroupWorkspaceId] = useState(null);
   const [isBootstrappingGroup, setIsBootstrappingGroup] = useState(isCreating);
   const autoCreateTriggeredRef = useRef(false);
@@ -155,6 +160,7 @@ function GroupWorkspacePage() {
   const [createdItems, setCreatedItems] = useState([]);
   const [groupProfile, setGroupProfile] = useState(null);
   const [groupProfileLoading, setGroupProfileLoading] = useState(false);
+  const [hasLoadedGroupProfile, setHasLoadedGroupProfile] = useState(isCreating);
   const [groupLogs, setGroupLogs] = useState([]);
   const [groupLogsLoading, setGroupLogsLoading] = useState(false);
   const [welcomePayload, setWelcomePayload] = useState(null);
@@ -231,23 +237,25 @@ function GroupWorkspacePage() {
     isLeader
     && canManageGroup
     && !isCreating
-    && !hasCompletedGroupProfile
-    && groupProfileLoading
+    && !hasLoadedGroupProfile
   );
   const isProfileSetupIncomplete = Boolean(
     isLeader
     && canManageGroup
     && !isCreating
+    && hasLoadedGroupProfile
     && groupProfile
     && !hasCompletedGroupProfile
   );
   const shouldForceProfileSetup = Boolean(
-    isCheckingMandatoryProfile
-    || isProfileSetupIncomplete
-    || (isLeader && canManageGroup && !isCreating && !groupProfile && !hasCompletedGroupProfile)
-    || (openProfileConfig && !hasCompletedGroupProfile)
+    isProfileSetupIncomplete
+    || (isLeader && canManageGroup && !isCreating && hasLoadedGroupProfile && !groupProfile && !hasCompletedGroupProfile)
+    || (hasLoadedGroupProfile && openProfileConfig && !hasCompletedGroupProfile)
   );
   const profileEditLocked = hasUploadedMaterials && hasCompletedGroupProfile;
+  // Tính toán xem workspace có dữ liệu học tập chưa hoàn thành không (quiz/roadmap)
+  // Sẽ được cập nhật khi fetch quiz và roadmap từ API trong quá trình xóa
+  const materialCountForGroupProfile = sources.length;
   const pageShellClass = isDarkMode
     ? 'bg-[#06131a] text-white'
     : 'bg-[linear-gradient(180deg,#fffaf0_0%,#f4fbf7_46%,#eef6ff_100%)] text-slate-900';
@@ -282,7 +290,7 @@ function GroupWorkspacePage() {
           status: item.status,
           uploadedAt: item.uploadedAt,
           ...item,
-        }))
+        })).filter((item) => String(item?.status || '').toUpperCase() !== 'DELETED')
         : [];
       setSources(mappedSources);
       return mappedSources;
@@ -331,6 +339,7 @@ function GroupWorkspacePage() {
     } catch (error) {
       console.error('Failed to load group profile:', error);
     } finally {
+      setHasLoadedGroupProfile(true);
       setGroupProfileLoading(false);
     }
   }, [resolvedWorkspaceId, isCreating]);
@@ -351,6 +360,7 @@ function GroupWorkspacePage() {
 
   useEffect(() => {
     if (!isCreating && resolvedWorkspaceId) {
+      setHasLoadedGroupProfile(false);
       loadGroupProfile();
       loadGroupLogs();
     }
@@ -419,6 +429,41 @@ function GroupWorkspacePage() {
       setProfileConfigOpen(true);
     }
   }, [isCreating, shouldForceProfileSetup]);
+
+  // Kiểm tra dữ liệu học tập khi guard dialog mở
+  useEffect(() => {
+    if (!profileUpdateGuardOpen || !workspaceId || isCreating) return;
+
+    let cancelled = false;
+
+    const checkLearningData = async () => {
+      try {
+        const quizResponse = await getQuizzesByScope('WORKSPACE', Number(workspaceId));
+        const quizzes = Array.isArray(quizResponse?.data) ? quizResponse.data : [];
+        if (cancelled) return;
+        if (quizzes.length > 0) {
+          setGroupHasLearningData(true);
+          return;
+        }
+        try {
+          const { getFlashcardsByScope } = await import('@/api/FlashcardAPI');
+          const fcResponse = await getFlashcardsByScope('WORKSPACE', Number(workspaceId));
+          const flashcards = Array.isArray(fcResponse?.data) ? fcResponse.data : [];
+          if (cancelled) return;
+          setGroupHasLearningData(flashcards.length > 0);
+        } catch {
+          if (!cancelled) setGroupHasLearningData(false);
+        }
+      } catch {
+        if (!cancelled) setGroupHasLearningData(false);
+      }
+    };
+
+    setGroupHasLearningData(false);
+    checkLearningData();
+
+    return () => { cancelled = true; };
+  }, [profileUpdateGuardOpen, workspaceId, isCreating]);
 
   // Invite handler
   const handleInvite = useCallback(async (email) => {
@@ -567,6 +612,119 @@ function GroupWorkspacePage() {
       await loadGroupProfile();
     }
   }, [fetchGroups, fetchWorkspaceDetail, loadGroupProfile, resolvedWorkspaceId]);
+
+  // Xử lý yêu cầu cập nhật onboarding — kiểm tra guard
+  const handleRequestGroupProfileUpdate = useCallback(() => {
+    setIsSettingsOpen(false);
+    if (profileEditLocked) {
+      setProfileUpdateGuardOpen(true);
+      return;
+    }
+    setProfileConfigOpen(true);
+  }, [profileEditLocked]);
+
+  // Xóa toàn bộ dữ liệu workspace để cho phép cập nhật onboarding
+  const handleDeleteMaterialsForGroupProfileUpdate = useCallback(async () => {
+    if (!workspaceId || isResettingWorkspaceForProfileUpdate) return;
+
+    setIsResettingWorkspaceForProfileUpdate(true);
+
+    try {
+      // 1. Xóa quiz
+      const quizResponse = await getQuizzesByScope('WORKSPACE', Number(workspaceId));
+      const workspaceQuizzes = Array.isArray(quizResponse?.data) ? quizResponse.data : [];
+      await Promise.all(workspaceQuizzes.map((quiz) => {
+        const quizId = Number(quiz?.quizId);
+        if (!Number.isInteger(quizId) || quizId <= 0) return Promise.resolve();
+        return deleteQuiz(quizId);
+      }));
+
+      // 2. Xóa flashcard (dynamic import theo pattern hiện tại)
+      try {
+        const { getFlashcardsByScope, deleteFlashcardSet } = await import('@/api/FlashcardAPI');
+        const flashcardResponse = await getFlashcardsByScope('WORKSPACE', Number(workspaceId));
+        const workspaceFlashcards = Array.isArray(flashcardResponse?.data) ? flashcardResponse.data : [];
+        await Promise.all(workspaceFlashcards.map((fc) => {
+          const fcId = Number(fc?.flashcardSetId ?? fc?.id);
+          if (!Number.isInteger(fcId) || fcId <= 0) return Promise.resolve();
+          return deleteFlashcardSet(fcId);
+        }));
+      } catch (fcError) {
+        console.error('Failed to delete flashcards during group profile reset:', fcError);
+      }
+
+      // 3. Xóa roadmap structure nếu có
+      try {
+        const roadmapId = groupProfile?.roadmapId
+          || groupProfile?.data?.roadmapId
+          || null;
+        if (roadmapId) {
+          const { getRoadmapStructureById, deleteRoadmapKnowledgeById, deleteRoadmapPhaseById } = await import('@/api/RoadmapAPI');
+          const roadmapResponse = await getRoadmapStructureById(roadmapId);
+          const roadmapData = roadmapResponse?.data?.data || roadmapResponse?.data || roadmapResponse || null;
+          const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
+          for (const phase of phases) {
+            const knowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+            for (const knowledge of knowledges) {
+              const knowledgeId = Number(knowledge?.knowledgeId);
+              const phaseId = Number(phase?.phaseId);
+              if (!Number.isInteger(knowledgeId) || knowledgeId <= 0 || !Number.isInteger(phaseId) || phaseId <= 0) continue;
+              await deleteRoadmapKnowledgeById(knowledgeId, phaseId);
+            }
+          }
+          for (const phase of phases) {
+            const phaseId = Number(phase?.phaseId);
+            if (!Number.isInteger(phaseId) || phaseId <= 0) continue;
+            await deleteRoadmapPhaseById(phaseId, roadmapId);
+          }
+        }
+      } catch (roadmapError) {
+        const status = Number(roadmapError?.response?.status);
+        if (status !== 404) {
+          console.error('Failed to reset roadmap structure for group profile update:', roadmapError);
+        }
+      }
+
+      // 4. Xóa tài liệu
+      const materialIds = sources
+        .map((source) => Number(source?.id))
+        .filter((id) => Number.isInteger(id) && id > 0);
+      await Promise.all(materialIds.map((materialId) => deleteMaterial(materialId)));
+
+      setSources([]);
+      setSelectedSourceIds([]);
+
+      await fetchWorkspaceDetail(workspaceId).catch(() => {});
+      await loadGroupProfile();
+
+      setProfileUpdateGuardOpen(false);
+      setProfileConfigOpen(true);
+      showSuccess(
+        currentLang === 'en'
+          ? 'Documents deleted. You can now update the group onboarding.'
+          : 'Đã xóa tài liệu. Bạn có thể cập nhật onboarding nhóm ngay bây giờ.'
+      );
+    } catch (error) {
+      console.error('Failed to reset group workspace for profile update:', error);
+      showError(
+        error?.message || (currentLang === 'en'
+          ? 'Unable to delete workspace data. Please try again.'
+          : 'Không thể xóa dữ liệu workspace. Vui lòng thử lại.')
+      );
+    } finally {
+      setIsResettingWorkspaceForProfileUpdate(false);
+    }
+  }, [
+    workspaceId,
+    isResettingWorkspaceForProfileUpdate,
+    groupProfile,
+    sources,
+    fetchWorkspaceDetail,
+    loadGroupProfile,
+    showSuccess,
+    showError,
+    currentLang,
+  ]);
 
   const handleCreateQuiz = useCallback(async () => {
     if (!canCreateContent) {
@@ -1193,7 +1351,7 @@ function GroupWorkspacePage() {
             isLeader={isLeader}
             onGroupUpdated={handleGroupUpdated}
             compactMode
-            onOpenProfileConfig={() => setProfileConfigOpen(true)}
+            onOpenProfileConfig={handleRequestGroupProfileUpdate}
             profileEditLocked={profileEditLocked}
           />
         );
@@ -1452,6 +1610,17 @@ function GroupWorkspacePage() {
           }
           showInfo(t('home.group.setupComplete', 'Cấu hình nhóm hoàn tất!'));
         }}
+      />
+
+      <WorkspaceOnboardingUpdateGuardDialog
+        open={profileUpdateGuardOpen}
+        onOpenChange={setProfileUpdateGuardOpen}
+        isDarkMode={isDarkMode}
+        currentLang={currentLang?.startsWith('en') ? 'en' : 'vi'}
+        materialCount={materialCountForGroupProfile}
+        hasLearningData={groupHasLearningData}
+        onDeleteAndContinue={handleDeleteMaterialsForGroupProfileUpdate}
+        deleting={isResettingWorkspaceForProfileUpdate}
       />
 
     </div>

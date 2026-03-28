@@ -70,4 +70,23 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
     expect(screen.queryByText(/trạng thái tài liệu/i)).not.toBeInTheDocument();
     expect(screen.queryByText('DONE')).not.toBeInTheDocument();
   });
+
+  it('renders the update onboarding action when edit handler is provided', () => {
+    render(
+      <IndividualWorkspaceProfileOverviewDialog
+        open
+        onOpenChange={() => {}}
+        isDarkMode={false}
+        profile={{
+          workspaceSetupStatus: 'DONE',
+          onboardingCompleted: true,
+          workspacePurpose: 'STUDY_NEW',
+        }}
+        materials={[]}
+        onEditProfile={() => {}}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /chỉnh sửa/i })).toBeInTheDocument();
+  });
 });

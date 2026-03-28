@@ -54,6 +54,8 @@ export function normalizeIndividualWorkspaceProfile(profile) {
   const learningMode = profile.workspacePurpose || profile.learningMode || '';
   const mockExamCatalogId = profile.mockExamCatalogId || '';
   const mockExamMode = profile.mockExamMode || null;
+  const materialCount = Number(profile.materialCount);
+  const normalizedMaterialCount = Number.isFinite(materialCount) && materialCount > 0 ? materialCount : 0;
 
   return {
     ...profile,
@@ -62,6 +64,8 @@ export function normalizeIndividualWorkspaceProfile(profile) {
     currentStep: Number(profile.currentStep) || deriveCurrentStep(profile),
     totalSteps: Number(profile.totalSteps) || 3,
     onboardingCompleted: Boolean(profile.onboardingCompleted ?? profile.workspaceSetupStatus === 'DONE'),
+    materialCount: normalizedMaterialCount,
+    hasMaterials: Boolean(profile.hasMaterials ?? normalizedMaterialCount > 0),
     knowledgeInput: profile.knowledgeInput ?? profile.knowledge ?? '',
     inferredDomain: profile.inferredDomain ?? profile.domain ?? '',
     enableRoadmap:
@@ -410,12 +414,19 @@ export function normalizeGroupWorkspaceProfile(profile) {
 
   const materialCount = Number(profile.materialCount);
   const normalizedMaterialCount = Number.isFinite(materialCount) && materialCount > 0 ? materialCount : 0;
+  const workspaceSetupStatus = profile.workspaceSetupStatus;
+  const onboardingCompleted = Boolean(
+    profile.onboardingCompleted
+    ?? (workspaceSetupStatus === 'DONE' || workspaceSetupStatus === 'PROFILE_DONE')
+  );
+  const currentStep = Number(profile.currentStep)
+    || (workspaceSetupStatus === 'DONE' || workspaceSetupStatus === 'PROFILE_DONE' ? 2 : 1);
 
   return {
     ...profile,
-    currentStep: Number(profile.currentStep) || 1,
+    currentStep,
     totalSteps: Number(profile.totalSteps) || 2,
-    onboardingCompleted: Boolean(profile.onboardingCompleted),
+    onboardingCompleted,
     materialCount: normalizedMaterialCount,
     hasMaterials: Boolean(profile.hasMaterials ?? normalizedMaterialCount > 0),
   };
