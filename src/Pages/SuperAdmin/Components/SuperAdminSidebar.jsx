@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   Users, UsersRound,
-  PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote
+  PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote, Bot
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -61,6 +61,12 @@ const menuItems = [
     icon: Shield,
     labelKey: 'rbac.title',
     path: '/super-admin/rbac',
+    matchPrefix: true,
+  },
+  {
+    icon: Bot,
+    labelKey: 'AI Audit',
+    path: '/super-admin/ai-audit',
     matchPrefix: true,
   },
 ];
@@ -146,7 +152,7 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
             )}
           >
             <item.icon className="w-5 h-5 flex-shrink-0" />
-            {!collapsed && <span>{t(item.labelKey)}</span>}
+            {!collapsed && <span>{item.labelKey.includes('.') ? t(item.labelKey) : item.labelKey}</span>}
           </button>
         ))}
       </nav>
