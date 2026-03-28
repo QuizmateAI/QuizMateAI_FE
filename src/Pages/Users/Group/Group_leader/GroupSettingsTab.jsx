@@ -150,11 +150,8 @@ function GroupSettingsTab({
 
         <section className={`rounded-2xl border p-5 ${shellClass}`}>
           <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {currentLang === 'en' ? 'Workspace settings' : 'Cài đặt workspace'}
+            {currentLang === 'en' ? 'General group information' : 'Thông tin chung nhóm'}
           </h3>
-          <p className={`mt-1 text-sm ${subtleTextClass}`}>
-            {currentLang === 'en' ? 'Keep the group identity clear, and let the leader adjust it before materials lock the baseline.' : 'Giữ định danh nhóm rõ ràng, và cho phép leader chỉnh lại trước khi tài liệu khóa mặt bằng chung.'}
-          </p>
 
           <div className="mt-4 space-y-3">
             <div>

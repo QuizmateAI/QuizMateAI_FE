@@ -10,13 +10,15 @@ import UploadSourceDialog from "@/Pages/Users/Individual/Workspace/Components/Up
 import RoadmapPhaseGenerateDialog from "@/Pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog";
 import IndividualWorkspaceProfileConfigDialog from "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog";
 import IndividualWorkspaceProfileOverviewDialog from "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog";
-import { Globe, Moon, Settings, Sun, UserCircle } from "lucide-react";
+import WorkspaceOnboardingUpdateGuardDialog from "@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog";
+import { Globe, Moon, Sun, UserCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useProgressTracking } from "@/hooks/useProgressTracking";
 import {
 	getIndividualWorkspaceProfile,
+	normalizeIndividualWorkspaceProfile,
 	saveIndividualWorkspaceBasicStep,
 	saveIndividualWorkspacePersonalInfoStep,
 	saveIndividualWorkspaceRoadmapConfigStep,
@@ -24,11 +26,17 @@ import {
 	confirmIndividualWorkspaceProfile,
 } from "@/api/WorkspaceAPI";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { createRoadmapForWorkspace, getRoadmapGraph, getRoadmapStructureById } from "@/api/RoadmapAPI";
+import {
+	createRoadmapForWorkspace,
+	deleteRoadmapKnowledgeById,
+	deleteRoadmapPhaseById,
+	getRoadmapGraph,
+	getRoadmapStructureById,
+} from "@/api/RoadmapAPI";
 import { generateRoadmapKnowledgeQuiz, generateRoadmapPhaseContent, generateRoadmapPhases, generateRoadmapPreLearning } from "@/api/AIAPI";
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
-import { getQuizzesByScope, shareQuizToCommunity } from "@/api/QuizAPI";
-import { getFlashcardsByScope } from "@/api/FlashcardAPI";
+import { deleteQuiz, getQuizzesByScope, shareQuizToCommunity } from "@/api/QuizAPI";
+import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 import { inferProcessingRoadmapGenerationIds } from "@/Pages/Users/Individual/Workspace/utils/roadmapProcessing";
 
@@ -116,7 +124,7 @@ function hasCompletedProfileStepTwo(profileData) {
 }
 
 function extractProfileData(response) {
-	return response?.data?.data || response?.data || response || null;
+	return normalizeIndividualWorkspaceProfile(response?.data?.data || response?.data || response || null);
 }
 
 function extractRoadmapIdFromProfile(profileData) {
@@ -197,12 +205,12 @@ function WorkspacePage() {
 	const { t, i18n } = useTranslation();
 	const { showError, showSuccess } = useToast();
 	const { isDarkMode, toggleDarkMode } = useDarkMode();
-	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-	const settingsRef = useRef(null);
-
 	const openProfileConfig = location.state?.openProfileConfig || false;
 	const [profileConfigOpen, setProfileConfigOpen] = useState(false);
 	const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
+	const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
+	const [isProfileUpdateMode, setIsProfileUpdateMode] = useState(false);
+	const [isResettingWorkspaceForProfileUpdate, setIsResettingWorkspaceForProfileUpdate] = useState(false);
 	const [isProfileConfigured, setIsProfileConfigured] = useState(false);
 	const [workspaceProfile, setWorkspaceProfile] = useState(null);
 	const [mockTestGenerationState, setMockTestGenerationState] = useState("idle");
@@ -226,20 +234,20 @@ function WorkspacePage() {
 	const mockTestShouldCloseAfterStartRef = useRef(false);
 	const mockTestGenerationStorageKey = workspaceId ? `workspace_${workspaceId}_mockTestGeneration` : null;
 
-	// State quáº£n lÃ½ tÃ i liá»‡u (sources) â€” mock data, sáº½ káº¿t ná»‘i API sau
+	// State quáº£n lÃ½ tÃ i liá»‡u (sources) â€" mock data, sáº½ káº¿t ná»'i API sau
 	const [sources, setSources] = useState([]);
 	const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
 	const [createdItems, setCreatedItems] = useState([]);
 	const [accessHistory, setAccessHistory] = useState([]);
 
-	// State quáº£n lÃ½ dialog upload â€” chá»‰ má»Ÿ khi workspace chÆ°a cÃ³ tÃ i liá»‡u sau láº§n fetch Ä‘áº§u tiÃªn
+	// State quáº£n lÃ½ dialog upload â€" chá»‰ má»Ÿ khi workspace chÆ°a cÃ³ tÃ i liá»‡u sau láº§n fetch Ä'áº§u tiÃªn
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
 	const workspaceLayoutRef = useRef(null);
 	const [workspaceLayoutWidth, setWorkspaceLayoutWidth] = useState(0);
 
-	// Tráº¡ng thÃ¡i hiá»ƒn thá»‹ ná»™i dung chÃ­nh â€” Æ°u tiÃªn route hiá»‡n táº¡i, khÃ´ng dÃ¹ng sessionStorage
+	// Tráº¡ng thÃ¡i hiá»ƒn thá»‹ ná»™i dung chÃ­nh â€" Æ°u tiÃªn route hiá»‡n táº¡i, khÃ´ng dÃ¹ng sessionStorage
 	const [activeView, setActiveView] = useState(() => {
 		if (!workspaceId) return null;
 
@@ -254,12 +262,12 @@ function WorkspacePage() {
 
 		return null;
 	});
-	// State lÆ°u quiz Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
+	// State lÆ°u quiz Ä'ang Ä'Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
 	const [selectedQuiz, setSelectedQuiz] = useState(null);
 	const [quizBackTarget, setQuizBackTarget] = useState(null);
-	// State lÆ°u flashcard Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t
+	// State lÆ°u flashcard Ä'ang Ä'Æ°á»£c xem chi tiáº¿t
 	const [selectedFlashcard, setSelectedFlashcard] = useState(null);
-	// State lÆ°u mock test Ä‘ang Ä‘Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
+	// State lÆ°u mock test Ä'ang Ä'Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
 	const [selectedMockTest, setSelectedMockTest] = useState(null);
 	const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
 	const [roadmapReloadToken, setRoadmapReloadToken] = useState(0);
@@ -347,7 +355,7 @@ function WorkspacePage() {
 		};
 	}, []);
 
-	// Háº±ng sá»‘ kÃ­ch thÆ°á»›c panel
+	// Háº±ng sá»' kÃ­ch thÆ°á»›c panel
 	const COLLAPSED_WIDTH = 56;
 	const DEFAULT_SIDE_PANEL_WIDTH = 280;
 	const COLLAPSED_HANDLE_WIDTH = 8;
@@ -439,6 +447,8 @@ function WorkspacePage() {
 	const shouldDisableFlashcard = !hasAtLeastOneActiveSource && !hasExistingWorkspaceFlashcard;
 	const shouldDisableCreateQuiz = !hasAtLeastOneActiveSource;
 	const shouldDisableCreateFlashcard = !hasAtLeastOneActiveSource;
+	const materialCountForProfile = sources.length;
+	const profileEditLocked = materialCountForProfile > 0;
 	const roadmapEnabledFromProfile = normalizeRoadmapEnabledValue(
 		workspaceProfile?.roadmapEnabled ?? workspaceProfile?.data?.roadmapEnabled
 	);
@@ -462,6 +472,10 @@ function WorkspacePage() {
 		? false
 		: (!hasAtLeastOneActiveSource || !passRoadmapCondition1 || !passRoadmapCondition3);
 	const isStudyNewRoadmap = getProfilePurpose(workspaceProfile) === "STUDY_NEW";
+	const hasWorkspaceLearningDataAtRisk = hasExistingWorkspaceQuiz
+		|| hasExistingWorkspaceFlashcard
+		|| hasRoadmapPhases
+		|| Boolean(extractRoadmapIdFromProfile(workspaceProfile));
 
 	useEffect(() => {
 		console.log("[RoadmapGate][WorkspacePage] Profile snapshot", {
@@ -1577,7 +1591,7 @@ function WorkspacePage() {
 		workspaceId: workspaceId,
 		enabled: !!workspaceId,
 		onMaterialUploaded: (data) => {
-			console.log("ðŸ“¤ [WorkspacePage] Material uploaded via WebSocket:", data);
+			console.log("[WorkspacePage] Material uploaded via WebSocket:", data);
 			fetchSources();
 		},
 		onMaterialDeleted: () => {
@@ -1865,9 +1879,9 @@ function WorkspacePage() {
 
 				if (!isMounted) return;
 
-				// Kiá»ƒm tra xem profile Ä‘Ã£ Ä‘Æ°á»£c config hay chÆ°a:
-				// Hiá»‡n táº¡i: chá»‰ cáº§n cÃ³ learningGoal (báº¯t buá»™c) lÃ  coi nhÆ° Ä‘Ã£ cáº¥u hÃ¬nh
-				const profileData = profileRes?.data?.data || profileRes?.data || null;
+				// Kiá»ƒm tra xem profile Ä'Ã£ Ä'Æ°á»£c config hay chÆ°a:
+				// Hiá»‡n táº¡i: chá»‰ cáº§n cÃ³ learningGoal (báº¯t buá»™c) lÃ  coi nhÆ° Ä'Ã£ cáº¥u hÃ¬nh
+				const profileData = extractProfileData(profileRes);
 				console.log("[RoadmapGate][WorkspacePage] Initial profile fetch", {
 					workspaceId,
 					rawProfileResponse: profileRes,
@@ -1914,7 +1928,8 @@ function WorkspacePage() {
 				if (isConfigured) {
 					setProfileConfigOpen(false);
 					if (openProfileConfig) {
-						setProfileOverviewOpen(true);
+						navigate(`/workspace/${workspaceId}`, { replace: true });
+						setProfileOverviewOpen(false);
 						setUploadDialogOpen(false);
 					} else if (initialSources.length === 0) {
 						setUploadDialogOpen(true);
@@ -1948,14 +1963,14 @@ function WorkspacePage() {
 		startMockTestGenerationPolling,
 	]);
 
-	// Xá»­ lÃ½ Ä‘Ã³ng/má»Ÿ profile config dialog
+	// Xá»­ lÃ½ Ä'Ã³ng/má»Ÿ profile config dialog
 	const handleProfileConfigChange = useCallback((open) => {
 		setProfileConfigOpen(open);
 		if (open) {
-			// Refetch profile khi má»Ÿ Ä‘á»ƒ luÃ´n cÃ³ dá»¯ liá»‡u má»›i nháº¥t (bao gá»“m targetLevelId)
+			// Refetch profile khi má»Ÿ Ä'á»ƒ luÃ´n cÃ³ dá»¯ liá»‡u má»›i nháº¥t (bao gá»"m targetLevelId)
 			getIndividualWorkspaceProfile(workspaceId)
 				.then((res) => {
-					const profileData = res?.data?.data || res?.data || res;
+					const profileData = extractProfileData(res);
 					const storedMockTestGeneration = readStoredMockTestGeneration();
 					if (!profileData) return;
 
@@ -1985,8 +2000,11 @@ function WorkspacePage() {
 					}
 				})
 				.catch(() => {});
-		} else if (location.state?.openProfileConfig) {
+		} else {
+			setIsProfileUpdateMode(false);
+			if (location.state?.openProfileConfig) {
 			navigate(`/workspace/${workspaceId}`, { replace: true });
+			}
 		}
 	}, [
 		getMockTestGeneratingMessage,
@@ -2005,7 +2023,7 @@ function WorkspacePage() {
 		if (open) {
 			getIndividualWorkspaceProfile(workspaceId)
 				.then((res) => {
-					const profileData = res?.data?.data || res?.data || res;
+					const profileData = extractProfileData(res);
 					if (profileData) setWorkspaceProfile(profileData);
 				})
 				.catch(() => {});
@@ -2013,6 +2031,129 @@ function WorkspacePage() {
 			navigate(`/workspace/${workspaceId}`, { replace: true });
 		}
 	}, [location.state, navigate, workspaceId]);
+
+	const handleRequestProfileUpdate = useCallback(() => {
+		setUploadDialogOpen(false);
+		if (profileEditLocked) {
+			setProfileOverviewOpen(false);
+			setIsProfileUpdateMode(true);
+			setProfileUpdateGuardOpen(true);
+			return;
+		}
+
+		setIsProfileUpdateMode(true);
+		setProfileOverviewOpen(false);
+		setProfileConfigOpen(true);
+	}, [profileEditLocked]);
+
+	const resetRoadmapStructureForProfileUpdate = useCallback(async () => {
+		const roadmapId = extractRoadmapIdFromProfile(workspaceProfile);
+		if (!roadmapId) return;
+
+		try {
+			const roadmapResponse = await getRoadmapStructureById(roadmapId);
+			const roadmapData = roadmapResponse?.data?.data || roadmapResponse?.data || roadmapResponse || null;
+			const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
+
+			for (const phase of phases) {
+				const knowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+				for (const knowledge of knowledges) {
+					const knowledgeId = Number(knowledge?.knowledgeId);
+					const phaseId = Number(phase?.phaseId);
+					if (!Number.isInteger(knowledgeId) || knowledgeId <= 0 || !Number.isInteger(phaseId) || phaseId <= 0) {
+						continue;
+					}
+					await deleteRoadmapKnowledgeById(knowledgeId, phaseId);
+				}
+			}
+
+			for (const phase of phases) {
+				const phaseId = Number(phase?.phaseId);
+				if (!Number.isInteger(phaseId) || phaseId <= 0) continue;
+				await deleteRoadmapPhaseById(phaseId, roadmapId);
+			}
+		} catch (error) {
+			const status = Number(error?.response?.status);
+			if (status !== 404) {
+				console.error("Failed to reset roadmap structure before updating onboarding:", error);
+			}
+		}
+	}, [workspaceProfile]);
+
+	const handleDeleteMaterialsForProfileUpdate = useCallback(async () => {
+		if (!workspaceId || isResettingWorkspaceForProfileUpdate) return;
+
+		setIsResettingWorkspaceForProfileUpdate(true);
+
+		try {
+			const [quizResponse, flashcardResponse] = await Promise.all([
+				getQuizzesByScope("WORKSPACE", Number(workspaceId)),
+				getFlashcardsByScope("WORKSPACE", Number(workspaceId)),
+			]);
+
+			const workspaceQuizzes = Array.isArray(quizResponse?.data) ? quizResponse.data : [];
+			const workspaceFlashcards = Array.isArray(flashcardResponse?.data) ? flashcardResponse.data : [];
+
+			await Promise.all(workspaceQuizzes.map((quiz) => {
+				const quizId = Number(quiz?.quizId);
+				if (!Number.isInteger(quizId) || quizId <= 0) return Promise.resolve();
+				return deleteQuiz(quizId);
+			}));
+
+			await Promise.all(workspaceFlashcards.map((flashcardSet) => {
+				const flashcardSetId = Number(
+					flashcardSet?.flashcardSetId
+					?? flashcardSet?.id
+				);
+				if (!Number.isInteger(flashcardSetId) || flashcardSetId <= 0) return Promise.resolve();
+				return deleteFlashcardSet(flashcardSetId);
+			}));
+
+			await resetRoadmapStructureForProfileUpdate();
+
+			const materialIds = sources
+				.map((source) => Number(source?.id))
+				.filter((id) => Number.isInteger(id) && id > 0);
+			await Promise.all(materialIds.map((materialId) => deleteMaterial(materialId)));
+
+			setSources([]);
+			setSelectedSourceIds([]);
+			setHasExistingWorkspaceQuiz(false);
+			setHasExistingWorkspaceFlashcard(false);
+			setRoadmapHasPhases(false);
+			setIsRoadmapStructureMissing(false);
+			setRoadmapReloadToken((current) => current + 1);
+			await fetchWorkspaceDetail(workspaceId).catch(() => {});
+
+			const latestProfile = extractProfileData(await getIndividualWorkspaceProfile(workspaceId));
+			if (latestProfile) {
+				setWorkspaceProfile(latestProfile);
+				setIsProfileConfigured(isProfileOnboardingDone(latestProfile));
+			}
+
+			setProfileUpdateGuardOpen(false);
+			setProfileOverviewOpen(false);
+			setUploadDialogOpen(false);
+			setIsProfileUpdateMode(true);
+			setProfileConfigOpen(true);
+			navigate(`/workspace/${workspaceId}`, { replace: true });
+			showSuccess("Đã xóa tài liệu hiện tại. Bạn có thể cập nhật onboarding ngay bây giờ.");
+		} catch (error) {
+			console.error("Failed to prepare workspace for onboarding update:", error);
+			showError(error?.message || "Không thể xóa dữ liệu hiện tại để cập nhật onboarding.");
+		} finally {
+			setIsResettingWorkspaceForProfileUpdate(false);
+		}
+	}, [
+		workspaceId,
+		isResettingWorkspaceForProfileUpdate,
+		fetchWorkspaceDetail,
+		navigate,
+		resetRoadmapStructureForProfileUpdate,
+		showError,
+		showSuccess,
+		sources,
+	]);
 
 	const handleSaveProfileConfig = useCallback(async (currentStep, data) => {
 		try {
@@ -2123,19 +2264,25 @@ function WorkspacePage() {
 		}
 	}, [workspaceId, fetchWorkspaceDetail, navigate, showError, showSuccess, sources.length, t]);
 
-	// ÄÃ³ng settings khi click ra ngoÃ i
+	// Chặn back navigation quay lại màn hình onboarding sau khi đã hoàn thành
 	useEffect(() => {
-		if (!isSettingsOpen) return;
-		const handleClickOutside = (event) => {
-			if (settingsRef.current && !settingsRef.current.contains(event.target)) {
-				setIsSettingsOpen(false);
+		if (!isProfileConfigured || profileConfigOpen) return;
+
+		// Đẩy một sentinel entry vào history để có thể intercept back
+		window.history.pushState({ __onboardingDone: true }, '');
+
+		const handlePopState = (event) => {
+			if (event.state?.__onboardingDone) {
+				// Re-push sentinel để ngăn quay lại — người dùng đang "back" vào wizard
+				window.history.pushState({ __onboardingDone: true }, '');
 			}
 		};
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, [isSettingsOpen]);
 
-	// Xá»­ lÃ½ upload file tÃ i liá»‡u - SONG SONG Ä‘á»ƒ tÄƒng tá»‘c
+		window.addEventListener('popstate', handlePopState);
+		return () => window.removeEventListener('popstate', handlePopState);
+	}, [isProfileConfigured, profileConfigOpen]);
+
+	// Xá»­ lÃ½ upload file tÃ i liá»‡u - SONG SONG Ä'á»ƒ tÄƒng tá»'c
 	const handleUploadFiles = useCallback(async (files) => {
         try {
             const uploadPromises = files.map((file) => uploadMaterial(file, workspaceId));
@@ -2147,7 +2294,7 @@ function WorkspacePage() {
         }
 	}, [workspaceId, fetchSources]);
 
-	// XÃ³a tÃ i liá»‡u Ä‘Æ¡n láº»
+	// XÃ³a tÃ i liá»‡u Ä'Æ¡n láº»
 	const handleRemoveSource = useCallback(async (sourceId) => {
         try {
             await deleteMaterial(sourceId);
@@ -2169,16 +2316,16 @@ function WorkspacePage() {
         }
 	}, [fetchSources]);
 
-	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€” ghi nháº­n má»—i láº§n truy cáº­p list view
+	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€" ghi nháº­n má»—i láº§n truy cáº­p list view
 	const addAccessHistory = useCallback((name, type, actionKey) => {
 		setAccessHistory((prev) => {
-			// XÃ³a trÃ¹ng náº¿u Ä‘Ã£ cÃ³ item cÃ¹ng actionKey
+			// XÃ³a trÃ¹ng náº¿u Ä'Ã£ cÃ³ item cÃ¹ng actionKey
 			const filtered = prev.filter((item) => item.actionKey !== actionKey);
 			return [{ name, type, actionKey, accessedAt: new Date().toISOString() }, ...filtered].slice(0, 20);
 		});
 	}, []);
 
-	// Xá»­ lÃ½ action tá»« Studio Panel â€” hiá»ƒn thá»‹ form inline trong ChatPanel
+	// Xá»­ lÃ½ action tá»« Studio Panel â€" hiá»ƒn thá»‹ form inline trong ChatPanel
 	const handleStudioAction = useCallback((actionKey) => {
 		if (actionKey === "roadmap" && shouldDisableRoadmapForStudio) {
 			return;
@@ -2211,9 +2358,9 @@ function WorkspacePage() {
 		setActiveView("roadmap");
 	}, []);
 
-	// Xá»­ lÃ½ táº¡o quiz â€” callback khi CreateQuizForm hoÃ n táº¥t API multi-step
+	// Xá»­ lÃ½ táº¡o quiz â€" callback khi CreateQuizForm hoÃ n táº¥t API multi-step
 	const handleCreateQuiz = useCallback(async (data) => {
-		// Quiz Ä‘Ã£ Ä‘Æ°á»£c táº¡o xong tá»« CreateQuizForm â†’ chuyá»ƒn vá» list view
+		// Quiz Ä'Ã£ Ä'Æ°á»£c táº¡o xong tá»« CreateQuizForm â†' chuyá»ƒn vá» list view
 		setActiveView("quiz");
 	}, []);
 
@@ -2230,7 +2377,7 @@ function WorkspacePage() {
 		);
 	}, [showSuccess, t]);
 
-	// Xá»­ lÃ½ xem chi tiáº¿t quiz â€” khi click vÃ o quiz trong danh sÃ¡ch
+	// Xá»­ lÃ½ xem chi tiáº¿t quiz â€" khi click vÃ o quiz trong danh sÃ¡ch
 	const handleViewQuiz = useCallback((quiz, options = null) => {
 		const backTarget = options?.backTarget || null;
 		setSelectedQuiz(quiz);
@@ -2241,44 +2388,44 @@ function WorkspacePage() {
 		setActiveView("quizDetail");
 	}, []);
 
-	// Xá»­ lÃ½ chuyá»ƒn sang chá»‰nh sá»­a quiz â€” tá»« detail view
+	// Xá»­ lÃ½ chuyá»ƒn sang chá»‰nh sá»­a quiz â€" tá»« detail view
 	const handleEditQuiz = useCallback((quiz) => {
 		setSelectedQuiz(quiz);
 		setActiveView("editQuiz");
 	}, []);
 
-	// Xá»­ lÃ½ lÆ°u quiz sau khi chá»‰nh sá»­a â€” quay vá» detail view
+	// Xá»­ lÃ½ lÆ°u quiz sau khi chá»‰nh sá»­a â€" quay vá» detail view
 	const handleSaveQuiz = useCallback((updatedQuiz) => {
 		setSelectedQuiz((prev) => ({ ...prev, ...updatedQuiz }));
 		setActiveView("quizDetail");
 	}, []);
 
-	// Xá»­ lÃ½ táº¡o flashcard â€” callback tá»« CreateFlashcardForm (API Ä‘Ã£ gá»i xong)
+	// Xá»­ lÃ½ táº¡o flashcard â€" callback tá»« CreateFlashcardForm (API Ä'Ã£ gá»i xong)
 	const handleCreateFlashcard = useCallback(async () => {
-		// Chuyá»ƒn vá» list view Ä‘á»ƒ reload danh sÃ¡ch
+		// Chuyá»ƒn vá» list view Ä'á»ƒ reload danh sÃ¡ch
 		setActiveView("flashcard");
 	}, []);
 
-	// Xá»­ lÃ½ xem chi tiáº¿t flashcard â€” khi click vÃ o flashcard trong danh sÃ¡ch
+	// Xá»­ lÃ½ xem chi tiáº¿t flashcard â€" khi click vÃ o flashcard trong danh sÃ¡ch
 	const handleViewFlashcard = useCallback((flashcard) => {
 		setSelectedFlashcard(flashcard);
 		setActiveView("flashcardDetail");
 	}, []);
 
-	// Xá»­ lÃ½ xÃ³a flashcard â€” gá»i API xÃ³a flashcard set
+	// Xá»­ lÃ½ xÃ³a flashcard â€" gá»i API xÃ³a flashcard set
 	const handleDeleteFlashcard = useCallback(async (flashcard) => {
 		if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
 		try {
 			const { deleteFlashcardSet } = await import("@/api/FlashcardAPI");
 			await deleteFlashcardSet(flashcard.flashcardSetId);
-			// Quay vá» list view Ä‘á»ƒ reload danh sÃ¡ch
+			// Quay vá» list view Ä'á»ƒ reload danh sÃ¡ch
 			setActiveView("flashcard");
 		} catch (err) {
 			console.error("XÃ³a flashcard tháº¥t báº¡i:", err);
 		}
 	}, []);
 
-	// Xá»­ lÃ½ táº¡o roadmap â€” gá»i API táº¡o roadmap cho workspace cÃ¡ nhÃ¢n
+	// Xá»­ lÃ½ táº¡o roadmap â€" gá»i API táº¡o roadmap cho workspace cÃ¡ nhÃ¢n
 	const handleCreateRoadmap = useCallback(async (data) => {
 		try {
 			await createRoadmapForWorkspace({
@@ -2291,7 +2438,7 @@ function WorkspacePage() {
 			});
 			setActiveView("roadmap");
 		} catch (err) {
-			// Lá»—i táº¡o roadmap â€” log Ä‘á»ƒ debug
+			// Lá»—i táº¡o roadmap â€" log Ä'á»ƒ debug
 			console.error("Táº¡o roadmap tháº¥t báº¡i:", err);
 			throw err;
 		}
@@ -2327,7 +2474,7 @@ function WorkspacePage() {
 		setActiveView(nextView);
 	}, [activeView, navigate, quizBackTarget, workspaceId]);
 
-	// Xá»­ lÃ½ táº¡o mock test â€” quay vá» list sau khi táº¡o thÃ nh cÃ´ng
+	// Xá»­ lÃ½ táº¡o mock test â€" quay vá» list sau khi táº¡o thÃ nh cÃ´ng
 	const handleCreateMockTest = useCallback(async () => {
 		setActiveView("mockTest");
 	}, []);
@@ -2350,92 +2497,71 @@ function WorkspacePage() {
 		setActiveView("mockTestDetail");
 	}, []);
 
+	const handleWorkspaceProfileClick = useCallback(() => {
+		if (isProfileConfigured) {
+			setProfileOverviewOpen(true);
+			setProfileConfigOpen(false);
+			return;
+		}
+
+		setIsProfileUpdateMode(false);
+		setProfileConfigOpen(true);
+		setProfileOverviewOpen(false);
+	}, [isProfileConfigured]);
+
+	const headerActionClass = `app-topbar-action gap-1.5 ${
+		isDarkMode
+			? "border-white/10 bg-slate-900/85 text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_10px_24px_rgba(2,6,23,0.32)] hover:border-cyan-400/30 hover:bg-slate-800/95 hover:text-white"
+			: "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+	}`;
+
 	const settingsMenu = (
-		<div ref={settingsRef} className="relative z-[140]">
+		<div className="flex items-center gap-2">
 			<Button
 				variant="outline"
 				type="button"
-				onClick={() => setIsSettingsOpen((prev) => !prev)}
-				className={`rounded-full h-9 px-4 flex items-center gap-2 ${
-					isDarkMode
-						? "border-slate-700 text-slate-200 hover:bg-slate-900"
-						: "border-gray-200"
-				}`}
-				aria-expanded={isSettingsOpen}
-				aria-haspopup="menu"
+				onClick={handleWorkspaceProfileClick}
+				className={`${headerActionClass} lg:min-w-[14rem] lg:justify-start`}
+				title={t("workspace.settingsMenu.workspaceProfile")}
 			>
-				<Settings className="w-4 h-4" />
-				<span className={fontClass}>{t("common.settings")}</span>
+				<UserCircle className="h-4 w-4 shrink-0" />
+				<span className="app-topbar-action-label hidden lg:inline">
+					{t("workspace.settingsMenu.workspaceProfile")}
+				</span>
 			</Button>
 
-			{isSettingsOpen ? (
-				<div
-					role="menu"
-					className={`absolute right-0 z-[150] mt-2 w-56 rounded-xl border shadow-lg overflow-hidden transition-colors duration-300 ${
-						isDarkMode ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-gray-200 text-gray-800"
-					}`}
-				>
-					<button
-						type="button"
-						onClick={() => {
-							setIsSettingsOpen(false);
-							if (isProfileConfigured) {
-								setProfileOverviewOpen(true);
-								setProfileConfigOpen(false);
-								return;
-							}
+			<Button
+				variant="outline"
+				type="button"
+				onClick={toggleLanguage}
+				className={`${headerActionClass} min-w-[4.25rem] justify-center`}
+				title={t("common.language")}
+			>
+				<Globe className="h-4 w-4 shrink-0" />
+				<span className="app-topbar-action-value hidden sm:inline min-w-[1.75rem] uppercase">
+					{currentLang === "vi" ? "VI" : "EN"}
+				</span>
+			</Button>
 
-							setProfileConfigOpen(true);
-							setProfileOverviewOpen(false);
-						}}
-						className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-							isDarkMode ? "hover:bg-slate-900 border-b border-slate-800" : "hover:bg-gray-50 border-b border-gray-100"
-						}`}
-					>
-						<span className={`flex items-center gap-2 ${fontClass}`}>
-							<UserCircle className="w-4 h-4" />
-							{t("workspace.settingsMenu.workspaceProfile")}
-						</span>
-					</button>
-					<button
-						type="button"
-						onClick={toggleLanguage}
-						className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-							isDarkMode ? "hover:bg-slate-900" : "hover:bg-gray-50"
-						}`}
-					>
-						<span className={`flex items-center gap-2 ${fontClass}`}>
-							<Globe className="w-4 h-4" />
-							{t("common.language")}
-						</span>
-						<span className={`text-xs font-semibold ${fontClass}`}>
-							{currentLang === "vi" ? "VI" : "EN"}
-						</span>
-					</button>
-					<button
-						type="button"
-						onClick={toggleDarkMode}
-						className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-							isDarkMode ? "hover:bg-slate-900" : "hover:bg-gray-50"
-						}`}
-					>
-						<span className={`flex items-center gap-2 ${fontClass}`}>
-							{isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-							{t("common.theme")}
-						</span>
-						<span className={`text-xs font-semibold ${fontClass}`}>
-							{isDarkMode ? t("common.dark") : t("common.light")}
-						</span>
-					</button>
-				</div>
-			) : null}
+			<Button
+				variant="outline"
+				type="button"
+				onClick={toggleDarkMode}
+				className={`${headerActionClass} min-w-[6rem] justify-center`}
+				title={t("common.theme")}
+			>
+				{isDarkMode ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
+				<span className="app-topbar-action-value hidden md:inline min-w-[3.25rem]">
+					{isDarkMode ? t("common.dark") : t("common.light")}
+				</span>
+			</Button>
 		</div>
 	);
 
-	// Xá»­ lÃ½ nÃºt click Ä‘á»ƒ má»Ÿ Upload Dialog â€” Pháº£i check config trÆ°á»›c
+	// Xá»­ lÃ½ nÃºt click Ä'á»ƒ má»Ÿ Upload Dialog â€" Pháº£i check config trÆ°á»›c
 	const handleUploadClickSafe = useCallback(() => {
 		if (!isProfileConfigured) {
-			// Profile chÆ°a cáº¥u hÃ¬nh Ä‘á»§, yÃªu cáº§u cáº­p nháº­t Profile trÆ°á»›c
+			// Profile chÆ°a cáº¥u hÃ¬nh Ä'á»§, yÃªu cáº§u cáº­p nháº­t Profile trÆ°á»›c
 			setProfileConfigOpen(true);
 			setProfileOverviewOpen(false);
 		} else {
@@ -2641,7 +2767,7 @@ function WorkspacePage() {
 						</div>
 					) : (
 						<div className="flex h-full">
-							{/* Panel nguá»“n tÃ i liá»‡u (trÃ¡i) */}
+							{/* Panel nguá»"n tÃ i liá»‡u (trÃ¡i) */}
 							<div
 								style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
 								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
@@ -2810,7 +2936,7 @@ function WorkspacePage() {
 				isDarkMode={isDarkMode}
 				uploadedMaterials={sources}
 				workspaceId={workspaceId}
-				forceStartAtStepOne={openProfileConfig && !isProfileConfigured}
+				forceStartAtStepOne={isProfileUpdateMode || (openProfileConfig && !isProfileConfigured)}
 				mockTestGenerationState={mockTestGenerationState}
 				mockTestGenerationMessage={mockTestGenerationDisplayMessage}
 				mockTestGenerationProgress={mockTestGenerationProgress}
@@ -2822,6 +2948,19 @@ function WorkspacePage() {
 				isDarkMode={isDarkMode}
 				profile={workspaceProfile}
 				materials={sources}
+				onEditProfile={handleRequestProfileUpdate}
+				editLocked={profileEditLocked}
+			/>
+
+			<WorkspaceOnboardingUpdateGuardDialog
+				open={profileUpdateGuardOpen}
+				onOpenChange={setProfileUpdateGuardOpen}
+				isDarkMode={isDarkMode}
+				currentLang={i18n.language?.startsWith('en') ? 'en' : 'vi'}
+				materialCount={materialCountForProfile}
+				hasLearningData={hasWorkspaceLearningDataAtRisk}
+				onDeleteAndContinue={handleDeleteMaterialsForProfileUpdate}
+				deleting={isResettingWorkspaceForProfileUpdate}
 			/>
 
 

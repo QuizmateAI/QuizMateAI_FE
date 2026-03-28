@@ -10,6 +10,7 @@ import {
   Target,
   Users,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { formatGroupLearningMode, formatGroupRole } from '../utils/groupDisplay';
 
 function formatToggleState(value, lang, enabledLabel, disabledLabel) {
@@ -32,27 +33,76 @@ function formatCompletionState(value, lang) {
     : (lang === 'en' ? 'In progress' : 'Đang hoàn thiện');
 }
 
-function ProfileField({ label, value, isDarkMode }) {
+function MetricCard({ icon: Icon, label, value, description, toneClass, isDarkMode }) {
   return (
-    <div className={`rounded-[22px] border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-slate-50/80'}`}>
-      <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+    <div className={cn(
+      'rounded-[24px] border p-4',
+      isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'
+    )}>
+      <div className="flex items-center gap-3">
+        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', toneClass)}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <p className={cn(
+          'text-[11px] font-semibold uppercase tracking-[0.18em]',
+          isDarkMode ? 'text-slate-500' : 'text-slate-500'
+        )}>
+          {label}
+        </p>
+      </div>
+      <p className={cn('mt-5 text-lg font-bold leading-7', isDarkMode ? 'text-white' : 'text-slate-900')}>
+        {value}
+      </p>
+      <p className={cn('mt-1 text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function InfoField({ label, value, isDarkMode }) {
+  return (
+    <div className={cn(
+      'rounded-[20px] border px-4 py-3.5',
+      isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50/80'
+    )}>
+      <p className={cn(
+        'text-[11px] font-semibold uppercase tracking-[0.18em]',
+        isDarkMode ? 'text-slate-500' : 'text-slate-500'
+      )}>
         {label}
       </p>
-      <p className={`mt-2 text-sm font-semibold leading-6 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+      <p className={cn('mt-2 text-sm font-semibold leading-6', isDarkMode ? 'text-slate-100' : 'text-slate-900')}>
         {value}
       </p>
     </div>
   );
 }
 
-function ProfileLongField({ label, value, isDarkMode }) {
+function NarrativeCard({ eyebrow, title, content, icon: Icon, toneClass, isDarkMode }) {
   return (
-    <div className={`rounded-[24px] border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
-      <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-        {label}
-      </p>
-      <p className={`mt-2 whitespace-pre-line text-sm leading-7 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-        {value}
+    <div className={cn(
+      'rounded-[24px] border p-5',
+      isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'
+    )}>
+      <div className="flex items-center gap-2">
+        <span className={cn('flex h-9 w-9 items-center justify-center rounded-2xl', toneClass)}>
+          <Icon className="h-4.5 w-4.5" />
+        </span>
+        <div>
+          <p className={cn(
+            'text-[11px] font-semibold uppercase tracking-[0.18em]',
+            isDarkMode ? 'text-slate-500' : 'text-slate-500'
+          )}>
+            {eyebrow}
+          </p>
+          <h4 className={cn('mt-1 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+            {title}
+          </h4>
+        </div>
+      </div>
+      <p className={cn('mt-4 whitespace-pre-line text-sm leading-7', isDarkMode ? 'text-slate-300' : 'text-slate-700')}>
+        {content}
       </p>
     </div>
   );
@@ -64,7 +114,6 @@ function GroupProfileOverviewPanel({
   isLeader = false,
   compact = false,
   onOpenProfileConfig,
-  profileEditLocked = false,
 }) {
   const { i18n } = useTranslation();
   const currentLang = i18n.language;
@@ -79,194 +128,217 @@ function GroupProfileOverviewPanel({
     currentLang === 'en' ? 'Enabled' : 'Đang bật',
     currentLang === 'en' ? 'Disabled' : 'Đang tắt',
   );
+  const roadmapBadgeLabel = currentLang === 'en'
+    ? (group?.roadmapEnabled ? 'Shared roadmap on' : 'Shared roadmap off')
+    : (group?.roadmapEnabled ? 'Có lộ trình chung' : 'Không có lộ trình chung');
   const preLearningLabel = formatToggleState(
     group?.preLearningRequired,
     currentLang,
     currentLang === 'en' ? 'Required' : 'Yêu cầu',
     currentLang === 'en' ? 'Not required' : 'Không yêu cầu',
   );
+  const profileProgressLabel = Number.isFinite(Number(group?.currentStep)) && Number.isFinite(Number(group?.totalSteps))
+    ? `${group.currentStep}/${group.totalSteps}`
+    : completionLabel;
+  const groupGoal = group?.groupLearningGoal || group?.description || emptyLabel;
+  const knowledgeScope = group?.knowledge || emptyLabel;
+  const groupRules = group?.rules || emptyLabel;
 
-  const profileStats = useMemo(() => ([
+  const heroTitle = currentLang === 'en'
+    ? 'A quick read of the group baseline before expanding the workspace'
+    : 'Tóm tắt mặt bằng nhóm trước khi mở rộng workspace';
+  const heroDescription = currentLang === 'en'
+    ? 'Everything here reflects the live profile already saved for this group: direction, baseline rules, and the shared learning setup that the team is following.'
+    : 'Toàn bộ khu này phản ánh profile đang được lưu cho nhóm: hướng học, nội quy cốt lõi và cấu hình học tập chung mà cả nhóm đang đi theo.';
+  const actionButtonLabel = currentLang === 'en'
+    ? 'Edit'
+    : 'Chỉnh sửa';
+
+  const metricCards = useMemo(() => ([
     {
       label: currentLang === 'en' ? 'Setup status' : 'Trạng thái setup',
       value: completionLabel,
+      description: currentLang === 'en' ? 'Whether the baseline is ready for the team' : 'Cho biết profile nền tảng của nhóm đã sẵn sàng hay chưa',
       icon: Sparkles,
-      tone: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
+      toneClass: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
     },
     {
       label: currentLang === 'en' ? 'Default role' : 'Vai trò mặc định',
       value: defaultRoleLabel,
+      description: currentLang === 'en' ? 'Applied when a new member joins the room' : 'Áp dụng cho thành viên mới vào nhóm',
       icon: ShieldCheck,
-      tone: isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700',
+      toneClass: isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700',
     },
     {
       label: currentLang === 'en' ? 'Learning mode' : 'Chế độ học',
       value: learningModeLabel,
+      description: currentLang === 'en' ? 'Defines the default rhythm for roadmap and content' : 'Định nghĩa nhịp học mặc định của roadmap và nội dung',
       icon: BrainCircuit,
-      tone: isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700',
+      toneClass: isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700',
     },
     {
       label: currentLang === 'en' ? 'Seat limit' : 'Sức chứa',
       value: formatSeatLimit(group?.maxMemberOverride, currentLang),
+      description: currentLang === 'en' ? 'Current capacity available for this group setup' : 'Sức chứa hiện tại dành cho mô hình nhóm này',
       icon: Users,
-      tone: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
+      toneClass: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
     },
-  ]), [
-    completionLabel,
-    currentLang,
-    defaultRoleLabel,
-    group?.maxMemberOverride,
-    isDarkMode,
-    learningModeLabel,
-  ]);
+  ]), [completionLabel, currentLang, defaultRoleLabel, group?.maxMemberOverride, isDarkMode, learningModeLabel]);
 
-  const profileFields = [
+  const primaryFields = [
     { label: currentLang === 'en' ? 'Group name' : 'Tên nhóm', value: group?.groupName || emptyLabel },
     { label: currentLang === 'en' ? 'Domain' : 'Lĩnh vực', value: group?.domain || emptyLabel },
     { label: currentLang === 'en' ? 'Exam name' : 'Kỳ thi', value: group?.examName || emptyLabel },
+    { label: currentLang === 'en' ? 'Profile progress' : 'Tiến độ profile', value: profileProgressLabel },
     { label: currentLang === 'en' ? 'Shared roadmap' : 'Roadmap chung', value: roadmapLabel },
     { label: currentLang === 'en' ? 'Entry assessment' : 'Đánh giá đầu vào', value: preLearningLabel },
-    {
-      label: currentLang === 'en' ? 'Profile progress' : 'Tiến độ profile',
-      value: Number.isFinite(Number(group?.currentStep)) && Number.isFinite(Number(group?.totalSteps))
-        ? `${group.currentStep}/${group.totalSteps}`
-        : completionLabel,
-    },
   ];
 
   return (
-    <section className={`rounded-[30px] border p-6 ${isDarkMode ? 'border-white/10 bg-[#08131a]/92 text-white' : 'border-white/80 bg-white/82 text-slate-900'}`}>
-      <div className={`flex flex-col gap-4 ${compact ? '' : 'xl:flex-row xl:items-start xl:justify-between'}`}>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}`}>
-              <BookOpenCheck className="h-5 w-5" />
-            </span>
-            <div>
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                {currentLang === 'en' ? 'Configured profile' : 'Profile nhóm đã setup'}
-              </p>
-              <h3 className={`mt-1 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {currentLang === 'en' ? 'Review the group baseline before inviting more members' : 'Xem lại mặt bằng nhóm trước khi mời thêm thành viên'}
-              </h3>
+    <section className={cn(
+      'rounded-[30px] border',
+      isDarkMode ? 'border-white/10 bg-[#08131a]/92 text-white' : 'border-slate-200 bg-white text-slate-900'
+    )}>
+      <div className={cn('border-b px-5 py-5 sm:px-6 sm:py-6', isDarkMode ? 'border-white/10' : 'border-slate-200')}>
+        <div className={cn(
+          'flex flex-col gap-4',
+          isLeader && onOpenProfileConfig ? 'sm:flex-row sm:items-start sm:justify-between' : ''
+        )}>
+          <div className="min-w-0">
+            <div className="flex items-start gap-3">
+              <span className={cn(
+                'mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl',
+                isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'
+              )}>
+                <BookOpenCheck className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className={cn(
+                  'text-[11px] font-semibold uppercase tracking-[0.24em]',
+                  isDarkMode ? 'text-slate-500' : 'text-slate-500'
+                )}>
+                  {currentLang === 'en' ? 'Group profile snapshot' : 'Profile nhóm đã setup'}
+                </p>
+                <h3 className={cn('mt-2 text-xl font-bold leading-tight sm:text-2xl', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                  {heroTitle}
+                </h3>
+                <p className={cn('mt-3 max-w-3xl text-sm leading-7', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
+                  {heroDescription}
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className={cn(
+                    'inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold',
+                    isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  )}>
+                    {completionLabel}
+                  </span>
+                  <span className={cn(
+                    'inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold',
+                    isDarkMode ? 'border-violet-400/20 bg-violet-500/10 text-violet-100' : 'border-violet-200 bg-violet-50 text-violet-700'
+                  )}>
+                    {learningModeLabel}
+                  </span>
+                  <span className={cn(
+                    'inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold',
+                    isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700'
+                  )}>
+                    {roadmapBadgeLabel}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <p className={`mt-4 max-w-3xl text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            {currentLang === 'en'
-              ? 'This section shows the real profile already saved for the workspace, including learning mode, group rules, and onboarding constraints.'
-              : 'Khu này hiển thị profile thật đã lưu của nhóm, gồm chế độ học, nội quy, mục tiêu và các điều kiện onboarding.'}
-          </p>
-        </div>
-
-        {isLeader && onOpenProfileConfig ? (
-          <div className="flex flex-col items-start gap-2">
+          {isLeader && onOpenProfileConfig ? (
             <button
               type="button"
               onClick={onOpenProfileConfig}
-              disabled={profileEditLocked}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-semibold transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={cn(
+                'inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full border px-4 py-2.5 text-sm font-semibold transition-all active:scale-95',
                 isDarkMode
-                  ? 'border-white/10 bg-white/[0.05] text-slate-100 hover:bg-white/[0.10]'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-              }`}
+                  ? 'border-white/10 bg-white/[0.06] text-slate-100 hover:bg-white/[0.10]'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+              )}
             >
               <PenSquare className="h-4 w-4" />
-              {currentLang === 'en' ? 'Open profile wizard' : 'Mở lại form cấu hình'}
+              {actionButtonLabel}
             </button>
-            {profileEditLocked ? (
-              <p className={`text-xs leading-5 ${isDarkMode ? 'text-amber-200/90' : 'text-amber-700'}`}>
-                {currentLang === 'en'
-                  ? 'Delete all workspace materials first if you want to update this profile again.'
-                  : 'Muốn cập nhật lại profile, hãy xóa hết tài liệu trong workspace trước.'}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
-      <div className={`mt-6 grid gap-3 ${compact ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-2 xl:grid-cols-4'}`}>
-        {profileStats.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className={`rounded-[24px] border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-white/80 bg-white/78'}`}>
-              <div className="flex items-center justify-between gap-3">
-                <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${item.tone}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {item.label}
-                </span>
-              </div>
-              <p className={`mt-4 text-lg font-bold leading-7 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {item.value}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className={`mt-6 grid gap-3 ${compact ? 'lg:grid-cols-2' : 'lg:grid-cols-3'}`}>
-        {profileFields.map((item) => (
-          <ProfileField key={item.label} label={item.label} value={item.value} isDarkMode={isDarkMode} />
-        ))}
-      </div>
-
-      <div className={`mt-6 grid gap-4 ${compact ? 'xl:grid-cols-2' : 'xl:grid-cols-[1.1fr_0.9fr]'}`}>
-        <div className="space-y-4">
-          <ProfileLongField
-            label={currentLang === 'en' ? 'Knowledge scope' : 'Nội dung kiến thức'}
-            value={group?.knowledge || emptyLabel}
-            isDarkMode={isDarkMode}
-          />
-          <ProfileLongField
-            label={currentLang === 'en' ? 'Group rules' : 'Nội quy nhóm'}
-            value={group?.rules || emptyLabel}
-            isDarkMode={isDarkMode}
-          />
+      <div className="px-5 py-5 sm:px-6 sm:py-6">
+        <div className={cn('grid gap-4', compact ? 'md:grid-cols-2' : 'md:grid-cols-2 xl:grid-cols-4')}>
+          {metricCards.map((item) => (
+            <MetricCard
+              key={item.label}
+              icon={item.icon}
+              label={item.label}
+              value={item.value}
+              description={item.description}
+              toneClass={item.toneClass}
+              isDarkMode={isDarkMode}
+            />
+          ))}
         </div>
 
-        <div className="space-y-4">
-          <ProfileLongField
-            label={currentLang === 'en' ? 'Group learning goal' : 'Mục tiêu học tập của nhóm'}
-            value={group?.groupLearningGoal || group?.description || emptyLabel}
-            isDarkMode={isDarkMode}
-          />
-
-          <div className={`rounded-[24px] border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
-            <div className="flex items-center gap-2">
-              <Compass className={`h-4 w-4 ${isDarkMode ? 'text-cyan-200' : 'text-cyan-700'}`} />
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                {currentLang === 'en' ? 'Profile reading note' : 'Gợi ý đọc profile'}
+        <div className={cn('mt-5 grid gap-4', compact ? 'xl:grid-cols-1' : 'xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]')}>
+          <div className="space-y-4">
+            <div className={cn(
+              'rounded-[26px] border p-5',
+              isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'
+            )}>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className={cn('h-4.5 w-4.5', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')} />
+                <p className={cn(
+                  'text-[11px] font-semibold uppercase tracking-[0.18em]',
+                  isDarkMode ? 'text-slate-500' : 'text-slate-500'
+                )}>
+                  {currentLang === 'en' ? 'Core setup' : 'Thiết lập cốt lõi'}
+                </p>
+              </div>
+              <p className={cn('mt-3 text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
+                {currentLang === 'en'
+                  ? 'These values define how the room identifies itself and what onboarding defaults new members inherit.'
+                  : 'Đây là những giá trị định nghĩa nhóm này là ai và thành viên mới sẽ nhận baseline nào khi tham gia.'}
               </p>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {primaryFields.map((item) => (
+                  <InfoField key={item.label} label={item.label} value={item.value} isDarkMode={isDarkMode} />
+                ))}
+              </div>
             </div>
-            <ul className={`mt-3 space-y-2 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-              <li>{currentLang === 'en' ? 'Check learning mode and goal before building quizzes or roadmap.' : 'Kiểm tra chế độ học và mục tiêu trước khi tạo quiz hoặc roadmap.'}</li>
-              <li>{currentLang === 'en' ? 'Use the rules block as the welcome baseline for new members.' : 'Dùng phần nội quy làm baseline chào đón thành viên mới.'}</li>
-              <li>{currentLang === 'en' ? 'You can update the profile while the workspace has no materials, or after removing existing materials.' : 'Bạn có thể cập nhật profile khi workspace chưa có tài liệu, hoặc sau khi đã xóa hết tài liệu hiện có.'}</li>
-            </ul>
+
+            <NarrativeCard
+              eyebrow={currentLang === 'en' ? 'Knowledge scope' : 'Nội dung kiến thức'}
+              title={currentLang === 'en' ? 'What this group is learning together' : 'Những gì nhóm đang học cùng nhau'}
+              content={knowledgeScope}
+              icon={Compass}
+              toneClass={isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}
+              isDarkMode={isDarkMode}
+            />
           </div>
 
-          <div className={`rounded-[24px] border p-4 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-slate-50/80'}`}>
-            <div className="flex items-center gap-2">
-              <Target className={`h-4 w-4 ${isDarkMode ? 'text-emerald-200' : 'text-emerald-700'}`} />
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                {currentLang === 'en' ? 'Leader action' : 'Hành động của leader'}
-              </p>
-            </div>
-            <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-              {isLeader
-                ? profileEditLocked
-                  ? (currentLang === 'en'
-                    ? 'The profile is locked because the workspace already has materials. Remove those materials first if you need to update the baseline again.'
-                    : 'Profile đang bị khóa vì workspace đã có tài liệu. Nếu muốn cập nhật lại mặt bằng nhóm, hãy xóa tài liệu khỏi workspace trước.')
-                  : (currentLang === 'en'
-                    ? 'You can reopen the setup form any time as long as the workspace does not contain materials yet.'
-                    : 'Bạn có thể mở lại form cấu hình bất cứ lúc nào miễn là workspace chưa có tài liệu.')
-                : (currentLang === 'en'
-                  ? 'This profile is currently managed by the group leader.'
-                  : 'Profile này hiện do trưởng nhóm quản lý.')}
-            </p>
+          <div className="space-y-4">
+            <NarrativeCard
+              eyebrow={currentLang === 'en' ? 'Learning goal' : 'Mục tiêu học tập'}
+              title={currentLang === 'en' ? 'What success should look like for the group' : 'Đích đến mà nhóm đang hướng tới'}
+              content={groupGoal}
+              icon={Target}
+              toneClass={isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700'}
+              isDarkMode={isDarkMode}
+            />
+
+            <NarrativeCard
+              eyebrow={currentLang === 'en' ? 'Group rules' : 'Nội quy nhóm'}
+              title={currentLang === 'en' ? 'Shared operating rules for new and current members' : 'Quy ước chung cho cả thành viên mới và hiện tại'}
+              content={groupRules}
+              icon={Users}
+              toneClass={isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700'}
+              isDarkMode={isDarkMode}
+            />
           </div>
         </div>
       </div>

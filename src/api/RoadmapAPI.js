@@ -422,6 +422,18 @@ export const deleteKnowledge = async (knowledgeId, phaseId) => {
   return buildMockResponse(true);
 };
 
+export const deleteRoadmapPhaseById = async (phaseId, roadmapId) => {
+  return api.delete(`/roadmap-phases/${phaseId}`, {
+    params: { roadmapId },
+  });
+};
+
+export const deleteRoadmapKnowledgeById = async (knowledgeId, phaseId) => {
+  return api.delete(`/roadmap-knowledges/${knowledgeId}`, {
+    params: { phaseId },
+  });
+};
+
 // ==================== MOCK ROADMAP DATA ====================
 
 const ROADMAP_GRAPH_SEED = {
