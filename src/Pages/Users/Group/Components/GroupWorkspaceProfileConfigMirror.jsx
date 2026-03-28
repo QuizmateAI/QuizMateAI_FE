@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   BrainCircuit,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -185,7 +186,7 @@ function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails,
 
 function FieldError({ message }) {
   if (!message) return null;
-  return <p className="text-xs font-medium text-rose-500">{message}</p>;
+  return <p className="group-profile-field-error text-xs font-medium text-rose-500">{message}</p>;
 }
 
 function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled, isDarkMode }) {
@@ -350,6 +351,7 @@ function GroupWorkspaceProfileConfigMirror({
   const [saveError, setSaveError] = useState('');
   const [statusNotice, setStatusNotice] = useState('');
   const [errors, setErrors] = useState({});
+  const [showProfileConfirm, setShowProfileConfirm] = useState(false);
 
   const [groupName, setGroupName] = useState('');
   const [rules, setRules] = useState('');
@@ -449,6 +451,69 @@ function GroupWorkspaceProfileConfigMirror({
     || knowledgeAnalysis?.advice
     || knowledgeAnalysis?.normalizedKnowledge
   );
+  const confirmMutedClass = isDarkMode ? 'text-slate-300' : 'text-slate-700';
+  const confirmLabelClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
+  const confirmationSummarySections = useMemo(() => {
+    const emptyLabel = isVi ? 'Chưa cập nhật' : 'Not configured';
+    const enabledLabel = isVi ? 'Đang bật' : 'Enabled';
+    const disabledLabel = isVi ? 'Đang tắt' : 'Disabled';
+    const requiredLabel = isVi ? 'Yêu cầu' : 'Required';
+    const notRequiredLabel = isVi ? 'Không yêu cầu' : 'Not required';
+
+    return [
+      {
+        id: 'identity',
+        title: isVi ? 'Nhận diện nhóm' : 'Group identity',
+        items: [
+          { id: 'groupName', label: isVi ? 'Tên nhóm' : 'Group name', value: groupName.trim() || emptyLabel },
+          { id: 'role', label: isVi ? 'Vai trò mặc định' : 'Default role', value: summary.role || emptyLabel },
+        ],
+      },
+      {
+        id: 'learning',
+        title: isVi ? 'Phạm vi học tập' : 'Learning scope',
+        items: [
+          { id: 'knowledge', label: isVi ? 'Kiến thức nhóm muốn học' : 'Shared knowledge scope', value: knowledge.trim() || emptyLabel },
+          { id: 'domain', label: isVi ? 'Lĩnh vực' : 'Domain', value: domain.trim() || emptyLabel },
+          { id: 'mode', label: isVi ? 'Chế độ học' : 'Learning mode', value: summary.mode || emptyLabel },
+          ...(learningMode === 'MOCK_TEST'
+            ? [{ id: 'exam', label: isVi ? 'Kỳ thi' : 'Exam name', value: examName.trim() || emptyLabel }]
+            : []),
+        ],
+      },
+      {
+        id: 'config',
+        title: isVi ? 'Cấu hình nhóm' : 'Group setup',
+        items: [
+          { id: 'roadmap', label: isVi ? 'Roadmap chung' : 'Shared roadmap', value: roadmapEnabled ? enabledLabel : disabledLabel },
+          { id: 'entry', label: isVi ? 'Đánh giá đầu vào' : 'Entry assessment', value: preLearningRequired ? requiredLabel : notRequiredLabel },
+        ],
+      },
+      {
+        id: 'notes',
+        title: isVi ? 'Ghi chú vận hành' : 'Operating notes',
+        spanClass: 'lg:col-span-2',
+        itemsGridClass: 'space-y-3',
+        items: [
+          { id: 'goal', label: isVi ? 'Mục tiêu học tập chung' : 'Shared learning goal', value: groupLearningGoal.trim() || emptyLabel },
+          { id: 'rules', label: isVi ? 'Nội quy nhóm' : 'Group rules', value: rules.trim() || emptyLabel },
+        ],
+      },
+    ];
+  }, [
+    domain,
+    examName,
+    groupLearningGoal,
+    groupName,
+    isVi,
+    knowledge,
+    learningMode,
+    preLearningRequired,
+    roadmapEnabled,
+    rules,
+    summary.mode,
+    summary.role,
+  ]);
 
   useEffect(() => {
     if (!open || !workspaceId) return;
@@ -506,6 +571,7 @@ function GroupWorkspaceProfileConfigMirror({
       setDomainOptions([]);
       setKnowledgeAnalysis(null);
       setAnalysisRetryTick(0);
+      setShowProfileConfirm(false);
     }
   }, [open]);
 
@@ -604,6 +670,22 @@ function GroupWorkspaceProfileConfigMirror({
       nextErrors.examName = t('groupProfileConfig.validation.examName');
     }
     setErrors((prev) => ({ ...prev, ...nextErrors }));
+    if (Object.keys(nextErrors).length > 0) {
+      setSaveError(
+        isVi
+          ? 'Vui lòng hoàn thành các mục bắt buộc trước khi kiểm tra lại để hoàn tất.'
+          : 'Please complete the required fields before reviewing the final setup.'
+      );
+
+      requestAnimationFrame(() => {
+        const firstErrorElement = document.querySelector('.group-profile-field-error');
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    } else {
+      setSaveError('');
+    }
     return Object.keys(nextErrors).length === 0;
   };
 
@@ -616,7 +698,6 @@ function GroupWorkspaceProfileConfigMirror({
       await saveGroupBasicStep(workspaceId, { groupName, rules, defaultRoleOnJoin });
       setStep(2);
       setMaxUnlockedStep(2);
-      setStatusNotice(t('groupProfileConfig.messages.basicsSaved'));
     } catch (error) {
       setSaveError(getErrorMessage(error, t('groupProfileConfig.messages.basicsSaveError')));
     } finally {
@@ -643,6 +724,7 @@ function GroupWorkspaceProfileConfigMirror({
         preLearningRequired,
       });
       await confirmGroupWorkspaceProfile(workspaceId);
+      setShowProfileConfirm(false);
       setStatusNotice(t('groupProfileConfig.messages.completed'));
       if (onComplete) {
         await Promise.resolve(onComplete());
@@ -651,6 +733,7 @@ function GroupWorkspaceProfileConfigMirror({
       }
     } catch (error) {
       setSaveError(getErrorMessage(error, t('groupProfileConfig.messages.confirmSaveError')));
+      setShowProfileConfirm(false);
     } finally {
       setSubmitting(false);
     }
@@ -683,70 +766,199 @@ function GroupWorkspaceProfileConfigMirror({
         <DialogHeader className="border-b border-inherit px-8 pb-5 pt-5 text-left">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <DialogTitle className="text-[24px] font-bold">
-                {step === 1
-                  ? t('groupProfileConfig.stepOne.title')
-                  : t('groupProfileConfig.stepTwo.title')}
-              </DialogTitle>
-              <DialogDescription className={cn('mt-2 max-w-3xl text-sm leading-6', mutedClass)}>
-                {step === 1
-                  ? t('groupProfileConfig.stepOne.description')
-                  : t('groupProfileConfig.stepTwo.description')}
-              </DialogDescription>
+              {showProfileConfirm ? (
+                <>
+                  <div className={cn(
+                    'mb-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold tracking-[0.04em]',
+                    isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  )}>
+                    <Check className="h-3.5 w-3.5" />
+                    {isVi ? 'XÁC NHẬN HỒ SƠ' : 'PROFILE CONFIRMATION'}
+                  </div>
+                  <DialogTitle className="text-[24px] font-bold">
+                    {isVi ? 'Xác nhận sử dụng hồ sơ nhóm này' : 'Confirm this group profile'}
+                  </DialogTitle>
+                  <DialogDescription className={cn('mt-2 max-w-4xl text-sm leading-6', confirmMutedClass)}>
+                    {isVi
+                      ? 'Kiểm tra nhanh bản tóm tắt trước khi áp dụng. Sau khi xác nhận, cấu hình này sẽ trở thành hồ sơ đang dùng cho workspace nhóm.'
+                      : 'Review the summary once more. After confirmation, this setup becomes the active profile for the group workspace.'}
+                  </DialogDescription>
+                </>
+              ) : (
+                <>
+                  <DialogTitle className="text-[24px] font-bold">
+                    {step === 1
+                      ? t('groupProfileConfig.stepOne.title')
+                      : t('groupProfileConfig.stepTwo.title')}
+                  </DialogTitle>
+                  <DialogDescription className={cn('mt-2 max-w-3xl text-sm leading-6', mutedClass)}>
+                    {step === 1
+                      ? t('groupProfileConfig.stepOne.description')
+                      : t('groupProfileConfig.stepTwo.description')}
+                  </DialogDescription>
+                </>
+              )}
             </div>
             {canClose ? (
               <button
                 type="button"
-                onClick={() => onOpenChange(false)}
+                onClick={() => {
+                  if (showProfileConfirm) {
+                    setShowProfileConfirm(false);
+                    return;
+                  }
+                  onOpenChange(false);
+                }}
                 className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl border', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-slate-200 bg-white text-slate-600')}
               >
                 <X className="h-4 w-4" />
               </button>
             ) : null}
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {stepTabs.map((item) => {
-              const active = step === item.id;
-              const unlocked = item.id <= maxUnlockedStep;
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  disabled={!unlocked || loading || submitting}
-                  onClick={() => setStep(item.id)}
-                  className={cn(
-                    'rounded-[24px] border px-4 py-4 text-left transition-all duration-200',
-                    active
-                      ? isDarkMode ? 'border-cyan-400/40 bg-cyan-500/10' : 'border-cyan-300 bg-cyan-50'
-                      : isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white',
-                    !unlocked && 'opacity-60'
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border',
-                      active
-                        ? isDarkMode ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
-                        : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
-                    )}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold">{item.title}</p>
-                      <p className={cn('mt-1 text-xs leading-5', mutedClass)}>{item.description}</p>
-                    </div>
+          {showProfileConfirm ? (
+            <div className="mt-5">
+              <div className={cn(
+                'rounded-[26px] border px-5 py-5 shadow-[0_20px_44px_-30px_rgba(15,23,42,0.35)]',
+                isDarkMode
+                  ? 'border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,47,73,0.78),rgba(6,78,59,0.78))]'
+                  : 'border-slate-300 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(239,246,255,1),rgba(236,253,245,0.98))]'
+              )}>
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+                    isDarkMode ? 'bg-white/10 text-emerald-200' : 'bg-emerald-100 text-emerald-700'
+                  )}>
+                    <Sparkles className="h-5 w-5" />
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                  <div>
+                    <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      {isVi ? 'Rà soát lần cuối trước khi áp dụng cho nhóm' : 'Final review before applying to the group'}
+                    </p>
+                    <p className={cn('mt-1 text-sm leading-6', confirmMutedClass)}>
+                      {isVi
+                        ? 'Bạn vẫn có thể quay lại form để chỉnh sửa lại mục tiêu, nội quy hoặc phạm vi kiến thức trước khi lưu chính thức.'
+                        : 'You can still return to the wizard to revise the goal, rules, or learning scope before saving.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {stepTabs.map((item) => {
+                const active = step === item.id;
+                const unlocked = item.id <= maxUnlockedStep;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    disabled={!unlocked || loading || submitting}
+                    onClick={() => setStep(item.id)}
+                    className={cn(
+                      'rounded-[24px] border px-4 py-4 text-left transition-all duration-200',
+                      active
+                        ? isDarkMode ? 'border-cyan-400/40 bg-cyan-500/10' : 'border-cyan-300 bg-cyan-50'
+                        : isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white',
+                      !unlocked && 'opacity-60'
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border',
+                        active
+                          ? isDarkMode ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
+                          : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
+                      )}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">{item.title}</p>
+                        <p className={cn('mt-1 text-xs leading-5', mutedClass)}>{item.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </DialogHeader>
 
         <div className="custom-scrollbar-group-setup max-h-[64vh] overflow-y-auto px-8 py-5 scroll-smooth">
           {loading ? (
             <div className="flex min-h-[320px] items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+            </div>
+          ) : showProfileConfirm ? (
+            <div className="space-y-4">
+              <div className={cn(
+                'rounded-[20px] border px-4 py-3',
+                isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'
+              )}>
+                <p className={cn('text-sm leading-6', confirmMutedClass)}>
+                  {isVi
+                    ? 'Bạn có thể quay lại để chỉnh sửa trước khi áp dụng.'
+                    : 'You can still go back and edit before applying.'}
+                </p>
+              </div>
+
+              <div className={cn(
+                'rounded-[26px] border px-5 py-5 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.28)]',
+                isDarkMode
+                  ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]'
+                  : 'border-slate-300 bg-[linear-gradient(180deg,#ffffff_0%,#f4f9ff_100%)]'
+              )}>
+                <div className="border-b border-inherit pb-4">
+                  <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
+                    {isVi ? 'Hồ sơ nhóm sẽ được áp dụng' : 'This group profile will be applied'}
+                  </p>
+                  <p className={cn('mt-2 text-sm leading-6', confirmMutedClass)}>
+                    {isVi
+                      ? 'Các mục bên dưới sẽ được lưu thành cấu hình học tập hiện tại của workspace nhóm.'
+                      : 'Everything below will be saved as the current learning setup for this group workspace.'}
+                  </p>
+                </div>
+
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                  {confirmationSummarySections.map((section) => (
+                    <section
+                      key={section.id}
+                      className={cn(
+                        'rounded-[24px] border px-4 py-4 shadow-[0_18px_36px_-30px_rgba(14,165,233,0.18)] sm:px-5',
+                        section.spanClass,
+                        isDarkMode
+                          ? 'border-cyan-400/15 bg-slate-950/70'
+                          : 'border-cyan-300 bg-white'
+                      )}
+                    >
+                      <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
+                        {section.title}
+                      </p>
+
+                      <div className={cn('mt-4', section.itemsGridClass || 'space-y-3')}>
+                        {section.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className={cn(
+                              'rounded-[20px] border px-3.5 py-3.5 shadow-sm',
+                              isDarkMode
+                                ? 'border-white/10 bg-white/[0.04]'
+                                : 'border-slate-300 bg-slate-50'
+                            )}
+                          >
+                            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
+                              {item.label}
+                            </p>
+                            <p className={cn('mt-1.5 text-sm font-semibold leading-6', isDarkMode ? 'text-slate-100' : 'text-slate-900')}>
+                              {item.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : step === 1 ? (
             <section className={cn('rounded-[30px] border p-5', panelClass)}>
@@ -1246,29 +1458,63 @@ function GroupWorkspaceProfileConfigMirror({
             : 'border-slate-200 bg-gradient-to-t from-[#f8fbff] via-[#f8fbff]/95 to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
         )}>
           <div className="space-y-1">
-            <div className={cn('text-xs leading-5', mutedClass)}>
-              {t('groupProfileConfig.common.stepCount', { current: step, total: 2 })}
+            <div className={cn('text-xs leading-5', showProfileConfirm ? confirmMutedClass : mutedClass)}>
+              {showProfileConfirm
+                ? '\u00A0'
+                : t('groupProfileConfig.common.stepCount', { current: step, total: 2 })}
             </div>
             {saveError ? <p className="text-xs font-medium text-rose-500">{saveError}</p> : null}
             {!saveError && statusNotice ? <p className="text-xs font-medium text-emerald-500">{statusNotice}</p> : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {step > 1 ? (
+            {showProfileConfirm ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading || submitting}
+                  onClick={() => setShowProfileConfirm(false)}
+                  className={cn(
+                    'rounded-[24px] px-5',
+                    isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  )}
+                >
+                  {isVi ? 'Quay lại chỉnh sửa' : 'Back to edit'}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={loading || submitting}
+                  onClick={handleConfirmSubmit}
+                  className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700"
+                >
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                  {isVi ? 'Xác nhận sử dụng hồ sơ này' : 'Confirm this profile'}
+                </Button>
+              </>
+            ) : step > 1 ? (
               <Button type="button" variant="ghost" disabled={loading || submitting} onClick={() => setStep(1)} className={cn('rounded-[24px] px-5 transition-all duration-200', isDarkMode ? 'text-slate-200 hover:bg-slate-900' : 'text-slate-700 hover:bg-slate-100')}>
                 <ChevronLeft className="h-4 w-4" />
                 {t('groupProfileConfig.common.back')}
               </Button>
             ) : null}
 
-            {step === 1 ? (
+            {!showProfileConfirm && step === 1 ? (
               <Button type="button" disabled={loading || submitting} onClick={handleNext} className="rounded-[24px] bg-cyan-600 px-6 text-white transition-all duration-200 hover:bg-cyan-700">
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {submitting ? t('groupProfileConfig.common.saving') : t('groupProfileConfig.common.continue')}
                 <ChevronRight className="h-4 w-4" />
               </Button>
-            ) : (
-              <Button type="button" disabled={loading || submitting} onClick={handleConfirmSubmit} className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700">
+            ) : !showProfileConfirm ? (
+              <Button
+                type="button"
+                disabled={loading || submitting}
+                onClick={() => {
+                  if (!validateStepTwo()) return;
+                  setShowProfileConfirm(true);
+                }}
+                className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700"
+              >
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {submitting
                   ? t('groupProfileConfig.common.saving')
@@ -1276,7 +1522,7 @@ function GroupWorkspaceProfileConfigMirror({
                     ? t('groupProfileConfig.common.finish')
                     : t('groupProfileConfig.common.finishIncomplete')}
               </Button>
-            )}
+            ) : null}
           </div>
         </DialogFooter>
       </DialogContent>

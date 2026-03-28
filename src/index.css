@@ -7,6 +7,7 @@
 @layer base {
   :root {
     --quiz-display-font: "Be Vietnam Pro", "Poppins", sans-serif;
+    --quiz-ui-font: "Be Vietnam Pro", "Poppins", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -67,8 +68,25 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--quiz-ui-font);
     @apply text-[#313131] antialiased;
+  }
+}
+
+@layer components {
+  .app-topbar-action {
+    @apply inline-flex h-9 items-center rounded-full border px-3 text-[13px] font-medium leading-none whitespace-nowrap shadow-sm backdrop-blur-md transition-all duration-200;
+    font-family: var(--quiz-ui-font);
+  }
+
+  .app-topbar-action-label {
+    @apply text-[13px] font-medium leading-none;
+    font-family: var(--quiz-ui-font);
+  }
+
+  .app-topbar-action-value {
+    @apply inline-flex items-center justify-center text-[13px] font-medium leading-none tabular-nums;
+    font-family: var(--quiz-ui-font);
   }
 }
 

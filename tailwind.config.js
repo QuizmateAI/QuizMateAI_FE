@@ -1,5 +1,19 @@
 import tailwindcssAnimate from "tailwindcss-animate";
 
+const sharedUiFontStack = [
+  '"Be Vietnam Pro"',
+  '"Poppins"',
+  'ui-sans-serif',
+  'system-ui',
+  '-apple-system',
+  'BlinkMacSystemFont',
+  '"Segoe UI"',
+  'Roboto',
+  '"Helvetica Neue"',
+  'Arial',
+  'sans-serif',
+];
+
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ["class"],
@@ -8,11 +22,11 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-  	extend: {
+  		extend: {
 		fontFamily: {
-			// Poppins cho tiếng Anh, Sans-serif cho tiếng Việt
-			poppins: ['Poppins', 'sans-serif'],
-			sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+			ui: sharedUiFontStack,
+			poppins: sharedUiFontStack,
+			sans: sharedUiFontStack,
       	},
   		borderRadius: {
   			lg: 'var(--radius)',
