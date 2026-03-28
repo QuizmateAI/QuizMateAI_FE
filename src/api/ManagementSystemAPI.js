@@ -148,6 +148,31 @@ export const getAuditLogs = async (actorId, action, page = 0, size = 50) => {
   return response;
 };
 
+export const getAiAuditLogs = async ({
+  provider,
+  featureKey,
+  actorUserId,
+  taskId,
+  status,
+  from,
+  to,
+  page = 0,
+  size = 20,
+} = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  if (provider) params.append('provider', String(provider));
+  if (featureKey) params.append('featureKey', String(featureKey));
+  if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (taskId) params.append('taskId', String(taskId));
+  if (status) params.append('status', String(status));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const response = await api.get(`/management/ai-audit/logs?${params.toString()}`);
+  return response;
+};
+
 export const getGroupLogs = async (workspaceId) => {
   const response = await api.get(`/management/groups/${workspaceId}/logs`);
   return response;

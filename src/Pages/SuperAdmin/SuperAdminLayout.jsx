@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Globe, Sun, Moon } from 'lucide-react';
 import SuperAdminSidebar from './Components/SuperAdminSidebar';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { AdminPermissionsProvider } from '@/hooks/useAdminPermissions';
+import WebSocketStatus from '@/Components/features/WebSocketStatus';
 
 function SuperAdminLayoutContent() {
   const { t, i18n } = useTranslation();
@@ -12,10 +13,24 @@ function SuperAdminLayoutContent() {
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
   };
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <div className={`flex min-h-screen transition-colors duration-300 ${fontClass} ${
@@ -35,6 +50,7 @@ function SuperAdminLayoutContent() {
             isDarkMode ? 'text-white' : 'text-[#313131]'
           }`}>{t('header.systemTitle')}</h2>
           <div className="flex items-center gap-3">
+            <WebSocketStatus isConnected={isOnline} isDarkMode={isDarkMode} compact />
             {/* Nút đổi Dark Mode */}
             <button
               onClick={toggleDarkMode}
