@@ -48,6 +48,7 @@ const SuperAdminLayout = lazy(() => import('./Pages/SuperAdmin/SuperAdminLayout'
 const SuperAdminDashboard = lazy(() => import('./Pages/SuperAdmin/SuperAdminDashboard'));
 const AdminManagement = lazy(() => import('./Pages/SuperAdmin/AdminManagement'));
 const RbacManagement = lazy(() => import('./Pages/SuperAdmin/RbacManagement'));
+const AiAuditManagement = lazy(() => import('./Pages/SuperAdmin/AiAuditManagement'));
 const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
 
@@ -92,6 +93,7 @@ function MainRoutes() {
           <Route index element={<SuperAdminDashboard />} />
           <Route path="admins" element={<AdminManagement />} />
           <Route path="rbac" element={<RbacManagement />} />
+          <Route path="ai-audit" element={<AiAuditManagement />} />
           <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
