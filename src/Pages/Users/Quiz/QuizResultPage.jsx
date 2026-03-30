@@ -81,6 +81,7 @@ export default function QuizResultPage() {
   const [quizDetails, setQuizDetails] = useState(null);
   const [quizRawDetails, setQuizRawDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [reviewMode, setReviewMode] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,6 +99,13 @@ export default function QuizResultPage() {
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
   const pendingResultPollingRef = useRef(null);
+  const lastAttemptRefreshAtRef = useRef(0);
+
+  const isIncompleteAttemptError = useCallback((error) => {
+    const statusCode = error?.response?.status;
+    const errorMessage = String(error?.response?.data?.message || error?.message || '').toLowerCase();
+    return statusCode === 400 && (errorMessage.includes('chưa hoàn thành') || errorMessage.includes('chua hoan thanh'));
+  }, []);
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
@@ -151,6 +159,12 @@ export default function QuizResultPage() {
 
     let cancelled = false;
     let shouldRetry = false;
+    // Reset dữ liệu cũ khi chuyển attempt để tránh polling theo state của attempt trước.
+    setResult(null);
+    setQuizDetails(null);
+    setQuizRawDetails(null);
+    setLoadError(null);
+    lastAttemptRefreshAtRef.current = 0;
     setLoading(true);
 
     const loadResult = async () => {
@@ -160,6 +174,7 @@ export default function QuizResultPage() {
 
         const attemptResult = res.data;
         setResult(attemptResult);
+        setLoadError(null); // Xóa lỗi khi tải thành công
 
         if (attemptResult?.quizId) {
           try {
@@ -177,15 +192,35 @@ export default function QuizResultPage() {
       } catch (err) {
         if (cancelled) return;
 
-        console.error('Failed to load result:', err);
-        // Retry ngắn để tránh race-condition khi BE vừa ghi attempt result.
-        if (retryCount < 2) {
+        const statusCode = err?.response?.status;
+        const errorMessage = err?.response?.data?.message || err?.message || '';
+        const isIncompleteAttempt = statusCode === 400 && errorMessage.includes('chưa hoàn thành');
+
+        if (!isIncompleteAttempt) {
+          console.error('Failed to load result:', err);
+        }
+        
+        // Retry logic:
+        // - Nếu lỗi 400 "chưa hoàn thành": retry tối đa 5 lần với delay 1500ms (backend đang xử lý)
+        // - Lỗi khác: retry tối đa 2 lần với delay 1000ms
+        const maxRetries = isIncompleteAttempt ? 5 : 2;
+        const retryDelayMs = isIncompleteAttempt ? 1500 : 1000;
+        
+        if (retryCount < maxRetries) {
           shouldRetry = true;
           retryTimeoutRef.current = globalThis.setTimeout(() => {
             setRetryCount((prev) => prev + 1);
-          }, 1000);
+          }, retryDelayMs);
           return;
         }
+
+        // Tất cả retries đã hết - lưu error để hiển thị
+        if (cancelled) return;
+        setLoadError({
+          statusCode,
+          message: errorMessage,
+          isIncompleteAttempt,
+        });
       } finally {
         if (!cancelled && !shouldRetry) {
           setLoading(false);
@@ -336,6 +371,14 @@ export default function QuizResultPage() {
 
   const refreshAttemptResult = useCallback(async () => {
     if (!attemptId) return;
+
+    const now = Date.now();
+    // Chặn refresh dày đặc từ websocket + polling cùng lúc.
+    if (now - lastAttemptRefreshAtRef.current < 1200) {
+      return null;
+    }
+    lastAttemptRefreshAtRef.current = now;
+
     try {
       const res = await getAttemptResult(attemptId);
       const latestResult = res?.data || null;
@@ -344,10 +387,12 @@ export default function QuizResultPage() {
       }
       return latestResult;
     } catch (error) {
-      console.error('Failed to refresh attempt result from grading event:', error);
+      if (!isIncompleteAttemptError(error)) {
+        console.error('Failed to refresh attempt result from grading event:', error);
+      }
     }
     return null;
-  }, [attemptId]);
+  }, [attemptId, isIncompleteAttemptError]);
 
   const handleQuizAttemptGrading = useCallback((event) => {
     if (!event) return;
@@ -582,9 +627,47 @@ export default function QuizResultPage() {
   }
 
   if (!result) {
+    const isIncompleteError = loadError?.isIncompleteAttempt;
+    const errorTitle = isIncompleteError
+      ? t('workspace.quiz.result.incompleteTitle', 'Quiz không sẵn sàng')
+      : t('workspace.quiz.result.notFound', 'Result not found');
+    const errorDesc = isIncompleteError
+      ? t('workspace.quiz.result.incompleteDesc', 'Backend đang xử lý kết quả quiz. Vui lòng thử lại sau vài giây.')
+      : t('workspace.quiz.result.notFoundDesc', 'Kết quả quiz chưa sẵn sàng. Vui lòng thử lại sau vài giây.');
+    
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
-        <h2 className="text-xl text-slate-600 dark:text-slate-300">{t('workspace.quiz.result.notFound', 'Result not found')}</h2>
+        <div className="text-center space-y-4">
+          <h2 className="text-xl text-slate-600 dark:text-slate-300">
+            {errorTitle}
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+            {errorDesc}
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button 
+              onClick={() => {
+                setLoadError(null);
+                setRetryCount(prev => prev + 1);
+              }}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {t('workspace.quiz.result.retry', 'Thử lại')}
+            </Button>
+            {directQuizDetailBackPath && (
+              <Button 
+                onClick={() => navigate(directQuizDetailBackPath)}
+                variant="ghost"
+                size="sm"
+              >
+                {t('workspace.quiz.result.backQuiz', 'Quay lại Quiz')}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

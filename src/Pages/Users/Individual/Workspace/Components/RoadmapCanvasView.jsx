@@ -904,6 +904,16 @@ function RoadmapCanvasView({
             <p data-no-pan="true" className={`mt-3 text-sm leading-6 select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
               {roadmap.description}
             </p>
+            {roadmap?.aiSuggest ? (
+              <div className={`mt-4 rounded-2xl border px-4 py-3 ${isDarkMode ? "border-amber-800/60 bg-amber-950/30" : "border-amber-200 bg-amber-50"}`}>
+                <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
+                  {t("workspace.roadmap.aiSuggestTitle", "AI suggestion")}
+                </p>
+                <p data-no-pan="true" className={`mt-1 text-xs leading-5 select-text cursor-text ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                  {roadmap.aiSuggest}
+                </p>
+              </div>
+            ) : null}
             <div className={`mt-5 rounded-2xl px-4 py-3 ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-[#F7FBFF] text-gray-700 border border-blue-100"}`}>
               <p data-no-pan="true" className={`text-xs uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
                 {labels.estimatedDuration}
@@ -955,6 +965,16 @@ function RoadmapCanvasView({
                 <p data-no-pan="true" className={`mt-3 text-sm leading-6 select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
                   {phase.description}
                 </p>
+                {phase?.aiSuggest ? (
+                  <div className={`mt-3 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-slate-200 bg-slate-50"}`}>
+                    <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
+                      {t("workspace.roadmap.phaseAiSuggestTitle", "AI suggestion")}
+                    </p>
+                    <p data-no-pan="true" className={`mt-1 text-xs leading-5 select-text cursor-text ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+                      {phase.aiSuggest}
+                    </p>
+                  </div>
+                ) : null}
                 <div className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${fontClass}`}>
                   {Number(phase?.estimatedDays) > 0 ? (
                     <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-gray-700"}`}>
@@ -967,7 +987,18 @@ function RoadmapCanvasView({
                     </span>
                   ) : null}
                 </div>
-                <div className={`mt-4 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-amber-900/50 bg-amber-950/30" : "border-amber-100 bg-amber-50"}`}>
+                <div className={`mt-4 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-blue-900/50 bg-blue-950/30" : "border-blue-100 bg-blue-50"}`}>
+                  <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
+                    {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
+                  </p>
+                  <p data-no-pan="true" className={`mt-1 text-sm font-medium select-text cursor-text ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
+                    {phase.preLearning?.title || "-"}
+                  </p>
+                  <p data-no-pan="true" className={`mt-1 text-xs select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                    {phase.preLearning?.questionCount ?? 0} {labels.questions}
+                  </p>
+                </div>
+                <div className={`mt-3 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-amber-900/50 bg-amber-950/30" : "border-amber-100 bg-amber-50"}`}>
                   <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
                     {labels.postLearning}
                   </p>
