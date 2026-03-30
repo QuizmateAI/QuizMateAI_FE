@@ -1,6 +1,6 @@
 {
   "sidebar": {
-    "dashboard": "Dashboard",
+    "dashboard": "Bảng điều khiển",
     "users": "Người dùng",
     "groups": "Nhóm",
     "moderation": "Kiểm duyệt",
@@ -8,10 +8,10 @@
     "billing": "Doanh thu",
     "settings": "Cài đặt",
     "logout": "Đăng xuất",
-    "adminAccounts": "Tài khoản Admin",
+    "adminAccounts": "Tài khoản quản trị viên",
     "rbac": "Phân quyền RBAC",
-    "subscriptions": "Quản lý Plan",
-    "creditPackages": "Gói Credit",
+    "subscriptions": "Quản lý gói",
+    "creditPackages": "Gói tín dụng",
     "payments": "Thanh toán"
   },
   "dashboard": {
@@ -19,23 +19,23 @@
     "welcomeBack": "Chào mừng trở lại, đây là những gì đang diễn ra hôm nay.",
     "totalUsers": "Tổng người dùng",
     "monthlyRevenue": "Doanh thu tháng",
-    "aiTokensUsed": "AI Tokens đã dùng",
+    "aiTokensUsed": "Số token AI đã dùng",
     "violationReports": "Báo cáo vi phạm",
     "comparedToLastMonth": "+12% so với tháng trước",
-    "userGrowthChart": "[Biểu đồ tăng trưởng người dùng - Shadcn Chart]",
+    "userGrowthChart": "[Biểu đồ tăng trưởng người dùng - biểu đồ Shadcn]",
     "newUsersList": "[Danh sách người dùng mới đăng ký]",
-    "totalAdmins": "Tổng Admin",
+    "totalAdmins": "Tổng quản trị viên",
     "systemLoad": "Tải hệ thống",
-    "superAdminDesc": "Chào mừng đến với trung tâm điều khiển Super Admin.",
+    "superAdminDesc": "Chào mừng đến với trung tâm điều khiển Siêu quản trị viên.",
     "userCount": "Người dùng thường",
     "quickActions": "Thao tác nhanh",
     "roleOverview": "Phân bổ vai trò"
   },
   "adminManagement": {
-    "title": "Quản lý Admin",
+    "title": "Quản lý quản trị viên",
     "desc": "Quản lý các quản trị viên hệ thống.",
-    "add": "Thêm Admin mới",
-    "cardTitle": "Tài khoản Admin",
+    "add": "Thêm quản trị viên mới",
+    "cardTitle": "Tài khoản quản trị viên",
     "searchPlaceholder": "Tìm kiếm theo username hoặc email...",
     "table": {
       "id": "ID",
@@ -47,13 +47,13 @@
     },
     "noData": "Không tìm thấy tài khoản admin nào.",
     "form": {
-      "title": "Tạo Admin Mới",
+      "title": "Tạo quản trị viên mới",
       "username": "Tên đăng nhập",
       "email": "Email",
       "password": "Mật khẩu",
       "confirmPassword": "Xác nhận mật khẩu",
       "fullName": "Họ và tên",
-      "submit": "Tạo Admin",
+      "submit": "Tạo quản trị viên",
       "cancel": "Hủy",
       "success": "Tạo tài khoản admin thành công.",
       "error": "Tạo tài khoản admin thất bại.",
@@ -67,21 +67,21 @@
     "desc": "Tra cứu giao dịch theo mã đơn, user, workspace hoặc trạng thái thanh toán.",
     "filterTitle": "Bộ lọc thanh toán",
     "placeholders": {
-      "orderId": "Order ID chính xác",
-      "userId": "User ID",
-      "workspaceId": "Workspace ID"
+      "orderId": "Mã đơn hàng chính xác",
+      "userId": "ID người dùng",
+      "workspaceId": "ID không gian học tập"
     },
     "fields": {
-      "userId": "User ID",
-      "workspaceId": "Workspace ID"
+      "userId": "ID người dùng",
+      "workspaceId": "ID không gian học tập"
     },
     "allStatuses": "Tất cả trạng thái",
     "search": "Tìm kiếm",
     "listTitle": "Danh sách giao dịch",
     "summary": "{{count}} giao dịch",
     "table": {
-      "orderId": "Order ID",
-      "user": "User",
+      "orderId": "Mã đơn hàng",
+      "user": "Người dùng",
       "target": "Mục tiêu",
       "amount": "Số tiền",
       "method": "Phương thức",
@@ -112,8 +112,8 @@
     "targetTypes": {
       "USER_PLAN": "Gói cá nhân",
       "WORKSPACE_PLAN": "Gói nhóm",
-      "USER_CREDIT": "Credit cá nhân",
-      "WORKSPACE_CREDIT": "Credit nhóm",
+      "USER_CREDIT": "Tín dụng cá nhân",
+      "WORKSPACE_CREDIT": "Tín dụng nhóm",
       "WORKSPACE_SLOT": "Slot nhóm"
     },
     "targetSummary": {
@@ -140,8 +140,8 @@
       "seed": {
         "roadmapTitle": "Mở mốc lộ trình mới",
         "roadmapContent": "Một mốc lộ trình mới đã mở trong tuần này. Vui lòng hoàn thành phần tự học trước thứ Sáu.",
-        "quizTitle": "Cập nhật luồng bài quiz",
-        "quizContent": "Cộng tác viên đã đề xuất làm mới bộ quiz luyện đọc."
+        "quizTitle": "Cập nhật luồng bài kiểm tra",
+        "quizContent": "Cộng tác viên đã đề xuất làm mới bộ câu hỏi luyện đọc."
       },
       "toast": {
         "published": "Thông báo đã được xuất bản.",
@@ -149,28 +149,28 @@
         "approved": "Thông báo đã được duyệt và xuất bản."
       },
       "workspace": "WS #{{id}}",
-      "chargedUser": "User tính phí #{{id}}"
+      "chargedUser": "Người dùng bị tính phí #{{id}}"
     },
     "detail": {
       "action": "Chi tiết",
       "title": "Chi tiết giao dịch {{orderId}}",
       "desc": "Xem toàn bộ thông tin giao dịch thanh toán và đối tượng bị tính phí.",
       "fields": {
-        "paymentId": "Payment ID",
-        "orderId": "Order ID",
-        "payerUser": "User thanh toán",
-        "chargedUser": "User bị tính phí",
-        "workspace": "Workspace",
+        "paymentId": "Mã thanh toán",
+        "orderId": "Mã đơn hàng",
+        "payerUser": "Người dùng thanh toán",
+        "chargedUser": "Người dùng bị tính phí",
+        "workspace": "Không gian học tập",
         "targetType": "Loại mục tiêu",
-        "userSubscription": "User Subscription",
-        "groupSubscription": "Group Subscription",
+        "userSubscription": "Gói người dùng",
+        "groupSubscription": "Gói nhóm",
         "amount": "Số tiền",
         "method": "Phương thức",
         "status": "Trạng thái",
         "createdAt": "Tạo lúc",
         "paidAt": "Thanh toán lúc",
         "expiresAt": "Hết hạn lúc",
-        "payUrl": "Pay URL"
+        "payUrl": "Liên kết thanh toán"
       }
     }
   },
@@ -206,11 +206,11 @@
     }
   },
   "systemConfig": {
-    "badge": "SYSTEM CONFIG",
+    "badge": "CẤU HÌNH HỆ THỐNG",
     "title": "Cấu hình học tập",
     "removedTitle": "Cấu hình học tập đã được đơn giản hóa",
     "removedDesc": "Lĩnh vực, kiến thức đã được loại bỏ. Người dùng cấu hình trực tiếp qua mô tả tài liệu, trình độ và mục tiêu trong Không gian học tập.",
-    "description": "Tạo và quản lý Domain, Knowledge, Scheme và Level dùng trên toàn hệ thống.",
+    "description": "Tạo và quản lý Lĩnh vực, Kiến thức, Khung đánh giá và Cấp độ dùng trên toàn hệ thống.",
     "searchPlaceholder": "Tìm theo tiêu đề, mô tả hoặc trạng thái...",
     "readDeniedTitle": "Bạn không có quyền xem cấu hình học tập",
     "readDeniedDescription": "Tài khoản hiện tại chưa được cấp quyền truy cập màn hình cấu hình học tập.",
@@ -255,15 +255,15 @@
       "title": "Tiêu đề",
       "status": "Trạng thái",
       "description": "Mô tả",
-      "levelSystemType": "Hệ thống level",
-      "levelValue": "Giá trị level",
+      "levelSystemType": "Hệ thống cấp độ",
+      "levelValue": "Giá trị cấp độ",
       "levelValues": "Điểm số",
-      "levelGroup": "Nhóm level",
+      "levelGroup": "Nhóm cấp độ",
       "sortOrder": "Thứ tự"
     },
     "placeholders": {
-      "selectDomain": "Chọn lĩnh vực",
-      "selectKnowledge": "Chọn kiến thức",
+      "selectLĩnh vực": "Chọn lĩnh vực",
+      "selectKiến thức": "Chọn kiến thức",
       "selectScheme": "Chọn khung đánh giá",
       "description": "Thêm mô tả hoặc ghi chú sử dụng..."
     },
@@ -276,10 +276,10 @@
       "THREE_LEVEL": "Ba cấp độ"
     },
     "levelHints": {
-      "selectParent": "Hãy chọn knowledge trước để biết loại level áp dụng.",
-      "parentType": "Parent này đang dùng mô hình {{type}}.",
+      "selectParent": "Hãy chọn kiến thức trước để biết loại cấp độ áp dụng.",
+      "parentType": "Mục cha này đang dùng mô hình {{type}}.",
       "scoreBased": "SCORE_BASED: Nhập từng điểm (vd: 5.0) rồi nhấn Enter để thêm vào danh sách.",
-      "threeLevel": "THREE_LEVEL: Level được tạo sẵn (Sơ cấp, Trung cấp, Cao cấp). Chỉ cần chỉnh sửa nếu cần."
+      "threeLevel": "THREE_LEVEL: Cấp độ được tạo sẵn (Sơ cấp, Trung cấp, Cao cấp). Chỉ cần chỉnh sửa nếu cần."
     },
     "status": {
       "ACTIVE": "Đang hoạt động",
@@ -299,33 +299,33 @@
     "wizard": {
       "title": "Tạo mới theo từng bước",
       "action": "Tạo mới",
-      "description": "Làm theo thứ tự Domain → Knowledge → Scheme → Level để đảm bảo logic.",
+      "description": "Làm theo thứ tự Lĩnh vực → Kiến thức → Khung đánh giá → Cấp độ để đảm bảo logic.",
       "step1": "Lĩnh vực",
       "step2": "Kiến thức",
       "step3": "Khung đánh giá",
       "step4": "Cấp độ",
-      "step1Desc": "Tạo domain mới hoặc chọn domain có sẵn.",
-      "step2Desc": "Chọn domain và tạo knowledge. Hệ thống level chọn ở đây sẽ áp dụng cho scheme và level.",
-      "step3Desc": "Scheme tùy chọn. LevelSystemType kế thừa từ Knowledge, không thể thay đổi.",
-      "step4Desc": "SCORE_BASED: nhập điểm. THREE_LEVEL: 3 level mặc định hoặc tùy chỉnh 4-5 level.",
-      "createNewDomain": "Tạo domain mới",
+      "step1Desc": "Tạo lĩnh vực mới hoặc chọn lĩnh vực có sẵn.",
+      "step2Desc": "Chọn lĩnh vực và tạo kiến thức. Hệ thống cấp độ chọn ở đây sẽ áp dụng cho khung đánh giá và cấp độ.",
+      "step3Desc": "Khung đánh giá là tùy chọn. Loại hệ thống cấp độ kế thừa từ Kiến thức và không thể thay đổi.",
+      "step4Desc": "SCORE_BASED: nhập điểm. THREE_LEVEL: 3 cấp độ mặc định hoặc tùy chỉnh 4-5 cấp độ.",
+      "createNewLĩnh vực": "Tạo lĩnh vực mới",
       "domainTitlePlaceholder": "Ngôn ngữ, Khoa học...",
-      "orSelectExisting": "Hoặc chọn domain có sẵn",
-      "step1CreateOrSelect": "Tạo domain mới hoặc chọn domain có sẵn.",
-      "levelSystemTypeHint": "Scheme sẽ kế thừa loại này. Muốn đổi phải quay lại bước 2.",
-      "knowledgeCreateNew": "Tạo knowledge mới",
-      "knowledgeUpdateExisting": "Cập nhật knowledge có sẵn",
-      "selectKnowledgeToUpdate": "Chọn knowledge cần cập nhật",
-      "schemeCreateNew": "Tạo scheme mới",
-      "schemeUpdateExisting": "Cập nhật scheme có sẵn",
-      "selectSchemeToUpdate": "Chọn scheme cần cập nhật",
-      "schemeLevelTypeInherited": "LevelSystemType kế thừa từ Knowledge",
-      "skipScheme": "Bỏ qua Scheme (Level thuộc trực tiếp Knowledge)",
-      "threeLevelDefault": "3 level mặc định (Sơ cấp, Trung cấp, Cao cấp)",
-      "threeLevelCustom": "Tùy chỉnh 4 hoặc 5 level",
-      "customLevelCount": "Số level",
-      "customLevelNamesRequired": "Vui lòng nhập tên cho tất cả level.",
-      "defaultLevelsPreview": "3 level mặc định sẽ được tạo:",
+      "orSelectExisting": "Hoặc chọn lĩnh vực có sẵn",
+      "step1CreateOrSelect": "Tạo lĩnh vực mới hoặc chọn lĩnh vực có sẵn.",
+      "levelSystemTypeHint": "Khung đánh giá sẽ kế thừa loại này. Muốn đổi phải quay lại bước 2.",
+      "knowledgeCreateNew": "Tạo kiến thức mới",
+      "knowledgeUpdateExisting": "Cập nhật kiến thức có sẵn",
+      "selectKiến thứcToUpdate": "Chọn kiến thức cần cập nhật",
+      "schemeCreateNew": "Tạo khung đánh giá mới",
+      "schemeUpdateExisting": "Cập nhật khung đánh giá có sẵn",
+      "selectSchemeToUpdate": "Chọn khung đánh giá cần cập nhật",
+      "schemeLevelTypeInherited": "Loại hệ thống cấp độ kế thừa từ Kiến thức",
+      "skipScheme": "Bỏ qua Khung đánh giá (Cấp độ thuộc trực tiếp Kiến thức)",
+      "threeLevelDefault": "3 cấp độ mặc định (Sơ cấp, Trung cấp, Cao cấp)",
+      "threeLevelCustom": "Tùy chỉnh 4 hoặc 5 cấp độ",
+      "customLevelCount": "Số cấp độ",
+      "customLevelNamesRequired": "Vui lòng nhập tên cho tất cả cấp độ.",
+      "defaultLevelsPreview": "3 cấp độ mặc định sẽ được tạo:",
       "scoreListHint": "Nhập từng điểm (vd: 5.0) rồi nhấn Enter để thêm vào danh sách.",
       "scoreInputPlaceholder": "5.0 rồi Enter, 5.5 rồi Enter...",
       "finish": "Hoàn tất"
@@ -340,13 +340,13 @@
       "saving": "Đang lưu...",
       "deleteTitle": "Xóa {{entity}}",
       "deleteDescription": "Thao tác này sẽ xóa vĩnh viễn {{entity}} {{name}}.",
-      "deleteDescriptionDomainCascade": "Xóa Domain {{name}} sẽ xóa vĩnh viễn Domain và tất cả Knowledge, Scheme, Level bên trong. Thao tác không thể hoàn tác. Bạn có chắc chắn?",
+      "deleteDescriptionDomainCascade": "Xóa Lĩnh vực {{name}} sẽ xóa vĩnh viễn lĩnh vực này cùng toàn bộ Kiến thức, Khung đánh giá và Cấp độ bên trong. Thao tác không thể hoàn tác. Bạn có chắc chắn?",
       "deleteAction": "Xóa",
       "deleting": "Đang xóa..."
     }
   },
   "header": {
-    "systemTitle": "Hệ thống QuizMate AI",
+    "systemTitle": "Hệ thống Bài kiểm traMate AI",
     "version": "Phiên bản 2026.1.0"
   },
   "common": {
@@ -361,12 +361,12 @@
     "subscription": "Gói đăng ký",
     "plan": "Gói",
     "optional": "tùy chọn",
-    "wallet": "Ví Credit",
+    "wallet": "Ví tín dụng",
     "cancel": "Đóng"
   },
   "plan": {
     "title": "Gói của bạn",
-    "subtitle": "Gói có thể mua vĩnh viễn. Khi dùng các tính năng AI, bạn sẽ trừ dần Credit trong ví.",
+    "subtitle": "Gói có thể mua vĩnh viễn. Khi dùng các tính năng AI, bạn sẽ bị trừ dần tín dụng trong ví.",
     "heroBadge": "Chọn gói & bắt đầu ngay",
     "backToHome": "Về trang chủ",
     "back": "Quay lại",
@@ -376,49 +376,49 @@
     },
     "badges": {
       "permanent": "Mua vĩnh viễn",
-      "credits": "Tính theo Credit",
+      "credits": "Tính theo tín dụng",
       "transparent": "Minh bạch & rõ ràng"
     },
     "creditModel": {
-      "title": "Mô hình Credit cho AI",
-      "desc": "Bạn có thể sở hữu plan vĩnh viễn. Mỗi lần dùng AI sẽ tiêu hao Credit. Hết Credit thì chỉ cần nạp thêm để dùng tiếp.",
-      "cta": "Mở ví Credit"
+      "title": "Mô hình tín dụng cho AI",
+      "desc": "Bạn có thể sở hữu gói vĩnh viễn. Mỗi lần dùng AI sẽ tiêu hao tín dụng. Hết tín dụng thì chỉ cần nạp thêm để dùng tiếp.",
+      "cta": "Mở ví tín dụng"
     },
-    "noPlans": "Chưa có plan nào cho danh mục này.",
+    "noPlans": "Chưa có gói nào cho danh mục này.",
     "loadError": "Không thể tải danh sách plan. Vui lòng thử lại.",
     "mostPopular": "PHỔ BIẾN NHẤT",
     "durationDays": "{{count}} ngày",
     "durationForever": "Vĩnh viễn",
     "durationForeverShort": "Vĩnh viễn",
-    "upgrade": "Chọn plan",
+    "upgrade": "Chọn gói",
     "thanhToan": "Thanh toán",
     "defaultPlan": "Gói mặc định",
     "notes": {
-      "permanentTitle": "Plan có thể mua vĩnh viễn",
-      "permanentDesc": "Plan không nhất thiết phải gia hạn theo tháng. Một số plan được bán dạng vĩnh viễn tùy cấu hình hệ thống.",
-      "creditsTitle": "AI dùng theo Credit",
-      "creditsDesc": "Các tính năng AI (tạo quiz/flashcard/mock test/companion...) sẽ trừ Credit dựa trên mức sử dụng.",
+      "permanentTitle": "Gói có thể mua vĩnh viễn",
+      "permanentDesc": "Gói không nhất thiết phải gia hạn theo tháng. Một số gói được bán dạng vĩnh viễn tùy cấu hình hệ thống.",
+      "creditsTitle": "AI dùng theo tín dụng",
+      "creditsDesc": "Các tính năng AI (tạo bài kiểm tra, thẻ ghi nhớ, bài thi mẫu, trợ lý đồng hành...) sẽ trừ tín dụng dựa trên mức sử dụng.",
       "refundTitle": "Thanh toán an toàn",
-      "refundDesc": "Quy trình thanh toán được bảo mật. Bạn có thể xem lịch sử mua Credit trong ví."
+      "refundDesc": "Quy trình thanh toán được bảo mật. Bạn có thể xem lịch sử mua tín dụng trong ví."
     }
   },
   "wallet": {
-    "title": "Quizmate Credit",
-    "subtitle": "Xem số dư, nạp thêm Credit và theo dõi lịch sử giao dịch.",
-    "badge": "WALLET",
+    "title": "Tín dụng Quizmate",
+    "subtitle": "Xem số dư, nạp thêm tín dụng và theo dõi lịch sử giao dịch.",
+    "badge": "VÍ",
     "back": "Quay lại",
     "balance": "Số dư hiện tại",
-    "creditsUnit": "Credit",
-    "hint": "Credit dùng để gọi các chức năng AI trong QuizMate.",
-    "buyTitle": "Mua thêm Credit",
+    "creditsUnit": "tín dụng",
+    "hint": "Tín dụng dùng để gọi các chức năng AI trong Bài kiểm traMate.",
+    "buyTitle": "Mua thêm tín dụng",
     "buySubtitle": "Chọn gói phù hợp để tiếp tục dùng AI.",
-    "bonus": "bonus",
+    "thưởng": "thưởng",
     "buyNow": "Mua ngay",
     "packageHint": "Nạp nhanh — dùng được ngay",
     "historyTitle": "Lịch sử giao dịch",
-    "historySubtitle": "Các lần nạp và sử dụng Credit gần đây.",
+    "historySubtitle": "Các lần nạp và sử dụng tín dụng gần đây.",
     "noHistory": "Chưa có giao dịch nào.",
-    "toastAdded": "Đã cộng {{amount}} Credit vào ví (demo UI).",
+    "toastAdded": "Đã cộng {{amount}} tín dụng vào ví (giao diện minh họa).",
     "types": {
       "TOPUP": "Nạp",
       "USAGE": "Sử dụng"
@@ -438,31 +438,31 @@
   },
   "rbac": {
     "title": "Phân quyền RBAC",
-    "desc": "Quản lý vai trò và quyền hạn hệ thống - Role Based Access Control.",
+    "desc": "Quản lý vai trò và quyền hạn hệ thống - Kiểm soát truy cập theo vai trò.",
     "tabs": {
       "permissions": "Danh sách quyền",
       "auditLogs": "Nhật ký kiểm toán"
     },
-    "permissionsList": "Danh sách Permissions",
-    "userRoleManagement": "Quản lý Role & Permissions người dùng",
-    "userRoleDesc": "Chỉ hiển thị tài khoản ADMIN và SUPER_ADMIN.",
+    "permissionsList": "Danh sách quyền hạn",
+    "userRoleManagement": "Quản lý vai trò và quyền hạn người dùng",
+    "userRoleDesc": "Chỉ hiển thị tài khoản quản trị viên và siêu quản trị viên.",
     "auditLogs": "Nhật ký kiểm toán RBAC",
     "syncSuccess": "Đã đồng bộ quyền thành công.",
     "syncError": "Không thể đồng bộ quyền."
   },
   "subscription": {
-    "title": "Quản lý Plan",
-    "desc": "Quản lý catalog các Plan (gói dịch vụ) dùng trong hệ thống.",
-    "addPlan": "Thêm Plan mới",
-    "editPlan": "Chỉnh sửa Plan",
-    "addPlanDesc": "Tạo Plan mới với giá, giới hạn và tính năng.",
-    "editPlanDesc": "Cập nhật thông tin Plan.",
-    "planList": "Danh sách Plan",
+    "title": "Quản lý gói",
+    "desc": "Quản lý danh mục các gói dịch vụ dùng trong hệ thống.",
+    "addPlan": "Thêm gói mới",
+    "editPlan": "Chỉnh sửa gói",
+    "addPlanDesc": "Tạo gói mới với giá, giới hạn và tính năng.",
+    "editPlanDesc": "Cập nhật thông tin gói.",
+    "planList": "Danh sách gói",
     "subList": "Đăng ký người dùng",
-    "searchPlan": "Tìm kiếm theo tên Plan...",
+    "searchPlan": "Tìm kiếm theo tên gói...",
     "searchSub": "Tìm kiếm theo tên người dùng hoặc gói...",
     "loading": "Đang tải dữ liệu...",
-    "noPlans": "Không tìm thấy Plan nào.",
+    "noPlans": "Không tìm thấy gói nào.",
     "noSubs": "Không tìm thấy đăng ký nào.",
     "free": "Miễn phí",
     "active": "Hoạt động",
@@ -477,21 +477,21 @@
     "create": "Tạo gói",
     "submitting": "Đang lưu...",
     "deleting": "Đang xóa...",
-    "planDetail": "Chi tiết Plan",
-    "planDetailDesc": "Thông tin chi tiết về Plan.",
-    "confirmDelete": "Xóa Plan",
+    "planDetail": "Chi tiết gói",
+    "planDetailDesc": "Thông tin chi tiết về gói.",
+    "confirmDelete": "Xóa gói",
     "confirmDeleteDesc": "Bạn có chắc muốn xóa Plan \"{{name}}\"? Hành động này không thể hoàn tác.",
-    "nameRequired": "Tên Plan là bắt buộc.",
+    "nameRequired": "Tên gói là bắt buộc.",
     "fetchError": "Không thể tải dữ liệu.",
-    "createSuccess": "Tạo Plan thành công!",
-    "updateSuccess": "Cập nhật Plan thành công!",
-    "deleteSuccess": "Xóa Plan thành công!",
-    "submitError": "Không thể lưu Plan.",
-    "deleteError": "Không thể xóa Plan.",
+    "createSuccess": "Tạo gói thành công!",
+    "updateSuccess": "Cập nhật gói thành công!",
+    "deleteSuccess": "Xóa gói thành công!",
+    "submitError": "Không thể lưu gói.",
+    "deleteError": "Không thể xóa gói.",
     "planInUse": "Gói này đang có ít nhất 1 người sử dụng",
-    "defaultPlanExists": "Đã tồn tại gói mặc định cho loại {{type}}. Chỉ có thể có 1 gói INDIVIDUAL default và 1 gói GROUP default.",
+    "defaultPlanExists": "Đã tồn tại gói mặc định cho loại {{type}}. Chỉ có thể có 1 gói cá nhân mặc định và 1 gói nhóm mặc định.",
     "tabs": {
-      "plans": "Plan",
+      "plans": "Gói",
       "subscriptions": "Đăng ký"
     },
     "table": {
@@ -510,7 +510,7 @@
       "name": "Tên gói",
       "price": "Giá",
       "duration": "Thời hạn (ngày)",
-      "maxWorkspaces": "Không gian học tập tối đa",
+      "maxKhông gian học tậps": "Không gian học tập tối đa",
       "maxGroups": "Nhóm tối đa",
       "maxMembers": "Thành viên tối đa",
       "aiTokens": "Hạn mức AI Token",
@@ -528,7 +528,7 @@
   },
   "auth": {
     "login": "Đăng nhập",
-    "loginSubtitle": "Đăng nhập để truy cập tài khoản QuizMate của bạn",
+    "loginSubtitle": "Đăng nhập để truy cập tài khoản Bài kiểm traMate của bạn",
     "email": "Email",
     "password": "Mật khẩu",
     "username": "Tên đăng nhập",
@@ -607,7 +607,7 @@
     "emailLocalPartLength": "Phần trước @ không được vượt quá 64 ký tự",
     "emailConsecutiveDots": "Email không được chứa hai dấu chấm liên tiếp",
     "emailDotPosition": "Email không được bắt đầu hoặc kết thúc bằng dấu chấm",
-    "emailDomainFormat": "Tên miền email không hợp lệ",
+    "emailLĩnh vựcFormat": "Tên miền email không hợp lệ",
     "otpRequired": "Vui lòng nhập mã OTP",
     "passwordRequired": "Mật khẩu không được để trống",
     "passwordLength": "Mật khẩu phải nhiều hơn 8 ký tự",
@@ -626,7 +626,7 @@
     "hero": {
       "badge": "✨ Đột phá học tập cùng AI",
       "titlePart1": "Chinh phục kiến thức cùng",
-      "titlePart2": "QuizMate AI",
+      "titlePart2": "Bài kiểm traMate AI",
       "subtitle": "Tải lên tài liệu học tập (PDF, Video, hoặc URL) và để AI xây dựng lộ trình cá nhân hóa cùng bộ câu hỏi tương tác.",
       "startLearning": "Bắt đầu học ngay",
       "watchDemo": "Xem Demo",
@@ -666,7 +666,7 @@
     },
     "testimonials": {
       "title": "Học viên nói gì về chúng tôi 😍",
-      "student1Quote": "\"QuizMate AI đã thay đổi hoàn toàn cách tôi ôn thi. Việc tạo câu hỏi từ video bài giảng đúng là thay đổi cuộc chơi!\"",
+      "student1Quote": "\"Bài kiểm traMate AI đã thay đổi hoàn toàn cách tôi ôn thi. Việc tạo câu hỏi từ video bài giảng đúng là thay đổi cuộc chơi!\"",
       "student1Role": "Sinh viên Y khoa",
       "student2Quote": "\"Lộ trình AI thật sự đáng kinh ngạc. Nó chia nhỏ cuốn giáo trình 200 trang của tôi thành 10 giai đoạn học logic. Cực kỳ đề xuất!\"",
       "student2Role": "Sinh viên Khoa học máy tính"
@@ -686,7 +686,7 @@
         "terms": "Điều khoản dịch vụ"
       },
       "connect": "Kết nối",
-      "copyright": "© 2026 QuizMate AI. Xây dựng bằng trí tuệ dành cho người học."
+      "copyright": "© 2026 Bài kiểm traMate AI. Xây dựng bằng trí tuệ dành cho người học."
     }
   },
   "groupManage": {
@@ -700,7 +700,7 @@
     "dashboard": {
       "totalMembers": "Tổng thành viên",
       "contributors": "Cộng tác viên",
-      "canUpload": "Được upload",
+      "canUpload": "Được tải lên",
       "progress": "Tiến độ",
       "noDescription": "Chưa có mô tả",
       "topic": "Chủ đề",
@@ -711,7 +711,7 @@
       "ago": "trước",
       "activityJoined": "Một thành viên mới tham gia nhóm",
       "activityUploaded": "Tài liệu mới được tải lên Không gian học tập nhóm",
-      "activityQuiz": "Một thành viên hoàn thành bài quiz",
+      "activityBài kiểm tra": "Một thành viên hoàn thành bài kiểm tra",
       "activityRole": "Vai trò thành viên được cập nhật"
     },
     "members": {
@@ -720,7 +720,7 @@
       "name": "Tên",
       "email": "Email",
       "role": "Vai trò",
-      "upload": "Upload",
+      "upload": "Tải lên",
       "yes": "Có",
       "no": "Không",
       "reload": "Tải lại",
@@ -755,7 +755,7 @@
     },
     "actions": {
       "create": "Tạo mới",
-      "createWorkspace": "Tạo không gian học tập mới",
+      "createKhông gian học tập": "Tạo không gian học tập mới",
       "createGroup": "Tạo nhóm",
       "share": "Chia sẻ"
     },
@@ -771,7 +771,7 @@
     "sections": {
       "featured": "Sổ ghi chú nổi bật",
       "recent": "Không gian học tập gần đây",
-      "myWorkspaces": "Không gian học tập của tôi",
+      "myKhông gian học tậps": "Không gian học tập của tôi",
       "myGroups": "Nhóm của tôi"
     },
     "table": {
@@ -810,7 +810,7 @@
       "subjectRequired": "Vui lòng chọn môn học.",
       "noGroups": "Chưa có nhóm",
       "noGroupsDesc": "Tạo hoặc tham gia nhóm để bắt đầu!",
-      "viewWorkspace": "Xem Không gian học tập",
+      "viewKhông gian học tập": "Xem Không gian học tập",
       "members": "Thành viên",
       "membersPanel": "Thành viên",
       "invite": "Mời",
@@ -827,18 +827,18 @@
       "removeConfirm": "Bạn có chắc muốn xóa thành viên này?",
       "removeSuccess": "Xóa thành viên thành công!",
       "removeError": "Xóa thành viên thất bại.",
-      "grantUpload": "Cấp quyền upload",
-      "revokeUpload": "Thu hồi quyền upload",
-      "uploadGranted": "Đã cấp quyền upload!",
-      "uploadRevoked": "Đã thu hồi quyền upload!",
-      "uploadError": "Cập nhật quyền upload thất bại.",
+      "grantUpload": "Cấp quyền tải lên",
+      "revokeUpload": "Thu hồi quyền tải lên",
+      "uploadGranted": "Đã cấp quyền tải lên!",
+      "uploadRevoked": "Đã thu hồi quyền tải lên!",
+      "uploadError": "Cập nhật quyền tải lên thất bại.",
       "changeRole": "Đổi vai trò",
       "roleUpdated": "Đã cập nhật vai trò thành viên!",
       "roleError": "Cập nhật vai trò thất bại.",
       "leader": "Trưởng nhóm",
       "member": "Thành viên",
       "contributor": "Cộng tác viên",
-      "canUpload": "Được upload",
+      "canUpload": "Được tải lên",
       "noMembers": "Không tìm thấy thành viên",
       "you": "Bạn"
     },
@@ -876,8 +876,8 @@
       "subjectRequired": "Vui lòng chọn môn học.",
       "untitledTitle": "Không gian Học tập không có tiêu đề",
       "noDescription": "Không có mô tả",
-      "noWorkspaces": "Chưa có Không gian Học tập",
-      "noWorkspacesDesc": "Tạo Không gian Học tập đầu tiên để bắt đầu!",
+      "noKhông gian học tậps": "Chưa có Không gian Học tập",
+      "noKhông gian học tậpsDesc": "Tạo Không gian Học tập đầu tiên để bắt đầu!",
       "status": "Trạng thái",
       "topic": "Chủ đề",
       "subject": "Môn học",
@@ -897,13 +897,13 @@
       "cloneError": "Hiện chưa thể clone community share này.",
       "owner": "Chia sẻ bởi {{owner}}",
       "starCount": "{{count}} sao",
-      "quizCount": "{{count}} quiz",
+      "quizCount": "{{count}} bài kiểm tra",
       "materialCount": "{{count}} tài liệu",
       "emptyDescription": "Mục chia sẻ này chưa có mô tả thêm.",
       "empty": "Chưa có community share nào. Hãy chia sẻ một workspace để bắt đầu.",
       "types": {
-        "WORKSPACE": "Workspace",
-        "QUIZ": "Quiz",
+        "WORKSPACE": "Không gian học tập",
+        "QUIZ": "Bài kiểm tra",
         "MATERIAL": "Tài liệu",
         "ROADMAP": "Roadmap"
       },
@@ -933,21 +933,21 @@
       "share": "Chia sẻ",
       "settings": "Cài đặt",
       "groupSubtitle": "Không gian làm việc nhóm",
-      "createWorkspace": "Tạo Không gian Học tập mới",
+      "createKhông gian học tập": "Tạo Không gian Học tập mới",
       "invite": "Mời"
     },
     "settingsMenu": {
       "workspaceProfile": "Hồ sơ không gian học tập"
     },
     "prelearning": {
-      "initInfo": "Bài kiểm tra năng lực (Pre-learning) đang được khởi tạo. Vui lòng chờ thông báo hoàn tất!",
-      "assessmentTitle": "Bài kiểm tra Đánh giá Năng lực Đầu vào (Pre-learning)",
+      "initInfo": "Bài kiểm tra năng lực (đánh giá trước học) đang được khởi tạo. Vui lòng chờ thông báo hoàn tất!",
+      "assessmentTitle": "Bài kiểm tra Đánh giá Năng lực Đầu vào (đánh giá trước học)",
       "sessionName": "Phần 1: Đánh giá Năng lực",
       "sessionDesc": "Đánh giá các kỹ năng cơ bản dựa trên mục tiêu hiện tại",
       "createError": "Không thể tạo bài kiểm tra năng lực lúc này. Vui lòng thử lại sau.",
-      "uploadBlockedError": "Vui lòng hoàn thành bài kiểm tra năng lực (Pre-learning) trước khi tải lên tài liệu mới."
+      "uploadBlockedError": "Vui lòng hoàn thành bài kiểm tra năng lực (đánh giá trước học) trước khi tải lên tài liệu mới."
     },
-    "confirmDeleteFlashcard": "Bạn có chắc muốn xóa bộ flashcard này?",
+    "confirmDeleteThẻ ghi nhớ": "Bạn có chắc muốn xóa bộ thẻ ghi nhớ này?",
     "profileConfig": {
       "badge": "WORKSPACE PROFILE",
       "title": "Thiết lập hồ sơ không gian học tập",
@@ -988,7 +988,7 @@
           "currentLevel": "Trình độ hiện tại",
           "strengthWeakness": "Điểm mạnh và điểm yếu",
           "learningGoal": "Mục tiêu",
-          "roadmapConfig": "Các config của lộ trình"
+          "roadmapConfig": "Các cấu hình của lộ trình"
         },
         "values": {
           "estimatedTotalDays": "{{value}} ngày",
@@ -1004,7 +1004,7 @@
         "2": {
           "title": "Bước 2",
           "stepperLabel": "Hồ sơ cá nhân",
-          "description": "Bổ sung trình độ cá nhân, mục tiêu và thông tin mock test nếu cần."
+          "description": "Bổ sung trình độ cá nhân, mục tiêu và thông tin bài thi mẫu nếu cần."
         },
         "3": {
           "title": "Bước 3",
@@ -1050,20 +1050,20 @@
         "knowledgeTitle": "Nhập kiến thức bạn muốn học",
         "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. Quizmate AI sẽ suy ra lĩnh vực phù hợp với bạn.",
         "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
-        "selectDomainTag": "Chọn lĩnh vực này",
-        "selectedDomainTag": "Đã chọn",
+        "selectLĩnh vựcTag": "Chọn lĩnh vực này",
+        "selectedLĩnh vựcTag": "Đã chọn",
         "noDomainSuggestionTitle": "Quizmate AI chưa có đủ lĩnh vực để bạn chọn.",
-        "noDomainSuggestionDescription": "Hãy nhập rõ hơn tên ngôn ngữ, kỳ thi hoặc mảng kiến thức cụ thể hơn. Nếu đây là một cấp độ như N1 hoặc N4, hệ thống sẽ ưu tiên suy ra các lĩnh vực liên quan ngay khi có đủ tín hiệu.",
+        "noLĩnh vựcSuggestionDescription": "Hãy nhập rõ hơn tên ngôn ngữ, kỳ thi hoặc mảng kiến thức cụ thể hơn. Nếu đây là một cấp độ như N1 hoặc N4, hệ thống sẽ ưu tiên suy ra các lĩnh vực liên quan ngay khi có đủ tín hiệu.",
         "primaryDomainLockedHint": "Lựa chọn từ gợi ý Quizmate AI",
         "domainReason": {
           "closest": "Khớp trực tiếp với tín hiệu \"{{signal}}\" trong kiến thức \"{{knowledge}}\", nên đây là domain sát nhất với nội dung bạn đang học.",
           "group": "Tín hiệu \"{{signal}}\" thuộc cùng nhóm với lĩnh vực \"{{domain}}\", nên lựa chọn này vẫn bám rất gần với kiến thức bạn nhập.",
-          "context": "Domain \"{{domain}}\" nằm trong cùng bối cảnh học tập với \"{{knowledge}}\", phù hợp để AI mở rộng đúng hướng hơn.",
+          "context": "Lĩnh vực \"{{domain}}\" nằm trong cùng bối cảnh học tập với \"{{knowledge}}\", phù hợp để AI mở rộng đúng hướng hơn.",
           "languagePair": "Đây là một hướng hiểu hợp lý nếu cụm \"{{knowledge}}\" đang ám chỉ việc học hoặc sử dụng {{domain}} trong cặp ngôn ngữ này.",
           "translation": "Lựa chọn này phù hợp nếu bạn đang muốn dịch, đối chiếu hoặc chuyển đổi nội dung theo hướng {{domain}}.",
           "studyBridge": "Lựa chọn này phù hợp nếu bạn muốn dùng một ngôn ngữ làm ngôn ngữ giải thích để học theo hướng {{domain}}."
         },
-        "knowledgeNudgeTitle": "Knowledge này vẫn còn khá chung chung",
+        "knowledgeNudgeTitle": "Kiến thức này vẫn còn khá chung chung",
         "knowledgeNudgeDescription": "Hãy mô tả rõ hơn phạm vi, tài liệu hoặc kỹ năng mục tiêu để Quizmate AI gợi ý chính xác hơn.",
         "analyzing": "AI đang phân tích kiến thức...",
         "analysisError": "AI phân tích thất bại. Vui lòng thử lại.",
@@ -1078,11 +1078,11 @@
       "stepTwo": {
         "title": "Mô tả trạng thái hiện tại của bạn",
         "description": "Điền đủ bối cảnh để các gợi ý ở bước cuối sát hơn với năng lực hiện tại và mục tiêu của bạn.",
-        "mockTestTitle": "Thiết lập kỳ thi và bản mẫu mock test",
+        "mockTestTitle": "Thiết lập kỳ thi và bản mẫu bài thi mẫu",
         "mockTestDescription": "Chọn kỳ thi công khai hoặc riêng tư. Với kỳ thi công khai, Quizmate AI sẽ hiển thị ngay template tham khảo theo format công khai của kỳ thi.",
         "noPublicExam": "Không tìm thấy kỳ thi công khai phù hợp với từ khóa hiện tại.",
         "publicTemplateTitle": "Template công khai của kỳ thi",
-        "publicTemplateDescription": "Quizmate AI hiển thị sẵn cấu trúc công khai của kỳ thi để bạn xem bố cục thật trước khi tạo mock test.",
+        "publicTemplateDescription": "Quizmate AI hiển thị sẵn cấu trúc công khai của kỳ thi để bạn xem bố cục thật trước khi tạo bài thi mẫu.",
         "supportNoticeTitle": "Giới hạn hỗ trợ hiện tại của Quizmate AI",
         "supportNoticeDescription": "Quizmate AI hiện chỉ hỗ trợ tốt các phần trắc nghiệm. Các phần Writing và Listening hiện chưa được hỗ trợ đầy đủ, nên template bên dưới chủ yếu dùng để bạn tham khảo cấu trúc đề công khai.",
         "supportedSection": "Được hỗ trợ",
@@ -1137,7 +1137,7 @@
         "summaryTitle": "Tóm tắt nhanh trước khi hoàn thành",
         "summaryDescription": "Kiểm tra lại mục tiêu chính để đảm bảo lộ trình và gợi ý cuối cùng bám sát không gian này.",
         "improvementTitle": "Quizmate AI gợi ý phần cần cải thiện",
-        "improvementDescription": "Chọn một hoặc nhiều phần để Quizmate AI ưu tiên trong lộ trình, kế hoạch ôn tập hoặc mock test.",
+        "improvementDescription": "Chọn một hoặc nhiều phần để Quizmate AI ưu tiên trong lộ trình, kế hoạch ôn tập hoặc bài thi mẫu.",
         "roadmapTitle": "Thiết lập lộ trình",
         "roadmapDescription": "Tách riêng lượng kiến thức cần học, tốc độ tiếp thu, số ngày dự kiến và số phút mỗi ngày để lộ trình phản ánh đúng mục tiêu của bạn.",
         "knowledgeLoadHint": "Lượng kiến thức xác định bạn muốn học bao nhiêu. Tốc độ học chỉ quyết định nhịp thời gian, còn hệ thống sẽ giãn đều khối lượng này qua số ngày và số phút học mỗi ngày.",
@@ -1148,13 +1148,13 @@
         "minutesInsightSuggested": "Để giãn đều lượng kiến thức cần học trong {{days}} ngày, Quizmate AI gợi ý khoảng {{minutes}} phút/ngày.",
         "minutesInsightAdjusted": "Bạn đang đặt {{minutes}} phút/ngày. Với cấu hình hiện tại, mốc gợi ý để giãn đều khối lượng học là khoảng {{recommendedMinutes}} phút/ngày.",
         "noRoadmapTitle": "Bạn đã chọn không tạo Lộ trình",
-        "noRoadmapDescription": "Wizard vẫn lưu mục tiêu, phần cần cải thiện và thông tin mock test của bạn.",
+        "noRoadmapDescription": "Wizard vẫn lưu mục tiêu, phần cần cải thiện và thông tin bài thi mẫu của bạn.",
         "mockGoalTitle": "Mục tiêu điểm số và ngày thi",
         "mockGoalDescription": "Chọn điểm mục tiêu AI gợi ý cho kỳ thi public hoặc tự nhập nếu đây là kỳ thi riêng tư."
       },
       "messages": {
         "mockTemplateGenerating": "Template đang được tạo. Hệ thống sẽ tự chuyển sang bước tiếp theo khi hoàn tất.",
-        "mockTemplateReady": "Đã lưu template mock test thành công.",
+        "mockTemplateReady": "Đã lưu template bài thi mẫu thành công.",
         "mockTemplateStatusError": "Không thể kiểm tra trạng thái tạo template lúc này. Vui lòng thử lại sau ít phút.",
         "mockTemplateAwaitingBackend": "Đang chờ backend xác nhận hoàn tất template. Đã chờ {{seconds}} giây.",
         "mockTemplateLongWait": "Backend vẫn đang xử lý template. Đã chờ {{seconds}} giây. Nếu quá lâu, hãy kiểm tra lại trạng thái.",
@@ -1166,8 +1166,8 @@
       "fields": {
         "workspacePurpose": "Mục đích sử dụng",
         "knowledgeInput": "Kiến thức bạn muốn học",
-        "knowledgeDescription": "Mô tả chi tiết knowledge",
-        "primaryDomain": "Lĩnh vực chính",
+        "knowledgeDescription": "Mô tả chi tiết kiến thức",
+        "primaryLĩnh vực": "Lĩnh vực chính",
         "currentLevel": "Trình độ hiện tại",
         "learningGoal": "Mục tiêu học tập",
         "learningGoalByPurpose": {
@@ -1198,7 +1198,7 @@
       "placeholders": {
         "knowledgeInput": "VD: IELTS Writing task 2, React hooks nâng cao, xác suất thống kê cơ bản...",
         "knowledgeDescription": "Mô tả rõ phạm vi, tài liệu, chương hoặc kỹ năng bạn muốn AI hiểu sâu hơn...",
-        "primaryDomain": "Lĩnh vực chính sẽ được điền theo lĩnh vực bạn chọn từ gợi ý AI...",
+        "primaryLĩnh vực": "Lĩnh vực chính sẽ được điền theo lĩnh vực bạn chọn từ gợi ý AI...",
         "currentLevel": "VD: IELTS 5.5, đã biết React cơ bản, đang học lớp 11...",
         "learningGoal": "VD: Đạt 7.0 IELTS trong 3 tháng, nắm chắc phần xác suất để thi cuối kỳ...",
         "learningGoalByPurpose": {
@@ -1216,7 +1216,7 @@
         "templatePrompt": "VD: Tạo đề thiên về reading và writing, mức khó tăng dần, có phần chữa lỗi điển hình...",
         "templateNotes": "VD: ưu tiên câu hỏi tình huống, bám format đề chính thức, hạn chế câu mẹo...",
         "customTargetScore": "VD: 7.5, 850, Level 5...",
-        "targetScoreScale": "VD: Band 0-9, điểm / 100, level 1-6..."
+        "targetScoreScale": "VD: Band 0-9, điểm / 100, cấp độ 1-6..."
       },
       "mockExamMode": {
         "PUBLIC": "Kỳ thi công khai",
@@ -1279,8 +1279,8 @@
         "purposeRequired": "Vui lòng chọn mục đích sử dụng Không gian Học tập.",
         "knowledgeRequired": "Vui lòng nhập kiến thức.",
         "aiAnalysisError": "AI phân tích thất bại. Vui lòng thử lại.",
-        "knowledgeOptionRequired": "Vui lòng chọn một knowledge chính từ gợi ý AI.",
-        "knowledgeDescriptionRequired": "Vui lòng mô tả rõ hơn knowledge đang học.",
+        "knowledgeOptionRequired": "Vui lòng chọn một kiến thức chính từ gợi ý AI.",
+        "knowledgeDescriptionRequired": "Vui lòng mô tả rõ hơn kiến thức đang học.",
         "currentLevelRequired": "Vui lòng nhập trình độ hiện tại.",
         "learningGoalRequired": "Vui lòng nhập mục tiêu học tập.",
         "strongAreasRequired": "Vui lòng nhập điểm mạnh của bạn.",
@@ -1344,7 +1344,7 @@
       "placeholder": "Nhập câu hỏi hoặc nội dung...",
       "sources": "{{count}} nguồn",
       "aiThinking": "AI đang xử lý...",
-      "prelearningTitle": "Bài đánh giá Pre-learning",
+      "prelearningTitle": "Bài đánh giá trước học",
       "prelearningDesc": "Hoàn thành bài đánh giá để AI tạo lộ trình phù hợp với bạn.",
       "startPrelearning": "Bắt đầu đánh giá",
       "quizMode": {
@@ -1362,14 +1362,14 @@
       "emptyDesc": "Chọn một hoạt động bên dưới để bắt đầu.",
       "actions": {
         "roadmap": "Lộ trình",
-        "quiz": "Quiz",
-        "flashcard": "Flashcard",
+        "quiz": "Bài kiểm tra",
+        "flashcard": "Thẻ ghi nhớ",
         "createRoadmap": "Tạo Lộ trình",
-        "createQuiz": "Tạo Quiz",
-        "createFlashcard": "Tạo Flashcard",
+        "createBài kiểm tra": "Tạo Bài kiểm tra",
+        "createThẻ ghi nhớ": "Tạo Thẻ ghi nhớ",
         "mockTest": "Mock Test",
         "postLearning": "Post-learning",
-        "prelearning": "Pre-learning"
+        "prelearning": "Đánh giá trước học"
       },
       "outputs": "Kết quả đã tạo",
       "noOutputs": "Chưa có kết quả nào.",
@@ -1389,7 +1389,7 @@
       "refreshSuggested": "Làm mới",
       "getSuggestedResources": "Lấy tài liệu",
       "importSuggested": "Tải file gợi ý",
-      "suggestMissingWorkspace": "Không tìm thấy workspace để lấy gợi ý.",
+      "suggestMissingKhông gian học tập": "Không tìm thấy workspace để lấy gợi ý.",
       "suggestLoadError": "Không thể tải danh sách tài liệu gợi ý.",
       "suggestGenerateSuccess": "Đã tạo danh sách tài liệu gợi ý thành công.",
       "suggestGenerateError": "Không thể tạo tài liệu gợi ý.",
@@ -1404,7 +1404,7 @@
       "webYoutubeSuccess": "Đã gửi link để hệ thống xử lý.",
       "webYoutubeError": "Không thể xử lý link YouTube.",
       "webYoutubeTitle": "Liên kết YouTube",
-      "webYoutubeDescription": "Dán URL trang YouTube vào bên dưới để tải lên dưới dạng một nguồn trong Workspace.",
+      "webYoutubeDescription": "Dán URL trang YouTube vào bên dưới để tải lên dưới dạng một nguồn trong Không gian học tập.",
       "urlPlaceholderLong": "Dán liên kết bất kỳ",
       "webYoutubeNote1": "Để thêm nhiều URL, hãy phân tách bằng dấu cách hoặc dòng mới.",
       "webYoutubeNote2": "Hiện chỉ nhập được văn bản hiển thị trên trang Youtube.",
@@ -1427,19 +1427,19 @@
       "tabUrl": "Đường dẫn"
     },
     "quiz": {
-      "createTitle": "Tạo Quiz",
+      "createTitle": "Tạo Bài kiểm tra",
       "createDesc": "Tạo bài kiểm tra cho Không gian.",
       "tabManual": "Tạo thủ công",
       "tabAI": "Tạo bằng AI",
-      "name": "Tên Quiz",
-      "namePlaceholder": "Nhập tên bài quiz...",
+      "name": "Tên Bài kiểm tra",
+      "namePlaceholder": "Nhập tên bài kiểm tra...",
       "timeType": "Kiểu thời gian",
       "totalTime": "Thời gian tổng",
       "perQuestion": "Thời gian mỗi câu",
       "timeDuration": "Thời gian (phút)",
       "passingScore": "Điểm đậu (0-10)",
       "maxAttempt": "Số lần tối đa",
-      "intent": "Mục đích Quiz",
+      "intent": "Mục đích Bài kiểm tra",
       "overallDifficulty": "Độ khó tổng thể",
       "timerMode": "Chế độ tổng thời gian",
       "timerModeHintOn": "Tất cả câu hỏi dùng chung thời gian tổng",
@@ -1452,8 +1452,8 @@
         "minutes": "phút",
         "practice": "Luyện tập",
         "exam": "Thi",
-        "chooseMode": "Chọn chế độ làm quiz",
-        "chooseModeDescription": "Bạn muốn bắt đầu quiz này ở chế độ nào?",
+        "chooseMode": "Chọn chế độ làm bài kiểm tra",
+        "chooseModeDescription": "Bạn muốn bắt đầu bài kiểm tra này ở chế độ nào?",
         "confirmPractice": "Xác nhận bắt đầu ở chế độ luyện tập?",
         "confirmExam": "Xác nhận bắt đầu ở chế độ thi?",
         "addQuestion": "Thêm câu hỏi",
@@ -1498,7 +1498,7 @@
       "addAnswer": "Thêm đáp án",
       "correctAnswer": "Đáp án đúng",
       "correctAnswerLabel": "Đáp án đúng",
-      "deleteQuiz": "Xóa quiz",
+      "deleteQuiz": "Xóa bài kiểm tra",
         "actionButtons": {
           "practice": "Luyện tập",
           "exam": "Thi",
@@ -1509,19 +1509,19 @@
         "communityPublicLong": "Đã Công khai  lên cộng đồng",
         "privateShort": "Riêng tư",
         "privateLong": "Đang ở chế độ riêng tư",
-        "makePublic": "Đưa quiz lên cộng đồng",
+        "makePublic": "Đưa bài kiểm tra lên cộng đồng",
         "makePublicShort": "Công khai",
-        "makePrivate": "Chuyển quiz về riêng tư",
+        "makePrivate": "Chuyển bài kiểm tra về riêng tư",
         "makePrivateShort": "Riêng tư",
         "myAttemptedTrue": "Đã làm",
         "myAttemptedFalse": "Chưa làm",
         "myPassedTrue": "Đã đậu",
         "myPassedFalse": "Chưa đậu",
-        "sharedToCommunitySuccess": "Đã chia sẻ quiz lên cộng đồng.",
-        "unsharedFromCommunitySuccess": "Đã chuyển quiz về riêng tư.",
+        "sharedToCommunitySuccess": "Đã chia sẻ bài kiểm tra lên cộng đồng.",
+        "unsharedFromCommunitySuccess": "Đã chuyển bài kiểm tra về riêng tư.",
         "deleteQuestion": "Xóa",
-        "deleteFail": "Không thể xóa quiz lúc này.",
-        "loading": "Đang tải danh sách quiz...",
+        "deleteFail": "Không thể xóa bài kiểm tra lúc này.",
+        "loading": "Đang tải danh sách bài kiểm tra...",
       "types": {
         "multipleChoice": "Trắc nghiệm một đáp án",
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
@@ -1556,7 +1556,7 @@
         "PROCESSING": "Đang xử lý",
         "ERROR": "Lỗi"
       },
-      "activeReadyLabel": "Quiz có thể làm",
+      "activeReadyLabel": "Bài kiểm tra có thể làm",
       "statusFilter": {
         "all": "Tất cả",
         "ACTIVE": "Đang hoạt động",
@@ -1564,15 +1564,15 @@
         "COMPLETED": "Đã làm"
       },
       "communityRecommendations": {
-        "title": "Quiz phù hợp cho workspace này",
-        "description": "Quizmate AI đã tìm thấy vài quiz cộng đồng khá khớp với hành vi học hiện tại. Nếu thấy hợp, bạn có thể clone thẳng về workspace này.",
-        "defaultQuizTitle": "Quiz cộng đồng",
-        "cloneAction": "Clone về workspace này",
-        "cloneSuccess": "Đã clone quiz vào workspace này.",
-        "cloneError": "Clone quiz thất bại.",
+        "title": "Bài kiểm tra phù hợp cho không gian học tập này",
+        "description": "Quizmate AI đã tìm thấy vài bài kiểm tra cộng đồng khá khớp với hành vi học hiện tại. Nếu thấy phù hợp, bạn có thể sao chép thẳng về không gian học tập này.",
+        "defaultBài kiểm traTitle": "Bài kiểm tra cộng đồng",
+        "cloneAction": "Sao chép về không gian học tập này",
+        "cloneSuccess": "Đã sao chép bài kiểm tra vào không gian học tập này.",
+        "cloneError": "Sao chép bài kiểm tra thất bại.",
         "cloneCount": "{{count}} lượt clone",
         "durationMinutes": "{{count}} phút",
-        "recommendationCount": "{{count}} quiz phù hợp",
+        "recommendationCount": "{{count}} bài kiểm tra phù hợp",
         "moreCount": "+{{count}} gợi ý khác",
         "bucket": {
           "buildFoundation": "Tiếp tục làm quen",
@@ -1581,8 +1581,8 @@
           "challengeYourself": "Tăng độ khó"
         },
         "metrics": {
-          "title": "Hiệu quả gợi ý quiz",
-          "description": "Funnel 30 ngày gần đây của quiz được gợi ý trong workspace này.",
+          "title": "Hiệu quả gợi ý bài kiểm tra",
+          "description": "Phễu 30 ngày gần đây của bài kiểm tra được gợi ý trong không gian học tập này.",
           "windowDays": "{{count}} ngày gần đây",
           "impressions": "Impression",
           "clones": "Clone",
@@ -1605,7 +1605,7 @@
           },
           "samples": {
             "title": "Sample requests gần đây",
-            "description": "Soi từng request cụ thể để xem quiz nào được semantic kéo lên, lexical rank bao nhiêu và conversion đi đến stage nào.",
+            "description": "Xem từng yêu cầu cụ thể để biết bài kiểm tra nào được ngữ nghĩa kéo lên, xếp hạng từ vựng ra sao và chuyển đổi đi đến giai đoạn nào.",
             "requests": "{{count}} request gần đây",
             "filters": {
               "all": "Tất cả",
@@ -1614,7 +1614,7 @@
             },
             "requestLabel": "Request",
             "expandHint": "Mở để xem chi tiết",
-            "servedCount": "{{count}} quiz đã serve",
+            "servedCount": "{{count}} bài kiểm tra đã serve",
             "cloneCount": "{{count}} clone",
             "startedCount": "{{count}} bắt đầu",
             "passedCount": "{{count}} đậu",
@@ -1625,12 +1625,12 @@
             "lexicalOutsideTop": "ngoài top lexical",
             "semanticFit": "Semantic fit {{value}}",
             "semanticSimilarity": "Similarity {{value}}",
-            "rescuedExplanation": "Quiz này được semantic kéo lên vì lexical rank {{lexicalRank}} sẽ nằm ngoài {{servedCount}} slot đã serve.",
-            "retainedExplanation": "Quiz này vẫn nằm trong top lexical ở rank {{lexicalRank}}, nên lexical-only cũng có thể hiển thị nó.",
+            "rescuedExplanation": "Bài kiểm tra này được semantic kéo lên vì lexical rank {{lexicalRank}} sẽ nằm ngoài {{servedCount}} slot đã serve.",
+            "retainedExplanation": "Bài kiểm tra này vẫn nằm trong top lexical ở rank {{lexicalRank}}, nên lexical-only cũng có thể hiển thị nó.",
             "convertPassed": "Downstream outcome: đã clone, bắt đầu làm và đậu.",
             "convertStarted": "Downstream outcome: đã clone và bắt đầu làm, nhưng chưa có pass event.",
             "convertCloned": "Downstream outcome: đã clone, nhưng chưa có start event.",
-            "convertNone": "Chưa ghi nhận downstream conversion cho quiz này.",
+            "convertNone": "Chưa ghi nhận chuyển đổi tiếp theo cho bài kiểm tra này.",
             "emptyRescued": "Chưa có request nào có semantic rescued trong khoảng thời gian này.",
             "emptyConverted": "Chưa có request nào có downstream conversion trong khoảng thời gian này.",
             "hybridScore": "Hybrid score",
@@ -1645,12 +1645,12 @@
         }
       },
       "validation": {
-        "nameRequired": "Vui lòng nhập tên quiz.",
+        "nameRequired": "Vui lòng nhập tên bài kiểm tra.",
         "requiredFieldsHint": "Các trường có dấu * là bắt buộc.",
-        "contextRequired": "Vui lòng chọn vị trí tạo quiz.",
+        "contextRequired": "Vui lòng chọn vị trí tạo bài kiểm tra.",
         "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
         "correctAnswerRequiredInline": "Chưa chọn đáp án đúng cho câu này.",
-        "createFailed": "Tạo quiz thất bại. Vui lòng thử lại.",
+        "createFailed": "Tạo bài kiểm tra thất bại. Vui lòng thử lại.",
         "postLearningLimit": "Giai đoạn này đã có bài Post-learning. Mỗi giai đoạn chỉ được phép có một bài.",
         "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
         "aiMaterialOrPromptRequired": "Vui lòng chọn ít nhất một tài liệu hoặc nhập prompt.",
@@ -1666,26 +1666,26 @@
         "allDurationsRequired": "Vui lòng nhập thời gian cho tất cả các mức độ khó.",
         "mediumDurationMustBeGreaterThanEasy": "Thời gian câu trung bình phải cao hơn thời gian câu dễ.",
         "hardDurationMustBeGreaterThanMedium": "Thời gian câu khó phải cao hơn thời gian câu trung bình.",
-        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho quiz."
+        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho bài kiểm tra."
       },
       "contextSelector": {
-        "title": "Vị trí tạo Quiz",
-        "attachPrompt": "Bạn có muốn tạo quiz vào Lộ trình không?",
+        "title": "Vị trí tạo Bài kiểm tra",
+        "attachPrompt": "Bạn có muốn tạo bài kiểm tra vào Lộ trình không?",
         "attachYes": "Có",
         "attachNo": "Không",
-        "attachHintYes": "Chọn Lộ trình, Giai đoạn và Kiến thức để gắn quiz vào Lộ trình học.",
-        "attachHintNo": "Quiz sẽ được tạo trực tiếp trong ngữ cảnh hiện tại.",
+        "attachHintYes": "Chọn Lộ trình, Giai đoạn và Kiến thức để gắn bài kiểm tra vào Lộ trình học.",
+        "attachHintNo": "Bài kiểm tra sẽ được tạo trực tiếp trong ngữ cảnh hiện tại.",
         "contextType": "Loại ngữ cảnh",
         "sourceType": "Nguồn",
-        "selectWorkspace": "Chọn Không gian Học tập",
+        "selectKhông gian học tập": "Chọn Không gian Học tập",
         "selectGroup": "Chọn Nhóm",
         "selectRoadmap": "Chọn Lộ trình",
         "selectPhase": "Chọn Giai đoạn",
-        "selectKnowledge": "Chọn Kiến thức",
+        "selectKiến thức": "Chọn Kiến thức",
         "placeholder": "-- Chọn --",
         "loading": "Đang tải...",
         "reload": "Tải lại",
-        "currentWorkspace": "Sử dụng Không gian Học tập hiện tại",
+        "currentKhông gian học tập": "Sử dụng Không gian Học tập hiện tại",
         "currentGroup": "Sử dụng nhóm hiện tại",
         "types": {
           "WORKSPACE": "Không gian Học tập",
@@ -1698,7 +1698,7 @@
       "quickCreate": {
         "emptyRoadmap": "Bạn chưa có Lộ trình nào.",
         "emptyPhase": "Lộ trình này chưa có Giai đoạn nào.",
-        "emptyKnowledge": "Giai đoạn này chưa có Kiến thức nào.",
+        "emptyKiến thức": "Giai đoạn này chưa có Kiến thức nào.",
         "createBtn": "Tạo mới",
         "titleRequired": "Vui lòng nhập tên.",
         "createFailed": "Tạo mới thất bại. Vui lòng thử lại.",
@@ -1732,7 +1732,7 @@
         "difficultyDistribution": "Phân bổ độ khó",
         "typeDistribution": "Phân bổ dạng câu",
         "skillDistribution": "Phân bổ kỹ năng",
-        "quizStyle": "Kiểu quiz",
+        "quizStyle": "Kiểu bài kiểm tra",
         "additionalPrompt": "Yêu cầu bổ sung",
         "customPromptLabel": "Vui lòng nhập yêu cầu của bạn",
         "promptPlaceholder": "Nhập yêu cầu bổ sung cho AI...",
@@ -1788,27 +1788,27 @@
         "edit": "Chỉnh sửa",
         "createdAt": "Ngày tạo",
         "updatedAt": "Cập nhật",
-        "loadingDetail": "Đang tải chi tiết quiz...",
+        "loadingDetail": "Đang tải chi tiết bài kiểm tra...",
         "noSections": "Không tìm thấy phần nào.",
         "section": "Phần",
         "questions": "câu hỏi",
         "noQuestions": "Không có câu hỏi trong phần này."
       },
       "edit": {
-        "title": "Chỉnh sửa Quiz",
-        "desc": "Cập nhật thông tin quiz, câu hỏi và đáp án.",
-        "loading": "Đang tải dữ liệu quiz...",
-        "loadFailed": "Tải dữ liệu quiz thất bại.",
+        "title": "Chỉnh sửa Bài kiểm tra",
+        "desc": "Cập nhật thông tin bài kiểm tra, câu hỏi và đáp án.",
+        "loading": "Đang tải dữ liệu bài kiểm tra...",
+        "loadFailed": "Tải dữ liệu bài kiểm tra thất bại.",
         "status": "Trạng thái",
         "questionsSection": "Câu hỏi",
         "newTag": "MỚI",
         "save": "Lưu thay đổi",
         "saving": "Đang lưu...",
         "cancel": "Hủy",
-        "saveSuccess": "Cập nhật quiz thành công!",
-        "saveFailed": "Lưu quiz thất bại. Vui lòng thử lại."
+        "saveSuccess": "Cập nhật bài kiểm tra thành công!",
+        "saveFailed": "Lưu bài kiểm tra thất bại. Vui lòng thử lại."
       },
-      "create": "Tạo Quiz",
+      "create": "Tạo Bài kiểm tra",
       "createActive": "Tạo & Kích hoạt",
       "saveDraft": "Lưu bản nháp",
       "creating": "Đang tạo...",
@@ -1818,19 +1818,19 @@
       "questions": "câu hỏi",
       "aiRecommendations": {
         "button": "Gợi ý của AI",
-        "title": "Gợi ý Quiz từ AI",
-        "desc": "Dựa trên kết quả học tập của bạn, AI gợi ý các bài quiz phù hợp.",
+        "title": "Gợi ý Bài kiểm tra từ AI",
+        "desc": "Dựa trên kết quả học tập của bạn, AI gợi ý các bài kiểm tra phù hợp.",
         "inlineTitle": "Các chủ đề AI gợi ý",
-        "inlineDesc": "Bấm vào tiêu đề để xem chi tiết trước khi tạo quiz.",
-        "inlineCreateQuiz": "Dùng gợi ý này để tạo quiz",
-        "inlineGenerating": "Đang tạo quiz...",
+        "inlineDesc": "Bấm vào tiêu đề để xem chi tiết trước khi tạo bài kiểm tra.",
+        "inlineCreateBài kiểm tra": "Dùng gợi ý này để tạo bài kiểm tra",
+        "inlineGenerating": "Đang tạo bài kiểm tra...",
         "hideDetail": "Ẩn",
         "loading": "Đang tải gợi ý...",
-        "empty": "Chưa có gợi ý nào từ AI. Hãy hoàn thành thêm quiz để nhận gợi ý!",
+        "empty": "Chưa có gợi ý nào từ AI. Hãy hoàn thành thêm bài kiểm tra để nhận gợi ý!",
         "loadFailed": "Không thể tải danh sách gợi ý. Vui lòng thử lại.",
-        "generateFailed": "Tạo quiz thất bại. Vui lòng thử lại.",
-        "generating": "Đang tạo quiz...",
-        "createQuiz": "Tạo Quiz"
+        "generateFailed": "Tạo bài kiểm tra thất bại. Vui lòng thử lại.",
+        "generating": "Đang tạo bài kiểm tra...",
+        "createBài kiểm tra": "Tạo Bài kiểm tra"
       },
       "header": {
         "english": "English",
@@ -1895,7 +1895,7 @@
       "result": {
         "title": "Kết quả",
         "notFound": "Không tìm thấy kết quả",
-        "quizCompleted": "Hoàn thành bài quiz",
+        "quizCompleted": "Hoàn thành bài kiểm tra",
         "congratulations": "Chúc mừng!",
         "keepTrying": "Hãy cố gắng thêm!",
         "gradingTitle": "AI đang chấm điểm",
@@ -1909,21 +1909,21 @@
         "reviewPending": "AI đang chấm bài của bạn, vui lòng đợi...",
         "reviewPendingHint": "AI đang chấm bài của bạn. Vui lòng đợi một chút trước khi xem đáp án.",
         "aiAssessment": "Đánh giá của AI",
-        "backToQuiz": "Quay lại Quiz",
+        "backToBài kiểm tra": "Quay lại Bài kiểm tra",
         "backToScore": "Quay lại điểm",
         "assessmentSection": "Nhận xét của Quizmate AI",
-        "preLearningDecisionTitle": "Quyết định sau Pre-learning",
-        "loadingCurrentPhase": "Đang kiểm tra phase hiện tại...",
+        "preLearningDecisionTitle": "Quyết định sau đánh giá trước học",
+        "loadingCurrentPhase": "Đang kiểm tra giai đoạn hiện tại...",
         "skipPhaseEligibleHint": "Bạn đã đủ điều kiện để bỏ qua giai đoạn này. Bạn muốn bỏ qua hay tiếp tục luyện tập?",
-        "skipPhaseAction": "Bỏ qua phase",
+        "skipPhaseAction": "Bỏ qua giai đoạn",
         "continuePracticeAction": "Tiếp tục luyện tập",
-        "generateKnowledgeAction": "Tạo knowledge luyện tập",
-        "generateKnowledgeDone": "Đã gửi yêu cầu tạo knowledge",
-        "generateKnowledgeSuccess": "Đã gửi yêu cầu tạo knowledge cho phase này.",
-        "generateKnowledgeFail": "Tạo knowledge thất bại. Vui lòng thử lại.",
-        "skipPhaseSuccess": "Đã bỏ qua phase hiện tại thành công.",
-        "skipPhaseFail": "Không thể cập nhật quyết định skip phase.",
-        "skipDecisionMissingPhase": "Không xác định được phase để cập nhật quyết định.",
+        "generateKnowledgeAction": "Tạo kiến thức luyện tập",
+        "generateKnowledgeDone": "Đã gửi yêu cầu tạo kiến thức",
+        "generateKnowledgeSuccess": "Đã gửi yêu cầu tạo kiến thức cho giai đoạn này.",
+        "generateKnowledgeFail": "Tạo kiến thức thất bại. Vui lòng thử lại.",
+        "skipPhaseSuccess": "Đã bỏ qua giai đoạn hiện tại thành công.",
+        "skipPhaseFail": "Không thể cập nhật quyết định bỏ qua giai đoạn.",
+        "skipDecisionMissingPhase": "Không xác định được giai đoạn để cập nhật quyết định.",
         "recommendationsSection": "Gợi ý tiếp theo",
         "actionsSection": "Hành động tiếp theo",
         "questionList": "Danh sách câu",
@@ -1931,12 +1931,12 @@
       }
     },
     "flashcard": {
-      "createTitle": "Tạo Flashcard",
+      "createTitle": "Tạo Thẻ ghi nhớ",
       "createDesc": "Tạo bộ thẻ ghi nhớ cho Không gian.",
       "tabManual": "Tạo thủ công",
       "tabAI": "Tạo bằng AI",
       "deckName": "Tên bộ thẻ",
-      "deckNamePlaceholder": "Nhập tên bộ flashcard...",
+      "deckNamePlaceholder": "Nhập tên bộ thẻ ghi nhớ...",
       "addCard": "Thêm thẻ",
       "front": "Mặt trước",
       "back": "Mặt sau",
@@ -1956,21 +1956,21 @@
         "byCount": "Theo số lượng",
         "byPercent": "Theo phần trăm"
       },
-      "create": "Tạo Flashcard",
+      "create": "Tạo Thẻ ghi nhớ",
       "creating": "Đang tạo...",
       "cancel": "Hủy",
       "generateAI": "Tạo bằng AI",
       "generating": "AI đang tạo...",
       "cards": "thẻ",
-      "detailTitle": "Chi tiết Flashcard",
+      "detailTitle": "Chi tiết Thẻ ghi nhớ",
       "items": "mục",
       "noItems": "Chưa có thẻ nào.",
       "addItem": "Thêm thẻ",
       "editItem": "Sửa thẻ",
       "deleteItem": "Xóa thẻ",
       "deleteItemConfirm": "Bạn có chắc muốn xóa thẻ này?",
-      "deleteSet": "Xóa Flashcard",
-      "deleteSetConfirm": "Bạn có chắc muốn xóa bộ flashcard này?",
+      "deleteSet": "Xóa Thẻ ghi nhớ",
+      "deleteSetConfirm": "Bạn có chắc muốn xóa bộ thẻ ghi nhớ này?",
       "frontContent": "Mặt trước",
       "backContent": "Mặt sau",
       "frontContentPlaceholder": "Nhập nội dung mặt trước...",
@@ -1992,7 +1992,7 @@
       "deleteItemSuccess": "Xóa thẻ thành công!",
       "renameSuccess": "Đổi tên thành công!",
       "statusUpdateSuccess": "Cập nhật trạng thái thành công!",
-      "createSuccess": "Tạo flashcard thành công!",
+      "createSuccess": "Tạo thẻ ghi nhớ thành công!",
       "error": "Có lỗi xảy ra. Vui lòng thử lại.",
       "flipCard": "Nhấn để lật",
       "itemNumber": "Thẻ #{{number}}",
@@ -2002,8 +2002,8 @@
       "backToTop": "Về đầu trang",
       "importExcel": "Nhập từ Excel",
       "importExcelHint": "Nhập từ file Excel (sắp ra mắt)",
-      "noFlashcards": "Bạn chưa có flashcard nào.",
-      "createFirstFlashcard": "Tạo flashcard đầu tiên",
+      "noThẻ ghi nhớs": "Bạn chưa có thẻ ghi nhớ nào.",
+      "createFirstThẻ ghi nhớ": "Tạo thẻ ghi nhớ đầu tiên",
       "flipPreview": "Xem trước lật thẻ",
       "flipToReveal": "Nhấn để xem mặt sau",
       "flipToFront": "Nhấn để xem mặt trước",
@@ -2013,7 +2013,7 @@
       "cardType": "Loại thẻ",
       "emptyRoadmap": "Chưa có Lộ trình nào.",
       "emptyPhase": "Chưa có Giai đoạn nào.",
-      "emptyKnowledge": "Chưa có Kiến thức nào."
+      "emptyKiến thức": "Chưa có Kiến thức nào."
     },
     "roadmap": {
       "createTitle": "Tạo Lộ trình học tập",
@@ -2036,10 +2036,10 @@
       "addPhase": "Thêm Giai đoạn",
       "phaseName": "Tên Giai đoạn",
       "phaseNamePlaceholder": "VD: Giai đoạn cơ bản...",
-      "addKnowledge": "Thêm Kiến thức",
+      "addKiến thức": "Thêm Kiến thức",
       "knowledgeName": "Tên Kiến thức",
       "knowledgeNamePlaceholder": "VD: Biến và kiểu dữ liệu...",
-      "prelearningRequired": "Cần làm bài Pre-learning trước khi AI tạo lộ trình.",
+      "prelearningRequired": "Cần làm bài đánh giá trước học trước khi AI tạo lộ trình.",
       "aiGenerating": "AI đang phân tích và tạo lộ trình...",
       "editBeforeConfirm": "Bạn có thể chỉnh sửa trước khi xác nhận.",
       "confirmRoadmap": "Xác nhận Lộ trình",
@@ -2056,25 +2056,25 @@
       "delete": "Xóa",
       "itemCount": "{{count}} mục",
       "postLearning": "Post-learning",
-      "postLearningDesc": "Hoàn thành tất cả Mốc kiến thức để mở bài post-learning.",
-      "quizDesc": "Làm bài quiz cho chủ đề kiến thức này.",
-      "flashcardDesc": "Ôn tập flashcard cho chủ đề kiến thức này.",
+      "postLearningDesc": "Hoàn thành tất cả mốc kiến thức để mở bài học sau giai đoạn.",
+      "quizDesc": "Làm bài kiểm tra cho chủ đề kiến thức này.",
+      "flashcardDesc": "Ôn tập thẻ ghi nhớ cho chủ đề kiến thức này.",
       "preLearningPrompt": "Bạn muốn bắt đầu giai đoạn này như thế nào?",
       "studyNew": {
         "hasFoundation": "Tôi đã có nền tảng cơ bản ở giai đoạn này",
         "noBackground": "Tôi mới làm quen với giai đoạn này",
         "preLearningNote": "Nếu bạn đạt 90%+ trong pre-learning, giai đoạn này có thể được bỏ qua."
       },
-      "startPostLearning": "Bạn có thể bắt đầu bài post-learning!",
-      "addQuiz": "Thêm bộ câu hỏi",
-      "addFlashcard": "Thêm Thẻ ghi nhớ",
+      "startPostLearning": "Bạn có thể bắt đầu bài học sau giai đoạn!",
+      "addBài kiểm tra": "Thêm bộ câu hỏi",
+      "addThẻ ghi nhớ": "Thêm Thẻ ghi nhớ",
       "quizNamePlaceholder": "Nhập tên bộ câu hỏi...",
-      "flashcardNamePlaceholder": "Nhập tên Thẻ ghi nhớ...",
-      "noQuizYet": "Chưa có bộ câu hỏi nào.",
-      "noFlashcardYet": "Chưa có Thẻ ghi nhớ nào.",
+      "flashcardNamePlaceholder": "Nhập tên thẻ ghi nhớ...",
+      "noBài kiểm traYet": "Chưa có bộ câu hỏi nào.",
+      "noThẻ ghi nhớYet": "Chưa có Thẻ ghi nhớ nào.",
       "gridView": "Dạng lưới",
       "listView": "Dạng danh sách",
-      "createKnowledgeQuiz": "Tạo quiz",
+      "createKnowledgeBài kiểm tra": "Tạo bài kiểm tra",
       "totalDays": "Tổng ngày",
       "minutesPerDay": "Phút/ngày",
       "phaseEstimatedDays": "Số ngày",
@@ -2099,7 +2099,7 @@
         "postLearning": "Post-learning",
         "phase": "Giai đoạn",
         "movePhase": "Di chuyển giai đoạn",
-        "moveKnowledge": "Di chuyển kiến thức",
+        "moveKiến thức": "Di chuyển kiến thức",
         "expand": "Mở rộng",
         "collapse": "Thu gọn",
         "hideTopBar": "Ẩn phần trên",
@@ -2116,73 +2116,73 @@
         "view2TimelineTitle": "Khung show lộ trình",
         "view2TimelineHint": "Lộ trình đi theo một hàng dài từ lộ trình đến từng Giai đoạn. Kéo ngang để xem toàn bộ lộ trình.",
         "view2DetailPanelTitle": "Khung coi chi tiết thông tin lộ trình",
-        "view2KnowledgeBranch": "Nhánh knowledge của Giai đoạn đang chọn",
+        "view2KnowledgeBranch": "Nhánh kiến thức của Giai đoạn đang chọn",
         "view2PhaseDetail": "Chi tiết Giai đoạn",
-        "view2KnowledgeDetail": "Chi tiết Kiến thức",
+        "view2Kiến thứcDetail": "Chi tiết Kiến thức",
         "view2RoadmapHint": "Chọn lộ trình, Giai đoạn hoặc Kiến thức ở khung trên để xem đúng thông tin chi tiết bên dưới.",
-        "view2PhaseHint": "Bấm vào Giai đoạn ở phía trên để xem mô tả Giai đoạn và danh sách post-learning.",
-        "view2KnowledgeHint": "Bấm vào Kiến thức để xem mô tả chi tiết cùng danh sách Bộ câu hỏi và Thẻ ghi nhớ."
+        "view2PhaseHint": "Bấm vào Giai đoạn ở phía trên để xem mô tả Giai đoạn và danh sách học sau giai đoạn.",
+        "view2Kiến thứcHint": "Bấm vào Kiến thức để xem mô tả chi tiết cùng danh sách Bộ câu hỏi và Thẻ ghi nhớ."
       },
       "doubleClickToRename": "Nhấp đúp để đổi tên",
-      "noMockTestYet": "Chưa có mock test nào.",
-      "noPostLearningYet": "Chưa có post-learning nào.",
+      "noMockTestYet": "Chưa có bài thi mẫu nào.",
+      "noPostLearningYet": "Chưa có bài học sau giai đoạn nào.",
       "save": "Lưu",
       "descriptionLabel": "Mô tả"
     },
     "mockTest": {
       "title": "Mock Test",
       "desc": "Tạo bài kiểm tra mô phỏng dựa trên tài liệu.",
-      "allRoadmapsCovered": "Tất cả các lộ trình đã có mock test.",
+      "allRoadmapsCovered": "Tất cả các lộ trình đã có bài thi mẫu.",
       "createTitle": "Tạo Mock Test",
       "createDesc": "Tạo bài kiểm tra tổng hợp bao phủ toàn bộ lộ trình.",
       "name": "Tên Mock Test",
-      "namePlaceholder": "Nhập tên mock test...",
+      "namePlaceholder": "Nhập tên bài thi mẫu...",
       "selectRoadmap": "Chọn Lộ trình",
-      "onePerRoadmap": "Mỗi lộ trình chỉ được có tối đa một mock test.",
-      "configFormat": "Bạn có muốn cấu hình format mock test riêng không?",
-      "uploadFormat": "Tải tài liệu chứa format",
+      "onePerRoadmap": "Mỗi lộ trình chỉ được có tối đa một bài thi mẫu.",
+      "configFormat": "Bạn có muốn cấu hình định dạng bài thi mẫu riêng không?",
+      "uploadFormat": "Tải tài liệu chứa định dạng",
       "customConfig": "Tự cấu hình",
       "useDefault": "Dùng mặc định",
       "start": "Bắt đầu Mock Test",
-      "completeAllPhases": "Hoàn thành tất cả post-learning và Giai đoạn để mở mock test cuối cùng.",
-      "noItems": "Chưa có mock test nào.",
+      "completeAllPhases": "Hoàn thành tất cả bài học sau giai đoạn và các Giai đoạn để mở bài thi mẫu cuối cùng.",
+      "noItems": "Chưa có bài thi mẫu nào.",
       "validation": {
         "roadmapRequired": "Vui lòng chọn một lộ trình.",
-        "mockTestLimit": "Lộ trình này đã có mock test. Mỗi lộ trình chỉ được phép có một bài.",
-        "roadmapAlreadyHas": "Lộ trình này đã có mock test. Vui lòng chọn lộ trình khác."
+        "mockTestLimit": "Lộ trình này đã có bài thi mẫu. Mỗi lộ trình chỉ được phép có một bài.",
+        "roadmapAlreadyHas": "Lộ trình này đã có bài thi mẫu. Vui lòng chọn lộ trình khác."
       },
       "detail": {
         "edit": "Chỉnh sửa"
       },
       "edit": {
         "title": "Chỉnh sửa Mock Test",
-        "desc": "Cập nhật thông tin, câu hỏi và câu trả lời của mock test.",
-        "loading": "Đang tải dữ liệu mock test...",
-        "loadFailed": "Không thể tải dữ liệu mock test.",
+        "desc": "Cập nhật thông tin, câu hỏi và câu trả lời của bài thi mẫu.",
+        "loading": "Đang tải dữ liệu bài thi mẫu...",
+        "loadFailed": "Không thể tải dữ liệu bài thi mẫu.",
         "status": "Trạng thái",
         "questionsSection": "Câu hỏi",
         "newTag": "MỚI",
         "save": "Lưu thay đổi",
         "saving": "Đang lưu...",
         "cancel": "Hủy",
-        "saveSuccess": "Cập nhật mock test thành công!",
-        "saveFailed": "Lưu mock test thất bại. Vui lòng thử lại."
+        "saveSuccess": "Cập nhật bài thi mẫu thành công!",
+        "saveFailed": "Lưu bài thi mẫu thất bại. Vui lòng thử lại."
       }
     },
     "postLearning": {
       "title": "Post-learning",
-      "desc": "Tạo bài kiểm tra post-learning cho một Giai đoạn.",
-      "allPhasesCovered": "Tất cả các Giai đoạn đã có bài post-learning.",
+      "desc": "Tạo bài kiểm tra sau giai đoạn cho một Giai đoạn.",
+      "allPhasesCovered": "Tất cả các Giai đoạn đã có bài học sau giai đoạn.",
       "createTitle": "Tạo Post-learning",
-      "createDesc": "Tạo bài kiểm tra post-learning bao phủ một Giai đoạn cụ thể.",
+      "createDesc": "Tạo bài kiểm tra sau giai đoạn bao phủ một Giai đoạn cụ thể.",
       "name": "Tên Post-learning",
-      "namePlaceholder": "Nhập tên post-learning...",
+      "namePlaceholder": "Nhập tên bài học sau giai đoạn...",
       "selectPhase": "Chọn Giai đoạn",
-      "onePerPhase": "Mỗi Giai đoạn chỉ được có tối đa một bài post-learning.",
-      "noItems": "Chưa có bài post-learning nào.",
+      "onePerPhase": "Mỗi Giai đoạn chỉ được có tối đa một bài học sau giai đoạn.",
+      "noItems": "Chưa có bài học sau giai đoạn nào.",
       "validation": {
         "phaseRequired": "Vui lòng chọn một Giai đoạn.",
-        "phaseAlreadyHas": "Giai đoạn này đã có bài post-learning. Vui lòng chọn Giai đoạn khác."
+        "phaseAlreadyHas": "Giai đoạn này đã có bài học sau giai đoạn. Vui lòng chọn Giai đoạn khác."
       }
     },
     "listView": {
@@ -2254,7 +2254,7 @@
     "subscription": "Gói hiện tại",
     "noPlan": "Chưa có gói",
     "createdAt": "Ngày tạo",
-    "noWorkspaces": "Chưa có Không gian học tập nào.",
+    "noKhông gian học tậps": "Chưa có Không gian học tập nào.",
     "roadmaps": "Lộ trình Học tập",
     "noRoadmaps": "Chưa có lộ trình.",
     "noGroups": "Chưa tham gia nhóm nào.",
@@ -2360,7 +2360,7 @@
       "subscription": "Gói đăng ký"
     },
     "badges": {
-      "quizMaster": "Bậc thầy Quiz",
+      "quizMaster": "Bậc thầy Bài kiểm tra",
       "streakKeeper": "Giữ Streak",
       "speedster": "Tốc độ cao"
     },
@@ -2443,12 +2443,12 @@
     "notGroupLeader": "Chỉ trưởng nhóm mới có thể thực hiện thao tác này.",
     "memberNotFound": "Không tìm thấy thành viên nhóm.",
     "contributorSlotLimit": "Nhóm chỉ được có 1 đóng góp viên.",
-    "memberUploadSlotLimit": "Đã đạt giới hạn 3 thành viên được upload.",
+    "memberUploadSlotLimit": "Đã đạt giới hạn 3 thành viên được tải lên.",
     "flashcardSetNotFound": "Không tìm thấy bộ thẻ ghi nhớ.",
     "flashcardItemNotFound": "Không tìm thấy mục.",
     "flashcardSetEmpty": "Phải có ít nhất 1 mục.",
     "generalRoadmapExists": "Lộ trình tổng quát đã tồn tại cho nhóm này.",
-    "generalRoadmapExistsWorkspace": "Lộ trình tổng quát đã tồn tại cho Không gian học tập này.",
+    "generalRoadmapExistsKhông gian học tập": "Lộ trình tổng quát đã tồn tại cho Không gian học tập này.",
     "quizNotFound": "Không tìm thấy bộ câu hỏi.",
     "quizSectionNotFound": "Không tìm thấy phần câu hỏi.",
     "questionNotFound": "Không tìm thấy câu hỏi.",
@@ -2469,7 +2469,7 @@
     "invitationNotFound": "Không tìm thấy lời mời.",
     "invitationExpired": "Lời mời đã hết hạn.",
     "groupMemberLimitReached": "Đã đạt giới hạn thành viên nhóm theo gói đăng ký.",
-    "invalidPlanSubscription": "Gói đăng ký cho plan không hợp lệ.",
+    "invalidPlanSubscription": "Gói đăng ký cho gói không hợp lệ.",
     "paymentNotFound": "Không tìm thấy thanh toán.",
     "planNotActive": "Gói kế hoạch chưa được kích hoạt.",
     "planNameExisted": "Tên gói kế hoạch đã tồn tại.",
@@ -2480,12 +2480,12 @@
     "invalidPermissionInput": "Dữ liệu quyền không hợp lệ.",
     "roleAlreadyExists": "Vai trò đã tồn tại.",
     "roleInUse": "Vai trò đang được sử dụng.",
-    "lastSuperAdminProtected": "Không thể cập nhật hoặc xóa super admin cuối cùng.",
+    "lastSuperAdminProtected": "Không thể cập nhật hoặc xóa siêu quản trị viên cuối cùng.",
     "systemRoleProtected": "Vai trò hệ thống được bảo vệ.",
     "conflict": "Xung đột dữ liệu.",
     "planLimitReached": "Đã đạt giới hạn sử dụng chức năng.",
     "paymentNotPending": "Thanh toán không ở trạng thái chờ xử lý.",
-    "adminCannotUseUserFeatures": "Chỉ người dùng thường mới có quyền tạo nhóm, Không gian Học tập và sử dụng các tính năng. Admin và Super Admin không có quyền này.",
+    "adminCannotUseUserFeatures": "Chỉ người dùng thường mới có quyền tạo nhóm, Không gian Học tập và sử dụng các tính năng. Quản trị viên và siêu quản trị viên không có quyền này.",
     "materialNotFound": "Không tìm thấy tài liệu.",
     "planFeatureNotSupported": "Gói không hỗ trợ tính năng này.",
     "defaultPlanExistsForType": "Gói mặc định đã tồn tại cho loại này.",
@@ -2504,13 +2504,13 @@
     "defaultPlanCannotDelete": "Gói mặc định không được xóa.",
     "defaultPlanCannotUpdateType": "Gói mặc định không được cập nhật loại.",
     "defaultPlanCannotInactive": "Gói mặc định không được vô hiệu hóa.",
-    "quizAttemptNotFound": "Không tìm thấy lượt làm quiz.",
+    "quizAttemptNotFound": "Không tìm thấy lượt làm bài kiểm tra.",
     "quizAttemptLimitReached": "Đã đạt số lượt làm tối đa.",
-    "quizAttemptAlreadyCompleted": "Lượt làm quiz đã hoàn thành.",
-    "quizAttemptNotInProgress": "Lượt làm quiz không ở trạng thái đang làm.",
-    "quizAttemptNotPaused": "Lượt làm quiz không ở trạng thái tạm dừng.",
+    "quizAttemptAlreadyCompleted": "Lượt làm bài kiểm tra đã hoàn thành.",
+    "quizAttemptNotInProgress": "Lượt làm bài kiểm tra không ở trạng thái đang làm.",
+    "quizAttemptNotPaused": "Lượt làm bài kiểm tra không ở trạng thái tạm dừng.",
     "quizAttemptTimeExpired": "Đã hết thời gian làm bài.",
-    "questionNotInQuiz": "Câu hỏi không thuộc bài quiz này.",
+    "questionNotInBài kiểm tra": "Câu hỏi không thuộc bài kiểm tra này.",
     "answerNotBelongToQuestion": "Đáp án không thuộc câu hỏi."
   },
   "groupProfileConfig": {
@@ -2538,7 +2538,7 @@
       "knowledge": "Vui lòng mô tả phạm vi kiến thức chung.",
       "analysisLoading": "Quizmate AI đang phân tích lĩnh vực. Vui lòng đợi một chút.",
       "analysisError": "Quizmate AI chưa suy ra được lĩnh vực. Hãy thử phân tích lại.",
-      "analysisMissing": "Vui lòng nhập knowledge để Quizmate AI suy ra lĩnh vực.",
+      "analysisMissing": "Vui lòng nhập kiến thức để Quizmate AI suy ra lĩnh vực.",
       "domain": "Vui lòng chọn một lĩnh vực từ gợi ý của Quizmate AI.",
       "learningMode": "Vui lòng chọn chế độ học tập.",
       "examName": "Vui lòng nhập tên kỳ thi."
@@ -2550,7 +2550,7 @@
       },
       "learning": {
         "title": "Hồ sơ học tập chung",
-        "description": "Knowledge, domain và nhịp học chung của nhóm"
+        "description": "Kiến thức, lĩnh vực và nhịp học chung của nhóm"
       }
     },
     "stepOne": {
@@ -2564,27 +2564,27 @@
     },
     "stepTwo": {
       "title": "Thiết lập hồ sơ học tập chung",
-      "description": "Bước này định nghĩa knowledge chung, domain AI hiểu và nhịp học mặc định cho cả nhóm.",
+      "description": "Bước này định nghĩa kiến thức chung, lĩnh vực AI hiểu và nhịp học mặc định cho cả nhóm.",
       "workflow": {
         "eyebrow": "Thiết kế nhanh",
         "title": "Hoàn thiện cấu hình chỉ trong 3 lựa chọn",
-        "description": "Mô tả phạm vi học của nhóm, chọn domain AI gợi ý và bật các tùy chọn phù hợp cho lộ trình chung.",
-        "describeTitle": "Mô tả knowledge",
+        "description": "Mô tả phạm vi học của nhóm, chọn lĩnh vực AI gợi ý và bật các tùy chọn phù hợp cho lộ trình chung.",
+        "describeTitle": "Mô tả kiến thức",
         "describeDescription": "Nói ngắn gọn nhóm đang học gì hoặc đang hướng tới mục tiêu nào.",
-        "domainTitle": "Chốt domain",
-        "domainDescription": "Chọn baseline phù hợp để AI hiểu đúng workspace của nhóm.",
+        "domainTitle": "Chốt lĩnh vực",
+        "domainDescription": "Chọn nền tảng phù hợp để AI hiểu đúng không gian học tập của nhóm.",
         "modeTitle": "Chọn cách học",
         "modeDescription": "Xác định nhóm ưu tiên học mới, ôn tập hay thi thử."
       },
-      "knowledgeLabel": "Knowledge chung của nhóm",
+      "knowledgeLabel": "Kiến thức chung của nhóm",
       "knowledgePlaceholder": "Ví dụ: Cả nhóm đang học JLPT N3 để củng cố ngữ pháp, từ vựng và luyện đọc theo từng chủ điểm.",
-      "knowledgeHint": "Mô tả càng cụ thể, Quizmate AI càng gợi ý domain sát với mục tiêu học của nhóm.",
-      "domainSuggestions": "Domain được Quizmate AI gợi ý",
-      "selectedDomain": "Domain đang dùng cho nhóm",
-      "selectedDomainHint": "Domain này sẽ làm baseline chung để AI gợi ý roadmap, quiz và hoạt động học.",
+      "knowledgeHint": "Mô tả càng cụ thể, Quizmate AI càng gợi ý lĩnh vực sát với mục tiêu học của nhóm.",
+      "domainSuggestions": "Lĩnh vực được Quizmate AI gợi ý",
+      "selectedLĩnh vực": "Lĩnh vực đang dùng cho nhóm",
+      "selectedLĩnh vựcHint": "Lĩnh vực này sẽ làm nền tảng chung để AI gợi ý lộ trình, bài kiểm tra và hoạt động học.",
       "learningMode": "Chế độ học tập",
       "modePrompt": "Chọn nhịp học chính của nhóm",
-      "studyNewDescription": "Phù hợp khi nhóm đang bắt đầu kiến thức mới và muốn có roadmap rõ ràng.",
+      "studyNewDescription": "Phù hợp khi nhóm đang bắt đầu kiến thức mới và muốn có lộ trình rõ ràng.",
       "reviewDescription": "Phù hợp khi nhóm đã học qua và muốn ôn tập có hệ thống.",
       "mockTestDescription": "Phù hợp khi nhóm cần luyện đề và theo dõi tiến độ bằng bài test.",
       "examName": "Tên kỳ thi",
@@ -2592,19 +2592,19 @@
       "groupGoal": "Mục tiêu học tập của nhóm",
       "groupGoalPlaceholder": "Ví dụ: Trong 8 tuần hoàn thành 20 chủ điểm ngữ pháp và 1500 từ vựng.",
       "learningSwitches": "Tùy chọn học tập",
-      "learningSwitchesHint": "Bạn có thể bật thêm roadmap hoặc đánh giá đầu vào tùy theo cách vận hành nhóm.",
+      "learningSwitchesHint": "Bạn có thể bật thêm lộ trình hoặc đánh giá đầu vào tùy theo cách vận hành nhóm.",
       "analysis": {
-        "loading": "Quizmate AI đang phân tích knowledge để gợi ý domain phù hợp.",
-        "error": "Quizmate AI chưa thể gợi ý domain đáng tin cậy. Bạn có thể thử lại ngay.",
-        "interpretingLabel": "AI đang hiểu knowledge này là",
-        "tooBroad": "Knowledge hiện khá rộng. Nếu muốn gợi ý sát hơn, hãy mô tả rõ đối tượng học và mục tiêu hơn một chút.",
-        "emptyDomainTitle": "Chưa có domain khả dụng",
-        "emptyDomainDescription": "Quizmate AI chưa tạo được danh sách domain từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử phân tích lại."
+        "loading": "Quizmate AI đang phân tích kiến thức để gợi ý lĩnh vực phù hợp.",
+        "error": "Quizmate AI chưa thể gợi ý lĩnh vực đáng tin cậy. Bạn có thể thử lại ngay.",
+        "interpretingLabel": "AI đang hiểu kiến thức này là",
+        "tooBroad": "Kiến thức hiện khá rộng. Nếu muốn gợi ý sát hơn, hãy mô tả rõ đối tượng học và mục tiêu hơn một chút.",
+        "emptyLĩnh vựcTitle": "Chưa có lĩnh vực khả dụng",
+        "emptyDomainDescription": "Quizmate AI chưa tạo được danh sách lĩnh vực từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử phân tích lại."
       },
       "roadmap": {
-        "title": "Bật roadmap chung",
+        "title": "Bật lộ trình chung",
         "description": "Tạo khung học tập chung để cả nhóm có nhịp học rõ ràng hơn.",
-        "studyNewDescription": "Chế độ này mặc định bật roadmap để nhóm có lộ trình học kiến thức mới rõ ràng hơn.",
+        "studyNewDescription": "Chế độ này mặc định bật lộ trình để nhóm có lộ trình học kiến thức mới rõ ràng hơn.",
         "studyNewBadge": "Roadmap mặc định bật",
         "defaultOn": "Mặc định bật"
       },
@@ -2614,8 +2614,8 @@
       },
       "ready": {
         "title": "Trạng thái sẵn sàng",
-        "knowledge": "Knowledge",
-        "domain": "Domain",
+        "knowledge": "Kiến thức",
+        "domain": "Lĩnh vực",
         "mode": "Chế độ học",
         "pending": "Chưa hoàn tất"
       },
@@ -2623,19 +2623,19 @@
         "eyebrow": "Bảng điều khiển",
         "title": "Nhìn nhanh trước khi hoàn tất",
         "readyBadge": "Sẵn sàng",
-        "loading": "Quizmate AI đang suy ra domain phù hợp từ knowledge bạn vừa nhập.",
-        "error": "Cần phân tích lại knowledge để có domain đáng tin cậy hơn.",
-        "ready": "AI đã đủ dữ liệu để dùng domain này làm baseline chung cho workspace.",
-        "default": "Khi chọn domain xong, AI sẽ dùng domain này để gợi ý roadmap và hoạt động học chung.",
-        "domainPlaceholder": "Chưa chọn domain",
+        "loading": "Quizmate AI đang suy ra lĩnh vực phù hợp từ kiến thức bạn vừa nhập.",
+        "error": "Cần phân tích lại kiến thức để có lĩnh vực đáng tin cậy hơn.",
+        "ready": "AI đã đủ dữ liệu để dùng lĩnh vực này làm nền tảng chung cho không gian học tập.",
+        "default": "Khi chọn lĩnh vực xong, AI sẽ dùng lĩnh vực này để gợi ý lộ trình và hoạt động học chung.",
+        "domainPlaceholder": "Chưa chọn lĩnh vực",
         "role": "Vai trò mặc định",
         "mode": "Chế độ học",
-        "domain": "Domain",
-        "roadmap": "Roadmap chung",
+        "domain": "Lĩnh vực",
+        "roadmap": "Lộ trình chung",
         "afterSaveTitle": "Sau khi lưu, nhóm sẽ có gì?",
-        "afterSaveItemOne": "Workspace dùng domain này làm baseline cho roadmap, quiz và flashcard.",
-        "afterSaveItemTwo": "Leader vẫn có thể cập nhật lại profile khi workspace chưa có tài liệu.",
-        "afterSaveItemThree": "Nếu workspace đã có tài liệu, hãy xóa tài liệu trước rồi mới cập nhật lại profile."
+        "afterSaveItemOne": "Không gian học tập dùng lĩnh vực này làm nền tảng cho lộ trình, bài kiểm tra và thẻ ghi nhớ.",
+        "afterSaveItemTwo": "Trưởng nhóm vẫn có thể cập nhật lại hồ sơ khi không gian học tập chưa có tài liệu.",
+        "afterSaveItemThree": "Nếu không gian học tập đã có tài liệu, hãy xóa tài liệu trước rồi mới cập nhật lại hồ sơ."
       }
     }
   },
@@ -2661,15 +2661,15 @@
     "selectGroupDesc": "Chọn nhóm mà bạn là trưởng nhóm để áp dụng gói đăng ký này.",
     "selectGroupFirst": "Vui lòng chọn nhóm bên trái trước khi thanh toán.",
     "limitKeys": {
-      "maxWorkspace": "Không gian học tập tối đa",
-      "maxMaterialPerWorkspace": "Tài liệu / Không gian học tập",
+      "maxKhông gian học tập": "Không gian học tập tối đa",
+      "maxMaterialPerKhông gian học tập": "Tài liệu / Không gian học tập",
       "maxMaterialInGroup": "Tài liệu / Nhóm",
-      "maxAiCreateQuizPerDay": "AI tạo bộ câu hỏi / ngày",
-      "maxAiCreateFlashcardPerDay": "AI tạo thẻ ghi nhớ / ngày",
+      "maxAiCreateBài kiểm traPerDay": "AI tạo bộ câu hỏi / ngày",
+      "maxAiCreateThẻ ghi nhớPerDay": "AI tạo thẻ ghi nhớ / ngày",
       "maxAiCreateMockTestPerDay": "AI tạo bài kiểm tra mẫu / ngày",
       "maxAiCompanionModePerDay": "Phiên AI Companion / ngày",
-      "maxAiCreateItemPerFlashcard": "Mục / Thẻ ghi nhớ",
-      "maxAiCreateQuestionPerQuiz": "Câu hỏi / Bộ câu hỏi",
+      "maxAiCreateItemPerThẻ ghi nhớ": "Mục / Thẻ ghi nhớ",
+      "maxAiCreateQuestionPerBài kiểm tra": "Câu hỏi / Bộ câu hỏi",
       "maxMemberSlot": "Thành viên tối đa"
     },
     "featureKeys": {
@@ -2709,60 +2709,60 @@
     "title": "Cách tính credit trong QuizmateAI",
     "subtitle": "QuizmateAI không tính tiền theo tên tính năng. Hệ thống tính credit theo mức độ AI được sử dụng thực tế, để bạn biết vì sao bị trừ credit và có thể dự đoán chi phí trước khi chạy.",
     "ctaPrimaryGuest": "Đăng nhập để xem ví",
-    "ctaPrimaryUser": "Mở ví credit",
-    "ctaSecondaryGuest": "Xem plans",
-    "ctaSecondaryUser": "Xem plans",
-    "openDashboard": "Mở dashboard",
-    "viewPlans": "Xem plans",
-    "creditCardDescription": "Đơn vị dùng để quy đổi usage AI thành cách tính dễ mua, dễ hiểu và dễ giới hạn ngân sách.",
+    "ctaPrimaryUser": "Mở ví tín dụng",
+    "ctaSecondaryGuest": "Xem gói",
+    "ctaSecondaryUser": "Xem gói",
+    "openDashboard": "Mở bảng điều khiển",
+    "viewPlans": "Xem gói",
+    "creditCardDescription": "Đơn vị dùng để quy đổi mức sử dụng AI thành cách tính dễ mua, dễ hiểu và dễ giới hạn ngân sách.",
     "startingPointLabel": "Mốc khởi động",
     "summaryCards": [
       {
-        "title": "1 credit",
-        "desc": "Mốc khởi động đề xuất hiện tại là 100 VND / credit."
+        "title": "1 tín dụng",
+        "desc": "Mốc khởi động đề xuất hiện tại là 100 VND / tín dụng."
       },
       {
-        "title": "Capability bundle",
-        "desc": "Tính theo nhóm năng lực AI như OCR, source understanding, quiz generation, review."
+        "title": "Gói năng lực",
+        "desc": "Tính theo nhóm năng lực AI như OCR, hiểu nguồn, tạo bài kiểm tra và đánh giá."
       },
       {
         "title": "Không tính hai lần",
         "desc": "Tính năng cấp cao đã bao gồm xử lý cấp thấp thì UI sẽ không tính lặp lại cùng một năng lực."
       },
       {
-        "title": "Estimate",
-        "desc": "Nên có estimate trước, settle theo usage thật và refund phần chưa dùng."
+        "title": "Ước tính",
+        "desc": "Nên có ước tính trước, đối soát theo mức sử dụng thực tế và hoàn lại phần chưa dùng."
       }
     ],
     "bundleTitle": "Cách tính theo loại tài liệu được hỗ trợ",
     "bundleDesc": "Hệ thống hiện dùng cách tính đơn giản để user dễ hiểu và dễ ước lượng. Mỗi loại tài liệu chỉ có một mức credit cơ bản theo đơn vị đo chính.",
-    "bundleHeaders": ["Loại tài liệu", "Cách tính", "Credit cơ bản"],
+    "bundleHeaders": ["Loại tài liệu", "Cách tính", "Tín dụng cơ bản"],
     "bundleTable": [
-      ["PDF", "Theo số trang", "1 credit / trang"],
-      ["SLIDE", "Theo số slide", "1 credit / slide"],
-      ["VIDEO", "Theo số phút", "1 credit / phút"],
-      ["AUDIO", "Theo số phút", "1 credit / phút"],
-      ["TEXT", "Theo số từ", "1 credit / 1000 từ"],
-      ["DOCUMENT", "Theo số từ", "1 credit / 1000 từ"],
-      ["EXCEL", "Theo số sheet", "1 credit / sheet"]
+      ["PDF", "Theo số trang", "1 tín dụng / trang"],
+      ["TRÌNH CHIẾU", "Theo số trang trình chiếu", "1 tín dụng / trang trình chiếu"],
+      ["VIDEO", "Theo số phút", "1 tín dụng / phút"],
+      ["ÂM THANH", "Theo số phút", "1 tín dụng / phút"],
+      ["VĂN BẢN", "Theo số từ", "1 tín dụng / 1000 từ"],
+      ["TÀI LIỆU", "Theo số từ", "1 tín dụng / 1000 từ"],
+      ["BẢNG TÍNH", "Theo số trang tính", "1 tín dụng / trang tính"]
     ],
     "unitTitle": "Bảng credit cho tính năng AI chính",
-    "unitDesc": "Bảng này chỉ giữ các tính năng AI cốt lõi để user dễ ước lượng trước khi chạy. Riêng quiz sẽ tính đơn giản theo tổng số câu, không tách riêng từng loại câu hay config câu hỏi.",
-    "unitHeaders": ["Hạng mục", "Credit đề xuất", "Cách tính"],
+    "unitDesc": "Bảng này chỉ giữ các tính năng AI cốt lõi để user dễ ước lượng trước khi chạy. Riêng bài kiểm tra sẽ tính đơn giản theo tổng số câu, không tách riêng từng loại câu hay cấu hình câu hỏi.",
+    "unitHeaders": ["Hạng mục", "Tín dụng đề xuất", "Cách tính"],
     "unitTable": [
-      ["Tạo quiz", "0.5 credit / câu", "Theo số câu"],
-      ["AI feedback sau mỗi bài quiz", "1 credit / lần làm bài", "Theo lần làm bài"],
-      ["Flashcard basic", "0.5 credit / card", "Theo card"],
-      ["AI tạo phase trong roadmap", "1 credit / phase", "Theo phase"],
-      ["AI tạo knowledge trong phase", "0.5 credit / knowledge", "Theo knowledge"]
+      ["Tạo bài kiểm tra", "0,5 tín dụng / câu", "Theo số câu"],
+      ["Phản hồi AI sau mỗi bài kiểm tra", "1 tín dụng / lần làm bài", "Theo lần làm bài"],
+      ["Thẻ ghi nhớ cơ bản", "0,5 tín dụng / thẻ", "Theo thẻ"],
+      ["AI tạo giai đoạn trong lộ trình", "1 tín dụng / giai đoạn", "Theo giai đoạn"],
+      ["AI tạo kiến thức trong giai đoạn", "0,5 tín dụng / kiến thức", "Theo kiến thức"]
     ],
     "personalizationTitle": "Gợi ý AI đơn giản",
     "personalizationDesc": "Các gợi ý dưới đây là những gợi ý cơ bản, dễ hiểu và phù hợp với hệ thống hiện tại.",
     "personalizationItems": [
       {
-        "title": "AI gợi ý quiz tiếp theo",
+        "title": "AI gợi ý bài kiểm tra tiếp theo",
         "unit": "Theo lần gợi ý",
-        "description": "AI gợi ý bộ quiz tiếp theo dựa trên lịch sử học và kết quả gần đây của user."
+        "description": "AI gợi ý bộ câu hỏi tiếp theo dựa trên lịch sử học và kết quả gần đây của người dùng."
       },
       {
         "title": "AI gợi ý chủ đề cần ôn lại",
@@ -2781,81 +2781,81 @@
     "quickMathLabel": "Cách tính nhanh",
     "examples": [
       {
-        "title": "Upload PDF 5 trang",
-        "total": "Khoảng 5 credit",
+        "title": "Tải lên PDF 5 trang",
+        "total": "Khoảng 5 tín dụng",
         "body": "Nếu hệ thống đọc và xử lý toàn bộ 5 trang PDF thì có thể tính đơn giản theo số trang.",
         "breakdown": [
-          "5 trang x 1 credit = 5 credit"
+          "5 trang x 1 tín dụng = 5 credit"
         ]
       },
       {
-        "title": "Tạo quiz 10 câu",
-        "total": "Khoảng 10 credit",
-        "body": "Với bộ quiz cơ bản, có thể ước lượng nhanh theo số câu được tạo.",
+        "title": "Tạo bài kiểm tra 10 câu",
+        "total": "Khoảng 10 tín dụng",
+        "body": "Với bộ bài kiểm tra cơ bản, có thể ước lượng nhanh theo số câu được tạo.",
         "breakdown": [
-          "10 câu x 0.5 credit = 5 credit"
+          "10 câu x 0,5 tín dụng = 5 tín dụng"
         ]
       },
       {
-        "title": "Tạo 20 flashcard",
-        "total": "Khoảng 10 credit",
-        "body": "Flashcard cơ bản có thể tính theo số card được tạo ra.",
+        "title": "Tạo 20 thẻ ghi nhớ",
+        "total": "Khoảng 10 tín dụng",
+        "body": "Thẻ ghi nhớ cơ bản có thể tính theo số thẻ được tạo ra.",
         "breakdown": [
-          "20 card x 0.5 credit = 10 credit"
+          "20 thẻ x 0,5 tín dụng = 10 tín dụng"
         ]
       },
       {
-        "title": "Paste TEXT 2,500 từ",
-        "total": "Khoảng 3 credit",
+        "title": "Dán VĂN BẢN 2.500 từ",
+        "total": "Khoảng 3 tín dụng",
         "body": "Với nội dung text, hệ thống tính theo tổng số từ được đưa vào xử lý.",
         "breakdown": [
           "2,500 từ = 3 đơn vị 1000 từ",
-          "3 x 1 credit = 3 credit"
+          "3 x 1 tín dụng = 3 credit"
         ]
       },
       {
-        "title": "Upload DOCUMENT 4,200 từ",
-        "total": "Khoảng 5 credit",
+        "title": "Tải lên TÀI LIỆU 4.200 từ",
+        "total": "Khoảng 5 tín dụng",
         "body": "Document cũng được tính đơn giản theo số từ thay vì theo số file.",
         "breakdown": [
           "4,200 từ = 5 đơn vị 1000 từ",
-          "5 x 1 credit = 5 credit"
+          "5 x 1 tín dụng = 5 credit"
         ]
       },
       {
-        "title": "Tạo quiz 25 câu",
-        "total": "Khoảng 25 credit",
-        "body": "Quiz giờ chỉ tính theo tổng số câu, không tách riêng từng loại câu hỏi.",
+        "title": "Tạo bài kiểm tra 25 câu",
+        "total": "Khoảng 25 tín dụng",
+        "body": "Bài kiểm tra giờ chỉ tính theo tổng số câu, không tách riêng từng loại câu hỏi.",
         "breakdown": [
-          "25 câu x 1 credit = 25 credit"
+          "25 câu x 1 tín dụng = 25 credit"
         ]
       },
       {
-        "title": "AI feedback sau 1 bài quiz",
-        "total": "Khoảng 1 credit",
-        "body": "Sau khi làm xong một bài quiz, user có thể nhận feedback AI cho lần làm bài đó.",
+        "title": "Phản hồi AI sau 1 bài kiểm tra",
+        "total": "Khoảng 1 tín dụng",
+        "body": "Sau khi làm xong một bài kiểm tra, người dùng có thể nhận phản hồi AI cho lần làm bài đó.",
         "breakdown": [
-          "1 lần feedback x 1 credit = 1 credit"
+          "1 lần phản hồi x 1 tín dụng = 1 tín dụng"
         ]
       },
       {
-        "title": "AI tạo 3 phase trong roadmap",
-        "total": "Khoảng 3 credit",
-        "body": "Khi dùng AI để gợi ý phase trong roadmap, hệ thống tính theo số phase được tạo.",
+        "title": "AI tạo 3 giai đoạn trong lộ trình",
+        "total": "Khoảng 3 tín dụng",
+        "body": "Khi dùng AI để gợi ý giai đoạn trong lộ trình, hệ thống tính theo số giai đoạn được tạo.",
         "breakdown": [
-          "3 phase x 1 credit = 3 credit"
+          "3 giai đoạn x 1 tín dụng = 3 tín dụng"
         ]
       },
       {
-        "title": "AI tạo 8 knowledge trong phase",
-        "total": "Khoảng 4 credit",
-        "body": "Knowledge trong phase được tính riêng theo số knowledge được tạo ra.",
+        "title": "AI tạo 8 kiến thức trong giai đoạn",
+        "total": "Khoảng 4 tín dụng",
+        "body": "Kiến thức trong giai đoạn được tính riêng theo số kiến thức được tạo ra.",
         "breakdown": [
-          "8 knowledge x 0.5 credit = 4 credit"
+          "8 kiến thức x 0,5 tín dụng = 4 tín dụng"
         ]
       }
     ],
-    "examplesNote": "Các con số trên là mức ước lượng đơn giản để user dễ hình dung trước khi chạy."
+    "examplesNote": "Các con số trên là mức ước lượng đơn giản để người dùng dễ hình dung trước khi chạy."
   },
   "upgradePlan": {
     "title": "Nâng cấp gói đăng ký",
