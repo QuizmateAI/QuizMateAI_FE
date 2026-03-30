@@ -162,6 +162,88 @@ export const getQuizFull = async (quizId) => {
   return response;
 };
 
+function buildQuizFullFromParts(quiz, sections = [], questionsBySection = new Map(), answersByQuestion = new Map()) {
+  return {
+    ...quiz,
+    quizId: quiz?.quizId ?? quiz?.id,
+    sections: (sections || []).map((section) => ({
+      ...section,
+      questions: (questionsBySection.get(section.sectionId) || []).map((question) => ({
+        ...question,
+        answers: answersByQuestion.get(question.questionId) || [],
+      })),
+    })),
+  };
+}
+
+export const getQuizFullForAttempt = async (quizId) => {
+  try {
+    return await getQuizFull(quizId);
+  } catch (error) {
+    if (Number(error?.statusCode) !== 409) {
+      throw error;
+    }
+
+    const [quizRes, sectionsRes] = await Promise.all([
+      getQuizById(quizId),
+      getSectionsByQuiz(quizId),
+    ]);
+
+    const quiz = quizRes?.data || null;
+    const sections = sectionsRes?.data || [];
+
+    if (!quiz || sections.length === 0) {
+      throw error;
+    }
+
+    const questionsBySection = new Map();
+    const answersByQuestion = new Map();
+
+    const sectionQuestionEntries = await Promise.all(
+      sections.map(async (section) => {
+        try {
+          const questionsRes = await getQuestionsBySection(section.sectionId);
+          return [section.sectionId, questionsRes?.data || []];
+        } catch (sectionError) {
+          console.error('[QuizAPI] Failed to load questions for section:', section.sectionId, sectionError);
+          return [section.sectionId, []];
+        }
+      }),
+    );
+
+    sectionQuestionEntries.forEach(([sectionId, questions]) => {
+      questionsBySection.set(sectionId, questions);
+    });
+
+    const allQuestions = sectionQuestionEntries.flatMap(([, questions]) => questions || []);
+
+    const answerEntries = await Promise.all(
+      allQuestions.map(async (question) => {
+        try {
+          const answersRes = await getAnswersByQuestion(question.questionId);
+          return [question.questionId, answersRes?.data || []];
+        } catch (answerError) {
+          console.error('[QuizAPI] Failed to load answers for question:', question.questionId, answerError);
+          return [question.questionId, []];
+        }
+      }),
+    );
+
+    answerEntries.forEach(([questionId, answers]) => {
+      answersByQuestion.set(questionId, answers);
+    });
+
+    if (allQuestions.length === 0) {
+      throw error;
+    }
+
+    return {
+      data: buildQuizFullFromParts(quiz, sections, questionsBySection, answersByQuestion),
+      message: 'Fallback quiz full payload loaded from sections/questions',
+    };
+  }
+};
+
 // Tạo attempt mới hoặc trả lại attempt chưa hoàn thành
 export const startQuizAttempt = async (quizId, { isCompanionMode = false, isPracticeMode = true } = {}) => {
   const response = await api.post(`/quiz-attempts/start/${quizId}?isCompanionMode=${isCompanionMode}&isPracticeMode=${isPracticeMode}`);
@@ -171,6 +253,12 @@ export const startQuizAttempt = async (quizId, { isCompanionMode = false, isPrac
 // Lưu danh sách câu trả lời (upsert theo attempt + question)
 export const saveAttemptAnswers = async (attemptId, answers) => {
   const response = await api.put(`/quiz-attempts/${attemptId}/saveAnswer`, answers);
+  return response;
+};
+
+// Nộp một câu hỏi trong practice mode và nhận kết quả chấm ngay cho câu đó
+export const submitPracticeQuestion = async (attemptId, answer) => {
+  const response = await api.post(`/quiz-attempts/${attemptId}/practice/submit-question`, answer, { timeout: 60000 });
   return response;
 };
 

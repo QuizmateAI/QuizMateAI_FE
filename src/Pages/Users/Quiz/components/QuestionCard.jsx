@@ -46,6 +46,30 @@ function isSameAnswerValue(left, right) {
   return String(left ?? '') === String(right ?? '');
 }
 
+function isSameStringArray(left, right) {
+  const leftValues = Array.isArray(left) ? left : [];
+  const rightValues = Array.isArray(right) ? right : [];
+  if (leftValues.length !== rightValues.length) return false;
+  return leftValues.every((value, index) => value === rightValues[index]);
+}
+
+function isSameReviewState(left, right) {
+  if (left === right) return true;
+  if (!left && !right) return true;
+  if (!left || !right) return false;
+
+  return (
+    left.revealed === right.revealed
+    && left.locked === right.locked
+    && left.isCorrect === right.isCorrect
+    && left.gradingStatus === right.gradingStatus
+    && left.explanation === right.explanation
+    && isSameAnswerValue(left.answerValue, right.answerValue)
+    && isSameStringArray(left.correctTextAnswers, right.correctTextAnswers)
+    && isSameAnswerValue(left.correctAnswerIds, right.correctAnswerIds)
+  );
+}
+
 function areQuestionCardPropsEqual(prevProps, nextProps) {
   return (
     prevProps.question === nextProps.question
@@ -54,6 +78,7 @@ function areQuestionCardPropsEqual(prevProps, nextProps) {
     && prevProps.showResult === nextProps.showResult
     && prevProps.showExplanation === nextProps.showExplanation
     && prevProps.disabled === nextProps.disabled
+    && isSameReviewState(prevProps.reviewState, nextProps.reviewState)
     && isSameAnswerValue(prevProps.answerValue, nextProps.answerValue)
     && isSameAnswerValue(prevProps.selectedAnswers, nextProps.selectedAnswers)
   );
@@ -62,23 +87,35 @@ function areQuestionCardPropsEqual(prevProps, nextProps) {
 const QuestionCard = memo(function QuestionCard({
   question, questionNumber, totalQuestions,
   answerValue, selectedAnswers = [], onSelectAnswer, onTextAnswerChange,
-  showResult = false, showExplanation = false, disabled = false,
+  showResult = false, showExplanation = false, disabled = false, reviewState = null,
 }) {
   const isMultiple = question.type === 'MULTIPLE_CHOICE';
   const isTextQuestion = question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK';
+  const isReviewRevealed = showResult || reviewState?.revealed === true;
+  const isExplanationRevealed = showExplanation || reviewState?.revealed === true;
+  const isLocked = disabled || reviewState?.locked === true || isReviewRevealed;
   const normalizedSelectedAnswers = Array.isArray(answerValue)
     ? answerValue
     : Array.isArray(selectedAnswers)
       ? selectedAnswers
       : [];
   const textAnswer = typeof answerValue === 'string' ? answerValue : '';
-  const correctTextAnswers = getCorrectTextAnswers(question);
-  const gradingStatus = String(question?.gradingStatus || '').toUpperCase();
+  const correctTextAnswers = Array.isArray(reviewState?.correctTextAnswers) && reviewState.correctTextAnswers.length > 0
+    ? reviewState.correctTextAnswers
+    : getCorrectTextAnswers(question);
+  const gradingStatus = String(reviewState?.gradingStatus || question?.gradingStatus || '').toUpperCase();
   const isPendingGrading = gradingStatus === 'PENDING';
+  const correctAnswerIds = Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
+    ? reviewState.correctAnswerIds
+    : question.answers.filter(a => a.isCorrect).map(a => a.id);
 
   const isFullyCorrect = useMemo(() => {
     if (isPendingGrading) {
       return false;
+    }
+
+    if (typeof reviewState?.isCorrect === 'boolean') {
+      return reviewState.isCorrect;
     }
 
     if (typeof question.isCorrect === 'boolean') {
@@ -93,13 +130,12 @@ const QuestionCard = memo(function QuestionCard({
         .some((answer) => answer && answer === normalizedUserAnswer);
     }
 
-    const correctIds = question.answers.filter(a => a.isCorrect).map(a => a.id);
-    return correctIds.length === normalizedSelectedAnswers.length && correctIds.every(id => normalizedSelectedAnswers.includes(id));
-  }, [question.answers, question.isCorrect, isPendingGrading, isTextQuestion, textAnswer, correctTextAnswers, normalizedSelectedAnswers]);
+    return correctAnswerIds.length === normalizedSelectedAnswers.length && correctAnswerIds.every(id => normalizedSelectedAnswers.includes(id));
+  }, [correctAnswerIds, question.isCorrect, isPendingGrading, isTextQuestion, reviewState?.isCorrect, textAnswer, correctTextAnswers, normalizedSelectedAnswers]);
 
   const getStateClass = (answer) => {
-    if (showResult) {
-      if (answer.isCorrect) return 'quiz-answer-correct';
+    if (isReviewRevealed) {
+      if (correctAnswerIds.includes(answer.id)) return 'quiz-answer-correct';
       if (normalizedSelectedAnswers.includes(answer.id)) return 'quiz-answer-incorrect';
       return '';
     }
@@ -130,13 +166,13 @@ const QuestionCard = memo(function QuestionCard({
         <div className="space-y-3">
           <Input
             value={textAnswer}
-            disabled={disabled || showResult}
+            disabled={isLocked}
             onChange={(event) => onTextAnswerChange?.(event.target.value)}
             placeholder={question.type === 'FILL_IN_BLANK' ? 'Điền câu trả lời của bạn' : 'Nhập câu trả lời ngắn'}
             className="h-11 border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
 
-          {showResult && (
+          {isReviewRevealed && (
             <div className={cn(
               'rounded-lg border px-3 py-2 text-sm',
               isPendingGrading
@@ -159,14 +195,14 @@ const QuestionCard = memo(function QuestionCard({
             <button
               key={answer.id}
               type="button"
-              disabled={disabled || showResult}
+              disabled={isLocked}
               onClick={() => onSelectAnswer?.(answer.id)}
               className={cn(
                 'quiz-answer w-full flex items-center gap-3 p-3.5 rounded-lg border text-sm font-semibold text-left transition-all duration-300',
                 'text-slate-700 dark:text-slate-300',
                 getStateClass(answer),
                 getAnswerTailwind(answer),
-                (disabled || showResult) ? 'cursor-default' : 'cursor-pointer',
+                isLocked ? 'cursor-default' : 'cursor-pointer',
               )}
             >
               {isMultiple ? <CheckboxIndicator id={answer.id} /> : <RadioIndicator />}
@@ -176,7 +212,7 @@ const QuestionCard = memo(function QuestionCard({
         </div>
       )}
 
-      {showResult && (
+      {isReviewRevealed && (
         <div className="mt-3">
           {isPendingGrading
             ? <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">… Đang chấm bởi AI</span>
@@ -195,10 +231,10 @@ const QuestionCard = memo(function QuestionCard({
         </div>
       )}
 
-      {showExplanation && (
+      {isExplanationRevealed && (reviewState?.explanation || question.explanation) && (
         <div className="mt-3 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            <span className="font-semibold">Explanation: </span>{question.explanation}
+            <span className="font-semibold">Explanation: </span>{reviewState?.explanation || question.explanation}
           </p>
         </div>
       )}

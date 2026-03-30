@@ -15,7 +15,7 @@ vi.mock('@tanstack/react-query', () => ({
 }));
 
 vi.mock('@/api/QuizAPI', () => ({
-  getQuizFull: vi.fn(),
+  getQuizFullForAttempt: vi.fn(),
   startQuizAttempt: (...args) => mockStartQuizAttempt(...args),
   submitAttempt: (...args) => mockSubmitAttempt(...args),
   updateQuiz: vi.fn(),

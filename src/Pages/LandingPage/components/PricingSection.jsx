@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { Card } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
@@ -9,6 +10,7 @@ import { Check, CheckCircle2 } from 'lucide-react';
 const PricingSection = () => {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const navigate = useNavigate();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   return (
@@ -22,6 +24,19 @@ const PricingSection = () => {
         <p className={`text-base font-bold uppercase tracking-widest ${
           isDarkMode ? 'text-slate-500' : 'text-gray-400'
         }`}>{t('landingPage.pricing.subtitle')}</p>
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            className={`rounded-full px-6 font-bold ${
+              isDarkMode
+                ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+            }`}
+            onClick={() => navigate('/pricing')}
+          >
+            Pricing Guide
+          </Button>
+        </div>
       </div>
 
       <div className="container mx-auto px-6 grid md:grid-cols-3 gap-12 max-w-7xl items-center pb-12">

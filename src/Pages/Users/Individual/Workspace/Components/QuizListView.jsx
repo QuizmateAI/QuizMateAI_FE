@@ -149,6 +149,10 @@ function resolveVisibilityMeta(isCommunityShared, isDarkMode, t) {
   };
 }
 
+function resolveQuizNavigationId(quiz) {
+  return quiz?.quizId ?? quiz?.id ?? null;
+}
+
 function QuizListView({
   isDarkMode,
   onCreateQuiz,
@@ -175,6 +179,7 @@ function QuizListView({
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [deleteTargetQuiz, setDeleteTargetQuiz] = useState(null);
   const [sharingQuizId, setSharingQuizId] = useState(null);
   const [examStartQuiz, setExamStartQuiz] = useState(null);
   const fetchGuardRef = useRef({
@@ -229,15 +234,17 @@ function QuizListView({
     navigate(`/quiz/${mode}/${quizId}`, {
       state: {
         returnToQuizPath: resolvedReturnToPath,
+        ...(mode === 'practice' ? { autoStart: true } : {}),
         ...quizNavigationSourceState,
       },
     });
   }, [navigate, quizNavigationSourceState, resolvedReturnToPath]);
 
   const handleConfirmExamStart = useCallback(() => {
-    if (!examStartQuiz?.quizId) return;
+    const resolvedQuizId = resolveQuizNavigationId(examStartQuiz);
+    if (!resolvedQuizId) return;
 
-    navigate(`/quiz/exam/${examStartQuiz.quizId}`, {
+    navigate(`/quiz/exam/${resolvedQuizId}`, {
       state: {
         returnToQuizPath: resolvedReturnToPath,
         autoStart: true,
@@ -245,7 +252,7 @@ function QuizListView({
       },
     });
     setExamStartQuiz(null);
-  }, [examStartQuiz?.quizId, navigate, quizNavigationSourceState, resolvedReturnToPath]);
+  }, [examStartQuiz, navigate, quizNavigationSourceState, resolvedReturnToPath]);
 
   // Lấy danh sách quiz từ API theo context hiện tại (workspace/roadmap/phase/knowledge)
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
@@ -367,21 +374,28 @@ function QuizListView({
   }, [quizzes]);
 
   // Xử lý xóa quiz
-  const handleDeleteQuiz = useCallback(async (e, quizId) => {
+  const handleRequestDeleteQuiz = useCallback((e, quiz) => {
     e.stopPropagation();
     if (deletingId) return;
+    setDeleteTargetQuiz(quiz);
+  }, [deletingId]);
+
+  const handleConfirmDeleteQuiz = useCallback(async () => {
+    const quizId = Number(deleteTargetQuiz?.quizId ?? deleteTargetQuiz?.id);
+    if (!Number.isInteger(quizId) || quizId <= 0 || deletingId) return;
+
     setDeletingId(quizId);
     try {
       await deleteQuiz(quizId);
-      // Cập nhật danh sách sau khi xóa thành công
       setQuizzes((prev) => prev.filter((q) => q.quizId !== quizId));
+      setDeleteTargetQuiz(null);
     } catch (err) {
       console.error("Lỗi khi xóa quiz:", err);
       showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
     } finally {
       setDeletingId(null);
     }
-  }, [deletingId, showError, t]);
+  }, [deleteTargetQuiz, deletingId, showError, t]);
 
   // Lọc quiz theo trạng thái và tìm kiếm
   const filtered = useMemo(() => {
@@ -508,7 +522,7 @@ function QuizListView({
               const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
               return (
                 <div
-                  key={quiz.quizId}
+                  key={resolveQuizNavigationId(quiz)}
                   onClick={() => onViewQuiz?.(quiz)}
                   className={`relative rounded-xl border overflow-hidden min-h-[104px] cursor-pointer shadow-[0_10px_20px_rgba(51,51,51,0.12)] transition-all duration-300 group ${
                     isCommunityShared
@@ -693,7 +707,7 @@ function QuizListView({
                           </button>
                         ) : null}
                         <button
-                          onClick={(e) => handleDeleteQuiz(e, quiz.quizId)}
+                          onClick={(e) => handleRequestDeleteQuiz(e, quiz)}
                           disabled={deletingId === quiz.quizId}
                           className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-red-950/40 text-red-300" : "hover:bg-red-100 text-red-600"}`}
                           title={t("workspace.quiz.deleteQuiz")}
@@ -730,6 +744,45 @@ function QuizListView({
             </Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleConfirmExamStart}>
               {t("workspace.quiz.header.confirm", "Confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(deleteTargetQuiz)}
+        onOpenChange={(open) => {
+          if (!open && !deletingId) setDeleteTargetQuiz(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("workspace.quiz.deleteQuiz", "Xóa quiz")}</DialogTitle>
+            <DialogDescription className="space-y-2">
+              <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
+                {deleteTargetQuiz?.title}
+              </span>
+              <span className="block">
+                {t("workspace.quiz.deleteConfirm", "Bạn có chắc chắn không?")}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTargetQuiz(null)}
+              disabled={Boolean(deletingId)}
+            >
+              {t("workspace.quiz.close", "Đóng")}
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleConfirmDeleteQuiz}
+              disabled={Boolean(deletingId)}
+            >
+              {deletingId
+                ? t("workspace.quiz.actionButtons.deleting", "Deleting...")
+                : t("workspace.quiz.actionButtons.delete", "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

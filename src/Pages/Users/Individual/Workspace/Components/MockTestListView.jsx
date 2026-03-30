@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, ClipboardList, Clock, FolderOpen, Loader2, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { deleteQuiz, getQuizzesByScope } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace } from "@/api/RoadmapAPI";
 import { useToast } from "@/context/ToastContext";
@@ -31,6 +32,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
   const [roadmapIds, setRoadmapIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [deleteTargetQuiz, setDeleteTargetQuiz] = useState(null);
 
   const fetchMockTests = useCallback(async () => {
     if (!contextId) return;
@@ -84,27 +86,34 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
     } finally {
       setLoading(false);
     }
-  }, [contextId, contextType, t]);
+  }, [contextId, contextType]);
 
   useEffect(() => {
     fetchMockTests();
   }, [fetchMockTests]);
 
-  const handleDelete = useCallback(async (event, quizId) => {
+  const handleRequestDelete = useCallback((event, quiz) => {
     event.stopPropagation();
     if (deletingId) return;
+    setDeleteTargetQuiz(quiz);
+  }, [deletingId]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    const quizId = Number(deleteTargetQuiz?.quizId ?? deleteTargetQuiz?.id);
+    if (!Number.isInteger(quizId) || quizId <= 0 || deletingId) return;
 
     setDeletingId(quizId);
     try {
       await deleteQuiz(quizId);
       setMockTests((current) => current.filter((item) => item.quizId !== quizId));
+      setDeleteTargetQuiz(null);
     } catch (error) {
       console.error("Failed to delete mock test:", error);
       showError(error?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
     } finally {
       setDeletingId(null);
     }
-  }, [deletingId, showError, t]);
+  }, [deleteTargetQuiz, deletingId, showError, t]);
 
   const filteredMockTests = useMemo(() => {
     if (!searchQuery.trim()) return mockTests;
@@ -202,6 +211,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
           <div className="space-y-2">
             {filteredMockTests.map((mockTest) => {
               const statusStyle = STATUS_STYLE[mockTest.status] || STATUS_STYLE.DRAFT;
+              const currentQuizId = mockTest.quizId ?? mockTest.id;
 
               return (
                 <div
@@ -230,10 +240,10 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
                     {mockTest.roadmapName}
                   </span>
                   <button
-                    onClick={(event) => handleDelete(event, mockTest.quizId ?? mockTest.id)}
+                    onClick={(event) => handleRequestDelete(event, mockTest)}
                     className={`p-1.5 rounded-lg transition-all active:scale-95 ${isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"}`}
                   >
-                    {deletingId === (mockTest.quizId ?? mockTest.id)
+                    {deletingId === currentQuizId
                       ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" />
                       : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
                   </button>
@@ -243,6 +253,45 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
           </div>
         )}
       </div>
+
+      <Dialog
+        open={Boolean(deleteTargetQuiz)}
+        onOpenChange={(open) => {
+          if (!open && !deletingId) setDeleteTargetQuiz(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("workspace.quiz.deleteQuiz", "Xóa quiz")}</DialogTitle>
+            <DialogDescription className="space-y-2">
+              <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
+                {deleteTargetQuiz?.title}
+              </span>
+              <span className="block">
+                {t("workspace.quiz.deleteConfirm", "Bạn có chắc chắn không?")}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTargetQuiz(null)}
+              disabled={Boolean(deletingId)}
+            >
+              {t("workspace.quiz.close", "Đóng")}
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleConfirmDelete}
+              disabled={Boolean(deletingId)}
+            >
+              {deletingId
+                ? t("workspace.quiz.actionButtons.deleting", "Deleting...")
+                : t("workspace.quiz.actionButtons.delete", "Delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
