@@ -840,7 +840,8 @@
       "contributor": "Contributor",
       "canUpload": "Can upload",
       "noMembers": "No members found",
-      "you": "You"
+      "you": "You",
+      "setupComplete": "Setup Complete"
     },
     "workspace": {
       "createTitle": "Create New Workspace",
@@ -920,7 +921,7 @@
       "greeting": "Hi {{name}},",
       "manageAccount": "Manage your Account",
       "logout": "Log out",
-        "materialRequired": "Please select at least one material.",
+      "materialRequired": "Please select at least one material.",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service"
     }
@@ -1359,7 +1360,9 @@
         "companionDesc": "AI reads questions, you answer by voice",
         "practice": "Practice Mode",
         "practiceDesc": "See answers & explanations after each question"
-      }
+      },
+      "requireUpload": "Require Upload",
+      "uploadBtn": "Upload Btn"
     },
     "studio": {
       "title": "Studio",
@@ -1429,7 +1432,8 @@
       "cancel": "Cancel",
       "close": "Close",
       "tabFile": "Upload file",
-      "tabUrl": "URL"
+      "tabUrl": "URL",
+      "noData": "No Data"
     },
     "quiz": {
       "createTitle": "Create Quiz",
@@ -1670,7 +1674,10 @@
         "allDurationsRequired": "Please enter duration for all difficulty levels.",
         "mediumDurationMustBeGreaterThanEasy": "Medium difficulty duration must be greater than easy difficulty duration.",
         "hardDurationMustBeGreaterThanMedium": "Hard difficulty duration must be greater than medium difficulty duration.",
-        "timeDurationRequired": "Please enter total duration for the quiz."
+        "timeDurationRequired": "Please enter total duration for the quiz.",
+        "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
+        "minimumTimePerQuestion": "Minimum Time Per Question",
+        "minimumTimePerQuestionHint": "Minimum Time Per Question Hint"
       },
       "contextSelector": {
         "title": "Quiz Location",
@@ -1796,7 +1803,8 @@
         "noSections": "No sections found.",
         "section": "Section",
         "questions": "questions",
-        "noQuestions": "No questions in this section."
+        "noQuestions": "No questions in this section.",
+        "assign": "Assign"
       },
       "edit": {
         "title": "Edit Quiz",
@@ -1810,7 +1818,9 @@
         "saving": "Saving...",
         "cancel": "Cancel",
         "saveSuccess": "Quiz updated successfully!",
-        "saveFailed": "Failed to save quiz. Please try again."
+        "saveFailed": "Failed to save quiz. Please try again.",
+        "questionOption": "Question Option",
+        "selectQuestion": "Select Question"
       },
       "create": "Create Quiz",
       "createActive": "Create & Activate",
@@ -1869,7 +1879,8 @@
         "processingAction": "Processing...",
         "processing": "Processing your submission...",
         "confirmSubmitTitle": "Stop and submit your exam?",
-        "confirmSubmitDescription": "Your current answers will be submitted immediately."
+        "confirmSubmitDescription": "Your current answers will be submitted immediately.",
+        "starting": "Starting"
       },
       "practiceActions": {
         "confirmExitTitle": "Leave practice mode?",
@@ -1931,7 +1942,56 @@
         "recommendationsSection": "Next recommendations",
         "actionsSection": "Next actions",
         "questionList": "Question list",
-        "noReviewData": "No detailed data available to review this attempt."
+        "noReviewData": "No detailed data available to review this attempt.",
+        "assessmentLoading": "Assessment Loading",
+        "assessmentNoSummary": "Assessment No Summary",
+        "assessmentProcessing": "Assessment Processing",
+        "generateFromAssessmentFail": "Generate From Assessment Fail",
+        "generateFromAssessmentSuccess": "Generate From Assessment Success",
+        "generateQuizFromAssessment": "Generate Quiz From Assessment",
+        "incompleteAttempt": "Incomplete Attempt",
+        "loading": "Loading",
+        "nextQuizPlan": "Next Quiz Plan",
+        "pendingOrMissing": "Pending Or Missing",
+        "recurringMistakes": "Recurring Mistakes",
+        "refreshAssessment": "Refresh Assessment",
+        "resumeAttempt": "Resume Attempt",
+        "retryLoad": "Retry Load",
+        "strengths": "Strengths",
+        "unavailable": "Unavailable",
+        "unknownTopic": "Unknown Topic",
+        "waitingForResult": "Waiting For Result",
+        "weaknesses": "Weaknesses",
+        "wrong": "Wrong"
+      },
+      "answerLocked": "Answer Locked",
+      "close": "Close",
+      "common": {
+        "cancel": "Cancel"
+      },
+      "communityExplorer": {
+        "backToQuiz": "Back To Quiz",
+        "description": "Description",
+        "empty": "Empty",
+        "loadError": "Load Error",
+        "publicCount": "Public Count",
+        "publicQuiz": "Public Quiz",
+        "recommendedCount": "Recommended Count",
+        "searchPlaceholder": "Search Placeholder",
+        "title": "Title",
+        "topMatch": "Top Match"
+      },
+      "deleteConfirm": "Delete Confirm",
+      "history": {
+        "attempt": "Attempt",
+        "empty": "Empty",
+        "loading": "Loading"
+      },
+      "startExamPrompt": "Start Exam Prompt",
+      "tabs": {
+        "history": "History",
+        "overview": "Overview",
+        "questions": "Questions"
       }
     },
     "flashcard": {
@@ -1958,7 +2018,16 @@
         "additionalPrompt": "Additional prompt",
         "promptPlaceholder": "Enter additional instructions for AI...",
         "byCount": "By count",
-        "byPercent": "By percentage"
+        "byPercent": "By percentage",
+        "clozePercent": "Cloze Percent",
+        "distributionInvalid": "Distribution Invalid",
+        "distributionTitle": "Distribution Title",
+        "distributionValid": "Distribution Valid",
+        "imagePercent": "Image Percent",
+        "noActiveSelectedMaterials": "No Active Selected Materials",
+        "nonActiveMaterialsWarning": "Non Active Materials Warning",
+        "qaPercent": "Qa Percent",
+        "termPercent": "Term Percent"
       },
       "create": "Create Flashcard",
       "creating": "Creating...",
@@ -2017,7 +2086,8 @@
       "cardType": "Card Type",
       "emptyRoadmap": "No roadmaps yet.",
       "emptyPhase": "No phases yet.",
-      "emptyKnowledge": "No knowledge items yet."
+      "emptyKnowledge": "No knowledge items yet.",
+      "aiOnlyHint": "Ai Only Hint"
     },
     "roadmap": {
       "createTitle": "Create Roadmap",
@@ -2125,13 +2195,55 @@
         "view2KnowledgeDetail": "Knowledge details",
         "view2RoadmapHint": "Choose the roadmap, a phase, or a knowledge item above to inspect the matching details below.",
         "view2PhaseHint": "Click a phase above to inspect its description and post-learning list.",
-        "view2KnowledgeHint": "Click a knowledge item to inspect its details, quizzes, and flashcards."
+        "view2KnowledgeHint": "Click a knowledge item to inspect its details, quizzes, and flashcards.",
+        "knowledge": "Knowledge",
+        "preLearning": "Pre Learning"
       },
       "doubleClickToRename": "Double-click to rename",
       "noMockTestYet": "No mock test created yet.",
       "noPostLearningYet": "No post-learning created yet.",
       "save": "Save",
-      "descriptionLabel": "Description"
+      "descriptionLabel": "Description",
+      "aiSuggestTitle": "Ai Suggest Title",
+      "createKnowledgeAndPostLearning": "Create Knowledge And Post Learning",
+      "createPhaseButton": "Create Phase Button",
+      "emptyRoadmapDescription": "Empty Roadmap Description",
+      "emptyRoadmapTitle": "Empty Roadmap Title",
+      "generatingKnowledge": "Generating Knowledge",
+      "generatingKnowledgeQuiz": "Generating Knowledge Quiz",
+      "generatingPostLearning": "Generating Post Learning",
+      "generatingPreLearning": "Generating Pre Learning",
+      "loading": {
+        "description": "Description",
+        "title": "Title"
+      },
+      "nextStepTitle": "Next Step Title",
+      "noRoadmapYet": "No Roadmap Yet",
+      "phaseAiSuggestTitle": "Phase Ai Suggest Title",
+      "phaseDescriptionDropdown": "Phase Description Dropdown",
+      "phaseDialog": {
+        "createButton": "Create Button",
+        "creating": "Creating",
+        "description": "Description",
+        "existingMaterials": "Existing Materials",
+        "noMaterialYet": "No Material Yet",
+        "onlyActive": "Only Active",
+        "selectionCount": "Selection Count",
+        "title": "Title"
+      },
+      "phaseGenerating": {
+        "description": "Description",
+        "title": "Title"
+      },
+      "phaseReviewAssessedAt": "Đánh giá lúc",
+      "phaseReviewConfidence": "Độ tin cậy",
+      "phaseReviewSummaryDropdown": "Phase Review Summary Dropdown",
+      "phaseReviewTitle": "Đánh giá AI cho phase hiện tại",
+      "postLearningHelper": "Post Learning Helper",
+      "postLearningLocked": "Post Learning Locked",
+      "postLearningProgress": "Post Learning Progress",
+      "preLearningHelper": "Pre Learning Helper",
+      "title": "Title"
     },
     "mockTest": {
       "title": "Mock Test",
@@ -2691,7 +2803,9 @@
       "hasPersonalizedLearningAnalytic": "Personalized Learning Analytics",
       "hasAiTextReadingAndSummarization": "AI Text Reading & Summarization",
       "hasAdvancedAiConfiguration": "Advanced AI Configuration"
-    }
+    },
+    "paymentError": "Payment Error",
+    "vnpayError": "Vnpay Error"
   },
   "paymentResult": {
     "successTitle": "Payment Successful!",
@@ -2742,25 +2856,81 @@
     ],
     "bundleTitle": "Pricing by supported source type",
     "bundleDesc": "The system currently uses a simple pricing model so users can understand and estimate quickly. Each source type has one basic credit rule based on its main unit.",
-    "bundleHeaders": ["Source type", "Measured as", "Base credit"],
+    "bundleHeaders": [
+      "Source type",
+      "Measured as",
+      "Base credit"
+    ],
     "bundleTable": [
-      ["PDF", "Per page", "1 credit / page"],
-      ["SLIDE", "Per slide", "1 credit / slide"],
-      ["VIDEO", "Per minute", "1 credit / minute"],
-      ["AUDIO", "Per minute", "1 credit / minute"],
-      ["TEXT", "Per word count", "1 credit / 1000 words"],
-      ["DOCUMENT", "Per word count", "1 credit / 1000 words"],
-      ["EXCEL", "Per sheet", "1 credit / sheet"]
+      [
+        "PDF",
+        "Per page",
+        "1 credit / page"
+      ],
+      [
+        "SLIDE",
+        "Per slide",
+        "1 credit / slide"
+      ],
+      [
+        "VIDEO",
+        "Per minute",
+        "1 credit / minute"
+      ],
+      [
+        "AUDIO",
+        "Per minute",
+        "1 credit / minute"
+      ],
+      [
+        "TEXT",
+        "Per word count",
+        "1 credit / 1000 words"
+      ],
+      [
+        "DOCUMENT",
+        "Per word count",
+        "1 credit / 1000 words"
+      ],
+      [
+        "EXCEL",
+        "Per sheet",
+        "1 credit / sheet"
+      ]
     ],
     "unitTitle": "Credit table for core AI features",
     "unitDesc": "This table keeps only the core AI features so users can estimate cost more easily. For quizzes, pricing is based only on total question count, not on individual question types or per-question configs.",
-    "unitHeaders": ["Item", "Suggested credit", "Measured as"],
+    "unitHeaders": [
+      "Item",
+      "Suggested credit",
+      "Measured as"
+    ],
     "unitTable": [
-      ["Quiz generation", "1 credit / question", "Per question count"],
-      ["AI feedback after each quiz", "1 credit / attempt", "Per attempt"],
-      ["Flashcard basic", "0.5 credit / card", "Per card"],
-      ["AI phase generation inside roadmap", "1 credit / phase", "Per phase"],
-      ["AI knowledge generation inside phase", "0.5 credit / knowledge node", "Per knowledge node"]
+      [
+        "Quiz generation",
+        "1 credit / question",
+        "Per question count"
+      ],
+      [
+        "AI feedback after each quiz",
+        "1 credit / attempt",
+        "Per attempt"
+      ],
+      [
+        "Flashcard basic",
+        "0.5 credit / card",
+        "Per card"
+      ],
+      [
+        "AI phase generation inside roadmap",
+        "1 credit / phase",
+        "Per phase"
+      ],
+      [
+        "AI knowledge generation inside phase",
+        "0.5 credit / knowledge node",
+        "Per knowledge node"
+      ]
     ],
     "personalizationTitle": "Simple AI suggestions",
     "personalizationDesc": "These are basic and easy-to-understand suggestions that fit the current system scope.",
@@ -2870,5 +3040,96 @@
     "selectGroup": "Select a group to apply",
     "noLeaderGroups": "You are not a leader of any group.",
     "upgradeBtn": "Upgrade"
-  }
+  },
+  "Bloom Skills": "Bloom Skills",
+  "Dashboard": "Dashboard",
+  "Difficulty Level": "Difficulty Level",
+  "General Info": "General Info",
+  "Loading materials": {
+    "": {
+      "": {
+        "": ""
+      }
+    }
+  },
+  "Members": "Members",
+  "No description": "No description",
+  "No materials found in this workspace": {
+    "": ""
+  },
+  "Question Types": "Question Types",
+  "Select Materials": "Select Materials",
+  "Settings": "Settings",
+  "Total Questions": "Total Questions",
+  "agreeToTerms": "I agree to the",
+  "alreadyHaveAccount": "Already have an account?",
+  "and": "and",
+  "backToLogin": "Back to login",
+  "confirmPassword": "Confirm password",
+  "createAccount": "Create account",
+  "creditPackage": {
+    "add": "Add",
+    "addTitle": "Add Title",
+    "basicInfo": "Basic Info",
+    "confirmDelete": "Confirm Delete",
+    "confirmDeleteDesc": "Confirm Delete Desc",
+    "create": "Create",
+    "createSuccess": "Create Success",
+    "delete": "Delete",
+    "deleteSuccess": "Delete Success",
+    "deleting": "Deleting",
+    "desc": "Desc",
+    "edit": "Edit",
+    "editTitle": "Edit Title",
+    "empty": "Empty",
+    "form": {
+      "bonusCredit": "Bonus Credit",
+      "creditAmount": "Credit Amount",
+      "description": "Description",
+      "descriptionPlaceholder": "Description Placeholder",
+      "name": "Name",
+      "namePlaceholder": "Name Placeholder",
+      "price": "Price"
+    },
+    "formDesc": "Form Desc",
+    "nameRequired": "Name Required",
+    "save": "Save",
+    "search": "Search",
+    "stats": {
+      "active": "Active",
+      "maxCredit": "Max Credit",
+      "minPrice": "Min Price",
+      "total": "Total"
+    },
+    "submitting": "Submitting",
+    "table": {
+      "actions": "Actions",
+      "bonus": "Bonus",
+      "credit": "Credit",
+      "name": "Name",
+      "price": "Price",
+      "status": "Status"
+    },
+    "tableTitle": "Table Title",
+    "title": "Title",
+    "toggleStatus": "Toggle Status",
+    "updateStatusSuccess": "Update Status Success",
+    "updateSuccess": "Update Success"
+  },
+  "email": "Email",
+  "firstName": "First name",
+  "forgotPasswordSubtitle": "Enter your email to receive password reset instructions.",
+  "forgotPasswordTitle": "Forgot password?",
+  "lastName": "Last name",
+  "login": "Login",
+  "orLoginWith": "Or login with",
+  "orRegisterWith": "Or register with",
+  "password": "Password",
+  "privacyPolicies": "Privacy Policy",
+  "processing": "Processing...",
+  "signUpSubtitle": "Create your account to start learning with QuizMateAI.",
+  "signUpTitle": "Create an account",
+  "submit": "Submit",
+  "terms": "Terms of Service",
+  "workspaceSettings": "Workspace settings"
 }
