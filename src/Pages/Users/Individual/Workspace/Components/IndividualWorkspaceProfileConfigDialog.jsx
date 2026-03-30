@@ -464,8 +464,7 @@ function IndividualWorkspaceProfileConfigDialog({
   const isPrimaryActionBusy = isNavigationBusy || wizard.isWaitingForOverallReview;
   const progressFraction = stepIds.length > 1 ? (wizard.step - 1) / (stepIds.length - 1) : 0;
   const stepTransitionClass = 'animate-in fade-in-50 slide-in-from-bottom-3 zoom-in-95 duration-500';
-  const [isProfileConfirmOpen, setIsProfileConfirmOpen] = React.useState(false);
-  const [isTransitioningToProfileConfirm, setIsTransitioningToProfileConfirm] = React.useState(false);
+  const [isProfileConfirmView, setIsProfileConfirmView] = React.useState(false);
   const confirmationTitle = translateOrFallback(
     t,
     'workspace.profileConfig.confirmProfileDialog.title',
@@ -482,32 +481,26 @@ function IndividualWorkspaceProfileConfigDialog({
   );
 
   React.useEffect(() => {
-    if (!open && !isTransitioningToProfileConfirm) {
-      setIsProfileConfirmOpen(false);
+    if (!open) {
+      setIsProfileConfirmView(false);
     }
-  }, [open, isTransitioningToProfileConfirm]);
+  }, [open]);
 
-  function handleCloseProfileConfirm(reopenWizard = true) {
-    setIsProfileConfirmOpen(false);
-    setIsTransitioningToProfileConfirm(false);
-
-    if (reopenWizard) {
-      onOpenChange(true);
-    }
+  function handleCloseProfileConfirm() {
+    setIsProfileConfirmView(false);
   }
 
   async function handleConfirmedProfileUse() {
     const result = await wizard.handleSubmit();
     if (result?.ok && result?.shouldConfirm !== false) {
-      setIsTransitioningToProfileConfirm(false);
-      setIsProfileConfirmOpen(false);
+      setIsProfileConfirmView(false);
       await onConfirm?.();
       onOpenChange(false);
       return;
     }
 
     if (!result?.ok || result?.shouldConfirm === false) {
-      handleCloseProfileConfirm(true);
+      handleCloseProfileConfirm();
     }
   }
 
@@ -572,15 +565,24 @@ function IndividualWorkspaceProfileConfigDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        hideClose
-        className={cn(
-          'grid h-[88vh] w-[min(1240px,calc(100vw-16px))] max-w-none grid-rows-[auto,1fr,auto] gap-0 overflow-hidden rounded-[32px] border p-0 shadow-2xl',
-          shellClass,
-          fontClass
-        )}
-      >
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          setIsProfileConfirmView(false);
+        }
+        onOpenChange(nextOpen);
+      }}
+    >
+      {!isProfileConfirmView ? (
+        <DialogContent
+          hideClose
+          className={cn(
+            'grid h-[88vh] w-[min(1240px,calc(100vw-16px))] max-w-none grid-rows-[auto,1fr,auto] gap-0 overflow-hidden rounded-[32px] border p-0 shadow-2xl',
+            shellClass,
+            fontClass
+          )}
+        >
         <div
           className={cn(
             'pointer-events-none absolute inset-x-0 top-0 h-16',
@@ -870,9 +872,7 @@ function IndividualWorkspaceProfileConfigDialog({
                   if (!wizard.showValidationErrors(wizard.step)) {
                     return;
                   }
-                  setIsTransitioningToProfileConfirm(true);
-                  onOpenChange(false);
-                  setIsProfileConfirmOpen(true);
+                  setIsProfileConfirmView(true);
                 }}
                 className="rounded-full bg-emerald-600 px-6 text-white hover:bg-emerald-700"
               >
@@ -898,26 +898,16 @@ function IndividualWorkspaceProfileConfigDialog({
             ) : null}
           </div>
         </div>
-      </DialogContent>
-
-      <Dialog
-        open={isProfileConfirmOpen}
-        onOpenChange={(nextOpen) => {
-          if (nextOpen) {
-            setIsProfileConfirmOpen(true);
-            return;
-          }
-
-          handleCloseProfileConfirm(true);
-        }}
-      >
-      <DialogContent
-        className={cn(
-          'grid h-[88vh] w-[min(1240px,calc(100vw-16px))] max-w-none grid-rows-[auto,1fr,auto] gap-0 overflow-hidden rounded-[32px] border p-0 shadow-2xl',
-          shellClass,
-          fontClass
-        )}
-      >
+        </DialogContent>
+      ) : (
+        <DialogContent
+          hideClose
+          className={cn(
+            'grid h-[88vh] w-[min(1240px,calc(100vw-16px))] max-w-none grid-rows-[auto,1fr,auto] gap-0 overflow-hidden rounded-[32px] border p-0 shadow-2xl',
+            shellClass,
+            fontClass
+          )}
+        >
         <div
           className={cn(
             'pointer-events-none absolute inset-x-0 top-0 h-20',
@@ -962,7 +952,7 @@ function IndividualWorkspaceProfileConfigDialog({
 
               <button
                 type="button"
-                onClick={() => handleCloseProfileConfirm(true)}
+                onClick={handleCloseProfileConfirm}
                 className={cn(
                   'inline-flex h-9 w-9 items-center justify-center rounded-2xl border transition-all',
                   isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:border-slate-600' : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
@@ -1107,7 +1097,7 @@ function IndividualWorkspaceProfileConfigDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={() => handleCloseProfileConfirm(true)}
+            onClick={handleCloseProfileConfirm}
             className={cn(
               'rounded-full px-5',
               isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -1125,8 +1115,8 @@ function IndividualWorkspaceProfileConfigDialog({
             {actionCopy.confirmProfileUse}
           </Button>
         </DialogFooter>
-      </DialogContent>
-      </Dialog>
+        </DialogContent>
+      )}
     </Dialog>
   );
 }
