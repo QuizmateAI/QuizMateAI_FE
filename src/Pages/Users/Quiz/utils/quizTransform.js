@@ -6,11 +6,110 @@ const QUESTION_TYPE_TO_CARD = {
   shortAnswer: 'SHORT_ANSWER',
   trueFalse: 'TRUE_FALSE',
   fillBlank: 'FILL_IN_BLANK',
+  matching: 'MATCHING',
 };
 
 export function getCardQuestionType(questionTypeId) {
   const frontendType = QUESTION_TYPE_ID_MAP[questionTypeId] || 'multipleChoice';
   return QUESTION_TYPE_TO_CARD[frontendType] || 'SINGLE_CHOICE';
+}
+
+function trimToNull(value) {
+  const normalized = String(value ?? '').trim();
+  return normalized || null;
+}
+
+export function normalizeMatchingPairs(pairs = []) {
+  if (!Array.isArray(pairs) || pairs.length === 0) {
+    return [];
+  }
+
+  const pairsByLeftKey = new Map();
+  pairs.forEach((pair) => {
+    const leftKey = trimToNull(pair?.leftKey);
+    const rightKey = trimToNull(pair?.rightKey);
+    if (!leftKey || !rightKey) {
+      return;
+    }
+    pairsByLeftKey.set(leftKey, rightKey);
+  });
+
+  return Array.from(pairsByLeftKey.entries())
+    .sort((leftEntry, rightEntry) => leftEntry[0].localeCompare(rightEntry[0]))
+    .map(([leftKey, rightKey]) => ({ leftKey, rightKey }));
+}
+
+function extractMatchingPairs(answer) {
+  return normalizeMatchingPairs(answer?.matchingPairs);
+}
+
+export function getCorrectMatchingPairs(question) {
+  const explicitPairs = normalizeMatchingPairs(question?.correctMatchingPairs);
+  if (explicitPairs.length > 0) {
+    return explicitPairs;
+  }
+
+  const answers = Array.isArray(question?.answers) ? question.answers : [];
+  const correctAnswers = answers.filter((answer) => answer?.isCorrect);
+  const sourceAnswers = correctAnswers.length > 0 ? correctAnswers : answers;
+
+  return normalizeMatchingPairs(
+    sourceAnswers.flatMap((answer) => extractMatchingPairs(answer)),
+  );
+}
+
+function buildMatchingRightOptions(correctMatchingPairs = []) {
+  const seen = new Set();
+  return correctMatchingPairs
+    .map((pair) => trimToNull(pair?.rightKey))
+    .filter((rightKey) => {
+      if (!rightKey || seen.has(rightKey)) {
+        return false;
+      }
+      seen.add(rightKey);
+      return true;
+    });
+}
+
+function isMatchingAnswerValue(answerValue) {
+  return Boolean(answerValue) && typeof answerValue === 'object' && !Array.isArray(answerValue);
+}
+
+function extractMatchingAnswerValue(answerValue) {
+  return isMatchingAnswerValue(answerValue)
+    ? normalizeMatchingPairs(answerValue.matchingPairs)
+    : [];
+}
+
+function shouldIncludeMatchingPairs(answerValue, questionType = null) {
+  return questionType === 'MATCHING'
+    || (isMatchingAnswerValue(answerValue) && Array.isArray(answerValue.matchingPairs));
+}
+
+function buildAttemptAnswerPayload(questionId, answerValue, questionType = null) {
+  const selectedAnswerIds = Array.isArray(answerValue)
+    ? answerValue.filter(answerId => answerId != null)
+    : Array.isArray(answerValue?.selectedAnswerIds)
+      ? answerValue.selectedAnswerIds.filter(answerId => answerId != null)
+      : [];
+
+  const normalizedTextAnswer = typeof answerValue === 'string'
+    ? answerValue.trim()
+    : typeof answerValue?.textAnswer === 'string'
+      ? answerValue.textAnswer.trim()
+      : '';
+
+  const includeMatchingPairs = shouldIncludeMatchingPairs(answerValue, questionType);
+  const matchingPairs = includeMatchingPairs
+    ? extractMatchingAnswerValue(answerValue)
+    : undefined;
+
+  return {
+    questionId,
+    selectedAnswerIds,
+    textAnswer: normalizedTextAnswer || null,
+    ...(includeMatchingPairs ? { matchingPairs } : {}),
+  };
 }
 
 /**
@@ -39,7 +138,14 @@ export function normalizeQuizData(apiQuiz) {
   const sections = apiQuiz.sections || [];
   for (const section of sections) {
     for (const q of section.questions || []) {
-      const cardType = getCardQuestionType(q.questionTypeId);
+      const normalizedAnswers = (q.answers || []).map(a => ({
+        id: a.answerId,
+        content: a.content,
+        isCorrect: a.isCorrect,
+        matchingPairs: normalizeMatchingPairs(a.matchingPairs),
+      }));
+      const correctMatchingPairs = getCorrectMatchingPairs({ answers: normalizedAnswers });
+      const cardType = correctMatchingPairs.length > 0 ? 'MATCHING' : getCardQuestionType(q.questionTypeId);
       const normalizedTimeLimit = isTotalTimerMode
         ? 0
         : Math.max(1, Number(q.duration) || 0);
@@ -51,11 +157,9 @@ export function normalizeQuizData(apiQuiz) {
         score: q.score || 0,
         explanation: q.explanation || '',
         timeLimit: normalizedTimeLimit,
-        answers: (q.answers || []).map(a => ({
-          id: a.answerId,
-          content: a.content,
-          isCorrect: a.isCorrect,
-        })),
+        answers: normalizedAnswers,
+        correctMatchingPairs,
+        matchingRightOptions: buildMatchingRightOptions(correctMatchingPairs),
       });
     }
   }
@@ -77,6 +181,7 @@ export function normalizeQuizData(apiQuiz) {
 
 export function mapSavedAnswersToState(savedAnswers = []) {
   return savedAnswers.reduce((result, savedAnswer) => {
+    const matchingPairs = normalizeMatchingPairs(savedAnswer?.matchingPairs);
     const selectedAnswerIds = Array.isArray(savedAnswer?.selectedAnswerIds)
       ? savedAnswer.selectedAnswerIds.filter(answerId => answerId != null)
       : [];
@@ -84,7 +189,9 @@ export function mapSavedAnswersToState(savedAnswers = []) {
       ? savedAnswer.textAnswer
       : '';
 
-    if (selectedAnswerIds.length > 0) {
+    if (matchingPairs.length > 0) {
+      result[savedAnswer.questionId] = { matchingPairs };
+    } else if (selectedAnswerIds.length > 0) {
       result[savedAnswer.questionId] = selectedAnswerIds;
     } else if (textAnswer.trim()) {
       result[savedAnswer.questionId] = textAnswer;
@@ -104,6 +211,7 @@ export function getFirstIncompleteQuestionIndex(questions = [], savedAnswers = [
       .filter((savedAnswer) => hasAnswerValue({
         selectedAnswerIds: savedAnswer?.selectedAnswerIds,
         textAnswer: savedAnswer?.textAnswer,
+        matchingPairs: savedAnswer?.matchingPairs,
       }))
       .map((savedAnswer) => Number(savedAnswer?.questionId))
       .filter((questionId) => Number.isFinite(questionId)),
@@ -123,7 +231,9 @@ export function hasAnswerValue(answerValue) {
   }
 
   if (answerValue && typeof answerValue === 'object') {
-    return hasAnswerValue(answerValue.selectedAnswerIds) || hasAnswerValue(answerValue.textAnswer);
+    return hasAnswerValue(answerValue.selectedAnswerIds)
+      || hasAnswerValue(answerValue.textAnswer)
+      || hasAnswerValue(answerValue.matchingPairs);
   }
 
   return false;
@@ -174,24 +284,8 @@ export function buildSavePayload(answers) {
         return payload;
       }
 
-      const selectedAnswerIds = Array.isArray(answerValue)
-        ? answerValue.filter(answerId => answerId != null)
-        : [];
-      const textAnswer = typeof answerValue === 'string'
-        ? answerValue.trim()
-        : typeof answerValue?.textAnswer === 'string'
-          ? answerValue.textAnswer.trim()
-          : null;
-      const normalizedSelectedAnswerIds = Array.isArray(answerValue?.selectedAnswerIds)
-        ? answerValue.selectedAnswerIds.filter(answerId => answerId != null)
-        : selectedAnswerIds;
-
       // Keep empty answers in the payload so the backend can clear previously saved data.
-      payload.push({
-        questionId: normalizedQuestionId,
-        selectedAnswerIds: normalizedSelectedAnswerIds,
-        textAnswer: textAnswer || null,
-      });
+      payload.push(buildAttemptAnswerPayload(normalizedQuestionId, answerValue));
 
       return payload;
     }, []);
@@ -205,48 +299,23 @@ export function buildSubmitPayload(questions = [], answers = {}) {
   return (questions || []).map((question) => {
     const questionId = Number(question?.id);
     const answerValue = answers?.[question?.id];
-
-    const selectedAnswerIds = Array.isArray(answerValue)
-      ? answerValue.filter(answerId => answerId != null)
-      : Array.isArray(answerValue?.selectedAnswerIds)
-        ? answerValue.selectedAnswerIds.filter(answerId => answerId != null)
-        : [];
-
-    const normalizedTextAnswer = typeof answerValue === 'string'
-      ? answerValue.trim()
-      : typeof answerValue?.textAnswer === 'string'
-        ? answerValue.textAnswer.trim()
-        : '';
-
-    return {
-      questionId,
-      selectedAnswerIds,
-      textAnswer: normalizedTextAnswer || null,
-    };
+    return buildAttemptAnswerPayload(questionId, answerValue, question?.type);
   }).filter(item => Number.isFinite(item.questionId));
 }
 
-export function buildSingleQuestionPayload(questionId, answerValue) {
-  const normalizedQuestionId = Number(questionId);
+export function buildSingleQuestionPayload(questionOrId, answerValue) {
+  const normalizedQuestionId = Number(
+    typeof questionOrId === 'object' && questionOrId !== null
+      ? questionOrId.id
+      : questionOrId,
+  );
   if (!Number.isFinite(normalizedQuestionId)) {
     return null;
   }
 
-  const selectedAnswerIds = Array.isArray(answerValue)
-    ? answerValue.filter(answerId => answerId != null)
-    : Array.isArray(answerValue?.selectedAnswerIds)
-      ? answerValue.selectedAnswerIds.filter(answerId => answerId != null)
-      : [];
+  const questionType = typeof questionOrId === 'object' && questionOrId !== null
+    ? questionOrId.type
+    : null;
 
-  const normalizedTextAnswer = typeof answerValue === 'string'
-    ? answerValue.trim()
-    : typeof answerValue?.textAnswer === 'string'
-      ? answerValue.textAnswer.trim()
-      : '';
-
-  return {
-    questionId: normalizedQuestionId,
-    selectedAnswerIds,
-    textAnswer: normalizedTextAnswer || null,
-  };
+  return buildAttemptAnswerPayload(normalizedQuestionId, answerValue, questionType);
 }

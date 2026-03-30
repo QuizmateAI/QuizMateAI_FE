@@ -165,6 +165,13 @@ export default function ExamQuizPage() {
     setAnswers(prev => ({ ...prev, [questionId]: textAnswer }));
   }, []);
 
+  const updateMatchingAnswer = useCallback((questionId, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: value,
+    }));
+  }, []);
+
   const handleStart = useCallback(async () => {
     if (isStarting) return;
 
@@ -380,11 +387,12 @@ export default function ExamQuizPage() {
             answerValue={answers[q.id]}
             onSelectAnswer={(answerId) => selectAnswer(q.id, answerId, q.type === 'MULTIPLE_CHOICE')}
             onTextAnswerChange={(value) => updateTextAnswer(q.id, value)}
+            onMatchingAnswerChange={(value) => updateMatchingAnswer(q.id, value)}
           />
         </div>
       );
     })
-  ), [answers, currentPage, itemsPerPage, paginatedQuestions, quiz?.questions.length, selectAnswer, updateTextAnswer]);
+  ), [answers, currentPage, itemsPerPage, paginatedQuestions, quiz?.questions.length, selectAnswer, updateMatchingAnswer, updateTextAnswer]);
 
   const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
@@ -505,6 +513,7 @@ export default function ExamQuizPage() {
           answers={answers}
           onSelectAnswer={selectAnswer}
           onTextAnswerChange={updateTextAnswer}
+          onMatchingAnswerChange={updateMatchingAnswer}
           onSubmit={handleSubmit}
           attemptId={attemptId}
           attemptStartedAt={attemptStartedAt}

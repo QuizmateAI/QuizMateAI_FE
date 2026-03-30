@@ -11,10 +11,12 @@ import QuizHeader from './components/QuizHeader';
 import { getQuizFullForAttempt, startQuizAttempt, submitAttempt, submitPracticeQuestion, updateQuiz } from '@/api/QuizAPI';
 import {
   buildSingleQuestionPayload,
+  getCorrectMatchingPairs,
   getCorrectTextAnswers,
   getFirstIncompleteQuestionIndex,
   hasAnswerValue,
   mapSavedAnswersToState,
+  normalizeMatchingPairs,
   normalizeQuizData,
 } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
@@ -27,12 +29,17 @@ function normalizeTextValue(value) {
 }
 
 function extractAnswerValue(source) {
+  const matchingPairs = normalizeMatchingPairs(source?.matchingPairs);
   const selectedAnswerIds = Array.isArray(source?.selectedAnswerIds)
     ? source.selectedAnswerIds.filter((answerId) => answerId != null)
     : [];
   const textAnswer = typeof source?.textAnswer === 'string'
     ? source.textAnswer
     : '';
+
+  if (matchingPairs.length > 0) {
+    return { matchingPairs };
+  }
 
   if (selectedAnswerIds.length > 0) {
     return selectedAnswerIds;
@@ -113,12 +120,24 @@ function extractCorrectTextAnswers(question, rawResult) {
   return getCorrectTextAnswers(question);
 }
 
+function extractCorrectMatchingPairs(question, rawResult) {
+  const result = extractNestedResult(rawResult);
+
+  if (Array.isArray(result?.correctMatchingPairs) && result.correctMatchingPairs.length > 0) {
+    return normalizeMatchingPairs(result.correctMatchingPairs);
+  }
+
+  return getCorrectMatchingPairs(question);
+}
+
 function evaluateSubmittedQuestion(question, answerValue, rawResult) {
   const result = extractNestedResult(rawResult);
   const gradingStatus = String(result?.gradingStatus || '').toUpperCase();
   const isTextQuestion = question?.type === 'SHORT_ANSWER' || question?.type === 'FILL_IN_BLANK';
+  const isMatchingQuestion = question?.type === 'MATCHING';
   const correctAnswerIds = extractCorrectAnswerIds(question, result);
   const correctTextAnswers = extractCorrectTextAnswers(question, result);
+  const correctMatchingPairs = extractCorrectMatchingPairs(question, result);
 
   let isCorrect = null;
   if (typeof result?.isCorrect === 'boolean') {
@@ -126,7 +145,13 @@ function evaluateSubmittedQuestion(question, answerValue, rawResult) {
   } else if (typeof result?.correct === 'boolean') {
     isCorrect = result.correct;
   } else if (gradingStatus !== 'PENDING') {
-    if (isTextQuestion) {
+    if (isMatchingQuestion) {
+      const submittedMatchingPairs = normalizeMatchingPairs(answerValue?.matchingPairs);
+      const correctPairMap = new Map(correctMatchingPairs.map((pair) => [pair.leftKey, pair.rightKey]));
+      isCorrect = submittedMatchingPairs.length === correctMatchingPairs.length
+        && submittedMatchingPairs.length > 0
+        && submittedMatchingPairs.every((pair) => correctPairMap.get(pair.leftKey) === pair.rightKey);
+    } else if (isTextQuestion) {
       const normalizedTextAnswer = normalizeTextValue(answerValue);
       isCorrect = correctTextAnswers
         .map(normalizeTextValue)
@@ -145,6 +170,7 @@ function evaluateSubmittedQuestion(question, answerValue, rawResult) {
     gradingStatus,
     correctAnswerIds,
     correctTextAnswers,
+    correctMatchingPairs,
     explanation: result?.explanation || question?.explanation || '',
   };
 }
@@ -336,6 +362,15 @@ export default function PracticeQuizPage() {
     setAnswers((prev) => ({ ...prev, [questionId]: textAnswer }));
   }, []);
 
+  const updateMatchingAnswer = useCallback((questionId, value) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: {
+        matchingPairs: normalizeMatchingPairs(value?.matchingPairs),
+      },
+    }));
+  }, []);
+
   const handleStart = useCallback(async () => {
     if (isStarting) return;
 
@@ -390,7 +425,7 @@ export default function PracticeQuizPage() {
     setActionError('');
 
     try {
-      const payload = buildSingleQuestionPayload(currentQuestion.id, currentAnswerValue);
+      const payload = buildSingleQuestionPayload(currentQuestion, currentAnswerValue);
       if (!payload) {
         throw new Error(t('workspace.quiz.practiceActions.invalidAnswer', 'Câu trả lời hiện tại không hợp lệ.'));
       }
@@ -608,6 +643,7 @@ export default function PracticeQuizPage() {
                 answerValue={currentAnswerValue}
                 onSelectAnswer={(answerId) => selectAnswer(currentQuestion.id, answerId, currentQuestion.type === 'MULTIPLE_CHOICE')}
                 onTextAnswerChange={(value) => updateTextAnswer(currentQuestion.id, value)}
+                onMatchingAnswerChange={(value) => updateMatchingAnswer(currentQuestion.id, value)}
                 reviewState={currentQuestionResult}
                 disabled={isCheckingAnswer}
               />

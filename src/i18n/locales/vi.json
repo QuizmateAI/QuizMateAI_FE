@@ -1480,7 +1480,7 @@
         "mockTest": "Mock Test",
         "postLearning": "Post-learning",
         "prelearning": "Đánh giá trước học",
-        "createFlashcard": "Tạo flashcard",
+        "createFlashcard": "Tạo thẻ ghi nhớ",
         "createQuiz": "Tạo bài kiểm tra"
       },
       "outputs": "Kết quả đã tạo",
@@ -1641,7 +1641,8 @@
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
         "trueFalse": "Đúng / Sai",
         "fillBlank": "Điền chỗ trống",
-        "shortAnswer": "Trả lời ngắn"
+        "shortAnswer": "Trả lời ngắn",
+        "matching": "Nối đáp án"
       },
       "difficulty": "Độ khó",
       "difficultyLevels": {
@@ -1660,7 +1661,8 @@
       "intentLabels": {
         "PRE_LEARNING": "Trước khi học",
         "POST_LEARNING": "Sau khi học",
-        "REVIEW": "Ôn tập"
+        "REVIEW": "Ôn tập",
+        "PRACTICE": "Luyện tập"
       },
       "statusLabels": {
         "ACTIVE": "Đang hoạt động",
@@ -2016,6 +2018,12 @@
         "checkFailed": "Kiểm tra câu trả lời thất bại. Vui lòng thử lại.",
         "invalidAnswer": "Câu trả lời hiện tại không hợp lệ."
       },
+      "matching": {
+        "dragInstruction": "Kéo các mục bên dưới vào ô tương ứng để ghép đôi.",
+        "dropHere": "Kéo đáp án vào đây",
+        "answerPool": "Đáp án",
+        "allMatched": "Tất cả đã được ghép đôi!"
+      },
       "result": {
         "title": "Kết quả",
         "notFound": "Không tìm thấy kết quả",
@@ -2131,9 +2139,10 @@
         "byPercent": "Theo phần trăm",
         "clozePercent": "Tỷ lệ điền khuyết",
         "distributionInvalid": "Phân bổ chưa hợp lệ",
-        "distributionTitle": "Phân bổ loại flashcard",
-        "distributionValid": "Phân bổ hợp lệ",
+        "distributionTitle": "Phân bổ loại thẻ ghi nhớ",
+        "distributionValid": "{{sum}}/{{target}} {{unit}}",
         "imagePercent": "Tỷ lệ hình ảnh",
+        "lockLimitHint": "Khóa tối đa {{count}} loại. Các loại còn lại sẽ tự cân bằng.",
         "noActiveSelectedMaterials": "Không có tài liệu đang hoạt động nào được chọn",
         "nonActiveMaterialsWarning": "Một số tài liệu đã chọn hiện không còn hoạt động",
         "qaPercent": "Tỷ lệ hỏi đáp",
@@ -2198,8 +2207,8 @@
       "emptyPhase": "Chưa có Giai đoạn nào.",
       "emptyKiến thức": "Chưa có Kiến thức nào.",
       "aiOnlyHint": "Tính năng này chỉ dùng AI",
-      "createFirstFlashcard": "Tạo bộ flashcard đầu tiên",
-      "noFlashcards": "Bạn chưa có flashcard nào."
+      "createFirstFlashcard": "Tạo bộ thẻ ghi nhớ đầu tiên",
+      "noFlashcards": "Bạn chưa có thẻ ghi nhớ nào."
     },
     "roadmap": {
       "createTitle": "Tạo Lộ trình học tập",
@@ -2320,7 +2329,7 @@
       "noPostLearningYet": "Chưa có bài học sau giai đoạn nào.",
       "save": "Lưu",
       "descriptionLabel": "Mô tả",
-      "addFlashcard": "Thêm flashcard",
+      "addFlashcard": "Thêm thẻ ghi nhớ",
       "addKnowledge": "Thêm kiến thức",
       "addQuiz": "Thêm bài kiểm tra",
       "aiSuggestTitle": "Gợi ý từ AI",
@@ -2338,7 +2347,7 @@
         "title": "Đang tải lộ trình"
       },
       "nextStepTitle": "Bước tiếp theo",
-      "noFlashcardYet": "Chưa có flashcard nào được tạo.",
+      "noFlashcardYet": "Chưa có thẻ ghi nhớ nào được tạo.",
       "noQuizYet": "Chưa có bài kiểm tra nào được tạo.",
       "noRoadmapYet": "Chưa có lộ trình nào",
       "phaseAiSuggestTitle": "Gợi ý AI cho giai đoạn",
@@ -2443,7 +2452,7 @@
         "group": "Nhóm"
       }
     },
-    "confirmDeleteFlashcard": "Bạn có chắc muốn xóa bộ flashcard này không?"
+    "confirmDeleteFlashcard": "Bạn có chắc muốn xóa bộ thẻ ghi nhớ này không?"
   },
   "userPage": {
     "title": "Quản lý người dùng",
