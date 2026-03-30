@@ -401,6 +401,9 @@ export default function QuizResultPage() {
         answers: detailQuestion?.answers || [],
         selectedAnswerIds: attemptQuestion.selectedAnswerIds || [],
         textAnswer: attemptQuestion.textAnswer || '',
+        matchingPairs: attemptQuestion.matchingPairs || [],
+        correctMatchingPairs: attemptQuestion.correctMatchingPairs || detailQuestion?.correctMatchingPairs || [],
+        matchingRightOptions: detailQuestion?.matchingRightOptions || [],
         isCorrect: evaluatedCorrect,
         gradingStatus,
         questionScore: attemptQuestion.questionScore || 0,
@@ -1042,21 +1045,18 @@ export default function QuizResultPage() {
                 const isPending = String(q?.gradingStatus || '').toUpperCase() === 'PENDING';
                 const isCorrect = q.isCorrect === true;
                 return (
-                <div key={q.id} className="relative" ref={el => { if (el) questionRefs.current[globalIdx] = el; }}>
-                  {/* Correct/incorrect badge */}
-                  <div className={cn(
-                    'absolute -left-2 -top-2 z-10 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold',
-                    isPending
-                      ? 'bg-amber-500'
-                      : (isCorrect ? 'bg-emerald-500' : 'bg-red-500')
-                  )}>
-                    {isPending ? '…' : (isCorrect ? '✓' : '✗')}
-                  </div>
+                <div key={q.id} ref={el => { if (el) questionRefs.current[globalIdx] = el; }}>
                   <QuestionCard
                     question={q}
                     questionNumber={globalIdx + 1}
                     totalQuestions={reviewQuestions.length}
-                    answerValue={q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK' ? q.textAnswer : q.selectedAnswerIds}
+                    answerValue={
+                      q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK'
+                        ? q.textAnswer
+                        : q.type === 'MATCHING'
+                          ? { matchingPairs: q.matchingPairs }
+                          : q.selectedAnswerIds
+                    }
                     showResult
                     showExplanation
                     disabled
@@ -1101,7 +1101,7 @@ export default function QuizResultPage() {
                   </div>
                 </div>
 
-                <div className="grid max-h-[58vh] grid-cols-5 gap-2 overflow-y-auto pr-1 pb-1">
+                <div className="grid max-h-[58vh] grid-cols-5 gap-1.5 overflow-y-auto p-1">
                   {navQuestions.map((q, idx) => {
                     const globalIdx = navStartIndex + idx;
                     const isPending = String(q?.gradingStatus || '').toUpperCase() === 'PENDING';
@@ -1112,14 +1112,14 @@ export default function QuizResultPage() {
                         key={q.id}
                         onClick={() => jumpToQuestion(globalIdx)}
                         className={cn(
-                          'h-9 w-9 rounded-lg border text-xs font-semibold transition-all duration-200 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-slate-900',
+                          'aspect-square w-full rounded-lg border text-xs font-semibold transition-all duration-200 focus-visible:outline-none',
                           isPending
                             ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
                             : (isCorrect
                               ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
                               : 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35'),
                           inCurrentPage
-                            ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-900'
+                            ? 'ring-2 ring-blue-500 dark:ring-blue-400'
                             : ''
                         )}
                       >

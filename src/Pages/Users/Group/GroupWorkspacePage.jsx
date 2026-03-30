@@ -739,14 +739,14 @@ function GroupWorkspacePage() {
 
   const handleCreateFlashcard = useCallback(async () => {
     if (!canCreateContent) {
-      showInfo(currentLang === 'en' ? 'Member cannot create flashcards.' : 'Member không có quyền tạo flashcard.');
+      showInfo(currentLang === 'en' ? 'Member cannot create flashcards.' : 'Member không có quyền tạo thẻ ghi nhớ.');
       return;
     }
     setActiveView('flashcard');
   }, [canCreateContent, currentLang, showInfo]);
   const handleViewFlashcard = useCallback((fc) => { setSelectedFlashcard(fc); setActiveView('flashcardDetail'); }, []);
   const handleDeleteFlashcard = useCallback(async (fc) => {
-    if (!window.confirm('Bạn có chắc muốn xóa bộ flashcard này?')) return;
+    if (!window.confirm(t('workspace.confirmDeleteFlashcard'))) return;
     try {
       const { deleteFlashcardSet } = await import('@/api/FlashcardAPI');
       await deleteFlashcardSet(fc.flashcardSetId);
@@ -754,7 +754,7 @@ function GroupWorkspacePage() {
     } catch (err) {
       console.error('Xóa flashcard thất bại:', err);
     }
-  }, []);
+  }, [t]);
 
   const handleCreateRoadmap = useCallback(async (data) => {
     if (!canCreateContent) {
@@ -812,7 +812,7 @@ function GroupWorkspacePage() {
     dashboard: { vi: 'Dashboard', en: 'Dashboard', icon: null },
     members: { vi: 'Quản lý thành viên', en: 'Member Management', icon: Users },
     documents: { vi: 'Quản lý tài liệu', en: 'Document Management', icon: FolderOpen },
-    flashcard: { vi: 'Flashcard', en: 'Flashcard', icon: BookOpen },
+    flashcard: { vi: 'Thẻ ghi nhớ', en: 'Flashcard', icon: BookOpen },
     quiz: { vi: 'Quiz', en: 'Quiz', icon: PenLine },
     roadmap: { vi: 'Roadmap', en: 'Roadmap', icon: Map },
     mockTest: { vi: 'Mock Test', en: 'Mock Test', icon: ClipboardList },

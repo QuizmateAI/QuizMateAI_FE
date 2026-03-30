@@ -639,6 +639,35 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                                             </span>
                                             <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
                                           </div>
+                                        ) : typeName === "matching" ? (
+                                          (() => {
+                                            const correctAns = answers.find((a) => a.isCorrect);
+                                            let pairs = [];
+                                            if (correctAns?.content) {
+                                              try { pairs = JSON.parse(correctAns.content); } catch { pairs = []; }
+                                            }
+                                            if (!Array.isArray(pairs) || pairs.length === 0) {
+                                              return <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>Không có dữ liệu ghép đôi</span>;
+                                            }
+                                            return (
+                                              <div className="space-y-1.5">
+                                                {pairs.map((pair, pIdx) => (
+                                                  <div key={pIdx} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                                                    isDarkMode ? "bg-emerald-950/30 border border-emerald-800/50" : "bg-emerald-50 border border-emerald-200"
+                                                  }`}>
+                                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                                      isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
+                                                    }`}>{pIdx + 1}</span>
+                                                    <span className={`font-semibold ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>{pair.leftKey}</span>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${isDarkMode ? "text-emerald-600" : "text-emerald-400"}`}>
+                                                      <path d="M5 12h14M13 6l6 6-6 6" />
+                                                    </svg>
+                                                    <span className={isDarkMode ? "text-emerald-300" : "text-emerald-700"}>{pair.rightKey}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            );
+                                          })()
                                         ) : (
                                           answers.map((ans, aIdx) => (
                                             <div key={ans.answerId} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
