@@ -16,7 +16,7 @@ i18n
       vi: { translation: vi }
     },
     lng: savedLanguage, // Ngôn ngữ mặc định
-    fallbackLng: 'vi', // Ngôn ngữ dự phòng
+    fallbackLng: false,
     interpolation: {
       escapeValue: false // React đã tự escape XSS
     }
