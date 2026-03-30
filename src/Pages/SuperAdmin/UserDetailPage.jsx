@@ -1,24 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, User, LayoutDashboard, FolderKanban, UsersRound,
-  ListChecks, Activity, CreditCard, ChevronDown, ChevronRight, User as UserIcon,
+  Activity, CreditCard, ChevronDown, ChevronRight, User as UserIcon,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import ListSpinner from '@/Components/ui/ListSpinner';
+import { unwrapApiData, unwrapApiList } from '@/Utils/apiResponse';
 import {
   getUserById,
   getWorkspacesByUserId,
+  getWorkspaceSnapshotByUserId,
   getGroupsByUserId,
   getUserSubscription,
   getAuditLogs,
   getGroupDetail,
 } from '@/api/ManagementSystemAPI';
-import { getRoadmapsByWorkspace } from '@/api/WorkspaceAPI';
+import {
+  normalizeGroupWorkspaceProfile,
+  normalizeIndividualWorkspaceProfile,
+} from '@/api/WorkspaceAPI';
+import UserWorkspaceExplorer from './Components/UserWorkspaceExplorer';
 
 function GroupExpandContent({ group, isDarkMode, t }) {
   return (
@@ -77,6 +83,61 @@ const TABS = [
   { id: 'subscription', labelKey: 'userDetail.tabs.subscription', icon: CreditCard },
 ];
 
+function extractApiCollection(response) {
+  return unwrapApiList(response);
+}
+
+function sanitizeDisplayText(value) {
+  if (value == null) return '';
+  const trimmed = String(value).trim();
+  const normalized = trimmed.toLowerCase();
+  if (
+    !trimmed
+    || normalized === 'null'
+    || normalized === 'undefined'
+    || normalized === 'description null'
+    || normalized === 'description undefined'
+  ) {
+    return '';
+  }
+  return trimmed;
+}
+
+function normalizeWorkspaceMaterials(items = []) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    ...item,
+    materialId: item?.materialId ?? item?.id ?? item?.sourceId ?? null,
+    title: sanitizeDisplayText(item?.title || item?.name),
+    materialType: item?.materialType || item?.type || item?.sourceType || item?.fileType || '',
+    status: item?.status || item?.moderationState || '',
+    uploadedAt: item?.uploadedAt || item?.createdAt || item?.updatedAt || null,
+  }));
+}
+
+function normalizeWorkspaceRoadmaps(items = []) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    ...item,
+    roadmapId: item?.roadmapId ?? item?.id ?? null,
+    title: sanitizeDisplayText(item?.title || item?.roadmapName || item?.name),
+    description: sanitizeDisplayText(item?.description),
+    status: item?.status || '',
+    updatedAt: item?.updatedAt || item?.createdAt || null,
+  }));
+}
+
+function normalizeWorkspaceQuizzes(items = []) {
+  return (Array.isArray(items) ? items : []).map((item) => ({
+    ...item,
+    quizId: item?.quizId ?? item?.id ?? null,
+    title: sanitizeDisplayText(item?.title || item?.quizName || item?.name),
+    status: item?.status || '',
+    totalQuestion: item?.totalQuestion ?? item?.questionCount ?? item?.totalQuestions ?? 0,
+    difficulty: item?.difficulty || item?.overallDifficulty || '',
+    quizIntent: item?.quizIntent || item?.contextType || '',
+    updatedAt: item?.updatedAt || item?.createdAt || null,
+  }));
+}
+
 function UserDetailPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -92,13 +153,18 @@ function UserDetailPage() {
   const [groups, setGroups] = useState([]);
   const [subscription, setSubscription] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [workspaceDetails, setWorkspaceDetails] = useState({});
+  const [workspaceSnapshots, setWorkspaceSnapshots] = useState({});
   const [expandedWorkspace, setExpandedWorkspace] = useState(null);
   const [expandedGroup, setExpandedGroup] = useState(null);
   const [groupDetails, setGroupDetails] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const workspaceSnapshotsRef = useRef({});
   const subscriptionPlanName = subscription?.plan?.displayName || subscription?.plan?.planName;
+
+  useEffect(() => {
+    workspaceSnapshotsRef.current = workspaceSnapshots;
+  }, [workspaceSnapshots]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -120,8 +186,7 @@ function UserDetailPage() {
   const fetchWorkspaces = async () => {
     try {
       const res = await getWorkspacesByUserId(userId, 0, 50);
-      const data = res?.data ?? res;
-      const list = data?.content ?? (Array.isArray(data) ? data : []);
+      const list = unwrapApiList(res);
       setWorkspaces(list);
     } catch (err) {
       console.error('Fetch workspaces:', err);
@@ -162,15 +227,64 @@ function UserDetailPage() {
     }
   };
 
-  const fetchWorkspaceRoadmaps = async (workspaceId) => {
-    if (workspaceDetails[workspaceId]) return;
+  const fetchWorkspaceSnapshot = async (workspace, force = false) => {
+    const workspaceId = workspace?.workspaceId;
+    const workspaceKey = String(workspaceId || '');
+    if (!workspaceKey) return;
+
+    const previousSnapshot = workspaceSnapshotsRef.current[workspaceKey];
+    if (!force && (previousSnapshot?.isLoading || previousSnapshot?.loaded)) return;
+
+    setWorkspaceSnapshots((prev) => ({
+      ...prev,
+      [workspaceKey]: {
+        ...prev[workspaceKey],
+        isLoading: true,
+        error: '',
+      },
+    }));
+
+    const isGroupWorkspace = String(workspace?.workspaceKind || '').toUpperCase() === 'GROUP';
+
     try {
-      const res = await getRoadmapsByWorkspace(workspaceId, 0, 20);
-      const data = res?.data ?? res;
-      const list = data?.content ?? (Array.isArray(data) ? data : []);
-      setWorkspaceDetails((prev) => ({ ...prev, [workspaceId]: list }));
+      const response = await getWorkspaceSnapshotByUserId(userId, workspaceId);
+      const snapshotData = unwrapApiData(response) || {};
+      const meta = snapshotData?.meta ? unwrapApiData(snapshotData.meta) : null;
+      const rawProfile = snapshotData?.profile ? unwrapApiData(snapshotData.profile) : null;
+      const profile = rawProfile
+        ? (isGroupWorkspace ? normalizeGroupWorkspaceProfile(rawProfile) : normalizeIndividualWorkspaceProfile(rawProfile))
+        : null;
+      const materials = normalizeWorkspaceMaterials(extractApiCollection(snapshotData?.materials));
+      const roadmaps = normalizeWorkspaceRoadmaps(extractApiCollection(snapshotData?.roadmaps));
+      const quizzes = normalizeWorkspaceQuizzes(extractApiCollection(snapshotData?.quizzes));
+
+      setWorkspaceSnapshots((prev) => ({
+        ...prev,
+        [workspaceKey]: {
+          loaded: true,
+          isLoading: false,
+          error: '',
+          meta,
+          profile,
+          materials,
+          roadmaps,
+          quizzes,
+        },
+      }));
     } catch (err) {
-      setWorkspaceDetails((prev) => ({ ...prev, [workspaceId]: [] }));
+      setWorkspaceSnapshots((prev) => ({
+        ...prev,
+        [workspaceKey]: {
+          loaded: false,
+          isLoading: false,
+          error: err?.response?.data?.message || err?.message || t('userDetail.workspaceSnapshotLoadError'),
+          meta: null,
+          profile: null,
+          materials: [],
+          roadmaps: [],
+          quizzes: [],
+        },
+      }));
     }
   };
 
@@ -189,6 +303,10 @@ function UserDetailPage() {
     const timer = setTimeout(() => {
       setLoading(true);
       setError('');
+      setWorkspaceSnapshots({});
+      setExpandedWorkspace(null);
+      setExpandedGroup(null);
+      setGroupDetails({});
       fetchUser().finally(() => setLoading(false));
     }, 0);
     return () => clearTimeout(timer);
@@ -210,16 +328,57 @@ function UserDetailPage() {
   }, [activeTab, user]);
 
   useEffect(() => {
+    if (activeTab !== 'workspaces' || workspaces.length === 0) return undefined;
+
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      const pendingWorkspaces = workspaces.filter((workspace) => {
+        const workspaceKey = String(workspace?.workspaceId || '');
+        if (!workspaceKey) return false;
+        const snapshot = workspaceSnapshotsRef.current[workspaceKey];
+        return !snapshot?.loaded && !snapshot?.isLoading;
+      });
+
+      const batchSize = 4;
+
+      for (let index = 0; index < pendingWorkspaces.length; index += batchSize) {
+        if (cancelled) break;
+
+        const batch = pendingWorkspaces.slice(index, index + batchSize);
+        await Promise.all(batch.map((workspace) => fetchWorkspaceSnapshot(workspace)));
+
+        if (!cancelled && index + batchSize < pendingWorkspaces.length) {
+          await new Promise((resolve) => setTimeout(resolve, 140));
+        }
+      }
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeTab, workspaces]);
+
+  useEffect(() => {
     if (!expandedWorkspace) return;
-    const timer = setTimeout(() => fetchWorkspaceRoadmaps(expandedWorkspace), 0);
+    const selectedWorkspace = workspaces.find((workspace) => String(workspace?.workspaceId) === String(expandedWorkspace));
+    if (!selectedWorkspace) return undefined;
+    const timer = setTimeout(() => fetchWorkspaceSnapshot(selectedWorkspace), 0);
     return () => clearTimeout(timer);
-  }, [expandedWorkspace]);
+  }, [expandedWorkspace, workspaces]);
 
   useEffect(() => {
     if (!expandedGroup) return;
     const timer = setTimeout(() => fetchGroupDetail(expandedGroup), 0);
     return () => clearTimeout(timer);
   }, [expandedGroup]);
+
+  const handleToggleWorkspace = (workspace) => {
+    const workspaceKey = String(workspace?.workspaceId || '');
+    if (!workspaceKey) return;
+    setExpandedWorkspace((prev) => (String(prev) === workspaceKey ? null : workspaceKey));
+  };
 
   if (loading || !user) {
     return (
@@ -308,55 +467,16 @@ function UserDetailPage() {
           )}
 
           {activeTab === 'workspaces' && (
-            <div className="space-y-4">
-              {workspaces.length === 0 ? (
-                <p className="text-slate-400 text-center py-8">{t('userDetail.noWorkspaces')}</p>
-              ) : (
-                workspaces.map((ws) => (
-                  <div
-                    key={ws.workspaceId}
-                    className={`rounded-xl border overflow-hidden ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
-                  >
-                    <button
-                      className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-700/30 transition-colors cursor-pointer"
-                      onClick={() => setExpandedWorkspace(expandedWorkspace === ws.workspaceId ? null : ws.workspaceId)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <FolderKanban className="w-5 h-5 text-blue-500" />
-                        <div>
-                          <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{ws.displayTitle || ws.title || ws.name || t('home.workspace.untitledTitle')}</p>
-                          <p className="text-sm text-slate-500">{[ws.workspaceKind, ws.status].filter(Boolean).join(' • ')}</p>
-                        </div>
-                      </div>
-                      {expandedWorkspace === ws.workspaceId ? (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-slate-400" />
-                      )}
-                    </button>
-                    {expandedWorkspace === ws.workspaceId && (
-                      <div className={`p-4 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-                        <p className="text-sm text-slate-500 mb-2">{t('userDetail.roadmaps')}</p>
-                        {workspaceDetails[ws.workspaceId] === undefined ? (
-                          <ListSpinner variant="inline" />
-                        ) : workspaceDetails[ws.workspaceId]?.length > 0 ? (
-                          <ul className="space-y-1">
-                            {workspaceDetails[ws.workspaceId].map((r) => (
-                              <li key={r.roadmapId} className="flex items-center gap-2 text-sm">
-                                <ListChecks className="w-4 h-4 text-emerald-500" />
-                                {r.title || r.roadmapName}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-slate-400">{t('userDetail.noRoadmaps')}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+            <UserWorkspaceExplorer
+              workspaces={workspaces}
+              workspaceSnapshots={workspaceSnapshots}
+              expandedWorkspace={expandedWorkspace}
+              onToggleWorkspace={handleToggleWorkspace}
+              onRetryWorkspaceSnapshot={(workspace) => fetchWorkspaceSnapshot(workspace, true)}
+              isDarkMode={isDarkMode}
+              t={t}
+              formatDate={formatDate}
+            />
           )}
 
           {activeTab === 'groups' && (

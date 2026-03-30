@@ -27,6 +27,22 @@ import AdminPagination from './components/AdminPagination';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 
+const GROUP_NAME_PLACEHOLDERS = ['group name null', 'name null', 'null', 'undefined'];
+const GROUP_DESCRIPTION_PLACEHOLDERS = ['group description null', 'description null', 'null', 'undefined'];
+
+function normalizeText(value) {
+  if (value == null) return '';
+
+  const trimmed = String(value).trim();
+  const normalized = trimmed.toLowerCase();
+
+  if (!trimmed || normalized === 'null' || normalized === 'undefined') {
+    return '';
+  }
+
+  return trimmed;
+}
+
 function GroupManagement() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,6 +66,27 @@ function GroupManagement() {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
     return fallbackText;
+  };
+
+  const getGroupName = (group) => {
+    const rawName = normalizeText(group?.groupName || group?.name);
+    if (!rawName || GROUP_NAME_PLACEHOLDERS.includes(rawName.toLowerCase())) {
+      return t('groupPage.untitledGroup');
+    }
+    return rawName;
+  };
+
+  const getGroupDescription = (group) => {
+    const rawDescription = normalizeText(group?.description);
+    if (!rawDescription || GROUP_DESCRIPTION_PLACEHOLDERS.includes(rawDescription.toLowerCase())) {
+      return t('groupPage.noDescription');
+    }
+    return rawDescription;
+  };
+
+  const getLeaderName = (group) => {
+    return normalizeText(group?.createdByFullName || group?.createdByUsername || group?.leaderName)
+      || t('groupPage.unknownLeader');
   };
 
   // Lấy danh sách nhóm từ API (có hỗ trợ phân trang)
@@ -173,16 +210,16 @@ function GroupManagement() {
         
         <CardContent className="p-0">
           <div className="overflow-hidden">
-            <Table>
+            <Table className="table-fixed min-w-[1080px]">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
                   <TableHead className="w-[60px] font-bold text-slate-500 text-left">{t('groupPage.table.id')}</TableHead>
-                  <TableHead className="w-[200px] font-bold text-slate-500 text-left">{t('groupPage.table.name')}</TableHead>
-                  <TableHead className="font-bold text-slate-500 text-left">{t('groupPage.table.description')}</TableHead>
-                  <TableHead className="w-[120px] font-bold text-slate-500 text-left">{t('groupPage.table.members')}</TableHead>
+                  <TableHead className="w-[300px] font-bold text-slate-500 text-left">{t('groupPage.table.name')}</TableHead>
+                  <TableHead className="w-[36%] font-bold text-slate-500 text-left">{t('groupPage.table.description')}</TableHead>
+                  <TableHead className="w-[136px] font-bold text-slate-500 text-left">{t('groupPage.table.members')}</TableHead>
                   <TableHead className="w-[150px] font-bold text-slate-500 text-left">{t('groupPage.table.leader')}</TableHead>
-                  <TableHead className="w-[120px] font-bold text-slate-500 text-left">{t('groupPage.table.createdAt')}</TableHead>
-                  <TableHead className="text-right w-[80px] font-bold text-slate-500">{t('groupPage.table.actions')}</TableHead>
+                  <TableHead className="w-[132px] font-bold text-slate-500 text-left">{t('groupPage.table.createdAt')}</TableHead>
+                  <TableHead className="text-right w-[84px] font-bold text-slate-500">{t('groupPage.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -197,43 +234,77 @@ function GroupManagement() {
                     <TableRow 
                       key={group.workspaceId ?? group.id} 
                       onClick={() => navigate(`${basePath}/groups/${group.workspaceId ?? group.id}`)}
-                      className={`border-b transition-colors cursor-pointer ${
+                      className={`border-b transition-colors duration-200 cursor-pointer ${
                         isDarkMode 
-                          ? 'border-slate-800 hover:bg-slate-800/50' 
-                          : 'border-slate-100 hover:bg-slate-50/50'
+                          ? 'border-slate-800 hover:bg-slate-800/45' 
+                          : 'border-slate-100 hover:bg-sky-50/60'
                       }`}
                     >
-                      <TableCell className="font-bold text-blue-600 dark:text-blue-400 text-left">{group.workspaceId ?? group.id}</TableCell>
-                      <TableCell className={`font-semibold text-left ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                        <div className="flex items-center gap-2">
+                      <TableCell className="whitespace-nowrap font-bold text-blue-600 dark:text-blue-400 text-left">
+                        {group.workspaceId ?? group.id}
+                      </TableCell>
+                      <TableCell className={`text-left ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                        <div className="flex items-start gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             isDarkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
                           }`}>
                             <Users className="w-4 h-4 text-indigo-500" />
                           </div>
-                          {group.groupName || group.name}
+                          <div className="min-w-0 flex-1">
+                            <p
+                              title={getGroupName(group)}
+                              className="min-h-[2.75rem] line-clamp-2 text-[15px] font-semibold leading-[1.375rem]"
+                            >
+                              {getGroupName(group)}
+                            </p>
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell className={`text-left ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} truncate max-w-[200px]`}>
-                        {group.description || '-'}
+                      <TableCell className={`text-left ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                        <p
+                          title={getGroupDescription(group)}
+                          className="min-h-[2.75rem] line-clamp-2 leading-[1.375rem]"
+                        >
+                          {getGroupDescription(group)}
+                        </p>
                       </TableCell>
-                      <TableCell className="text-left align-top whitespace-nowrap">
-                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg px-2.5 py-0.5 border-none whitespace-nowrap inline-flex">
+                      <TableCell className="text-left whitespace-nowrap">
+                        <Badge
+                          variant="outline"
+                          className={`rounded-lg px-2.5 py-0.5 whitespace-nowrap inline-flex border transition-colors duration-200 ${
+                            isDarkMode
+                              ? 'border-sky-800/70 bg-sky-950/40 text-sky-300 hover:border-sky-700 hover:bg-sky-900/55'
+                              : 'border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300 hover:bg-sky-100'
+                          }`}
+                        >
                           {group.memberCount ?? 0} {t('groupPage.members')}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-left align-top whitespace-nowrap">
-                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg px-2.5 py-0.5 border-none whitespace-nowrap inline-flex">
-                          {group.createdByFullName || group.createdByUsername || group.leaderName || '-'}
+                      <TableCell className="text-left whitespace-nowrap">
+                        <Badge
+                          variant="outline"
+                          className={`rounded-lg px-2.5 py-0.5 whitespace-nowrap inline-flex border transition-colors duration-200 ${
+                            isDarkMode
+                              ? 'border-emerald-800/70 bg-emerald-950/35 text-emerald-300 hover:border-emerald-700 hover:bg-emerald-900/50'
+                              : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100'
+                          }`}
+                        >
+                          {getLeaderName(group)}
                         </Badge>
                       </TableCell>
-                      <TableCell className={`text-left text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <TableCell className={`whitespace-nowrap text-left text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {formatDate(group.createdAt)}
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-9 w-9 rounded-lg transition-colors ${
+                                isDarkMode ? 'hover:bg-slate-700/70' : 'hover:bg-sky-50'
+                              }`}
+                            >
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
