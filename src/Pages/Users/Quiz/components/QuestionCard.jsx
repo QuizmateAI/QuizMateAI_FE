@@ -1,7 +1,8 @@
 import { memo, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/Components/ui/input';
-import { getCorrectTextAnswers } from '../utils/quizTransform';
+import { getCorrectMatchingPairs, getCorrectTextAnswers, normalizeMatchingPairs } from '../utils/quizTransform';
+import MatchingDragDrop from './MatchingDragDrop';
 import './QuestionCard.css';
 
 const DIFFICULTY_STYLES = {
@@ -35,22 +36,54 @@ function normalizeTextValue(value) {
     .toLowerCase();
 }
 
+function isSamePrimitiveArray(left, right) {
+  const leftValues = Array.isArray(left) ? left : [];
+  const rightValues = Array.isArray(right) ? right : [];
+  if (leftValues.length !== rightValues.length) return false;
+  return leftValues.every((value, index) => value === rightValues[index]);
+}
+
+function isSameMatchingPairs(left, right) {
+  const leftPairs = normalizeMatchingPairs(left);
+  const rightPairs = normalizeMatchingPairs(right);
+  if (leftPairs.length !== rightPairs.length) return false;
+
+  return leftPairs.every((pair, index) => (
+    pair.leftKey === rightPairs[index]?.leftKey
+    && pair.rightKey === rightPairs[index]?.rightKey
+  ));
+}
+
 function isSameAnswerValue(left, right) {
   if (Array.isArray(left) || Array.isArray(right)) {
     const leftValues = Array.isArray(left) ? left : [];
     const rightValues = Array.isArray(right) ? right : [];
-    if (leftValues.length !== rightValues.length) return false;
-    return leftValues.every((value, index) => value === rightValues[index]);
+    const containsObjectValue = [...leftValues, ...rightValues].some((value) => value && typeof value === 'object');
+
+    return containsObjectValue
+      ? isSameMatchingPairs(leftValues, rightValues)
+      : isSamePrimitiveArray(leftValues, rightValues);
+  }
+
+  if (
+    (left && typeof left === 'object')
+    || (right && typeof right === 'object')
+  ) {
+    const leftObject = left && typeof left === 'object' && !Array.isArray(left) ? left : {};
+    const rightObject = right && typeof right === 'object' && !Array.isArray(right) ? right : {};
+
+    return (
+      isSameAnswerValue(leftObject.selectedAnswerIds, rightObject.selectedAnswerIds)
+      && String(leftObject.textAnswer ?? '') === String(rightObject.textAnswer ?? '')
+      && isSameMatchingPairs(leftObject.matchingPairs, rightObject.matchingPairs)
+    );
   }
 
   return String(left ?? '') === String(right ?? '');
 }
 
 function isSameStringArray(left, right) {
-  const leftValues = Array.isArray(left) ? left : [];
-  const rightValues = Array.isArray(right) ? right : [];
-  if (leftValues.length !== rightValues.length) return false;
-  return leftValues.every((value, index) => value === rightValues[index]);
+  return isSamePrimitiveArray(left, right);
 }
 
 function isSameReviewState(left, right) {
@@ -67,6 +100,7 @@ function isSameReviewState(left, right) {
     && isSameAnswerValue(left.answerValue, right.answerValue)
     && isSameStringArray(left.correctTextAnswers, right.correctTextAnswers)
     && isSameAnswerValue(left.correctAnswerIds, right.correctAnswerIds)
+    && isSameMatchingPairs(left.correctMatchingPairs, right.correctMatchingPairs)
   );
 }
 
@@ -86,28 +120,68 @@ function areQuestionCardPropsEqual(prevProps, nextProps) {
 
 const QuestionCard = memo(function QuestionCard({
   question, questionNumber, totalQuestions,
-  answerValue, selectedAnswers = [], onSelectAnswer, onTextAnswerChange,
+  answerValue, selectedAnswers = [], onSelectAnswer, onTextAnswerChange, onMatchingAnswerChange,
   showResult = false, showExplanation = false, disabled = false, reviewState = null,
 }) {
   const isMultiple = question.type === 'MULTIPLE_CHOICE';
   const isTextQuestion = question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK';
+  const isMatchingQuestion = question.type === 'MATCHING';
   const isReviewRevealed = showResult || reviewState?.revealed === true;
   const isExplanationRevealed = showExplanation || reviewState?.revealed === true;
   const isLocked = disabled || reviewState?.locked === true || isReviewRevealed;
   const normalizedSelectedAnswers = Array.isArray(answerValue)
     ? answerValue
+    : Array.isArray(answerValue?.selectedAnswerIds)
+      ? answerValue.selectedAnswerIds
     : Array.isArray(selectedAnswers)
       ? selectedAnswers
       : [];
-  const textAnswer = typeof answerValue === 'string' ? answerValue : '';
+  const textAnswer = typeof answerValue === 'string'
+    ? answerValue
+    : typeof answerValue?.textAnswer === 'string'
+      ? answerValue.textAnswer
+      : '';
+  const normalizedMatchingPairs = useMemo(
+    () => normalizeMatchingPairs(answerValue?.matchingPairs),
+    [answerValue],
+  );
   const correctTextAnswers = Array.isArray(reviewState?.correctTextAnswers) && reviewState.correctTextAnswers.length > 0
     ? reviewState.correctTextAnswers
     : getCorrectTextAnswers(question);
+  const correctMatchingPairs = useMemo(() => {
+    const reviewPairs = normalizeMatchingPairs(reviewState?.correctMatchingPairs);
+    if (reviewPairs.length > 0) {
+      return reviewPairs;
+    }
+    return getCorrectMatchingPairs(question);
+  }, [question, reviewState?.correctMatchingPairs]);
+  const matchingPairByLeft = useMemo(
+    () => new Map(normalizedMatchingPairs.map((pair) => [pair.leftKey, pair.rightKey])),
+    [normalizedMatchingPairs],
+  );
+  const correctMatchingPairByLeft = useMemo(
+    () => new Map(correctMatchingPairs.map((pair) => [pair.leftKey, pair.rightKey])),
+    [correctMatchingPairs],
+  );
+  const matchingLeftItems = useMemo(() => {
+    const leftItems = correctMatchingPairs.length > 0
+      ? correctMatchingPairs.map((pair) => pair.leftKey)
+      : normalizedMatchingPairs.map((pair) => pair.leftKey);
+    return Array.from(new Set(leftItems.filter(Boolean)));
+  }, [correctMatchingPairs, normalizedMatchingPairs]);
+  const matchingRightOptions = useMemo(() => {
+    const combined = [
+      ...(Array.isArray(question.matchingRightOptions) ? question.matchingRightOptions : []),
+      ...correctMatchingPairs.map((pair) => pair.rightKey),
+      ...normalizedMatchingPairs.map((pair) => pair.rightKey),
+    ];
+    return Array.from(new Set(combined.filter(Boolean)));
+  }, [correctMatchingPairs, normalizedMatchingPairs, question.matchingRightOptions]);
   const gradingStatus = String(reviewState?.gradingStatus || question?.gradingStatus || '').toUpperCase();
   const isPendingGrading = gradingStatus === 'PENDING';
   const correctAnswerIds = Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
     ? reviewState.correctAnswerIds
-    : question.answers.filter(a => a.isCorrect).map(a => a.id);
+    : (Array.isArray(question.answers) ? question.answers.filter((answer) => answer.isCorrect).map((answer) => answer.id) : []);
 
   const isFullyCorrect = useMemo(() => {
     if (isPendingGrading) {
@@ -122,6 +196,16 @@ const QuestionCard = memo(function QuestionCard({
       return question.isCorrect;
     }
 
+    if (isMatchingQuestion) {
+      if (normalizedMatchingPairs.length === 0 || correctMatchingPairs.length === 0) {
+        return false;
+      }
+      if (normalizedMatchingPairs.length !== correctMatchingPairs.length) {
+        return false;
+      }
+      return normalizedMatchingPairs.every((pair) => correctMatchingPairByLeft.get(pair.leftKey) === pair.rightKey);
+    }
+
     if (isTextQuestion) {
       const normalizedUserAnswer = normalizeTextValue(textAnswer);
       if (!normalizedUserAnswer) return false;
@@ -131,7 +215,20 @@ const QuestionCard = memo(function QuestionCard({
     }
 
     return correctAnswerIds.length === normalizedSelectedAnswers.length && correctAnswerIds.every(id => normalizedSelectedAnswers.includes(id));
-  }, [correctAnswerIds, question.isCorrect, isPendingGrading, isTextQuestion, reviewState?.isCorrect, textAnswer, correctTextAnswers, normalizedSelectedAnswers]);
+  }, [
+    correctAnswerIds,
+    correctMatchingPairByLeft,
+    correctMatchingPairs,
+    question.isCorrect,
+    isMatchingQuestion,
+    isPendingGrading,
+    isTextQuestion,
+    normalizedMatchingPairs,
+    normalizedSelectedAnswers,
+    reviewState?.isCorrect,
+    textAnswer,
+    correctTextAnswers,
+  ]);
 
   const getStateClass = (answer) => {
     if (isReviewRevealed) {
@@ -150,19 +247,90 @@ const QuestionCard = memo(function QuestionCard({
     return 'border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-500';
   };
 
+  const handleMatchingPairChange = (leftKey, nextRightKey) => {
+    const nextPairs = matchingLeftItems.reduce((pairs, itemLeftKey) => {
+      const existingRightKey = itemLeftKey === leftKey
+        ? nextRightKey
+        : matchingPairByLeft.get(itemLeftKey);
+      if (existingRightKey) {
+        pairs.push({ leftKey: itemLeftKey, rightKey: existingRightKey });
+      }
+      return pairs;
+    }, []);
+
+    onMatchingAnswerChange?.({ matchingPairs: nextPairs });
+  };
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md shadow-slate-900/10 dark:shadow-blue-900/50 border border-slate-200 dark:border-slate-700">
       <div className="flex items-start justify-between mb-4 gap-3">
         <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 leading-relaxed">{question.content}</h3>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={cn('px-2 py-0.5 rounded text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
+          {isReviewRevealed && question.difficulty && (
+            <span className={cn('px-2 py-0.5 rounded text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
+          )}
           <span className="bg-slate-900 dark:bg-slate-600 text-white px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">{questionNumber}/{totalQuestions}</span>
         </div>
       </div>
 
       {isMultiple && <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 italic">Select all that apply</p>}
 
-      {isTextQuestion ? (
+      {isMatchingQuestion ? (
+        isReviewRevealed ? (
+          /* Review mode — show pairs with correct/incorrect styling */
+          <div className="space-y-3">
+            <p className="text-xs italic text-slate-500 dark:text-slate-400">
+              Ghép mỗi mục bên trái với đáp án đúng.
+            </p>
+
+            {matchingLeftItems.map((leftKey, index) => {
+              const selectedRightKey = matchingPairByLeft.get(leftKey) || '';
+              const correctRightKey = correctMatchingPairByLeft.get(leftKey) || '';
+              const isPairCorrect = Boolean(selectedRightKey) && selectedRightKey === correctRightKey;
+              const pairStateClass = isPairCorrect
+                ? 'border-green-200 bg-green-50 dark:border-green-900/50 dark:bg-green-950/20'
+                : (selectedRightKey
+                  ? 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20'
+                  : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/40');
+
+              return (
+                <div key={leftKey} className={cn('rounded-xl border p-3 transition-colors', pairStateClass)}>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex-1">{leftKey}</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600 shrink-0">
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                    <span className={cn(
+                      'text-sm font-medium flex-1',
+                      isPairCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400',
+                    )}>
+                      {selectedRightKey || <span className="italic text-slate-400">Chưa chọn</span>}
+                    </span>
+                  </div>
+
+                  {!isPairCorrect && correctRightKey && (
+                    <div className="mt-2 ml-9 text-xs text-green-700 dark:text-green-400 font-medium">
+                      Đáp án đúng: {correctRightKey}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Quiz taking mode — drag and drop */
+          <MatchingDragDrop
+            leftItems={matchingLeftItems}
+            rightOptions={matchingRightOptions}
+            matchedPairs={normalizedMatchingPairs}
+            onPairChange={onMatchingAnswerChange}
+            disabled={isLocked}
+          />
+        )
+      ) : isTextQuestion ? (
         <div className="space-y-3">
           <Input
             value={textAnswer}
@@ -216,6 +384,12 @@ const QuestionCard = memo(function QuestionCard({
         <div className="mt-3">
           {isPendingGrading
             ? <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">… Đang chấm bởi AI</span>
+            : isMatchingQuestion
+            ? (normalizedMatchingPairs.length === 0
+                ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer provided</span>
+                : isFullyCorrect
+                  ? <span className="text-green-600 dark:text-green-400 font-semibold text-sm">✓ Correct!</span>
+                  : <span className="text-red-600 dark:text-red-400 font-semibold text-sm">✗ Incorrect</span>)
             : isTextQuestion
             ? (!textAnswer.trim()
                 ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer provided</span>

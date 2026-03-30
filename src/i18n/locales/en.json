@@ -1469,7 +1469,7 @@
         "flashcard": "Flashcard",
         "createRoadmap": "Create Roadmap",
         "createQuiz": "Create Quiz",
-        "createFlashcard": "Create Flashcard",
+        "createFlashcard": "Create Flashcards",
         "mockTest": "Mock Test",
         "postLearning": "Post-learning",
         "prelearning": "Pre-learning"
@@ -1631,7 +1631,8 @@
         "multipleSelect": "Multiple Select",
         "trueFalse": "True / False",
         "fillBlank": "Fill in the Blank",
-        "shortAnswer": "Short Answer"
+        "shortAnswer": "Short Answer",
+        "matching": "Matching"
       },
       "difficulty": "Difficulty",
       "difficultyLevels": {
@@ -1650,7 +1651,8 @@
       "intentLabels": {
         "PRE_LEARNING": "Pre-learning",
         "POST_LEARNING": "Post-learning",
-        "REVIEW": "Review"
+        "REVIEW": "Review",
+        "PRACTICE": "Practice"
       },
       "statusLabels": {
         "ACTIVE": "Active",
@@ -2002,6 +2004,12 @@
         "checkFailed": "Failed to check the answer. Please try again.",
         "invalidAnswer": "The current answer is invalid."
       },
+      "matching": {
+        "dragInstruction": "Drag the items below into the matching slots.",
+        "dropHere": "Drag an answer here",
+        "answerPool": "Answers",
+        "allMatched": "Everything has been matched!"
+      },
       "result": {
         "title": "Result",
         "notFound": "Result not found",
@@ -2115,10 +2123,11 @@
         "byCount": "By count",
         "byPercent": "By percentage",
         "clozePercent": "Cloze Percent",
-        "distributionInvalid": "Distribution Invalid",
-        "distributionTitle": "Distribution Title",
-        "distributionValid": "Distribution Valid",
+        "distributionInvalid": "Distribution is invalid",
+        "distributionTitle": "Flashcard type distribution",
+        "distributionValid": "{{sum}}/{{target}} {{unit}}",
         "imagePercent": "Image Percent",
+        "lockLimitHint": "Lock up to {{count}} card types. The remaining types will auto-balance.",
         "noActiveSelectedMaterials": "No Active Selected Materials",
         "nonActiveMaterialsWarning": "Non Active Materials Warning",
         "qaPercent": "Qa Percent",

@@ -19,11 +19,21 @@ describe('quiz autosave stability', () => {
       2: '',
       3: [31, 32],
       4: '  final answer  ',
+      5: { matchingPairs: [{ leftKey: 'A', rightKey: '1' }, { leftKey: 'B', rightKey: '2' }] },
     })).toEqual([
       { questionId: 1, selectedAnswerIds: [], textAnswer: null },
       { questionId: 2, selectedAnswerIds: [], textAnswer: null },
       { questionId: 3, selectedAnswerIds: [31, 32], textAnswer: null },
       { questionId: 4, selectedAnswerIds: [], textAnswer: 'final answer' },
+      {
+        questionId: 5,
+        selectedAnswerIds: [],
+        textAnswer: null,
+        matchingPairs: [
+          { leftKey: 'A', rightKey: '1' },
+          { leftKey: 'B', rightKey: '2' },
+        ],
+      },
     ]);
   });
 

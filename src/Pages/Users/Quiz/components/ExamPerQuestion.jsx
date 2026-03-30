@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import QuestionCard from './QuestionCard';
 import HourglassLoader from './HourglassLoader';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
-import { buildSavePayload } from '../utils/quizTransform';
+import { buildSavePayload, hasAnswerValue } from '../utils/quizTransform';
 
 function formatTime(s) {
   const m = Math.floor(s / 60);
@@ -33,12 +33,6 @@ function makeReducer(questions) {
         return state;
     }
   };
-}
-
-function hasAnswerValue(value) {
-  if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === 'string') return value.trim().length > 0;
-  return false;
 }
 
 function resolvePerQuestionProgress(questions, attemptStartedAt, answers) {
@@ -112,7 +106,18 @@ function resolvePerQuestionProgress(questions, attemptStartedAt, answers) {
   };
 }
 
-export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextAnswerChange, onSubmit, attemptId, attemptStartedAt, submitError, fontClass }) {
+export default function ExamPerQuestion({
+  quiz,
+  answers,
+  onSelectAnswer,
+  onTextAnswerChange,
+  onMatchingAnswerChange,
+  onSubmit,
+  attemptId,
+  attemptStartedAt,
+  submitError,
+  fontClass,
+}) {
   const { t } = useTranslation();
   const [state, dispatch] = useReducer(
     makeReducer(quiz.questions),
@@ -325,6 +330,7 @@ export default function ExamPerQuestion({ quiz, answers, onSelectAnswer, onTextA
         answerValue={answers[currentQuestion.id]}
         onSelectAnswer={(answerId) => onSelectAnswer(currentQuestion.id, answerId, currentQuestion.type === 'MULTIPLE_CHOICE')}
         onTextAnswerChange={(value) => onTextAnswerChange?.(currentQuestion.id, value)}
+        onMatchingAnswerChange={(value) => onMatchingAnswerChange?.(currentQuestion.id, value)}
         disabled={timeLeft <= 0}
       />
 
