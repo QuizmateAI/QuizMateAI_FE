@@ -935,6 +935,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(within(confirmDialog).getByText('Bai toan xac suat tong hop')).toBeInTheDocument();
     expect(within(confirmDialog).getByText('On lai de thi cuoi ky')).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.roadmapDisabled'))).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).not.toBeInTheDocument();
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
 
@@ -945,6 +946,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     });
 
     expect(screen.queryByRole('heading', { name: i18n.t('workspace.profileConfig.confirmProfileDialog.title') })).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeVisible();
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();
   });
@@ -990,6 +992,7 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.estimatedTotalDays', { value: 30 }))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.fields.recommendedMinutesPerDay'))).toBeInTheDocument();
     expect(within(confirmDialog).getByText(i18n.t('workspace.profileConfig.confirmProfileDialog.values.recommendedMinutesPerDay', { value: 60 }))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
     expect(onSave).toHaveBeenCalledTimes(2);
     expect(onConfirm).not.toHaveBeenCalled();
   });
