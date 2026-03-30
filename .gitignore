@@ -35,3 +35,6 @@ dist-ssr
 .env.production.local
 
 AGENTS.md
+.agents
+.claude
+skills-lock.json

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/Components/ui/button";
-import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Save, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText, CheckCircle2, Info } from "lucide-react";
+import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText, CheckCircle2, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz, getPendingRecommendations, generateQuizFromWorkspaceAssessment } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
@@ -2233,13 +2233,6 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
           {t("workspace.quiz.cancel")}
         </Button>
-        {tab === "manual" && (
-          <Button variant="outline" onClick={() => handleSubmit("DRAFT")} disabled={submitting}
-            className={`${isDarkMode ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-            {t("workspace.quiz.saveDraft")}
-          </Button>
-        )}
         <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
           {tab === "manual"

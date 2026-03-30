@@ -37,6 +37,10 @@ const MOCK_QUIZZES = [
 
 const FILTER_OPTIONS = ["all", "knowledge", "phase", "roadmap", "workspace", "group"];
 
+function resolveQuizNavigationId(quiz) {
+  return quiz?.quizId ?? quiz?.id ?? null;
+}
+
 function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -57,14 +61,16 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
     navigate(`/quiz/${mode}/${quizId}`, {
       state: {
         returnToQuizPath: location.pathname,
+        ...(mode === 'practice' ? { autoStart: true } : {}),
       },
     });
   };
 
   const handleConfirmExamStart = () => {
-    if (!examStartQuiz?.id) return;
+    const resolvedQuizId = resolveQuizNavigationId(examStartQuiz);
+    if (!resolvedQuizId) return;
 
-    navigate(`/quiz/exam/${examStartQuiz.id}`, {
+    navigate(`/quiz/exam/${resolvedQuizId}`, {
       state: {
         returnToQuizPath: location.pathname,
         autoStart: true,
@@ -155,7 +161,7 @@ function QuizListView({ isDarkMode, onCreateQuiz, createdItems = [] }) {
                     {quiz.status === "ACTIVE" && (
                       <>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleStartQuiz('practice', quiz.id); }}
+                          onClick={(e) => { e.stopPropagation(); handleStartQuiz('practice', resolveQuizNavigationId(quiz)); }}
                           className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-blue-950/30 text-blue-400" : "hover:bg-blue-50 text-blue-600"}`}
                           title={t("workspace.quiz.practice", "Practice")}
                         >

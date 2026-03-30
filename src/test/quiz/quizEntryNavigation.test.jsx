@@ -119,6 +119,74 @@ describe('Quiz entry navigation', () => {
     );
   });
 
+  it('falls back to legacy id when opening exam from the workspace quiz list', async () => {
+    getQuizzesByScope.mockResolvedValueOnce({
+      data: [
+        {
+          id: 321,
+          title: 'Legacy algebra challenge',
+          status: 'ACTIVE',
+          quizIntent: 'PRACTICE',
+          createdAt: '2026-03-25T10:00:00',
+          overallDifficulty: 'MEDIUM',
+          timerMode: true,
+          communityShared: false,
+          myAttempted: false,
+          myPassed: false,
+        },
+      ],
+    });
+
+    render(
+      <QuizListView
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onViewQuiz={vi.fn()}
+        contextId={42}
+      />
+    );
+
+    expect(await screen.findByText('Legacy algebra challenge')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Exam' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/quiz/exam/321',
+      expect.objectContaining({
+        state: expect.objectContaining({
+          returnToQuizPath: '/workspace/42?phaseId=7',
+          autoStart: true,
+        }),
+      })
+    );
+  });
+
+  it('navigates straight into practice mode from the workspace quiz list with auto start enabled', async () => {
+    render(
+      <QuizListView
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onViewQuiz={vi.fn()}
+        contextId={42}
+      />
+    );
+
+    expect(await screen.findByText('Algebra challenge')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Practice' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/quiz/practice/123',
+      expect.objectContaining({
+        state: expect.objectContaining({
+          returnToQuizPath: '/workspace/42?phaseId=7',
+          autoStart: true,
+        }),
+      })
+    );
+  });
+
   it('opens the exam popup from the quiz detail view before navigating into the exam', async () => {
     render(
       <QuizDetailView
@@ -153,5 +221,72 @@ describe('Quiz entry navigation', () => {
         }),
       })
     );
+  });
+
+  it('navigates straight into practice mode from the quiz detail view with auto start enabled', async () => {
+    render(
+      <QuizDetailView
+        isDarkMode={false}
+        quiz={{
+          quizId: 456,
+          title: 'Geometry mock',
+          status: 'ACTIVE',
+        }}
+        onBack={vi.fn()}
+        hideEditButton
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Practice mode' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      '/quiz/practice/456',
+      expect.objectContaining({
+        state: expect.objectContaining({
+          returnToQuizPath: '/workspace/42?phaseId=7',
+          autoStart: true,
+        }),
+      })
+    );
+  });
+
+  it('still shows questions in quiz detail even when one answer request fails', async () => {
+    getSectionsByQuiz.mockResolvedValueOnce({
+      data: [{ sectionId: 11 }],
+    });
+    getQuestionsBySection.mockResolvedValueOnce({
+      data: [
+        {
+          questionId: 99,
+          content: 'Question survives broken answers',
+          questionTypeId: 1,
+          difficulty: 'MEDIUM',
+          explanation: '',
+        },
+      ],
+    });
+    getAnswersByQuestion.mockRejectedValueOnce({
+      statusCode: 409,
+      message: 'Matching answer content phai la JSON hop le',
+    });
+
+    render(
+      <QuizDetailView
+        isDarkMode={false}
+        quiz={{
+          quizId: 456,
+          title: 'Geometry mock',
+          status: 'DRAFT',
+        }}
+        onBack={vi.fn()}
+        hideEditButton
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Câu hỏi' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Question survives broken answers')).toBeInTheDocument();
+    });
   });
 });

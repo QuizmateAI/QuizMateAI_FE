@@ -1869,7 +1869,28 @@
       },
       "practiceActions": {
         "confirmExitTitle": "Thoát thực hành?",
-        "confirmExitDescription": "Trạng thái bài làm hiện tại có thể bị mất."
+        "confirmExitDescription": "Câu bạn chưa kiểm tra có thể bị mất.",
+        "startButton": "Bắt đầu luyện tập",
+        "starting": "Đang mở phòng luyện tập...",
+        "startFailed": "Không thể bắt đầu chế độ luyện tập. Vui lòng thử lại.",
+        "resumeHint": "Nếu bạn đã làm dở, hệ thống sẽ mở lại đúng câu đang tiếp tục.",
+        "headerHint": "Chọn đáp án, bấm kiểm tra để xem đúng sai và lời giải, rồi chuyển sang câu tiếp theo.",
+        "currentQuestionLabel": "Câu hiện tại",
+        "answeredLabel": "Đã kiểm tra",
+        "remainingLabel": "Còn lại",
+        "progressLabel": "Tiến độ luyện tập",
+        "progressHint": "Mỗi câu sẽ được chấm ngay sau khi bạn bấm kiểm tra.",
+        "questionListTitle": "Danh sách câu hỏi",
+        "questionLabel": "Câu hỏi",
+        "previousButton": "Câu trước",
+        "checkButton": "Kiểm tra",
+        "checkingButton": "Đang kiểm tra...",
+        "nextButton": "Câu tiếp theo",
+        "finishButton": "Hoàn thành luyện tập",
+        "finishFailed": "Không thể hoàn thành bài luyện tập. Vui lòng thử lại.",
+        "finishing": "Đang hoàn thành bài luyện tập...",
+        "checkFailed": "Kiểm tra câu trả lời thất bại. Vui lòng thử lại.",
+        "invalidAnswer": "Câu trả lời hiện tại không hợp lệ."
       },
       "result": {
         "title": "Kết quả",
@@ -2681,6 +2702,160 @@
     "time": "Thời gian",
     "backToPlans": "Quay lại gói đăng ký",
     "goHome": "Về trang chủ"
+  },
+  "pricingGuide": {
+    "navHome": "Trang chủ",
+    "heroBadge": "Minh bạch, công bằng, dễ dự đoán",
+    "title": "Cách tính credit trong QuizmateAI",
+    "subtitle": "QuizmateAI không tính tiền theo tên tính năng. Hệ thống tính credit theo mức độ AI được sử dụng thực tế, để bạn biết vì sao bị trừ credit và có thể dự đoán chi phí trước khi chạy.",
+    "ctaPrimaryGuest": "Đăng nhập để xem ví",
+    "ctaPrimaryUser": "Mở ví credit",
+    "ctaSecondaryGuest": "Xem plans",
+    "ctaSecondaryUser": "Xem plans",
+    "openDashboard": "Mở dashboard",
+    "viewPlans": "Xem plans",
+    "creditCardDescription": "Đơn vị dùng để quy đổi usage AI thành cách tính dễ mua, dễ hiểu và dễ giới hạn ngân sách.",
+    "startingPointLabel": "Mốc khởi động",
+    "summaryCards": [
+      {
+        "title": "1 credit",
+        "desc": "Mốc khởi động đề xuất hiện tại là 100 VND / credit."
+      },
+      {
+        "title": "Capability bundle",
+        "desc": "Tính theo nhóm năng lực AI như OCR, source understanding, quiz generation, review."
+      },
+      {
+        "title": "Không tính hai lần",
+        "desc": "Tính năng cấp cao đã bao gồm xử lý cấp thấp thì UI sẽ không tính lặp lại cùng một năng lực."
+      },
+      {
+        "title": "Estimate",
+        "desc": "Nên có estimate trước, settle theo usage thật và refund phần chưa dùng."
+      }
+    ],
+    "bundleTitle": "Cách tính theo loại tài liệu được hỗ trợ",
+    "bundleDesc": "Hệ thống hiện dùng cách tính đơn giản để user dễ hiểu và dễ ước lượng. Mỗi loại tài liệu chỉ có một mức credit cơ bản theo đơn vị đo chính.",
+    "bundleHeaders": ["Loại tài liệu", "Cách tính", "Credit cơ bản"],
+    "bundleTable": [
+      ["PDF", "Theo số trang", "1 credit / trang"],
+      ["SLIDE", "Theo số slide", "1 credit / slide"],
+      ["VIDEO", "Theo số phút", "1 credit / phút"],
+      ["AUDIO", "Theo số phút", "1 credit / phút"],
+      ["TEXT", "Theo số từ", "1 credit / 1000 từ"],
+      ["DOCUMENT", "Theo số từ", "1 credit / 1000 từ"],
+      ["EXCEL", "Theo số sheet", "1 credit / sheet"]
+    ],
+    "unitTitle": "Bảng credit cho tính năng AI chính",
+    "unitDesc": "Bảng này chỉ giữ các tính năng AI cốt lõi để user dễ ước lượng trước khi chạy. Riêng quiz sẽ tính đơn giản theo tổng số câu, không tách riêng từng loại câu hay config câu hỏi.",
+    "unitHeaders": ["Hạng mục", "Credit đề xuất", "Cách tính"],
+    "unitTable": [
+      ["Tạo quiz", "0.5 credit / câu", "Theo số câu"],
+      ["AI feedback sau mỗi bài quiz", "1 credit / lần làm bài", "Theo lần làm bài"],
+      ["Flashcard basic", "0.5 credit / card", "Theo card"],
+      ["AI tạo phase trong roadmap", "1 credit / phase", "Theo phase"],
+      ["AI tạo knowledge trong phase", "0.5 credit / knowledge", "Theo knowledge"]
+    ],
+    "personalizationTitle": "Gợi ý AI đơn giản",
+    "personalizationDesc": "Các gợi ý dưới đây là những gợi ý cơ bản, dễ hiểu và phù hợp với hệ thống hiện tại.",
+    "personalizationItems": [
+      {
+        "title": "AI gợi ý quiz tiếp theo",
+        "unit": "Theo lần gợi ý",
+        "description": "AI gợi ý bộ quiz tiếp theo dựa trên lịch sử học và kết quả gần đây của user."
+      },
+      {
+        "title": "AI gợi ý chủ đề cần ôn lại",
+        "unit": "Theo lần gợi ý",
+        "description": "AI chỉ ra các chủ đề user nên ôn lại trước để cải thiện kết quả học."
+      },
+      {
+        "title": "AI gợi ý tài liệu",
+        "unit": "Theo lần gợi ý",
+        "description": "AI đề xuất tài liệu phù hợp với chủ đề user đang học."
+      }
+    ],
+    "examplesTitle": "Ví dụ đơn giản để dễ hình dung",
+    "examplesDesc": "Đây là các ví dụ ngắn để user ước lượng credit nhanh trước khi chạy tính năng.",
+    "examplePrefix": "Ví dụ",
+    "quickMathLabel": "Cách tính nhanh",
+    "examples": [
+      {
+        "title": "Upload PDF 5 trang",
+        "total": "Khoảng 5 credit",
+        "body": "Nếu hệ thống đọc và xử lý toàn bộ 5 trang PDF thì có thể tính đơn giản theo số trang.",
+        "breakdown": [
+          "5 trang x 1 credit = 5 credit"
+        ]
+      },
+      {
+        "title": "Tạo quiz 10 câu",
+        "total": "Khoảng 10 credit",
+        "body": "Với bộ quiz cơ bản, có thể ước lượng nhanh theo số câu được tạo.",
+        "breakdown": [
+          "10 câu x 0.5 credit = 5 credit"
+        ]
+      },
+      {
+        "title": "Tạo 20 flashcard",
+        "total": "Khoảng 10 credit",
+        "body": "Flashcard cơ bản có thể tính theo số card được tạo ra.",
+        "breakdown": [
+          "20 card x 0.5 credit = 10 credit"
+        ]
+      },
+      {
+        "title": "Paste TEXT 2,500 từ",
+        "total": "Khoảng 3 credit",
+        "body": "Với nội dung text, hệ thống tính theo tổng số từ được đưa vào xử lý.",
+        "breakdown": [
+          "2,500 từ = 3 đơn vị 1000 từ",
+          "3 x 1 credit = 3 credit"
+        ]
+      },
+      {
+        "title": "Upload DOCUMENT 4,200 từ",
+        "total": "Khoảng 5 credit",
+        "body": "Document cũng được tính đơn giản theo số từ thay vì theo số file.",
+        "breakdown": [
+          "4,200 từ = 5 đơn vị 1000 từ",
+          "5 x 1 credit = 5 credit"
+        ]
+      },
+      {
+        "title": "Tạo quiz 25 câu",
+        "total": "Khoảng 25 credit",
+        "body": "Quiz giờ chỉ tính theo tổng số câu, không tách riêng từng loại câu hỏi.",
+        "breakdown": [
+          "25 câu x 1 credit = 25 credit"
+        ]
+      },
+      {
+        "title": "AI feedback sau 1 bài quiz",
+        "total": "Khoảng 1 credit",
+        "body": "Sau khi làm xong một bài quiz, user có thể nhận feedback AI cho lần làm bài đó.",
+        "breakdown": [
+          "1 lần feedback x 1 credit = 1 credit"
+        ]
+      },
+      {
+        "title": "AI tạo 3 phase trong roadmap",
+        "total": "Khoảng 3 credit",
+        "body": "Khi dùng AI để gợi ý phase trong roadmap, hệ thống tính theo số phase được tạo.",
+        "breakdown": [
+          "3 phase x 1 credit = 3 credit"
+        ]
+      },
+      {
+        "title": "AI tạo 8 knowledge trong phase",
+        "total": "Khoảng 4 credit",
+        "body": "Knowledge trong phase được tính riêng theo số knowledge được tạo ra.",
+        "breakdown": [
+          "8 knowledge x 0.5 credit = 4 credit"
+        ]
+      }
+    ],
+    "examplesNote": "Các con số trên là mức ước lượng đơn giản để user dễ hình dung trước khi chạy."
   },
   "upgradePlan": {
     "title": "Nâng cấp gói đăng ký",

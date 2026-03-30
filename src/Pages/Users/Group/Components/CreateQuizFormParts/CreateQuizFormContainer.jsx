@@ -1083,17 +1083,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
           {t("workspace.quiz.cancel")}
         </Button>
-        {tab === "manual" && (
-          <Button variant="outline" onClick={() => handleSubmit("DRAFT")} disabled={submitting}
-            className={`${isDarkMode ? "border-slate-600 text-slate-300 hover:bg-slate-800" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-            {t("workspace.quiz.saveDraft")}
-          </Button>
-        )}
-        <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
-          {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
+        <Button onClick={() => handleSubmit("DRAFT")} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : tab === "manual" ? <Save className="w-4 h-4 mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
           {tab === "manual"
-            ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.createActive"))
+            ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.saveDraft"))
             : (submitting ? t("workspace.quiz.generating") : t("workspace.quiz.generateAI"))
           }
         </Button>
