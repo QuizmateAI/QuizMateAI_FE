@@ -5,7 +5,12 @@ import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import QuizListView from "./QuizListView";
 import { useToast } from "@/context/ToastContext";
 import { getAttemptAssessment, getQuizHistory } from "@/api/QuizAPI";
-import { getCurrentRoadmapPhaseProgress, submitRoadmapPhaseSkipDecision } from "@/api/RoadmapPhaseAPI";
+import {
+  createPhaseProgressReview,
+  getCurrentRoadmapPhaseProgress,
+  getPhaseProgressReview,
+  submitRoadmapPhaseSkipDecision,
+} from "@/api/RoadmapPhaseAPI";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -25,6 +30,7 @@ function RoadmapCanvasView2({
   onCreateKnowledgeQuizForKnowledge,
   onCreatePhasePreLearning,
   isStudyNewRoadmap = false,
+  adaptationMode = "",
   onViewQuiz,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
@@ -50,11 +56,17 @@ function RoadmapCanvasView2({
   });
   const [submittingSkipDecision, setSubmittingSkipDecision] = useState(false);
   const [decisionHandledPhaseIds, setDecisionHandledPhaseIds] = useState([]);
+  const [phaseReviewState, setPhaseReviewState] = useState({
+    loading: false,
+    data: null,
+    phaseId: null,
+  });
   const preLearningDecisionFetchRef = useRef({
     inFlightKey: null,
     lastLoadedKey: null,
     lastLoadedAt: 0,
   });
+  const phaseReviewInFlightRef = useRef(false);
   const getDefaultOpenKnowledgeMap = (phaseList = []) => {
     return (phaseList || []).reduce((accumulator, phase) => {
       const phaseId = Number(phase?.phaseId);
@@ -85,6 +97,7 @@ function RoadmapCanvasView2({
     const rawPhases = roadmap?.phases ?? [];
     return [...rawPhases].sort((a, b) => Number(a?.phaseIndex ?? 0) - Number(b?.phaseIndex ?? 0));
   }, [roadmap?.phases]);
+  const normalizedAdaptationMode = String(adaptationMode || "").toUpperCase();
 
   const getPersistedKnowledgeMap = (storageKey) => {
     if (!storageKey || typeof window === "undefined") {
@@ -142,6 +155,145 @@ function RoadmapCanvasView2({
     ? openPhaseId
     : fallbackPhaseId;
   const activePhase = phases.find((phase) => phase.phaseId === effectiveOpenPhaseId) || null;
+
+  const hasCompletedPostLearning = useCallback((phase) => {
+    const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+    return postLearningQuizzes.some((quiz) => {
+      const attempted = quiz?.myAttempted === true;
+      const passed = quiz?.myPassed === true;
+      const status = String(quiz?.status || "").toUpperCase();
+      return attempted || passed || status === "COMPLETED";
+    });
+  }, []);
+
+  const hasPassedPostLearning = useCallback((phase) => {
+    const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+    return postLearningQuizzes.some((quiz) => quiz?.myPassed === true);
+  }, []);
+
+  const resolvePostLearningReviewEligibility = useCallback((phase) => {
+    if (!phase) return false;
+    const isFlexible = normalizedAdaptationMode === "FLEXIBLE";
+    const isStrict = normalizedAdaptationMode === "STRICT";
+    const isDone = hasCompletedPostLearning(phase);
+    const isPassed = hasPassedPostLearning(phase);
+
+    if (isFlexible) return isDone;
+    if (isStrict) return isPassed;
+
+    return isPassed;
+  }, [hasCompletedPostLearning, hasPassedPostLearning, normalizedAdaptationMode]);
+
+  const syncPhaseReview = useCallback(async () => {
+    const normalizedRoadmapId = Number(roadmap?.roadmapId);
+    const activePhaseId = Number(activePhase?.phaseId);
+    if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      return;
+    }
+    if (!Number.isInteger(activePhaseId) || activePhaseId <= 0) {
+      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      return;
+    }
+
+    if (phaseReviewInFlightRef.current) return;
+    phaseReviewInFlightRef.current = true;
+    setPhaseReviewState({ loading: true, data: null, phaseId: activePhaseId });
+
+    try {
+      const currentResponse = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+      const currentPhaseProgress = currentResponse?.data?.data || currentResponse?.data || null;
+      const phaseProgressId = Number(currentPhaseProgress?.phaseProgressId);
+      const currentPhaseId = Number(currentPhaseProgress?.phaseId);
+
+      const currentPhase = phases.find((phase) => Number(phase?.phaseId) === activePhaseId) || null;
+      const eligibleToCreateReview = resolvePostLearningReviewEligibility(currentPhase);
+      const canCreateForActivePhase = Number.isInteger(currentPhaseId)
+        && currentPhaseId === activePhaseId;
+      const reviewCreationKey = `phase_review_created:${normalizedRoadmapId}:${phaseProgressId}`;
+      const alreadyCreated = typeof window !== "undefined"
+        ? window.sessionStorage.getItem(reviewCreationKey) === "1"
+        : false;
+
+      if (
+        canCreateForActivePhase
+        &&
+        eligibleToCreateReview
+        && Number.isInteger(phaseProgressId)
+        && phaseProgressId > 0
+        && !alreadyCreated
+      ) {
+        try {
+          await createPhaseProgressReview(phaseProgressId);
+          if (typeof window !== "undefined") {
+            window.sessionStorage.setItem(reviewCreationKey, "1");
+          }
+        } catch (createError) {
+          const createStatus = Number(createError?.response?.status || 0);
+          // 409 thuong la du lieu progress chua du, van thu GET review de hien thi neu da ton tai.
+          if (createStatus !== 409) {
+            console.error("Failed to create phase progress review:", createError);
+          }
+        }
+      }
+
+      try {
+        const reviewResponse = await getPhaseProgressReview(activePhaseId);
+        const reviewData = reviewResponse?.data?.data || reviewResponse?.data || null;
+        const reviewPhaseId = Number(reviewData?.phaseId);
+        if (reviewData?.summary && reviewPhaseId === activePhaseId) {
+          setPhaseReviewState({ loading: false, data: reviewData, phaseId: activePhaseId });
+          return;
+        }
+      } catch (reviewError) {
+        // Chưa có review thì ẩn khung, không coi là lỗi UI.
+      }
+
+      setPhaseReviewState({ loading: false, data: null, phaseId: activePhaseId });
+    } catch (error) {
+      console.error("Failed to sync phase review state:", error);
+      setPhaseReviewState((current) => ({ ...current, loading: false }));
+    } finally {
+      phaseReviewInFlightRef.current = false;
+    }
+  }, [activePhase?.phaseId, phases, resolvePostLearningReviewEligibility, roadmap?.roadmapId]);
+
+  useEffect(() => {
+    void syncPhaseReview();
+  }, [syncPhaseReview, quizRefreshToken, activePhase?.phaseId]);
+
+  const phaseReviewConfidencePercent = useMemo(() => {
+    const rawScore = Number(phaseReviewState?.data?.confidenceScore);
+    if (!Number.isFinite(rawScore)) return null;
+    const normalizedScore = Math.max(0, Math.min(1, rawScore));
+    return Math.round(normalizedScore * 100);
+  }, [phaseReviewState?.data?.confidenceScore]);
+
+  const phaseReviewSegmentFillPercents = useMemo(() => {
+    if (typeof phaseReviewConfidencePercent !== "number") {
+      return [0, 0, 0];
+    }
+
+    const segmentSize = 100 / 3;
+    return [0, 1, 2].map((index) => {
+      const segmentStart = index * segmentSize;
+      const segmentEnd = segmentStart + segmentSize;
+      if (phaseReviewConfidencePercent <= segmentStart) return 0;
+      if (phaseReviewConfidencePercent >= segmentEnd) return 100;
+      return Math.max(0, Math.min(100, ((phaseReviewConfidencePercent - segmentStart) / segmentSize) * 100));
+    });
+  }, [phaseReviewConfidencePercent]);
+
+  const phaseReviewAssessedAtLabel = useMemo(() => {
+    const rawValue = phaseReviewState?.data?.assessedAt;
+    if (!rawValue) return null;
+    const parsedDate = new Date(rawValue);
+    if (Number.isNaN(parsedDate.getTime())) return null;
+    return new Intl.DateTimeFormat("vi-VN", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(parsedDate);
+  }, [phaseReviewState?.data?.assessedAt]);
 
   const loadPreLearningDecisionState = useCallback(async (phase) => {
     const normalizedPhaseId = Number(phase?.phaseId);
@@ -590,6 +742,61 @@ function RoadmapCanvasView2({
             </div>
           ) : null}
         </div>
+
+        {phaseReviewState?.data?.summary && Number(phaseReviewState?.phaseId) === Number(activePhase?.phaseId) ? (
+          <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-emerald-800/70 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
+                {t("workspace.roadmap.phaseReviewTitle", "Đánh giá AI cho phase hiện tại")}
+              </p>
+            </div>
+
+            {typeof phaseReviewConfidencePercent === "number" ? (
+              <div className="mt-3">
+                <div className="flex items-center justify-between">
+                  <p className={`text-xs font-medium ${isDarkMode ? "text-emerald-100" : "text-emerald-800"} ${fontClass}`}>
+                    {t("workspace.roadmap.phaseReviewConfidence", "Độ tin cậy")}
+                  </p>
+                  <p className={`text-xs font-semibold ${isDarkMode ? "text-emerald-100" : "text-emerald-800"} ${fontClass}`}>
+                    {phaseReviewConfidencePercent}%
+                  </p>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-1">
+                  {[
+                    { color: "#ef4444", fill: phaseReviewSegmentFillPercents[0] },
+                    { color: "#f59e0b", fill: phaseReviewSegmentFillPercents[1] },
+                    { color: "#22c55e", fill: phaseReviewSegmentFillPercents[2] },
+                  ].map((segment, index) => (
+                    <div
+                      key={`confidence-segment-${index}`}
+                      className={`h-3 overflow-hidden rounded-sm border ${isDarkMode ? "border-slate-700 bg-white/95" : "border-slate-200 bg-white"}`}
+                    >
+                      <div
+                        className="h-full"
+                        style={{
+                          width: `${segment.fill}%`,
+                          backgroundColor: segment.color,
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+              {phaseReviewState.data.summary}
+            </p>
+
+            {phaseReviewAssessedAtLabel ? (
+              <div className="mt-3 text-right">
+                <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
+                  {t("workspace.roadmap.phaseReviewAssessedAt", "Đánh giá lúc")}: {phaseReviewAssessedAtLabel}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {activePhase ? [activePhase].map((phase) => {
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
