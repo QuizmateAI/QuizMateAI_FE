@@ -117,6 +117,8 @@
       "WORKSPACE_SLOT": "Slot nhóm"
     },
     "targetSummary": {
+      "chargedUser": "Người dùng bị tính phí #{{id}}",
+      "workspace": "Không gian học tập #{{id}}"
     },
     "notifications": {
       "title": "Thông báo nhóm",
@@ -434,7 +436,8 @@
       "type": "Loại",
       "amount": "Số lượng",
       "status": "Trạng thái"
-    }
+    },
+    "bonus": "thưởng"
   },
   "rbac": {
     "title": "Phân quyền RBAC",
@@ -757,7 +760,8 @@
       "create": "Tạo mới",
       "createKhông gian học tập": "Tạo không gian học tập mới",
       "createGroup": "Tạo nhóm",
-      "share": "Chia sẻ"
+      "share": "Chia sẻ",
+      "createWorkspace": "Tạo workspace mới"
     },
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
@@ -772,7 +776,8 @@
       "featured": "Sổ ghi chú nổi bật",
       "recent": "Không gian học tập gần đây",
       "myKhông gian học tậps": "Không gian học tập của tôi",
-      "myGroups": "Nhóm của tôi"
+      "myGroups": "Nhóm của tôi",
+      "myWorkspaces": "Workspace của tôi"
     },
     "table": {
       "title": "Tiêu đề",
@@ -840,7 +845,8 @@
       "contributor": "Cộng tác viên",
       "canUpload": "Được tải lên",
       "noMembers": "Không tìm thấy thành viên",
-      "you": "Bạn"
+      "you": "Bạn",
+      "setupComplete": "Thiết lập hoàn tất"
     },
     "workspace": {
       "createTitle": "Tạo Không gian Học tập Mới",
@@ -882,7 +888,9 @@
       "topic": "Chủ đề",
       "subject": "Môn học",
       "edit": "Chỉnh sửa",
-      "confirmDeleteName": "Bạn sắp xóa"
+      "confirmDeleteName": "Bạn sắp xóa",
+      "noWorkspaces": "Chưa có workspace nào",
+      "noWorkspacesDesc": "Tạo workspace đầu tiên để bắt đầu."
     },
     "community": {
       "title": "Không gian học tập được chia sẻ",
@@ -1073,7 +1081,10 @@
         "analysisRefinementTitle": "Bạn có thể nhập lại theo hướng này",
         "roadmapQuestion": "Bạn có muốn Quizmate AI tạo lộ trình không?",
         "enableRoadmap": "Có, tạo lộ trình kèm theo",
-        "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại"
+        "skipRoadmap": "Không cần lộ trình, chỉ cấu hình các phần còn lại",
+        "noDomainSuggestionDescription": "Hãy thêm ngôn ngữ, kỳ thi hoặc chủ đề cụ thể hơn. Nếu đây là mức viết tắt như N1 hoặc N4, hệ thống sẽ ưu tiên suy ra lĩnh vực liên quan khi đã có đủ tín hiệu.",
+        "selectDomainTag": "Chọn lĩnh vực này",
+        "selectedDomainTag": "Đã chọn"
       },
       "stepTwo": {
         "title": "Mô tả trạng thái hiện tại của bạn",
@@ -1193,7 +1204,8 @@
         "targetScore": "Điểm mục tiêu",
         "customTargetScore": "Điểm mục tiêu tùy chỉnh",
         "targetScoreScale": "Thang điểm",
-        "expectedExamDate": "Ngày thi dự kiến"
+        "expectedExamDate": "Ngày thi dự kiến",
+        "primaryDomain": "Lĩnh vực chính"
       },
       "placeholders": {
         "knowledgeInput": "VD: IELTS Writing task 2, React hooks nâng cao, xác suất thống kê cơ bản...",
@@ -1299,7 +1311,8 @@
         "targetScoreRequired": "Vui lòng nhập hoặc chọn điểm mục tiêu.",
         "targetScoreScaleRequired": "Vui lòng nhập thang điểm cho kỳ thi private.",
         "expectedExamDateRequired": "Vui lòng chọn ngày thi dự kiến."
-      }
+      },
+      "editDesc": "Đi từng bước để xác định định hướng học, trọng tâm kiến thức, mục tiêu và cách thiết lập lộ trình hoặc thi thử."
     },
     "sources": {
       "title": "Tài liệu",
@@ -1354,7 +1367,9 @@
         "companionDesc": "AI đọc câu hỏi, bạn trả lời bằng giọng nói",
         "practice": "Luyện tập",
         "practiceDesc": "Xem đáp án & giải thích ngay sau mỗi câu"
-      }
+      },
+      "requireUpload": "Vui lòng tải tài liệu lên để sử dụng các chức năng này.",
+      "uploadBtn": "Tải lên"
     },
     "studio": {
       "title": "Studio",
@@ -1369,7 +1384,9 @@
         "createThẻ ghi nhớ": "Tạo Thẻ ghi nhớ",
         "mockTest": "Mock Test",
         "postLearning": "Post-learning",
-        "prelearning": "Đánh giá trước học"
+        "prelearning": "Đánh giá trước học",
+        "createFlashcard": "Tạo flashcard",
+        "createQuiz": "Tạo bài kiểm tra"
       },
       "outputs": "Kết quả đã tạo",
       "noOutputs": "Chưa có kết quả nào.",
@@ -1424,7 +1441,9 @@
       "cancel": "Hủy",
       "close": "Đóng",
       "tabFile": "Tải file",
-      "tabUrl": "Đường dẫn"
+      "tabUrl": "Đường dẫn",
+      "noData": "Không có dữ liệu",
+      "suggestMissingWorkspace": "Không tìm thấy workspace nên không thể tải gợi ý."
     },
     "quiz": {
       "createTitle": "Tạo Bài kiểm tra",
@@ -1444,21 +1463,21 @@
       "timerMode": "Chế độ tổng thời gian",
       "timerModeHintOn": "Tất cả câu hỏi dùng chung thời gian tổng",
       "timerModeHintOff": "Mỗi câu hỏi có thời gian riêng",
-        "examModeLabel": "Loại Exam",
-        "examModeType1": "Exam giới hạn thời gian tổng",
-        "examModeType2": "Exam theo từng câu",
-        "examModeType1Short": "Giới hạn thời gian tổng",
-        "examModeType2Short": "Theo từng câu",
-        "minutes": "phút",
-        "practice": "Luyện tập",
-        "exam": "Thi",
-        "chooseMode": "Chọn chế độ làm bài kiểm tra",
-        "chooseModeDescription": "Bạn muốn bắt đầu bài kiểm tra này ở chế độ nào?",
-        "confirmPractice": "Xác nhận bắt đầu ở chế độ luyện tập?",
-        "confirmExam": "Xác nhận bắt đầu ở chế độ thi?",
-        "addQuestion": "Thêm câu hỏi",
-        "totalQuestions": "Tổng số câu hỏi",
-        "maxScore": "Tổng điểm",
+      "examModeLabel": "Loại Exam",
+      "examModeType1": "Exam giới hạn thời gian tổng",
+      "examModeType2": "Exam theo từng câu",
+      "examModeType1Short": "Giới hạn thời gian tổng",
+      "examModeType2Short": "Theo từng câu",
+      "minutes": "phút",
+      "practice": "Luyện tập",
+      "exam": "Thi",
+      "chooseMode": "Chọn chế độ làm bài kiểm tra",
+      "chooseModeDescription": "Bạn muốn bắt đầu bài kiểm tra này ở chế độ nào?",
+      "confirmPractice": "Xác nhận bắt đầu ở chế độ luyện tập?",
+      "confirmExam": "Xác nhận bắt đầu ở chế độ thi?",
+      "addQuestion": "Thêm câu hỏi",
+      "totalQuestions": "Tổng số câu hỏi",
+      "maxScore": "Tổng điểm",
       "navigator": {
         "title": "Điều hướng câu hỏi",
         "pts": "điểm",
@@ -1499,29 +1518,29 @@
       "correctAnswer": "Đáp án đúng",
       "correctAnswerLabel": "Đáp án đúng",
       "deleteQuiz": "Xóa bài kiểm tra",
-        "actionButtons": {
-          "practice": "Luyện tập",
-          "exam": "Thi",
-          "delete": "Xóa",
-          "deleting": "Đang xóa..."
-        },
-        "communityPublic": "Công khai",
-        "communityPublicLong": "Đã Công khai  lên cộng đồng",
-        "privateShort": "Riêng tư",
-        "privateLong": "Đang ở chế độ riêng tư",
-        "makePublic": "Đưa bài kiểm tra lên cộng đồng",
-        "makePublicShort": "Công khai",
-        "makePrivate": "Chuyển bài kiểm tra về riêng tư",
-        "makePrivateShort": "Riêng tư",
-        "myAttemptedTrue": "Đã làm",
-        "myAttemptedFalse": "Chưa làm",
-        "myPassedTrue": "Đã đậu",
-        "myPassedFalse": "Chưa đậu",
-        "sharedToCommunitySuccess": "Đã chia sẻ bài kiểm tra lên cộng đồng.",
-        "unsharedFromCommunitySuccess": "Đã chuyển bài kiểm tra về riêng tư.",
-        "deleteQuestion": "Xóa",
-        "deleteFail": "Không thể xóa bài kiểm tra lúc này.",
-        "loading": "Đang tải danh sách bài kiểm tra...",
+      "actionButtons": {
+        "practice": "Luyện tập",
+        "exam": "Thi",
+        "delete": "Xóa",
+        "deleting": "Đang xóa..."
+      },
+      "communityPublic": "Công khai",
+      "communityPublicLong": "Đã Công khai  lên cộng đồng",
+      "privateShort": "Riêng tư",
+      "privateLong": "Đang ở chế độ riêng tư",
+      "makePublic": "Đưa bài kiểm tra lên cộng đồng",
+      "makePublicShort": "Công khai",
+      "makePrivate": "Chuyển bài kiểm tra về riêng tư",
+      "makePrivateShort": "Riêng tư",
+      "myAttemptedTrue": "Đã làm",
+      "myAttemptedFalse": "Chưa làm",
+      "myPassedTrue": "Đã đậu",
+      "myPassedFalse": "Chưa đậu",
+      "sharedToCommunitySuccess": "Đã chia sẻ bài kiểm tra lên cộng đồng.",
+      "unsharedFromCommunitySuccess": "Đã chuyển bài kiểm tra về riêng tư.",
+      "deleteQuestion": "Xóa",
+      "deleteFail": "Không thể xóa bài kiểm tra lúc này.",
+      "loading": "Đang tải danh sách bài kiểm tra...",
       "types": {
         "multipleChoice": "Trắc nghiệm một đáp án",
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
@@ -1642,7 +1661,8 @@
               "passed": "Đã đậu"
             }
           }
-        }
+        },
+        "defaultQuizTitle": "Bài kiểm tra cộng đồng"
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên bài kiểm tra.",
@@ -1666,7 +1686,9 @@
         "allDurationsRequired": "Vui lòng nhập thời gian cho tất cả các mức độ khó.",
         "mediumDurationMustBeGreaterThanEasy": "Thời gian câu trung bình phải cao hơn thời gian câu dễ.",
         "hardDurationMustBeGreaterThanMedium": "Thời gian câu khó phải cao hơn thời gian câu trung bình.",
-        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho bài kiểm tra."
+        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho bài kiểm tra.",
+        "minimumTimePerQuestion": "Thời gian tối thiểu cho mỗi câu hỏi",
+        "minimumTimePerQuestionHint": "Thời gian làm bài phải đủ để mỗi câu hỏi có thời lượng tối thiểu hợp lệ."
       },
       "contextSelector": {
         "title": "Vị trí tạo Bài kiểm tra",
@@ -1693,7 +1715,8 @@
           "ROADMAP": "Lộ trình",
           "PHASE": "Giai đoạn",
           "KNOWLEDGE": "Kiến thức"
-        }
+        },
+        "selectKnowledge": "Chọn kiến thức"
       },
       "quickCreate": {
         "emptyRoadmap": "Bạn chưa có Lộ trình nào.",
@@ -1792,7 +1815,8 @@
         "noSections": "Không tìm thấy phần nào.",
         "section": "Phần",
         "questions": "câu hỏi",
-        "noQuestions": "Không có câu hỏi trong phần này."
+        "noQuestions": "Không có câu hỏi trong phần này.",
+        "assign": "Giao bài"
       },
       "edit": {
         "title": "Chỉnh sửa Bài kiểm tra",
@@ -1806,7 +1830,9 @@
         "saving": "Đang lưu...",
         "cancel": "Hủy",
         "saveSuccess": "Cập nhật bài kiểm tra thành công!",
-        "saveFailed": "Lưu bài kiểm tra thất bại. Vui lòng thử lại."
+        "saveFailed": "Lưu bài kiểm tra thất bại. Vui lòng thử lại.",
+        "questionOption": "Tùy chọn câu hỏi",
+        "selectQuestion": "Chọn câu hỏi"
       },
       "create": "Tạo Bài kiểm tra",
       "createActive": "Tạo & Kích hoạt",
@@ -1830,7 +1856,9 @@
         "loadFailed": "Không thể tải danh sách gợi ý. Vui lòng thử lại.",
         "generateFailed": "Tạo bài kiểm tra thất bại. Vui lòng thử lại.",
         "generating": "Đang tạo bài kiểm tra...",
-        "createBài kiểm tra": "Tạo Bài kiểm tra"
+        "createBài kiểm tra": "Tạo Bài kiểm tra",
+        "createQuiz": "Tạo bài kiểm tra",
+        "inlineCreateQuiz": "Dùng gợi ý này để tạo bài kiểm tra"
       },
       "header": {
         "english": "English",
@@ -1865,7 +1893,8 @@
         "processingAction": "Đang xử lý...",
         "processing": "Đang xử lý bài nộp của bạn...",
         "confirmSubmitTitle": "Dừng và nộp bài?",
-        "confirmSubmitDescription": "Bài làm của bạn sẽ được nộp ngay lập tức."
+        "confirmSubmitDescription": "Bài làm của bạn sẽ được nộp ngay lập tức.",
+        "starting": "Đang bắt đầu..."
       },
       "practiceActions": {
         "confirmExitTitle": "Thoát thực hành?",
@@ -1927,7 +1956,57 @@
         "recommendationsSection": "Gợi ý tiếp theo",
         "actionsSection": "Hành động tiếp theo",
         "questionList": "Danh sách câu",
-        "noReviewData": "Không có dữ liệu chi tiết để review bài làm."
+        "noReviewData": "Không có dữ liệu chi tiết để review bài làm.",
+        "assessmentLoading": "Đang tải đánh giá",
+        "assessmentNoSummary": "Chưa có tóm tắt đánh giá",
+        "assessmentProcessing": "Đang xử lý đánh giá",
+        "backToQuiz": "Quay lại bài kiểm tra",
+        "generateFromAssessmentFail": "Tạo bài kiểm tra từ đánh giá thất bại",
+        "generateFromAssessmentSuccess": "Tạo bài kiểm tra từ đánh giá thành công",
+        "generateQuizFromAssessment": "Tạo bài kiểm tra từ đánh giá",
+        "incompleteAttempt": "Lượt làm chưa hoàn tất",
+        "loading": "Đang tải kết quả",
+        "nextQuizPlan": "Kế hoạch bài kiểm tra tiếp theo",
+        "pendingOrMissing": "Đang chờ hoặc thiếu dữ liệu",
+        "recurringMistakes": "Lỗi lặp lại",
+        "refreshAssessment": "Làm mới đánh giá",
+        "resumeAttempt": "Tiếp tục lượt làm",
+        "retryLoad": "Thử tải lại",
+        "strengths": "Điểm mạnh",
+        "unavailable": "Không khả dụng",
+        "unknownTopic": "Chủ đề chưa xác định",
+        "waitingForResult": "Đang chờ kết quả",
+        "weaknesses": "Điểm yếu",
+        "wrong": "Sai"
+      },
+      "answerLocked": "Câu trả lời đã bị khóa",
+      "close": "Đóng",
+      "common": {
+        "cancel": "Hủy"
+      },
+      "communityExplorer": {
+        "backToQuiz": "Quay lại danh sách bài kiểm tra",
+        "description": "Mô tả",
+        "empty": "Chưa có dữ liệu",
+        "loadError": "Không thể tải dữ liệu",
+        "publicCount": "Số bài công khai",
+        "publicQuiz": "Bài kiểm tra công khai",
+        "recommendedCount": "Số bài được gợi ý",
+        "searchPlaceholder": "Tìm kiếm bài kiểm tra cộng đồng",
+        "title": "Khám phá bài kiểm tra cộng đồng",
+        "topMatch": "Phù hợp nhất"
+      },
+      "deleteConfirm": "Bạn có chắc muốn xóa bài kiểm tra này không?",
+      "history": {
+        "attempt": "Lượt làm",
+        "empty": "Chưa có lịch sử",
+        "loading": "Đang tải lịch sử"
+      },
+      "startExamPrompt": "Bạn có muốn bắt đầu bài thi không?",
+      "tabs": {
+        "history": "Lịch sử",
+        "overview": "Tổng quan",
+        "questions": "Câu hỏi"
       }
     },
     "flashcard": {
@@ -1954,7 +2033,16 @@
         "additionalPrompt": "Yêu cầu bổ sung",
         "promptPlaceholder": "Nhập yêu cầu bổ sung cho AI...",
         "byCount": "Theo số lượng",
-        "byPercent": "Theo phần trăm"
+        "byPercent": "Theo phần trăm",
+        "clozePercent": "Tỷ lệ điền khuyết",
+        "distributionInvalid": "Phân bổ chưa hợp lệ",
+        "distributionTitle": "Phân bổ loại flashcard",
+        "distributionValid": "Phân bổ hợp lệ",
+        "imagePercent": "Tỷ lệ hình ảnh",
+        "noActiveSelectedMaterials": "Không có tài liệu đang hoạt động nào được chọn",
+        "nonActiveMaterialsWarning": "Một số tài liệu đã chọn hiện không còn hoạt động",
+        "qaPercent": "Tỷ lệ hỏi đáp",
+        "termPercent": "Tỷ lệ thuật ngữ"
       },
       "create": "Tạo Thẻ ghi nhớ",
       "creating": "Đang tạo...",
@@ -2013,7 +2101,10 @@
       "cardType": "Loại thẻ",
       "emptyRoadmap": "Chưa có Lộ trình nào.",
       "emptyPhase": "Chưa có Giai đoạn nào.",
-      "emptyKiến thức": "Chưa có Kiến thức nào."
+      "emptyKiến thức": "Chưa có Kiến thức nào.",
+      "aiOnlyHint": "Tính năng này chỉ dùng AI",
+      "createFirstFlashcard": "Tạo bộ flashcard đầu tiên",
+      "noFlashcards": "Bạn chưa có flashcard nào."
     },
     "roadmap": {
       "createTitle": "Tạo Lộ trình học tập",
@@ -2124,13 +2215,59 @@
         "view2Kiến thứcDetail": "Chi tiết Kiến thức",
         "view2RoadmapHint": "Chọn lộ trình, Giai đoạn hoặc Kiến thức ở khung trên để xem đúng thông tin chi tiết bên dưới.",
         "view2PhaseHint": "Bấm vào Giai đoạn ở phía trên để xem mô tả Giai đoạn và danh sách học sau giai đoạn.",
-        "view2Kiến thứcHint": "Bấm vào Kiến thức để xem mô tả chi tiết cùng danh sách Bộ câu hỏi và Thẻ ghi nhớ."
+        "view2Kiến thứcHint": "Bấm vào Kiến thức để xem mô tả chi tiết cùng danh sách Bộ câu hỏi và Thẻ ghi nhớ.",
+        "knowledge": "Kiến thức",
+        "moveKnowledge": "Di chuyển khối kiến thức",
+        "preLearning": "Tiền học tập"
       },
       "doubleClickToRename": "Nhấp đúp để đổi tên",
       "noMockTestYet": "Chưa có bài thi mẫu nào.",
       "noPostLearningYet": "Chưa có bài học sau giai đoạn nào.",
       "save": "Lưu",
-      "descriptionLabel": "Mô tả"
+      "descriptionLabel": "Mô tả",
+      "addFlashcard": "Thêm flashcard",
+      "addKnowledge": "Thêm kiến thức",
+      "addQuiz": "Thêm bài kiểm tra",
+      "aiSuggestTitle": "Gợi ý từ AI",
+      "createKnowledgeAndPostLearning": "Tạo kiến thức và hậu học tập",
+      "createKnowledgeQuiz": "Tạo bài kiểm tra kiến thức",
+      "createPhaseButton": "Tạo giai đoạn",
+      "emptyRoadmapDescription": "Chưa có lộ trình nào để hiển thị.",
+      "emptyRoadmapTitle": "Chưa có lộ trình",
+      "generatingKnowledge": "Đang tạo kiến thức",
+      "generatingKnowledgeQuiz": "Đang tạo bài kiểm tra kiến thức",
+      "generatingPostLearning": "Đang tạo hậu học tập",
+      "generatingPreLearning": "Đang tạo tiền học tập",
+      "loading": {
+        "description": "Đang tải dữ liệu lộ trình.",
+        "title": "Đang tải lộ trình"
+      },
+      "nextStepTitle": "Bước tiếp theo",
+      "noFlashcardYet": "Chưa có flashcard nào được tạo.",
+      "noQuizYet": "Chưa có bài kiểm tra nào được tạo.",
+      "noRoadmapYet": "Chưa có lộ trình nào",
+      "phaseAiSuggestTitle": "Gợi ý AI cho giai đoạn",
+      "phaseDescriptionDropdown": "Mô tả giai đoạn",
+      "phaseDialog": {
+        "createButton": "Tạo giai đoạn",
+        "creating": "Đang tạo...",
+        "description": "Mô tả",
+        "existingMaterials": "Tài liệu hiện có",
+        "noMaterialYet": "Chưa có tài liệu nào",
+        "onlyActive": "Chỉ hiện tài liệu đang hoạt động",
+        "selectionCount": "Số lượng đã chọn",
+        "title": "Tạo giai đoạn lộ trình"
+      },
+      "phaseGenerating": {
+        "description": "AI đang tạo giai đoạn cho lộ trình của bạn.",
+        "title": "Đang tạo giai đoạn"
+      },
+      "phaseReviewSummaryDropdown": "Tóm tắt đánh giá giai đoạn",
+      "postLearningHelper": "Gợi ý cho phần hậu học tập",
+      "postLearningLocked": "Phần hậu học tập đang bị khóa",
+      "postLearningProgress": "Tiến độ hậu học tập",
+      "preLearningHelper": "Gợi ý cho phần tiền học tập",
+      "title": "Lộ trình"
     },
     "mockTest": {
       "title": "Mock Test",
@@ -2210,7 +2347,8 @@
         "workspace": "Không gian học tập",
         "group": "Nhóm"
       }
-    }
+    },
+    "confirmDeleteFlashcard": "Bạn có chắc muốn xóa bộ flashcard này không?"
   },
   "userPage": {
     "title": "Quản lý người dùng",
@@ -2268,7 +2406,8 @@
     "endDate": "Ngày hết hạn",
     "price": "Giá",
     "noDetail": "Không thể tải chi tiết.",
-    "loadError": "Không thể tải thông tin người dùng"
+    "loadError": "Không thể tải thông tin người dùng",
+    "noWorkspaces": "Chưa có workspace nào."
   },
   "groupDetail": {
     "description": "Mô tả",
@@ -2602,7 +2741,8 @@
         "interpretingLabel": "AI đang hiểu kiến thức này là",
         "tooBroad": "Kiến thức hiện khá rộng. Nếu muốn gợi ý sát hơn, hãy mô tả rõ đối tượng học và mục tiêu hơn một chút.",
         "emptyLĩnh vựcTitle": "Chưa có lĩnh vực khả dụng",
-        "emptyDomainDescription": "Quizmate AI chưa tạo được danh sách lĩnh vực từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử phân tích lại."
+        "emptyDomainDescription": "Quizmate AI chưa tạo được danh sách lĩnh vực từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử phân tích lại.",
+        "emptyDomainTitle": "Chưa có lĩnh vực sẵn sàng"
       },
       "roadmap": {
         "title": "Bật lộ trình chung",
@@ -2639,7 +2779,9 @@
         "afterSaveItemOne": "Không gian học tập dùng lĩnh vực này làm nền tảng cho lộ trình, bài kiểm tra và thẻ ghi nhớ.",
         "afterSaveItemTwo": "Trưởng nhóm vẫn có thể cập nhật lại hồ sơ khi không gian học tập chưa có tài liệu.",
         "afterSaveItemThree": "Nếu không gian học tập đã có tài liệu, hãy xóa tài liệu trước rồi mới cập nhật lại hồ sơ."
-      }
+      },
+      "selectedDomain": "Lĩnh vực đã chọn cho nhóm này",
+      "selectedDomainHint": "Lĩnh vực này sẽ là nền tảng chung cho gợi ý lộ trình, bài kiểm tra và hoạt động học tập."
     }
   },
   "payment": {
@@ -2689,7 +2831,9 @@
       "hasPersonalizedLearningAnalytic": "Phân tích học tập cá nhân",
       "hasAiTextReadingAndSummarization": "AI đọc & tóm tắt văn bản",
       "hasAdvancedAiConfiguration": "Cấu hình AI nâng cao"
-    }
+    },
+    "paymentError": "Lỗi thanh toán",
+    "vnpayError": "Lỗi VNPay"
   },
   "paymentResult": {
     "successTitle": "Thanh toán thành công!",
@@ -2739,25 +2883,81 @@
     ],
     "bundleTitle": "Cách tính theo loại tài liệu được hỗ trợ",
     "bundleDesc": "Hệ thống hiện dùng cách tính đơn giản để user dễ hiểu và dễ ước lượng. Mỗi loại tài liệu chỉ có một mức credit cơ bản theo đơn vị đo chính.",
-    "bundleHeaders": ["Loại tài liệu", "Cách tính", "Tín dụng cơ bản"],
+    "bundleHeaders": [
+      "Loại tài liệu",
+      "Cách tính",
+      "Tín dụng cơ bản"
+    ],
     "bundleTable": [
-      ["PDF", "Theo số trang", "1 tín dụng / trang"],
-      ["TRÌNH CHIẾU", "Theo số trang trình chiếu", "1 tín dụng / trang trình chiếu"],
-      ["VIDEO", "Theo số phút", "1 tín dụng / phút"],
-      ["ÂM THANH", "Theo số phút", "1 tín dụng / phút"],
-      ["VĂN BẢN", "Theo số từ", "1 tín dụng / 1000 từ"],
-      ["TÀI LIỆU", "Theo số từ", "1 tín dụng / 1000 từ"],
-      ["BẢNG TÍNH", "Theo số trang tính", "1 tín dụng / trang tính"]
+      [
+        "PDF",
+        "Theo số trang",
+        "1 tín dụng / trang"
+      ],
+      [
+        "TRÌNH CHIẾU",
+        "Theo số trang trình chiếu",
+        "1 tín dụng / trang trình chiếu"
+      ],
+      [
+        "VIDEO",
+        "Theo số phút",
+        "1 tín dụng / phút"
+      ],
+      [
+        "ÂM THANH",
+        "Theo số phút",
+        "1 tín dụng / phút"
+      ],
+      [
+        "VĂN BẢN",
+        "Theo số từ",
+        "1 tín dụng / 1000 từ"
+      ],
+      [
+        "TÀI LIỆU",
+        "Theo số từ",
+        "1 tín dụng / 1000 từ"
+      ],
+      [
+        "BẢNG TÍNH",
+        "Theo số trang tính",
+        "1 tín dụng / trang tính"
+      ]
     ],
     "unitTitle": "Bảng credit cho tính năng AI chính",
     "unitDesc": "Bảng này chỉ giữ các tính năng AI cốt lõi để user dễ ước lượng trước khi chạy. Riêng bài kiểm tra sẽ tính đơn giản theo tổng số câu, không tách riêng từng loại câu hay cấu hình câu hỏi.",
-    "unitHeaders": ["Hạng mục", "Tín dụng đề xuất", "Cách tính"],
+    "unitHeaders": [
+      "Hạng mục",
+      "Tín dụng đề xuất",
+      "Cách tính"
+    ],
     "unitTable": [
-      ["Tạo bài kiểm tra", "0,5 tín dụng / câu", "Theo số câu"],
-      ["Phản hồi AI sau mỗi bài kiểm tra", "1 tín dụng / lần làm bài", "Theo lần làm bài"],
-      ["Thẻ ghi nhớ cơ bản", "0,5 tín dụng / thẻ", "Theo thẻ"],
-      ["AI tạo giai đoạn trong lộ trình", "1 tín dụng / giai đoạn", "Theo giai đoạn"],
-      ["AI tạo kiến thức trong giai đoạn", "0,5 tín dụng / kiến thức", "Theo kiến thức"]
+      [
+        "Tạo bài kiểm tra",
+        "0,5 tín dụng / câu",
+        "Theo số câu"
+      ],
+      [
+        "Phản hồi AI sau mỗi bài kiểm tra",
+        "1 tín dụng / lần làm bài",
+        "Theo lần làm bài"
+      ],
+      [
+        "Thẻ ghi nhớ cơ bản",
+        "0,5 tín dụng / thẻ",
+        "Theo thẻ"
+      ],
+      [
+        "AI tạo giai đoạn trong lộ trình",
+        "1 tín dụng / giai đoạn",
+        "Theo giai đoạn"
+      ],
+      [
+        "AI tạo kiến thức trong giai đoạn",
+        "0,5 tín dụng / kiến thức",
+        "Theo kiến thức"
+      ]
     ],
     "personalizationTitle": "Gợi ý AI đơn giản",
     "personalizationDesc": "Các gợi ý dưới đây là những gợi ý cơ bản, dễ hiểu và phù hợp với hệ thống hiện tại.",
@@ -2867,5 +3067,96 @@
     "selectGroup": "Chọn nhóm áp dụng",
     "noLeaderGroups": "Bạn chưa là trưởng nhóm của nhóm nào.",
     "upgradeBtn": "Nâng cấp"
-  }
+  },
+  "Bloom Skills": "Kỹ năng Bloom",
+  "Dashboard": "Bảng điều khiển",
+  "Difficulty Level": "Mức độ khó",
+  "General Info": "Thông tin chung",
+  "Loading materials": {
+    "": {
+      "": {
+        "": "Đang tải tài liệu..."
+      }
+    }
+  },
+  "Members": "Thành viên",
+  "No description": "Không có mô tả",
+  "No materials found in this workspace": {
+    "": "Không tìm thấy tài liệu nào trong workspace này."
+  },
+  "Question Types": "Loại câu hỏi",
+  "Select Materials": "Chọn tài liệu",
+  "Settings": "Cài đặt",
+  "Total Questions": "Tổng số câu hỏi",
+  "agreeToTerms": "Tôi đồng ý với",
+  "alreadyHaveAccount": "Đã có tài khoản?",
+  "and": "và",
+  "backToLogin": "Quay lại đăng nhập",
+  "confirmPassword": "Xác nhận mật khẩu",
+  "createAccount": "Tạo tài khoản",
+  "creditPackage": {
+    "add": "Thêm gói",
+    "addTitle": "Thêm gói tín dụng",
+    "basicInfo": "Thông tin cơ bản",
+    "confirmDelete": "Xác nhận xóa",
+    "confirmDeleteDesc": "Bạn có chắc muốn xóa gói tín dụng này không?",
+    "create": "Tạo gói",
+    "createSuccess": "Tạo gói tín dụng thành công",
+    "delete": "Xóa",
+    "deleteSuccess": "Xóa gói tín dụng thành công",
+    "deleting": "Đang xóa...",
+    "desc": "Mô tả",
+    "edit": "Chỉnh sửa",
+    "editTitle": "Chỉnh sửa gói tín dụng",
+    "empty": "Chưa có gói tín dụng nào",
+    "form": {
+      "bonusCredit": "Tín dụng thưởng",
+      "creditAmount": "Số tín dụng",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Nhập mô tả gói tín dụng",
+      "name": "Tên gói",
+      "namePlaceholder": "Nhập tên gói tín dụng",
+      "price": "Giá"
+    },
+    "formDesc": "Điền thông tin để tạo hoặc cập nhật gói tín dụng.",
+    "nameRequired": "Vui lòng nhập tên gói",
+    "save": "Lưu",
+    "search": "Tìm kiếm gói tín dụng",
+    "stats": {
+      "active": "Đang hoạt động",
+      "maxCredit": "Tín dụng cao nhất",
+      "minPrice": "Giá thấp nhất",
+      "total": "Tổng số gói"
+    },
+    "submitting": "Đang lưu...",
+    "table": {
+      "actions": "Thao tác",
+      "bonus": "Thưởng",
+      "credit": "Tín dụng",
+      "name": "Tên gói",
+      "price": "Giá",
+      "status": "Trạng thái"
+    },
+    "tableTitle": "Danh sách gói tín dụng",
+    "title": "Quản lý gói tín dụng",
+    "toggleStatus": "Bật/tắt trạng thái",
+    "updateStatusSuccess": "Cập nhật trạng thái thành công",
+    "updateSuccess": "Cập nhật gói tín dụng thành công"
+  },
+  "email": "Email",
+  "firstName": "Tên",
+  "forgotPasswordSubtitle": "Nhập email để nhận hướng dẫn đặt lại mật khẩu.",
+  "forgotPasswordTitle": "Quên mật khẩu?",
+  "lastName": "Họ",
+  "login": "Đăng nhập",
+  "orLoginWith": "Hoặc đăng nhập với",
+  "orRegisterWith": "Hoặc đăng ký với",
+  "password": "Mật khẩu",
+  "privacyPolicies": "Chính sách bảo mật",
+  "processing": "Đang xử lý...",
+  "signUpSubtitle": "Tạo tài khoản để bắt đầu học cùng QuizMateAI.",
+  "signUpTitle": "Tạo tài khoản",
+  "submit": "Gửi",
+  "terms": "Điều khoản dịch vụ",
+  "workspaceSettings": "Cài đặt workspace"
 }
