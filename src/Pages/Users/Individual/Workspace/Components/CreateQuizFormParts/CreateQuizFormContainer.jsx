@@ -354,6 +354,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const [difficultyDefs, setDifficultyDefs] = useState([]);
   const [selectedDifficultyId, setSelectedDifficultyId] = useState(""); // ID or "CUSTOM"
   const [customDifficulty, setCustomDifficulty] = useState({ easy: 30, medium: 40, hard: 30 });
+  const [lockedDifficultyLevel, setLockedDifficultyLevel] = useState(null);
   const [allQTypes, setAllQTypes] = useState([]);
   const [qTypes, setQTypes] = useState([]);
   const [selectedQTypes, setSelectedQTypes] = useState([]); // { questionTypeId, ratio, isLocked }
@@ -379,6 +380,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const [qTypeToAdd, setQTypeToAdd] = useState("");
   const [bloomToAdd, setBloomToAdd] = useState("");
   const [fieldErrors, setFieldErrors] = useState({}); // Track errors for each field
+  const prevDifficultyUnitRef = useRef(questionUnit);
   const prevQuestionTypeUnitRef = useRef(questionTypeUnit);
   const prevBloomUnitRef = useRef(bloomUnit);
 
@@ -489,6 +491,109 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     return { easy, medium, hard };
   };
 
+  const normalizeDifficultyValue = (value, unitByCount) => {
+    const raw = Math.max(0, Number(value) || 0);
+    return unitByCount ? Math.round(raw) : Math.round(raw * 100) / 100;
+  };
+
+  const distributeDifficultyValues = (values, targetTotal, unitByCount, lockedKey = null, changedKey = null) => {
+    const validKeys = DIFFICULTY_LEVELS.filter((key) => ["easy", "medium", "hard"].includes(key));
+    const target = unitByCount
+      ? Math.max(0, Math.round(Number(targetTotal || 0)))
+      : Math.max(0, Number(targetTotal || 0));
+
+    const next = validKeys.reduce((acc, key) => {
+      acc[key] = normalizeDifficultyValue(values?.[key], unitByCount);
+      return acc;
+    }, {});
+
+    const preservedKeys = [...new Set([lockedKey, changedKey].filter((key) => validKeys.includes(key)))];
+
+    if (changedKey && preservedKeys.includes(changedKey)) {
+      const otherPreservedTotal = preservedKeys
+        .filter((key) => key !== changedKey)
+        .reduce((sum, key) => sum + next[key], 0);
+      const maxAllowed = Math.max(0, target - otherPreservedTotal);
+      next[changedKey] = Math.min(next[changedKey], maxAllowed);
+    }
+
+    const adjustableKeys = validKeys.filter((key) => !preservedKeys.includes(key));
+    const preservedTotal = preservedKeys.reduce((sum, key) => sum + next[key], 0);
+    const remaining = Math.max(0, target - preservedTotal);
+
+    if (adjustableKeys.length > 0) {
+      const adjustableTotal = adjustableKeys.reduce((sum, key) => sum + next[key], 0);
+
+      if (unitByCount) {
+        const rawShares = adjustableKeys.map((key) => (
+          adjustableTotal > 0
+            ? (next[key] / adjustableTotal) * remaining
+            : remaining / adjustableKeys.length
+        ));
+        const baseShares = rawShares.map((value) => Math.floor(value));
+        let leftover = Math.max(0, remaining - baseShares.reduce((sum, value) => sum + value, 0));
+
+        adjustableKeys.forEach((key, index) => {
+          next[key] = baseShares[index];
+        });
+
+        const order = rawShares
+          .map((value, index) => ({ index, fraction: value - baseShares[index] }))
+          .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+
+        for (let index = 0; index < leftover; index += 1) {
+          const targetKey = adjustableKeys[order[index % order.length].index];
+          next[targetKey] += 1;
+        }
+      } else {
+        const rawShares = adjustableKeys.map((key) => (
+          adjustableTotal > 0
+            ? (next[key] / adjustableTotal) * remaining
+            : remaining / adjustableKeys.length
+        ));
+        const baseShares = rawShares.map((value) => Math.floor(value * 100) / 100);
+        const distributed = baseShares.reduce((sum, value) => sum + value, 0);
+        const delta = Math.round((remaining - distributed) * 100) / 100;
+
+        adjustableKeys.forEach((key, index) => {
+          next[key] = baseShares[index];
+        });
+
+        const lastAdjustableKey = adjustableKeys[adjustableKeys.length - 1];
+        if (lastAdjustableKey && delta !== 0) {
+          next[lastAdjustableKey] = Math.max(0, Math.round((next[lastAdjustableKey] + delta) * 100) / 100);
+        }
+      }
+    }
+
+    const total = validKeys.reduce((sum, key) => sum + next[key], 0);
+    const finalDelta = unitByCount
+      ? target - total
+      : Math.round((target - total) * 100) / 100;
+    const fixupKey = adjustableKeys[adjustableKeys.length - 1] || changedKey || lockedKey;
+
+    if (fixupKey && finalDelta !== 0) {
+      next[fixupKey] = Math.max(0, normalizeDifficultyValue(next[fixupKey] + finalDelta, unitByCount));
+    }
+
+    return next;
+  };
+
+  const handleCustomDifficultyChange = (level, value) => {
+    const parsed = normalizeDifficultyValue(value, questionUnit);
+    setCustomDifficulty((prev) => distributeDifficultyValues(
+      { ...prev, [level]: parsed },
+      getTargetTotal(questionUnit),
+      questionUnit,
+      lockedDifficultyLevel,
+      level,
+    ));
+  };
+
+  const handleToggleDifficultyLock = (level) => {
+    setLockedDifficultyLevel((prev) => (prev === level ? null : level));
+  };
+
   const filterQuestionTypesByImageAvailability = useCallback((items) => {
     return (Array.isArray(items) ? items : []).filter((item) => {
       const normalizedType = String(item?.questionType || "").toUpperCase();
@@ -590,10 +695,14 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     const val = e.target.value;
     if (val === "CUSTOM") {
       setSelectedDifficultyId("CUSTOM");
+      setLockedDifficultyLevel(null);
       setCustomDifficulty(distributeCustomDifficultyEvenly(questionUnit));
+      prevDifficultyUnitRef.current = questionUnit;
     } else {
       setSelectedDifficultyId(Number(val));
       setQuestionUnit(false);
+      setLockedDifficultyLevel(null);
+      prevDifficultyUnitRef.current = false;
     }
   };
 
@@ -604,10 +713,21 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   }, [selectedDifficultyId, questionUnit]);
 
   useEffect(() => {
-    if (selectedDifficultyId === "CUSTOM") {
-      setCustomDifficulty(distributeCustomDifficultyEvenly(questionUnit));
+    if (selectedDifficultyId !== "CUSTOM") return;
+
+    if (prevDifficultyUnitRef.current !== questionUnit) {
+      setCustomDifficulty((prev) => distributeDifficultyValues(prev, getTargetTotal(questionUnit), questionUnit));
+      prevDifficultyUnitRef.current = questionUnit;
+      return;
     }
-  }, [aiTotalQuestions, questionUnit, selectedDifficultyId]);
+
+    setCustomDifficulty((prev) => distributeDifficultyValues(
+      prev,
+      getTargetTotal(questionUnit),
+      questionUnit,
+      lockedDifficultyLevel,
+    ));
+  }, [aiTotalQuestions, questionUnit, selectedDifficultyId, lockedDifficultyLevel]);
 
   const handleAddQType = () => {
     const id = Number(qTypeToAdd);
@@ -1115,7 +1235,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const totalScoreDisplay = Math.round(questions.reduce((s, q) => s + (q.point || 0), 0) * 100) / 100;
   const unlockedCount = questions.filter(q => !q.isLocked).length;
 
-  // Difficulty preview (AI config): always render as a 100% stacked bar for clearer understanding.
+  // Difficulty preview (AI config): keep legend aligned with the stacked bar preview.
   const selectedDifficultyDef = difficultyDefs.find((d) => d.id === selectedDifficultyId);
   const difficultyPreviewRaw = selectedDifficultyId === "CUSTOM"
     ? {
@@ -1129,13 +1249,22 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         hard: Math.max(0, Number(selectedDifficultyDef?.hardRatio) || 0),
       };
   const difficultyRawTotal = difficultyPreviewRaw.easy + difficultyPreviewRaw.medium + difficultyPreviewRaw.hard;
-  const difficultyBarBase = difficultyRawTotal > 0 ? difficultyRawTotal : 1;
+  const difficultyPreviewTarget = questionUnit ? Math.max(0, Number(aiTotalQuestions || 0)) : 100;
+  const difficultyBarBase = Math.max(difficultyPreviewTarget, difficultyRawTotal, 1);
   const difficultyPreviewPercent = {
     easy: (difficultyPreviewRaw.easy / difficultyBarBase) * 100,
     medium: (difficultyPreviewRaw.medium / difficultyBarBase) * 100,
     hard: (difficultyPreviewRaw.hard / difficultyBarBase) * 100,
   };
-  const difficultyValueUnit = questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%";
+  const difficultyPreviewUsedPercent = difficultyPreviewPercent.easy + difficultyPreviewPercent.medium + difficultyPreviewPercent.hard;
+  const difficultyPreviewRemainingPercent = Math.max(0, Math.round((100 - difficultyPreviewUsedPercent) * 100) / 100);
+  const formatDifficultyPreviewPercent = (value) => {
+    const rounded = Math.round((Number(value) || 0) * 100) / 100;
+    return Number(rounded.toFixed(2)).toString();
+  };
+  const difficultyPreviewSummary = questionUnit
+    ? `${Number((Math.round(difficultyRawTotal * 100) / 100).toFixed(2))}/${difficultyPreviewTarget} ${t("workspace.quiz.aiConfig.countUnit")}`
+    : `${formatDifficultyPreviewPercent(difficultyRawTotal)}%`;
 
   return (
     <div id="create-quiz-header" className="flex flex-col h-full scroll-mt-20">
@@ -2026,16 +2155,26 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                  <div className="mt-3 grid grid-cols-3 gap-2">
                     {["easy", "medium", "hard"].map(level => (
                       <div key={level}>
-                        <label className={`text-[10px] uppercase font-bold mb-1 block ${isDarkMode?"text-slate-500":"text-gray-500"}`}>{level} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})</label>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <label className={`text-[10px] uppercase font-bold block ${isDarkMode?"text-slate-500":"text-gray-500"}`}>{level} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})</label>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleDifficultyLock(level)}
+                            className={`p-1 rounded transition-colors ${
+                              lockedDifficultyLevel === level
+                                ? "text-blue-500"
+                                : (isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-500 hover:text-gray-700")
+                            }`}
+                            title={lockedDifficultyLevel === level ? t("workspace.quiz.aiConfig.unlock") : t("workspace.quiz.aiConfig.lock")}
+                          >
+                            {lockedDifficultyLevel === level ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
                         <input
                           type="number"
                           className={inputCls}
                           value={customDifficulty[level]}
-                          onChange={e => {
-                            const raw = Math.max(0, Number(e.target.value) || 0);
-                            const value = questionUnit ? Math.round(raw) : raw;
-                            setCustomDifficulty(prev => ({ ...prev, [level]: value }));
-                          }}
+                          onChange={e => handleCustomDifficultyChange(level, e.target.value)}
                         />
                       </div>
                     ))}
@@ -2048,7 +2187,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                      {t("workspace.quiz.aiConfig.difficultyPreviewTitle")}
                    </span>
                    <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                     100%
+                     {difficultyPreviewSummary}
                    </span>
                  </div>
 
@@ -2056,37 +2195,46 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                    <div
                      className="h-full bg-green-500 transition-all duration-300"
                      style={{ width: `${difficultyPreviewPercent.easy}%` }}
-                     title={`${t("workspace.quiz.difficultyLevels.easy")}: ${Math.round(difficultyPreviewPercent.easy)}%`}
+                     title={`${t("workspace.quiz.difficultyLevels.easy")}: ${formatDifficultyPreviewPercent(difficultyPreviewPercent.easy)}%`}
                    />
                    <div
                      className="h-full bg-amber-500 transition-all duration-300"
                      style={{ width: `${difficultyPreviewPercent.medium}%` }}
-                     title={`${t("workspace.quiz.difficultyLevels.medium")}: ${Math.round(difficultyPreviewPercent.medium)}%`}
+                     title={`${t("workspace.quiz.difficultyLevels.medium")}: ${formatDifficultyPreviewPercent(difficultyPreviewPercent.medium)}%`}
                    />
                    <div
                      className="h-full bg-red-500 transition-all duration-300"
                      style={{ width: `${difficultyPreviewPercent.hard}%` }}
-                     title={`${t("workspace.quiz.difficultyLevels.hard")}: ${Math.round(difficultyPreviewPercent.hard)}%`}
+                     title={`${t("workspace.quiz.difficultyLevels.hard")}: ${formatDifficultyPreviewPercent(difficultyPreviewPercent.hard)}%`}
                    />
+                   {difficultyPreviewRemainingPercent > 0 && (
+                     <div
+                       className={`h-full transition-all duration-300 ${isDarkMode ? "bg-slate-700/70" : "bg-gray-200"}`}
+                       style={{ width: `${difficultyPreviewRemainingPercent}%` }}
+                       title={questionUnit
+                         ? `${difficultyPreviewTarget - Math.round(difficultyRawTotal)} ${t("workspace.quiz.aiConfig.countUnit")}`
+                         : `${formatDifficultyPreviewPercent(100 - difficultyRawTotal)}%`}
+                     />
+                   )}
                  </div>
 
                  <div className="mt-2 grid grid-cols-3 gap-2">
                    <div className="flex items-center gap-1.5 min-w-0">
                      <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />
                      <span className={`text-[11px] truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                       {t("workspace.quiz.difficultyLevels.easy")}: {difficultyPreviewRaw.easy}{difficultyValueUnit} ({Math.round(difficultyPreviewPercent.easy)}%)
+                       {t("workspace.quiz.difficultyLevels.easy")}: {formatDifficultyPreviewPercent(difficultyPreviewPercent.easy)}%
                      </span>
                    </div>
                    <div className="flex items-center gap-1.5 min-w-0">
                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
                      <span className={`text-[11px] truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                       {t("workspace.quiz.difficultyLevels.medium")}: {difficultyPreviewRaw.medium}{difficultyValueUnit} ({Math.round(difficultyPreviewPercent.medium)}%)
+                       {t("workspace.quiz.difficultyLevels.medium")}: {formatDifficultyPreviewPercent(difficultyPreviewPercent.medium)}%
                      </span>
                    </div>
                    <div className="flex items-center gap-1.5 min-w-0">
                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
                      <span className={`text-[11px] truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                       {t("workspace.quiz.difficultyLevels.hard")}: {difficultyPreviewRaw.hard}{difficultyValueUnit} ({Math.round(difficultyPreviewPercent.hard)}%)
+                       {t("workspace.quiz.difficultyLevels.hard")}: {formatDifficultyPreviewPercent(difficultyPreviewPercent.hard)}%
                      </span>
                    </div>
                  </div>
