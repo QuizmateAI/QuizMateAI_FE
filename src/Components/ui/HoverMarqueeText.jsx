@@ -13,12 +13,14 @@ function HoverMarqueeText({
   const frameRef = useRef(null);
   const lastTimeRef = useRef(0);
   const cycleWidthRef = useRef(0);
+  const offsetXRef = useRef(0);
   const pauseUntilRef = useRef(0);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [offsetX, setOffsetX] = useState(0);
 
   const normalizedText = useMemo(() => String(text ?? ""), [text]);
+  const shouldAnimate = isOverflowing && (alwaysRun || isHovering);
 
   useEffect(() => {
     const measureOverflow = () => {
@@ -27,6 +29,7 @@ function HoverMarqueeText({
       if (!container || !textEl) {
         setIsOverflowing(false);
         cycleWidthRef.current = 0;
+        offsetXRef.current = 0;
         setOffsetX(0);
         return;
       }
@@ -34,6 +37,7 @@ function HoverMarqueeText({
       const textWidth = textEl.scrollWidth;
       const overflowWidth = Math.max(0, textWidth - container.clientWidth);
       cycleWidthRef.current = textWidth + 28;
+      offsetXRef.current = 0;
       setIsOverflowing(overflowWidth > 4);
       setOffsetX(0);
     };
@@ -55,15 +59,29 @@ function HoverMarqueeText({
   }, [normalizedText]);
 
   useEffect(() => {
-    const shouldAnimate = isOverflowing && (alwaysRun || isHovering);
+    let resetFrameRef = null;
+
     if (!shouldAnimate) {
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
-      setOffsetX(0);
+      const hadOffset = offsetXRef.current !== 0;
+      offsetXRef.current = 0;
+      pauseUntilRef.current = 0;
       lastTimeRef.current = 0;
-      return;
+
+      if (hadOffset) {
+        resetFrameRef = requestAnimationFrame(() => {
+          setOffsetX(0);
+        });
+      }
+
+      return () => {
+        if (resetFrameRef) {
+          cancelAnimationFrame(resetFrameRef);
+        }
+      };
     }
 
     const run = (now) => {
@@ -80,34 +98,45 @@ function HoverMarqueeText({
       const dt = now - lastTimeRef.current;
       lastTimeRef.current = now;
 
-      setOffsetX((prev) => {
-        const distance = (Number(speedPxPerSecond) || 40) * (dt / 1000);
-        let next = prev - distance;
-        const cycleWidth = cycleWidthRef.current;
+      const distance = (Number(speedPxPerSecond) || 40) * (dt / 1000);
+      let next = offsetXRef.current - distance;
+      const cycleWidth = cycleWidthRef.current;
 
-        if (cycleWidth > 0 && next <= -cycleWidth) {
-          next = 0;
-          pauseUntilRef.current = now + (Number(pauseAtStartMs) || 1000);
-        }
+      if (cycleWidth > 0 && next <= -cycleWidth) {
+        next = 0;
+        pauseUntilRef.current = now + (Number(pauseAtStartMs) || 1000);
+      }
 
-        return next;
-      });
+      offsetXRef.current = next;
+      setOffsetX(next);
 
       frameRef.current = requestAnimationFrame(run);
     };
 
-    setOffsetX(0);
+    const hadOffset = offsetXRef.current !== 0;
+    offsetXRef.current = 0;
     pauseUntilRef.current = performance.now() + (Number(pauseAtStartMs) || 1000);
     lastTimeRef.current = 0;
-    frameRef.current = requestAnimationFrame(run);
+
+    if (hadOffset) {
+      resetFrameRef = requestAnimationFrame(() => {
+        setOffsetX(0);
+        frameRef.current = requestAnimationFrame(run);
+      });
+    } else {
+      frameRef.current = requestAnimationFrame(run);
+    }
 
     return () => {
+      if (resetFrameRef) {
+        cancelAnimationFrame(resetFrameRef);
+      }
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
     };
-  }, [alwaysRun, isHovering, isOverflowing, pauseAtStartMs, speedPxPerSecond]);
+  }, [pauseAtStartMs, shouldAnimate, speedPxPerSecond]);
 
   return (
     <div

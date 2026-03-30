@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
-import { getAttemptResult, getQuizFull, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
+import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
 import { getCurrentRoadmapPhaseProgress, submitRoadmapPhaseSkipDecision } from '@/api/RoadmapPhaseAPI';
@@ -14,6 +14,9 @@ import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 
 const PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY = 'prelearning_phasecontent_triggered_attempts';
+const RESULT_BOOTSTRAP_MAX_RETRIES = 8;
+const RESULT_BOOTSTRAP_RETRY_DELAY_MS = 1500;
+const RETRYABLE_RESULT_STATUS_CODES = new Set([404, 409, 425, 429, 500, 502, 503, 504]);
 
 function markPhaseContentGenerating(workspaceId, phaseId) {
   const normalizedWorkspaceId = Number(workspaceId);
@@ -53,6 +56,32 @@ function unmarkPhaseContentGenerating(workspaceId, phaseId) {
   }
 }
 
+function getRequestStatusCode(error) {
+  const normalizedStatusCode = Number(error?.statusCode ?? error?.response?.status);
+  return Number.isInteger(normalizedStatusCode) ? normalizedStatusCode : null;
+}
+
+function isIncompleteAttemptResultError(error) {
+  const statusCode = getRequestStatusCode(error);
+  const normalizedMessage = String(error?.message || '').toLowerCase();
+  return statusCode === 400 && normalizedMessage.includes('chua hoan thanh')
+    || statusCode === 400 && normalizedMessage.includes('chưa hoàn thành')
+    || statusCode === 400 && normalizedMessage.includes('not completed');
+}
+
+function canRetryBootstrapResult(error, retryCount) {
+  if (retryCount >= RESULT_BOOTSTRAP_MAX_RETRIES) {
+    return false;
+  }
+
+  if (isIncompleteAttemptResultError(error)) {
+    return true;
+  }
+
+  const statusCode = getRequestStatusCode(error);
+  return statusCode == null || RETRYABLE_RESULT_STATUS_CODES.has(statusCode);
+}
+
 function SectionDivider({ label, className = '' }) {
   return (
     <div className={cn('relative my-6', className)}>
@@ -84,6 +113,8 @@ export default function QuizResultPage() {
   const [loadError, setLoadError] = useState(null);
   const [reviewMode, setReviewMode] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [resultBootstrapError, setResultBootstrapError] = useState(null);
+  const [resultReloadSeed, setResultReloadSeed] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [assessmentData, setAssessmentData] = useState(null);
   const [assessmentStatus, setAssessmentStatus] = useState('NOT_AVAILABLE');
@@ -109,9 +140,11 @@ export default function QuizResultPage() {
 
   // quizId passed via navigation state for "back to quiz" button
   const quizId = location.state?.quizId;
+  const attemptMode = String(location.state?.attemptMode || '').toLowerCase();
   const returnToQuizPath = location.state?.returnToQuizPath;
   const sourceView = String(location.state?.sourceView || '').toLowerCase();
   const sourceWorkspaceId = Number(location.state?.sourceWorkspaceId);
+  const sourcePhaseId = location.state?.sourcePhaseId;
   const normalizedWorkspaceId = Number(
     quizRawDetails?.workspaceId
     ?? quizRawDetails?.workspace?.workspaceId
@@ -151,6 +184,22 @@ export default function QuizResultPage() {
     return /\/workspace\/\d+\/(?:quiz(?:\/\d+)?|roadmap\/quiz\/\d+)(?:\?|$)/.test(returnToQuizPath);
   }, [returnToQuizPath]);
 
+  const resumeAttemptPath = useMemo(() => {
+    if (!hasQuizIdForBack) return null;
+    if (attemptMode !== 'exam' && attemptMode !== 'practice') return null;
+    return `/quiz/${attemptMode}/${normalizedQuizIdForBack}`;
+  }, [attemptMode, hasQuizIdForBack, normalizedQuizIdForBack]);
+
+  const retryLoadResult = useCallback(() => {
+    setResult(null);
+    setQuizDetails(null);
+    setQuizRawDetails(null);
+    setRetryCount(0);
+    setResultBootstrapError(null);
+    setLoading(true);
+    setResultReloadSeed((prev) => prev + 1);
+  }, []);
+
   useEffect(() => {
     if (!attemptId) {
       setLoading(false);
@@ -166,6 +215,7 @@ export default function QuizResultPage() {
     setLoadError(null);
     lastAttemptRefreshAtRef.current = 0;
     setLoading(true);
+    setResultBootstrapError(null);
 
     const loadResult = async () => {
       try {
@@ -174,11 +224,12 @@ export default function QuizResultPage() {
 
         const attemptResult = res.data;
         setResult(attemptResult);
-        setLoadError(null); // Xóa lỗi khi tải thành công
+        setRetryCount(0);
+        setResultBootstrapError(null);
 
         if (attemptResult?.quizId) {
           try {
-            const quizRes = await getQuizFull(attemptResult.quizId);
+            const quizRes = await getQuizFullForAttempt(attemptResult.quizId);
             if (cancelled) return;
             setQuizRawDetails(quizRes.data || null);
             setQuizDetails(normalizeQuizData(quizRes.data));
@@ -192,25 +243,22 @@ export default function QuizResultPage() {
       } catch (err) {
         if (cancelled) return;
 
-        const statusCode = err?.response?.status;
-        const errorMessage = err?.response?.data?.message || err?.message || '';
-        const isIncompleteAttempt = statusCode === 400 && errorMessage.includes('chưa hoàn thành');
+        console.error('Failed to load result:', err);
+        const statusCode = getRequestStatusCode(err);
+        const errorMessage = String(err?.response?.data?.message || err?.message || '');
+        const isIncompleteAttempt = isIncompleteAttemptResultError(err);
 
-        if (!isIncompleteAttempt) {
-          console.error('Failed to load result:', err);
-        }
-        
-        // Retry logic:
-        // - Nếu lỗi 400 "chưa hoàn thành": retry tối đa 5 lần với delay 1500ms (backend đang xử lý)
-        // - Lỗi khác: retry tối đa 2 lần với delay 1000ms
-        const maxRetries = isIncompleteAttempt ? 5 : 2;
-        const retryDelayMs = isIncompleteAttempt ? 1500 : 1000;
-        
-        if (retryCount < maxRetries) {
+        // Result có thể được BE ghi trễ hơn lúc FE điều hướng xong.
+        if (canRetryBootstrapResult(err, retryCount)) {
           shouldRetry = true;
+          setResultBootstrapError({
+            statusCode,
+            message: errorMessage,
+            isRetrying: true,
+          });
           retryTimeoutRef.current = globalThis.setTimeout(() => {
             setRetryCount((prev) => prev + 1);
-          }, retryDelayMs);
+          }, RESULT_BOOTSTRAP_RETRY_DELAY_MS);
           return;
         }
 
@@ -237,7 +285,7 @@ export default function QuizResultPage() {
         retryTimeoutRef.current = null;
       }
     };
-  }, [attemptId, retryCount]);
+  }, [attemptId, retryCount, resultReloadSeed]);
 
   const preLearningGenerationContext = useMemo(() => {
     const quizSource = quizRawDetails || {};
@@ -444,6 +492,34 @@ export default function QuizResultPage() {
     returnToQuizPath,
   ]);
 
+  const handleResumeAttempt = useCallback(() => {
+    if (!resumeAttemptPath) {
+      handleBack();
+      return;
+    }
+
+    navigate(resumeAttemptPath, {
+      replace: true,
+      state: {
+        autoStart: true,
+        quizId: normalizedQuizIdForBack,
+        returnToQuizPath,
+        sourceView,
+        sourceWorkspaceId,
+        sourcePhaseId,
+      },
+    });
+  }, [
+    handleBack,
+    navigate,
+    normalizedQuizIdForBack,
+    resumeAttemptPath,
+    returnToQuizPath,
+    sourcePhaseId,
+    sourceView,
+    sourceWorkspaceId,
+  ]);
+
   const jumpToQuestion = useCallback((questionIndex) => {
     const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
     if (targetPage !== currentPage) {
@@ -621,51 +697,52 @@ export default function QuizResultPage() {
   if (loading) {
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
+            {retryCount > 0
+              ? t('workspace.quiz.result.waitingForResult', 'Đang chờ hệ thống trả kết quả bài làm...')
+              : t('workspace.quiz.result.loading', 'Đang tải kết quả...')}
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!result) {
-    const isIncompleteError = loadError?.isIncompleteAttempt;
-    const errorTitle = isIncompleteError
-      ? t('workspace.quiz.result.incompleteTitle', 'Quiz không sẵn sàng')
-      : t('workspace.quiz.result.notFound', 'Result not found');
-    const errorDesc = isIncompleteError
-      ? t('workspace.quiz.result.incompleteDesc', 'Backend đang xử lý kết quả quiz. Vui lòng thử lại sau vài giây.')
-      : t('workspace.quiz.result.notFoundDesc', 'Kết quả quiz chưa sẵn sàng. Vui lòng thử lại sau vài giây.');
-    
+    const activeResultError = loadError ?? resultBootstrapError;
+    const isIncompleteAttempt = Boolean(activeResultError?.isIncompleteAttempt)
+      || isIncompleteAttemptResultError(activeResultError);
+    const resultErrorMessage = isIncompleteAttempt
+      ? t('workspace.quiz.result.incompleteAttempt', 'Lượt làm quiz này chưa hoàn thành. Hãy quay lại để tiếp tục làm bài hoặc nộp bài trước khi xem kết quả.')
+      : activeResultError?.statusCode === 404 || activeResultError?.statusCode === 409
+      ? t('workspace.quiz.result.pendingOrMissing', 'Kết quả bài làm này chưa sẵn sàng hoặc không còn tồn tại.')
+      : t('workspace.quiz.result.unavailable', 'Hiện chưa lấy được kết quả bài làm này. Vui lòng thử lại.');
+
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
-        <div className="text-center space-y-4">
-          <h2 className="text-xl text-slate-600 dark:text-slate-300">
-            {errorTitle}
+        <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-6 text-center">
+          <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-100">
+            {t('workspace.quiz.result.notFound', 'Không tìm thấy kết quả')}
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-            {errorDesc}
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {resultErrorMessage}
           </p>
-          <div className="flex gap-2 justify-center">
-            <Button 
-              onClick={() => {
-                setLoadError(null);
-                setRetryCount(prev => prev + 1);
-              }}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              {t('workspace.quiz.result.retry', 'Thử lại')}
-            </Button>
-            {directQuizDetailBackPath && (
-              <Button 
-                onClick={() => navigate(directQuizDetailBackPath)}
-                variant="ghost"
-                size="sm"
-              >
-                {t('workspace.quiz.result.backQuiz', 'Quay lại Quiz')}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {isIncompleteAttempt && resumeAttemptPath && (
+              <Button type="button" onClick={handleResumeAttempt} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                <ArrowLeft className="h-4 w-4" />
+                {t('workspace.quiz.result.resumeAttempt', 'Tiếp tục làm bài')}
               </Button>
             )}
+            <Button type="button" onClick={retryLoadResult} className="gap-2 bg-blue-600 text-white hover:bg-blue-700">
+              <RefreshCw className="h-4 w-4" />
+              {t('workspace.quiz.result.retryLoad', 'Thử lại')}
+            </Button>
+            <Button type="button" variant="outline" onClick={handleBack} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
+            </Button>
           </div>
         </div>
       </div>

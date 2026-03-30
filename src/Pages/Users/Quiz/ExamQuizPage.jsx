@@ -11,7 +11,7 @@ import QuestionNavPanel from './components/QuestionNavPanel';
 import ExamPerQuestion from './components/ExamPerQuestion';
 import QuizHeader from './components/QuizHeader';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
-import { getQuizFull, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
+import { getQuizFullForAttempt, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
 import { buildSubmitPayload, getAttemptRemainingSeconds, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
@@ -53,11 +53,11 @@ export default function ExamQuizPage() {
   } = useQuery({
     queryKey: ['quiz-full', quizId],
     queryFn: async () => {
-      const res = await getQuizFull(quizId);
+      const res = await getQuizFullForAttempt(quizId);
       return normalizeQuizData(res.data);
     },
     enabled: Boolean(quizId),
-    retry: 1,
+    retry: (failureCount, error) => Number(error?.statusCode) >= 500 && failureCount < 1,
   });
   const totalPages = Math.max(1, Math.ceil((quiz?.questions?.length || 0) / itemsPerPage));
 
@@ -232,6 +232,7 @@ export default function ExamQuizPage() {
         navigate(`/quiz/result/${attemptId}`, {
           state: {
             quizId,
+            attemptMode: 'exam',
             returnToQuizPath,
             sourceView: location.state?.sourceView,
             sourceWorkspaceId: location.state?.sourceWorkspaceId,
