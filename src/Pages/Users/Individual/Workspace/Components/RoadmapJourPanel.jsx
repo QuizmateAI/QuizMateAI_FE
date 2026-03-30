@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { CheckCircle2, ChevronDown, ChevronsLeft, Loader2, Map } from "lucide-react";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
+import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
 
 function RoadmapJourPanel({
   isDarkMode = false,
@@ -125,13 +126,31 @@ function RoadmapJourPanel({
           </div>
         ) : (
           <>
-            <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-slate-50"}`}>
-              <h3 className={`text-base font-semibold leading-6 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                {roadmap.title}
-              </h3>
-              <p className={`mt-2 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
-                {roadmap.description || t("workspace.roadmap.canvas.view2RoadmapHint", "Roadmap detail")}
-              </p>
+            <div
+              className={`relative overflow-hidden rounded-xl border px-4 py-4 ${isDarkMode
+                ? "border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/40"
+                : "border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50"}`}
+            >
+              <div
+                className={`pointer-events-none absolute -top-10 -right-10 h-24 w-24 rounded-full ${isDarkMode ? "bg-blue-500/10" : "bg-blue-200/60"}`}
+              />
+              <div className="relative flex items-center gap-3">
+                <div
+                  className={`shrink-0 flex h-10 w-10 items-center justify-center rounded-xl border ${isDarkMode
+                    ? "border-blue-700/60 bg-blue-900/40 text-blue-300"
+                    : "border-blue-200 bg-blue-100 text-blue-700"}`}
+                >
+                  <Map className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
+                    {t("workspace.roadmap.canvas.centralRoadmap", "Central roadmap")}
+                  </p>
+                  <h3 className={`mt-1 text-base font-semibold leading-6 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                    {roadmap.title}
+                  </h3>
+                </div>
+              </div>
             </div>
 
             <div className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white"}`}>
@@ -194,9 +213,12 @@ function RoadmapJourPanel({
                           ) : (
                             <div className={`w-4 h-4 shrink-0 rounded-full border-2 ${isDarkMode ? "border-slate-500" : "border-slate-300"}`} />
                           )}
-                          <span className={`text-sm truncate ${isDarkMode ? "text-slate-200" : "text-gray-900"} ${fontClass}`}>
-                            {phase.title || `${t("workspace.roadmap.canvas.phase", "Phase")} ${index + 1}`}
-                          </span>
+                          <HoverMarqueeText
+                            text={phase.title || `${t("workspace.roadmap.canvas.phase", "Phase")} ${index + 1}`}
+                            containerClassName="flex-1"
+                            className={`text-sm ${isDarkMode ? "text-slate-200" : "text-gray-900"} ${fontClass}`}
+                            alwaysRun={active}
+                          />
                         </button>
                       );
                     })}

@@ -547,15 +547,21 @@ function RoadmapCanvasView2({
   return (
     <div className={`h-full overflow-y-auto p-4 ${isDarkMode ? "bg-slate-900" : "bg-white"}`}>
       <div className="space-y-3">
-        <div className={`rounded-lg border px-4 py-3 flex items-start justify-between gap-3 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
-          <div className="min-w-0">
-            <p className={`text-sm font-semibold truncate ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+        <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
+          <div className="min-w-0 w-full">
+            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
               {roadmap?.title}
             </p>
             {roadmap?.description ? (
-              <p className={`mt-1 text-xs line-clamp-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+              <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
                 {roadmap.description}
               </p>
+            ) : null}
+            {roadmap?.aiSuggest ? (
+              <div className={`mt-3 rounded-md p-3 text-sm ${isDarkMode ? "bg-yellow-950/30 border border-yellow-800 text-yellow-200" : "bg-yellow-50 border border-yellow-200 text-yellow-700"}`}>
+                <p className={`font-medium mb-1 ${fontClass}`}>{t('workspace.roadmap.aiSuggestTitle', 'AI suggestion')}</p>
+                <p className={`${fontClass} text-[13px] leading-snug`}>{roadmap.aiSuggest}</p>
+              </div>
             ) : null}
             <div className={`mt-2 flex flex-wrap items-center gap-2 text-[11px] ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
               {Number(roadmap?.estimatedTotalDays) > 0 ? (
@@ -571,15 +577,17 @@ function RoadmapCanvasView2({
             </div>
           </div>
           {onShareRoadmap && roadmap?.roadmapId ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onShareRoadmap(roadmap)}
-              className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              {t("home.actions.share", "Share")}
-            </Button>
+            <div className="mt-3 flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onShareRoadmap(roadmap)}
+                className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                {t("home.actions.share", "Share")}
+              </Button>
+            </div>
           ) : null}
         </div>
         {activePhase ? [activePhase].map((phase) => {
@@ -657,16 +665,22 @@ function RoadmapCanvasView2({
               <button
                 type="button"
                 onClick={() => togglePhase(phase.phaseId)}
-                className={`w-full px-4 py-4 flex items-start justify-between gap-4 text-left hover:bg-slate-50`}
+                className={`w-full px-4 py-4 flex flex-col items-stretch gap-3 text-left hover:bg-slate-50`}
               >
-                <div className="min-w-0">
+                <div className="min-w-0 w-full">
                   <p className={`text-xs uppercase tracking-[0.15em] ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
                     {t("workspace.roadmap.canvas.phase", "Phase")} {Number(phase?.phaseIndex ?? 0) + 1}
                   </p>
                   <h3 className={`mt-1 text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>{phase.title}</h3>
                   <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{phase.description}</p>
+                  {phase?.aiSuggest ? (
+                    <div className={`mt-2 rounded-md p-3 text-sm ${isDarkMode ? "bg-slate-800/40 border border-slate-700 text-slate-200" : "bg-slate-50 border border-slate-200 text-gray-700"}`}>
+                      <p className={`font-medium mb-1 ${fontClass}`}>{t('workspace.roadmap.phaseAiSuggestTitle', 'AI suggestion')}</p>
+                      <p className={`${fontClass} text-[13px] leading-snug`}>{phase.aiSuggest}</p>
+                    </div>
+                  ) : null}
                 </div>
-                <div className="shrink-0 flex items-center gap-2">
+                <div className="w-full flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
                     {phase?.durationLabel || `${Number(phase?.estimatedDays) || 0} ${t("workspace.roadmap.days", "days")} • ${Number(phase?.estimatedMinutesPerDay) || 0} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`}
                   </span>
@@ -999,7 +1013,8 @@ function RoadmapCanvasView2({
                     </div>
                   )}
 
-                  {isGeneratingKnowledge && hasKnowledge && (
+                  {/* Placeholder tổng ở cuối đang bị trùng với placeholder trong từng knowledge item nên tạm thời tắt. */}
+                  {/* {isGeneratingKnowledge && hasKnowledge && (
                     <div className={`border-t px-4 py-3 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
                       <div className="space-y-1">
                         {isGeneratingPhaseContent ? renderLoadingPlaceholder(
@@ -1014,7 +1029,7 @@ function RoadmapCanvasView2({
                         ) : null}
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               ) : null}
             </div>
