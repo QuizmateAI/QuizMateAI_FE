@@ -6,6 +6,7 @@ import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
 import SourceDetailView from "./SourceDetailView";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
+import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
 
 // Format MIME type thành tên file type ngắn gọn
 function formatFileType(type) {
@@ -476,7 +477,10 @@ function SourcesPanel({
                     {/* Icon trạng thái: ERROR (chấm than), WARN (chấm than vàng), REJECT (ban), PROCESSING (spinner), hoặc icon file thông thường */}
                     {getSourceDisplayIcon(source, progressTracking)}
                     <div className="min-w-0 flex-1 text-left">
-                      <p className={`text-sm font-medium truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>{displayName}</p>
+                      <HoverMarqueeText
+                        text={displayName}
+                        className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}
+                      />
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatFileType(source.type)}</span>
                         {source.status?.toUpperCase() === "ERROR" && (

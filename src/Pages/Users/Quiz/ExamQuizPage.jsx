@@ -225,9 +225,10 @@ export default function ExamQuizPage() {
           await submitAttempt(attemptId, submitPayload);
         }
         markQuizCompleted(quizId);
-        // Add small delay to ensure backend finishes processing before navigating
-        // This prevents white screen bug when navigating too quickly
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add delay to ensure backend finishes processing before navigating
+        // Tăng từ 500ms lên 1500ms để backend có đủ thời gian xử lý và đánh dấu attempt thành COMPLETED
+        // Điều này tránh lỗi 400 "Lượt làm quiz chưa hoàn thành"
+        await new Promise(resolve => setTimeout(resolve, 1500));
         navigate(`/quiz/result/${attemptId}`, {
           state: {
             quizId,
