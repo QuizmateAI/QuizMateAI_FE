@@ -5,7 +5,12 @@ import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import QuizListView from "./QuizListView";
 import { useToast } from "@/context/ToastContext";
 import { getAttemptAssessment, getQuizHistory } from "@/api/QuizAPI";
-import { getCurrentRoadmapPhaseProgress, submitRoadmapPhaseSkipDecision } from "@/api/RoadmapPhaseAPI";
+import {
+  createPhaseProgressReview,
+  getCurrentRoadmapPhaseProgress,
+  getPhaseProgressReview,
+  submitRoadmapPhaseSkipDecision,
+} from "@/api/RoadmapPhaseAPI";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -25,6 +30,7 @@ function RoadmapCanvasView2({
   onCreateKnowledgeQuizForKnowledge,
   onCreatePhasePreLearning,
   isStudyNewRoadmap = false,
+  adaptationMode = "",
   onViewQuiz,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
@@ -50,11 +56,17 @@ function RoadmapCanvasView2({
   });
   const [submittingSkipDecision, setSubmittingSkipDecision] = useState(false);
   const [decisionHandledPhaseIds, setDecisionHandledPhaseIds] = useState([]);
+  const [phaseReviewState, setPhaseReviewState] = useState({
+    loading: false,
+    data: null,
+    phaseId: null,
+  });
   const preLearningDecisionFetchRef = useRef({
     inFlightKey: null,
     lastLoadedKey: null,
     lastLoadedAt: 0,
   });
+  const phaseReviewInFlightRef = useRef(false);
   const getDefaultOpenKnowledgeMap = (phaseList = []) => {
     return (phaseList || []).reduce((accumulator, phase) => {
       const phaseId = Number(phase?.phaseId);
@@ -85,6 +97,7 @@ function RoadmapCanvasView2({
     const rawPhases = roadmap?.phases ?? [];
     return [...rawPhases].sort((a, b) => Number(a?.phaseIndex ?? 0) - Number(b?.phaseIndex ?? 0));
   }, [roadmap?.phases]);
+  const normalizedAdaptationMode = String(adaptationMode || "").toUpperCase();
 
   const getPersistedKnowledgeMap = (storageKey) => {
     if (!storageKey || typeof window === "undefined") {
@@ -142,6 +155,145 @@ function RoadmapCanvasView2({
     ? openPhaseId
     : fallbackPhaseId;
   const activePhase = phases.find((phase) => phase.phaseId === effectiveOpenPhaseId) || null;
+
+  const hasCompletedPostLearning = useCallback((phase) => {
+    const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+    return postLearningQuizzes.some((quiz) => {
+      const attempted = quiz?.myAttempted === true;
+      const passed = quiz?.myPassed === true;
+      const status = String(quiz?.status || "").toUpperCase();
+      return attempted || passed || status === "COMPLETED";
+    });
+  }, []);
+
+  const hasPassedPostLearning = useCallback((phase) => {
+    const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+    return postLearningQuizzes.some((quiz) => quiz?.myPassed === true);
+  }, []);
+
+  const resolvePostLearningReviewEligibility = useCallback((phase) => {
+    if (!phase) return false;
+    const isFlexible = normalizedAdaptationMode === "FLEXIBLE";
+    const isStrict = normalizedAdaptationMode === "STRICT";
+    const isDone = hasCompletedPostLearning(phase);
+    const isPassed = hasPassedPostLearning(phase);
+
+    if (isFlexible) return isDone;
+    if (isStrict) return isPassed;
+
+    return isPassed;
+  }, [hasCompletedPostLearning, hasPassedPostLearning, normalizedAdaptationMode]);
+
+  const syncPhaseReview = useCallback(async () => {
+    const normalizedRoadmapId = Number(roadmap?.roadmapId);
+    const activePhaseId = Number(activePhase?.phaseId);
+    if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      return;
+    }
+    if (!Number.isInteger(activePhaseId) || activePhaseId <= 0) {
+      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      return;
+    }
+
+    if (phaseReviewInFlightRef.current) return;
+    phaseReviewInFlightRef.current = true;
+    setPhaseReviewState({ loading: true, data: null, phaseId: activePhaseId });
+
+    try {
+      const currentResponse = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+      const currentPhaseProgress = currentResponse?.data?.data || currentResponse?.data || null;
+      const phaseProgressId = Number(currentPhaseProgress?.phaseProgressId);
+      const currentPhaseId = Number(currentPhaseProgress?.phaseId);
+
+      const currentPhase = phases.find((phase) => Number(phase?.phaseId) === activePhaseId) || null;
+      const eligibleToCreateReview = resolvePostLearningReviewEligibility(currentPhase);
+      const canCreateForActivePhase = Number.isInteger(currentPhaseId)
+        && currentPhaseId === activePhaseId;
+      const reviewCreationKey = `phase_review_created:${normalizedRoadmapId}:${phaseProgressId}`;
+      const alreadyCreated = typeof window !== "undefined"
+        ? window.sessionStorage.getItem(reviewCreationKey) === "1"
+        : false;
+
+      if (
+        canCreateForActivePhase
+        &&
+        eligibleToCreateReview
+        && Number.isInteger(phaseProgressId)
+        && phaseProgressId > 0
+        && !alreadyCreated
+      ) {
+        try {
+          await createPhaseProgressReview(phaseProgressId);
+          if (typeof window !== "undefined") {
+            window.sessionStorage.setItem(reviewCreationKey, "1");
+          }
+        } catch (createError) {
+          const createStatus = Number(createError?.response?.status || 0);
+          // 409 thuong la du lieu progress chua du, van thu GET review de hien thi neu da ton tai.
+          if (createStatus !== 409) {
+            console.error("Failed to create phase progress review:", createError);
+          }
+        }
+      }
+
+      try {
+        const reviewResponse = await getPhaseProgressReview(activePhaseId);
+        const reviewData = reviewResponse?.data?.data || reviewResponse?.data || null;
+        const reviewPhaseId = Number(reviewData?.phaseId);
+        if (reviewData?.summary && reviewPhaseId === activePhaseId) {
+          setPhaseReviewState({ loading: false, data: reviewData, phaseId: activePhaseId });
+          return;
+        }
+      } catch (reviewError) {
+        // Chưa có review thì ẩn khung, không coi là lỗi UI.
+      }
+
+      setPhaseReviewState({ loading: false, data: null, phaseId: activePhaseId });
+    } catch (error) {
+      console.error("Failed to sync phase review state:", error);
+      setPhaseReviewState((current) => ({ ...current, loading: false }));
+    } finally {
+      phaseReviewInFlightRef.current = false;
+    }
+  }, [activePhase?.phaseId, phases, resolvePostLearningReviewEligibility, roadmap?.roadmapId]);
+
+  useEffect(() => {
+    void syncPhaseReview();
+  }, [syncPhaseReview, quizRefreshToken, activePhase?.phaseId]);
+
+  const phaseReviewConfidencePercent = useMemo(() => {
+    const rawScore = Number(phaseReviewState?.data?.confidenceScore);
+    if (!Number.isFinite(rawScore)) return null;
+    const normalizedScore = Math.max(0, Math.min(1, rawScore));
+    return Math.round(normalizedScore * 100);
+  }, [phaseReviewState?.data?.confidenceScore]);
+
+  const phaseReviewSegmentFillPercents = useMemo(() => {
+    if (typeof phaseReviewConfidencePercent !== "number") {
+      return [0, 0, 0];
+    }
+
+    const segmentSize = 100 / 3;
+    return [0, 1, 2].map((index) => {
+      const segmentStart = index * segmentSize;
+      const segmentEnd = segmentStart + segmentSize;
+      if (phaseReviewConfidencePercent <= segmentStart) return 0;
+      if (phaseReviewConfidencePercent >= segmentEnd) return 100;
+      return Math.max(0, Math.min(100, ((phaseReviewConfidencePercent - segmentStart) / segmentSize) * 100));
+    });
+  }, [phaseReviewConfidencePercent]);
+
+  const phaseReviewAssessedAtLabel = useMemo(() => {
+    const rawValue = phaseReviewState?.data?.assessedAt;
+    if (!rawValue) return null;
+    const parsedDate = new Date(rawValue);
+    if (Number.isNaN(parsedDate.getTime())) return null;
+    return new Intl.DateTimeFormat("vi-VN", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(parsedDate);
+  }, [phaseReviewState?.data?.assessedAt]);
 
   const loadPreLearningDecisionState = useCallback(async (phase) => {
     const normalizedPhaseId = Number(phase?.phaseId);
@@ -549,19 +701,35 @@ function RoadmapCanvasView2({
       <div className="space-y-3">
         <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
           <div className="min-w-0 w-full">
-            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-              {roadmap?.title}
-            </p>
             {roadmap?.description ? (
-              <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                {roadmap.description}
+              <details className="group">
+                <summary className="list-none cursor-pointer">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                      {roadmap?.title}
+                    </p>
+                    <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
+                  </div>
+                </summary>
+                <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                  {roadmap.description}
+                </p>
+              </details>
+            ) : (
+              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                {roadmap?.title}
               </p>
-            ) : null}
+            )}
             {roadmap?.aiSuggest ? (
-              <div className={`mt-3 rounded-md p-3 text-sm ${isDarkMode ? "bg-yellow-950/30 border border-yellow-800 text-yellow-200" : "bg-yellow-50 border border-yellow-200 text-yellow-700"}`}>
-                <p className={`font-medium mb-1 ${fontClass}`}>{t('workspace.roadmap.aiSuggestTitle', 'AI suggestion')}</p>
-                <p className={`${fontClass} text-[13px] leading-snug`}>{roadmap.aiSuggest}</p>
-              </div>
+              <details className={`group mt-3 rounded-md p-3 text-sm ${isDarkMode ? "bg-yellow-950/30 border border-yellow-800 text-yellow-200" : "bg-yellow-50 border border-yellow-200 text-yellow-700"}`}>
+                <summary className="list-none cursor-pointer">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`font-medium ${fontClass}`}>{t("workspace.roadmap.aiSuggestTitle", "AI suggestion")}</p>
+                    <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-yellow-100" : "text-yellow-800"}`} />
+                  </div>
+                </summary>
+                <p className={`${fontClass} mt-2 text-[13px] leading-snug`}>{roadmap.aiSuggest}</p>
+              </details>
             ) : null}
             <div className={`mt-2 flex flex-wrap items-center gap-2 text-[11px] ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
               {Number(roadmap?.estimatedTotalDays) > 0 ? (
@@ -590,6 +758,71 @@ function RoadmapCanvasView2({
             </div>
           ) : null}
         </div>
+
+        {phaseReviewState?.data?.summary && Number(phaseReviewState?.phaseId) === Number(activePhase?.phaseId) ? (
+          <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-emerald-800/70 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
+                {t("workspace.roadmap.phaseReviewTitle", "Đánh giá AI cho phase hiện tại")}
+              </p>
+            </div>
+
+            {typeof phaseReviewConfidencePercent === "number" ? (
+              <div className="mt-3">
+                <div className="flex items-center justify-between">
+                  <p className={`text-xs font-medium ${isDarkMode ? "text-emerald-100" : "text-emerald-800"} ${fontClass}`}>
+                    {t("workspace.roadmap.phaseReviewConfidence", "Độ tin cậy")}
+                  </p>
+                  <p className={`text-xs font-semibold ${isDarkMode ? "text-emerald-100" : "text-emerald-800"} ${fontClass}`}>
+                    {phaseReviewConfidencePercent}%
+                  </p>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-1">
+                  {[
+                    { color: "#ef4444", fill: phaseReviewSegmentFillPercents[0] },
+                    { color: "#f59e0b", fill: phaseReviewSegmentFillPercents[1] },
+                    { color: "#22c55e", fill: phaseReviewSegmentFillPercents[2] },
+                  ].map((segment, index) => (
+                    <div
+                      key={`confidence-segment-${index}`}
+                      className={`h-3 overflow-hidden rounded-sm border ${isDarkMode ? "border-slate-700 bg-white/95" : "border-slate-200 bg-white"}`}
+                    >
+                      <div
+                        className="h-full"
+                        style={{
+                          width: `${segment.fill}%`,
+                          backgroundColor: segment.color,
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <details className="group mt-2">
+              <summary className="list-none cursor-pointer">
+                <div className="flex items-center justify-between gap-2">
+                  <p className={`text-sm font-medium ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
+                    {t("workspace.roadmap.phaseReviewSummaryDropdown", "Xem tóm tắt đánh giá")}
+                  </p>
+                  <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-emerald-200" : "text-emerald-800"}`} />
+                </div>
+              </summary>
+              <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                {phaseReviewState.data.summary}
+              </p>
+            </details>
+
+            {phaseReviewAssessedAtLabel ? (
+              <div className="mt-3 text-right">
+                <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
+                  {t("workspace.roadmap.phaseReviewAssessedAt", "Đánh giá lúc")}: {phaseReviewAssessedAtLabel}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {activePhase ? [activePhase].map((phase) => {
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
@@ -672,13 +905,6 @@ function RoadmapCanvasView2({
                     {t("workspace.roadmap.canvas.phase", "Phase")} {Number(phase?.phaseIndex ?? 0) + 1}
                   </p>
                   <h3 className={`mt-1 text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>{phase.title}</h3>
-                  <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{phase.description}</p>
-                  {phase?.aiSuggest ? (
-                    <div className={`mt-2 rounded-md p-3 text-sm ${isDarkMode ? "bg-slate-800/40 border border-slate-700 text-slate-200" : "bg-slate-50 border border-slate-200 text-gray-700"}`}>
-                      <p className={`font-medium mb-1 ${fontClass}`}>{t('workspace.roadmap.phaseAiSuggestTitle', 'AI suggestion')}</p>
-                      <p className={`${fontClass} text-[13px] leading-snug`}>{phase.aiSuggest}</p>
-                    </div>
-                  ) : null}
                 </div>
                 <div className="w-full flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
@@ -707,6 +933,34 @@ function RoadmapCanvasView2({
               {isOpen ? (
                 <div className={`border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
                   <div className="px-4 py-3 space-y-4">
+                    {phase?.description ? (
+                      <details className="group">
+                        <summary className="list-none cursor-pointer">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"} ${fontClass}`}>
+                              {t("workspace.roadmap.phaseDescriptionDropdown", "Mô tả phase")}
+                            </p>
+                            <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
+                          </div>
+                        </summary>
+                        <p className={`mt-2 text-sm leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+                          {phase.description}
+                        </p>
+                      </details>
+                    ) : null}
+
+                    {phase?.aiSuggest ? (
+                      <details className={`group rounded-md p-3 text-sm ${isDarkMode ? "bg-slate-800/40 border border-slate-700 text-slate-200" : "bg-slate-50 border border-slate-200 text-gray-700"}`}>
+                        <summary className="list-none cursor-pointer">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className={`font-medium ${fontClass}`}>{t("workspace.roadmap.phaseAiSuggestTitle", "AI suggestion")}</p>
+                            <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-300" : "text-slate-700"}`} />
+                          </div>
+                        </summary>
+                        <p className={`${fontClass} mt-2 text-[13px] leading-snug`}>{phase.aiSuggest}</p>
+                      </details>
+                    ) : null}
+
                     {hasPreLearning && !isSkipPreLearningPhase ? (
                     <div>
                       <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
