@@ -2842,7 +2842,6 @@ function WorkspacePage() {
 									onCreatePhasePreLearning={handleCreatePhasePreLearning}
 									isStudyNewRoadmap={isStudyNewRoadmap}
 									adaptationMode={workspaceAdaptationMode}
-									adaptationMode={workspaceAdaptationMode}
 									isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
 									roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
 									generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
