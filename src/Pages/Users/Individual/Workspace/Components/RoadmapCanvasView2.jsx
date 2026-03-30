@@ -701,19 +701,35 @@ function RoadmapCanvasView2({
       <div className="space-y-3">
         <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-950/40" : "border-slate-200 bg-slate-50"}`}>
           <div className="min-w-0 w-full">
-            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-              {roadmap?.title}
-            </p>
             {roadmap?.description ? (
-              <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                {roadmap.description}
+              <details className="group">
+                <summary className="list-none cursor-pointer">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                      {roadmap?.title}
+                    </p>
+                    <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
+                  </div>
+                </summary>
+                <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                  {roadmap.description}
+                </p>
+              </details>
+            ) : (
+              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                {roadmap?.title}
               </p>
-            ) : null}
+            )}
             {roadmap?.aiSuggest ? (
-              <div className={`mt-3 rounded-md p-3 text-sm ${isDarkMode ? "bg-yellow-950/30 border border-yellow-800 text-yellow-200" : "bg-yellow-50 border border-yellow-200 text-yellow-700"}`}>
-                <p className={`font-medium mb-1 ${fontClass}`}>{t('workspace.roadmap.aiSuggestTitle', 'AI suggestion')}</p>
-                <p className={`${fontClass} text-[13px] leading-snug`}>{roadmap.aiSuggest}</p>
-              </div>
+              <details className={`group mt-3 rounded-md p-3 text-sm ${isDarkMode ? "bg-yellow-950/30 border border-yellow-800 text-yellow-200" : "bg-yellow-50 border border-yellow-200 text-yellow-700"}`}>
+                <summary className="list-none cursor-pointer">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`font-medium ${fontClass}`}>{t("workspace.roadmap.aiSuggestTitle", "AI suggestion")}</p>
+                    <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-yellow-100" : "text-yellow-800"}`} />
+                  </div>
+                </summary>
+                <p className={`${fontClass} mt-2 text-[13px] leading-snug`}>{roadmap.aiSuggest}</p>
+              </details>
             ) : null}
             <div className={`mt-2 flex flex-wrap items-center gap-2 text-[11px] ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
               {Number(roadmap?.estimatedTotalDays) > 0 ? (
@@ -784,9 +800,19 @@ function RoadmapCanvasView2({
               </div>
             ) : null}
 
-            <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-              {phaseReviewState.data.summary}
-            </p>
+            <details className="group mt-2">
+              <summary className="list-none cursor-pointer">
+                <div className="flex items-center justify-between gap-2">
+                  <p className={`text-sm font-medium ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
+                    {t("workspace.roadmap.phaseReviewSummaryDropdown", "Xem tóm tắt đánh giá")}
+                  </p>
+                  <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-emerald-200" : "text-emerald-800"}`} />
+                </div>
+              </summary>
+              <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                {phaseReviewState.data.summary}
+              </p>
+            </details>
 
             {phaseReviewAssessedAtLabel ? (
               <div className="mt-3 text-right">
@@ -879,13 +905,6 @@ function RoadmapCanvasView2({
                     {t("workspace.roadmap.canvas.phase", "Phase")} {Number(phase?.phaseIndex ?? 0) + 1}
                   </p>
                   <h3 className={`mt-1 text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>{phase.title}</h3>
-                  <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>{phase.description}</p>
-                  {phase?.aiSuggest ? (
-                    <div className={`mt-2 rounded-md p-3 text-sm ${isDarkMode ? "bg-slate-800/40 border border-slate-700 text-slate-200" : "bg-slate-50 border border-slate-200 text-gray-700"}`}>
-                      <p className={`font-medium mb-1 ${fontClass}`}>{t('workspace.roadmap.phaseAiSuggestTitle', 'AI suggestion')}</p>
-                      <p className={`${fontClass} text-[13px] leading-snug`}>{phase.aiSuggest}</p>
-                    </div>
-                  ) : null}
                 </div>
                 <div className="w-full flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
@@ -914,6 +933,34 @@ function RoadmapCanvasView2({
               {isOpen ? (
                 <div className={`border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
                   <div className="px-4 py-3 space-y-4">
+                    {phase?.description ? (
+                      <details className="group">
+                        <summary className="list-none cursor-pointer">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"} ${fontClass}`}>
+                              {t("workspace.roadmap.phaseDescriptionDropdown", "Mô tả phase")}
+                            </p>
+                            <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
+                          </div>
+                        </summary>
+                        <p className={`mt-2 text-sm leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+                          {phase.description}
+                        </p>
+                      </details>
+                    ) : null}
+
+                    {phase?.aiSuggest ? (
+                      <details className={`group rounded-md p-3 text-sm ${isDarkMode ? "bg-slate-800/40 border border-slate-700 text-slate-200" : "bg-slate-50 border border-slate-200 text-gray-700"}`}>
+                        <summary className="list-none cursor-pointer">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className={`font-medium ${fontClass}`}>{t("workspace.roadmap.phaseAiSuggestTitle", "AI suggestion")}</p>
+                            <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-300" : "text-slate-700"}`} />
+                          </div>
+                        </summary>
+                        <p className={`${fontClass} mt-2 text-[13px] leading-snug`}>{phase.aiSuggest}</p>
+                      </details>
+                    ) : null}
+
                     {hasPreLearning && !isSkipPreLearningPhase ? (
                     <div>
                       <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
