@@ -12,7 +12,8 @@ import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
 const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "REVIEW"];
-const HIDDEN_AI_QUESTION_TYPES = ["IMAGED_BASED"];
+const HIDDEN_AI_QUESTION_TYPES = [];
+const IMAGE_BASED_QUESTION_TYPE = "IMAGED_BASED";
 const BLOOM_LEVELS = [
   { id: 1, key: "remember" },
   { id: 2, key: "understand" },
@@ -114,6 +115,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     const [tab, setTab] = useState("ai");
   const selectedMaterialIds = Array.isArray(selectedSourceIds) ? selectedSourceIds : [];
   const selectedSourceItems = sources.filter((s) => selectedMaterialIds.includes(s.id));
+    const hasImageMaterials = Array.isArray(selectedSourceItems)
+      ? selectedSourceItems.some((item) => item?.hasImage === true)
+      : false;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [questionValidationErrors, setQuestionValidationErrors] = useState({});
@@ -350,6 +354,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const [difficultyDefs, setDifficultyDefs] = useState([]);
   const [selectedDifficultyId, setSelectedDifficultyId] = useState(""); // ID or "CUSTOM"
   const [customDifficulty, setCustomDifficulty] = useState({ easy: 30, medium: 40, hard: 30 });
+  const [allQTypes, setAllQTypes] = useState([]);
   const [qTypes, setQTypes] = useState([]);
   const [selectedQTypes, setSelectedQTypes] = useState([]); // { questionTypeId, ratio, isLocked }
   const [bloomSkills, setBloomSkills] = useState([]);
@@ -484,6 +489,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     return { easy, medium, hard };
   };
 
+  const filterQuestionTypesByImageAvailability = useCallback((items) => {
+    return (Array.isArray(items) ? items : []).filter((item) => {
+      const normalizedType = String(item?.questionType || "").toUpperCase();
+      if (HIDDEN_AI_QUESTION_TYPES.includes(normalizedType)) return false;
+      if (normalizedType === IMAGE_BASED_QUESTION_TYPE && !hasImageMaterials) return false;
+      return true;
+    });
+  }, [hasImageMaterials]);
+
   // Auto-switch to AI tab when user selects source(s) in SourcesPanel
   useEffect(() => {
     if (selectedSourceIds.length > 0) {
@@ -514,14 +528,11 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
             return [];
           };
 
-          const questionTypeList = toList(qTypeRes).filter((item) => {
-            const normalizedType = String(item?.questionType || "").toUpperCase();
-            return !HIDDEN_AI_QUESTION_TYPES.includes(normalizedType);
-          });
+          const questionTypeList = toList(qTypeRes);
           const difficultyList = toList(diffRes);
           const bloomList = toList(bloomRes);
 
-          setQTypes(questionTypeList);
+          setAllQTypes(questionTypeList);
           setDifficultyDefs(difficultyList);
           setBloomSkills(bloomList);
           
@@ -530,14 +541,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
              setSelectedDifficultyId(defaultDiff.id);
           }
           
-          if (questionTypeList.length > 0) {
-             const singleChoice = questionTypeList.find((q) => q.questionType === "SINGLE_CHOICE");
-             if (singleChoice) {
-              setSelectedQTypes([{ questionTypeId: singleChoice.questionTypeId, ratio: 100, isLocked: false }]);
-             } else {
-              setSelectedQTypes([{ questionTypeId: questionTypeList[0].questionTypeId, ratio: 100, isLocked: false }]);
-             }
-             setQTypeToAdd(String((questionTypeList[0]?.questionTypeId ?? "")));
+          const availableQuestionTypes = filterQuestionTypesByImageAvailability(questionTypeList);
+          if (availableQuestionTypes.length > 0) {
+            setSelectedQTypes((prev) => {
+              if (Array.isArray(prev) && prev.length > 0) return prev;
+              const singleChoice = availableQuestionTypes.find((q) => q.questionType === "SINGLE_CHOICE");
+              const defaultType = singleChoice || availableQuestionTypes[0];
+              return [{ questionTypeId: defaultType.questionTypeId, ratio: 100, isLocked: false }];
+            });
+            setQTypeToAdd((prev) => prev || String((availableQuestionTypes[0]?.questionTypeId ?? "")));
           }
 
           if (bloomList.length > 0) {
@@ -548,7 +560,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
              setBloomToAdd(String((bloomList[0]?.bloomId ?? "")));
           }
 
-          if (!questionTypeList.length || !difficultyList.length || !bloomList.length) {
+          if (!availableQuestionTypes.length || !difficultyList.length || !bloomList.length) {
             setMetadataError(t("workspace.quiz.aiConfig.metadataEmpty"));
           }
 
@@ -562,7 +574,17 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
       
       fetchData();
     }
-  }, [tab, defaultContextId, t]);
+  }, [tab, defaultContextId, filterQuestionTypesByImageAvailability, t]);
+
+  useEffect(() => {
+    const nextQTypes = filterQuestionTypesByImageAvailability(allQTypes);
+    setQTypes(nextQTypes);
+    setQTypeToAdd((prev) => {
+      const hasPrev = nextQTypes.some((item) => String(item?.questionTypeId) === String(prev));
+      if (hasPrev) return prev;
+      return String(nextQTypes[0]?.questionTypeId ?? "");
+    });
+  }, [allQTypes, filterQuestionTypesByImageAvailability]);
 
   const handleDifficultyChange = (e) => {
     const val = e.target.value;
@@ -688,6 +710,12 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     const availableTypeIds = new Set(qTypes.map((item) => Number(item?.questionTypeId)).filter((id) => Number.isInteger(id) && id > 0));
     setSelectedQTypes((prev) => {
       const filtered = prev.filter((item) => availableTypeIds.has(Number(item?.questionTypeId)));
+      if (filtered.length === 0) {
+        const singleChoice = qTypes.find((item) => String(item?.questionType || "").toUpperCase() === "SINGLE_CHOICE");
+        const fallbackType = singleChoice || qTypes[0];
+        if (!fallbackType?.questionTypeId) return [];
+        return [{ questionTypeId: fallbackType.questionTypeId, ratio: getTargetTotal(questionTypeUnit), isLocked: false }];
+      }
       if (filtered.length === prev.length) return prev;
       return distributeConfigValues(filtered, getTargetTotal(questionTypeUnit), questionTypeUnit);
     });
