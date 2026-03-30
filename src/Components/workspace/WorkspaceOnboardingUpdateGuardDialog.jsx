@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -11,23 +11,16 @@ import {
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 
-function WorkspaceOnboardingUpdateGuardDialog({
-  open,
+function WorkspaceOnboardingUpdateGuardDialogContent({
   onOpenChange,
   isDarkMode,
-  currentLang = 'vi',
-  materialCount = 0,
-  hasLearningData = false,
+  currentLang,
+  materialCount,
+  hasLearningData,
   onDeleteAndContinue,
-  deleting = false,
+  deleting,
 }) {
   const [step, setStep] = useState('materials');
-
-  useEffect(() => {
-    if (open) {
-      setStep('materials');
-    }
-  }, [open]);
 
   const copy = useMemo(() => {
     if (currentLang === 'en') {
@@ -61,7 +54,7 @@ function WorkspaceOnboardingUpdateGuardDialog({
       deleteMaterials: 'Xóa tài liệu',
       confirmDelete: 'Xác nhận xóa',
     };
-  }, [currentLang, hasLearningData, materialCount]);
+  }, [currentLang, materialCount]);
 
   const handlePrimaryAction = async () => {
     if (deleting) return;
@@ -77,85 +70,110 @@ function WorkspaceOnboardingUpdateGuardDialog({
   const showRiskStep = step === 'data-loss';
 
   return (
-    <Dialog open={open} onOpenChange={deleting ? undefined : onOpenChange}>
-      <DialogContent
-        className={cn(
-          'sm:max-w-[560px]',
-          isDarkMode ? 'border-slate-800 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'
-        )}
-      >
-        <DialogHeader>
-          <div
-            className={cn(
-              'mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl',
-              showRiskStep
-                ? (isDarkMode ? 'bg-red-500/15 text-red-200' : 'bg-red-50 text-red-600')
-                : (isDarkMode ? 'bg-amber-500/15 text-amber-200' : 'bg-amber-50 text-amber-600')
-            )}
-          >
-            <AlertTriangle className="h-5 w-5" />
-          </div>
-          <DialogTitle>{showRiskStep ? copy.stepTwoTitle : copy.stepOneTitle}</DialogTitle>
-          <DialogDescription className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>
-            {showRiskStep ? copy.stepTwoDescription : copy.stepOneDescription}
-          </DialogDescription>
-        </DialogHeader>
+    <DialogContent
+      className={cn(
+        'sm:max-w-[560px]',
+        isDarkMode ? 'border-slate-800 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-900'
+      )}
+    >
+      <DialogHeader>
+        <div
+          className={cn(
+            'mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl',
+            showRiskStep
+              ? (isDarkMode ? 'bg-red-500/15 text-red-200' : 'bg-red-50 text-red-600')
+              : (isDarkMode ? 'bg-amber-500/15 text-amber-200' : 'bg-amber-50 text-amber-600')
+          )}
+        >
+          <AlertTriangle className="h-5 w-5" />
+        </div>
+        <DialogTitle>{showRiskStep ? copy.stepTwoTitle : copy.stepOneTitle}</DialogTitle>
+        <DialogDescription className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>
+          {showRiskStep ? copy.stepTwoDescription : copy.stepOneDescription}
+        </DialogDescription>
+      </DialogHeader>
 
-        <div className="space-y-3 text-sm leading-6">
-          <div
-            className={cn(
-              'rounded-2xl border px-4 py-3',
-              isDarkMode ? 'border-slate-800 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'
-            )}
-          >
-            {showRiskStep ? copy.stepTwoHint : copy.stepOneHint}
-          </div>
-
-          <div
-            className={cn(
-              'rounded-2xl border px-4 py-3',
-              showRiskStep
-                ? (isDarkMode ? 'border-red-500/20 bg-red-500/10 text-red-100' : 'border-red-200 bg-red-50 text-red-700')
-                : (isDarkMode ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700')
-            )}
-          >
-            {showRiskStep ? copy.stepTwoHint : (hasLearningData ? copy.stepOneNextRisk : copy.stepOneNextSafe)}
-          </div>
+      <div className="space-y-3 text-sm leading-6">
+        <div
+          className={cn(
+            'rounded-2xl border px-4 py-3',
+            isDarkMode ? 'border-slate-800 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'
+          )}
+        >
+          {showRiskStep ? copy.stepTwoHint : copy.stepOneHint}
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-end">
-          {showRiskStep ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={deleting}
-              onClick={() => setStep('materials')}
-            >
-              {copy.back}
-            </Button>
-          ) : null}
+        <div
+          className={cn(
+            'rounded-2xl border px-4 py-3',
+            showRiskStep
+              ? (isDarkMode ? 'border-red-500/20 bg-red-500/10 text-red-100' : 'border-red-200 bg-red-50 text-red-700')
+              : (isDarkMode ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700')
+          )}
+        >
+          {showRiskStep ? copy.stepTwoHint : (hasLearningData ? copy.stepOneNextRisk : copy.stepOneNextSafe)}
+        </div>
+      </div>
+
+      <DialogFooter className="gap-2 sm:justify-end">
+        {showRiskStep ? (
           <Button
             type="button"
             variant="outline"
             disabled={deleting}
-            onClick={() => onOpenChange(false)}
+            onClick={() => setStep('materials')}
           >
-            {copy.cancel}
+            {copy.back}
           </Button>
-          <Button
-            type="button"
-            disabled={deleting}
-            onClick={handlePrimaryAction}
-            className={cn(
-              'text-white',
-              showRiskStep ? 'bg-red-600 hover:bg-red-700' : 'bg-cyan-600 hover:bg-cyan-700'
-            )}
-          >
-            {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-            {showRiskStep ? copy.confirmDelete : copy.deleteMaterials}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          disabled={deleting}
+          onClick={() => onOpenChange?.(false)}
+        >
+          {copy.cancel}
+        </Button>
+        <Button
+          type="button"
+          disabled={deleting}
+          onClick={handlePrimaryAction}
+          className={cn(
+            'text-white',
+            showRiskStep ? 'bg-red-600 hover:bg-red-700' : 'bg-cyan-600 hover:bg-cyan-700'
+          )}
+        >
+          {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+          {showRiskStep ? copy.confirmDelete : copy.deleteMaterials}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
+function WorkspaceOnboardingUpdateGuardDialog({
+  open,
+  onOpenChange,
+  isDarkMode,
+  currentLang = 'vi',
+  materialCount = 0,
+  hasLearningData = false,
+  onDeleteAndContinue,
+  deleting = false,
+}) {
+  return (
+    <Dialog open={open} onOpenChange={deleting ? undefined : onOpenChange}>
+      {open ? (
+        <WorkspaceOnboardingUpdateGuardDialogContent
+          onOpenChange={onOpenChange}
+          isDarkMode={isDarkMode}
+          currentLang={currentLang}
+          materialCount={materialCount}
+          hasLearningData={hasLearningData}
+          onDeleteAndContinue={onDeleteAndContinue}
+          deleting={deleting}
+        />
+      ) : null}
     </Dialog>
   );
 }

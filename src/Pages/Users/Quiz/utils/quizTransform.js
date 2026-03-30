@@ -94,6 +94,25 @@ export function mapSavedAnswersToState(savedAnswers = []) {
   }, {});
 }
 
+export function getFirstIncompleteQuestionIndex(questions = [], savedAnswers = []) {
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return 0;
+  }
+
+  const answeredQuestionIds = new Set(
+    (savedAnswers || [])
+      .filter((savedAnswer) => hasAnswerValue({
+        selectedAnswerIds: savedAnswer?.selectedAnswerIds,
+        textAnswer: savedAnswer?.textAnswer,
+      }))
+      .map((savedAnswer) => Number(savedAnswer?.questionId))
+      .filter((questionId) => Number.isFinite(questionId)),
+  );
+
+  const firstIncompleteIndex = questions.findIndex((question) => !answeredQuestionIds.has(Number(question?.id)));
+  return firstIncompleteIndex === -1 ? Math.max(questions.length - 1, 0) : firstIncompleteIndex;
+}
+
 export function hasAnswerValue(answerValue) {
   if (Array.isArray(answerValue)) {
     return answerValue.length > 0;
@@ -205,4 +224,29 @@ export function buildSubmitPayload(questions = [], answers = {}) {
       textAnswer: normalizedTextAnswer || null,
     };
   }).filter(item => Number.isFinite(item.questionId));
+}
+
+export function buildSingleQuestionPayload(questionId, answerValue) {
+  const normalizedQuestionId = Number(questionId);
+  if (!Number.isFinite(normalizedQuestionId)) {
+    return null;
+  }
+
+  const selectedAnswerIds = Array.isArray(answerValue)
+    ? answerValue.filter(answerId => answerId != null)
+    : Array.isArray(answerValue?.selectedAnswerIds)
+      ? answerValue.selectedAnswerIds.filter(answerId => answerId != null)
+      : [];
+
+  const normalizedTextAnswer = typeof answerValue === 'string'
+    ? answerValue.trim()
+    : typeof answerValue?.textAnswer === 'string'
+      ? answerValue.textAnswer.trim()
+      : '';
+
+  return {
+    questionId: normalizedQuestionId,
+    selectedAnswerIds,
+    textAnswer: normalizedTextAnswer || null,
+  };
 }

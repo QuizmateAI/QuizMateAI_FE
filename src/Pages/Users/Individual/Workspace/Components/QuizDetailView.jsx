@@ -2,15 +2,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Edit3, Star,
+  ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import {
-  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, updateQuiz, getQuizFull, getQuizHistory
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory
 } from "@/api/QuizAPI";
-import { useToast } from "@/context/ToastContext";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
@@ -78,7 +77,6 @@ function getDurationInMinutes(quiz) {
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
 function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contextType = "WORKSPACE", contextId: _contextId, hideEditButton = false }) {
   const { t, i18n } = useTranslation();
-  const { showSuccess, showError } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -90,7 +88,6 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const [expandedSections, setExpandedSections] = useState({});
   const [expandedQuestions, setExpandedQuestions] = useState({});
   const [starringId, setStarringId] = useState(null);
-  const [activating, setActivating] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(quiz?.status || "DRAFT");
   const [quizMeta, setQuizMeta] = useState(null);
   
@@ -161,10 +158,14 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
 
       // Nếu quiz chỉ có quizId (thiếu metadata như khi back từ kết quả), fetch thông tin đầy đủ
       if (!quiz?.title) {
-        const fullRes = await getQuizFull(quiz.quizId);
-        if (fullRes?.data) {
-          nextQuizMeta = fullRes.data;
-          nextStatus = fullRes.data.status || "DRAFT";
+        try {
+          const fullRes = await getQuizFull(quiz.quizId);
+          if (fullRes?.data) {
+            nextQuizMeta = fullRes.data;
+            nextStatus = fullRes.data.status || "DRAFT";
+          }
+        } catch (fullErr) {
+          console.error("Lỗi khi tải metadata quiz:", fullErr);
         }
       }
 
@@ -179,18 +180,40 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
       }
 
       // Bước 2: Lấy questions cho mỗi section
-      for (const section of sectionList) {
-        const qRes = await getQuestionsBySection(section.sectionId);
-        const questions = qRes.data || [];
-        nextQuestionsMap[section.sectionId] = questions;
-
-        // Chỉ lấy đáp án sau khi user đã hoàn thành bài để tránh lộ đáp án sớm.
-        if (canViewAnswers) {
-          for (const question of questions) {
-            const aRes = await getAnswersByQuestion(question.questionId);
-            nextAnswersMap[question.questionId] = aRes.data || [];
+      const sectionQuestionEntries = await Promise.all(
+        sectionList.map(async (section) => {
+          try {
+            const qRes = await getQuestionsBySection(section.sectionId);
+            return [section.sectionId, qRes.data || []];
+          } catch (questionErr) {
+            console.error("Lỗi khi tải câu hỏi của section:", section.sectionId, questionErr);
+            return [section.sectionId, []];
           }
-        }
+        })
+      );
+
+      sectionQuestionEntries.forEach(([sectionId, questions]) => {
+        nextQuestionsMap[sectionId] = questions;
+      });
+
+      // Chỉ lấy đáp án sau khi user đã hoàn thành bài để tránh lộ đáp án sớm.
+      if (canViewAnswers) {
+        const allQuestions = sectionQuestionEntries.flatMap(([, questions]) => questions || []);
+        const answerEntries = await Promise.all(
+          allQuestions.map(async (question) => {
+            try {
+              const aRes = await getAnswersByQuestion(question.questionId);
+              return [question.questionId, aRes.data || []];
+            } catch (answerErr) {
+              console.error("Lỗi khi tải đáp án của câu hỏi:", question.questionId, answerErr);
+              return [question.questionId, []];
+            }
+          })
+        );
+
+        answerEntries.forEach(([questionId, answers]) => {
+          nextAnswersMap[questionId] = answers;
+        });
       }
 
       return {
@@ -284,21 +307,6 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     }
   };
 
-  const handleActivateQuiz = async () => {
-    if (!quiz?.quizId || activating) return;
-    setActivating(true);
-    try {
-      const res = await updateQuiz(quiz.quizId, { status: "ACTIVE" });
-      const nextStatus = res?.data?.status || "ACTIVE";
-      setCurrentStatus(nextStatus);
-      showSuccess(t("workspace.quiz.activateSuccess", "Kích hoạt quiz thành công"));
-    } catch (err) {
-      showError(err?.message || t("workspace.quiz.activateFail", "Kích hoạt quiz thất bại"));
-    } finally {
-      setActivating(false);
-    }
-  };
-
   const effectiveQuiz = quizMeta || quiz;
   const effectiveContextType = String(effectiveQuiz?.contextType || "").toUpperCase();
   const isRoadmapRouteSource = /\/workspace\/\d+\/roadmap(?:\/|$)/.test(location.pathname);
@@ -322,6 +330,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     navigate(`/quiz/${mode}/${quiz.quizId}`, {
       state: {
         returnToQuizPath: `${location.pathname}${location.search || ""}`,
+        ...(mode === 'practice' ? { autoStart: true } : {}),
         ...resultSourceState,
       },
     });
@@ -339,7 +348,6 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     setExamStartOpen(false);
   }, [location.pathname, location.search, navigate, quiz?.quizId, resultSourceState]);
   const isActiveQuiz = currentStatus === "ACTIVE";
-  const canActivate = currentStatus === "DRAFT" || currentStatus === "INACTIVE";
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
@@ -358,26 +366,6 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!hideEditButton && !isActiveQuiz && (
-            <>
-              {onEdit && (
-                <Button onClick={() => onEdit?.(effectiveQuiz)} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
-                  <Edit3 className="w-4 h-4" />
-                  <span className="text-sm">{t("workspace.quiz.detail.edit")}</span>
-                </Button>
-              )}
-              {canActivate && (
-                <Button
-                  onClick={handleActivateQuiz}
-                  disabled={activating}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"
-                >
-                  {activating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  <span className="text-sm">{t("workspace.quiz.activate", "Kích hoạt")}</span>
-                </Button>
-              )}
-            </>
-          )}
           {!hideEditButton && _contextType === "GROUP" && (
             <Button
               className="bg-violet-600 hover:bg-violet-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"

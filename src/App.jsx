@@ -12,6 +12,7 @@ import './App.css';
 // ── Lazy-loaded route components (code splitting) ──
 const LaunchingPage = lazy(() => import('./Pages/LaunchingPage/LaunchingPage'));
 const LandingPage = lazy(() => import('./Pages/LandingPage/LandingPage'));
+const PricingGuidePage = lazy(() => import('./Pages/Pricing/PricingGuidePage'));
 const LoginPage = lazy(() => import('./Pages/Authentication/LoginPage'));
 const RegisterPage = lazy(() => import('./Pages/Authentication/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./Pages/Authentication/ForgotPasswordPage'));
@@ -61,6 +62,7 @@ function MainRoutes() {
       {/* VNPay return: nếu request trúng frontend thay vì backend thì redirect sang backend */}
       <Route path="/api/vnpay/return" element={<VnPayReturnRedirect />} />
       <Route path="/accept-invite" element={<AcceptInvitationPage />} />
+      <Route path="/pricing" element={<PricingGuidePage />} />
 
       <Route element={<PublicRoute />}>
       <Route path="/" element={<LandingPage />} />

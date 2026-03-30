@@ -306,6 +306,17 @@ export default function WalletPage() {
                   <Sparkles className="w-4 h-4 text-indigo-500" />
                   {t("wallet.hint")}
                 </div>
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/pricing")}
+                    className={`rounded-full cursor-pointer ${
+                      isDarkMode ? "border-slate-600 bg-slate-900 text-slate-100 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    Pricing Guide
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
