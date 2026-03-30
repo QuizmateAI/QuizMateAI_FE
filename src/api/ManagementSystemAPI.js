@@ -27,6 +27,11 @@ export const getWorkspacesByUserId = async (userId, page = 0, size = 20) => {
   return response;
 };
 
+export const getWorkspaceSnapshotByUserId = async (userId, workspaceId) => {
+  const response = await api.get(`/management/users/${userId}/workspaces/${workspaceId}/snapshot`);
+  return response;
+};
+
 export const getGroupsByUserId = async (userId) => {
   const response = await api.get(`/management/users/${userId}/groups`);
   return response;
