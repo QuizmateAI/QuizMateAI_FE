@@ -44,13 +44,13 @@ const DialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
-const DialogContent = React.forwardRef(({ className, children, hideClose, ...props }, ref) => {
+const DialogContent = React.forwardRef(({ className, children, hideClose, hideOverlay = false, ...props }, ref) => {
   const hasTitle = hasDialogPart(children, DialogPrimitive.Title.displayName)
   const hasDescription = hasDialogPart(children, DialogPrimitive.Description.displayName)
 
   return (
     <DialogPortal>
-      <DialogOverlay />
+      {!hideOverlay ? <DialogOverlay /> : null}
       <DialogPrimitive.Content
         ref={ref}
         className={cn(

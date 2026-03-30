@@ -476,6 +476,7 @@ function WorkspacePage() {
 		|| hasExistingWorkspaceFlashcard
 		|| hasRoadmapPhases
 		|| Boolean(extractRoadmapIdFromProfile(workspaceProfile));
+	const workspaceAdaptationMode = String(workspaceProfile?.adaptationMode || workspaceProfile?.data?.adaptationMode || "").toUpperCase();
 
 	useEffect(() => {
 		console.log("[RoadmapGate][WorkspacePage] Profile snapshot", {
@@ -2840,6 +2841,8 @@ function WorkspacePage() {
 									onCreateKnowledgeQuizForKnowledge={handleCreateKnowledgeQuizForKnowledge}
 									onCreatePhasePreLearning={handleCreatePhasePreLearning}
 									isStudyNewRoadmap={isStudyNewRoadmap}
+									adaptationMode={workspaceAdaptationMode}
+									adaptationMode={workspaceAdaptationMode}
 									isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
 									roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
 									generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
