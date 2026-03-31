@@ -320,6 +320,11 @@ export const getWorkspaceQuizRecommendations = async (workspaceId) => {
   return response;
 };
 
+export const getWorkspacePersonalization = async (workspaceId) => {
+  const response = await api.get(`/workspace/${workspaceId}/personalization`);
+  return response;
+};
+
 export const getWorkspaceCommunityQuizzes = async (workspaceId) => {
   const response = await api.get(`/workspace/${workspaceId}/community-quizzes`);
   return response;

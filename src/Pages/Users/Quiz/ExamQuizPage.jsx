@@ -240,6 +240,7 @@ export default function ExamQuizPage() {
           state: {
             quizId,
             attemptMode: 'exam',
+            openReviewMode: true,
             returnToQuizPath,
             sourceView: location.state?.sourceView,
             sourceWorkspaceId: location.state?.sourceWorkspaceId,

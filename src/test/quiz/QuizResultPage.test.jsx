@@ -9,6 +9,7 @@ const mockShowSuccess = vi.fn();
 const mockGetAttemptResult = vi.fn();
 const mockGetQuizFullForAttempt = vi.fn();
 const mockGetAttemptAssessment = vi.fn();
+let latestUseWebSocketOptions = null;
 
 vi.mock('@/api/QuizAPI', () => ({
   getAttemptResult: (...args) => mockGetAttemptResult(...args),
@@ -34,9 +35,12 @@ vi.mock('@/api/RoadmapPhaseAPI', () => ({
 }));
 
 vi.mock('@/hooks/useWebSocket', () => ({
-  useWebSocket: () => ({
-    isConnected: false,
-  }),
+  useWebSocket: (options = {}) => {
+    latestUseWebSocketOptions = options;
+    return {
+      isConnected: false,
+    };
+  },
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -76,71 +80,90 @@ vi.mock('@/Pages/Users/Quiz/components/QuizHeader', () => ({
 }));
 
 vi.mock('@/Pages/Users/Quiz/components/QuestionCard', () => ({
-  default: ({ question }) => <div data-testid="question-card">{question?.content}</div>,
+  default: ({ question }) => (
+    <div data-testid="question-card">
+      {question?.content}|{question?.gradingStatus || 'NONE'}|{String(question?.isCorrect)}
+    </div>
+  ),
 }));
+
+function buildAttemptResult(overrides = {}) {
+  const baseQuestions = [
+    {
+      questionId: 1,
+      selectedAnswerIds: [11],
+      correct: true,
+      questionScore: 1,
+    },
+  ];
+
+  return Object.assign({
+    quizId: 66,
+    score: 8,
+    maxScore: 10,
+    totalQuestion: 10,
+    correctQuestion: 8,
+    answeredQuestion: 10,
+    startedAt: '2026-03-30T06:00:00.000Z',
+    completedAt: '2026-03-30T06:08:00.000Z',
+    questions: baseQuestions,
+  }, overrides, {
+    questions: overrides.questions || baseQuestions,
+  });
+}
+
+function buildQuizDetail(overrides = {}) {
+  const baseQuestion = {
+    questionId: 1,
+    content: 'Cau 1',
+    questionTypeId: 1,
+    difficulty: 'EASY',
+    answers: [
+      { answerId: 11, content: 'Dap an A', isCorrect: true },
+    ],
+  };
+
+  return Object.assign({
+    quizId: 66,
+    workspaceId: 12,
+    title: 'Bai kiem tra 60 cau',
+    duration: 900,
+    timerMode: true,
+    sections: [
+      {
+        sectionId: 1,
+        questions: overrides.questions || [baseQuestion],
+      },
+    ],
+  }, overrides);
+}
 
 describe('QuizResultPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
+    window.sessionStorage.clear();
+    window.localStorage.clear();
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    latestUseWebSocketOptions = null;
     mockGetAttemptAssessment.mockRejectedValue(new Error('assessment unavailable'));
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    window.sessionStorage.clear();
+    window.localStorage.clear();
   });
 
   it('keeps retrying bootstrap result loading until the backend result becomes available', async () => {
+    vi.useFakeTimers();
     const pendingError = { statusCode: 400, message: 'Lượt làm quiz chưa hoàn thành' };
     mockGetAttemptResult
       .mockRejectedValueOnce(pendingError)
       .mockRejectedValueOnce(pendingError)
       .mockRejectedValueOnce(pendingError)
       .mockRejectedValueOnce(pendingError)
-      .mockResolvedValue({
-        data: {
-          quizId: 66,
-          score: 1,
-          maxScore: 1,
-          totalQuestion: 1,
-          correctQuestion: 1,
-          answeredQuestion: 1,
-          startedAt: '2026-03-30T06:00:00.000Z',
-          completedAt: '2026-03-30T06:01:00.000Z',
-          questions: [
-            {
-              questionId: 1,
-              selectedAnswerIds: [11],
-              correct: true,
-              questionScore: 1,
-            },
-          ],
-        },
-      });
-    mockGetQuizFullForAttempt.mockResolvedValue({
-      data: {
-        quizId: 66,
-        title: 'Bai kiem tra 60 cau',
-        duration: 900,
-        timerMode: true,
-        sections: [
-          {
-            sectionId: 1,
-            questions: [
-              {
-                questionId: 1,
-                content: 'Cau 1',
-                questionTypeId: 1,
-                difficulty: 'EASY',
-                answers: [
-                  { answerId: 11, content: 'Dap an A', isCorrect: true },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    });
+      .mockResolvedValue({ data: buildAttemptResult() });
+    mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
 
     render(<QuizResultPage />);
 
@@ -159,4 +182,153 @@ describe('QuizResultPage', () => {
     expect(mockGetQuizFullForAttempt).toHaveBeenCalledWith(66);
     expect(screen.queryByText('Không tìm thấy kết quả')).not.toBeInTheDocument();
   }, 10000);
+
+  it('renders only concise recommendation results when the assessment is ready', async () => {
+    mockGetAttemptResult.mockResolvedValue({ data: buildAttemptResult() });
+    mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
+    mockGetAttemptAssessment.mockResolvedValue({
+      data: {
+        status: 'READY',
+        assessmentId: 901,
+        recommendationStatus: 'PENDING',
+        summary: 'Bạn đang làm tốt phần task response nhưng còn lặp lỗi cohesion.',
+        strengths: ['Task response'],
+        weaknesses: ['Cohesion'],
+        recurringMistakes: [{ topic: 'Cohesion', detail: 'Các đoạn chuyển ý chưa đều.' }],
+        nextActionType: 'REVIEW_WEAK_TOPIC',
+        targetDifficulty: 'MEDIUM',
+        profileReadiness: {
+          completedQuizCount: 2,
+          targetQuizCount: 3,
+          remainingQuizCount: 1,
+          summary: 'Đã có 2/3 quiz. Làm thêm 1 bài nữa để profile ổn định hơn.',
+        },
+        nextQuizPlan: {
+          displayTitle: 'Quiz review Cohesion',
+          goal: 'Ôn lại các dạng lỗi chuyển ý và sắp xếp luận điểm.',
+          displayReason: 'Hệ thống ưu tiên review vì bạn còn lặp lỗi ở cùng một chủ đề.',
+        },
+        learnerExplanation: {
+          whyThisQuiz: 'Hệ thống ưu tiên review vì bạn còn lặp lỗi ở cùng một chủ đề.',
+          whatToStudyNext: 'Ôn lại các mẫu chuyển ý và cách nhóm luận điểm.',
+          reviewOrLevelUp: 'Nên review trước rồi mới tăng độ khó.',
+          roadmapOrMock: 'Tạm quay lại roadmap sau khi xử lý xong review queue.',
+        },
+        roadmapGuidance: {
+          recommendedSpeedMode: 'SLOW',
+          recommendedAdaptationMode: 'FLEXIBLE',
+          nextRoadmapAction: 'Review lại phase hiện tại',
+          summary: 'Nên giảm nhịp roadmap một chút để ưu tiên review chủ đề yếu.',
+        },
+        shortTermGoals: [
+          {
+            title: 'Củng cố Cohesion',
+            detail: 'Hoàn thành 1 quiz review ngắn trước buổi học tiếp theo.',
+          },
+        ],
+        reviewQueue: [
+          {
+            topic: 'Cohesion',
+            priority: 'HIGH',
+            dueAt: '2026-04-01T09:00:00',
+            reason: 'Ôn lại sớm để giảm lỗi lặp lại.',
+          },
+        ],
+        communityQuizSuggestions: [
+          {
+            quizId: 77,
+            title: 'Community quiz cohesion basics',
+            overallDifficulty: 'EASY',
+          },
+        ],
+      },
+    });
+
+    render(<QuizResultPage />);
+
+    expect(await screen.findByText('Đề xuất tiếp theo')).toBeInTheDocument();
+    expect(screen.getByText('Quiz review Cohesion')).toBeInTheDocument();
+    expect(screen.getByText('Ôn lại các dạng lỗi chuyển ý và sắp xếp luận điểm.')).toBeInTheDocument();
+    expect(screen.getByText('Community quiz cohesion basics')).toBeInTheDocument();
+    expect(screen.queryByText('Tóm tắt đề xuất')).not.toBeInTheDocument();
+    expect(screen.queryByText('Đã có 2/3 quiz. Làm thêm 1 bài nữa để profile ổn định hơn.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ôn lại chủ đề yếu')).not.toBeInTheDocument();
+    expect(screen.queryByText('Review lại phase hiện tại')).not.toBeInTheDocument();
+    expect(screen.queryByText('Task response')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /tạo quiz dựa trên đánh giá ai/i })).toBeInTheDocument();
+  });
+
+  it('shows a clear fallback when no assessment is available yet', async () => {
+    mockGetAttemptResult.mockResolvedValue({ data: buildAttemptResult() });
+    mockGetQuizFullForAttempt.mockResolvedValue({ data: buildQuizDetail() });
+
+    render(<QuizResultPage />);
+
+    expect(await screen.findByText(/Chưa có đánh giá AI cho lượt làm này/i)).toBeInTheDocument();
+  });
+
+  it('updates the grading UI from websocket events even if result refresh fails', async () => {
+    mockGetAttemptResult
+      .mockResolvedValueOnce({
+        data: buildAttemptResult({
+          score: 0,
+          correctQuestion: 0,
+          pendingGradingQuestionCount: 1,
+          questions: [
+            {
+              questionId: 1,
+              textAnswer: '72 27 70 77',
+              correct: null,
+              gradingStatus: 'PENDING',
+              questionScore: 1,
+            },
+          ],
+        }),
+      })
+      .mockRejectedValue({
+        statusCode: 400,
+        message: 'Lượt làm quiz chưa hoàn thành',
+      });
+    mockGetQuizFullForAttempt.mockResolvedValue({
+      data: buildQuizDetail({
+        questions: [
+          {
+            questionId: 1,
+            content: 'Cau 1',
+            questionTypeId: 3,
+            difficulty: 'HARD',
+            explanation: 'Sap xep tang dan',
+            answers: [
+              { answerId: 11, content: '27, 70, 72, 77', isCorrect: true },
+            ],
+          },
+        ],
+      }),
+    });
+
+    render(<QuizResultPage />);
+
+    expect(await screen.findByRole('heading', { name: 'Review Answers' })).toBeInTheDocument();
+    expect(screen.getByText('Click a number to jump straight to that question.')).toBeInTheDocument();
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByText('Cau 1|PENDING|null')).toBeInTheDocument();
+
+    await act(async () => {
+      latestUseWebSocketOptions?.onQuizAttemptGrading?.({
+        attemptId: 62,
+        updatedQuestionId: 1,
+        updatedQuestionGradingStatus: 'COMPLETED',
+        updatedQuestionCorrect: true,
+        updatedQuestionGradingReason: 'Dung roi',
+        pendingGradingQuestionCount: 0,
+        failedGradingQuestionCount: 0,
+        score: 1,
+        status: 'COMPLETED',
+        allGradingFinished: true,
+      });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('Cau 1|COMPLETED|true')).toBeInTheDocument();
+  });
 });
