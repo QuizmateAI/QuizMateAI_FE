@@ -19,7 +19,7 @@ import PostLearningListView from "./PostLearningListView";
 import CreatePostLearningForm from "./CreatePostLearningForm";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onRoadmapPhaseFocus, onCreatePhaseKnowledge, onCreateKnowledgeQuizForKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, adaptationMode = "", isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingKnowledgeQuizKnowledgeKeys = [], knowledgeQuizRefreshByKey = {}, generatingPreLearningPhaseIds = [], skipPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null, onShareQuiz, onShareRoadmap }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onRoadmapPhaseFocus, onCreatePhaseKnowledge, onCreateKnowledgeQuizForKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, adaptationMode = "", isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingKnowledgeQuizKnowledgeKeys = [], knowledgeQuizRefreshByKey = {}, generatingPreLearningPhaseIds = [], skipPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, onShareQuiz, onShareRoadmap }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -101,7 +101,21 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
           />
         );
       case "quiz":
-        return <QuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="WORKSPACE" contextId={workspaceId} disableCreate={shouldDisableCreateQuiz} onShareQuiz={onShareQuiz} onOpenCommunityQuiz={() => onChangeView?.("communityQuiz")} />;
+        return (
+          <QuizListView
+            isDarkMode={isDarkMode}
+            onCreateQuiz={() => onChangeView?.("createQuiz")}
+            onViewQuiz={onViewQuiz}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            disableCreate={shouldDisableCreateQuiz}
+            onShareQuiz={onShareQuiz}
+            onOpenCommunityQuiz={() => onChangeView?.("communityQuiz")}
+            progressTracking={progressTracking}
+            quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+            quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
+          />
+        );
       case "communityQuiz":
         return <CommunityQuizExplorerView isDarkMode={isDarkMode} workspaceId={workspaceId} onBackToQuiz={() => onChangeView?.("quiz")} />;
       case "flashcard":
