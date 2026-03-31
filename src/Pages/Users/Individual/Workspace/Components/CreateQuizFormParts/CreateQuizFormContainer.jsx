@@ -6,6 +6,7 @@ import { createFullQuiz, getPendingRecommendations, generateQuizFromWorkspaceAss
 import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmapForWorkspace, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { generateAIQuiz, getQuestionTypes, getDifficultyDefinitions, getBloomSkills } from "@/api/AIAPI";
 import QuickCreateDialog from "../QuickCreateDialog";
+import { QUIZ_TITLE_MAX_LENGTH, normalizeQuizTitleInput } from "../quizTitleConfig";
 import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 
 // Danh sách dạng câu hỏi và độ khó
@@ -850,6 +851,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
 
     if (!aiName.trim()) {
       registerError("general", "aiName", t("workspace.quiz.validation.nameRequired"));
+    } else if (aiName.trim().length > QUIZ_TITLE_MAX_LENGTH) {
+      registerError(
+        "general",
+        "aiName",
+        t("workspace.quiz.validation.nameMaxLength", {
+          max: QUIZ_TITLE_MAX_LENGTH,
+          defaultValue: `Tên bài kiểm tra tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+        })
+      );
     }
     if (!selectedMaterialIds.length && !aiPrompt.trim()) {
       registerError("general", "aiPrompt", t("workspace.quiz.validation.aiMaterialOrPromptRequired"));
@@ -1270,10 +1280,21 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     setSubmitting(true);
     setError("");
     try {
+      const trimmedName = String(name ?? "").trim();
+      const trimmedAiName = String(aiName ?? "").trim();
+
       if (tab === "manual") {
         // Validate cơ bản
-        if (!name.trim()) {
+        if (!trimmedName) {
           setError(t("workspace.quiz.validation.nameRequired"));
+          setSubmitting(false);
+          return;
+        }
+        if (trimmedName.length > QUIZ_TITLE_MAX_LENGTH) {
+          setError(t("workspace.quiz.validation.nameMaxLength", {
+            max: QUIZ_TITLE_MAX_LENGTH,
+            defaultValue: `Tên bài kiểm tra tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+          }));
           setSubmitting(false);
           return;
         }
@@ -1303,7 +1324,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
           roadmapId: null,
           phaseId: null,
           knowledgeId: targetKnowledgeId,
-          title: name,
+          title: trimmedName,
           duration,
           quizIntent,
           timerMode,
@@ -1387,7 +1408,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         const normalizedDuration = Math.max(1, Number(aiDuration) || 1);
 
         const payload = {
-          title: aiName,
+          title: trimmedAiName,
           materialIds: selectedMaterialIds,
           overallDifficulty: selectedDifficultyId === "CUSTOM" ? "CUSTOM" : selectedDifficulty?.difficultyName || "MEDIUM",
           durationInMinute: aiTimerMode ? normalizedDuration : 0,
@@ -1688,7 +1709,19 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
           <div className="space-y-4">
             <div>
               <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
-              <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
+              <input
+                className={inputCls}
+                placeholder={t("workspace.quiz.namePlaceholder")}
+                value={name}
+                maxLength={QUIZ_TITLE_MAX_LENGTH}
+                onChange={(e) => setName(normalizeQuizTitleInput(e.target.value))}
+              />
+              <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                {t("workspace.quiz.validation.nameMaxLengthHint", {
+                  max: QUIZ_TITLE_MAX_LENGTH,
+                  defaultValue: `Tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+                })}
+              </p>
             </div>
 
             <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-slate-700 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
@@ -2199,14 +2232,21 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                       className={`${inputCls} ${fieldErrors.aiName ? (isDarkMode ? "border-red-600" : "border-red-400") : ""}`} 
                       placeholder={t("workspace.quiz.namePlaceholder")} 
                       value={aiName} 
+                      maxLength={QUIZ_TITLE_MAX_LENGTH}
                       onChange={(e) => {
-                        setAiName(e.target.value);
+                        setAiName(normalizeQuizTitleInput(e.target.value));
                         setFieldErrors(prev => ({ ...prev, aiName: "" }));
                       }} 
                     />
                     {fieldErrors.aiName && (
                       <p className="text-xs text-red-500 mt-1">{fieldErrors.aiName}</p>
                     )}
+                    <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                      {t("workspace.quiz.validation.nameMaxLengthHint", {
+                        max: QUIZ_TITLE_MAX_LENGTH,
+                        defaultValue: `Tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+                      })}
+                    </p>
                   </div>
                   <div>
                     <label className={labelCls}>{t("workspace.quiz.aiConfig.customPromptLabel", "vui lòng nhập yêu cầu của bạn")}</label>
@@ -2540,7 +2580,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
              </div>
 
              {/* 5. Question Types & Bloom Skills */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="grid grid-cols-2 gap-4">
                 {/* Question Types */}
                 <div ref={aiQuestionTypesSectionRef} className={getAiSectionCardClass(["selectedQTypes"])}>
                    <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
