@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, BadgeCheck, ArrowLeft, MapPin, RefreshCw, Rocket, AlertCircle, Lock, Unlock, RotateCcw, ArrowUp, Sparkles, Sliders, CheckSquare, BrainCircuit, FileText, CheckCircle2, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -12,8 +12,22 @@ import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
 const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "REVIEW"];
-const HIDDEN_AI_QUESTION_TYPES = [];
 const IMAGE_BASED_QUESTION_TYPE = "IMAGED_BASED";
+const HIDDEN_AI_QUESTION_TYPES = ["IMAGED_BASED"];
+const AI_MINIMUM_SECONDS_PER_QUESTION = 30;
+const AI_MINIMUM_QUESTION_COUNT = 10;
+const AI_MAXIMUM_QUESTION_COUNT = 100;
+const AI_VALIDATION_SECTION_ORDER = ["general", "settings", "difficulty", "questionTypes", "bloomSkills"];
+const AI_VALIDATION_ERROR_KEYS = [
+  "aiName",
+  "aiPrompt",
+  "aiTotalQuestions",
+  "aiDuration",
+  "aiDurations",
+  "aiDifficulty",
+  "selectedQTypes",
+  "selectedBloomSkills",
+];
 const BLOOM_LEVELS = [
   { id: 1, key: "remember" },
   { id: 2, key: "understand" },
@@ -129,7 +143,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
 
   useEffect(() => {
     if (selectedMaterialIds.length > 0) {
-      setFieldErrors((prev) => ({ ...prev, selectedMaterialIds: "" }));
+      setFieldErrors((prev) => ({ ...prev, selectedMaterialIds: "", aiPrompt: "" }));
     }
   }, [selectedMaterialIds.length]);
 
@@ -372,6 +386,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiQuizIntent, setAiQuizIntent] = useState("REVIEW");
   const [aiTimerMode, setAiTimerMode] = useState(true);
+  const [aiDurationSyncNotice, setAiDurationSyncNotice] = useState("");
   const [questionTypeUnit, setQuestionTypeUnit] = useState(false);
   const [bloomUnit, setBloomUnit] = useState(false);
   const [questionUnit, setQuestionUnit] = useState(false);
@@ -383,8 +398,16 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
   const prevDifficultyUnitRef = useRef(questionUnit);
   const prevQuestionTypeUnitRef = useRef(questionTypeUnit);
   const prevBloomUnitRef = useRef(bloomUnit);
+  const aiGeneralSectionRef = useRef(null);
+  const aiSettingsSectionRef = useRef(null);
+  const aiDifficultySectionRef = useRef(null);
+  const aiQuestionTypesSectionRef = useRef(null);
+  const aiBloomSectionRef = useRef(null);
+  const prevAiTotalQuestionsRef = useRef(aiTotalQuestions);
+  const prevAiTimerModeRef = useRef(aiTimerMode);
 
   const getTargetTotal = (unitByCount) => unitByCount ? Number(aiTotalQuestions || 0) : 100;
+  const minimumAiDurationMinutes = Math.ceil((Math.max(0, Number(aiTotalQuestions) || 0) * AI_MINIMUM_SECONDS_PER_QUESTION) / 60);
 
   const shuffle = (arr) => {
     const clone = [...arr];
@@ -807,6 +830,257 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     });
   };
 
+  const aiValidationState = useMemo(() => {
+    const nextFieldErrors = {};
+    const nextSectionErrors = {};
+    const registerError = (sectionKey, fieldKey, message) => {
+      if (!message) return;
+      if (!nextFieldErrors[fieldKey]) {
+        nextFieldErrors[fieldKey] = message;
+      }
+      nextSectionErrors[sectionKey] = true;
+    };
+    const sumRatios = (items = []) => items.reduce((sum, item) => sum + (Number(item?.ratio) || 0), 0);
+    const nearlyEqual = (a, b) => Math.abs(a - b) <= 0.01;
+    const normalizedTotalQuestions = Number(aiTotalQuestions);
+    const hasValidTotalQuestions = Number.isFinite(normalizedTotalQuestions)
+      && normalizedTotalQuestions >= AI_MINIMUM_QUESTION_COUNT
+      && normalizedTotalQuestions <= AI_MAXIMUM_QUESTION_COUNT;
+    const normalizedDuration = Number(aiDuration);
+
+    if (!aiName.trim()) {
+      registerError("general", "aiName", t("workspace.quiz.validation.nameRequired"));
+    }
+    if (!selectedMaterialIds.length && !aiPrompt.trim()) {
+      registerError("general", "aiPrompt", t("workspace.quiz.validation.aiMaterialOrPromptRequired"));
+    }
+
+    if (!hasValidTotalQuestions) {
+      registerError(
+        "settings",
+        "aiTotalQuestions",
+        t("workspace.quiz.validation.totalQuestionsRange", {
+          min: AI_MINIMUM_QUESTION_COUNT,
+          max: AI_MAXIMUM_QUESTION_COUNT,
+        })
+      );
+    }
+
+    if (aiTimerMode) {
+      if (!Number.isFinite(normalizedDuration) || normalizedDuration <= 0) {
+        registerError("settings", "aiDuration", t("workspace.quiz.validation.timeDurationRequired"));
+      } else if (hasValidTotalQuestions && normalizedDuration < minimumAiDurationMinutes) {
+        registerError(
+          "settings",
+          "aiDuration",
+          t(
+            "workspace.quiz.validation.minimumTimePerQuestion",
+            `Mỗi câu cần tối thiểu ${AI_MINIMUM_SECONDS_PER_QUESTION} giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumAiDurationMinutes} phút.`
+          )
+        );
+      }
+    } else {
+      const easyDur = Number(aiEasyDuration) || 0;
+      const mediumDur = Number(aiMediumDuration) || 0;
+      const hardDur = Number(aiHardDuration) || 0;
+
+      if (!easyDur || !mediumDur || !hardDur) {
+        registerError("settings", "aiDurations", t("workspace.quiz.validation.allDurationsRequired"));
+      } else if (easyDur < 10 || mediumDur < 10 || hardDur < 10) {
+        registerError("settings", "aiDurations", t("workspace.quiz.validation.durationMinimum"));
+      } else if (mediumDur <= easyDur) {
+        registerError("settings", "aiDurations", t("workspace.quiz.validation.mediumDurationMustBeGreaterThanEasy"));
+      } else if (hardDur <= mediumDur) {
+        registerError("settings", "aiDurations", t("workspace.quiz.validation.hardDurationMustBeGreaterThanMedium"));
+      }
+    }
+
+    const selectedDifficulty = difficultyDefs.find((difficulty) => difficulty.id === selectedDifficultyId);
+    const difficultyRatios = selectedDifficultyId === "CUSTOM"
+      ? {
+          easy: Math.max(0, Number(customDifficulty.easy) || 0),
+          medium: Math.max(0, Number(customDifficulty.medium) || 0),
+          hard: Math.max(0, Number(customDifficulty.hard) || 0),
+        }
+      : {
+          easy: Math.max(0, Number(selectedDifficulty?.easyRatio) || 0),
+          medium: Math.max(0, Number(selectedDifficulty?.mediumRatio) || 0),
+          hard: Math.max(0, Number(selectedDifficulty?.hardRatio) || 0),
+        };
+
+    const difficultyTarget = questionUnit ? normalizedTotalQuestions : 100;
+    const difficultyTotal = difficultyRatios.easy + difficultyRatios.medium + difficultyRatios.hard;
+    if ((!questionUnit || hasValidTotalQuestions) && !nearlyEqual(difficultyTotal, difficultyTarget)) {
+      registerError(
+        "difficulty",
+        "aiDifficulty",
+        questionUnit
+          ? t("workspace.quiz.validation.difficultyTotalByCount", { target: difficultyTarget })
+          : t("workspace.quiz.validation.difficultyTotalByPercent")
+      );
+    }
+
+    const questionTypeTarget = questionTypeUnit ? normalizedTotalQuestions : 100;
+    if (selectedQTypes.length === 0) {
+      registerError("questionTypes", "selectedQTypes", t("workspace.quiz.validation.questionTypeRequired"));
+    } else if ((!questionTypeUnit || hasValidTotalQuestions) && !nearlyEqual(sumRatios(selectedQTypes), questionTypeTarget)) {
+      registerError(
+        "questionTypes",
+        "selectedQTypes",
+        questionTypeUnit
+          ? t("workspace.quiz.validation.questionTypeTotalByCount", { target: questionTypeTarget })
+          : t("workspace.quiz.validation.questionTypeTotalByPercent")
+      );
+    }
+
+    const bloomTarget = bloomUnit ? normalizedTotalQuestions : 100;
+    if (selectedBloomSkills.length === 0) {
+      registerError("bloomSkills", "selectedBloomSkills", t("workspace.quiz.validation.bloomRequired"));
+    } else if ((!bloomUnit || hasValidTotalQuestions) && !nearlyEqual(sumRatios(selectedBloomSkills), bloomTarget)) {
+      registerError(
+        "bloomSkills",
+        "selectedBloomSkills",
+        bloomUnit
+          ? t("workspace.quiz.validation.bloomTotalByCount", { target: bloomTarget })
+          : t("workspace.quiz.validation.bloomTotalByPercent")
+      );
+    }
+
+    return {
+      fieldErrors: nextFieldErrors,
+      firstErrorMessage: Object.values(nextFieldErrors)[0] || "",
+      firstInvalidSection: AI_VALIDATION_SECTION_ORDER.find((sectionKey) => nextSectionErrors[sectionKey]),
+      isValid: Object.keys(nextFieldErrors).length === 0,
+    };
+  }, [
+    aiDuration,
+    aiEasyDuration,
+    aiHardDuration,
+    aiMediumDuration,
+    aiName,
+    aiPrompt,
+    aiTimerMode,
+    aiTotalQuestions,
+    bloomUnit,
+    customDifficulty.easy,
+    customDifficulty.hard,
+    customDifficulty.medium,
+    difficultyDefs,
+    minimumAiDurationMinutes,
+    questionTypeUnit,
+    questionUnit,
+    selectedBloomSkills,
+    selectedDifficultyId,
+    selectedMaterialIds,
+    selectedQTypes,
+    t,
+  ]);
+
+  useEffect(() => {
+    if (tab !== "ai") return;
+
+    setFieldErrors((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      AI_VALIDATION_ERROR_KEYS.forEach((key) => {
+        if (prev[key] && !aiValidationState.fieldErrors[key]) {
+          delete next[key];
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [aiValidationState, tab]);
+
+  useEffect(() => {
+    if (tab === "ai" && error) {
+      setError("");
+    }
+  }, [
+    aiDuration,
+    aiEasyDuration,
+    aiHardDuration,
+    aiMediumDuration,
+    aiName,
+    aiPrompt,
+    aiTimerMode,
+    aiTotalQuestions,
+    bloomUnit,
+    questionTypeUnit,
+    questionUnit,
+    selectedBloomSkills,
+    selectedDifficultyId,
+    selectedMaterialIds,
+    selectedQTypes,
+    tab,
+  ]);
+
+  useEffect(() => {
+    const previousTotalQuestions = Number(prevAiTotalQuestionsRef.current);
+    const currentTotalQuestions = Number(aiTotalQuestions);
+    const totalQuestionsChanged = previousTotalQuestions !== currentTotalQuestions;
+    const timerModeEnabled = !prevAiTimerModeRef.current && aiTimerMode;
+
+    prevAiTotalQuestionsRef.current = aiTotalQuestions;
+    prevAiTimerModeRef.current = aiTimerMode;
+
+    if (!aiTimerMode) {
+      setAiDurationSyncNotice("");
+      return;
+    }
+
+    if (!totalQuestionsChanged && !timerModeEnabled) {
+      return;
+    }
+
+    const normalizedDuration = Number(aiDuration) || 0;
+
+    if (minimumAiDurationMinutes > 0 && normalizedDuration < minimumAiDurationMinutes) {
+      setAiDuration(minimumAiDurationMinutes);
+      setFieldErrors((prev) => ({ ...prev, aiDuration: "" }));
+      setAiDurationSyncNotice(
+        t("workspace.quiz.validation.durationAutoAdjusted", {
+          minutes: minimumAiDurationMinutes,
+          count: Math.max(0, Number(aiTotalQuestions) || 0),
+        })
+      );
+      return;
+    }
+
+    setAiDurationSyncNotice("");
+  }, [aiDuration, aiTimerMode, aiTotalQuestions, minimumAiDurationMinutes, t]);
+
+  const scrollToAiSection = useCallback((sectionKey) => {
+    const sectionRefs = {
+      general: aiGeneralSectionRef,
+      settings: aiSettingsSectionRef,
+      difficulty: aiDifficultySectionRef,
+      questionTypes: aiQuestionTypesSectionRef,
+      bloomSkills: aiBloomSectionRef,
+    };
+    const sectionNode = sectionRefs[sectionKey]?.current;
+    if (!sectionNode) return;
+
+    sectionNode.scrollIntoView({ behavior: "smooth", block: "center" });
+    const focusTarget = sectionNode.querySelector("input, textarea, select, button");
+    if (focusTarget && typeof focusTarget.focus === "function") {
+      setTimeout(() => focusTarget.focus(), 180);
+    }
+  }, []);
+
+  const handleBlockedAiSubmit = useCallback(() => {
+    if (aiValidationState.isValid) return;
+
+    setFieldErrors(aiValidationState.fieldErrors);
+    setError(aiValidationState.firstErrorMessage);
+
+    if (aiValidationState.firstInvalidSection) {
+      scrollToAiSection(aiValidationState.firstInvalidSection);
+    }
+  }, [aiValidationState, scrollToAiSection]);
+
   useEffect(() => {
     if (prevQuestionTypeUnitRef.current !== questionTypeUnit) {
       const fromUnitByCount = prevQuestionTypeUnitRef.current;
@@ -1044,60 +1318,13 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         await onCreateQuiz?.({ quizId: result.quizId, title: result.title, ...result });
       } else {
         // Tab AI — gọi API tạo quiz AI
-        let newFieldErrors = {};
-
-        if (!aiName.trim()) {
-           newFieldErrors.aiName = t("workspace.quiz.validation.nameRequired");
-        }
-          if (selectedMaterialIds.length === 0) {
-            newFieldErrors.selectedMaterialIds = t("workspace.quiz.validation.materialRequired");
-          }
-        if (!Number.isFinite(aiTotalQuestions) || aiTotalQuestions <= 0) {
-           newFieldErrors.aiTotalQuestions = t("workspace.quiz.aiConfig.totalQuestions");
-        }
-        if (aiTimerMode && (!Number.isFinite(aiDuration) || aiDuration <= 0)) {
-           newFieldErrors.aiDuration = t("workspace.quiz.validation.timeDurationRequired");
-        }
-
-        if (aiTimerMode && Number.isFinite(aiTotalQuestions) && aiTotalQuestions > 0 && Number.isFinite(aiDuration) && aiDuration > 0) {
-          const minimumSecondsPerQuestion = 30;
-          const totalDurationInSeconds = Number(aiDuration) * 60;
-          const minimumTotalDurationInSeconds = Number(aiTotalQuestions) * minimumSecondsPerQuestion;
-
-          if (totalDurationInSeconds < minimumTotalDurationInSeconds) {
-            const minimumTotalMinutes = Math.ceil(minimumTotalDurationInSeconds / 60);
-            newFieldErrors.aiDuration = t(
-              "workspace.quiz.validation.minimumTimePerQuestion",
-              `Mỗi câu cần tối thiểu ${minimumSecondsPerQuestion} giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumTotalMinutes} phút.`
-            );
-          }
-        }
-
-        // Validate per-question durations when timerMode is false
-        if (!aiTimerMode) {
-          const easyDur = Number(aiEasyDuration) || 0;
-          const mediumDur = Number(aiMediumDuration) || 0;
-          const hardDur = Number(aiHardDuration) || 0;
-
-          if (!easyDur || !mediumDur || !hardDur) {
-            newFieldErrors.aiDurations = t("workspace.quiz.validation.allDurationsRequired");
-          } else {
-            if (easyDur < 10 || mediumDur < 10 || hardDur < 10) {
-              newFieldErrors.aiDurations = t("workspace.quiz.validation.durationMinimum");
-            }
-            if (mediumDur <= easyDur) {
-              newFieldErrors.aiDurations = t("workspace.quiz.validation.mediumDurationMustBeGreaterThanEasy");
-            }
-            if (hardDur <= mediumDur) {
-              newFieldErrors.aiDurations = t("workspace.quiz.validation.hardDurationMustBeGreaterThanMedium");
-            }
-          }
-        }
-
-        if (Object.keys(newFieldErrors).length > 0) {
-          setFieldErrors(newFieldErrors);
-          setError(Object.values(newFieldErrors)[0]); // Show first error as main error
+        if (!aiValidationState.isValid) {
+          setFieldErrors(aiValidationState.fieldErrors);
+          setError(aiValidationState.firstErrorMessage);
           setSubmitting(false);
+          if (aiValidationState.firstInvalidSection) {
+            scrollToAiSection(aiValidationState.firstInvalidSection);
+          }
           return;
         }
 
@@ -1217,6 +1444,22 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
 
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass} text-left`;
   const requiredMark = <span className="text-red-500 ml-1">*</span>;
+  const getAiSectionCardClass = (errorKeys = []) => {
+    const hasError = errorKeys.some((key) => fieldErrors[key]);
+    const defaultClasses = isDarkMode
+      ? "bg-slate-900/50 border-slate-800"
+      : "bg-white border-gray-100 shadow-sm";
+
+    if (!hasError) {
+      return `p-4 rounded-xl border transition-colors ${defaultClasses}`;
+    }
+
+    return `p-4 rounded-xl border transition-colors ${
+      isDarkMode
+        ? "bg-red-950/10 border-red-500/60"
+        : "bg-red-50/70 border-red-300 shadow-sm"
+    }`;
+  };
 
   const normalizeIntegerInput = (value) => {
     if (value === "") return "";
@@ -1226,10 +1469,29 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
     return Number(normalized || 0);
   };
 
-  const applyMinOnBlur = (value, setter, minValue = 1) => {
+  const applyRangeOnBlur = (value, setter, minValue = 1, maxValue = Number.POSITIVE_INFINITY) => {
     const next = Number(value);
-    setter(Number.isFinite(next) && next >= minValue ? next : minValue);
+    if (!Number.isFinite(next)) {
+      setter(minValue);
+      return;
+    }
+
+    setter(Math.min(Math.max(next, minValue), maxValue));
   };
+  const applyMinOnBlur = (value, setter, minValue = 1) => applyRangeOnBlur(value, setter, minValue);
+  const hasValidAiTotalQuestions = Number(aiTotalQuestions) >= AI_MINIMUM_QUESTION_COUNT
+    && Number(aiTotalQuestions) <= AI_MAXIMUM_QUESTION_COUNT;
+  const hasAiDurationMinimumMismatch = aiTimerMode
+    && hasValidAiTotalQuestions
+    && Number(aiDuration) > 0
+    && Number(aiDuration) < minimumAiDurationMinutes;
+  const aiDurationMetaBaseClass = "mt-2 inline-flex max-w-full items-start gap-2 rounded-lg border px-3 py-2 text-[11px] font-medium leading-relaxed";
+  const aiDurationHintClass = isDarkMode
+    ? `${aiDurationMetaBaseClass} border-slate-700 bg-slate-800/70 text-slate-300`
+    : `${aiDurationMetaBaseClass} border-slate-200 bg-slate-50 text-slate-600`;
+  const aiDurationSyncClass = isDarkMode
+    ? `${aiDurationMetaBaseClass} border-cyan-500/30 bg-cyan-500/10 text-cyan-200`
+    : `${aiDurationMetaBaseClass} border-blue-200 bg-blue-50 text-blue-700`;
 
   // Tổng điểm hiện tại (computed)
   const totalScoreDisplay = Math.round(questions.reduce((s, q) => s + (q.point || 0), 0) * 100) / 100;
@@ -1926,7 +2188,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
             )}
 
              {/* 1. Basic Info */}
-            <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+            <div ref={aiGeneralSectionRef} className={getAiSectionCardClass(["aiName", "aiPrompt"])}>
                <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
                   <FileText className="w-4 h-4 text-blue-500"/> {t("workspace.quiz.aiConfig.generalInfo")}
                </h3>
@@ -1949,13 +2211,17 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                   <div>
                     <label className={labelCls}>{t("workspace.quiz.aiConfig.customPromptLabel", "vui lòng nhập yêu cầu của bạn")}</label>
                     <textarea 
-                      className={`${inputCls} min-h-[60px] resize-none`} 
+                      className={`${inputCls} min-h-[60px] resize-none ${fieldErrors.aiPrompt ? (isDarkMode ? "border-red-600" : "border-red-400") : ""}`}
                       placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")} 
                       value={aiPrompt} 
                       onChange={(e) => {
                         setAiPrompt(e.target.value);
-                      }} 
+                        setFieldErrors(prev => ({ ...prev, aiPrompt: "" }));
+                      }}
                     />
+                    {fieldErrors.aiPrompt && (
+                      <p className="text-xs text-red-500 mt-1">{fieldErrors.aiPrompt}</p>
+                    )}
                   </div>
                </div>
             </div>
@@ -1989,7 +2255,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
             </div>
 
              {/* 3. Settings */}
-             <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+             <div ref={aiSettingsSectionRef} className={getAiSectionCardClass(["aiTotalQuestions", "aiDuration", "aiDurations"])}>
                 <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
                   <Sliders className="w-4 h-4 text-gray-500"/> {t("workspace.quiz.aiConfig.settings")}
                 </h3>
@@ -2001,14 +2267,24 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                        className={`${inputCls} ${fieldErrors.aiTotalQuestions ? (isDarkMode ? "border-red-600" : "border-red-400") : ""}`}
                        value={aiTotalQuestions}
                        onChange={(e) => {
-                         setAiTotalQuestions(normalizeIntegerInput(e.target.value));
-                         setFieldErrors(prev => ({ ...prev, aiTotalQuestions: "" }));
+                         const normalizedValue = normalizeIntegerInput(e.target.value);
+                         setAiTotalQuestions(normalizedValue === "" ? "" : Math.min(normalizedValue, AI_MAXIMUM_QUESTION_COUNT));
+                         setFieldErrors(prev => ({ ...prev, aiTotalQuestions: "", aiDuration: "" }));
                        }}
-                       onBlur={() => applyMinOnBlur(aiTotalQuestions, setAiTotalQuestions, 1)}
-                       min={1}
+                       onBlur={() => applyRangeOnBlur(aiTotalQuestions, setAiTotalQuestions, AI_MINIMUM_QUESTION_COUNT, AI_MAXIMUM_QUESTION_COUNT)}
+                       min={AI_MINIMUM_QUESTION_COUNT}
+                       max={AI_MAXIMUM_QUESTION_COUNT}
                      />
                      {fieldErrors.aiTotalQuestions && (
                        <p className="text-xs text-red-500 mt-1">{fieldErrors.aiTotalQuestions}</p>
+                     )}
+                     {!fieldErrors.aiTotalQuestions && (
+                       <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                         {t("workspace.quiz.validation.totalQuestionsRangeHint", {
+                           min: AI_MINIMUM_QUESTION_COUNT,
+                           max: AI_MAXIMUM_QUESTION_COUNT,
+                         })}
+                       </p>
                      )}
                    </div>
                    {aiTimerMode && (
@@ -2016,11 +2292,12 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                        <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes")}{requiredMark}</label>
                        <input
                          type="number"
-                         className={`${inputCls} ${fieldErrors.aiDuration ? (isDarkMode ? "border-red-600" : "border-red-400") : ""}`}
+                         className={`${inputCls} ${(fieldErrors.aiDuration || hasAiDurationMinimumMismatch) ? (isDarkMode ? "border-red-600" : "border-red-400") : ""}`}
                          value={aiDuration}
                          onChange={(e) => {
                            setAiDuration(normalizeIntegerInput(e.target.value));
                            setFieldErrors(prev => ({ ...prev, aiDuration: "" }));
+                           setAiDurationSyncNotice("");
                          }}
                          onBlur={() => applyMinOnBlur(aiDuration, setAiDuration, 1)}
                          min={1}
@@ -2028,13 +2305,31 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                        {fieldErrors.aiDuration && (
                          <p className="text-xs text-red-500 mt-1">{fieldErrors.aiDuration}</p>
                        )}
-                       {!fieldErrors.aiDuration && Number(aiTotalQuestions) > 0 && (
-                         <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                           {t(
-                             "workspace.quiz.validation.minimumTimePerQuestionHint",
-                             `Tối thiểu ${Math.ceil((Number(aiTotalQuestions) * 30) / 60)} phút (${30}s/câu).`
-                           )}
+                       {!fieldErrors.aiDuration && hasAiDurationMinimumMismatch && (
+                         <p className="text-xs text-red-500 mt-1">
+                           {t("workspace.quiz.validation.minimumTimePerQuestion", {
+                             defaultValue: `Mỗi câu cần tối thiểu 30 giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumAiDurationMinutes} phút.`,
+                             count: Number(aiTotalQuestions) || 0,
+                             minutes: minimumAiDurationMinutes,
+                           })}
                          </p>
+                       )}
+                       {!fieldErrors.aiDuration && !hasAiDurationMinimumMismatch && aiDurationSyncNotice && (
+                         <div className={aiDurationSyncClass}>
+                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                           <span className="break-words">{aiDurationSyncNotice}</span>
+                         </div>
+                       )}
+                       {!fieldErrors.aiDuration && !hasAiDurationMinimumMismatch && !aiDurationSyncNotice && hasValidAiTotalQuestions && (
+                         <div className={aiDurationHintClass}>
+                           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                           <span className="break-words">
+                             {t("workspace.quiz.validation.minimumTimePerQuestionHint", {
+                               defaultValue: `Tối thiểu ${minimumAiDurationMinutes} phút (30 giây/câu).`,
+                               minutes: minimumAiDurationMinutes,
+                             })}
+                           </span>
+                         </div>
                        )}
                      </div>
                    )}
@@ -2130,7 +2425,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
              </div>
 
              {/* 4. Difficulty Configuration */}
-             <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+             <div ref={aiDifficultySectionRef} className={getAiSectionCardClass(["aiDifficulty"])}>
                <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
                   <Sliders className="w-4 h-4 text-amber-500"/> {t("workspace.quiz.aiConfig.difficultyLevel")}
                </h3>
@@ -2172,7 +2467,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                         </div>
                         <input
                           type="number"
-                          className={inputCls}
+                          className={`${inputCls} ${fieldErrors.aiDifficulty ? (isDarkMode ? "border-red-600" : "border-red-400") : ""}`}
                           value={customDifficulty[level]}
                           onChange={e => handleCustomDifficultyChange(level, e.target.value)}
                         />
@@ -2239,12 +2534,15 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                    </div>
                  </div>
                </div>
+               {fieldErrors.aiDifficulty && (
+                 <p className="text-xs text-red-500 mt-2">{fieldErrors.aiDifficulty}</p>
+               )}
              </div>
 
              {/* 5. Question Types & Bloom Skills */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Question Types */}
-                <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+                <div ref={aiQuestionTypesSectionRef} className={getAiSectionCardClass(["selectedQTypes"])}>
                    <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
                       <Sparkles className="w-4 h-4 text-purple-500"/> {t("workspace.quiz.aiConfig.questionTypes")}
                    </h3>
@@ -2308,10 +2606,13 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                        );
                      })}
                    </div>
+                   {fieldErrors.selectedQTypes && (
+                     <p className="text-xs text-red-500 mt-3">{fieldErrors.selectedQTypes}</p>
+                   )}
                 </div>
 
                 {/* Bloom Skills */}
-                 <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
+                 <div ref={aiBloomSectionRef} className={getAiSectionCardClass(["selectedBloomSkills"])}>
                    <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
                       <BrainCircuit className="w-4 h-4 text-teal-500"/> {t("workspace.quiz.aiConfig.bloomSkills")}
                       <div className="relative group/bloom-info">
@@ -2396,6 +2697,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
                        );
                      })}
                    </div>
+                   {fieldErrors.selectedBloomSkills && (
+                     <p className="text-xs text-red-500 mt-3">{fieldErrors.selectedBloomSkills}</p>
+                   )}
                 </div>
              </div>
 
@@ -2409,7 +2713,25 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextId: d
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
           {t("workspace.quiz.cancel")}
         </Button>
-        <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
+        <Button
+          onClick={() => {
+            if (tab === "ai" && !aiValidationState.isValid) {
+              handleBlockedAiSubmit();
+              return;
+            }
+            handleSubmit("ACTIVE");
+          }}
+          disabled={submitting || (tab === "ai" && metadataLoading)}
+          aria-disabled={tab === "ai" && !aiValidationState.isValid}
+          title={tab === "ai" && !aiValidationState.isValid ? aiValidationState.firstErrorMessage : undefined}
+          className={
+            tab === "ai" && !aiValidationState.isValid
+              ? (isDarkMode
+                  ? "bg-slate-700 text-slate-300 hover:bg-slate-700 cursor-not-allowed"
+                  : "bg-slate-300 text-slate-600 hover:bg-slate-300 cursor-not-allowed")
+              : "bg-[#2563EB] hover:bg-blue-700 text-white"
+          }
+        >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
           {tab === "manual"
             ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.createActive"))

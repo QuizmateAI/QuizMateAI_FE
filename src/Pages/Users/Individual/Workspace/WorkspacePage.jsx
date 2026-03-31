@@ -18,6 +18,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { useProgressTracking } from "@/hooks/useProgressTracking";
 import {
 	getIndividualWorkspaceProfile,
+	getWorkspacePersonalization,
 	normalizeIndividualWorkspaceProfile,
 	saveIndividualWorkspaceBasicStep,
 	saveIndividualWorkspacePersonalInfoStep,
@@ -213,6 +214,7 @@ function WorkspacePage() {
 	const [isResettingWorkspaceForProfileUpdate, setIsResettingWorkspaceForProfileUpdate] = useState(false);
 	const [isProfileConfigured, setIsProfileConfigured] = useState(false);
 	const [workspaceProfile, setWorkspaceProfile] = useState(null);
+	const [workspacePersonalization, setWorkspacePersonalization] = useState(null);
 	const [mockTestGenerationState, setMockTestGenerationState] = useState("idle");
 	const [mockTestGenerationMessage, setMockTestGenerationMessage] = useState("");
 	const [mockTestGenerationProgress, setMockTestGenerationProgress] = useState(0);
@@ -1236,6 +1238,28 @@ function WorkspacePage() {
 		workspaceId,
 	]);
 
+	const refreshWorkspacePersonalization = useCallback(async () => {
+		if (!workspaceId) {
+			setWorkspacePersonalization(null);
+			return null;
+		}
+
+		try {
+			const response = await getWorkspacePersonalization(workspaceId);
+			const payload = response?.data?.data || response?.data || response || null;
+			setWorkspacePersonalization(payload);
+			return payload;
+		} catch (error) {
+			console.error("Failed to load workspace personalization:", error);
+			setWorkspacePersonalization(null);
+			return null;
+		}
+	}, [workspaceId]);
+
+	useEffect(() => {
+		void refreshWorkspacePersonalization();
+	}, [refreshWorkspacePersonalization]);
+
 	const toggleLanguage = () => {
 		const newLang = currentLang === "vi" ? "en" : "vi";
 		i18n.changeLanguage(newLang);
@@ -2022,16 +2046,20 @@ function WorkspacePage() {
 	const handleProfileOverviewChange = useCallback((open) => {
 		setProfileOverviewOpen(open);
 		if (open) {
-			getIndividualWorkspaceProfile(workspaceId)
-				.then((res) => {
-					const profileData = extractProfileData(res);
+			Promise.allSettled([
+				getIndividualWorkspaceProfile(workspaceId),
+				refreshWorkspacePersonalization(),
+			])
+				.then(([profileResult]) => {
+					if (profileResult?.status !== "fulfilled") return;
+					const profileData = extractProfileData(profileResult.value);
 					if (profileData) setWorkspaceProfile(profileData);
 				})
 				.catch(() => {});
 		} else if (location.state?.openProfileConfig) {
 			navigate(`/workspace/${workspaceId}`, { replace: true });
 		}
-	}, [location.state, navigate, workspaceId]);
+	}, [location.state, navigate, refreshWorkspacePersonalization, workspaceId]);
 
 	const handleRequestProfileUpdate = useCallback(() => {
 		setUploadDialogOpen(false);
@@ -2949,6 +2977,7 @@ function WorkspacePage() {
 				onOpenChange={handleProfileOverviewChange}
 				isDarkMode={isDarkMode}
 				profile={workspaceProfile}
+				personalization={workspacePersonalization}
 				materials={sources}
 				onEditProfile={handleRequestProfileUpdate}
 				editLocked={profileEditLocked}
