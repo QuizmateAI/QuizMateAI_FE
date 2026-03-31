@@ -1609,6 +1609,12 @@
         "delete": "Delete",
         "deleting": "Deleting..."
       },
+      "processingProgressLabel": "Creating quiz",
+      "processingProgressHint": "The system is generating questions and configuring the quiz.",
+      "cardQuestionUnit": "questions",
+      "cardAiLabel": "QUIZMATE AI",
+      "cardManualLabel": "Manual Quiz",
+      "cardResultLabel": "Result",
       "communityPublic": "Public",
       "communityPublicLong": "Published to community",
       "privateShort": "Private",
@@ -1752,6 +1758,8 @@
       },
       "validation": {
         "nameRequired": "Please enter a quiz name.",
+        "nameMaxLength": "Quiz title must be at most {{max}} characters.",
+        "nameMaxLengthHint": "Maximum {{max}} characters.",
         "requiredFieldsHint": "Fields marked with * are required.",
         "contextRequired": "Please choose where to create the quiz.",
         "correctAnswerRequired": "Question {{index}} has no correct answer selected.",
@@ -2084,7 +2092,7 @@
         "publicQuiz": "Public Quiz",
         "recommendedCount": "Recommended Count",
         "searchPlaceholder": "Search Placeholder",
-        "title": "Title",
+        "title": "Community Quiz",
         "topMatch": "Top Match"
       },
       "deleteConfirm": "Delete Confirm",

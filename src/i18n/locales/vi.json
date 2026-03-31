@@ -1619,6 +1619,12 @@
         "delete": "Xóa",
         "deleting": "Đang xóa..."
       },
+      "processingProgressLabel": "Đang tạo quiz",
+      "processingProgressHint": "Hệ thống đang sinh câu hỏi và cấu hình bài kiểm tra.",
+      "cardQuestionUnit": "câu hỏi",
+      "cardAiLabel": "QUIZMATE AI",
+      "cardManualLabel": "Quiz thủ công",
+      "cardResultLabel": "Kết quả",
       "communityPublic": "Công khai",
       "communityPublicLong": "Đã Công khai  lên cộng đồng",
       "privateShort": "Riêng tư",
@@ -1649,7 +1655,7 @@
         "easy": "Dễ",
         "medium": "Trung bình",
         "hard": "Khó",
-        "custom": "Tùy chỉnh (Tự cấu hình)"
+        "custom": "Tùy chỉnh"
       },
       "bloomLevels": {
         "remember": "Ghi nhớ",
@@ -1763,6 +1769,8 @@
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên bài kiểm tra.",
+        "nameMaxLength": "Tên bài kiểm tra tối đa {{max}} ký tự.",
+        "nameMaxLengthHint": "Tối đa {{max}} ký tự.",
         "requiredFieldsHint": "Các trường có dấu * là bắt buộc.",
         "contextRequired": "Vui lòng chọn vị trí tạo bài kiểm tra.",
         "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
@@ -2102,7 +2110,7 @@
         "publicQuiz": "Bài kiểm tra công khai",
         "recommendedCount": "Số bài được gợi ý",
         "searchPlaceholder": "Tìm kiếm bài kiểm tra cộng đồng",
-        "title": "Khám phá bài kiểm tra cộng đồng",
+        "title": "Cộng đồng bài kiểm tra",
         "topMatch": "Phù hợp nhất"
       },
       "deleteConfirm": "Bạn có chắc muốn xóa bài kiểm tra này không?",
