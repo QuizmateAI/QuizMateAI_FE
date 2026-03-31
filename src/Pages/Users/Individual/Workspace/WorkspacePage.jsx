@@ -240,6 +240,8 @@ function WorkspacePage() {
 	const [sources, setSources] = useState([]);
 	const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
 	const [createdItems, setCreatedItems] = useState([]);
+	const [quizGenerationTaskByQuizId, setQuizGenerationTaskByQuizId] = useState({});
+	const [quizGenerationProgressByQuizId, setQuizGenerationProgressByQuizId] = useState({});
 	const [accessHistory, setAccessHistory] = useState([]);
 
 	// State quáº£n lÃ½ dialog upload â€" chá»‰ má»Ÿ khi workspace chÆ°a cÃ³ tÃ i liá»‡u sau láº§n fetch Ä'áº§u tiÃªn
@@ -398,6 +400,8 @@ function WorkspacePage() {
 		if (!workspaceId) {
 			setHasExistingWorkspaceQuiz(false);
 			setHasExistingWorkspaceFlashcard(false);
+			setQuizGenerationTaskByQuizId({});
+			setQuizGenerationProgressByQuizId({});
 			return;
 		}
 
@@ -1651,8 +1655,24 @@ function WorkspacePage() {
 			);
 			const websocketTaskId = progress?.websocketTaskId ?? progress?.taskId;
 			const materialId = Number(progress?.materialId ?? progress?.material_id ?? 0);
+			const progressQuizId = Number(
+				progressData?.quizId
+				?? progressData?.quiz_id
+				?? progress?.quizId
+				?? progress?.quiz_id
+				?? 0
+			);
 			const progressStep = String(progress?.step ?? progressData?.step ?? "").toUpperCase();
 			const progressMessage = String(progress?.message ?? progressData?.message ?? "").toUpperCase();
+			const isQuizSignal = Number.isInteger(progressQuizId) && progressQuizId > 0
+				|| (
+					!status.startsWith("ROADMAP_")
+					&& (
+						status.includes("QUIZ")
+						|| progressStep.includes("QUIZ")
+						|| progressMessage.includes("QUIZ")
+					)
+				);
 
 			// Cập nhật progress tracking cho task và material
 			if (websocketTaskId) {
@@ -1660,6 +1680,27 @@ function WorkspacePage() {
 			}
 			if (materialId > 0) {
 				progressTracking.updateMaterialProgress(materialId, progressPercent);
+			}
+			if (Number.isInteger(progressQuizId) && progressQuizId > 0 && websocketTaskId) {
+				setQuizGenerationTaskByQuizId((current) => {
+					if (current[progressQuizId] === websocketTaskId) return current;
+					return {
+						...current,
+						[progressQuizId]: websocketTaskId,
+					};
+				});
+			}
+			if (isQuizSignal && Number.isInteger(progressQuizId) && progressQuizId > 0) {
+				setQuizGenerationProgressByQuizId((current) => {
+					const nextPercent = progressPercent > 0
+						? progressPercent
+						: (status.includes("COMPLETED") ? 100 : current[progressQuizId] ?? 0);
+					if ((current[progressQuizId] ?? 0) === nextPercent) return current;
+					return {
+						...current,
+						[progressQuizId]: nextPercent,
+					};
+				});
 			}
 			if (progressPercent > 0) {
 				const isPreLearningSignal = status.includes("PRE_LEARNING")
@@ -2389,6 +2430,32 @@ function WorkspacePage() {
 
 	// Xá»­ lÃ½ táº¡o quiz â€" callback khi CreateQuizForm hoÃ n táº¥t API multi-step
 	const handleCreateQuiz = useCallback(async (data) => {
+		const normalizedQuizId = Number(data?.quizId ?? data?.id ?? 0);
+		const websocketTaskId = data?.websocketTaskId ?? data?.taskId ?? null;
+		const initialProgress = clampPercent(
+			data?.percent
+			?? data?.progressPercent
+			?? data?.processingPercent
+			?? 0
+		);
+
+		if (Number.isInteger(normalizedQuizId) && normalizedQuizId > 0 && websocketTaskId) {
+			setQuizGenerationTaskByQuizId((current) => {
+				if (current[normalizedQuizId] === websocketTaskId) return current;
+				return {
+					...current,
+					[normalizedQuizId]: websocketTaskId,
+				};
+			});
+		}
+
+		if (Number.isInteger(normalizedQuizId) && normalizedQuizId > 0 && initialProgress > 0) {
+			setQuizGenerationProgressByQuizId((current) => ({
+				...current,
+				[normalizedQuizId]: initialProgress,
+			}));
+		}
+
 		// Quiz Ä'Ã£ Ä'Æ°á»£c táº¡o xong tá»« CreateQuizForm â†' chuyá»ƒn vá» list view
 		setActiveView("quiz");
 	}, []);
@@ -2734,6 +2801,8 @@ function WorkspacePage() {
 									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
 									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
 									progressTracking={progressTracking}
+									quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+									quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
 								/>
 							</div>
 
@@ -2901,6 +2970,8 @@ function WorkspacePage() {
 									shouldDisableCreateQuiz={shouldDisableCreateQuiz}
 									shouldDisableCreateFlashcard={shouldDisableCreateFlashcard}
 									progressTracking={progressTracking}
+									quizGenerationTaskByQuizId={quizGenerationTaskByQuizId}
+									quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
 								/>
 							</div>
 

@@ -8,6 +8,7 @@ import {
   updateQuiz, updateQuestion, updateAnswer, deleteQuestion, deleteAnswer,
   createQuestion, createAnswer, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
+import { QUIZ_TITLE_MAX_LENGTH, normalizeQuizTitleInput } from "./quizTitleConfig";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -183,8 +184,18 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
     setError("");
     setSuccess("");
     try {
-      if (!name.trim()) {
+      const trimmedName = String(name ?? "").trim();
+
+      if (!trimmedName) {
         setError(t("workspace.quiz.validation.nameRequired"));
+        setSubmitting(false);
+        return;
+      }
+      if (trimmedName.length > QUIZ_TITLE_MAX_LENGTH) {
+        setError(t("workspace.quiz.validation.nameMaxLength", {
+          max: QUIZ_TITLE_MAX_LENGTH,
+          defaultValue: `Tên bài kiểm tra tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+        }));
         setSubmitting(false);
         return;
       }
@@ -195,7 +206,7 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         roadmapId: contextType === 'ROADMAP' ? Number(contextId) : null,
         phaseId: contextType === 'PHASE' ? Number(contextId) : null,
         knowledgeId: contextType === 'KNOWLEDGE' ? Number(contextId) : null,
-        title: name,
+        title: trimmedName,
         duration: Math.max(1, Number(duration) || 1) * 60,
         timerMode,
         status,
@@ -369,7 +380,19 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
         {/* Tên Quiz */}
         <div>
           <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
-          <input className={inputCls} placeholder={t("workspace.quiz.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
+          <input
+            className={inputCls}
+            placeholder={t("workspace.quiz.namePlaceholder")}
+            value={name}
+            maxLength={QUIZ_TITLE_MAX_LENGTH}
+            onChange={(e) => setName(normalizeQuizTitleInput(e.target.value))}
+          />
+          <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+            {t("workspace.quiz.validation.nameMaxLengthHint", {
+              max: QUIZ_TITLE_MAX_LENGTH,
+              defaultValue: `Tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+            })}
+          </p>
         </div>
 
         <div>

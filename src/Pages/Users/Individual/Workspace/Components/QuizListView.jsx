@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock, MoreVertical } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import { getQuizzesByScope, deleteQuiz, getQuizById } from "@/api/QuizAPI";
 import { useToast } from "@/context/ToastContext";
 
@@ -29,6 +30,10 @@ function extractPhaseIdFromPath(path) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Number(value) || 0));
+}
+
 // Hàm format ngày giờ ngắn gọn
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
@@ -41,19 +46,23 @@ function formatShortDate(dateStr) {
   return `${day}/${month}/${year} ${hours}:${mins}`;
 }
 
+function formatCardDate(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 // Cấu hình màu badge trạng thái quiz
 const STATUS_STYLES = {
   ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
   DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
   COMPLETED: { light: "bg-blue-100 text-blue-700", dark: "bg-blue-950/50 text-blue-400" },
   INACTIVE: { light: "bg-slate-100 text-slate-500", dark: "bg-slate-800 text-slate-400" },
-};
-
-// Cấu hình màu badge intent
-const INTENT_STYLES = {
-  PRE_LEARNING: { light: "bg-purple-100 text-purple-700", dark: "bg-purple-950/50 text-purple-400" },
-  POST_LEARNING: { light: "bg-cyan-100 text-cyan-700", dark: "bg-cyan-950/50 text-cyan-400" },
-  PRACTICE: { light: "bg-orange-100 text-orange-700", dark: "bg-orange-950/50 text-orange-400" },
+  PROCESSING: { light: "bg-sky-100 text-sky-700", dark: "bg-sky-950/50 text-sky-300" },
+  ERROR: { light: "bg-rose-100 text-rose-700", dark: "bg-rose-950/50 text-rose-300" },
 };
 
 const DIFFICULTY_STYLES = {
@@ -61,6 +70,29 @@ const DIFFICULTY_STYLES = {
   MEDIUM: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-300" },
   HARD: { light: "bg-rose-100 text-rose-700", dark: "bg-rose-950/50 text-rose-300" },
   CUSTOM: { light: "bg-slate-100 text-slate-700", dark: "bg-slate-800 text-slate-300" },
+};
+
+const QUIZ_CARD_THEMES = {
+  EASY: {
+    banner: "bg-sky-50",
+    iconWrap: "border-sky-100 bg-white",
+    iconColor: "text-sky-700",
+  },
+  MEDIUM: {
+    banner: "bg-amber-50",
+    iconWrap: "border-amber-100 bg-white",
+    iconColor: "text-amber-700",
+  },
+  HARD: {
+    banner: "bg-rose-50",
+    iconWrap: "border-rose-100 bg-white",
+    iconColor: "text-rose-700",
+  },
+  CUSTOM: {
+    banner: "bg-slate-50",
+    iconWrap: "border-slate-200 bg-white",
+    iconColor: "text-slate-700",
+  },
 };
 
 // Bộ lọc theo trạng thái
@@ -129,28 +161,48 @@ function getDurationInMinutes(quiz) {
   return rawDuration;
 }
 
-function resolveVisibilityMeta(isCommunityShared, isDarkMode, t) {
-  if (isCommunityShared) {
-    return {
-      icon: Globe,
-      shortLabel: t("workspace.quiz.communityPublic", "Đã public"),
-      longLabel: t("workspace.quiz.communityPublicLong", "Đã public lên cộng đồng"),
-      lightClassName: "bg-emerald-100 text-emerald-700",
-      darkClassName: "bg-emerald-950/50 text-emerald-300",
-    };
-  }
-
-  return {
-    icon: Lock,
-    shortLabel: t("workspace.quiz.privateShort", "Riêng tư"),
-    longLabel: t("workspace.quiz.privateLong", "Đang ở chế độ private"),
-    lightClassName: "bg-slate-100 text-slate-700",
-    darkClassName: "bg-slate-800 text-slate-300",
-  };
-}
-
 function resolveQuizNavigationId(quiz) {
   return quiz?.quizId ?? quiz?.id ?? null;
+}
+
+function resolveQuizCardTheme(difficultyKey) {
+  return QUIZ_CARD_THEMES[difficultyKey] || QUIZ_CARD_THEMES.CUSTOM;
+}
+
+function resolveQuizGenerationTaskId(quiz, quizGenerationTaskByQuizId) {
+  const resolvedQuizId = Number(resolveQuizNavigationId(quiz));
+  if (quiz?.websocketTaskId) return quiz.websocketTaskId;
+  if (quiz?.taskId) return quiz.taskId;
+  if (Number.isInteger(resolvedQuizId) && resolvedQuizId > 0) {
+    return quizGenerationTaskByQuizId?.[resolvedQuizId] ?? null;
+  }
+  return null;
+}
+
+function resolveQuizProcessingPercent(quiz, progressTracking, quizGenerationTaskByQuizId, quizGenerationProgressByQuizId) {
+  const resolvedQuizId = Number(resolveQuizNavigationId(quiz));
+  const directPercent = clampPercent(
+    quiz?.percent
+    ?? quiz?.progressPercent
+    ?? quiz?.processingPercent
+    ?? quiz?.generationProgressPercent
+    ?? quiz?.progress?.percent
+    ?? quiz?.progress?.progressPercent
+    ?? 0
+  );
+  const storedPercent = Number.isInteger(resolvedQuizId) && resolvedQuizId > 0
+    ? clampPercent(quizGenerationProgressByQuizId?.[resolvedQuizId] ?? 0)
+    : 0;
+  const taskId = resolveQuizGenerationTaskId(quiz, quizGenerationTaskByQuizId);
+  const trackedPercent = taskId
+    ? clampPercent(
+      progressTracking?.getTaskProgress?.(taskId)
+      ?? progressTracking?.progressByTaskId?.[taskId]
+      ?? 0
+    )
+    : 0;
+
+  return Math.max(directPercent, storedPercent, trackedPercent);
 }
 
 function QuizListView({
@@ -168,6 +220,9 @@ function QuizListView({
   title = "Quiz",
   onShareQuiz,
   onOpenCommunityQuiz,
+  progressTracking = null,
+  quizGenerationTaskByQuizId = null,
+  quizGenerationProgressByQuizId = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -501,224 +556,256 @@ function QuizListView({
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((quiz) => {
-              const ss = STATUS_STYLES[quiz.status] || STATUS_STYLES.DRAFT;
-              const is = INTENT_STYLES[quiz.quizIntent] || {};
-              const myAttempted = quiz?.myAttempted === true;
-              const myPassed = quiz?.myPassed === true;
+              const resolvedQuizId = resolveQuizNavigationId(quiz);
               const isCommunityShared = quiz?.communityShared === true;
-              const visibilityMeta = resolveVisibilityMeta(isCommunityShared, isDarkMode, t);
-              const VisibilityIcon = visibilityMeta.icon;
               const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
-              const normalizedIntent = String(quiz?.quizIntent || "").toUpperCase();
-              const shouldHideRoadmapIntentBadge = isRoadmapContextQuiz
-                && ["PRE_LEARNING", "PRACTICE", "REVIEW"].includes(normalizedIntent);
-              const shouldHideActiveStatusBadge = isRoadmapContextQuiz && String(quiz?.status || "").toUpperCase() === "ACTIVE";
-              const shouldHideAttemptedBadge = isRoadmapContextQuiz;
               const shouldHideRoadmapVisibility = isRoadmapContextQuiz;
               const durationInMinutes = getDurationInMinutes(quiz);
+              const normalizedStatus = String(quiz?.status || "").toUpperCase();
+              const isProcessing = normalizedStatus === "PROCESSING";
+              const statusMeta = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
+              const VisibilityIcon = isCommunityShared ? Globe : Lock;
+              const visibilityIconWrap = isCommunityShared
+                ? (isDarkMode ? "border-emerald-900/60 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50")
+                : (isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white");
+              const visibilityIconColor = isCommunityShared
+                ? (isDarkMode ? "text-emerald-300" : "text-emerald-600")
+                : (isDarkMode ? "text-slate-300" : "text-slate-600");
+              const processingPercent = resolveQuizProcessingPercent(
+                quiz,
+                progressTracking,
+                quizGenerationTaskByQuizId,
+                quizGenerationProgressByQuizId,
+              );
+              const processingBarWidth = processingPercent > 0 ? Math.max(10, processingPercent) : 10;
               const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
               const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
+              const theme = resolveQuizCardTheme(difficultyKey);
+              const intentLabel = quiz?.quizIntent && !isRoadmapContextQuiz
+                ? t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)
+                : null;
+              const timerLabel = typeof quiz.timerMode === "boolean"
+                ? (
+                  quiz.timerMode
+                    ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
+                    : t("workspace.quiz.examModeType2Short", "Theo từng câu")
+                )
+                : null;
+              const specialStatusLabel = ["PROCESSING", "DRAFT", "ERROR"].includes(normalizedStatus)
+                ? t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus)
+                : null;
+              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz;
+              const showExamAction = normalizedStatus === "ACTIVE";
+              const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
+              const updatedLabel = formatCardDate(quiz.updatedAt || quiz.createdAt);
+
               return (
-                <div
-                  key={resolveQuizNavigationId(quiz)}
+                <article
+                  key={resolvedQuizId}
                   onClick={() => onViewQuiz?.(quiz)}
-                  className={`relative rounded-xl border overflow-hidden min-h-[104px] cursor-pointer shadow-[0_10px_20px_rgba(51,51,51,0.12)] transition-all duration-300 group ${
+                  className={`overflow-hidden rounded-[28px] border cursor-pointer shadow-[0_20px_50px_rgba(15,23,42,0.08)] ${
                     isCommunityShared
-                      ? (isDarkMode ? "border-emerald-800/70 bg-slate-900/50" : "border-emerald-200 bg-white")
-                      : (isDarkMode ? "border-slate-700 bg-slate-900/50" : "border-gray-200 bg-white")
+                      ? (isDarkMode ? "border-emerald-900/60 bg-slate-900/60" : "border-emerald-200 bg-white")
+                      : (isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white")
                   }`}
                 >
-                  <div
-                    className="absolute inset-0 px-4 py-3 flex items-center gap-3 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.23,1,0.320,1)] group-hover:-translate-x-full"
-                  >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-blue-950/40" : "bg-blue-100"}`}>
-                      <BadgeCheck className="w-4 h-4 text-blue-500" />
-                    </div>
-                    <div className="flex-1 min-w-0 flex items-center justify-between gap-5">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className={`min-w-0 flex-1 text-sm font-semibold truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{quiz.title}</p>
+                  <div className={`border-b px-4 py-4 ${isDarkMode ? "bg-slate-800/40 border-slate-700/50" : `${theme.banner} border-slate-100`}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${visibilityIconWrap}`}>
+                          <VisibilityIcon className={`h-5 w-5 ${visibilityIconColor}`} />
                         </div>
-                        <div className={`flex items-center gap-2 mt-1 text-xs flex-wrap ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>
-                          {durationInMinutes > 0 && (
-                            <span className="flex items-center gap-1">
-                              <Timer className="w-3 h-3" />{durationInMinutes} {t("workspace.quiz.minutes")}
-                            </span>
-                        )}
-                        {quiz.overallDifficulty && (
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${
-                            isDarkMode ? difficultyMeta.dark : difficultyMeta.light
-                          }`}>
-                            <BarChart3 className="w-3 h-3" />{t(`workspace.quiz.difficultyLevels.${quiz.overallDifficulty.toLowerCase()}`)}
-                          </span>
-                        )}
-                        </div>
-                        <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatShortDate(quiz.createdAt)}</span>
+                        <div className="min-w-0">
+                          <p className={`truncate text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? "text-slate-300" : "text-slate-500"}`}>
+                            {quiz?.createVia === "AI"
+                              ? t("workspace.quiz.cardAiLabel", "QUIZMATE AI")
+                              : t("workspace.quiz.cardManualLabel", "Quiz thủ công")}
+                          </p>
                         </div>
                       </div>
-
-                      <div className="shrink-0 flex flex-col items-end justify-center gap-2.5 pr-1 py-1">
-                        <div className="flex items-center justify-end gap-2.5 flex-wrap">
-                          <span className={`self-center inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                            myPassed
-                              ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
-                              : (isDarkMode ? "bg-amber-950/40 text-amber-300" : "bg-amber-100 text-amber-700")
-                          }`}>
-                            {myPassed
-                              ? t("workspace.quiz.myPassedTrue", "Đã đậu")
-                              : t("workspace.quiz.myPassedFalse", "Chưa đậu")}
+                      <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        {specialStatusLabel ? (
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusMeta.dark : statusMeta.light}`}>
+                            {specialStatusLabel}
                           </span>
-                          {!shouldHideRoadmapVisibility ? (
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                              isDarkMode ? visibilityMeta.darkClassName : visibilityMeta.lightClassName
-                            }`}>
-                              <VisibilityIcon className="w-3 h-3" />
-                              {visibilityMeta.shortLabel}
-                            </span>
-                          ) : null}
-                        </div>
-
-                        {typeof quiz.timerMode === "boolean" && (
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                            quiz.timerMode
-                              ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
-                              : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
-                          }`}>
-                            {quiz.timerMode
-                              ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
-                              : t("workspace.quiz.examModeType2Short", "Theo từng câu")}
-                          </span>
-                        )}
+                        ) : null}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => e.stopPropagation()}
+                              className={`h-8 w-8 rounded-full ${
+                                isDarkMode
+                                  ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                                  : "text-slate-500 hover:bg-white hover:text-slate-900"
+                              }`}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className={`w-52 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                          >
+                            {showShareAction ? (
+                              <DropdownMenuItem
+                                disabled={sharingQuizId === quiz.quizId}
+                                onSelect={async (e) => {
+                                  e?.stopPropagation?.();
+                                  if (sharingQuizId === quiz.quizId) return;
+                                  setSharingQuizId(quiz.quizId);
+                                  try {
+                                    await onShareQuiz(quiz);
+                                    await fetchQuizzes({ silent: true });
+                                  } catch (error) {
+                                    showError(error?.message || t("home.actions.share", "Share"));
+                                  } finally {
+                                    setSharingQuizId(null);
+                                  }
+                                }}
+                                className="cursor-pointer"
+                              >
+                                {sharingQuizId === quiz.quizId ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : isCommunityShared ? (
+                                  <Lock className="h-4 w-4" />
+                                ) : (
+                                  <Globe className="h-4 w-4" />
+                                )}
+                                <span>
+                                  {isCommunityShared
+                                    ? t("workspace.quiz.makePrivateShort", "Riêng tư")
+                                    : t("workspace.quiz.makePublicShort", "Công khai")}
+                                </span>
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuItem
+                              disabled={deletingId === quiz.quizId}
+                              onSelect={() => handleRequestDeleteQuiz({ stopPropagation: () => {} }, quiz)}
+                              className={`cursor-pointer ${isDarkMode ? "text-red-300 focus:text-red-200" : "text-red-600 focus:text-red-600"}`}
+                            >
+                              {deletingId === quiz.quizId ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              <span>{t("workspace.quiz.deleteQuiz")}</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </div>
 
-                  <div
-                    className={`absolute inset-0 px-4 py-3 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.23,1,0.320,1)] translate-x-full group-hover:translate-x-0 ${
-                      isDarkMode
-                        ? "bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950/60"
-                        : "bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100"
-                    }`}
-                  >
-                    <div className="h-full flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {quiz.quizIntent && !shouldHideRoadmapIntentBadge && (
-                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${isDarkMode ? is.dark || "bg-slate-800 text-slate-400" : is.light || "bg-gray-100 text-gray-500"}`}>
-                            {t(`workspace.quiz.intentLabels.${quiz.quizIntent}`)}
-                          </span>
-                        )}
-                        {!shouldHideActiveStatusBadge ? (
-                          <span className={`text-sm px-3.5 py-1.5 rounded-full font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
-                            {t(`workspace.quiz.statusLabels.${quiz.status}`)}
-                          </span>
-                        ) : null}
-                        {typeof quiz.timerMode === "boolean" && (
-                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${quiz.timerMode
-                            ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
-                            : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
-                          }`}>
-                            {quiz.timerMode
-                              ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
-                              : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
-                          </span>
-                        )}
-                        {!shouldHideAttemptedBadge ? (
-                          <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${myAttempted
-                            ? (isDarkMode ? "bg-cyan-950/40 text-cyan-300" : "bg-cyan-100 text-cyan-700")
-                            : (isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-200 text-gray-600")
-                          }`}>
-                            {myAttempted
-                              ? t("workspace.quiz.myAttemptedTrue", "Đã làm")
-                              : t("workspace.quiz.myAttemptedFalse", "Chưa làm")}
-                          </span>
-                        ) : null}
-                        <span className={`text-sm px-3 py-1.5 rounded-full font-semibold ${myPassed
-                          ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
-                          : (isDarkMode ? "bg-amber-950/40 text-amber-300" : "bg-amber-100 text-amber-700")
-                        }`}>
-                          {myPassed
-                            ? t("workspace.quiz.myPassedTrue", "Đã đậu")
-                            : t("workspace.quiz.myPassedFalse", "Chưa đậu")}
-                        </span>
+                  <div className="space-y-4 p-4">
+                    <div>
+                      <h3 className={`line-clamp-2 min-h-12 break-words text-[18px] font-semibold leading-6 ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                        {quiz.title}
+                      </h3>
+                      <div className={`mt-2 flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>{formatShortDate(quiz.createdAt)}</span>
                       </div>
+                    </div>
 
-                      <div className="flex items-center justify-end gap-2.5">
-                        {quiz.status === "ACTIVE" && (
-                          <>
-                            {!isRoadmapQuiz(quiz) ? (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleStartQuiz('practice', quiz.quizId); }}
-                                className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-blue-950/40 text-blue-300" : "hover:bg-blue-100 text-blue-700"}`}
-                                title={t("workspace.quiz.practice", "Practice")}
-                              >
-                                <Play className="w-5 h-5" />
-                                <span>{t("workspace.quiz.actionButtons.practice", "Practice")}</span>
-                              </button>
-                            ) : null}
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setExamStartQuiz(quiz); }}
-                              className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-emerald-950/40 text-emerald-300" : "hover:bg-emerald-100 text-emerald-700"}`}
-                              title={t("workspace.quiz.exam", "Exam")}
-                            >
-                              <ClipboardCheck className="w-5 h-5" />
-                              <span>{t("workspace.quiz.actionButtons.exam", "Exam")}</span>
-                            </button>
-                          </>
-                        )}
-                        {onShareQuiz && !shouldHideRoadmapVisibility ? (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (sharingQuizId === quiz.quizId) return;
-                              setSharingQuizId(quiz.quizId);
-                              try {
-                                await onShareQuiz(quiz);
-                                await fetchQuizzes({ silent: true });
-                              } catch (error) {
-                                showError(error?.message || t("home.actions.share", "Share"));
-                              } finally {
-                                setSharingQuizId(null);
-                              }
-                            }}
-                            disabled={sharingQuizId === quiz.quizId}
-                            className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${
-                              isCommunityShared
-                                ? (isDarkMode ? "hover:bg-slate-800 text-slate-200 disabled:text-slate-500" : "hover:bg-slate-100 text-slate-700 disabled:text-slate-300")
-                                : (isDarkMode ? "hover:bg-emerald-950/40 text-emerald-300 disabled:text-emerald-500" : "hover:bg-emerald-100 text-emerald-700 disabled:text-emerald-300")
-                            }`}
-                            title={isCommunityShared
-                              ? t("workspace.quiz.makePrivate", "Chuyển quiz về private")
-                              : t("workspace.quiz.makePublic", "Đưa quiz lên cộng đồng")}
-                          >
-                            {sharingQuizId === quiz.quizId ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : isCommunityShared ? (
-                              <Lock className="w-5 h-5" />
-                            ) : (
-                              <Globe className="w-5 h-5" />
-                            )}
-                            <span>{isCommunityShared
-                              ? t("workspace.quiz.makePrivateShort", "Để private")
-                              : t("workspace.quiz.makePublicShort", "Public")}
+                    {isProcessing ? (
+                      <div className={`rounded-[22px] border px-4 py-4 ${
+                        isDarkMode
+                          ? "border-sky-900/60 bg-sky-950/20"
+                          : "border-sky-200 bg-sky-50/80"
+                      }`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                              {t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}
+                            </p>
+                            <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                              {t("workspace.quiz.processingProgressHint", "Hệ thống đang sinh câu hỏi và cấu hình bài kiểm tra.")}
+                            </p>
+                          </div>
+                          <span className={`shrink-0 text-sm font-semibold tabular-nums ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                            {processingPercent}%
+                          </span>
+                        </div>
+                        <div className={`mt-3 h-2 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-white"}`}>
+                          <div
+                            className="h-full rounded-full bg-sky-500"
+                            style={{ width: `${processingBarWidth}%` }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className={`rounded-[20px] border px-3 py-3 ${isDarkMode ? "border-slate-700/50 bg-slate-800/50" : "border-slate-200 bg-slate-50"}`}>
+                          <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400/80" : "text-slate-500"}`}>
+                            {t("workspace.quiz.timeDuration", "Thời gian")}
+                          </p>
+                          <p className={`mt-2 flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
+                            <Timer className="h-3.5 w-3.5" />
+                            <span>{durationInMinutes > 0 ? `${durationInMinutes} ${t("workspace.quiz.minutes", "phút")}` : "-"}</span>
+                          </p>
+                        </div>
+                        <div className={`rounded-[20px] border px-3 py-3 ${isDarkMode ? "border-slate-700/50 bg-slate-800/50" : "border-slate-200 bg-slate-50"}`}>
+                          <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400/80" : "text-slate-500"}`}>
+                            {t("workspace.quiz.overallDifficulty", "Độ khó")}
+                          </p>
+                          <p className={`mt-2 flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light} w-fit rounded-full px-2.5 py-1`}>
+                            <BarChart3 className="h-3.5 w-3.5" />
+                            <span>
+                              {difficultyKey === "CUSTOM"
+                                ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
+                                : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`)}
                             </span>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        {intentLabel ? (
+                          <span className={`inline-flex max-w-full items-center rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-slate-700/60 text-slate-300" : "bg-slate-200/70 text-slate-700"}`}>
+                            {intentLabel}
+                          </span>
+                        ) : null}
+                        {timerLabel ? (
+                          <span className={`inline-flex max-w-full items-center rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-slate-700/60 text-slate-300" : "bg-slate-200/70 text-slate-700"}`}>
+                            {timerLabel}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {showPracticeAction || showExamAction ? (
+                      <div className={`grid gap-2 ${showPracticeAction && showExamAction ? "grid-cols-2" : "grid-cols-1"}`}>
+                        {showPracticeAction ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStartQuiz('practice', quiz.quizId); }}
+                            className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${isDarkMode ? "border-blue-900/50 bg-blue-950/20 text-blue-300 hover:bg-blue-900/30" : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"}`}
+                            title={t("workspace.quiz.practice", "Luyện tập")}
+                          >
+                            <Play className="h-4.5 w-4.5" />
+                            <span>{t("workspace.quiz.practice", "Luyện tập")}</span>
                           </button>
                         ) : null}
-                        <button
-                          onClick={(e) => handleRequestDeleteQuiz(e, quiz)}
-                          disabled={deletingId === quiz.quizId}
-                          className={`px-3 py-2.5 rounded-xl transition-all inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "hover:bg-red-950/40 text-red-300" : "hover:bg-red-100 text-red-600"}`}
-                          title={t("workspace.quiz.deleteQuiz")}
-                        >
-                          {deletingId === quiz.quizId ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
-                          <span>{deletingId === quiz.quizId ? t("workspace.quiz.actionButtons.deleting", "Deleting...") : t("workspace.quiz.actionButtons.delete", "Delete")}</span>
-                        </button>
+                        {showExamAction ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setExamStartQuiz(quiz); }}
+                            className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${isDarkMode ? "border-emerald-900/50 bg-emerald-950/20 text-emerald-300 hover:bg-emerald-900/30" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                            title={t("workspace.quiz.exam", "Thi")}
+                          >
+                            <ClipboardCheck className="h-4.5 w-4.5" />
+                            <span>{t("workspace.quiz.exam", "Thi")}</span>
+                          </button>
+                        ) : null}
                       </div>
+                    ) : null}
                     </div>
-                  </div>
-                </div>
+                </article>
               );
             })}
           </div>
