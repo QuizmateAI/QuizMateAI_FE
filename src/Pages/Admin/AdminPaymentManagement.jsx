@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, Eye, Banknote } from 'lucide-react';
+import { Search, RefreshCw, Eye, Banknote, Clock, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/Components/ui/card';
@@ -26,7 +26,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
-import { getAdminPayments, getAdminPaymentByOrderId } from '@/api/ManagementSystemAPI';
+import { getAdminPayments, getAdminPaymentByOrderId, expireOverduePayments } from '@/api/ManagementSystemAPI';
 
 const INITIAL_FILTERS = {
   orderId: '',
@@ -56,10 +56,11 @@ function AdminPaymentManagement() {
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { permissions, loading: permLoading } = useAdminPermissions();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
   const canRead = !permLoading && permissions.has('payment:read');
+  const canWrite = !permLoading && permissions.has('payment:write');
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [payments, setPayments] = useState([]);
@@ -76,6 +77,8 @@ function AdminPaymentManagement() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isExpireOpen, setIsExpireOpen] = useState(false);
+  const [isExpiring, setIsExpiring] = useState(false);
 
   const getFriendlyError = (err, fallbackText) => {
     const mapped = getErrorMessage(t, err);
@@ -205,6 +208,21 @@ function AdminPaymentManagement() {
     }
   };
 
+  const handleExpireOverdue = async () => {
+    setIsExpiring(true);
+    try {
+      const res = await expireOverduePayments();
+      const count = res?.data?.data ?? res?.data ?? 0;
+      showSuccess(t('adminPayments.expireSuccess', { count }));
+      setIsExpireOpen(false);
+      await loadPayments(pageInfo.page, filters);
+    } catch (err) {
+      showError(getFriendlyError(err, t('adminPayments.errors.expireFailed')));
+    } finally {
+      setIsExpiring(false);
+    }
+  };
+
   const renderStatusBadge = (status) => (
     <Badge className={STATUS_META[status] || STATUS_META.CANCELLED}>
       {status ? t(`adminPayments.status.${status}`, { defaultValue: status }) : '-'}
@@ -306,8 +324,21 @@ function AdminPaymentManagement() {
           <CardTitle className={`text-xl ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
             {t('adminPayments.listTitle')}
           </CardTitle>
-          <div className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            {t('adminPayments.summary', { count: new Intl.NumberFormat(locale).format(pageInfo.totalElements) })}
+          <div className="flex items-center gap-3">
+            {canWrite && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsExpireOpen(true)}
+                className={`rounded-xl gap-2 ${isDarkMode ? 'border-amber-700 text-amber-400 hover:bg-amber-500/10' : 'border-amber-300 text-amber-700 hover:bg-amber-50'}`}
+              >
+                <Clock className="w-4 h-4" />
+                {t('adminPayments.expireOverdue')}
+              </Button>
+            )}
+            <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              {t('adminPayments.summary', { count: new Intl.NumberFormat(locale).format(pageInfo.totalElements) })}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -405,6 +436,40 @@ function AdminPaymentManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Expire Overdue Dialog */}
+      <Dialog open={isExpireOpen} onOpenChange={setIsExpireOpen}>
+        <DialogContent className={isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : ''}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500" />
+              {t('adminPayments.expireOverdue')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('adminPayments.expireDescription')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsExpireOpen(false)}
+              disabled={isExpiring}
+              className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+            >
+              <X className="w-4 h-4 mr-1" />
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleExpireOverdue}
+              disabled={isExpiring}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              <Clock className={`w-4 h-4 mr-1 ${isExpiring ? 'animate-spin' : ''}`} />
+              {isExpiring ? t('adminPayments.expiring') : t('adminPayments.expireConfirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className={`max-w-3xl max-h-[85vh] overflow-y-auto ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
+import {
   LayoutDashboard,
   Users, UsersRound,
   CreditCard, LogOut,
-  PanelLeftClose, Coins, ChevronDown, ChevronRight
+  PanelLeftClose, Coins, ChevronDown, ChevronRight,
+  Settings2,
 } from 'lucide-react';
 import { Banknote } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -69,6 +70,18 @@ const MENU_SECTIONS = [
         labelKey: 'sidebar.payments',
         path: '/admin/payments',
         requiredPerm: 'payment:read',
+        matchPrefix: true,
+      },
+    ],
+  },
+  {
+    labelKey: 'sidebarSections.system',
+    items: [
+      {
+        icon: Settings2,
+        labelKey: 'sidebar.systemSettings',
+        path: '/admin/system-settings',
+        requiredPerm: 'system-settings:read',
         matchPrefix: true,
       },
     ],

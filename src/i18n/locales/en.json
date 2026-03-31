@@ -13,13 +13,39 @@
     "aiAudit": "AI Audit",
     "subscriptions": "Subscriptions",
     "creditPackages": "Credit Packs",
-    "payments": "Payments"
+    "payments": "Payments",
+    "systemSettings": "System Settings"
   },
   "sidebarSections": {
     "overview": "Overview",
     "workspace": "Users & groups",
     "commerce": "Plans & payments",
     "system": "Internal systems"
+  },
+  "systemSettings": {
+    "title": "System Settings",
+    "subtitle": "Manage global system configuration parameters",
+    "refresh": "Refresh",
+    "empty": "No settings found",
+    "colKey": "Key",
+    "colDescription": "Description",
+    "colValue": "Value",
+    "colStatus": "Status",
+    "colUpdatedAt": "Last Updated",
+    "colActions": "Actions",
+    "customized": "Customized",
+    "default": "Default",
+    "editTitle": "Edit Setting",
+    "editDescription": "Change the value for this system parameter",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "updateSuccess": "Setting updated successfully",
+    "resyncPrices": "Sync Prices",
+    "resyncDescription": "Recalculate and update all credit package prices based on the current unit credit price setting. This will overwrite any manually set prices.",
+    "resyncConfirm": "Sync Now",
+    "resyncing": "Syncing...",
+    "resyncSuccess": "Credit package prices synced successfully"
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -193,8 +219,14 @@
     "permissionDenied": "Your account does not have permission to view payment transactions.",
     "errors": {
       "loadList": "Unable to load payment transactions",
-      "loadDetail": "Unable to load payment details"
+      "loadDetail": "Unable to load payment details",
+      "expireFailed": "Failed to expire overdue payments"
     },
+    "expireOverdue": "Expire Overdue",
+    "expireDescription": "Cancel all PENDING payments that have passed their expiry time. This action cannot be undone.",
+    "expireConfirm": "Expire Now",
+    "expiring": "Processing...",
+    "expireSuccess": "{{count}} overdue payment(s) have been cancelled",
     "validation": {
       "positiveInteger": "{{field}} must be a positive integer"
     },
