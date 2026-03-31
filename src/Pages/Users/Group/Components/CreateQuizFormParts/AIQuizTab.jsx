@@ -1,5 +1,5 @@
 import React from "react";
-import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit } from "lucide-react";
+import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2 } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
 
 function AIQuizTab({
@@ -42,10 +42,14 @@ function AIQuizTab({
   onBloomRatioChange,
   aiTotalQuestions,
   setAiTotalQuestions,
+  minTotalQuestions,
+  maxTotalQuestions,
   aiTimerMode,
   setAiTimerMode,
   aiDuration,
   setAiDuration,
+  aiDurationSyncNotice,
+  setAiDurationSyncNotice,
   aiEasyDuration,
   setAiEasyDuration,
   aiMediumDuration,
@@ -54,8 +58,10 @@ function AIQuizTab({
   setAiHardDuration,
   fieldErrors,
   setFieldErrors,
+  sectionRefs,
+  minimumDurationMinutes,
 }) {
-  const requiredMark = <span className="text-red-500 ml-1">*</span>;
+  const requiredMark = <span className="ml-1 text-red-500">*</span>;
 
   const normalizeIntegerInput = (value) => {
     if (value === "") return "";
@@ -65,49 +71,92 @@ function AIQuizTab({
     return Number(normalized || 0);
   };
 
-  const applyMinOnBlur = (value, setter, minValue = 1) => {
+  const applyRangeOnBlur = (value, setter, minValue = 1, maxValue = Number.POSITIVE_INFINITY) => {
     const next = Number(value);
-    setter(Number.isFinite(next) && next >= minValue ? next : minValue);
+    if (!Number.isFinite(next)) {
+      setter(minValue);
+      return;
+    }
+
+    setter(Math.min(Math.max(next, minValue), maxValue));
+  };
+  const applyMinOnBlur = (value, setter, minValue = 1) => applyRangeOnBlur(value, setter, minValue);
+  const hasValidTotalQuestions = Number(aiTotalQuestions) >= minTotalQuestions
+    && Number(aiTotalQuestions) <= maxTotalQuestions;
+  const hasDurationMinimumMismatch = aiTimerMode
+    && hasValidTotalQuestions
+    && Number(aiDuration) > 0
+    && Number(aiDuration) < minimumDurationMinutes;
+  const durationMetaBaseClass = "mt-2 inline-flex max-w-full items-start gap-2 rounded-lg border px-3 py-2 text-[11px] font-medium leading-relaxed";
+  const durationHintClass = isDarkMode
+    ? `${durationMetaBaseClass} border-slate-700 bg-slate-800/70 text-slate-300`
+    : `${durationMetaBaseClass} border-slate-200 bg-slate-50 text-slate-600`;
+  const durationSyncClass = isDarkMode
+    ? `${durationMetaBaseClass} border-cyan-500/30 bg-cyan-500/10 text-cyan-200`
+    : `${durationMetaBaseClass} border-blue-200 bg-blue-50 text-blue-700`;
+
+  const getSectionClassName = (errorKeys = []) => {
+    const hasError = errorKeys.some((key) => fieldErrors[key]);
+    const defaultClasses = isDarkMode
+      ? "bg-slate-900/50 border-slate-800"
+      : "bg-white border-gray-100 shadow-sm";
+
+    if (!hasError) {
+      return `p-4 rounded-xl border transition-colors ${defaultClasses}`;
+    }
+
+    return `p-4 rounded-xl border transition-colors ${
+      isDarkMode
+        ? "bg-red-950/10 border-red-500/60"
+        : "bg-red-50/70 border-red-300 shadow-sm"
+    }`;
   };
 
   return (
     <div className="space-y-5 pb-4">
-      <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+      <div className={`rounded-lg border px-3 py-2 text-xs ${isDarkMode ? "border-amber-900/40 bg-amber-950/30 text-amber-300" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
         {t("workspace.quiz.validation.requiredFieldsHint")}
       </div>
 
-      <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
-        <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          <FileText className="w-4 h-4 text-blue-500" /> {t("General Info")}
+      <div ref={sectionRefs?.general} className={getSectionClassName(["aiName", "aiPrompt"])}>
+        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+          <FileText className="h-4 w-4 text-blue-500" />
+          {t("workspace.quiz.aiConfig.generalInfo")}
         </h3>
         <div className="space-y-3">
           <div>
             <label className={labelCls}>{t("workspace.quiz.name")}{requiredMark}</label>
-            <input 
+            <input
               className={`${inputCls} ${fieldErrors.aiName ? "border-red-400" : ""}`}
-              placeholder={t("workspace.quiz.namePlaceholder")} 
-              value={aiName} 
+              placeholder={t("workspace.quiz.namePlaceholder")}
+              value={aiName}
               onChange={(e) => {
                 setAiName(e.target.value);
-                setFieldErrors(prev => ({ ...prev, aiName: "" }));
-              }} 
+                setFieldErrors((prev) => ({ ...prev, aiName: "" }));
+              }}
             />
             {fieldErrors.aiName && (
-              <p className="text-xs text-red-500 mt-1">{fieldErrors.aiName}</p>
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.aiName}</p>
             )}
           </div>
+
           <div>
             <label className={labelCls}>{t("workspace.quiz.aiConfig.customPromptLabel", "Vui lòng nhập yêu cầu của bạn")}</label>
-            <textarea 
-              className={`${inputCls} min-h-[60px] resize-none`}
-              placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")} 
-              value={aiPrompt} 
+            <textarea
+              className={`${inputCls} min-h-[72px] resize-none ${fieldErrors.aiPrompt ? "border-red-400" : ""}`}
+              placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")}
+              value={aiPrompt}
               onChange={(e) => {
                 setAiPrompt(e.target.value);
-              }} 
+                setFieldErrors((prev) => ({ ...prev, aiPrompt: "" }));
+              }}
             />
+            {fieldErrors.aiPrompt && (
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.aiPrompt}</p>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
               <label className={labelCls}>{t("workspace.quiz.intent")}</label>
               <select className={selectCls} value={aiQuizIntent} onChange={(e) => setAiQuizIntent(e.target.value)}>
@@ -117,7 +166,7 @@ function AIQuizTab({
               </select>
             </div>
             <div>
-              <label className={labelCls}>Output Language</label>
+              <label className={labelCls}>{t("workspace.quiz.aiConfig.outputLanguage", "Output Language")}</label>
               <select className={selectCls} value={aiOutputLanguage} onChange={(e) => setAiOutputLanguage(e.target.value)}>
                 {AI_OUTPUT_LANGUAGES.map((lang) => (
                   <option key={lang} value={lang}>{lang}</option>
@@ -128,104 +177,169 @@ function AIQuizTab({
         </div>
       </div>
 
-      <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
-        <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          <CheckSquare className="w-4 h-4 text-green-500" /> {t("Select Materials")} {requiredMark}
+      <div className={getSectionClassName()}>
+        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+          <CheckSquare className="h-4 w-4 text-green-500" />
+          {t("workspace.quiz.aiConfig.selectedMaterials")}
         </h3>
         {loadingMetadata ? (
-          <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="w-3 h-3 animate-spin" /> {t("Loading materials...")}</div>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {t("workspace.quiz.aiConfig.loadingMetadata")}
+          </div>
         ) : materials.length > 0 ? (
-          <div className="max-h-40 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-            {materials.map((mat) => (
-              <label key={mat.id || mat.materialId} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${selectedMaterialIds.includes(mat.id || mat.materialId)
-                ? (isDarkMode ? "bg-blue-900/20 border-blue-500/50" : "bg-blue-50 border-blue-200")
-                : (isDarkMode ? "border-slate-800 hover:bg-slate-800" : "border-gray-200 hover:bg-gray-50")}`}>
-                <input type="checkbox" checked={selectedMaterialIds.includes(mat.id || mat.materialId)} onChange={() => onToggleMaterial(mat.id || mat.materialId)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4" />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-medium truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{mat.fileName || mat.title || "Untitled"}</p>
-                  <p className="text-[10px] text-slate-500 truncate">{mat.description || t("No description")}</p>
-                </div>
-              </label>
-            ))}
+          <div className="max-h-40 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+            {materials.map((mat) => {
+              const materialId = mat.id || mat.materialId;
+              const isSelected = selectedMaterialIds.includes(materialId);
+              return (
+                <label
+                  key={materialId}
+                  className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2 transition-all ${
+                    isSelected
+                      ? (isDarkMode ? "border-blue-500/50 bg-blue-900/20" : "border-blue-200 bg-blue-50")
+                      : (isDarkMode ? "border-slate-800 hover:bg-slate-800" : "border-gray-200 hover:bg-gray-50")
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleMaterial(materialId)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+                      {mat.fileName || mat.title || "Untitled"}
+                    </p>
+                    <p className="truncate text-[10px] text-slate-500">
+                      {mat.description || t("No description")}
+                    </p>
+                  </div>
+                </label>
+              );
+            })}
           </div>
         ) : (
-          <p className="text-xs text-slate-500 italic">{t("No materials found in this workspace.")}</p>
-        )}
-        {fieldErrors.selectedMaterialIds && (
-          <p className="text-xs text-red-500 mt-2">{fieldErrors.selectedMaterialIds}</p>
+          <p className="text-xs italic text-slate-500">{t("workspace.quiz.aiConfig.noSelectedMaterials")}</p>
         )}
       </div>
 
-      <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
-        <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          <Sliders className="w-4 h-4 text-gray-500" /> {t("Settings")}
+      <div ref={sectionRefs?.settings} className={getSectionClassName(["aiTotalQuestions", "aiDuration", "aiDurations"])}>
+        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+          <Sliders className="h-4 w-4 text-gray-500" />
+          {t("workspace.quiz.aiConfig.settings")}
         </h3>
-        <div className={`grid ${aiTimerMode ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
+        <div className={`grid gap-3 ${aiTimerMode ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
           <div>
-            <label className={labelCls}>{t("Total Questions")}{requiredMark}</label>
+            <label className={labelCls}>{t("workspace.quiz.aiConfig.totalQuestions")}{requiredMark}</label>
             <input
               type="number"
               className={`${inputCls} ${fieldErrors.aiTotalQuestions ? "border-red-400" : ""}`}
               value={aiTotalQuestions}
               onChange={(e) => {
-                setAiTotalQuestions(normalizeIntegerInput(e.target.value));
-                setFieldErrors(prev => ({ ...prev, aiTotalQuestions: "" }));
+                const normalizedValue = normalizeIntegerInput(e.target.value);
+                setAiTotalQuestions(normalizedValue === "" ? "" : Math.min(normalizedValue, maxTotalQuestions));
+                setFieldErrors((prev) => ({ ...prev, aiTotalQuestions: "", aiDuration: "" }));
               }}
-              onBlur={() => applyMinOnBlur(aiTotalQuestions, setAiTotalQuestions, 1)}
-              min={1}
+              onBlur={() => applyRangeOnBlur(aiTotalQuestions, setAiTotalQuestions, minTotalQuestions, maxTotalQuestions)}
+              min={minTotalQuestions}
+              max={maxTotalQuestions}
             />
-                        {fieldErrors.aiTotalQuestions && (
-                          <p className="text-xs text-red-500 mt-1">{fieldErrors.aiTotalQuestions}</p>
-                        )}
+            {fieldErrors.aiTotalQuestions && (
+              <p className="mt-1 text-xs text-red-500">{fieldErrors.aiTotalQuestions}</p>
+            )}
+            {!fieldErrors.aiTotalQuestions && (
+              <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                {t("workspace.quiz.validation.totalQuestionsRangeHint", {
+                  min: minTotalQuestions,
+                  max: maxTotalQuestions,
+                })}
+              </p>
+            )}
           </div>
+
           {aiTimerMode && (
             <div>
               <label className={labelCls}>{t("workspace.quiz.aiConfig.timeMinutes")}{requiredMark}</label>
               <input
                 type="number"
-                className={`${inputCls} ${fieldErrors.aiDuration ? "border-red-400" : ""}`}
+                className={`${inputCls} ${(fieldErrors.aiDuration || hasDurationMinimumMismatch) ? "border-red-400" : ""}`}
                 value={aiDuration}
                 onChange={(e) => {
                   setAiDuration(normalizeIntegerInput(e.target.value));
-                  setFieldErrors(prev => ({ ...prev, aiDuration: "" }));
+                  setFieldErrors((prev) => ({ ...prev, aiDuration: "" }));
+                  setAiDurationSyncNotice("");
                 }}
                 onBlur={() => applyMinOnBlur(aiDuration, setAiDuration, 1)}
                 min={1}
               />
-                            {fieldErrors.aiDuration && (
-                              <p className="text-xs text-red-500 mt-1">{fieldErrors.aiDuration}</p>
-                            )}
+              {fieldErrors.aiDuration ? (
+                <p className="mt-1 text-xs text-red-500">{fieldErrors.aiDuration}</p>
+              ) : hasDurationMinimumMismatch ? (
+                <p className="mt-1 text-xs text-red-500">
+                  {t("workspace.quiz.validation.minimumTimePerQuestion", {
+                    defaultValue: `Mỗi câu cần tối thiểu 30 giây. Với ${aiTotalQuestions} câu, thời gian phải từ ${minimumDurationMinutes} phút.`,
+                    count: Number(aiTotalQuestions) || 0,
+                    minutes: minimumDurationMinutes,
+                  })}
+                </p>
+              ) : null}
+              {!fieldErrors.aiDuration && !hasDurationMinimumMismatch && aiDurationSyncNotice && (
+                <div className={durationSyncClass}>
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="break-words">{aiDurationSyncNotice}</span>
+                </div>
+              )}
+              {!fieldErrors.aiDuration && !hasDurationMinimumMismatch && !aiDurationSyncNotice && hasValidTotalQuestions && (
+                <div className={durationHintClass}>
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="break-words">
+                    {t("workspace.quiz.validation.minimumTimePerQuestionHint", {
+                      defaultValue: `Tối thiểu ${minimumDurationMinutes} phút (30 giây/câu).`,
+                      minutes: minimumDurationMinutes,
+                    })}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
+
         <div className="mt-3">
           <label className={labelCls}>{t("workspace.quiz.aiConfig.examType")}</label>
           <div className="grid grid-cols-1 gap-2">
             <button
               type="button"
               onClick={() => setAiTimerMode(true)}
-              className={`text-left rounded-lg border px-3 py-2 transition-all ${aiTimerMode
-                ? (isDarkMode ? "border-blue-500 bg-blue-950/30 text-blue-300" : "border-blue-400 bg-blue-50 text-blue-700")
-                : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
+              className={`rounded-lg border px-3 py-2 text-left transition-all ${
+                aiTimerMode
+                  ? (isDarkMode ? "border-blue-500 bg-blue-950/30 text-blue-300" : "border-blue-400 bg-blue-50 text-blue-700")
+                  : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
               }`}
             >
               <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeTimed")}</p>
-              <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintTimed")}</p>
+              <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                {t("workspace.quiz.aiConfig.examTypeHintTimed")}
+              </p>
             </button>
             <button
               type="button"
               onClick={() => setAiTimerMode(false)}
-              className={`text-left rounded-lg border px-3 py-2 transition-all ${!aiTimerMode
-                ? (isDarkMode ? "border-emerald-500 bg-emerald-950/25 text-emerald-300" : "border-emerald-400 bg-emerald-50 text-emerald-700")
-                : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
+              className={`rounded-lg border px-3 py-2 text-left transition-all ${
+                !aiTimerMode
+                  ? (isDarkMode ? "border-emerald-500 bg-emerald-950/25 text-emerald-300" : "border-emerald-400 bg-emerald-50 text-emerald-700")
+                  : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
               }`}
             >
               <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeSequential")}</p>
-              <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintSequential")}</p>
+              <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                {t("workspace.quiz.aiConfig.examTypeHintSequential")}
+              </p>
             </button>
           </div>
+
           {!aiTimerMode && (
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
               <div>
                 <label className={labelCls}>{t("workspace.quiz.aiConfig.easyDuration")} (s)</label>
                 <input
@@ -234,13 +348,9 @@ function AIQuizTab({
                   value={aiEasyDuration}
                   onChange={(e) => {
                     setAiEasyDuration(normalizeIntegerInput(e.target.value));
-                    setFieldErrors(prev => ({ ...prev, aiDurations: "" }));
+                    setFieldErrors((prev) => ({ ...prev, aiDurations: "" }));
                   }}
-                  onBlur={() => {
-                    if (!aiEasyDuration || Number(aiEasyDuration) <= 0) {
-                      setAiEasyDuration(10);
-                    }
-                  }}
+                  onBlur={() => applyMinOnBlur(aiEasyDuration, setAiEasyDuration, 10)}
                   min={1}
                 />
               </div>
@@ -252,13 +362,9 @@ function AIQuizTab({
                   value={aiMediumDuration}
                   onChange={(e) => {
                     setAiMediumDuration(normalizeIntegerInput(e.target.value));
-                    setFieldErrors(prev => ({ ...prev, aiDurations: "" }));
+                    setFieldErrors((prev) => ({ ...prev, aiDurations: "" }));
                   }}
-                  onBlur={() => {
-                    if (!aiMediumDuration || Number(aiMediumDuration) <= 0) {
-                      setAiMediumDuration(20);
-                    }
-                  }}
+                  onBlur={() => applyMinOnBlur(aiMediumDuration, setAiMediumDuration, 10)}
                   min={1}
                 />
               </div>
@@ -270,72 +376,45 @@ function AIQuizTab({
                   value={aiHardDuration}
                   onChange={(e) => {
                     setAiHardDuration(normalizeIntegerInput(e.target.value));
-                    setFieldErrors(prev => ({ ...prev, aiDurations: "" }));
+                    setFieldErrors((prev) => ({ ...prev, aiDurations: "" }));
                   }}
-                  onBlur={() => {
-                    if (!aiHardDuration || Number(aiHardDuration) <= 0) {
-                      setAiHardDuration(30);
-                    }
-                  }}
+                  onBlur={() => applyMinOnBlur(aiHardDuration, setAiHardDuration, 10)}
                   min={1}
                 />
-                            {fieldErrors.aiDurations && (
-                              <p className="text-xs text-red-500 mt-2">{fieldErrors.aiDurations}</p>
-                            )}
               </div>
             </div>
           )}
-        </div>
-        <div className="mt-3">
-          <label className={labelCls}>{t("workspace.quiz.aiConfig.examType")}</label>
-          <div className="grid grid-cols-1 gap-2">
-            <button
-              type="button"
-              onClick={() => setAiTimerMode(true)}
-              className={`text-left rounded-lg border px-3 py-2 transition-all ${aiTimerMode
-                ? (isDarkMode ? "border-blue-500 bg-blue-950/30 text-blue-300" : "border-blue-400 bg-blue-50 text-blue-700")
-                : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
-              }`}
-            >
-              <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeTimed")}</p>
-              <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintTimed")}</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAiTimerMode(false)}
-              className={`text-left rounded-lg border px-3 py-2 transition-all ${!aiTimerMode
-                ? (isDarkMode ? "border-emerald-500 bg-emerald-950/25 text-emerald-300" : "border-emerald-400 bg-emerald-50 text-emerald-700")
-                : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
-              }`}
-            >
-              <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeSequential")}</p>
-              <p className={`text-[11px] mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintSequential")}</p>
-            </button>
-          </div>
+
+          {fieldErrors.aiDurations && (
+            <p className="mt-2 text-xs text-red-500">{fieldErrors.aiDurations}</p>
+          )}
         </div>
       </div>
 
-      <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
-        <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          <Sliders className="w-4 h-4 text-amber-500" /> {t("Difficulty Level")} {requiredMark}
+      <div ref={sectionRefs?.difficulty} className={getSectionClassName(["aiDifficulty"])}>
+        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+          <Sliders className="h-4 w-4 text-amber-500" />
+          {t("workspace.quiz.aiConfig.difficultyLevel")}
         </h3>
         <select className={selectCls} value={selectedDifficultyId} onChange={onDifficultyChange}>
-          {difficultyDefs.map((d) => (
-            <option key={d.id} value={d.id}>{d.difficultyName} ({d.easyRatio}-{d.mediumRatio}-{d.hardRatio})</option>
+          {difficultyDefs.map((difficulty) => (
+            <option key={difficulty.id} value={difficulty.id}>
+              {difficulty.difficultyName} ({difficulty.easyRatio}-{difficulty.mediumRatio}-{difficulty.hardRatio})
+            </option>
           ))}
           <option value="CUSTOM">{t("workspace.quiz.difficultyLevels.custom")}</option>
         </select>
 
         {selectedDifficultyId === "CUSTOM" && (
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
             {["easy", "medium", "hard"].map((level) => (
               <div key={level}>
-                <label className={`text-[10px] uppercase font-bold mb-1 block ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+                <label className={`mb-1 block text-[10px] font-bold uppercase ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
                   {level} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})
                 </label>
                 <input
                   type="number"
-                  className={inputCls}
+                  className={`${inputCls} ${fieldErrors.aiDifficulty ? "border-red-400" : ""}`}
                   value={customDifficulty[level]}
                   onChange={(e) => {
                     const raw = Math.max(0, Number(e.target.value) || 0);
@@ -347,6 +426,7 @@ function AIQuizTab({
             ))}
           </div>
         )}
+
         <div className="mt-3 flex items-center gap-2">
           <input
             id="difficulty-unit-toggle"
@@ -360,12 +440,18 @@ function AIQuizTab({
             {t("workspace.quiz.aiConfig.difficultyUnitByCount")}
           </label>
         </div>
+
+        {fieldErrors.aiDifficulty && (
+          <p className="mt-2 text-xs text-red-500">{fieldErrors.aiDifficulty}</p>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
-          <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-            <Sparkles className="w-4 h-4 text-purple-500" /> {t("Question Types")} {requiredMark}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div ref={sectionRefs?.questionTypes} className={getSectionClassName(["selectedQTypes"])}>
+          <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+            <Sparkles className="h-4 w-4 text-purple-500" />
+            {t("workspace.quiz.aiConfig.questionTypes")}
+            {requiredMark}
           </h3>
           <div className="mb-2 flex items-center gap-2">
             <input
@@ -383,13 +469,25 @@ function AIQuizTab({
             {qTypes.map((qt) => {
               const isSelected = selectedQTypes.some((x) => x.questionTypeId === qt.questionTypeId);
               const currentRatio = selectedQTypes.find((x) => x.questionTypeId === qt.questionTypeId)?.ratio || 0;
+
               return (
                 <div key={qt.questionTypeId} className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                  <input type="checkbox" checked={isSelected} onChange={() => onToggleQType(qt.questionTypeId)} className="rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleQType(qt.questionTypeId)}
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
                   <span className="flex-1 truncate" title={qt.description}>{qt.questionType}</span>
                   {isSelected && (
                     <div className="flex items-center gap-1">
-                      <input type="number" className={`w-12 p-1 text-center border rounded ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`} value={currentRatio} onChange={(e) => onQTypeRatioChange(qt.questionTypeId, e.target.value)} placeholder="%" />
+                      <input
+                        type="number"
+                        className={`w-12 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}
+                        value={currentRatio}
+                        onChange={(e) => onQTypeRatioChange(qt.questionTypeId, e.target.value)}
+                        placeholder="%"
+                      />
                       <span>{questionTypeUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
                     </div>
                   )}
@@ -397,11 +495,16 @@ function AIQuizTab({
               );
             })}
           </div>
+          {fieldErrors.selectedQTypes && (
+            <p className="mt-3 text-xs text-red-500">{fieldErrors.selectedQTypes}</p>
+          )}
         </div>
 
-        <div className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-gray-100 shadow-sm"}`}>
-          <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-            <BrainCircuit className="w-4 h-4 text-teal-500" /> {t("Bloom Skills")} {requiredMark}
+        <div ref={sectionRefs?.bloomSkills} className={getSectionClassName(["selectedBloomSkills"])}>
+          <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+            <BrainCircuit className="h-4 w-4 text-teal-500" />
+            {t("workspace.quiz.aiConfig.bloomSkills")}
+            {requiredMark}
           </h3>
           <div className="mb-2 flex items-center gap-2">
             <input
@@ -416,16 +519,28 @@ function AIQuizTab({
             </label>
           </div>
           <div className="space-y-2">
-            {bloomSkills.map((bs) => {
-              const isSelected = selectedBloomSkills.some((x) => x.bloomId === bs.bloomId);
-              const currentRatio = selectedBloomSkills.find((x) => x.bloomId === bs.bloomId)?.ratio || 0;
+            {bloomSkills.map((skill) => {
+              const isSelected = selectedBloomSkills.some((x) => x.bloomId === skill.bloomId);
+              const currentRatio = selectedBloomSkills.find((x) => x.bloomId === skill.bloomId)?.ratio || 0;
+
               return (
-                <div key={bs.bloomId} className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                  <input type="checkbox" checked={isSelected} onChange={() => onToggleBloom(bs.bloomId)} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  <span className="flex-1 truncate" title={bs.description}>{bs.bloomName}</span>
+                <div key={skill.bloomId} className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleBloom(skill.bloomId)}
+                    className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <span className="flex-1 truncate" title={skill.description}>{skill.bloomName}</span>
                   {isSelected && (
                     <div className="flex items-center gap-1">
-                      <input type="number" className={`w-12 p-1 text-center border rounded ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`} value={currentRatio} onChange={(e) => onBloomRatioChange(bs.bloomId, e.target.value)} placeholder="%" />
+                      <input
+                        type="number"
+                        className={`w-12 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}
+                        value={currentRatio}
+                        onChange={(e) => onBloomRatioChange(skill.bloomId, e.target.value)}
+                        placeholder="%"
+                      />
                       <span>{bloomUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
                     </div>
                   )}
@@ -433,9 +548,11 @@ function AIQuizTab({
               );
             })}
           </div>
+          {fieldErrors.selectedBloomSkills && (
+            <p className="mt-3 text-xs text-red-500">{fieldErrors.selectedBloomSkills}</p>
+          )}
         </div>
       </div>
-
     </div>
   );
 }

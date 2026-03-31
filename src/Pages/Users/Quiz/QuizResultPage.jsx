@@ -14,9 +14,72 @@ import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 
 const PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY = 'prelearning_phasecontent_triggered_attempts';
+const RESULT_CONTEXT_STORAGE_KEY_PREFIX = 'quiz_result_context:';
 const RESULT_BOOTSTRAP_MAX_RETRIES = 8;
 const RESULT_BOOTSTRAP_RETRY_DELAY_MS = 1500;
+const ASSESSMENT_NOT_AVAILABLE_POLL_LIMIT = 10;
+const ASSESSMENT_NOT_AVAILABLE_POLL_INTERVAL_MS = 3000;
 const RETRYABLE_RESULT_STATUS_CODES = new Set([404, 409, 425, 429, 500, 502, 503, 504]);
+
+function isPendingQuestionGrading(question) {
+  return String(question?.gradingStatus || '').toUpperCase() === 'PENDING';
+}
+
+function isFailedQuestionGrading(question) {
+  return String(question?.gradingStatus || '').toUpperCase() === 'FAILED';
+}
+
+function hasResolvedQuestionResult(question) {
+  return question?.isCorrect === true || question?.isCorrect === false;
+}
+
+function normalizePositiveInteger(value) {
+  const normalizedValue = Number(value);
+  return Number.isInteger(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+}
+
+function readStoredResultContext(attemptId) {
+  const normalizedAttemptId = normalizePositiveInteger(attemptId);
+  if (!normalizedAttemptId || typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(`${RESULT_CONTEXT_STORAGE_KEY_PREFIX}${normalizedAttemptId}`);
+    if (!rawValue) return {};
+
+    const parsedValue = JSON.parse(rawValue);
+    return parsedValue && typeof parsedValue === 'object' ? parsedValue : {};
+  } catch (error) {
+    console.error('Không thể đọc result context đã lưu:', error);
+    return {};
+  }
+}
+
+function writeStoredResultContext(attemptId, context) {
+  const normalizedAttemptId = normalizePositiveInteger(attemptId);
+  if (!normalizedAttemptId || typeof window === 'undefined' || !context || typeof context !== 'object') {
+    return;
+  }
+
+  const persistedContext = Object.fromEntries(
+    Object.entries(context).filter(([, value]) => value != null && value !== ''),
+  );
+
+  try {
+    if (Object.keys(persistedContext).length === 0) {
+      window.sessionStorage.removeItem(`${RESULT_CONTEXT_STORAGE_KEY_PREFIX}${normalizedAttemptId}`);
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      `${RESULT_CONTEXT_STORAGE_KEY_PREFIX}${normalizedAttemptId}`,
+      JSON.stringify(persistedContext),
+    );
+  } catch (error) {
+    console.error('Không thể lưu result context:', error);
+  }
+}
 
 function markPhaseContentGenerating(workspaceId, phaseId) {
   const normalizedWorkspaceId = Number(workspaceId);
@@ -105,13 +168,16 @@ export default function QuizResultPage() {
   const { showError, showSuccess } = useToast();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const quizFontStyle = { fontFamily: 'var(--quiz-display-font)' };
+  const storedResultContext = useMemo(() => readStoredResultContext(attemptId), [attemptId]);
+  const shouldStartInReviewMode = location.state?.openReviewMode === true
+    || storedResultContext?.openReviewMode === true;
 
   const [result, setResult] = useState(null);
   const [quizDetails, setQuizDetails] = useState(null);
   const [quizRawDetails, setQuizRawDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewMode, setReviewMode] = useState(shouldStartInReviewMode);
   const [retryCount, setRetryCount] = useState(0);
   const [resultBootstrapError, setResultBootstrapError] = useState(null);
   const [resultReloadSeed, setResultReloadSeed] = useState(0);
@@ -130,34 +196,41 @@ export default function QuizResultPage() {
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
   const pendingResultPollingRef = useRef(null);
+  const assessmentNotAvailablePollingRef = useRef(null);
+  const assessmentNotAvailablePollCountRef = useRef(0);
   const lastAttemptRefreshAtRef = useRef(0);
+  const initialPendingJumpDoneRef = useRef(false);
 
   const isIncompleteAttemptError = useCallback((error) => {
-    const statusCode = error?.response?.status;
-    const errorMessage = String(error?.response?.data?.message || error?.message || '').toLowerCase();
+    const statusCode = getRequestStatusCode(error);
+    const errorMessage = String(error?.data?.message || error?.response?.data?.message || error?.message || '').toLowerCase();
     return statusCode === 400 && (errorMessage.includes('chưa hoàn thành') || errorMessage.includes('chua hoan thanh'));
   }, []);
 
   // quizId passed via navigation state for "back to quiz" button
-  const quizId = location.state?.quizId;
-  const attemptMode = String(location.state?.attemptMode || '').toLowerCase();
-  const returnToQuizPath = location.state?.returnToQuizPath;
-  const sourceView = String(location.state?.sourceView || '').toLowerCase();
-  const sourceWorkspaceId = Number(location.state?.sourceWorkspaceId);
-  const sourcePhaseId = location.state?.sourcePhaseId;
-  const normalizedWorkspaceId = Number(
-    quizRawDetails?.workspaceId
-    ?? quizRawDetails?.workspace?.workspaceId
-    ?? quizDetails?.workspaceId
-    ?? result?.workspaceId
-  );
+  const quizId = normalizePositiveInteger(location.state?.quizId) ?? normalizePositiveInteger(storedResultContext?.quizId);
+  const attemptMode = String(location.state?.attemptMode || storedResultContext?.attemptMode || '').toLowerCase();
+  const returnToQuizPath = location.state?.returnToQuizPath || storedResultContext?.returnToQuizPath || null;
+  const sourceView = String(location.state?.sourceView || storedResultContext?.sourceView || '').toLowerCase();
+  const sourceWorkspaceId = normalizePositiveInteger(location.state?.sourceWorkspaceId)
+    ?? normalizePositiveInteger(storedResultContext?.sourceWorkspaceId);
+  const sourcePhaseId = normalizePositiveInteger(location.state?.sourcePhaseId)
+    ?? normalizePositiveInteger(storedResultContext?.sourcePhaseId);
   const returnPathWorkspaceId = useMemo(() => {
     if (!returnToQuizPath) return null;
     const matched = returnToQuizPath.match(/\/workspace\/(\d+)/);
     if (!matched) return null;
-    const parsed = Number(matched[1]);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+    return normalizePositiveInteger(matched[1]);
   }, [returnToQuizPath]);
+
+  const normalizedWorkspaceId = normalizePositiveInteger(
+    sourceWorkspaceId
+    ?? quizRawDetails?.workspaceId
+    ?? quizRawDetails?.workspace?.workspaceId
+    ?? quizDetails?.workspaceId
+    ?? result?.workspaceId
+    ?? returnPathWorkspaceId
+  );
 
   const resolvedWorkspaceIdForBack = Number.isInteger(sourceWorkspaceId) && sourceWorkspaceId > 0
     ? sourceWorkspaceId
@@ -165,13 +238,35 @@ export default function QuizResultPage() {
     ? normalizedWorkspaceId
     : returnPathWorkspaceId;
 
-  const normalizedQuizIdForBack = Number(
+  const normalizedQuizIdForBack = normalizePositiveInteger(
     quizId
     ?? result?.quizId
     ?? quizRawDetails?.quizId
     ?? quizDetails?.quizId
   );
-  const hasQuizIdForBack = Number.isInteger(normalizedQuizIdForBack) && normalizedQuizIdForBack > 0;
+  const hasQuizIdForBack = Boolean(normalizedQuizIdForBack);
+
+  useEffect(() => {
+    writeStoredResultContext(attemptId, {
+      quizId: hasQuizIdForBack ? normalizedQuizIdForBack : null,
+      attemptMode: attemptMode || null,
+      returnToQuizPath: returnToQuizPath || null,
+      openReviewMode: reviewMode ? true : null,
+      sourceView: sourceView || null,
+      sourceWorkspaceId,
+      sourcePhaseId,
+    });
+  }, [
+    attemptId,
+    attemptMode,
+    hasQuizIdForBack,
+    normalizedQuizIdForBack,
+    reviewMode,
+    returnToQuizPath,
+    sourcePhaseId,
+    sourceView,
+    sourceWorkspaceId,
+  ]);
 
   const directQuizDetailBackPath = Number.isInteger(resolvedWorkspaceIdForBack) && resolvedWorkspaceIdForBack > 0 && hasQuizIdForBack
     ? (sourceView === 'roadmap'
@@ -214,6 +309,7 @@ export default function QuizResultPage() {
     setQuizRawDetails(null);
     setLoadError(null);
     lastAttemptRefreshAtRef.current = 0;
+    initialPendingJumpDoneRef.current = false;
     setLoading(true);
     setResultBootstrapError(null);
 
@@ -361,6 +457,14 @@ export default function QuizResultPage() {
   }, [attemptId]);
 
   useEffect(() => {
+    assessmentNotAvailablePollCountRef.current = 0;
+    if (assessmentNotAvailablePollingRef.current) {
+      globalThis.clearInterval(assessmentNotAvailablePollingRef.current);
+      assessmentNotAvailablePollingRef.current = null;
+    }
+  }, [attemptId]);
+
+  useEffect(() => {
     fetchAssessment();
   }, [fetchAssessment]);
 
@@ -412,13 +516,86 @@ export default function QuizResultPage() {
   }, [result, quizDetails]);
 
   const pendingGradingCount = useMemo(() => {
+    const pendingFromQuestions = reviewQuestions.filter(isPendingQuestionGrading).length;
     const fromResult = Number(result?.pendingGradingQuestionCount);
     if (Number.isInteger(fromResult) && fromResult >= 0) {
-      return fromResult;
+      return Math.max(fromResult, pendingFromQuestions);
     }
-    return reviewQuestions.filter((question) => String(question?.gradingStatus || '').toUpperCase() === 'PENDING').length;
+    return pendingFromQuestions;
   }, [result?.pendingGradingQuestionCount, reviewQuestions]);
+  const reviewSummary = useMemo(() => {
+    const summary = reviewQuestions.reduce((stats, question) => {
+      if (question?.isCorrect === true) {
+        stats.correct += 1;
+      } else if (question?.isCorrect === false) {
+        stats.wrong += 1;
+      } else {
+        stats.pending += 1;
+      }
+
+      return stats;
+    }, {
+      total: reviewQuestions.length,
+      correct: 0,
+      wrong: 0,
+      pending: 0,
+    });
+
+    const unresolvedSlots = Math.max(reviewQuestions.length - summary.correct - summary.wrong, 0);
+    return {
+      ...summary,
+      pending: Math.min(unresolvedSlots, Math.max(summary.pending, pendingGradingCount)),
+    };
+  }, [pendingGradingCount, reviewQuestions]);
   const isGradingPending = pendingGradingCount > 0;
+
+  useEffect(() => {
+    setReviewMode(shouldStartInReviewMode);
+  }, [attemptId, shouldStartInReviewMode]);
+
+  useEffect(() => {
+    if (isGradingPending) {
+      setReviewMode(true);
+    }
+  }, [isGradingPending]);
+
+  useEffect(() => {
+    if (!attemptId || !result || isGradingPending || assessmentStatus !== 'NOT_AVAILABLE') {
+      return undefined;
+    }
+
+    assessmentNotAvailablePollCountRef.current = 0;
+    assessmentNotAvailablePollingRef.current = globalThis.setInterval(() => {
+      assessmentNotAvailablePollCountRef.current += 1;
+      void fetchAssessment();
+
+      if (assessmentNotAvailablePollCountRef.current >= ASSESSMENT_NOT_AVAILABLE_POLL_LIMIT
+        && assessmentNotAvailablePollingRef.current) {
+        globalThis.clearInterval(assessmentNotAvailablePollingRef.current);
+        assessmentNotAvailablePollingRef.current = null;
+      }
+    }, ASSESSMENT_NOT_AVAILABLE_POLL_INTERVAL_MS);
+
+    return () => {
+      if (assessmentNotAvailablePollingRef.current) {
+        globalThis.clearInterval(assessmentNotAvailablePollingRef.current);
+        assessmentNotAvailablePollingRef.current = null;
+      }
+    };
+  }, [assessmentStatus, attemptId, fetchAssessment, isGradingPending, result]);
+
+  const jumpToQuestion = useCallback((questionIndex) => {
+    const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
+    if (targetPage !== currentPage) {
+      setCurrentPage(targetPage);
+      setTimeout(() => {
+        questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 0);
+      return;
+    }
+
+    questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [currentPage, itemsPerPage]);
 
   const refreshAttemptResult = useCallback(async () => {
     if (!attemptId) return;
@@ -451,16 +628,82 @@ export default function QuizResultPage() {
     if (!Number.isInteger(eventAttemptId) || eventAttemptId !== Number(attemptId)) return;
 
     const pendingCount = Number(event?.pendingGradingQuestionCount);
+    const failedCount = Number(event?.failedGradingQuestionCount);
+    const hasEventScore = event?.score != null && Number.isFinite(Number(event.score));
     const status = String(event?.status || '').toUpperCase();
+    const updatedQuestionId = Number(event?.updatedQuestionId);
+    const hasUpdatedQuestionId = Number.isInteger(updatedQuestionId);
+    const hasUpdatedQuestionCorrect = typeof event?.updatedQuestionCorrect === 'boolean';
+    const updatedQuestionGradingStatus = event?.updatedQuestionGradingStatus || null;
+    const updatedQuestionGradingReason = typeof event?.updatedQuestionGradingReason === 'string'
+      ? event.updatedQuestionGradingReason
+      : null;
+    let nextPendingQuestionIndex = null;
+
+    setResult((previousResult) => {
+      if (!previousResult) return previousResult;
+
+      const previousQuestions = Array.isArray(previousResult.questions) ? previousResult.questions : [];
+      const nextQuestions = previousQuestions.map((questionResult) => {
+        if (!hasUpdatedQuestionId || Number(questionResult?.questionId) !== updatedQuestionId) {
+          return questionResult;
+        }
+
+        return {
+          ...questionResult,
+          ...(updatedQuestionGradingStatus ? { gradingStatus: updatedQuestionGradingStatus } : {}),
+          ...(hasUpdatedQuestionCorrect ? { correct: event.updatedQuestionCorrect } : {}),
+          ...(updatedQuestionGradingReason ? { gradingReason: updatedQuestionGradingReason } : {}),
+        };
+      });
+
+      if (hasUpdatedQuestionId && updatedQuestionGradingStatus && String(updatedQuestionGradingStatus).toUpperCase() !== 'PENDING') {
+        const updatedQuestionIndex = nextQuestions.findIndex((questionResult) => Number(questionResult?.questionId) === updatedQuestionId);
+        const nextForwardPendingIndex = nextQuestions.findIndex((questionResult, index) => index > updatedQuestionIndex && isPendingQuestionGrading(questionResult));
+        const nextAnyPendingIndex = nextForwardPendingIndex >= 0
+          ? nextForwardPendingIndex
+          : nextQuestions.findIndex(isPendingQuestionGrading);
+        nextPendingQuestionIndex = nextAnyPendingIndex >= 0 ? nextAnyPendingIndex : null;
+      }
+
+      const pendingFromQuestions = nextQuestions.filter(isPendingQuestionGrading).length;
+      const failedFromQuestions = nextQuestions.filter(isFailedQuestionGrading).length;
+      const correctFromQuestions = nextQuestions.filter((questionResult) => questionResult?.correct === true).length;
+
+      return {
+        ...previousResult,
+        questions: nextQuestions,
+        correctQuestion: correctFromQuestions,
+        ...(Number.isInteger(pendingCount)
+          ? { pendingGradingQuestionCount: Math.max(pendingCount, pendingFromQuestions) }
+          : { pendingGradingQuestionCount: pendingFromQuestions }),
+        ...(Number.isInteger(failedCount)
+          ? { failedGradingQuestionCount: Math.max(failedCount, failedFromQuestions) }
+          : { failedGradingQuestionCount: failedFromQuestions }),
+        ...(hasEventScore ? { score: Number(event.score) } : {}),
+      };
+    });
+
     const isDone = event?.allGradingFinished === true
       || (Number.isInteger(pendingCount) && pendingCount <= 0)
       || status === 'COMPLETED'
       || status === 'COMPLETED_WITH_ERRORS';
 
-    if (isDone) {
-      void refreshAttemptResult();
+    if (reviewMode && Number.isInteger(nextPendingQuestionIndex) && nextPendingQuestionIndex >= 0) {
+      globalThis.setTimeout(() => {
+        jumpToQuestion(nextPendingQuestionIndex);
+      }, 0);
     }
-  }, [attemptId, refreshAttemptResult]);
+
+    void refreshAttemptResult();
+
+    if (isDone) {
+      globalThis.setTimeout(() => {
+        void refreshAttemptResult();
+      }, 1500);
+      void fetchAssessment();
+    }
+  }, [attemptId, fetchAssessment, jumpToQuestion, refreshAttemptResult, reviewMode]);
 
   const wsWorkspaceId = Number.isInteger(normalizedWorkspaceId) && normalizedWorkspaceId > 0
     ? normalizedWorkspaceId
@@ -522,19 +765,6 @@ export default function QuizResultPage() {
     sourceView,
     sourceWorkspaceId,
   ]);
-
-  const jumpToQuestion = useCallback((questionIndex) => {
-    const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
-    if (targetPage !== currentPage) {
-      setCurrentPage(targetPage);
-      setTimeout(() => {
-        questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 0);
-      return;
-    }
-
-    questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [currentPage, itemsPerPage]);
 
   const canTriggerKnowledgeAfterPreLearning = preLearningGenerationContext.isPreLearningQuiz
     && preLearningGenerationContext.isCompletedAttempt
@@ -697,6 +927,22 @@ export default function QuizResultPage() {
     };
   }, [attemptId, pendingGradingCount, result, refreshAttemptResult, isQuizGradingSocketConnected]);
 
+  useEffect(() => {
+    if (!reviewMode || !isGradingPending || reviewQuestions.length === 0 || initialPendingJumpDoneRef.current) {
+      return;
+    }
+
+    const firstPendingQuestionIndex = reviewQuestions.findIndex(isPendingQuestionGrading);
+    if (firstPendingQuestionIndex < 0) {
+      return;
+    }
+
+    initialPendingJumpDoneRef.current = true;
+    globalThis.setTimeout(() => {
+      jumpToQuestion(firstPendingQuestionIndex);
+    }, 0);
+  }, [isGradingPending, jumpToQuestion, reviewMode, reviewQuestions]);
+
   if (loading) {
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
@@ -753,7 +999,9 @@ export default function QuizResultPage() {
   }
 
   const totalQuestion = Number(result.totalQuestion ?? reviewQuestions.length ?? 0);
-  const correctQuestion = Number(result.correctQuestion ?? reviewQuestions.filter(q => q.isCorrect).length ?? 0);
+  const correctQuestion = reviewQuestions.length > 0
+    ? reviewQuestions.filter((question) => question?.isCorrect === true).length
+    : Number(result.correctQuestion ?? 0);
   const passScore = result.passScore != null ? Number(result.passScore) : null;
   const accuracyPercent = totalQuestion > 0
     ? (correctQuestion / totalQuestion) * 100
@@ -788,10 +1036,27 @@ export default function QuizResultPage() {
         ? t('workspace.quiz.result.congratulations', 'Congratulations!')
         : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
   const aiSummary = assessmentData?.summary;
-  const aiStrengths = Array.isArray(assessmentData?.strengths) ? assessmentData.strengths : [];
-  const aiWeaknesses = Array.isArray(assessmentData?.weaknesses) ? assessmentData.weaknesses : [];
-  const recurringMistakes = Array.isArray(assessmentData?.recurringMistakes) ? assessmentData.recurringMistakes : [];
   const nextQuizPlan = assessmentData?.nextQuizPlan;
+  const profileReadiness = assessmentData?.profileReadiness || null;
+  const learnerExplanation = assessmentData?.learnerExplanation || null;
+  const shortTermGoals = Array.isArray(assessmentData?.shortTermGoals) ? assessmentData.shortTermGoals : [];
+  const communityQuizSuggestions = Array.isArray(assessmentData?.communityQuizSuggestions)
+    ? assessmentData.communityQuizSuggestions.slice(0, 2)
+    : [];
+  const recommendedQuizTitle = nextQuizPlan?.displayTitle
+    || shortTermGoals[0]?.title
+    || null;
+  const recommendedQuizGoal = nextQuizPlan?.goal
+    || learnerExplanation?.whatToStudyNext
+    || shortTermGoals[0]?.detail
+    || null;
+  const communitySuggestionText = communityQuizSuggestions
+    .map((quiz) => quiz?.title)
+    .filter(Boolean)
+    .join(', ');
+  const recommendationFootnote = profileReadiness?.remainingQuizCount > 0
+    ? t('workspace.quiz.result.profileResultPending', 'Hệ thống sẽ gợi ý chính xác hơn sau thêm vài bài quiz nữa.')
+    : '';
   const canGenerateRecommendedQuiz = assessmentData?.recommendationStatus === 'PENDING' && Number(assessmentData?.assessmentId) > 0;
 
   const handleGenerateQuizFromAssessment = async () => {
@@ -865,78 +1130,84 @@ export default function QuizResultPage() {
 
             <SectionDivider label={t('workspace.quiz.result.assessmentSection', 'Nhận xét của Quizmate AI')} />
 
-            {assessmentStatus !== 'NOT_AVAILABLE' && (
-              <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                  <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
-                    <Sparkles className="w-4 h-4" />
-                    {t('workspace.quiz.result.aiAssessment', 'Đánh giá của AI')}
-                  </h3>
-                  <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
-                    <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
-                    {t('workspace.quiz.result.refreshAssessment', 'Refresh')}
-                  </Button>
+            <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
+                  <Sparkles className="w-4 h-4" />
+                  {t('workspace.quiz.result.aiAssessment', 'Đánh giá của AI')}
+                </h3>
+                <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
+                  <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
+                  {t('workspace.quiz.result.refreshAssessment', 'Refresh')}
+                </Button>
+              </div>
+
+              {(assessmentLoading && !assessmentData) && (
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
+              )}
+
+              {!assessmentLoading && assessmentStatus === 'NOT_AVAILABLE' && (
+                <div className="rounded-lg border border-slate-200/80 bg-slate-50/90 p-4 text-sm text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/50 dark:text-slate-300">
+                  {assessmentData?.message || t('workspace.quiz.result.assessmentUnavailable', 'Chưa có đánh giá AI cho lượt làm này. Hoàn thành thêm bài quiz để nhận gợi ý tiếp theo.')}
                 </div>
+              )}
 
-                {(assessmentLoading && !assessmentData) && (
-                  <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
-                )}
+              {assessmentStatus === 'PROCESSING' && (
+                <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-950/20 dark:text-amber-300">
+                  {t('workspace.quiz.result.assessmentProcessing', 'Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.')}
+                </div>
+              )}
 
-                {assessmentStatus === 'PROCESSING' && (
-                  <div className="text-sm text-amber-600 dark:text-amber-400">{t('workspace.quiz.result.assessmentProcessing', 'Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.')}</div>
-                )}
+              {assessmentStatus === 'FAILED' && (
+                <div className="rounded-lg border border-rose-200/80 bg-rose-50/80 p-4 text-sm text-rose-700 dark:border-rose-700/60 dark:bg-rose-950/20 dark:text-rose-300">
+                  {assessmentData?.message || t('workspace.quiz.result.assessmentFailed', 'Đánh giá AI chưa thể hoàn tất. Hãy thử refresh lại sau khi hệ thống xử lý xong grading.')}
+                </div>
+              )}
 
                 {assessmentStatus === 'READY' && assessmentData && (
                   <div className="space-y-4">
-                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                    {aiSummary || t('workspace.quiz.result.assessmentNoSummary', 'Chưa có tóm tắt đánh giá AI.')}
-                  </p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                      {aiSummary || t('workspace.quiz.result.assessmentNoSummary', 'Chưa có tóm tắt đánh giá AI.')}
+                    </p>
 
-                  {!!aiStrengths.length && (
-                    <div>
-                      <p className="font-medium text-emerald-700 dark:text-emerald-300 mb-1">{t('workspace.quiz.result.strengths', 'Điểm mạnh')}</p>
-                      <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300 space-y-1">
-                        {aiStrengths.map((item, idx) => (
-                          <li key={`strength-${idx}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {!!aiWeaknesses.length && (
-                    <div>
-                      <p className="font-medium text-rose-700 dark:text-rose-300 mb-1">{t('workspace.quiz.result.weaknesses', 'Điểm cần cải thiện')}</p>
-                      <ul className="list-disc pl-5 text-sm text-slate-700 dark:text-slate-300 space-y-1">
-                        {aiWeaknesses.map((item, idx) => (
-                          <li key={`weakness-${idx}`}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {!!recurringMistakes.length && (
-                    <div>
-                      <p className="font-medium text-slate-800 dark:text-slate-100 mb-1">{t('workspace.quiz.result.recurringMistakes', 'Lỗi lặp lại')}</p>
-                      <div className="space-y-2">
-                        {recurringMistakes.map((mistake, idx) => (
-                          <div key={`mistake-${idx}`} className="rounded-lg bg-slate-100/80 dark:bg-slate-700/40 p-3 text-sm">
-                            <p className="font-medium text-slate-800 dark:text-slate-100">{mistake?.topic || t('workspace.quiz.result.unknownTopic', 'Chủ đề chưa rõ')}</p>
-                            <p className="text-slate-600 dark:text-slate-300">{mistake?.detail}</p>
-                          </div>
-                        ))}
+                    {(recommendedQuizTitle || recommendedQuizGoal || communitySuggestionText || recommendationFootnote) && (
+                      <div className="rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 dark:border-violet-800/70 dark:bg-violet-950/20">
+                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-violet-700 dark:text-violet-300">
+                          {t('workspace.quiz.result.nextResultSummary', 'Đề xuất tiếp theo')}
+                        </p>
+                        <div className="mt-3 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                          {recommendedQuizTitle && (
+                            <p>
+                              <span className="font-semibold text-violet-700 dark:text-violet-300">
+                                {t('workspace.quiz.result.recommendedQuizTitle', 'Quiz nên làm tiếp')}:
+                              </span>{' '}
+                              {recommendedQuizTitle}
+                            </p>
+                          )}
+                          {recommendedQuizGoal && (
+                            <p>
+                              <span className="font-semibold text-violet-700 dark:text-violet-300">
+                                {t('workspace.quiz.result.recommendedQuizGoal', 'Mục tiêu')}:
+                              </span>{' '}
+                              {recommendedQuizGoal}
+                            </p>
+                          )}
+                          {communitySuggestionText && (
+                            <p>
+                              <span className="font-semibold text-violet-700 dark:text-violet-300">
+                                {t('workspace.quiz.result.communitySuggestionTitle', 'Quiz cộng đồng phù hợp')}:
+                              </span>{' '}
+                              {communitySuggestionText}
+                            </p>
+                          )}
+                          {recommendationFootnote && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {recommendationFootnote}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {nextQuizPlan && (
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
-                      <p className="font-medium text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.nextQuizPlan', 'Kế hoạch cho bài quiz tiếp theo')}</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{nextQuizPlan?.goal}</p>
-                      {nextQuizPlan?.reason && (
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{nextQuizPlan.reason}</p>
-                      )}
-                    </div>
-                  )}
+                    )}
 
                   {canGenerateRecommendedQuiz && (
                     <div className="pt-1">
@@ -946,11 +1217,9 @@ export default function QuizResultPage() {
                       </Button>
                     </div>
                   )}
-
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
 
             {canTriggerKnowledgeAfterPreLearning && isAssessmentReady && (
               <div className="rounded-xl border border-blue-200/80 dark:border-blue-700/70 bg-blue-50/70 dark:bg-blue-900/20 p-4 mb-6 text-left space-y-3">
@@ -1038,134 +1307,199 @@ export default function QuizResultPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
-            <div className="space-y-4">
-              {reviewQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
-                const globalIdx = (currentPage - 1) * itemsPerPage + idx;
-                const isPending = String(q?.gradingStatus || '').toUpperCase() === 'PENDING';
-                const isCorrect = q.isCorrect === true;
-                return (
-                <div key={q.id} ref={el => { if (el) questionRefs.current[globalIdx] = el; }}>
-                  <QuestionCard
-                    question={q}
-                    questionNumber={globalIdx + 1}
-                    totalQuestions={reviewQuestions.length}
-                    answerValue={
-                      q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK'
-                        ? q.textAnswer
-                        : q.type === 'MATCHING'
-                          ? { matchingPairs: q.matchingPairs }
-                          : q.selectedAnswerIds
-                    }
-                    showResult
-                    showExplanation
-                    disabled
-                  />
-                </div>
-              );
-            })}
+            {isGradingPending && (
+              <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/90 px-4 py-3 text-sm text-blue-700 shadow-sm dark:border-blue-800/70 dark:bg-blue-950/20 dark:text-blue-300">
+                {gradingProgressText}
+              </div>
+            )}
 
-              {reviewQuestions.length > itemsPerPage && (
-                <div className="flex justify-between items-center mt-6 p-4">
-                  <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage((p) => p - 1); scrollToTop(); }}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
-                  <span className="text-sm font-medium text-slate-500">{t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}</span>
-                  <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage((p) => p + 1); scrollToTop(); }}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
-                </div>
-              )}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
+              <div className="space-y-4">
+                {reviewQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
+                  const globalIdx = (currentPage - 1) * itemsPerPage + idx;
+                  return (
+                    <div key={q.id} className="relative" ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }}>
+                      <QuestionCard
+                        question={q}
+                        questionNumber={globalIdx + 1}
+                        totalQuestions={reviewQuestions.length}
+                        answerValue={
+                          q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK'
+                            ? q.textAnswer
+                            : q.type === 'MATCHING'
+                              ? { matchingPairs: q.matchingPairs }
+                              : q.selectedAnswerIds
+                        }
+                        showResult
+                        showExplanation
+                        disabled
+                      />
+                    </div>
+                  );
+                })}
 
-              {reviewQuestions.length === 0 && (
-                <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                  {t('workspace.quiz.result.noReviewData', 'No detailed data available to review this attempt.')}
-                </div>
-              )}
-            </div>
-
-            {/* Right Sticky Nav */}
-            <div className="hidden lg:block relative">
-              <div className="sticky top-[96px] rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-blue-900/20">
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    {t('workspace.quiz.result.questionList', 'Question list')}
-                  </h3>
-                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    {reviewQuestions.length}
-                  </span>
-                </div>
-
-                <div className="mb-3 grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-300">
-                    {t('workspace.quiz.result.correct', 'Correct')}: {reviewQuestions.filter((question) => question?.isCorrect === true).length}
-                  </div>
-                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/30 dark:text-rose-300">
-                    {t('workspace.quiz.result.wrong', 'Wrong')}: {reviewQuestions.filter((question) => question?.isCorrect === false).length}
-                  </div>
-                </div>
-
-                <div className="grid max-h-[58vh] grid-cols-5 gap-1.5 overflow-y-auto p-1">
-                  {navQuestions.map((q, idx) => {
-                    const globalIdx = navStartIndex + idx;
-                    const isPending = String(q?.gradingStatus || '').toUpperCase() === 'PENDING';
-                    const isCorrect = q.isCorrect === true;
-                    const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
-                    return (
-                      <button
-                        key={q.id}
-                        onClick={() => jumpToQuestion(globalIdx)}
-                        className={cn(
-                          'aspect-square w-full rounded-lg border text-xs font-semibold transition-all duration-200 focus-visible:outline-none',
-                          isPending
-                            ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
-                            : (isCorrect
-                              ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
-                              : 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35'),
-                          inCurrentPage
-                            ? 'ring-2 ring-blue-500 dark:ring-blue-400'
-                            : ''
-                        )}
-                      >
-                        {globalIdx + 1}
-                      </button>
-                    );
-                  })}
-                </div>
                 {reviewQuestions.length > itemsPerPage && (
-                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={safeNavPage === 1}
-                      onClick={() => {
-                        setCurrentPage((p) => Math.max(1, p - 1));
-                        scrollToTop();
-                      }}
-                    >
+                  <div className="mt-6 flex items-center justify-between p-4">
+                    <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage((p) => p - 1); scrollToTop(); }}>
                       {t('workspace.quiz.pagination.prev', 'Previous page')}
                     </Button>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {t('workspace.quiz.pagination.page', 'Page')} {safeNavPage}/{totalPages}
+                    <span className="text-sm font-medium text-slate-500">
+                      {t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}
                     </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={safeNavPage === totalPages}
-                      onClick={() => {
-                        setCurrentPage((p) => Math.min(totalPages, p + 1));
-                        scrollToTop();
-                      }}
-                    >
+                    <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage((p) => p + 1); scrollToTop(); }}>
                       {t('workspace.quiz.pagination.next', 'Next page')}
                     </Button>
                   </div>
                 )}
+
+                {reviewQuestions.length === 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                    {t('workspace.quiz.result.noReviewData', 'No detailed data available to review this attempt.')}
+                  </div>
+                )}
               </div>
-            </div>
+
+              {/* Right Sticky Nav */}
+              <div className="relative hidden lg:block">
+                <div className="sticky top-[96px] overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/90 dark:shadow-blue-950/10">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_46%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.16),_transparent_40%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_46%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_40%)]" />
+                  <div className="relative">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-300">
+                          {t('workspace.quiz.result.reviewAnswersTitle', 'Review Answers')}
+                        </p>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                          {t('workspace.quiz.result.questionList', 'Question list')}
+                        </h3>
+                        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                          {t('workspace.quiz.result.questionListHint', 'Click a number to jump straight to that question.')}
+                        </p>
+                      </div>
+                      <div className="min-w-[72px] rounded-2xl border border-slate-200/80 bg-white/80 px-3 py-2 text-right shadow-sm dark:border-slate-700/80 dark:bg-slate-950/60">
+                        <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
+                          {t('workspace.quiz.result.total', 'Total')}
+                        </p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+                          {reviewSummary.total}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4 grid grid-cols-2 gap-2 text-left">
+                      <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/90 px-3 py-2.5 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/30">
+                        <div className="mb-1 flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                            {t('workspace.quiz.result.correct', 'Correct')}
+                          </span>
+                        </div>
+                        <p className="text-xl font-bold text-emerald-700 dark:text-emerald-200">{reviewSummary.correct}</p>
+                      </div>
+                      <div className="rounded-2xl border border-rose-200/80 bg-rose-50/90 px-3 py-2.5 shadow-sm dark:border-rose-800/60 dark:bg-rose-950/30">
+                        <div className="mb-1 flex items-center gap-2 text-rose-700 dark:text-rose-300">
+                          <XCircle className="h-4 w-4" />
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                            {t('workspace.quiz.result.wrong', 'Wrong')}
+                          </span>
+                        </div>
+                        <p className="text-xl font-bold text-rose-700 dark:text-rose-200">{reviewSummary.wrong}</p>
+                      </div>
+                      {reviewSummary.pending > 0 && (
+                        <div className="col-span-2 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-3 py-2.5 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/30">
+                          <div className="mb-1 flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                              {t('workspace.quiz.result.pending', 'Pending')}
+                            </span>
+                          </div>
+                          <p className="text-lg font-bold text-amber-700 dark:text-amber-200">{reviewSummary.pending}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid max-h-[58vh] grid-cols-5 gap-1.5 overflow-y-auto p-1">
+                      <div className="mb-4 flex flex-col items-start gap-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                          {t('workspace.quiz.result.questionList', 'Question list')}
+                        </span>
+                        {totalPages > 1 && (
+                          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
+                            {t('workspace.quiz.pagination.page', 'Page')} {safeNavPage}/{totalPages}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid max-h-[58vh] grid-cols-4 gap-3 overflow-y-auto p-1">
+                        {navQuestions.map((q, idx) => {
+                          const globalIdx = navStartIndex + idx;
+                          const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
+                          const isCorrect = q.isCorrect === true;
+                          const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
+
+                          return (
+                            <button
+                              key={q.id}
+                              onClick={() => jumpToQuestion(globalIdx)}
+                              className={cn(
+                                'aspect-square w-full rounded-lg border text-xs font-semibold transition-all duration-200 focus-visible:outline-none',
+                                'relative aspect-square w-full rounded-[20px] border text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+                                isPending
+                                  ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
+                                  : isCorrect
+                                    ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
+                                    : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
+                                inCurrentPage
+                                  ? 'ring-2 ring-sky-500 ring-offset-2 dark:ring-offset-slate-900'
+                                  : ''
+                              )}
+                            >
+                              <span className="relative z-10">{globalIdx + 1}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {reviewQuestions.length > itemsPerPage && (
+                        <div className="col-span-5 mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={safeNavPage === 1}
+                            onClick={() => {
+                              setCurrentPage((p) => Math.max(1, p - 1));
+                              scrollToTop();
+                            }}
+                          >
+                            {t('workspace.quiz.pagination.prev', 'Previous page')}
+                          </Button>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {t('workspace.quiz.pagination.page', 'Page')} {safeNavPage}/{totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={safeNavPage === totalPages}
+                            onClick={() => {
+                              setCurrentPage((p) => Math.min(totalPages, p + 1));
+                              scrollToTop();
+                            }}
+                          >
+                            {t('workspace.quiz.pagination.next', 'Next page')}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-center mt-8 gap-3">
-              <Button variant="outline" onClick={() => setReviewMode(false)} className="min-w-[160px]">{t('workspace.quiz.result.backToScore', 'Back to Score')}</Button>
               <Button onClick={handleBack} className="min-w-[160px] bg-blue-600 hover:bg-blue-700 text-white gap-2">
                 <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
               </Button>
+              <Button variant="outline" onClick={() => setReviewMode(false)} className="min-w-[160px]">{t('workspace.quiz.result.backToScore', 'Back to Score')}</Button>
             </div>
           </>
         )}

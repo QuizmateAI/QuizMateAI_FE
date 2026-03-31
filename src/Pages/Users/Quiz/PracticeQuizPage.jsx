@@ -475,6 +475,7 @@ export default function PracticeQuizPage() {
         state: {
           quizId,
           attemptMode: 'practice',
+          openReviewMode: true,
           returnToQuizPath,
           sourceView: location.state?.sourceView,
           sourceWorkspaceId: location.state?.sourceWorkspaceId,
