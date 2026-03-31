@@ -1,11 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  BookOpen,
   CheckCircle2,
-  GraduationCap,
-  Layers3,
-  Route,
   ScrollText,
   X,
 } from 'lucide-react';
@@ -46,11 +42,119 @@ function formatProfileValue(value, fallback) {
   return normalized || fallback;
 }
 
+function extractAreaSourceItems(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item : ''))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return [value];
+  }
+
+  return [];
+}
+
+function isGenericAreaText(value) {
+  const normalized = String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalized) {
+    return true;
+  }
+
+  return normalized.startsWith('chưa có dữ liệu')
+    || normalized.startsWith('chua co du lieu')
+    || normalized.startsWith('chưa có bằng chứng')
+    || normalized.startsWith('chua co bang chung')
+    || normalized.startsWith('chưa có nhiều lần kiểm tra')
+    || normalized.startsWith('chua co nhieu lan kiem tra')
+    || normalized.includes('i am just starting')
+    || normalized.includes('cannot identify a clear weakness')
+    || normalized.includes('weakness yet');
+}
+
+function shortenAreaLabel(value) {
+  const normalized = String(value || '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalized || isGenericAreaText(normalized)) {
+    return null;
+  }
+
+  const firstClause = normalized
+    .split(/\s+(?:để|với|trên|qua|bao gồm|ở|và|with|and)\s+/i)[0]
+    .trim();
+  const words = firstClause.split(/\s+/).filter(Boolean);
+  if (words.length <= 7) {
+    return firstClause;
+  }
+  return words.slice(0, 6).join(' ');
+}
+
+function summarizeAreaValue(value, fallback) {
+  const summarized = extractAreaSourceItems(value)
+    .flatMap((item) => String(item)
+      .split(/[•\n;]+/)
+      .map((part) => part.trim())
+      .filter(Boolean))
+    .map(shortenAreaLabel)
+    .filter(Boolean)
+    .reduce((items, item) => {
+      if (!items.some((existing) => existing.toLowerCase() === item.toLowerCase())) {
+        items.push(item);
+      }
+      return items;
+    }, [])
+    .slice(0, 2);
+
+  return summarized.length > 0 ? summarized.join(' • ') : fallback;
+}
+
 function normalizeKnowledgeLoadValue(value) {
   if (value === 'INTERMEDIATE') return 'INTERMEDIATE';
   if (value === 'ADVANCED') return 'ADVANCED';
   if (value === 'FULL') return 'ADVANCED';
   return value === 'BASIC' ? 'BASIC' : '';
+}
+
+function formatRoadmapSpeedModeLabel(value, t, language) {
+  const normalizedValue = value === 'MEDIUM' ? 'STANDARD' : value;
+  if (!normalizedValue) {
+    return language === 'en' ? 'Not configured' : 'Chưa cấu hình';
+  }
+
+  const fallbackLabels = {
+    FAST: language === 'en' ? 'Fast' : 'Nhanh',
+    STANDARD: language === 'en' ? 'Standard' : 'Tiêu chuẩn',
+    SLOW: language === 'en' ? 'Slow' : 'Chậm',
+  };
+
+  return translateOrFallback(
+    t,
+    `workspace.profileConfig.roadmapSpeedMode.${normalizedValue}.title`,
+    fallbackLabels[normalizedValue] || normalizedValue
+  );
+}
+
+function formatAdaptationModeLabel(value, t, language) {
+  const normalizedValue = value === 'BALANCED' ? 'STRICT' : value;
+  if (!normalizedValue) {
+    return language === 'en' ? 'Not configured' : 'Chưa cấu hình';
+  }
+
+  const fallbackLabels = {
+    STRICT: language === 'en' ? 'Strict' : 'Bám sát',
+    FLEXIBLE: language === 'en' ? 'Flexible' : 'Linh hoạt',
+  };
+
+  return fallbackLabels[normalizedValue]
+    || translateOrFallback(t, `workspace.profileConfig.adaptationMode.${normalizedValue}.title`, normalizedValue);
 }
 
 function getOverviewTone(tone, isDarkMode) {
@@ -198,76 +302,12 @@ function OverviewChip({ label, isDarkMode, tone = 'default' }) {
   return <span className={cn('rounded-full px-3 py-1.5 text-xs font-semibold', toneClassName)}>{label}</span>;
 }
 
-function buildSetupSteps(t, language, profile) {
-  const currentStep = Number(profile?.currentStep) || 1;
-  const completed = Boolean(profile?.onboardingCompleted || profile?.workspaceSetupStatus === 'DONE');
-  const isEnglish = language === 'en';
-  const steps = [
-    {
-      id: 1,
-      icon: BookOpen,
-      title: translateOrFallback(t, 'workspace.profileOverview.setupSteps.1.title', isEnglish ? 'Learning goal' : 'Mục tiêu học tập'),
-      description: translateOrFallback(t, 'workspace.profileConfig.steps.1.description', isEnglish ? 'Set the workspace intent and knowledge focus.' : 'Xác định mục đích workspace và phạm vi kiến thức.'),
-    },
-    {
-      id: 2,
-      icon: GraduationCap,
-      title: translateOrFallback(t, 'workspace.profileOverview.setupSteps.2.title', isEnglish ? 'Personal profile' : 'Hồ sơ cá nhân'),
-      description: translateOrFallback(t, 'workspace.profileConfig.steps.2.description', isEnglish ? 'Complete learner context and AI exam setup.' : 'Hoàn thiện bối cảnh người học và thiết lập AI cho kỳ thi.'),
-    },
-    {
-      id: 3,
-      icon: Route,
-      title: translateOrFallback(t, 'workspace.profileOverview.setupSteps.3.title', isEnglish ? 'Roadmap configuration' : 'Cấu hình lộ trình'),
-      description: translateOrFallback(t, 'workspace.profileConfig.steps.3.description', isEnglish ? 'Finalize roadmap pacing and complete setup.' : 'Chốt nhịp học và hoàn tất thiết lập workspace.'),
-    },
-  ];
-
-  return steps.map((step) => ({
-    ...step,
-    state: completed || currentStep > step.id
-      ? 'done'
-      : currentStep === step.id
-        ? 'current'
-        : 'upcoming',
-  }));
-}
-
-function SetupStepCard({ step, isDarkMode }) {
-  const Icon = step.icon;
-  const toneClassName = step.state === 'done'
-    ? (isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50')
-    : step.state === 'current'
-      ? (isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50')
-      : (isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white');
-  const badgeClassName = step.state === 'done'
-    ? (isDarkMode ? 'bg-emerald-400 text-slate-950' : 'bg-emerald-600 text-white')
-    : step.state === 'current'
-      ? (isDarkMode ? 'bg-cyan-300 text-slate-950' : 'bg-cyan-600 text-white')
-      : (isDarkMode ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700');
-
-  return (
-    <div className={cn('rounded-[24px] border p-4 shadow-[0_16px_38px_-28px_rgba(15,23,42,0.35)]', toneClassName)}>
-      <div className="flex items-start gap-3">
-        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl', badgeClassName)}>
-          {step.state === 'done' ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-        </div>
-        <div>
-          <p className="text-sm font-semibold">{step.title}</p>
-          <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
-            {step.description}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function IndividualWorkspaceProfileOverviewDialog({
   open,
   onOpenChange,
   isDarkMode,
   profile,
+  personalization: _personalization = null,
   materials = [],
   onEditProfile,
   editLocked = false,
@@ -277,24 +317,18 @@ function IndividualWorkspaceProfileOverviewDialog({
   const fallbackEmpty = translateOrFallback(t, 'workspace.profileOverview.empty', i18n.language === 'en' ? 'Not configured' : 'Chưa cấu hình');
   const purpose = profile?.workspacePurpose || profile?.learningMode || '';
   const examName = profile?.mockExamName || profile?.examName || '';
-  const knowledgeDescription = readText(profile?.knowledgeDescription || profile?.customSchemeDescription, '');
   const roadmapEnabled = purpose === 'STUDY_NEW' ? true : Boolean(profile?.enableRoadmap ?? profile?.roadmapEnabled);
-  const setupSteps = buildSetupSteps(t, i18n.language, profile);
   const knowledgeSummary = formatProfileValue(profile?.knowledgeInput || profile?.knowledge || profile?.customKnowledge, fallbackEmpty);
   const domainSummary = formatProfileValue(profile?.inferredDomain || profile?.domain || profile?.customDomain, fallbackEmpty);
   const currentLevelSummary = formatProfileValue(profile?.currentLevel || profile?.customCurrentLevel, fallbackEmpty);
   const learningGoalSummary = formatProfileValue(profile?.learningGoal, fallbackEmpty);
   const roadmapSpeedModeKey = profile?.roadmapSpeedMode || (profile?.speedMode === 'MEDIUM' ? 'STANDARD' : profile?.speedMode);
   const normalizedKnowledgeLoad = normalizeKnowledgeLoadValue(profile?.knowledgeLoad);
-  const knowledgeLoadSummary = normalizedKnowledgeLoad
-    ? t(`workspace.profileConfig.knowledgeLoad.${normalizedKnowledgeLoad}.title`)
-    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'));
   const speedSummary = roadmapSpeedModeKey
     ? t(`workspace.profileConfig.roadmapSpeedMode.${roadmapSpeedModeKey}.title`)
     : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'));
-  const daysSummary = profile?.estimatedTotalDays
-    ? `${profile.estimatedTotalDays} ${i18n.language === 'en' ? 'days' : 'ngày'}`
-    : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt');
+  const roadmapSpeedLabel = formatRoadmapSpeedModeLabel(roadmapSpeedModeKey, t, i18n.language);
+  const roadmapAdaptationLabel = formatAdaptationModeLabel(profile?.adaptationMode, t, i18n.language);
   const recommendedMinutesValue =
     profile?.recommendedMinutesPerDay
     ?? profile?.estimatedMinutesPerDay
@@ -304,6 +338,20 @@ function IndividualWorkspaceProfileOverviewDialog({
   const minutesSummary = recommendedMinutesValue
     ? `${recommendedMinutesValue} ${i18n.language === 'en' ? 'minutes/day' : 'phút/ngày'}`
     : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt');
+  const estimatedDaysSummary = profile?.estimatedTotalDays
+    ? `${profile.estimatedTotalDays} ${i18n.language === 'en' ? 'days' : 'ngày'}`
+    : fallbackEmpty;
+  const knowledgeLoadSummary = normalizedKnowledgeLoad
+    ? t(`workspace.profileConfig.knowledgeLoad.${normalizedKnowledgeLoad}.title`)
+    : fallbackEmpty;
+  const strongAreasSummary = summarizeAreaValue(profile?.strongAreas, fallbackEmpty);
+  const weakAreasSummary = summarizeAreaValue(profile?.weakAreas, fallbackEmpty);
+  const summaryFocusLabel = [domainSummary, knowledgeSummary]
+    .filter((value) => value && value !== fallbackEmpty)
+    .join(' • ') || fallbackEmpty;
+  const summaryPaceLabel = [currentLevelSummary, speedSummary, minutesSummary]
+    .filter((value) => value && value !== fallbackEmpty)
+    .join(' • ') || fallbackEmpty;
 
   const title = translateOrFallback(
     t,
@@ -314,8 +362,8 @@ function IndividualWorkspaceProfileOverviewDialog({
     t,
     'workspace.profileOverview.description',
     i18n.language === 'en'
-      ? 'Review what this workspace was configured to learn, how it is scoped, and how roadmap or exam settings were set up.'
-      : 'Xem lại Không gian học tập đã được cấu hình để học gì, phạm vi ra sao và lộ trình hoặc kỳ thi đã được thiết lập như thế nào.'
+      ? 'A short summary of the key configuration saved for this workspace.'
+      : 'Tóm tắt ngắn các cấu hình chính đã lưu cho workspace này.'
   );
 
   return (
@@ -375,98 +423,15 @@ function IndividualWorkspaceProfileOverviewDialog({
         </DialogHeader>
 
         <div className="overflow-y-auto px-5 py-5 sm:px-6">
-          <section
-            className={cn(
-              'mb-6 rounded-[28px] border p-5 sm:p-6',
-              isDarkMode ? 'border-white/10 bg-white/[0.04] text-white' : 'border-slate-200 bg-white text-slate-900'
-            )}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={cn(
-                  'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                  isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-50 text-cyan-600'
-                )}
-              >
-                <Layers3 className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">
-                  {translateOrFallback(t, 'workspace.profileOverview.setupTitle', i18n.language === 'en' ? 'Setup progress' : 'Tiến trình thiết lập')}
-                </h3>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {setupSteps.map((step) => (
-                <SetupStepCard key={step.id} step={step} isDarkMode={isDarkMode} />
-              ))}
-            </div>
-          </section>
-
           <div className="grid items-stretch gap-6 xl:grid-cols-2">
             <OverviewSection
-              title={translateOrFallback(t, 'workspace.profileOverview.scopeTitle', i18n.language === 'en' ? 'Learning scope' : 'Phạm vi học tập')}
-              description={translateOrFallback(t, 'workspace.profileOverview.scopeDescription', i18n.language === 'en' ? 'These values define what this workspace is meant to focus on.' : 'Đây là các giá trị cốt lõi cho biết không gian được thiết kế để tập trung vào điều gì.')}
-              icon={BookOpen}
-              iconClassName={isDarkMode ? 'bg-cyan-500/15 text-cyan-300' : 'bg-cyan-50 text-cyan-600'}
-              isDarkMode={isDarkMode}
-              tone="scope"
-              className="h-full"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.workspacePurpose', 'Purpose')} value={purpose ? t(`workspace.profileConfig.purpose.${purpose}.title`) : fallbackEmpty} isDarkMode={isDarkMode} tone="scope" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.primaryDomain', 'Domain')} value={formatProfileValue(profile?.inferredDomain || profile?.domain || profile?.customDomain, fallbackEmpty)} isDarkMode={isDarkMode} tone="scope" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeInput', 'Knowledge')} value={knowledgeSummary} isDarkMode={isDarkMode} tone="scope" className={knowledgeDescription ? undefined : 'md:col-span-2'} />
-                {knowledgeDescription
-                  ? <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeDescription', 'Knowledge description')} value={knowledgeDescription} isDarkMode={isDarkMode} tone="scope" className="md:col-span-2" />
-                  : null}
-              </div>
-            </OverviewSection>
-
-            <OverviewSection
-              title={translateOrFallback(t, 'workspace.profileOverview.roadmapTitle', i18n.language === 'en' ? 'Roadmap configuration' : 'Cấu hình lộ trình')}
-              description={translateOrFallback(t, 'workspace.profileOverview.roadmapDescription', i18n.language === 'en' ? 'These settings define how the workspace was scheduled and paced.' : 'Các thông số này cho biết không gian đã được lên lộ trình và nhịp học như thế nào.')}
-              icon={Route}
-              iconClassName={isDarkMode ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-600'}
-              isDarkMode={isDarkMode}
-              tone="roadmap"
-              className="h-full"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeLoad', 'Knowledge amount')} value={knowledgeLoadSummary} isDarkMode={isDarkMode} tone="roadmap" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Adaptation mode')} value={profile?.adaptationMode ? t(`workspace.profileConfig.adaptationMode.${profile.adaptationMode === 'STRICT' ? 'BALANCED' : profile.adaptationMode}.title`) : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'))} isDarkMode={isDarkMode} tone="roadmap" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', 'Roadmap speed')} value={speedSummary} isDarkMode={isDarkMode} tone="roadmap" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', 'Estimated total days')} value={daysSummary} isDarkMode={isDarkMode} tone="roadmap" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.recommendedMinutesPerDay', 'Recommended minutes per day')} value={minutesSummary} isDarkMode={isDarkMode} tone="roadmap" />
-              </div>
-            </OverviewSection>
-
-            <OverviewSection
-              title={translateOrFallback(t, 'workspace.profileOverview.personalTitle', i18n.language === 'en' ? 'Your context' : 'Bối cảnh của bạn')}
-              description={translateOrFallback(t, 'workspace.profileOverview.personalDescription', i18n.language === 'en' ? 'This is your learner profile used to personalize roadmap, review, or mock-test flows.' : 'Đây là hồ sơ của bạn mà hệ thống dùng để cá nhân hóa lộ trình, ôn tập hoặc mock test.')}
-              icon={GraduationCap}
-              iconClassName={isDarkMode ? 'bg-sky-500/15 text-sky-300' : 'bg-sky-50 text-sky-600'}
-              isDarkMode={isDarkMode}
-              tone="personal"
-              className="h-full"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.currentLevel', 'Current level')} value={currentLevelSummary} isDarkMode={isDarkMode} tone="personal" />
-                <OverviewField label={translateOrFallback(t, `workspace.profileConfig.fields.learningGoalByPurpose.${purpose}`, translateOrFallback(t, 'workspace.profileConfig.fields.learningGoal', 'Learning goal'))} value={formatProfileValue(profile?.learningGoal, fallbackEmpty)} isDarkMode={isDarkMode} tone="personal" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.strongAreas', 'Strengths')} value={formatProfileValue(profile?.strongAreas, fallbackEmpty)} isDarkMode={isDarkMode} tone="personal" />
-                <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.weakAreas', 'Weaknesses')} value={formatProfileValue(profile?.weakAreas, fallbackEmpty)} isDarkMode={isDarkMode} tone="personal" />
-              </div>
-            </OverviewSection>
-
-            <OverviewSection
               title={translateOrFallback(t, 'workspace.profileOverview.learningSummaryTitle', i18n.language === 'en' ? 'Learning workspace summary' : 'Tóm tắt không gian học tập')}
-              description={translateOrFallback(t, 'workspace.profileOverview.learningSummaryDescription', i18n.language === 'en' ? 'A quick snapshot of the key profile and roadmap settings currently applied.' : 'Nhìn nhanh các thông tin cốt lõi của hồ sơ và cấu hình đang được áp dụng.')}
+              description={translateOrFallback(t, 'workspace.profileOverview.learningSummaryDescription', i18n.language === 'en' ? 'The key learning configuration saved for this workspace.' : 'Các cấu hình học tập chính đã lưu cho workspace này.')}
               icon={CheckCircle2}
               iconClassName={isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-50 text-emerald-600'}
               isDarkMode={isDarkMode}
               tone="summary"
-              className="h-full"
+              className="xl:col-span-2"
             >
               <div className="space-y-4">
                 <OverviewField
@@ -483,13 +448,13 @@ function IndividualWorkspaceProfileOverviewDialog({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <OverviewField
                     label={translateOrFallback(t, 'workspace.profileOverview.summaryFocusLabel', i18n.language === 'en' ? 'Main focus' : 'Trọng tâm chính')}
-                    value={`${domainSummary} • ${knowledgeSummary}`}
+                    value={summaryFocusLabel}
                     isDarkMode={isDarkMode}
                     tone="summary"
                   />
                   <OverviewField
                     label={translateOrFallback(t, 'workspace.profileOverview.summaryPaceLabel', i18n.language === 'en' ? 'Learning pace' : 'Nhịp học')}
-                    value={`${knowledgeLoadSummary} • ${speedSummary} • ${daysSummary} • ${minutesSummary}`}
+                    value={summaryPaceLabel}
                     isDarkMode={isDarkMode}
                     tone="summary"
                   />
@@ -506,18 +471,93 @@ function IndividualWorkspaceProfileOverviewDialog({
               </div>
             </OverviewSection>
 
+            <OverviewSection
+              title={translateOrFallback(t, 'workspace.profileOverview.personalStrengthsTitle', i18n.language === 'en' ? 'Strengths and focus areas' : 'Điểm mạnh và điểm cần cải thiện')}
+              description={translateOrFallback(t, 'workspace.profileOverview.personalStrengthsDescription', i18n.language === 'en' ? 'Learner context configured for this workspace.' : 'Các thông tin năng lực nền đã cấu hình cho workspace này.')}
+              icon={CheckCircle2}
+              iconClassName={isDarkMode ? 'bg-sky-500/15 text-sky-300' : 'bg-sky-50 text-sky-600'}
+              isDarkMode={isDarkMode}
+              tone="personal"
+              className="h-full"
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <OverviewField
+                  label={translateOrFallback(t, 'workspace.profileOverview.strongAreas', i18n.language === 'en' ? 'Strong areas' : 'Điểm mạnh')}
+                  value={strongAreasSummary}
+                  isDarkMode={isDarkMode}
+                  tone="personal"
+                />
+                <OverviewField
+                  label={translateOrFallback(t, 'workspace.profileOverview.weakAreas', i18n.language === 'en' ? 'Areas to improve' : 'Điểm cần cải thiện')}
+                  value={weakAreasSummary}
+                  isDarkMode={isDarkMode}
+                  tone="personal"
+                />
+                <OverviewField
+                  label={translateOrFallback(t, 'workspace.profileOverview.currentLevel', i18n.language === 'en' ? 'Current level' : 'Trình độ hiện tại')}
+                  value={currentLevelSummary}
+                  isDarkMode={isDarkMode}
+                  tone="personal"
+                />
+                <OverviewField
+                  label={translateOrFallback(t, 'workspace.profileOverview.knowledgeInput', i18n.language === 'en' ? 'Knowledge input' : 'Nguồn kiến thức')}
+                  value={knowledgeSummary}
+                  isDarkMode={isDarkMode}
+                  tone="personal"
+                />
+              </div>
+            </OverviewSection>
+
+            {roadmapEnabled ? (
+              <OverviewSection
+                title={translateOrFallback(t, 'workspace.profileOverview.roadmapTitle', i18n.language === 'en' ? 'Roadmap configuration' : 'Cấu hình lộ trình')}
+                description={translateOrFallback(t, 'workspace.profileOverview.roadmapDescription', i18n.language === 'en' ? 'Roadmap settings currently applied to this workspace.' : 'Các thiết lập lộ trình hiện đang áp dụng cho workspace này.')}
+                icon={CheckCircle2}
+                iconClassName={isDarkMode ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-600'}
+                isDarkMode={isDarkMode}
+                tone="roadmap"
+                className="h-full"
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <OverviewField
+                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapSpeed', i18n.language === 'en' ? 'Roadmap speed' : 'Nhịp roadmap')}
+                    value={roadmapSpeedLabel}
+                    isDarkMode={isDarkMode}
+                    tone="roadmap"
+                  />
+                  <OverviewField
+                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapAdaptation', i18n.language === 'en' ? 'Adaptation mode' : 'Cách thích nghi')}
+                    value={roadmapAdaptationLabel}
+                    isDarkMode={isDarkMode}
+                    tone="roadmap"
+                  />
+                  <OverviewField
+                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapLoad', i18n.language === 'en' ? 'Knowledge load' : 'Mức độ kiến thức')}
+                    value={knowledgeLoadSummary}
+                    isDarkMode={isDarkMode}
+                    tone="roadmap"
+                  />
+                  <OverviewField
+                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapDuration', i18n.language === 'en' ? 'Plan duration' : 'Thời lượng dự kiến')}
+                    value={`${minutesSummary} • ${estimatedDaysSummary}`}
+                    isDarkMode={isDarkMode}
+                    tone="roadmap"
+                  />
+                </div>
+              </OverviewSection>
+            ) : null}
+
             {purpose === 'MOCK_TEST' ? (
               <OverviewSection
                 title={translateOrFallback(t, 'workspace.profileOverview.mockTitle', i18n.language === 'en' ? 'Mock-test setup' : 'Thiết lập mock test')}
-                description={translateOrFallback(t, 'workspace.profileOverview.mockDescription', i18n.language === 'en' ? 'This workspace was configured with a target exam and template preferences.' : 'Workspace này đã được cấu hình với kỳ thi mục tiêu và các thiết lập template tương ứng.')}
+                description={translateOrFallback(t, 'workspace.profileOverview.mockDescription', i18n.language === 'en' ? 'Keep only the exam settings you still need to remember.' : 'Chỉ giữ lại các thiết lập mock test cần nhớ.')}
                 icon={ScrollText}
                 iconClassName={isDarkMode ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-600'}
                 isDarkMode={isDarkMode}
                 tone="mock"
                 className="xl:col-span-2"
               >
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.mockExamMode', 'Exam type')} value={profile?.mockExamMode ? t(`workspace.profileConfig.mockExamMode.${profile.mockExamMode}`) : fallbackEmpty} isDarkMode={isDarkMode} tone="mock" />
+                <div className="grid gap-4 md:grid-cols-3">
                   <OverviewField label={translateOrFallback(t, 'workspace.profileOverview.examName', i18n.language === 'en' ? 'Exam name' : 'Tên kỳ thi')} value={formatProfileValue(examName, fallbackEmpty)} isDarkMode={isDarkMode} tone="mock" />
                   <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.templateFormat', 'Template format')} value={profile?.templateFormat ? t(`workspace.profileConfig.templateFormat.${profile.templateFormat}`) : fallbackEmpty} isDarkMode={isDarkMode} tone="mock" />
                   <OverviewField label={translateOrFallback(t, 'workspace.profileOverview.templateVolume', i18n.language === 'en' ? 'Template volume' : 'Khối lượng template')} value={
@@ -525,8 +565,6 @@ function IndividualWorkspaceProfileOverviewDialog({
                       ? `${profile?.templateDurationMinutes || 0} phút • ${profile?.templateQuestionCount || 0} câu`
                       : fallbackEmpty
                   } isDarkMode={isDarkMode} tone="mock" />
-                  <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.templatePrompt', 'Template prompt')} value={formatProfileValue(profile?.templatePrompt, fallbackEmpty)} isDarkMode={isDarkMode} tone="mock" className="md:col-span-2 xl:col-span-1" />
-                  <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.templateNotes', 'Template notes')} value={formatProfileValue(profile?.templateNotes, fallbackEmpty)} isDarkMode={isDarkMode} tone="mock" className="md:col-span-2 xl:col-span-2" />
                 </div>
               </OverviewSection>
             ) : null}

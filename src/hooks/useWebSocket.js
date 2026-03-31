@@ -98,7 +98,19 @@ export function useWebSocket({
   });
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
-  const connectionKey = workspaceId ? `workspace:${workspaceId}` : null;
+  const needsProgressQueue = Boolean(
+    onProgress || onMaterialUploaded || onMaterialDeleted || onMaterialUpdated,
+  );
+  const needsQuizAttemptGradingQueue = Boolean(onQuizAttemptGrading);
+  const hasWorkspaceSubscription = Boolean(
+    workspaceId && (onMaterialUploaded || onMaterialDeleted || onMaterialUpdated),
+  );
+  const shouldConnect = Boolean(enabled) && (needsProgressQueue || needsQuizAttemptGradingQueue || hasWorkspaceSubscription);
+  const connectionKey = [
+    hasWorkspaceSubscription ? `workspace:${workspaceId}` : null,
+    needsProgressQueue ? "progress" : null,
+    needsQuizAttemptGradingQueue ? "quiz-attempt-grading" : null,
+  ].filter(Boolean).join("|") || null;
 
   useEffect(() => {
     callbackRefs.current = {
@@ -126,7 +138,7 @@ export function useWebSocket({
 
   // Kết nối WebSocket
   useEffect(() => {
-    if (!enabled || !workspaceId) {
+    if (!shouldConnect || !connectionKey) {
       return;
     }
 
@@ -134,8 +146,8 @@ export function useWebSocket({
     hasRequestedResyncRef.current = false;
 
     const restoredFromRegistry = registerActiveSocket(connectionKey, {
-      workspaceId,
-      type: "workspace",
+      workspaceId: workspaceId ?? null,
+      type: hasWorkspaceSubscription ? "workspace" : "user",
     });
 
     const handleBeforeUnload = () => {
@@ -170,9 +182,13 @@ export function useWebSocket({
       onConnect: () => {
         isDeactivatingRef.current = false;
         console.log("✅ STOMP WebSocket connected");
-        console.log("🔔 Subscribed channel: /user/queue/progress");
-        console.log("🔔 Subscribed channel: /user/queue/quiz-attempt-grading");
-        if (workspaceId) {
+        if (needsProgressQueue) {
+          console.log("🔔 Subscribed channel: /user/queue/progress");
+        }
+        if (needsQuizAttemptGradingQueue) {
+          console.log("🔔 Subscribed channel: /user/queue/quiz-attempt-grading");
+        }
+        if (hasWorkspaceSubscription && workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/material`);
         }
         setIsConnected(true);
@@ -189,84 +205,88 @@ export function useWebSocket({
         }
 
         // Subscribe to personal progress updates
-        const progressSubscription = stompClient.subscribe(
-          "/user/queue/progress",
-          (message) => {
-            try {
-              const response = JSON.parse(message.body);
-              console.log("📊 Progress update received:", response);
-              console.log("   Progress status:", response.status);
-              
-              // Nếu progress COMPLETED, xử lý như material update
-              if (response.status === 'COMPLETED' && response.data) {
-                const materialData = normalizeMaterialPayload(response.data);
-                console.log("✅ Progress COMPLETED - Material data:", materialData);
-                console.log("   Material ID:", materialData.materialId);
-                console.log("   Material status:", materialData.status);
-                
-                // Route dựa trên material status
-                if (materialData.status === 'ACTIVE') {
-                  console.log("🎉 Material upload completed successfully");
-                  setLastMessage({ type: "material:uploaded", data: materialData, timestamp: Date.now() });
-                  callbackRefs.current.onMaterialUploaded?.(materialData);
-                } else if (materialData.status === 'ERROR') {
-                  console.log("❌ Material upload failed");
-                  setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
-                  callbackRefs.current.onMaterialUpdated?.(materialData);              
-                } else if (materialData.status === 'WARN' || materialData.status === 'WARNED') {
-                console.log("⚠️ Material content not appropriate for current level");
-                setLastMessage({ type: "material:updated", data: { ...materialData, status: 'WARN' }, timestamp: Date.now() });
-                callbackRefs.current.onMaterialUpdated?.({ ...materialData, status: 'WARN' });
-              } else if (materialData.status === 'REJECT' || materialData.status === 'REJECTED') {
-                console.log("🚫 Material content not related to learning - rejected");
-                setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
-                callbackRefs.current.onMaterialUpdated?.(materialData);                
-              } else if (materialData.status === 'PROCESSING') {
-                  console.log("⏳ Material still processing");
-                  setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
-                  callbackRefs.current.onMaterialUpdated?.(materialData);
-                }
-              } else {
-                // Progress update khác (không phải COMPLETED)
-                setLastMessage({ type: "progress", data: response, timestamp: Date.now() });
-                callbackRefs.current.onProgress?.(response);
+        if (needsProgressQueue) {
+          const progressSubscription = stompClient.subscribe(
+            "/user/queue/progress",
+            (message) => {
+              try {
+                const response = JSON.parse(message.body);
+                console.log("📊 Progress update received:", response);
+                console.log("   Progress status:", response.status);
 
-                // Nhiều luồng BE gửi tiến trình qua /user/queue/progress thay vì /topic/*.
-                // Nếu screen không truyền onProgress, vẫn kích hoạt onMaterialUpdated để reload list realtime.
-                const normalizedResponseStatus = normalizeStatus(response.status || response.final_status);
-                if (['ERROR', 'REJECT', 'PROCESSING', 'WARN'].includes(normalizedResponseStatus)) {
-                  const fallbackMaterial =
-                    typeof response.data === 'object' && response.data !== null
-                      ? normalizeMaterialPayload({ ...response.data, status: normalizedResponseStatus })
-                      : { status: normalizedResponseStatus, message: response.data };
-                  console.log("🔄 Triggering fallback onMaterialUpdated from progress channel", fallbackMaterial);
-                  callbackRefs.current.onMaterialUpdated?.(fallbackMaterial);
+                // Nếu progress COMPLETED, xử lý như material update
+                if (response.status === 'COMPLETED' && response.data) {
+                  const materialData = normalizeMaterialPayload(response.data);
+                  console.log("✅ Progress COMPLETED - Material data:", materialData);
+                  console.log("   Material ID:", materialData.materialId);
+                  console.log("   Material status:", materialData.status);
+
+                  // Route dựa trên material status
+                  if (materialData.status === 'ACTIVE') {
+                    console.log("🎉 Material upload completed successfully");
+                    setLastMessage({ type: "material:uploaded", data: materialData, timestamp: Date.now() });
+                    callbackRefs.current.onMaterialUploaded?.(materialData);
+                  } else if (materialData.status === 'ERROR') {
+                    console.log("❌ Material upload failed");
+                    setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
+                    callbackRefs.current.onMaterialUpdated?.(materialData);
+                  } else if (materialData.status === 'WARN' || materialData.status === 'WARNED') {
+                    console.log("⚠️ Material content not appropriate for current level");
+                    setLastMessage({ type: "material:updated", data: { ...materialData, status: 'WARN' }, timestamp: Date.now() });
+                    callbackRefs.current.onMaterialUpdated?.({ ...materialData, status: 'WARN' });
+                  } else if (materialData.status === 'REJECT' || materialData.status === 'REJECTED') {
+                    console.log("🚫 Material content not related to learning - rejected");
+                    setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
+                    callbackRefs.current.onMaterialUpdated?.(materialData);
+                  } else if (materialData.status === 'PROCESSING') {
+                    console.log("⏳ Material still processing");
+                    setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
+                    callbackRefs.current.onMaterialUpdated?.(materialData);
+                  }
+                } else {
+                  // Progress update khác (không phải COMPLETED)
+                  setLastMessage({ type: "progress", data: response, timestamp: Date.now() });
+                  callbackRefs.current.onProgress?.(response);
+
+                  // Nhiều luồng BE gửi tiến trình qua /user/queue/progress thay vì /topic/*.
+                  // Nếu screen không truyền onProgress, vẫn kích hoạt onMaterialUpdated để reload list realtime.
+                  const normalizedResponseStatus = normalizeStatus(response.status || response.final_status);
+                  if (['ERROR', 'REJECT', 'PROCESSING', 'WARN'].includes(normalizedResponseStatus)) {
+                    const fallbackMaterial =
+                      typeof response.data === 'object' && response.data !== null
+                        ? normalizeMaterialPayload({ ...response.data, status: normalizedResponseStatus })
+                        : { status: normalizedResponseStatus, message: response.data };
+                    console.log("🔄 Triggering fallback onMaterialUpdated from progress channel", fallbackMaterial);
+                    callbackRefs.current.onMaterialUpdated?.(fallbackMaterial);
+                  }
                 }
+              } catch (err) {
+                console.error("Failed to parse progress message:", err);
               }
-            } catch (err) {
-              console.error("Failed to parse progress message:", err);
             }
-          }
-        );
-        subscriptionsRef.current.push(progressSubscription);
+          );
+          subscriptionsRef.current.push(progressSubscription);
+        }
 
-        const gradingSubscription = stompClient.subscribe(
-          "/user/queue/quiz-attempt-grading",
-          (message) => {
-            try {
-              const response = JSON.parse(message.body);
-              console.log("🧪 Quiz attempt grading event:", response);
-              setLastMessage({ type: "quiz:attempt-grading", data: response, timestamp: Date.now() });
-              callbackRefs.current.onQuizAttemptGrading?.(response);
-            } catch (err) {
-              console.error("Failed to parse quiz attempt grading message:", err);
+        if (needsQuizAttemptGradingQueue) {
+          const gradingSubscription = stompClient.subscribe(
+            "/user/queue/quiz-attempt-grading",
+            (message) => {
+              try {
+                const response = JSON.parse(message.body);
+                console.log("🧪 Quiz attempt grading event:", response);
+                setLastMessage({ type: "quiz:attempt-grading", data: response, timestamp: Date.now() });
+                callbackRefs.current.onQuizAttemptGrading?.(response);
+              } catch (err) {
+                console.error("Failed to parse quiz attempt grading message:", err);
+              }
             }
-          }
-        );
-        subscriptionsRef.current.push(gradingSubscription);
+          );
+          subscriptionsRef.current.push(gradingSubscription);
+        }
 
         // Subscribe to workspace material updates
-        if (workspaceId) {
+        if (hasWorkspaceSubscription && workspaceId) {
           const workspaceSubscription = stompClient.subscribe(
             `/topic/workspace/${workspaceId}/material`,
             (message) => {
@@ -357,7 +377,15 @@ export function useWebSocket({
       }
       stompClientRef.current = null;
     };
-  }, [workspaceId, enabled, getAuthToken, connectionKey]);
+  }, [
+    connectionKey,
+    getAuthToken,
+    hasWorkspaceSubscription,
+    needsProgressQueue,
+    needsQuizAttemptGradingQueue,
+    shouldConnect,
+    workspaceId,
+  ]);
 
   // Gửi message qua WebSocket
   const send = useCallback((destination, body) => {

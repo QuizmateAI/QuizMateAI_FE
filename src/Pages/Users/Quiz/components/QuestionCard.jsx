@@ -108,7 +108,6 @@ function areQuestionCardPropsEqual(prevProps, nextProps) {
   return (
     prevProps.question === nextProps.question
     && prevProps.questionNumber === nextProps.questionNumber
-    && prevProps.totalQuestions === nextProps.totalQuestions
     && prevProps.showResult === nextProps.showResult
     && prevProps.showExplanation === nextProps.showExplanation
     && prevProps.disabled === nextProps.disabled
@@ -261,15 +260,45 @@ const QuestionCard = memo(function QuestionCard({
     onMatchingAnswerChange?.({ matchingPairs: nextPairs });
   };
 
+  const cardToneClass = isReviewRevealed
+    ? (isPendingGrading
+        ? 'border-amber-200 bg-amber-50/80 dark:border-amber-900/50 dark:bg-amber-950/20'
+        : (isFullyCorrect
+            ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/50 dark:bg-emerald-950/20'
+            : 'border-rose-200 bg-rose-50/80 dark:border-rose-900/50 dark:bg-rose-950/20'))
+    : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800';
+
+  const questionNumberToneClass = isReviewRevealed
+    ? (isPendingGrading
+        ? 'border-amber-200 bg-amber-100/80 text-amber-700 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+        : (isFullyCorrect
+            ? 'border-emerald-200 bg-emerald-100/80 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+            : 'border-rose-200 bg-rose-100/80 text-rose-700 dark:border-rose-800 dark:bg-rose-900/40 dark:text-rose-200'))
+    : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200';
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-md shadow-slate-900/10 dark:shadow-blue-900/50 border border-slate-200 dark:border-slate-700">
-      <div className="flex items-start justify-between mb-4 gap-3">
-        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 leading-relaxed">{question.content}</h3>
+    <div className={cn(
+      'rounded-xl border p-5 shadow-md shadow-slate-900/10 transition-colors dark:shadow-blue-900/30',
+      cardToneClass,
+    )}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {Number.isInteger(questionNumber) && questionNumber > 0 && (
+            <span className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold transition-colors',
+              questionNumberToneClass,
+            )}>
+              {questionNumber}
+            </span>
+          )}
+          <h3 className="min-w-0 text-base font-bold leading-snug text-slate-800 dark:text-slate-100">{question.content}</h3>
+        </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {isReviewRevealed && question.difficulty && (
             <span className={cn('px-2 py-0.5 rounded text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
           )}
           <span className="bg-slate-900 dark:bg-slate-600 text-white px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">{questionNumber}/{totalQuestions}</span>
+          <span className={cn('px-2 py-0.5 rounded text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
         </div>
       </div>
 
