@@ -292,6 +292,27 @@ export const getAdminPaymentByOrderId = async (orderId) => {
   return response;
 };
 
+export const expireOverduePayments = async () => {
+  const response = await api.post('/payment/admin/expire-overdue');
+  return response;
+};
+
+// System Settings APIs — maps to SystemSettingController (/api/system-settings/...)
+export const getAllSystemSettings = async () => {
+  const response = await api.get('/system-settings');
+  return response;
+};
+
+export const updateSystemSetting = async (key, data) => {
+  const response = await api.put(`/system-settings/${key}`, data);
+  return response;
+};
+
+export const resyncCreditPackagePrices = async () => {
+  const response = await api.post('/credit-package/resync-prices');
+  return response;
+};
+
 // Credit Wallet APIs — maps to CreditWalletController (/api/credit-wallet/...)
 export const getMyWallet = async () => {
   const response = await api.get('/credit-wallet/me');

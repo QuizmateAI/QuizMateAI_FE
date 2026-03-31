@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
+import {
   LayoutDashboard,
   Users, UsersRound,
-  PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote, Bot, ChevronDown, ChevronRight
+  PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote, Bot, ChevronDown, ChevronRight,
+  Settings2,
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -84,6 +85,12 @@ const MENU_SECTIONS = [
         icon: Bot,
         labelKey: 'sidebar.aiAudit',
         path: '/super-admin/ai-audit',
+        matchPrefix: true,
+      },
+      {
+        icon: Settings2,
+        labelKey: 'sidebar.systemSettings',
+        path: '/super-admin/system-settings',
         matchPrefix: true,
       },
     ],

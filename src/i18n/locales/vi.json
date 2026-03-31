@@ -13,13 +13,39 @@
     "subscriptions": "Quản lý gói",
     "creditPackages": "Gói tín dụng",
     "aiAudit": "AI Audit",
-    "payments": "Thanh toán"
+    "payments": "Thanh toán",
+    "systemSettings": "Cấu hình hệ thống"
   },
   "sidebarSections": {
     "overview": "Tổng quan",
     "workspace": "Người dùng & nhóm",
     "commerce": "Gói & thanh toán",
     "system": "Hệ thống nội bộ"
+  },
+  "systemSettings": {
+    "title": "Cấu hình hệ thống",
+    "subtitle": "Quản lý các tham số cấu hình chung của hệ thống",
+    "refresh": "Làm mới",
+    "empty": "Chưa có cấu hình nào",
+    "colKey": "Key",
+    "colDescription": "Mô tả",
+    "colValue": "Giá trị",
+    "colStatus": "Trạng thái",
+    "colUpdatedAt": "Cập nhật lần cuối",
+    "colActions": "Thao tác",
+    "customized": "Đã tùy chỉnh",
+    "default": "Mặc định",
+    "editTitle": "Chỉnh sửa cấu hình",
+    "editDescription": "Thay đổi giá trị cho tham số hệ thống này",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "updateSuccess": "Cập nhật cấu hình thành công",
+    "resyncPrices": "Đồng bộ giá",
+    "resyncDescription": "Tính toán lại và cập nhật giá của tất cả gói tín dụng dựa trên giá đơn vị tín dụng hiện tại. Thao tác này sẽ ghi đè các giá đã chỉnh sửa thủ công.",
+    "resyncConfirm": "Đồng bộ ngay",
+    "resyncing": "Đang đồng bộ...",
+    "resyncSuccess": "Đồng bộ giá gói tín dụng thành công"
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
@@ -193,8 +219,14 @@
     "permissionDenied": "Tài khoản của bạn chưa có quyền xem giao dịch thanh toán.",
     "errors": {
       "loadList": "Không thể tải danh sách thanh toán",
-      "loadDetail": "Không thể tải chi tiết thanh toán"
+      "loadDetail": "Không thể tải chi tiết thanh toán",
+      "expireFailed": "Không thể hủy các thanh toán hết hạn"
     },
+    "expireOverdue": "Hủy hết hạn",
+    "expireDescription": "Hủy tất cả thanh toán đang PENDING đã quá thời gian hết hạn. Hành động này không thể hoàn tác.",
+    "expireConfirm": "Xác nhận hủy",
+    "expiring": "Đang xử lý...",
+    "expireSuccess": "Đã hủy {{count}} thanh toán hết hạn",
     "validation": {
       "positiveInteger": "{{field}} phải là số nguyên dương"
     },
