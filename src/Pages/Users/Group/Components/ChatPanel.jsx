@@ -22,6 +22,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+  const documentsHubLabel = i18n.language === "en" ? "Open documents hub" : "Mở trung tâm tài liệu";
 
   // Khi chưa có nguồn tài liệu — hiển thị lời chào và nút upload
   if (!hasSources && !activeView) {
@@ -51,7 +52,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
               className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10 flex items-center gap-2"
             >
               <UploadCloud className="w-4 h-4" />
-              <span className={fontClass}>{t("workspace.chat.uploadBtn")}</span>
+              <span className={fontClass}>{documentsHubLabel}</span>
             </Button>
           )}
         </div>

@@ -577,6 +577,7 @@ function RoadmapListView({
             contextId={path[0].id}
             onCreateQuiz={onNavigateToCreateMockTest}
             onViewQuiz={onViewMockTest}
+            legacyRoadmapUI
           />
         )}
         {depth === 2 && path[1] && (
@@ -586,6 +587,7 @@ function RoadmapListView({
             contextId={path[1].id}
             onCreateQuiz={onNavigateToCreatePostLearning}
             onViewQuiz={onViewPostLearning}
+            legacyRoadmapUI
           />
         )}
 

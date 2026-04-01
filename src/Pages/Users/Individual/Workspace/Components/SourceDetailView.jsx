@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewMaterial } from "@/api/MaterialAPI";
+import InlineSpinner from "@/Components/ui/InlineSpinner";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 const IMAGE_URL_REGEX = /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -401,7 +402,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
             >
               {moderationLoading ? (
                 <div className="flex items-center gap-2">
-                  <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-slate-300" : "text-gray-500"}`} />
+                  <InlineSpinner className={`h-4 w-4 ${isDarkMode ? "text-slate-300" : "text-gray-500"}`} />
                   <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
                     Đang tải báo cáo kiểm duyệt...
                   </span>
@@ -498,7 +499,12 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                     >
                       Không
                     </button>
-                    {reviewLoading && <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-slate-300" : "text-gray-500"}`} />}
+                    <span
+                      aria-hidden="true"
+                      className={`inline-flex h-4 w-4 items-center justify-center transition-opacity ${reviewLoading ? "opacity-100" : "opacity-0"}`}
+                    >
+                      <InlineSpinner className={`h-4 w-4 ${isDarkMode ? "text-slate-300" : "text-gray-500"}`} />
+                    </span>
                   </div>
                 </div>
               )}
@@ -533,7 +539,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
               <div className={`px-4 pb-4 max-h-64 overflow-y-auto`}>
                 {summaryLoading ? (
                   <div className="flex items-center gap-2 py-3">
-                    <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+                    <InlineSpinner className={`h-4 w-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
                     <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}>{t("workspace.sources.loadingSummary")}</span>
                   </div>
                 ) : summary ? (
@@ -575,7 +581,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
           <div className="flex-1 min-h-0 overflow-y-auto pr-1">
             {textLoading ? (
               <div className="flex items-center justify-center gap-2 py-16">
-                <Loader2 className={`w-5 h-5 animate-spin ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+                <InlineSpinner className={`h-5 w-5 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
                 <span className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}>{t("workspace.sources.loadingContent")}</span>
               </div>
             ) : textError ? (

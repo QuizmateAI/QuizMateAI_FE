@@ -17,6 +17,9 @@ import {
 const mockNavigate = vi.fn();
 const mockShowError = vi.fn();
 const mockShowSuccess = vi.fn();
+const examButtonName = /^(Exam|Thi|Kiểm tra)$/i;
+const practiceButtonName = /^(Practice|Luyện tập)$/i;
+const deleteButtonName = /^(Delete|Xóa)$/i;
 
 vi.mock('@/api/QuizAPI', () => ({
   getQuizzesByScope: vi.fn(),
@@ -101,7 +104,7 @@ describe('Quiz entry navigation', () => {
 
     expect(await screen.findByText('Algebra challenge')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Exam' }));
+    fireEvent.click(screen.getByRole('button', { name: examButtonName }));
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
@@ -148,7 +151,7 @@ describe('Quiz entry navigation', () => {
 
     expect(await screen.findByText('Legacy algebra challenge')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Exam' }));
+    fireEvent.click(screen.getByRole('button', { name: examButtonName }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
@@ -174,7 +177,7 @@ describe('Quiz entry navigation', () => {
 
     expect(await screen.findByText('Algebra challenge')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Practice' }));
+    fireEvent.click(screen.getByRole('button', { name: practiceButtonName }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
       '/quiz/practice/123',
@@ -185,6 +188,52 @@ describe('Quiz entry navigation', () => {
         }),
       })
     );
+  });
+
+  it('uses the legacy roadmap card UI when legacyRoadmapUI is enabled', async () => {
+    getQuizzesByScope.mockResolvedValueOnce({
+      data: [
+        {
+          quizId: 777,
+          title: 'Roadmap legacy quiz',
+          status: 'ACTIVE',
+          quizIntent: 'POST_LEARNING',
+          createdAt: '2026-03-25T10:00:00',
+          updatedAt: '2026-03-26T10:00:00',
+          overallDifficulty: 'MEDIUM',
+          timerMode: true,
+          communityShared: false,
+          myAttempted: false,
+          myPassed: false,
+          createVia: 'AI',
+          questionCount: 10,
+          maxAttempt: 2,
+          passScore: 7,
+          maxScore: 10,
+        },
+      ],
+    });
+
+    render(
+      <QuizListView
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onViewQuiz={vi.fn()}
+        contextType="PHASE"
+        contextId={7}
+        embedded
+        hideCreateButton
+        legacyRoadmapUI
+      />
+    );
+
+    expect(await screen.findByText('Roadmap legacy quiz')).toBeInTheDocument();
+    expect(screen.queryByText('QUIZMATE AI')).not.toBeInTheDocument();
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
+    expect(screen.queryByText('Quiz overview')).not.toBeInTheDocument();
+    expect(screen.getByText('Câu hỏi')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: examButtonName })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: deleteButtonName })).not.toBeInTheDocument();
   });
 
   it('opens the exam popup from the quiz detail view before navigating into the exam', async () => {

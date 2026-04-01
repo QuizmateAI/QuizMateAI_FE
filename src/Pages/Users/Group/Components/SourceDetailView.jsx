@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewMaterial } from "@/api/MaterialAPI";
+import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 const IMAGE_URL_REGEX = /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -306,11 +306,12 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
     setReviewError("");
     setReviewMessage("");
     try {
-      const result = await reviewMaterial(currentSource.id, isApproved);
+      const result = await reviewGroupMaterial(currentSource.id, isApproved);
       const updatedSource = mergeMaterialSource(currentSource, result);
+      updatedSource.needReview = false;
       setCurrentSource(updatedSource);
       onSourceUpdated?.(updatedSource);
-      setReviewMessage(isApproved ? "Đã duyệt tài liệu này." : "Đã từ chối tài liệu này.");
+      setReviewMessage(isApproved ? "Đã duyệt tài liệu này cho group." : "Đã từ chối tài liệu này khỏi group.");
     } catch (error) {
       setReviewError(error?.message || "Không thể duyệt tài liệu lúc này.");
     } finally {
@@ -346,7 +347,9 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
     [imageUrls, extractedImageUrls]
   );
   const suitablePercentText = useMemo(() => formatSuitablePercent(moderationInfo?.suitablePercent), [moderationInfo?.suitablePercent]);
-  const showWarnReviewActions = moderationInfo?.type === "WARN" && ["WARN", "WARNED"].includes(String(currentSource?.status || "").toUpperCase());
+  const currentStatus = String(currentSource?.status || "").toUpperCase();
+  const needsLeaderReview = Boolean(currentSource?.needReview);
+  const showLeaderReviewActions = needsLeaderReview && ["ACTIVE", "WARN", "WARNED"].includes(currentStatus);
   const hasModerationDetails = Boolean(
     moderationInfo?.reason ||
     moderationInfo?.suggestion ||
@@ -387,10 +390,14 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
       {/* Nội dung chi tiết */}
       <div className="flex-1 overflow-hidden px-6 py-4">
         <div className="h-full min-h-0 flex flex-col gap-4">
-          {(moderationLoading || hasModerationContent || reviewMessage || reviewError) && (
+          {(moderationLoading || hasModerationContent || reviewMessage || reviewError || needsLeaderReview) && (
             <div
               className={`shrink-0 rounded-xl border px-4 py-3 ${
-                moderationInfo?.type === "REJECT"
+                currentStatus === "ERROR"
+                  ? isDarkMode
+                    ? "border-red-800 bg-red-950/30"
+                    : "border-red-200 bg-red-50"
+                  : moderationInfo?.type === "REJECT"
                   ? isDarkMode
                     ? "border-red-800 bg-red-950/30"
                     : "border-red-200 bg-red-50"
@@ -405,6 +412,15 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                   <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
                     Đang tải báo cáo kiểm duyệt...
                   </span>
+                </div>
+              ) : null}
+              {!moderationLoading && needsLeaderReview && !hasModerationDetails ? (
+                <div className="mt-1.5">
+                  <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                    {currentStatus === "ACTIVE"
+                      ? "AI đã xử lý xong tài liệu này. Leader cần xác nhận trước khi tài liệu xuất hiện trong nguồn học chung."
+                      : "Tài liệu này đang ở hàng chờ leader duyệt cho group."}
+                  </p>
                 </div>
               ) : null}
               {!moderationLoading && hasModerationDetails && (
@@ -468,10 +484,10 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                   )}
                 </div>
               )}
-              {showWarnReviewActions && (
+              {showLeaderReviewActions && (
                 <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10">
                   <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                    Có duyệt tài liệu này không?
+                    Leader có muốn duyệt tài liệu này cho group không?
                   </p>
                   <div className="flex items-center gap-2">
                     <button
