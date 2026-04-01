@@ -17,6 +17,7 @@ import MockTestDetailView from "./MockTestDetailView";
 import EditMockTestForm from "./EditMockTestForm";
 import PostLearningListView from "./PostLearningListView";
 import CreatePostLearningForm from "./CreatePostLearningForm";
+import QuestionStatsView from "./QuestionStatsView";
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
 function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onRoadmapPhaseFocus, onCreatePhaseKnowledge, onCreateKnowledgeQuizForKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, adaptationMode = "", isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingKnowledgeQuizKnowledgeKeys = [], knowledgeQuizRefreshByKey = {}, generatingPreLearningPhaseIds = [], skipPreLearningPhaseIds = [], roadmapReloadToken = 0, onReloadRoadmap, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, onShareQuiz, onShareRoadmap }) {
@@ -125,6 +126,8 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
         return <MockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="WORKSPACE" contextId={workspaceId} />;
       case "postLearning":
         return <PostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="WORKSPACE" contextId={workspaceId} />;
+      case "questionStats":
+        return <QuestionStatsView workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "createQuiz":
         return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "createFlashcard":
