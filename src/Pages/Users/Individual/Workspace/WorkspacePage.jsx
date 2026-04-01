@@ -248,6 +248,11 @@ function WorkspacePage() {
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
+	const [isMaterialDetailOpen, setIsMaterialDetailOpen] = useState(false);
+	const [isResizingPanels, setIsResizingPanels] = useState(false);
+	const [leftPanelWidth, setLeftPanelWidth] = useState(350);
+	const [rightPanelWidth, setRightPanelWidth] = useState(350);
+	const leftWidthBeforeMaterialDetailRef = useRef(null);
 	const workspaceLayoutRef = useRef(null);
 	const [workspaceLayoutWidth, setWorkspaceLayoutWidth] = useState(0);
 
@@ -362,20 +367,49 @@ function WorkspacePage() {
 	// Háº±ng sá»' kÃ­ch thÆ°á»›c panel
 	const COLLAPSED_WIDTH = 56;
 	const DEFAULT_SIDE_PANEL_WIDTH = 280;
+	const MIN_PANEL_PERCENT = 0.2;
 	const COLLAPSED_HANDLE_WIDTH = 8;
 	const EXPANDED_HANDLE_WIDTH = 16;
-	const CHAT_MIN_WIDTH = 760;
+	const dragStateRef = useRef(null);
 
-	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
-	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
+	const getScreenWidth = useCallback(() => {
+		if (typeof window !== "undefined" && Number(window.innerWidth) > 0) {
+			return window.innerWidth;
+		}
+		return workspaceLayoutWidth || 0;
+	}, [workspaceLayoutWidth]);
+
+	const getBaseMinPanelWidth = useCallback(() => {
+		const screenWidth = getScreenWidth();
+		if (!screenWidth) return 220;
+		return Math.max(220, Math.floor(screenWidth * MIN_PANEL_PERCENT));
+	}, [getScreenWidth]);
+
+	const getChatMinWidth = useCallback(() => {
+		const screenWidth = getScreenWidth();
+		if (!screenWidth) return 220;
+		return Math.max(220, Math.floor(screenWidth * MIN_PANEL_PERCENT));
+	}, [getScreenWidth]);
+
+	const getMaterialDetailMinWidth = useCallback(() => {
+		const baseMin = getBaseMinPanelWidth();
+		const roadmapJourActive = activeView === "roadmap"
+			|| (quizBackTarget?.view === "roadmap" && (activeView === "quizDetail" || activeView === "editQuiz"));
+		if (!isMaterialDetailOpen || isSourcesCollapsed || roadmapJourActive) return baseMin;
+		const viewportBasedMin = Math.floor((window?.innerWidth || 0) * 0.4);
+		return Math.max(baseMin, viewportBasedMin);
+	}, [activeView, getBaseMinPanelWidth, isMaterialDetailOpen, isSourcesCollapsed, quizBackTarget?.view]);
+
+	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : leftPanelWidth;
+	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : rightPanelWidth;
 
 	const getRequiredLayoutWidth = useCallback((sourcesCollapsed, studioCollapsed) => {
-		const leftPanelWidth = sourcesCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
-		const rightPanelWidth = studioCollapsed ? COLLAPSED_WIDTH : DEFAULT_SIDE_PANEL_WIDTH;
+		const currentLeftWidth = sourcesCollapsed ? COLLAPSED_WIDTH : leftPanelWidth;
+		const currentRightWidth = studioCollapsed ? COLLAPSED_WIDTH : rightPanelWidth;
 		const leftHandleWidth = sourcesCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
 		const rightHandleWidth = studioCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
-		return CHAT_MIN_WIDTH + leftPanelWidth + rightPanelWidth + leftHandleWidth + rightHandleWidth;
-	}, [CHAT_MIN_WIDTH]);
+		return getChatMinWidth() + currentLeftWidth + currentRightWidth + leftHandleWidth + rightHandleWidth;
+	}, [getChatMinWidth, leftPanelWidth, rightPanelWidth]);
 
 	const minWidthForChatWithOneSidePanel = getRequiredLayoutWidth(false, true);
 	const shouldStackSidePanels = workspaceLayoutWidth > 0 && workspaceLayoutWidth < minWidthForChatWithOneSidePanel;
@@ -519,21 +553,6 @@ function WorkspacePage() {
 		shouldDisableRoadmapForStudio,
 	]);
 
-	const resolveCollapsedStateByWidth = useCallback((layoutWidth, sourcesCollapsed, studioCollapsed) => {
-		let nextSourcesCollapsed = sourcesCollapsed;
-		let nextStudioCollapsed = studioCollapsed;
-
-		if (layoutWidth < getRequiredLayoutWidth(nextSourcesCollapsed, nextStudioCollapsed) && !nextSourcesCollapsed) {
-			nextSourcesCollapsed = true;
-		}
-
-		if (layoutWidth < getRequiredLayoutWidth(nextSourcesCollapsed, nextStudioCollapsed) && !nextStudioCollapsed) {
-			nextStudioCollapsed = true;
-		}
-
-		return { nextSourcesCollapsed, nextStudioCollapsed };
-	}, [getRequiredLayoutWidth]);
-
 	const handleToggleSourcesCollapse = useCallback(() => {
 		const nextSourcesCollapsed = !isSourcesCollapsed;
 
@@ -542,14 +561,9 @@ function WorkspacePage() {
 			return;
 		}
 
-		let nextStudioCollapsed = isStudioCollapsed;
-		if (workspaceLayoutWidth > 0 && workspaceLayoutWidth < getRequiredLayoutWidth(false, nextStudioCollapsed)) {
-			nextStudioCollapsed = true;
-		}
-
-		setIsStudioCollapsed(nextStudioCollapsed);
+		setLeftPanelWidth((current) => Math.max(current || DEFAULT_SIDE_PANEL_WIDTH, getMaterialDetailMinWidth()));
 		setIsSourcesCollapsed(false);
-	}, [getRequiredLayoutWidth, isSourcesCollapsed, isStudioCollapsed, workspaceLayoutWidth]);
+	}, [DEFAULT_SIDE_PANEL_WIDTH, getMaterialDetailMinWidth, isSourcesCollapsed]);
 
 	const handleToggleStudioCollapse = useCallback(() => {
 		const nextStudioCollapsed = !isStudioCollapsed;
@@ -559,14 +573,129 @@ function WorkspacePage() {
 			return;
 		}
 
-		let nextSourcesCollapsed = isSourcesCollapsed;
-		if (workspaceLayoutWidth > 0 && workspaceLayoutWidth < getRequiredLayoutWidth(nextSourcesCollapsed, false)) {
-			nextSourcesCollapsed = true;
+		setRightPanelWidth((current) => Math.max(current || DEFAULT_SIDE_PANEL_WIDTH, getBaseMinPanelWidth()));
+		setIsStudioCollapsed(false);
+	}, [DEFAULT_SIDE_PANEL_WIDTH, getBaseMinPanelWidth, isStudioCollapsed]);
+
+	const handleStartResize = useCallback((side, event) => {
+		if (shouldStackSidePanels) return;
+		if (side === "left" && isSourcesCollapsed) return;
+		if (side === "right" && isStudioCollapsed) return;
+		if (!workspaceLayoutRef.current) return;
+
+		event.preventDefault();
+		setIsResizingPanels(true);
+		document.body.style.userSelect = "none";
+		document.body.style.cursor = "ew-resize";
+		dragStateRef.current = { side };
+	}, [isSourcesCollapsed, isStudioCollapsed, shouldStackSidePanels]);
+
+	useEffect(() => {
+		const handleMouseMove = (event) => {
+			if (!dragStateRef.current || !workspaceLayoutRef.current || workspaceLayoutWidth <= 0) return;
+
+			const rect = workspaceLayoutRef.current.getBoundingClientRect();
+			const leftHandleWidth = isSourcesCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
+			const rightHandleWidth = isStudioCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
+			const minChatWidth = getChatMinWidth();
+			const minSideWidth = getBaseMinPanelWidth();
+
+			if (dragStateRef.current.side === "left") {
+				const proposed = event.clientX - rect.left;
+				const minLeftWidth = getMaterialDetailMinWidth();
+				const fixedRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : Math.max(rightPanelWidth, minSideWidth);
+				const maxLeftWidth = Math.max(
+					minLeftWidth,
+					workspaceLayoutWidth - fixedRightWidth - minChatWidth - leftHandleWidth - rightHandleWidth
+				);
+				const clamped = Math.min(Math.max(proposed, minLeftWidth), maxLeftWidth);
+				setLeftPanelWidth(clamped);
+				return;
+			}
+
+			if (dragStateRef.current.side === "right") {
+				const proposed = rect.right - event.clientX;
+				const minRightWidth = minSideWidth;
+				const fixedLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : Math.max(leftPanelWidth, getMaterialDetailMinWidth());
+				const maxRightWidth = Math.max(
+					minRightWidth,
+					workspaceLayoutWidth - fixedLeftWidth - minChatWidth - leftHandleWidth - rightHandleWidth
+				);
+				const clamped = Math.min(Math.max(proposed, minRightWidth), maxRightWidth);
+				setRightPanelWidth(clamped);
+			}
+		};
+
+		const handleMouseUp = () => {
+			dragStateRef.current = null;
+			setIsResizingPanels(false);
+			document.body.style.userSelect = "";
+			document.body.style.cursor = "";
+		};
+
+		window.addEventListener("mousemove", handleMouseMove);
+		window.addEventListener("mouseup", handleMouseUp);
+
+		return () => {
+			window.removeEventListener("mousemove", handleMouseMove);
+			window.removeEventListener("mouseup", handleMouseUp);
+		};
+	}, [getBaseMinPanelWidth, getChatMinWidth, getMaterialDetailMinWidth, isSourcesCollapsed, isStudioCollapsed, leftPanelWidth, rightPanelWidth, workspaceLayoutWidth]);
+
+	useEffect(() => {
+		if (isSourcesCollapsed) return;
+		const minWidth = getMaterialDetailMinWidth();
+		setLeftPanelWidth((current) => Math.max(current, minWidth));
+	}, [getMaterialDetailMinWidth, isSourcesCollapsed, isMaterialDetailOpen]);
+
+	useEffect(() => {
+		const shouldApplyMaterialDetailMin = isMaterialDetailOpen && !isSourcesCollapsed && !isRoadmapJourActive;
+
+		if (shouldApplyMaterialDetailMin) {
+			if (leftWidthBeforeMaterialDetailRef.current == null) {
+				leftWidthBeforeMaterialDetailRef.current = leftPanelWidth;
+			}
+			setLeftPanelWidth((current) => Math.max(current, getMaterialDetailMinWidth()));
+			return;
 		}
 
-		setIsSourcesCollapsed(nextSourcesCollapsed);
-		setIsStudioCollapsed(false);
-	}, [getRequiredLayoutWidth, isSourcesCollapsed, isStudioCollapsed, workspaceLayoutWidth]);
+		if (leftWidthBeforeMaterialDetailRef.current != null) {
+			const restoredWidth = Math.max(getBaseMinPanelWidth(), leftWidthBeforeMaterialDetailRef.current);
+			setLeftPanelWidth(restoredWidth);
+			leftWidthBeforeMaterialDetailRef.current = null;
+		}
+	}, [getBaseMinPanelWidth, getMaterialDetailMinWidth, isMaterialDetailOpen, isRoadmapJourActive, isSourcesCollapsed, leftPanelWidth]);
+
+	useEffect(() => {
+		if (!isRoadmapJourActive) return;
+		setIsMaterialDetailOpen(false);
+	}, [isRoadmapJourActive]);
+
+	useEffect(() => {
+		if (!workspaceLayoutWidth) return;
+		const minSideWidth = getBaseMinPanelWidth();
+		const minChatWidth = getChatMinWidth();
+		const leftHandleWidth = isSourcesCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
+		const rightHandleWidth = isStudioCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
+
+		if (!isSourcesCollapsed) {
+			setLeftPanelWidth((current) => Math.max(current, getMaterialDetailMinWidth()));
+		}
+
+		if (!isStudioCollapsed) {
+			setRightPanelWidth((current) => Math.max(current, minSideWidth));
+		}
+
+		if (!isSourcesCollapsed && !isStudioCollapsed) {
+			const maxTotalSides = workspaceLayoutWidth - minChatWidth - leftHandleWidth - rightHandleWidth;
+			setLeftPanelWidth((currentLeft) => {
+				const safeLeft = Math.max(currentLeft, getMaterialDetailMinWidth());
+				const currentRight = Math.max(rightPanelWidth, minSideWidth);
+				if (safeLeft + currentRight <= maxTotalSides) return safeLeft;
+				return Math.max(getMaterialDetailMinWidth(), maxTotalSides - currentRight);
+			});
+		}
+	}, [getBaseMinPanelWidth, getChatMinWidth, getMaterialDetailMinWidth, isSourcesCollapsed, isStudioCollapsed, rightPanelWidth, workspaceLayoutWidth]);
 
 	useEffect(() => {
 		const container = workspaceLayoutRef.current;
@@ -580,24 +709,6 @@ function WorkspacePage() {
 		observer.observe(container);
 		return () => observer.disconnect();
 	}, []);
-
-	useEffect(() => {
-		if (!workspaceLayoutWidth || shouldStackSidePanels) return;
-
-		const { nextSourcesCollapsed, nextStudioCollapsed } = resolveCollapsedStateByWidth(
-			workspaceLayoutWidth,
-			isSourcesCollapsed,
-			isStudioCollapsed
-		);
-
-		if (nextSourcesCollapsed !== isSourcesCollapsed) {
-			setIsSourcesCollapsed(nextSourcesCollapsed);
-		}
-
-		if (nextStudioCollapsed !== isStudioCollapsed) {
-			setIsStudioCollapsed(nextStudioCollapsed);
-		}
-	}, [isSourcesCollapsed, isStudioCollapsed, resolveCollapsedStateByWidth, shouldStackSidePanels, workspaceLayoutWidth]);
 
 	const getWorkspaceSubPath = useCallback(() => {
 		if (!workspaceId) return "";
@@ -2821,6 +2932,8 @@ function WorkspacePage() {
 												onSourceUpdated={(updatedSource) => {
 													setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
 												}}
+												onDetailViewChange={setIsMaterialDetailOpen}
+												forceCloseDetail={isRoadmapJourActive}
 												isCollapsed={false}
 												onToggleCollapse={handleToggleSourcesCollapse}
 												progressTracking={progressTracking}
@@ -2868,7 +2981,7 @@ function WorkspacePage() {
 							{/* Panel nguá»"n tÃ i liá»‡u (trÃ¡i) */}
 							<div
 								style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
-								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
+								className={`shrink-0 h-full ${isResizingPanels ? "transition-none" : "transition-[width,min-width] duration-300 ease-in-out"}`}
 							>
 								<div className="relative h-full overflow-hidden">
 									<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
@@ -2883,6 +2996,8 @@ function WorkspacePage() {
 											onSourceUpdated={(updatedSource) => {
 												setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
 											}}
+											onDetailViewChange={setIsMaterialDetailOpen}
+											forceCloseDetail={isRoadmapJourActive}
 											isCollapsed={isSourcesCollapsed}
 											onToggleCollapse={handleToggleSourcesCollapse}
 											progressTracking={progressTracking}
@@ -2911,7 +3026,8 @@ function WorkspacePage() {
 
 							{/* Resize handle trÃ¡i */}
 							<div
-								className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${isSourcesCollapsed ? "w-2" : "w-4"}`}
+								onMouseDown={(event) => handleStartResize("left", event)}
+								className={`shrink-0 flex items-center justify-center ${isResizingPanels ? "transition-none" : "transition-all duration-300 ease-in-out"} ${isSourcesCollapsed ? "w-2" : "w-4"} ${isSourcesCollapsed ? "cursor-default" : "cursor-ew-resize"}`}
 							>
 								{!isSourcesCollapsed && (
 									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
@@ -2919,7 +3035,7 @@ function WorkspacePage() {
 							</div>
 
 							{/* Panel khu vá»±c há»c táº­p (giá»¯a) */}
-							<div className="flex-1 min-w-0 h-full">
+							<div style={{ minWidth: getChatMinWidth() }} className="flex-1 min-w-0 h-full">
 								<ChatPanel
 									isDarkMode={isDarkMode}
 									sources={sources}
@@ -2977,7 +3093,8 @@ function WorkspacePage() {
 
 							{/* Resize handle pháº£i */}
 							<div
-								className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${isStudioCollapsed ? "w-2" : "w-4"}`}
+								onMouseDown={(event) => handleStartResize("right", event)}
+								className={`shrink-0 flex items-center justify-center ${isResizingPanels ? "transition-none" : "transition-all duration-300 ease-in-out"} ${isStudioCollapsed ? "w-2" : "w-4"} ${isStudioCollapsed ? "cursor-default" : "cursor-ew-resize"}`}
 							>
 								{!isStudioCollapsed && (
 									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
@@ -2987,7 +3104,7 @@ function WorkspacePage() {
 							{/* Panel Studio (pháº£i) */}
 							<div
 								style={{ width: effectiveRightWidth, minWidth: effectiveRightWidth }}
-								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
+								className={`shrink-0 h-full ${isResizingPanels ? "transition-none" : "transition-[width,min-width] duration-300 ease-in-out"}`}
 							>
 								<StudioPanel
 									isDarkMode={isDarkMode}
