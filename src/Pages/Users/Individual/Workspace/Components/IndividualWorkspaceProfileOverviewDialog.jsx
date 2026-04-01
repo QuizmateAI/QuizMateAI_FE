@@ -142,19 +142,32 @@ function formatRoadmapSpeedModeLabel(value, t, language) {
   );
 }
 
+function normalizeAdaptationModeValue(value) {
+  const normalizedValue = String(value || '').toUpperCase();
+
+  if (normalizedValue === 'FLEXIBLE') return 'FLEXIBLE';
+  if (normalizedValue === 'INTENSIVE') return 'INTENSIVE';
+  if (normalizedValue === 'STRICT' || normalizedValue === 'BALANCED') return 'BALANCED';
+  return normalizedValue;
+}
+
 function formatAdaptationModeLabel(value, t, language) {
-  const normalizedValue = value === 'BALANCED' ? 'STRICT' : value;
+  const normalizedValue = normalizeAdaptationModeValue(value);
   if (!normalizedValue) {
     return language === 'en' ? 'Not configured' : 'Chưa cấu hình';
   }
 
   const fallbackLabels = {
-    STRICT: language === 'en' ? 'Strict' : 'Bám sát',
+    BALANCED: language === 'en' ? 'Fixed' : 'Cố định',
     FLEXIBLE: language === 'en' ? 'Flexible' : 'Linh hoạt',
+    INTENSIVE: language === 'en' ? 'Intensive' : 'Tăng tốc',
   };
 
-  return fallbackLabels[normalizedValue]
-    || translateOrFallback(t, `workspace.profileConfig.adaptationMode.${normalizedValue}.title`, normalizedValue);
+  return translateOrFallback(
+    t,
+    `workspace.profileConfig.adaptationMode.${normalizedValue}.title`,
+    fallbackLabels[normalizedValue] || normalizedValue
+  );
 }
 
 function getOverviewTone(tone, isDarkMode) {
@@ -337,12 +350,16 @@ function IndividualWorkspaceProfileOverviewDialog({
       : null);
   const minutesSummary = recommendedMinutesValue
     ? `${recommendedMinutesValue} ${i18n.language === 'en' ? 'minutes/day' : 'phút/ngày'}`
-    : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt');
+    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'));
   const estimatedDaysSummary = profile?.estimatedTotalDays
     ? `${profile.estimatedTotalDays} ${i18n.language === 'en' ? 'days' : 'ngày'}`
     : fallbackEmpty;
   const knowledgeLoadSummary = normalizedKnowledgeLoad
-    ? t(`workspace.profileConfig.knowledgeLoad.${normalizedKnowledgeLoad}.title`)
+    ? translateOrFallback(
+      t,
+      `workspace.profileConfig.knowledgeLoad.${normalizedKnowledgeLoad}.title`,
+      normalizedKnowledgeLoad
+    )
     : fallbackEmpty;
   const strongAreasSummary = summarizeAreaValue(profile?.strongAreas, fallbackEmpty);
   const weakAreasSummary = summarizeAreaValue(profile?.weakAreas, fallbackEmpty);
@@ -520,26 +537,32 @@ function IndividualWorkspaceProfileOverviewDialog({
               >
                 <div className="grid gap-4 md:grid-cols-2">
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapSpeed', i18n.language === 'en' ? 'Roadmap speed' : 'Nhịp roadmap')}
-                    value={roadmapSpeedLabel}
-                    isDarkMode={isDarkMode}
-                    tone="roadmap"
-                  />
-                  <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapAdaptation', i18n.language === 'en' ? 'Adaptation mode' : 'Cách thích nghi')}
-                    value={roadmapAdaptationLabel}
-                    isDarkMode={isDarkMode}
-                    tone="roadmap"
-                  />
-                  <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapLoad', i18n.language === 'en' ? 'Knowledge load' : 'Mức độ kiến thức')}
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeLoad', i18n.language === 'en' ? 'Knowledge amount' : 'Lượng kiến thức cần học')}
                     value={knowledgeLoadSummary}
                     isDarkMode={isDarkMode}
                     tone="roadmap"
                   />
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileOverview.roadmapDuration', i18n.language === 'en' ? 'Plan duration' : 'Thời lượng dự kiến')}
-                    value={`${minutesSummary} • ${estimatedDaysSummary}`}
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', i18n.language === 'en' ? 'Adaptation mode' : 'Loại Lộ trình')}
+                    value={roadmapAdaptationLabel}
+                    isDarkMode={isDarkMode}
+                    tone="roadmap"
+                  />
+                  <OverviewField
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', i18n.language === 'en' ? 'Roadmap speed mode' : 'Tốc độ Lộ trình')}
+                    value={roadmapSpeedLabel}
+                    isDarkMode={isDarkMode}
+                    tone="roadmap"
+                  />
+                  <OverviewField
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', i18n.language === 'en' ? 'Estimated total days' : 'Số ngày dự kiến')}
+                    value={estimatedDaysSummary}
+                    isDarkMode={isDarkMode}
+                    tone="roadmap"
+                  />
+                  <OverviewField
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.recommendedMinutesPerDay', i18n.language === 'en' ? 'Suggested minutes per day' : 'Số phút học gợi ý mỗi ngày')}
+                    value={minutesSummary}
                     isDarkMode={isDarkMode}
                     tone="roadmap"
                   />
