@@ -32,51 +32,64 @@ export default function QuizHeader({ onBack, title, showConfirm, confirmTitle, c
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handleBackClick} className="rounded-full shrink-0">
-            <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-          </Button>
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 hidden sm:block truncate max-w-[200px] md:max-w-xs">{title}</h2>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full shrink-0">
-                <Type className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[220px]">
-              {fontOptions.map((fontOption) => (
-                <DropdownMenuItem
-                  key={fontOption.key}
-                  onClick={() => setSelectedFont(fontOption.key)}
-                  className={selectedFont === fontOption.key ? 'bg-slate-100 dark:bg-slate-800' : ''}
-                >
-                  <span style={{ fontFamily: fontOption.family }}>
-                    {t(fontOption.labelKey, fontOption.defaultLabel)}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <div className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 backdrop-blur dark:border-slate-800 dark:bg-slate-950/88">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleBackClick}
+              className="h-11 w-11 shrink-0 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
+              aria-label={t('workspace.quiz.header.back', 'Go back')}
+            >
+              <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+            </Button>
+            <div className="min-w-0">
+              <p className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:block dark:text-slate-500">
+                {t('workspace.quiz.header.sessionLabel', 'Quiz session')}
+              </p>
+              <h2 className="truncate text-lg font-semibold text-slate-800 dark:text-slate-100 sm:max-w-[320px] md:max-w-xl">{title}</h2>
+            </div>
+          </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full shrink-0">
-                <Globe className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => changeLanguage('en')}>{t('workspace.quiz.header.english', 'English')}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => changeLanguage('vi')}>{t('workspace.quiz.header.vietnamese', 'Tiếng Việt')}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50/90 px-2 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl shrink-0" aria-label={t('workspace.quiz.header.font', 'Change font')}>
+                  <Type className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[220px]">
+                {fontOptions.map((fontOption) => (
+                  <DropdownMenuItem
+                    key={fontOption.key}
+                    onClick={() => setSelectedFont(fontOption.key)}
+                    className={selectedFont === fontOption.key ? 'bg-slate-100 dark:bg-slate-800' : ''}
+                  >
+                    <span style={{ fontFamily: fontOption.family }}>
+                      {t(fontOption.labelKey, fontOption.defaultLabel)}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="rounded-full shrink-0">
-            {isDarkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-700" />}
-          </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl shrink-0" aria-label={t('workspace.quiz.header.language', 'Change language')}>
+                  <Globe className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => changeLanguage('en')}>{t('workspace.quiz.header.english', 'English')}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => changeLanguage('vi')}>{t('workspace.quiz.header.vietnamese', 'Tiếng Việt')}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="rounded-xl shrink-0" aria-label={t('workspace.quiz.header.theme', 'Toggle theme')}>
+              {isDarkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-700" />}
+            </Button>
+          </div>
         </div>
       </div>
 

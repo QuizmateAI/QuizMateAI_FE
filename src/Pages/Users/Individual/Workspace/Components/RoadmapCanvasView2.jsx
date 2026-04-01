@@ -658,6 +658,7 @@ function RoadmapCanvasView2({
                       onCreateQuiz={() => onCreatePhaseKnowledge?.(phase.phaseId)}
                       onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
                       embedded
+                      legacyRoadmapUI
                       hideCreateButton
                       title={t("workspace.roadmap.canvas.quiz", "Quiz")}
                       refreshToken={(Number(quizRefreshToken) || 0) + targetedKnowledgeRefreshToken}
@@ -977,6 +978,7 @@ function RoadmapCanvasView2({
                         onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
                         onShareQuiz={onShareQuiz}
                         embedded
+                        legacyRoadmapUI
                         hideCreateButton
                         title={t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
                         intentFilter={["PRE_LEARNING"]}
@@ -1173,6 +1175,7 @@ function RoadmapCanvasView2({
                             onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
                             onShareQuiz={onShareQuiz}
                             embedded
+                            legacyRoadmapUI
                             hideCreateButton
                             title={t("workspace.roadmap.canvas.postLearning", "Post-learning")}
                             intentFilter={["POST_LEARNING"]}

@@ -588,13 +588,13 @@ export default function QuizResultPage() {
     const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
     if (targetPage !== currentPage) {
       setCurrentPage(targetPage);
-      setTimeout(() => {
-        questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 0);
+      window.setTimeout(() => {
+        questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 30);
       return;
     }
 
-    questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [currentPage, itemsPerPage]);
 
   const refreshAttemptResult = useCallback(async () => {
@@ -1078,7 +1078,11 @@ export default function QuizResultPage() {
 
   return (
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
-      <QuizHeader onBack={handleBack} title={quizDetails?.title || t('workspace.quiz.result.title', 'Result')} showConfirm={false} />
+      <QuizHeader
+        onBack={reviewMode ? () => setReviewMode(false) : handleBack}
+        title={quizDetails?.title || t('workspace.quiz.result.title', 'Result')}
+        showConfirm={false}
+      />
       <div className="flex-1 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Score card */}
@@ -1286,11 +1290,8 @@ export default function QuizResultPage() {
 
             {/* Action buttons */}
             <SectionDivider />
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button onClick={handleBack} className="min-w-[160px] gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
-              </Button>
-              <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[160px] gap-2" disabled={reviewQuestions.length === 0}>
+            <div className="flex items-center justify-center">
+              <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[180px] gap-2" disabled={reviewQuestions.length === 0}>
                 <Eye className="w-4 h-4" /> {t('workspace.quiz.result.reviewAnswers', 'Review Answers')}
               </Button>
             </div>
@@ -1300,11 +1301,8 @@ export default function QuizResultPage() {
         {/* Review mode */}
         {reviewMode && (
           <>
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-6">
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.reviewAnswersTitle', 'Review Answers')}</h2>
-              <Button variant="outline" onClick={() => setReviewMode(false)} className="gap-2">
-                <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToScore', 'Back to Score')}
-              </Button>
             </div>
 
             {isGradingPending && (
@@ -1313,16 +1311,17 @@ export default function QuizResultPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_260px]">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_272px] xl:grid-cols-[minmax(0,1fr)_288px]">
               <div className="space-y-4">
                 {reviewQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
                   const globalIdx = (currentPage - 1) * itemsPerPage + idx;
                   return (
-                    <div key={q.id} className="relative" ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }}>
+                    <div key={q.id} className="relative scroll-mt-24" ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }}>
                       <QuestionCard
                         question={q}
                         questionNumber={globalIdx + 1}
                         totalQuestions={reviewQuestions.length}
+                        showHeaderMeta={false}
                         answerValue={
                           q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK'
                             ? q.textAnswer
@@ -1361,65 +1360,65 @@ export default function QuizResultPage() {
 
               {/* Right Sticky Nav */}
               <div className="relative hidden lg:block">
-                <div className="sticky top-[96px] overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/90 dark:shadow-blue-950/10">
+                <div className="sticky top-[96px] rounded-[26px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.10)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/90 dark:shadow-blue-950/10 xl:p-4">
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_46%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.16),_transparent_40%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_46%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_40%)]" />
                   <div className="relative">
-                    <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="mb-3 flex items-start justify-between gap-2.5">
                       <div className="space-y-1">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-300">
                           {t('workspace.quiz.result.reviewAnswersTitle', 'Review Answers')}
                         </p>
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">
                           {t('workspace.quiz.result.questionList', 'Question list')}
                         </h3>
-                        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        <p className="max-w-[150px] text-[11px] leading-4 text-slate-500 dark:text-slate-400">
                           {t('workspace.quiz.result.questionListHint', 'Click a number to jump straight to that question.')}
                         </p>
                       </div>
-                      <div className="min-w-[72px] rounded-2xl border border-slate-200/80 bg-white/80 px-3 py-2 text-right shadow-sm dark:border-slate-700/80 dark:bg-slate-950/60">
+                      <div className="min-w-[62px] rounded-[20px] border border-slate-200/80 bg-white/80 px-2.5 py-2 text-right shadow-sm dark:border-slate-700/80 dark:bg-slate-950/60">
                         <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                           {t('workspace.quiz.result.total', 'Total')}
                         </p>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+                        <p className="text-[26px] font-bold leading-none text-slate-900 dark:text-slate-50">
                           {reviewSummary.total}
                         </p>
                       </div>
                     </div>
 
-                    <div className="mb-4 grid grid-cols-2 gap-2 text-left">
-                      <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/90 px-3 py-2.5 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/30">
+                    <div className="mb-3 grid grid-cols-2 gap-2 text-left">
+                      <div className="min-h-[82px] rounded-[20px] border border-emerald-200/80 bg-emerald-50/90 px-3 py-2.5 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-950/30">
                         <div className="mb-1 flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
-                          <CheckCircle2 className="h-4 w-4" />
+                          <CheckCircle2 className="h-3.5 w-3.5" />
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
                             {t('workspace.quiz.result.correct', 'Correct')}
                           </span>
                         </div>
-                        <p className="text-xl font-bold text-emerald-700 dark:text-emerald-200">{reviewSummary.correct}</p>
+                        <p className="text-lg font-bold text-emerald-700 dark:text-emerald-200">{reviewSummary.correct}</p>
                       </div>
-                      <div className="rounded-2xl border border-rose-200/80 bg-rose-50/90 px-3 py-2.5 shadow-sm dark:border-rose-800/60 dark:bg-rose-950/30">
+                      <div className="min-h-[82px] rounded-[20px] border border-rose-200/80 bg-rose-50/90 px-3 py-2.5 shadow-sm dark:border-rose-800/60 dark:bg-rose-950/30">
                         <div className="mb-1 flex items-center gap-2 text-rose-700 dark:text-rose-300">
-                          <XCircle className="h-4 w-4" />
+                          <XCircle className="h-3.5 w-3.5" />
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
                             {t('workspace.quiz.result.wrong', 'Wrong')}
                           </span>
                         </div>
-                        <p className="text-xl font-bold text-rose-700 dark:text-rose-200">{reviewSummary.wrong}</p>
+                        <p className="text-lg font-bold text-rose-700 dark:text-rose-200">{reviewSummary.wrong}</p>
                       </div>
                       {reviewSummary.pending > 0 && (
-                        <div className="col-span-2 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-3 py-2.5 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/30">
+                        <div className="col-span-2 rounded-[20px] border border-amber-200/80 bg-amber-50/90 px-3 py-2.5 shadow-sm dark:border-amber-800/60 dark:bg-amber-950/30">
                           <div className="mb-1 flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
                               {t('workspace.quiz.result.pending', 'Pending')}
                             </span>
                           </div>
-                          <p className="text-lg font-bold text-amber-700 dark:text-amber-200">{reviewSummary.pending}</p>
+                          <p className="text-base font-bold text-amber-700 dark:text-amber-200">{reviewSummary.pending}</p>
                         </div>
                       )}
                     </div>
 
-                    <div className="grid max-h-[58vh] grid-cols-5 gap-1.5 overflow-y-auto p-1">
-                      <div className="mb-4 flex flex-col items-start gap-2">
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-3">
                         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                           {t('workspace.quiz.result.questionList', 'Question list')}
                         </span>
@@ -1430,7 +1429,7 @@ export default function QuizResultPage() {
                         )}
                       </div>
 
-                      <div className="grid max-h-[58vh] grid-cols-4 gap-3 overflow-y-auto p-1">
+                      <div className="grid max-h-[48vh] grid-cols-5 gap-1.5 overflow-y-auto pr-0.5">
                         {navQuestions.map((q, idx) => {
                           const globalIdx = navStartIndex + idx;
                           const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
@@ -1442,8 +1441,7 @@ export default function QuizResultPage() {
                               key={q.id}
                               onClick={() => jumpToQuestion(globalIdx)}
                               className={cn(
-                                'aspect-square w-full rounded-lg border text-xs font-semibold transition-all duration-200 focus-visible:outline-none',
-                                'relative aspect-square w-full rounded-[20px] border text-base font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+                                'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
                                 isPending
                                   ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
                                   : isCorrect
@@ -1454,14 +1452,14 @@ export default function QuizResultPage() {
                                   : ''
                               )}
                             >
-                              <span className="relative z-10">{globalIdx + 1}</span>
+                              <span className="relative z-10 leading-none">{globalIdx + 1}</span>
                             </button>
                           );
                         })}
                       </div>
 
                       {reviewQuestions.length > itemsPerPage && (
-                        <div className="col-span-5 mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
                           <Button
                             variant="outline"
                             size="sm"
@@ -1495,12 +1493,6 @@ export default function QuizResultPage() {
               </div>
             </div>
 
-            <div className="flex justify-center mt-8 gap-3">
-              <Button onClick={handleBack} className="min-w-[160px] bg-blue-600 hover:bg-blue-700 text-white gap-2">
-                <ArrowLeft className="w-4 h-4" /> {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
-              </Button>
-              <Button variant="outline" onClick={() => setReviewMode(false)} className="min-w-[160px]">{t('workspace.quiz.result.backToScore', 'Back to Score')}</Button>
-            </div>
           </>
         )}
       </div>

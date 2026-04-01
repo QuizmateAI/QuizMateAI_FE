@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, Loader2, AlertTriangle, Ban, MoreHorizontal, Download, PenLine, Share2 } from "lucide-react";
+import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, AlertTriangle, Ban, MoreHorizontal, Download, PenLine, Share2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
 import { renameMaterial } from "@/api/MaterialAPI";
@@ -7,6 +7,7 @@ import { useToast } from "@/context/ToastContext";
 import SourceDetailView from "./SourceDetailView";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
+import InlineSpinner from "@/Components/ui/InlineSpinner";
 
 // Format MIME type thành tên file type ngắn gọn
 function formatFileType(type) {
@@ -43,7 +44,7 @@ function getSourceDisplayIcon(source, progressTracking = null) {
     if (percent > 0) {
       return <CircularProgressLoader percent={Math.min(percent, 100)} size="sm" color="blue" showSpinner={true} />;
     }
-    return <Loader2 className="w-4 h-4 animate-spin text-blue-500 shrink-0" />;
+    return <InlineSpinner className="h-4 w-4 text-blue-500" />;
   }
   return getSourceIcon(source?.type);
 }

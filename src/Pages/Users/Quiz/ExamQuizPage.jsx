@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { CheckCircle2, FileQuestion, Loader2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
@@ -12,7 +12,7 @@ import ExamPerQuestion from './components/ExamPerQuestion';
 import QuizHeader from './components/QuizHeader';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
 import { getQuizFullForAttempt, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
-import { buildSubmitPayload, getAttemptRemainingSeconds, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
+import { buildSubmitPayload, getAttemptRemainingSeconds, hasAnswerValue, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 
@@ -37,6 +37,7 @@ export default function ExamQuizPage() {
   const [submitError, setSubmitError] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
   const [saveMessage, setSaveMessage] = useState('');
+  const [flaggedQuestionIds, setFlaggedQuestionIds] = useState([]);
   const [confirmStartOpen, setConfirmStartOpen] = useState(() => !shouldAutoStart);
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -151,6 +152,62 @@ export default function ExamQuizPage() {
     return false;
   }, [saveManually, t]);
 
+  const answeredCount = useMemo(
+    () => quiz?.questions?.filter((question) => hasAnswerValue(answers[question.id])).length || 0,
+    [answers, quiz?.questions],
+  );
+
+  const unansweredQuestionNumbers = useMemo(() => {
+    if (!quiz?.questions?.length) return [];
+    return quiz.questions.flatMap((question, index) => (
+      hasAnswerValue(answers[question.id]) ? [] : [index + 1]
+    ));
+  }, [answers, quiz?.questions]);
+
+  const resolveTemplatedText = useCallback((key, fallback, replacements = {}) => {
+    const template = t(key);
+    const base = template === key ? fallback : template;
+    return Object.entries(replacements).reduce(
+      (message, [name, value]) => message.replaceAll(`{{${name}}}`, String(value)),
+      String(base),
+    );
+  }, [t]);
+
+  const submitConfirmState = useMemo(() => {
+    const unansweredCount = unansweredQuestionNumbers.length;
+    const previewNumbers = unansweredQuestionNumbers.slice(0, 8);
+
+    return {
+      unansweredCount,
+      previewNumbers,
+      hasMore: unansweredCount > previewNumbers.length,
+      title: unansweredCount > 0
+        ? resolveTemplatedText(
+          'workspace.quiz.examActions.confirmSubmitIncompleteTitle',
+          unansweredCount === 1
+            ? 'You still have 1 unanswered question'
+            : `You still have ${unansweredCount} unanswered questions`,
+          { count: unansweredCount },
+        )
+        : t('workspace.quiz.examActions.confirmSubmitCompletedTitle', 'Ready to submit your exam?'),
+      description: unansweredCount > 0
+        ? resolveTemplatedText(
+          'workspace.quiz.examActions.confirmSubmitIncompleteDescription',
+          'These questions will be submitted as unanswered. Do you still want to continue?',
+          { count: unansweredCount },
+        )
+        : t('workspace.quiz.examActions.confirmSubmitCompletedDescription', 'You have completed all questions. Once submitted, you will not be able to edit your answers.'),
+    };
+  }, [resolveTemplatedText, t, unansweredQuestionNumbers]);
+
+  const toggleQuestionFlag = useCallback((questionId) => {
+    setFlaggedQuestionIds((prev) => (
+      prev.includes(questionId)
+        ? prev.filter((id) => id !== questionId)
+        : [...prev, questionId]
+    ));
+  }, []);
+
   const selectAnswer = useCallback((questionId, answerId, isMultiple) => {
     setAnswers(prev => {
       const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
@@ -203,6 +260,7 @@ export default function ExamQuizPage() {
       setTimeLeft(getAttemptRemainingSeconds(effectiveTimeoutAt, quiz?.totalTime || 0));
       markQuizAttempted(quizId);
       setAnswers(hydratedAnswers);
+      setFlaggedQuestionIds([]);
       syncSnapshot(hydratedAnswers);
       setIsStarted(true);
     } catch (err) {
@@ -357,18 +415,22 @@ export default function ExamQuizPage() {
     void handleStart();
   }, [handleStart, isStarted, loading, quiz, shouldAutoStart]);
 
+  const scrollQuestionIntoView = useCallback((index) => {
+    questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, []);
+
   const jumpToQuestion = useCallback((index) => {
     const targetPage = Math.floor(index / itemsPerPage) + 1;
     if (targetPage !== currentPage) {
       setCurrentPage(targetPage);
-      setTimeout(() => {
-        questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 0);
+      window.setTimeout(() => {
+        scrollQuestionIntoView(index);
+      }, 30);
       return;
     }
 
-    questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [currentPage, itemsPerPage]);
+    scrollQuestionIntoView(index);
+  }, [currentPage, itemsPerPage, scrollQuestionIntoView]);
 
   const paginatedQuestions = useMemo(() => {
     if (!quiz?.questions?.length) return [];
@@ -380,11 +442,14 @@ export default function ExamQuizPage() {
     paginatedQuestions.map((q, idx) => {
       const globalIdx = (currentPage - 1) * itemsPerPage + idx;
       return (
-        <div key={q.id} ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }}>
+        <div key={q.id} ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }} className="scroll-mt-24">
           <QuestionCard
             question={q}
             questionNumber={globalIdx + 1}
             totalQuestions={quiz.questions.length}
+            showHeaderMeta={false}
+            isFlagged={flaggedQuestionIds.includes(q.id)}
+            onToggleFlag={() => toggleQuestionFlag(q.id)}
             answerValue={answers[q.id]}
             onSelectAnswer={(answerId) => selectAnswer(q.id, answerId, q.type === 'MULTIPLE_CHOICE')}
             onTextAnswerChange={(value) => updateTextAnswer(q.id, value)}
@@ -393,11 +458,11 @@ export default function ExamQuizPage() {
         </div>
       );
     })
-  ), [answers, currentPage, itemsPerPage, paginatedQuestions, quiz?.questions.length, selectAnswer, updateMatchingAnswer, updateTextAnswer]);
+  ), [answers, currentPage, flaggedQuestionIds, itemsPerPage, paginatedQuestions, quiz?.questions.length, selectAnswer, toggleQuestionFlag, updateMatchingAnswer, updateTextAnswer]);
 
   const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   if (loading) {
@@ -538,18 +603,54 @@ export default function ExamQuizPage() {
       />
       <div className="flex-1 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-6 flex items-center gap-2 flex-wrap">
-          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{quiz.title}</h1>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${quiz.timerMode === 'TOTAL'
-            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-          }`}>
-            {quiz.timerMode === 'TOTAL'
-              ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
-              : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
-          </span>
+        <div className="mb-8 overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-blue-950/20">
+          <div className="relative p-6">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_42%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.12),_transparent_38%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_42%),radial-gradient(circle_at_bottom_right,_rgba(250,204,21,0.10),_transparent_38%)]" />
+            <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-800/70 dark:bg-blue-950/30 dark:text-blue-300">
+                  {quiz.timerMode === 'TOTAL'
+                    ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
+                    : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">{quiz.title}</h1>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    {t('workspace.quiz.examActions.headerHint', 'Hoàn thành từng câu, dùng dấu sao để đánh dấu các câu bạn muốn quay lại kiểm tra trước khi nộp bài.')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 sm:min-w-[360px]">
+                <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                    {t('workspace.quiz.result.total', 'Total')}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-50">{quiz.questions.length}</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 shadow-sm dark:border-emerald-800/70 dark:bg-emerald-950/20">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600 dark:text-emerald-300">
+                    {t('workspace.quiz.result.answered', 'Answered')}
+                  </p>
+                  <p className="mt-1 flex items-center gap-2 text-2xl font-bold text-emerald-700 dark:text-emerald-200">
+                    <CheckCircle2 className="h-5 w-5" />
+                    {answeredCount}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 shadow-sm dark:border-amber-800/70 dark:bg-amber-950/20">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600 dark:text-amber-300">
+                    {t('workspace.quiz.examActions.markedCount', 'Marked')}
+                  </p>
+                  <p className="mt-1 flex items-center gap-2 text-2xl font-bold text-amber-700 dark:text-amber-200">
+                    <Star className="h-5 w-5 fill-current" />
+                    {flaggedQuestionIds.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           {/* Questions list */}
           <div className="space-y-4">
             {renderedQuestionCards}
@@ -560,18 +661,12 @@ export default function ExamQuizPage() {
                 <Button variant="outline" disabled={currentPage === totalPages} onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}>{t('workspace.quiz.pagination.next', 'Next page')}</Button>
               </div>
             )}
-            <Button onClick={handleOpenSubmitConfirm} disabled={isSubmitted} className="w-full min-w-[100px] bg-blue-600 hover:bg-blue-700 text-white text-base py-3">
-              {isSubmitted
-                  ? <span className="inline-flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" />{t('workspace.quiz.examActions.submitting', 'Submitting...')}</span>
-                  : t('workspace.quiz.examActions.submitButton', 'Submit Exam')}
-            </Button>
             {submitError && (
               <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
             )}
           </div>
 
-          {/* Side nav panel (desktop) */}
-          <div className="hidden lg:block">
+          <div>
             <QuestionNavPanel
               questions={quiz.questions}
               answers={answers}
@@ -585,6 +680,7 @@ export default function ExamQuizPage() {
               isSaveLoading={saveStatus === 'saving'}
               saveStatus={saveStatus}
               saveMessage={saveMessage}
+              flaggedQuestionIds={flaggedQuestionIds}
               isSubmitLoading={isSubmitted}
               submitError={submitError}
               t={t}
@@ -597,11 +693,32 @@ export default function ExamQuizPage() {
       <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
         <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-700">
           <DialogHeader>
-            <DialogTitle>{t('workspace.quiz.examActions.confirmSubmitTitle', 'Stop and submit your exam?')}</DialogTitle>
+            <DialogTitle>{submitConfirmState.title}</DialogTitle>
             <DialogDescription>
-              {t('workspace.quiz.examActions.confirmSubmitDescription', 'Your current answers will be submitted immediately.')}
+              {submitConfirmState.description}
             </DialogDescription>
           </DialogHeader>
+          {submitConfirmState.unansweredCount > 0 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/70 dark:bg-amber-950/20 dark:text-amber-200">
+              <p className="flex items-center gap-2 font-semibold">
+                <FileQuestion className="h-4 w-4" />
+                {t('workspace.quiz.examActions.unansweredListLabel', 'Unanswered questions')}
+              </p>
+              <p className="mt-2 leading-6">
+                {submitConfirmState.previewNumbers.join(', ')}
+                {submitConfirmState.hasMore
+                  ? ` ${t('workspace.quiz.examActions.unansweredListMore', 'and more...')}`
+                  : ''}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/20 dark:text-emerald-200">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="h-4 w-4" />
+                {t('workspace.quiz.examActions.allQuestionsCompleted', 'All questions are completed.')}
+              </div>
+            </div>
+          )}
           <DialogFooter className="gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => setConfirmSubmitOpen(false)}>
               {t('workspace.quiz.common.cancel', 'Cancel')}

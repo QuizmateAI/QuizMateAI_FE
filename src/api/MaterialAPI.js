@@ -1,5 +1,20 @@
 import api from './api';
 
+function buildMultipartConfig(workspaceId, options = {}) {
+  const { onUploadProgress, timeout = 120000 } = options;
+
+  return {
+    params: {
+      workspaceID: Number(workspaceId),
+    },
+    headers: {
+      'Content-Type': undefined, // Để Axios tự set multipart boundary
+    },
+    timeout,
+    ...(typeof onUploadProgress === 'function' ? { onUploadProgress } : {}),
+  };
+}
+
 // Lấy danh sách tài liệu theo workspaceId
 export const getMaterialsByWorkspace = async (workspaceId) => {
   const response = await api.get(`/materials/workspace/${workspaceId}`);
@@ -46,23 +61,52 @@ export const renameMaterial = async (materialId, title) => {
   return response;
 };
 
+// Duyệt tài liệu group theo hàng chờ leader review
+export const reviewGroupMaterial = async (materialId, isApproved) => {
+  const response = await api.post(`/materials/${materialId}/group-review`, null, {
+    params: {
+      isApproved,
+    },
+  });
+  return response;
+};
+
+// Lấy danh sách tài liệu group đang chờ leader duyệt
+export const getPendingGroupMaterials = async (workspaceId) => {
+  const response = await api.get(`/materials/workspace/${workspaceId}/pending-review`);
+  return response;
+};
+
 // Upload tài liệu
-export const uploadMaterial = async (file, workspaceId) => {
+export const uploadMaterial = async (file, workspaceId, options = {}) => {
   if (!workspaceId) {
     throw new Error('workspaceID is required to upload material');
   }
 
   const formData = new FormData();
   formData.append('file', file);
-  
-  const response = await api.post('/materials/upload', formData, {
-    params: {
-      workspaceID: Number(workspaceId),
-    },
-    headers: {
-      'Content-Type': undefined, // Để Axios tự set multipart boundary
-    },
-    timeout: 120000, // 2 phút cho file lớn
-  });
+
+  const response = await api.post(
+    '/materials/upload',
+    formData,
+    buildMultipartConfig(workspaceId, options),
+  );
+  return response;
+};
+
+// Upload tài liệu group theo luồng AI kiểm duyệt + leader review
+export const uploadGroupPendingMaterial = async (file, workspaceId, options = {}) => {
+  if (!workspaceId) {
+    throw new Error('workspaceID is required to upload group material');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post(
+    '/materials/upload/group-pending',
+    formData,
+    buildMultipartConfig(workspaceId, options),
+  );
   return response;
 };

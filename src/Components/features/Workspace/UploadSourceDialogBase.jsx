@@ -13,7 +13,6 @@ import {
   Image,
   Film,
   X,
-  Loader2,
   Sparkles,
   Link2,
   Youtube,
@@ -22,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import InlineSpinner from "@/Components/ui/InlineSpinner";
 import {
   getSuggestedResources,
   suggestResourcesByWorkspace,
@@ -67,11 +67,13 @@ function UploadSourceDialogBase({
   onUploadFiles,
   workspaceId,
   onSuggestedImported,
+  variant = "default",
 }) {
   const { t, i18n } = useTranslation();
   const { showError, showSuccess, showInfo } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const normalizedWorkspaceId = useMemo(() => normalizeWorkspaceId(workspaceId), [workspaceId]);
+  const isGroupReviewUpload = variant === "group-review";
 
   const [dragOver, setDragOver] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -295,15 +297,18 @@ function UploadSourceDialogBase({
           <DialogTitle className={fontClass}>
             {showWebInput
               ? t("workspace.upload.webYoutubeTitle", "URL trang YouTube")
-              : t("workspace.upload.title")}
+              : isGroupReviewUpload
+                ? t("workspace.upload.groupReviewTitle", "Tải tài liệu chờ leader duyệt")
+                : t("workspace.upload.title")}
           </DialogTitle>
           <DialogDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
             {showWebInput
               ? t("workspace.upload.webYoutubeDescription", "Dán URL trang YouTube vào bên dưới để tải lên dưới dạng một nguồn trong Workspace.")
-              : `${t("workspace.upload.dragDrop")} / ${t("workspace.upload.orBrowse")}`}
+              : isGroupReviewUpload
+                ? t("workspace.upload.groupReviewDescription", "Tài liệu sẽ được AI kiểm tra theo profile nhóm, sau đó đi vào hàng chờ leader duyệt trước khi xuất hiện trong nguồn học chung.")
+                : `${t("workspace.upload.dragDrop")} / ${t("workspace.upload.orBrowse")}`}
           </DialogDescription>
         </DialogHeader>
-
         {showWebInput ? (
           <div className="space-y-3">
             {/* <div className="flex items-center justify-between gap-2">
@@ -358,7 +363,7 @@ function UploadSourceDialogBase({
                 disabled={processingWebLink || String(webUrl || "").trim().length === 0}
                 className="min-w-[120px] h-10 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-300 disabled:text-slate-600"
               >
-                {processingWebLink ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {processingWebLink ? <InlineSpinner className="mr-2" /> : null}
                 {t("workspace.upload.insertUrl", "Chèn")}
               </Button>
             </div>
@@ -422,15 +427,27 @@ function UploadSourceDialogBase({
               <div className={`px-3 py-2 border-b text-xs font-medium ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-500"}`}>
                 {selectedFiles.length} {t("workspace.sources.title", "Tài liệu")}
               </div>
-              <div className="max-h-40 overflow-y-auto">
+              <div className="max-h-40 overflow-x-hidden overflow-y-auto">
               {selectedFiles.map((file, i) => (
-                <div key={`${file.name}_${i}`} className={`flex items-center justify-between px-3 py-2 text-sm ${isDarkMode ? "hover:bg-slate-900" : "hover:bg-slate-50"}`}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    {getFileIcon(file)}
-                    <span className={`truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{file.name}</span>
-                    <span className={`text-xs shrink-0 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                <div key={`${file.name}_${i}`} className={`flex items-start gap-3 px-3 py-2 text-sm ${isDarkMode ? "hover:bg-slate-900" : "hover:bg-slate-50"}`}>
+                  <div className="grid min-w-0 flex-1 grid-cols-[auto,minmax(0,1fr),auto] items-start gap-2 overflow-hidden">
+                    <span className="mt-0.5 shrink-0">
+                      {getFileIcon(file)}
+                    </span>
+                    <span
+                      title={file.name}
+                      className={`block min-w-0 overflow-hidden break-all leading-5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
+                      style={{
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                      }}
+                    >
+                      {file.name}
+                    </span>
+                    <span className={`mt-0.5 shrink-0 text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
                   </div>
-                  <button onClick={() => removeFile(i)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded">
+                  <button onClick={() => removeFile(i)} className="mt-0.5 shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded">
                     <X className="w-3.5 h-3.5 text-red-500" />
                   </button>
                 </div>
@@ -447,7 +464,7 @@ function UploadSourceDialogBase({
                     disabled={uploading || importingSuggestions || !hasUserSelectedFiles}
                     className="bg-[#2563EB] hover:bg-blue-700 text-white"
                   >
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
+                    {uploading ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
                     {t("workspace.upload.uploadUserFiles")}
                   </Button>
                 </div>
@@ -472,7 +489,7 @@ function UploadSourceDialogBase({
                     disabled={loadingSuggestions || generatingSuggestions || importingSuggestions}
                     className={`transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
                   >
-                    {loadingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    {loadingSuggestions ? <InlineSpinner className="mr-2" /> : null}
                     {t("workspace.upload.refreshSuggested")}
                   </Button>
                 </div>
@@ -480,7 +497,7 @@ function UploadSourceDialogBase({
 
               {loadingSuggestions || generatingSuggestions ? (
                 <div className="h-28 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                  <InlineSpinner className="h-5 w-5 text-blue-500" />
                 </div>
               ) : visibleSuggestedResources.length === 0 ? (
                 <div className={`h-32 rounded-xl border flex items-center justify-center text-sm ${isDarkMode ? "border-slate-800 bg-slate-950/50 text-slate-400" : "border-slate-200 bg-white text-slate-500"}`}>
@@ -557,7 +574,7 @@ function UploadSourceDialogBase({
                     disabled={importingSuggestions || uploading}
                     className="bg-[#2563EB] hover:bg-blue-700 text-white"
                   >
-                    {importingSuggestions ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
+                    {importingSuggestions ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
                     {t("workspace.upload.importSuggested")}
                   </Button>
                 </div>
@@ -585,7 +602,7 @@ function UploadSourceDialogBase({
                   disabled={uploading || importingSuggestions || !canUploadAllSources}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white"
                 >
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
+                  {uploading ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
                   {uploading ? t("workspace.upload.uploading") : t("workspace.upload.uploadAllSources")}
                 </Button>
               </div>

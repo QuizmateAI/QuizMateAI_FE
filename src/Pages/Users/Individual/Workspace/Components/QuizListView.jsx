@@ -65,6 +65,12 @@ const STATUS_STYLES = {
   ERROR: { light: "bg-rose-100 text-rose-700", dark: "bg-rose-950/50 text-rose-300" },
 };
 
+const INTENT_STYLES = {
+  PRE_LEARNING: { light: "bg-purple-100 text-purple-700", dark: "bg-purple-950/50 text-purple-400" },
+  POST_LEARNING: { light: "bg-cyan-100 text-cyan-700", dark: "bg-cyan-950/50 text-cyan-400" },
+  PRACTICE: { light: "bg-orange-100 text-orange-700", dark: "bg-orange-950/50 text-orange-400" },
+};
+
 const DIFFICULTY_STYLES = {
   EASY: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-300" },
   MEDIUM: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-300" },
@@ -161,6 +167,26 @@ function getDurationInMinutes(quiz) {
   return rawDuration;
 }
 
+function resolveVisibilityMeta(isCommunityShared, isDarkMode, t) {
+  if (isCommunityShared) {
+    return {
+      icon: Globe,
+      shortLabel: t("workspace.quiz.communityPublic", "Đã public"),
+      longLabel: t("workspace.quiz.communityPublicLong", "Đã public lên cộng đồng"),
+      lightClassName: "bg-emerald-100 text-emerald-700",
+      darkClassName: "bg-emerald-950/50 text-emerald-300",
+    };
+  }
+
+  return {
+    icon: Lock,
+    shortLabel: t("workspace.quiz.privateShort", "Riêng tư"),
+    longLabel: t("workspace.quiz.privateLong", "Đang ở chế độ private"),
+    lightClassName: "bg-slate-100 text-slate-700",
+    darkClassName: "bg-slate-800 text-slate-300",
+  };
+}
+
 function resolveQuizNavigationId(quiz) {
   return quiz?.quizId ?? quiz?.id ?? null;
 }
@@ -223,6 +249,7 @@ function QuizListView({
   progressTracking = null,
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
+  legacyRoadmapUI = false,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -466,6 +493,253 @@ function QuizListView({
     }
     return items;
   }, [quizzes, searchQuery, filterStatus]);
+  const useLegacyRoadmapCards = legacyRoadmapUI;
+
+  const renderLegacyRoadmapCard = (quiz) => {
+    const resolvedQuizId = resolveQuizNavigationId(quiz);
+    const isCommunityShared = quiz?.communityShared === true;
+    const normalizedStatus = String(quiz?.status || "").toUpperCase();
+    const isProcessing = normalizedStatus === "PROCESSING";
+    const ss = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
+    const is = INTENT_STYLES[quiz.quizIntent] || {};
+    const myAttempted = quiz?.myAttempted === true;
+    const myPassed = quiz?.myPassed === true;
+    const visibilityMeta = resolveVisibilityMeta(isCommunityShared, isDarkMode, t);
+    const VisibilityIcon = visibilityMeta.icon;
+    const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
+    const normalizedIntent = String(quiz?.quizIntent || "").toUpperCase();
+    const shouldHideRoadmapIntentBadge = isRoadmapContextQuiz
+      && ["PRE_LEARNING", "PRACTICE", "REVIEW"].includes(normalizedIntent);
+    const shouldHideActiveStatusBadge = isRoadmapContextQuiz && normalizedStatus === "ACTIVE";
+    const shouldHideRoadmapVisibility = isRoadmapContextQuiz;
+    const durationInMinutes = getDurationInMinutes(quiz);
+    const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
+    const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
+    const processingPercent = resolveQuizProcessingPercent(
+      quiz,
+      progressTracking,
+      quizGenerationTaskByQuizId,
+      quizGenerationProgressByQuizId,
+    );
+    const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
+    const statusLabel = t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus || "DRAFT");
+    const questionCount = Number(quiz?.questionCount ?? quiz?.totalQuestion ?? quiz?.totalQuestions ?? 0) || 0;
+    const maxAttempt = Number(quiz?.maxAttempt);
+    const attemptCount = Number(quiz?.attemptCount ?? quiz?.attemptsCount ?? quiz?.myAttemptCount);
+    const resolvedAttemptCount = Number.isFinite(attemptCount) && attemptCount >= 0
+      ? attemptCount
+      : (myAttempted ? 1 : null);
+    const passScore = Number(quiz?.passScore);
+    const maxScore = Number(quiz?.maxScore);
+    const scoreValue = Number(quiz?.latestScore ?? quiz?.score ?? quiz?.myScore ?? quiz?.marksScored ?? quiz?.markScored);
+    const resolvedScoreValue = Number.isFinite(scoreValue) && scoreValue >= 0 ? scoreValue : null;
+    const updatedLabel = formatCardDate(quiz.updatedAt || quiz.createdAt);
+    const overviewStats = [
+      {
+        label: t("workspace.quiz.roadmapOverview.questions", "Câu hỏi"),
+        value: questionCount > 0 ? String(questionCount) : "-",
+        hint: questionCount > 0 ? t("workspace.quiz.roadmapOverview.questionsHint", "câu") : null,
+        icon: BadgeCheck,
+      },
+      {
+        label: t("workspace.quiz.roadmapOverview.attempts", "Số lần làm"),
+        value: maxAttempt > 0
+          ? `${resolvedAttemptCount ?? "-"} / ${maxAttempt}`
+          : (resolvedAttemptCount != null ? String(resolvedAttemptCount) : "-"),
+        hint: null,
+        icon: RefreshCw,
+      },
+      {
+        label: t("workspace.quiz.roadmapOverview.duration", "Thời gian"),
+        value: durationInMinutes > 0 ? String(durationInMinutes) : "-",
+        hint: durationInMinutes > 0 ? t("workspace.quiz.minutesShort", "phút") : null,
+        icon: Timer,
+      },
+      {
+        label: resolvedScoreValue != null
+          ? t("workspace.quiz.roadmapOverview.score", "Điểm")
+          : t("workspace.quiz.roadmapOverview.passScore", "Ngưỡng đạt"),
+        value: resolvedScoreValue != null
+          ? (
+            maxScore > 0
+              ? `${resolvedScoreValue} / ${maxScore}`
+              : String(resolvedScoreValue)
+          )
+          : (
+            passScore > 0
+              ? (
+                maxScore > 0
+                  ? `${passScore} / ${maxScore}`
+                  : String(passScore)
+              )
+              : "-"
+          ),
+        hint: null,
+        icon: BarChart3,
+      },
+    ];
+    const resultLabel = myAttempted
+      ? (
+        myPassed
+          ? t("workspace.quiz.myPassedTrue", "Đã đậu")
+          : t("workspace.quiz.myPassedFalse", "Chưa đậu")
+      )
+      : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
+    const roadmapExamLabel = "Kiểm tra";
+    const roadmapRetakeExamLabel = "Kiểm tra lại";
+
+    return (
+      <div
+        key={resolvedQuizId}
+        onClick={() => onViewQuiz?.(quiz)}
+        className={`overflow-hidden rounded-[26px] border shadow-[0_18px_45px_rgba(15,23,42,0.08)] cursor-pointer ${
+          isCommunityShared
+            ? (isDarkMode ? "border-emerald-800/70 bg-slate-900/60" : "border-emerald-200 bg-white")
+            : (isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-200 bg-white")
+        }`}
+      >
+        <div className="p-4 md:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <h3 className={`text-[18px] font-semibold leading-tight md:text-[20px] ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                {quiz.title}
+              </h3>
+              <div className={`mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                {questionCount > 0 ? (
+                  <span className="flex items-center gap-1.5">
+                    <BadgeCheck className="h-4 w-4" />
+                    {questionCount} {t("workspace.quiz.roadmapOverview.questionsHint", "câu")}
+                  </span>
+                ) : null}
+                {updatedLabel ? (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    {t("workspace.quiz.roadmapOverview.updatedOn", "Cập nhật")} {updatedLabel}
+                  </span>
+                ) : null}
+                {quiz.overallDifficulty ? (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    {difficultyKey === "CUSTOM"
+                      ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
+                      : t(`workspace.quiz.difficultyLevels.${String(quiz.overallDifficulty).toLowerCase()}`)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            {!shouldHideRoadmapVisibility ? (
+              <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${isDarkMode ? visibilityMeta.darkClassName : visibilityMeta.lightClassName}`}>
+                <VisibilityIcon className="h-4 w-4" />
+                {visibilityMeta.shortLabel}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-4 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+            {overviewStats.map(({ label, value, hint, icon: StatIcon }) => (
+              <div
+                key={label}
+                className={`rounded-2xl border p-4 ${
+                  isDarkMode
+                    ? "border-slate-700 bg-slate-900/70"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <StatIcon className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-blue-300" : "text-blue-600"}`} />
+                  <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                    {label}
+                  </p>
+                </div>
+                <p className={`mt-2 text-base font-semibold md:text-[18px] ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                  {value}
+                  {hint ? (
+                    <span className={`ml-1 text-sm font-medium ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                      {hint}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className={`mt-4 flex flex-col gap-3 border-t pt-3 ${isDarkMode ? "border-slate-700/70" : "border-slate-100"} lg:flex-row lg:items-center lg:justify-between`}>
+            <div className="flex flex-wrap items-center gap-2">
+              {typeof quiz.timerMode === "boolean" ? (
+                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${
+                  quiz.timerMode
+                    ? (isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700")
+                    : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                }`}>
+                  {quiz.timerMode
+                    ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
+                    : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                </span>
+              ) : null}
+              {quiz.quizIntent && !shouldHideRoadmapIntentBadge ? (
+                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${isDarkMode ? is.dark || "bg-slate-800 text-slate-400" : is.light || "bg-slate-100 text-slate-600"}`}>
+                  {t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)}
+                </span>
+              ) : null}
+              {!shouldHideActiveStatusBadge ? (
+                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
+                  {statusLabel}
+                </span>
+              ) : null}
+              <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${
+                myPassed
+                  ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
+                  : myAttempted
+                    ? (isDarkMode ? "bg-amber-950/40 text-amber-300" : "bg-amber-100 text-amber-700")
+                    : (isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600")
+              }`}>
+                {resultLabel}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {isProcessing ? (
+                <div className={`min-w-[170px] rounded-2xl border px-4 py-3 ${isDarkMode ? "border-sky-900/60 bg-sky-950/20" : "border-sky-200 bg-sky-50/70"}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={`text-xs font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                      {t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}
+                    </span>
+                    <span className={`text-xs font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                      {processingPercent}%
+                    </span>
+                  </div>
+                  <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
+                    <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
+                  </div>
+                </div>
+              ) : normalizedStatus === "ACTIVE" ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExamStartQuiz(quiz);
+                  }}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${
+                    isDarkMode
+                      ? "bg-emerald-900/60 text-emerald-200"
+                      : "bg-emerald-50 text-emerald-700"
+                  }`}
+                  title={roadmapExamLabel}
+                >
+                  <ClipboardCheck className="h-4.5 w-4.5" />
+                  <span>{myAttempted ? roadmapRetakeExamLabel : roadmapExamLabel}</span>
+                </button>
+              ) : (
+                <span className={`inline-flex items-center rounded-full px-3 py-2 text-sm font-semibold ${isDarkMode ? ss.dark : ss.light}`}>
+                  {statusLabel}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={`${embedded ? "" : "h-full flex flex-col"} ${fontClass}`}>
@@ -556,8 +830,12 @@ function QuizListView({
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className={useLegacyRoadmapCards ? "space-y-2" : "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"}>
             {filtered.map((quiz) => {
+              if (useLegacyRoadmapCards) {
+                return renderLegacyRoadmapCard(quiz);
+              }
+
               const resolvedQuizId = resolveQuizNavigationId(quiz);
               const isCommunityShared = quiz?.communityShared === true;
               const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
@@ -796,10 +1074,10 @@ function QuizListView({
                           <button
                             onClick={(e) => { e.stopPropagation(); setExamStartQuiz(quiz); }}
                             className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${isDarkMode ? "border-emerald-900/50 bg-emerald-950/20 text-emerald-300 hover:bg-emerald-900/30" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
-                            title={t("workspace.quiz.exam", "Thi")}
+                            title={t("workspace.quiz.exam", "Kiểm tra")}
                           >
                             <ClipboardCheck className="h-4.5 w-4.5" />
-                            <span>{t("workspace.quiz.exam", "Thi")}</span>
+                            <span>{t("workspace.quiz.exam", "Kiểm tra")}</span>
                           </button>
                         ) : null}
                       </div>
@@ -815,13 +1093,13 @@ function QuizListView({
       <Dialog open={Boolean(examStartQuiz)} onOpenChange={(open) => { if (!open) setExamStartQuiz(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.exam", "Thi")}</DialogTitle>
+            <DialogTitle>{t("workspace.quiz.exam", "KIểm tra")}</DialogTitle>
             <DialogDescription className="space-y-2">
               <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
                 {examStartQuiz?.title}
               </span>
               <span className="block">
-                {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ thi?")}
+                {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ kiểm tra?")}
               </span>
             </DialogDescription>
           </DialogHeader>

@@ -57,7 +57,13 @@ vi.mock('@/Pages/Users/Quiz/components/QuestionCard', () => ({
 }));
 
 vi.mock('@/Pages/Users/Quiz/components/QuestionNavPanel', () => ({
-  default: () => <div data-testid="question-nav-panel" />,
+  default: ({ onRequestSubmit, t }) => (
+    <div data-testid="question-nav-panel">
+      <button type="button" onClick={onRequestSubmit}>
+        {t?.('workspace.quiz.examActions.submitButton', 'Submit Exam') ?? 'Submit Exam'}
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('@/Pages/Users/Quiz/components/ExamPerQuestion', () => ({
@@ -210,7 +216,7 @@ describe('ExamQuizPage', () => {
     const submitButton = await screen.findByRole('button', { name: 'Submit Exam' });
     fireEvent.click(submitButton);
 
-    expect(screen.getByText('Stop and submit your exam?')).toBeInTheDocument();
+    expect(screen.getByText('You still have 1 unanswered question')).toBeInTheDocument();
     expect(mockSubmitAttempt).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Submit Exam' }).at(-1));
