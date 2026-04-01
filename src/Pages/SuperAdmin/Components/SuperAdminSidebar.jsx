@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   Users, UsersRound,
   PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote, Bot, ChevronDown, ChevronRight,
-  Settings2,
+  Settings2, Cpu,
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -91,6 +91,12 @@ const MENU_SECTIONS = [
         icon: Settings2,
         labelKey: 'sidebar.systemSettings',
         path: '/super-admin/system-settings',
+        matchPrefix: true,
+      },
+      {
+        icon: Cpu,
+        labelKey: 'sidebar.aiActionPolicies',
+        path: '/super-admin/ai-action-policies',
         matchPrefix: true,
       },
     ],

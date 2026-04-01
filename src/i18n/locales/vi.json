@@ -12,7 +12,167 @@
     "rbac": "Phân quyền RBAC",
     "subscriptions": "Quản lý Plan",
     "creditPackages": "Gói Credit",
-    "payments": "Thanh toán"
+    "aiAudit": "AI Audit",
+    "payments": "Thanh toán",
+    "systemSettings": "Cấu hình hệ thống",
+    "aiActionPolicies": "Chính sách AI"
+  },
+  "sidebarSections": {
+    "overview": "Tổng quan",
+    "workspace": "Người dùng & nhóm",
+    "commerce": "Gói & thanh toán",
+    "system": "Hệ thống nội bộ"
+  },
+  "systemSettings": {
+    "title": "Cấu hình hệ thống",
+    "subtitle": "Quản lý các tham số cấu hình chung của hệ thống",
+    "refresh": "Làm mới",
+    "empty": "Chưa có cấu hình nào",
+    "colKey": "Key",
+    "colDescription": "Mô tả",
+    "colValue": "Giá trị",
+    "colStatus": "Trạng thái",
+    "colUpdatedAt": "Cập nhật lần cuối",
+    "colActions": "Thao tác",
+    "customized": "Đã tùy chỉnh",
+    "default": "Mặc định",
+    "editTitle": "Chỉnh sửa cấu hình",
+    "editDescription": "Thay đổi giá trị cho tham số hệ thống này",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "updateSuccess": "Cập nhật cấu hình thành công",
+    "resyncPrices": "Đồng bộ giá",
+    "resyncDescription": "Tính toán lại và cập nhật giá của tất cả gói tín dụng dựa trên giá đơn vị tín dụng hiện tại. Thao tác này sẽ ghi đè các giá đã chỉnh sửa thủ công.",
+    "resyncConfirm": "Đồng bộ ngay",
+    "resyncing": "Đang đồng bộ...",
+    "resyncSuccess": "Đồng bộ giá gói tín dụng thành công"
+  },
+  "aiActionPolicy": {
+    "title": "Chính sách tính phí AI",
+    "subtitle": "Cấu hình chi phí credit cho từng chức năng AI",
+    "refresh": "Làm mới",
+    "categoryGenerate": "Tạo nội dung bằng AI",
+    "categoryProcess": "Xử lý tài liệu",
+    "active": "Kích hoạt",
+    "statusActive": "Đang hoạt động",
+    "statusInactive": "Đã tắt",
+    "edit": "Chỉnh sửa",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "saving": "Đang lưu...",
+    "updateSuccess": "Cập nhật chính sách thành công",
+    "descriptionPlaceholder": "Mô tả chính sách...",
+    "baseCost": "Chi phí cơ bản",
+    "unitCost": "Chi phí mỗi đơn vị",
+    "unitSize": "Kích thước đơn vị",
+    "formula": "Công thức tính phí",
+    "formulaResult": "Chi phí =",
+    "formulaCeil": "làm tròn lên",
+    "formulaFixedNote": "cố định mỗi lần sử dụng",
+    "formulaSummary": "Mỗi lần sử dụng tốn {{base}} QMC cố định, cộng thêm {{unit}} QMC cho mỗi {{size}} {{mode}}. Phần lẻ được làm tròn lên.",
+    "costMode": {
+      "label": "Cách tính phí",
+      "FIXED": "Cố định",
+      "PER_QUESTION": "Theo câu hỏi",
+      "PER_ITEM": "Theo mục",
+      "PER_PAGE": "Theo trang",
+      "PER_WORD": "Theo từ",
+      "PER_CELL": "Theo ô",
+      "PER_SECOND": "Theo giây"
+    },
+    "costModeUnit": {
+      "PER_QUESTION": "câu hỏi",
+      "PER_ITEM": "mục",
+      "PER_PAGE": "trang",
+      "PER_WORD": "từ",
+      "PER_CELL": "ô",
+      "PER_SECOND": "giây"
+    },
+    "actions": {
+      "generateQuiz": {
+        "title": "Tạo bài kiểm tra",
+        "description": "Tính phí khi tạo bài kiểm tra bằng AI, dựa trên tổng số câu hỏi được tạo.",
+        "baseCost": "Phí khởi tạo quiz",
+        "unitCost": "Phí mỗi câu hỏi",
+        "unitSize": "Số câu / đơn vị"
+      },
+      "generateFlashcards": {
+        "title": "Tạo thẻ ghi nhớ",
+        "description": "Tính phí khi tạo bộ thẻ ghi nhớ bằng AI, dựa trên tổng số thẻ được tạo.",
+        "baseCost": "Phí khởi tạo bộ thẻ",
+        "unitCost": "Phí mỗi thẻ",
+        "unitSize": "Số thẻ / đơn vị"
+      },
+      "generateMockTest": {
+        "title": "Tạo đề thi thử",
+        "description": "Tính phí khi tạo đề thi thử bằng AI, dựa trên tổng số câu hỏi trong đề.",
+        "baseCost": "Phí khởi tạo đề thi",
+        "unitCost": "Phí mỗi câu hỏi",
+        "unitSize": "Số câu / đơn vị"
+      },
+      "generateRoadmapQuiz": {
+        "title": "Tạo quiz lộ trình",
+        "description": "Tính phí khi tạo bài kiểm tra kiến thức lộ trình, dựa trên tổng số câu hỏi.",
+        "baseCost": "Phí khởi tạo",
+        "unitCost": "Phí mỗi câu hỏi",
+        "unitSize": "Số câu / đơn vị"
+      },
+      "processPdf": {
+        "title": "Xử lý PDF",
+        "description": "Tính phí xử lý tài liệu PDF, dựa trên tổng số trang.",
+        "baseCost": "Phí cơ bản mỗi file",
+        "unitCost": "Phí mỗi trang",
+        "unitSize": "Số trang / đơn vị"
+      },
+      "processImage": {
+        "title": "Xử lý hình ảnh",
+        "description": "Tính phí xử lý hình ảnh, mỗi lần upload tính một lần phí cố định.",
+        "baseCost": "Phí mỗi ảnh"
+      },
+      "processText": {
+        "title": "Xử lý văn bản",
+        "description": "Tính phí xử lý văn bản thuần, dựa trên tổng số từ.",
+        "baseCost": "Phí cơ bản mỗi file",
+        "unitCost": "Phí mỗi 1.000 từ",
+        "unitSize": "Số từ / đơn vị"
+      },
+      "processDocx": {
+        "title": "Xử lý Word",
+        "description": "Tính phí xử lý tài liệu Word, dựa trên tổng số từ.",
+        "baseCost": "Phí cơ bản mỗi file",
+        "unitCost": "Phí mỗi 1.000 từ",
+        "unitSize": "Số từ / đơn vị"
+      },
+      "processXlsx": {
+        "title": "Xử lý Excel",
+        "description": "Tính phí xử lý bảng tính Excel, dựa trên tổng số ô có dữ liệu.",
+        "baseCost": "Phí cơ bản mỗi file",
+        "unitCost": "Phí mỗi nhóm ô",
+        "unitSize": "Số ô / đơn vị"
+      },
+      "processPptx": {
+        "title": "Xử lý PowerPoint",
+        "description": "Tính phí xử lý slide PowerPoint, dựa trên tổng số trang slide.",
+        "baseCost": "Phí cơ bản mỗi file",
+        "unitCost": "Phí mỗi slide",
+        "unitSize": "Số slide / đơn vị"
+      },
+      "processAudio": {
+        "title": "Xử lý âm thanh",
+        "description": "Tính phí xử lý file âm thanh, dựa trên thời lượng (giây).",
+        "baseCost": "Phí cơ bản mỗi file",
+        "unitCost": "Phí mỗi phút",
+        "unitSize": "Số giây / đơn vị"
+      },
+      "processVideo": {
+        "title": "Xử lý video",
+        "description": "Tính phí xử lý video, dựa trên thời lượng (giây).",
+        "baseCost": "Phí cơ bản mỗi file",
+        "unitCost": "Phí mỗi phút",
+        "unitSize": "Số giây / đơn vị"
+      }
+    }
   },
   "dashboard": {
     "systemOverview": "Tổng quan hệ thống",
