@@ -470,3 +470,10 @@ export const confirmGroupWorkspaceProfile = async (workspaceId) => {
   const response = await api.post(`/workspace-profile/group/${workspaceId}/steps/confirm`);
   return response;
 };
+
+// ====== Individual Workspace Question Stats ======
+
+export const getIndividualWorkspaceQuestionStats = async (workspaceId, attemptMode = 'OFFICIAL') => {
+  const response = await api.get(`/workspace/${workspaceId}/question-stats?attemptMode=${attemptMode}`);
+  return response;
+};

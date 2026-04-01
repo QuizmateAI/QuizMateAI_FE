@@ -11,6 +11,7 @@ import {
   Map,
   Clock,
   History,
+  BarChart3,
 } from "lucide-react";
 
 function normalizeStudioLocale(lang) {
@@ -29,6 +30,9 @@ function getOutputIcon(type) {
   if (normalizedType === "roadmap") {
     return { icon: Map, color: "text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-950/40" };
   }
+  if (normalizedType === "questionstats") {
+    return { icon: BarChart3, color: "text-purple-500", bg: "bg-purple-100 dark:bg-purple-950/40" };
+  }
 
   return { icon: FileCheck, color: "text-gray-500", bg: "bg-gray-100 dark:bg-gray-800" };
 }
@@ -37,6 +41,7 @@ const STUDIO_ACTIONS = [
   { key: "roadmap", icon: GitBranch, color: "text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-950/40" },
   { key: "quiz", icon: BadgeCheck, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-950/40" },
   { key: "flashcard", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-950/40" },
+  { key: "questionStats", icon: BarChart3, color: "text-purple-500", bg: "bg-purple-100 dark:bg-purple-950/40" },
 ];
 
 function getActiveKey(view) {
