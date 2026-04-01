@@ -28,7 +28,7 @@ import {
 import { useUserProfile } from "@/context/UserProfileContext";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
-import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
+import CreditIconImage from "@/Components/ui/CreditIconImage";
 
 // --- Custom Tab Components ---
 const Tabs = ({ children, className }) => <div className={className}>{children}</div>;
@@ -428,12 +428,14 @@ function ProfilePage() {
       {/* Header */}
       <header className={`w-full h-16 border-b sticky top-0 z-50 backdrop-blur-md ${isDarkMode ? "bg-slate-950/80 border-slate-800" : "bg-white/80 border-gray-200"}`}>
         <div className="max-w-[1600px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <div
-            className="w-[100px] md:w-[130px] flex items-center cursor-pointer"
+          <button
+            type="button"
+            className="flex w-[100px] items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 md:w-[130px] dark:focus-visible:ring-offset-slate-950"
             onClick={() => navigate("/home")}
+            aria-label="Go to home"
           >
             <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-auto object-contain" />
-          </div>
+          </button>
 
           <div className="flex items-center gap-2">
             <Button
@@ -458,7 +460,7 @@ function ProfilePage() {
               <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
                 isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
               }`}>
-                <img src={QuizmateCreditIcon} alt="Quizmate Credit" className="w-6 h-6 rounded-full" />
+                <CreditIconImage alt="Quizmate Credit" className="w-6 h-6 rounded-full" />
               </span>
               <span className="text-sm hidden sm:inline">{t("common.wallet")}</span>
             </Button>
@@ -562,11 +564,7 @@ function ProfilePage() {
                               : "bg-blue-600/10 ring-blue-600/20"
                           }`}
                         >
-                          <img
-                            src={QuizmateCreditIcon}
-                            alt="Quizmate Credit"
-                            className="w-8 h-8 rounded-2xl"
-                          />
+                          <CreditIconImage alt="Quizmate Credit" className="w-8 h-8 rounded-2xl" />
                         </span>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide">

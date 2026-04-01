@@ -36,6 +36,7 @@ import ListSpinner from '@/Components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { getAiAuditLogs } from '@/api/ManagementSystemAPI';
 import AdminPagination from '@/Pages/Admin/components/AdminPagination';
+import { getWebSocketUrl } from '@/lib/websocketUrl';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 const STATUS_OPTIONS = ['', 'PROCESSING', 'SUCCESS', 'ERROR'];
@@ -267,10 +268,14 @@ function AiAuditManagement() {
   }, [page, pageSize]);
 
   useEffect(() => {
-    const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8080/ws-quiz';
+    const websocketUrl = getWebSocketUrl();
+    if (!websocketUrl) {
+      return undefined;
+    }
+
     const token = getAuthToken();
     const stompClient = new Client({
-      webSocketFactory: () => new SockJS(WS_URL),
+      webSocketFactory: () => new SockJS(websocketUrl),
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,

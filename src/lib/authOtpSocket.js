@@ -1,19 +1,12 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-
-function buildWebSocketUrl() {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.quizmateai.io.vn';
-  const normalizedUrl = new URL(baseUrl);
-  const normalizedPath = normalizedUrl.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
-
-  return `${normalizedUrl.origin}${normalizedPath}/ws-quiz`;
-}
+import { getWebSocketUrl } from '@/api/api';
 
 export function waitForOtpStatus(email, sendOtpRequest, options = {}) {
   const { timeoutMs = 30000 } = options;
 
   return new Promise((resolve, reject) => {
-    const wsUrl = buildWebSocketUrl();
+    const wsUrl = getWebSocketUrl();
     const topic = `/topic/otp/${email}`;
     const client = new Client({
       webSocketFactory: () => new SockJS(wsUrl),
