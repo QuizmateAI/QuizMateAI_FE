@@ -39,6 +39,12 @@ export const getExtractedSummary = async (materialId) => {
   return response;
 };
 
+// Lấy trạng thái task async theo taskId
+export const getTaskStatusByTaskId = async (taskId) => {
+  const response = await api.get(`/v1/quiz/status/${taskId}`);
+  return response;
+};
+
 // Lấy chi tiết moderation report từ materialId
 export const getModerationReportDetail = async (materialId) => {
   const response = await api.get(`/materials/${materialId}/moderation-report/detail`);
