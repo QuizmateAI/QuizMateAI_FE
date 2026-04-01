@@ -64,25 +64,62 @@ const PATH_TO_VIEW = Object.entries(VIEW_TO_PATH).reduce((result, [view, path]) 
 function resolveViewFromSubPath(subPath) {
 	if (!subPath) return { view: null, quizId: null, backTarget: null };
 
+	const roadmapPathMatch = subPath.match(/^roadmap\/(\d+)(?:\/phase\/(\d+))?$/);
+	if (roadmapPathMatch) {
+		return {
+			view: "roadmap",
+			quizId: null,
+			backTarget: null,
+			roadmapId: Number(roadmapPathMatch[1]),
+			phaseId: roadmapPathMatch[2] ? Number(roadmapPathMatch[2]) : null,
+		};
+	}
+
 	const directView = PATH_TO_VIEW[subPath];
 	if (directView) {
 		return { view: directView, quizId: null, backTarget: null };
 	}
 
-	const roadmapQuizEditMatch = subPath.match(/^roadmap\/quiz\/(\d+)\/edit$/);
+	const roadmapQuizEditMatch = subPath.match(/^roadmap\/(\d+)\/phase\/(\d+)\/quiz\/(\d+)\/edit$/);
 	if (roadmapQuizEditMatch) {
 		return {
 			view: "editQuiz",
-			quizId: Number(roadmapQuizEditMatch[1]),
+			quizId: Number(roadmapQuizEditMatch[3]),
+			backTarget: {
+				view: "roadmap",
+				roadmapId: Number(roadmapQuizEditMatch[1]),
+				phaseId: Number(roadmapQuizEditMatch[2]),
+			},
+		};
+	}
+
+	const legacyRoadmapQuizEditMatch = subPath.match(/^roadmap\/quiz\/(\d+)\/edit$/);
+	if (legacyRoadmapQuizEditMatch) {
+		return {
+			view: "editQuiz",
+			quizId: Number(legacyRoadmapQuizEditMatch[1]),
 			backTarget: { view: "roadmap" },
 		};
 	}
 
-	const roadmapQuizDetailMatch = subPath.match(/^roadmap\/quiz\/(\d+)$/);
+	const roadmapQuizDetailMatch = subPath.match(/^roadmap\/(\d+)\/phase\/(\d+)\/quiz\/(\d+)$/);
 	if (roadmapQuizDetailMatch) {
 		return {
 			view: "quizDetail",
-			quizId: Number(roadmapQuizDetailMatch[1]),
+			quizId: Number(roadmapQuizDetailMatch[3]),
+			backTarget: {
+				view: "roadmap",
+				roadmapId: Number(roadmapQuizDetailMatch[1]),
+				phaseId: Number(roadmapQuizDetailMatch[2]),
+			},
+		};
+	}
+
+	const legacyRoadmapQuizDetailMatch = subPath.match(/^roadmap\/quiz\/(\d+)$/);
+	if (legacyRoadmapQuizDetailMatch) {
+		return {
+			view: "quizDetail",
+			quizId: Number(legacyRoadmapQuizDetailMatch[1]),
 			backTarget: { view: "roadmap" },
 		};
 	}
@@ -103,6 +140,11 @@ function resolveViewFromSubPath(subPath) {
 function buildPathForView(view, selectedQuiz, quizBackTarget) {
 	if (view === "quizDetail" && selectedQuiz?.quizId) {
 		if (quizBackTarget?.view === "roadmap") {
+			const normalizedRoadmapId = Number(quizBackTarget?.roadmapId);
+			const normalizedPhaseId = Number(quizBackTarget?.phaseId);
+			if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0 && Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+				return `roadmap/${normalizedRoadmapId}/phase/${normalizedPhaseId}/quiz/${selectedQuiz.quizId}`;
+			}
 			return `roadmap/quiz/${selectedQuiz.quizId}`;
 		}
 		return `quiz/${selectedQuiz.quizId}`;
@@ -110,6 +152,11 @@ function buildPathForView(view, selectedQuiz, quizBackTarget) {
 
 	if (view === "editQuiz" && selectedQuiz?.quizId) {
 		if (quizBackTarget?.view === "roadmap") {
+			const normalizedRoadmapId = Number(quizBackTarget?.roadmapId);
+			const normalizedPhaseId = Number(quizBackTarget?.phaseId);
+			if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0 && Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+				return `roadmap/${normalizedRoadmapId}/phase/${normalizedPhaseId}/quiz/${selectedQuiz.quizId}/edit`;
+			}
 			return `roadmap/quiz/${selectedQuiz.quizId}/edit`;
 		}
 		return `quiz/${selectedQuiz.quizId}/edit`;
@@ -436,7 +483,7 @@ function WorkspacePage() {
 	const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] = useState(false);
 	const isOnWorkspaceQuizRoute = useMemo(() => {
 		if (!workspaceId || !location.pathname) return false;
-		return new RegExp(`^/workspace/${workspaceId}/(?:quiz(?:/|$)|roadmap/quiz(?:/|$))`).test(location.pathname);
+		return new RegExp(`^/workspace/${workspaceId}/(?:quiz(?:/|$)|roadmap/(?:\\d+/phase/\\d+/)?quiz(?:/|$))`).test(location.pathname);
 	}, [location.pathname, workspaceId]);
 	const focusRoadmapViewSafely = useCallback(() => {
 		if (isOnWorkspaceQuizRoute) return;
@@ -772,18 +819,37 @@ function WorkspacePage() {
 			}
 		}
 
-		const { view: mappedView, quizId, backTarget } = resolveViewFromSubPath(subPath);
+		const { view: mappedView, quizId, backTarget, phaseId: mappedPhaseId, roadmapId: mappedRoadmapId } = resolveViewFromSubPath(subPath);
 		if (!mappedView) return;
 
 		if (backTarget?.view === "roadmap") {
-			const phaseParam = new URLSearchParams(location.search).get("phaseId");
-			const parsedPhaseId = Number(phaseParam);
+			const urlPhaseParam = new URLSearchParams(location.search).get("phaseId");
+			const parsedPhaseId = Number(urlPhaseParam);
+			const normalizedPhaseId = Number.isInteger(backTarget?.phaseId) && backTarget.phaseId > 0
+				? Number(backTarget.phaseId)
+				: (Number.isInteger(parsedPhaseId) && parsedPhaseId > 0 ? parsedPhaseId : null);
+			const normalizedRoadmapId = Number.isInteger(backTarget?.roadmapId) && backTarget.roadmapId > 0
+				? Number(backTarget.roadmapId)
+				: null;
 			setQuizBackTarget({
 				view: "roadmap",
-				phaseId: Number.isInteger(parsedPhaseId) && parsedPhaseId > 0 ? parsedPhaseId : null,
+				phaseId: normalizedPhaseId,
+				roadmapId: normalizedRoadmapId,
 			});
+			if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+				setSelectedRoadmapPhaseId(normalizedPhaseId);
+			}
 		} else if (mappedView === "quizDetail" || mappedView === "editQuiz") {
 			setQuizBackTarget(null);
+		}
+
+		if (mappedView === "roadmap") {
+			if (Number.isInteger(mappedPhaseId) && mappedPhaseId > 0) {
+				setSelectedRoadmapPhaseId(mappedPhaseId);
+			}
+			if (Number.isInteger(mappedRoadmapId) && mappedRoadmapId > 0) {
+				setRoadmapAiRoadmapId((prev) => prev || mappedRoadmapId);
+			}
 		}
 
 		if (quizId) {
@@ -800,12 +866,22 @@ function WorkspacePage() {
 		if (!workspaceId) return;
 		if (!activeView) return;
 
-		const mappedPath = buildPathForView(activeView, selectedQuiz, quizBackTarget);
+		let mappedPath = buildPathForView(activeView, selectedQuiz, quizBackTarget);
+		if (activeView === "roadmap") {
+			const normalizedRoadmapId = Number(roadmapAiRoadmapId);
+			if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
+				mappedPath = `roadmap/${normalizedRoadmapId}`;
+				if (Number.isInteger(selectedRoadmapPhaseId) && selectedRoadmapPhaseId > 0) {
+					mappedPath += `/phase/${selectedRoadmapPhaseId}`;
+				}
+			}
+		}
 		if (!mappedPath) return;
 
 		const currentSubPath = getWorkspaceSubPath();
 		const isQuizDeepLink = /^quiz\/\d+(?:\/edit)?$/.test(currentSubPath)
-			|| /^roadmap\/quiz\/\d+(?:\/edit)?$/.test(currentSubPath);
+			|| /^roadmap\/quiz\/\d+(?:\/edit)?$/.test(currentSubPath)
+			|| /^roadmap\/\d+\/phase\/\d+\/quiz\/\d+(?:\/edit)?$/.test(currentSubPath);
 		const isQuizDetailView = activeView === "quizDetail" || activeView === "editQuiz";
 
 		if (isQuizDeepLink) {
@@ -820,7 +896,7 @@ function WorkspacePage() {
 		if (currentSubPath === mappedPath) return;
 
 		navigate(`/workspace/${workspaceId}/${mappedPath}`, { replace: true });
-	}, [activeView, getWorkspaceSubPath, navigate, quizBackTarget, selectedQuiz, workspaceId]);
+	}, [activeView, getWorkspaceSubPath, navigate, quizBackTarget, selectedQuiz, selectedRoadmapPhaseId, roadmapAiRoadmapId, workspaceId]);
 
 	const currentLang = i18n.language;
 	const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
@@ -1487,22 +1563,26 @@ function WorkspacePage() {
 			if (!Number.isInteger(roadmapId) || roadmapId <= 0) return;
 
 			const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
-			const phaseIdsToGenerate = normalizePositiveIds(
-				phases
-					.filter((phase) => {
-						const hasPreLearning = (phase?.preLearningQuizzes || []).length > 0;
-						const hasKnowledge = (phase?.knowledges || []).length > 0;
-						return !hasPreLearning && !hasKnowledge;
-					})
-					.map((phase) => phase?.phaseId)
-			);
+			const phaseIdsToGenerate = [];
+			
+			if (phases.length > 0) {
+				const firstPhase = phases[0];
+				const hasPreLearning = (firstPhase?.preLearningQuizzes || []).length > 0;
+				const hasKnowledge = (firstPhase?.knowledges || []).length > 0;
+				
+				if (!hasPreLearning && !hasKnowledge) {
+					phaseIdsToGenerate.push(firstPhase.phaseId);
+				}
+			}
+			
+			const normalizedPhaseIds = normalizePositiveIds(phaseIdsToGenerate);
 
-			if (phaseIdsToGenerate.length === 0) return;
+			if (normalizedPhaseIds.length === 0) return;
 
 			setRoadmapAiRoadmapId(roadmapId);
 			focusRoadmapViewSafely();
 
-			for (const phaseId of phaseIdsToGenerate) {
+			for (const phaseId of normalizedPhaseIds) {
 				if (!isMountedRef.current || nonStudyPreLearningAutoRunRef.current.runId !== runId) return;
 
 				setGeneratingPreLearningPhaseIds((current) => {
@@ -2697,8 +2777,11 @@ function WorkspacePage() {
 			setActiveView("roadmap");
 			if (Number.isInteger(phaseId) && phaseId > 0) {
 				setSelectedRoadmapPhaseId(phaseId);
-				if (workspaceId) {
-					navigate(`/workspace/${workspaceId}/roadmap?phaseId=${phaseId}`, { replace: true });
+				const normalizedRoadmapId = Number(quizBackTarget?.roadmapId || roadmapAiRoadmapId);
+				if (workspaceId && Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
+					navigate(`/workspace/${workspaceId}/roadmap/${normalizedRoadmapId}/phase/${phaseId}`, { replace: true });
+				} else if (workspaceId) {
+					navigate(`/workspace/${workspaceId}/roadmap`, { replace: true });
 				}
 			}
 			return;
@@ -2928,6 +3011,7 @@ function WorkspacePage() {
 											generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
 											skipPreLearningPhaseIds={skipPreLearningPhaseIds}
 											roadmapReloadToken={roadmapReloadToken}
+											onReloadRoadmap={bumpRoadmapReloadToken}
 									onCreateMockTest={handleCreateMockTest}
 									onBack={handleBackFromForm}
 									workspaceId={workspaceId}
@@ -3110,6 +3194,7 @@ function WorkspacePage() {
 									generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
 									skipPreLearningPhaseIds={skipPreLearningPhaseIds}
 									roadmapReloadToken={roadmapReloadToken}
+									onReloadRoadmap={bumpRoadmapReloadToken}
 									onCreateMockTest={handleCreateMockTest}
 									onBack={handleBackFromForm}
 									workspaceId={workspaceId}
