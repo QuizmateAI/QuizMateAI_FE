@@ -4,6 +4,14 @@ import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { BrainCircuit, PlayCircle  } from 'lucide-react';
+import LocalAvatar from '@/Components/ui/LocalAvatar';
+
+const HERO_AVATARS = [
+  { initials: 'AN', label: 'Active learner Anh', tone: 'blue' },
+  { initials: 'BM', label: 'Active learner Binh', tone: 'emerald' },
+  { initials: 'CL', label: 'Active learner Chi', tone: 'violet' },
+  { initials: 'DN', label: 'Active learner Duc', tone: 'amber' },
+];
 
 const HeroSection = () => {
   const { t, i18n } = useTranslation();
@@ -51,12 +59,17 @@ const HeroSection = () => {
           isDarkMode ? 'opacity-80' : 'grayscale opacity-70 hover:grayscale-0 hover:opacity-100'
         }`}>
           <div className="flex -space-x-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={`w-12 h-12 rounded-full border-4 overflow-hidden shadow-md ${
-                isDarkMode ? 'border-slate-950 bg-slate-800' : 'border-white bg-gray-200'
-              }`}>
-                <img src={`https://i.pravatar.cc/100?img=${i+15}`} alt="learner" className="w-full h-full object-cover" loading="lazy" width={48} height={48} decoding="async" />
-              </div>
+            {HERO_AVATARS.map((avatar) => (
+              <LocalAvatar
+                key={avatar.label}
+                label={avatar.label}
+                initials={avatar.initials}
+                tone={avatar.tone}
+                className={`w-12 h-12 border-4 ${
+                  isDarkMode ? 'border-slate-950' : 'border-white'
+                }`}
+                textClassName="text-xs tracking-wide"
+              />
             ))}
           </div>
           <div className="text-sm font-bold">

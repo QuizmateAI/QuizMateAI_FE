@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { Sparkles } from 'lucide-react';
+import LocalAvatar from '@/Components/ui/LocalAvatar';
 
 const TestimonialsSection = () => {
   const { t, i18n } = useTranslation();
@@ -38,7 +39,13 @@ const TestimonialsSection = () => {
               <div className={`w-16 h-16 rounded-2xl overflow-hidden border-4 rotate-3 ${
                 isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-blue-300 border-white/30'
               }`}>
-                <img src="https://i.pravatar.cc/100?img=32" alt="student" className="w-full h-full object-cover" loading="lazy" width={64} height={64} decoding="async" />
+                <LocalAvatar
+                  label="Sarah Johnson"
+                  initials="SJ"
+                  tone="rose"
+                  className="h-full w-full rounded-[10px]"
+                  textClassName="text-sm tracking-wide"
+                />
               </div>
               <div>
                 <p className="font-black text-lg">Sarah Johnson</p>
@@ -62,7 +69,13 @@ const TestimonialsSection = () => {
               <div className={`w-16 h-16 rounded-2xl overflow-hidden border-4 -rotate-3 ${
                 isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-blue-300 border-white/30'
               }`}>
-                <img src="https://i.pravatar.cc/100?img=44" alt="student" className="w-full h-full object-cover" loading="lazy" width={64} height={64} decoding="async" />
+                <LocalAvatar
+                  label="Mark Thompson"
+                  initials="MT"
+                  tone="emerald"
+                  className="h-full w-full rounded-[10px]"
+                  textClassName="text-sm tracking-wide"
+                />
               </div>
               <div>
                 <p className="font-black text-lg">Mark Thompson</p>

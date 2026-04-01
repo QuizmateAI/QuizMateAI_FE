@@ -166,6 +166,7 @@ function RoadmapCanvasView({
   generatingPreLearningPhaseIds = [],
   skipPreLearningPhaseIds = [],
   reloadToken = 0,
+  onReloadRoadmap,
   forcedCanvasView = null,
   onCanvasViewChange,
   selectedPhaseId = null,
@@ -728,6 +729,7 @@ function RoadmapCanvasView({
         generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
         skipPreLearningPhaseIds={skipPreLearningPhaseIds}
         quizRefreshToken={reloadToken}
+        onReloadRoadmap={onReloadRoadmap}
         progressTracking={progressTracking}
         onShareRoadmap={onShareRoadmap}
         onShareQuiz={onShareQuiz}

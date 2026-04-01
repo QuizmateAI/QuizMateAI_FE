@@ -78,9 +78,14 @@ export default function PaymentResultPage() {
       <header className={`fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 sm:px-20 h-14 transition-colors duration-300 ${
         isDarkMode ? 'bg-slate-950/90 backdrop-blur-sm' : 'bg-white/90 backdrop-blur-sm'
       }`}>
-        <div className="w-[130px] flex items-center justify-center cursor-pointer" onClick={() => navigate('/home')}>
-          <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} fetchPriority="high" />
-        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/home')}
+          aria-label="Go to home"
+          className="flex w-[130px] items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+        >
+          <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} />
+        </button>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"

@@ -18,6 +18,15 @@ export const submitRoadmapPhaseSkipDecision = async (phaseId, skipped) => {
   return response;
 };
 
+export const submitRoadmapPhaseRemedialDecision = async (phaseId, option) => {
+  const normalizedPhaseId = Number(phaseId);
+  const normalizedOption = String(option || '').toUpperCase();
+  const response = await api.post(`/roadmap-phases/${normalizedPhaseId}/remedial-decision`, {
+    option: normalizedOption,
+  });
+  return response;
+};
+
 export const createPhaseProgressReview = async (phaseProgressId) => {
   const normalizedPhaseProgressId = Number(phaseProgressId);
   const response = await api.post(`/roadmap-phases/progress/${normalizedPhaseProgressId}/review`, null);
