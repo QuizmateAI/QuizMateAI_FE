@@ -480,6 +480,7 @@ export default function PracticeQuizPage() {
           sourceView: location.state?.sourceView,
           sourceWorkspaceId: location.state?.sourceWorkspaceId,
           sourcePhaseId: location.state?.sourcePhaseId,
+          sourceRoadmapId: location.state?.sourceRoadmapId,
         },
         replace: true,
       });
@@ -490,7 +491,7 @@ export default function PracticeQuizPage() {
       showError(message);
       setIsFinishing(false);
     }
-  }, [attemptId, isFinishing, location.state?.sourcePhaseId, location.state?.sourceView, location.state?.sourceWorkspaceId, navigate, quizId, returnToQuizPath, showError, t]);
+  }, [attemptId, isFinishing, location.state?.sourcePhaseId, location.state?.sourceRoadmapId, location.state?.sourceView, location.state?.sourceWorkspaceId, navigate, quizId, returnToQuizPath, showError, t]);
 
   useEffect(() => {
     if (!shouldAutoStart || loading || !quiz || isStarted || autoStartTriggeredRef.current) return;
