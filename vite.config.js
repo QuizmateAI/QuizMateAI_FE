@@ -52,6 +52,8 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.js'],
+      minWorkers: 1,
+      maxWorkers: 1,
       // Dam bao Vitest xu ly tot cac tep JSX
       include: ['src/**/*.{test,spec}.{js,jsx}'],
     },
