@@ -18,8 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
-import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
+import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/Utils/getErrorMessage";
 import {
@@ -276,7 +276,7 @@ export default function WalletPage() {
                         ? "bg-blue-500/10 ring-blue-400/25 shadow-[0_0_0_6px_rgba(99,102,241,0.10)]"
                         : "bg-blue-600/10 ring-blue-600/20 shadow-[0_0_0_6px_rgba(99,102,241,0.12)]"
                     }`}>
-                      <img src={QuizmateCreditIcon} alt="Quizmate Credit" className="w-9 h-9 rounded-2xl animate-floaty" />
+                      <CreditIconImage alt="Quizmate Credit" className="w-9 h-9 rounded-2xl animate-floaty" />
                     </span>
                     {t("wallet.title")}
                   </CardTitle>

@@ -31,24 +31,32 @@ const Navbar = () => {
     }`}>
       <div className="container mx-auto flex items-center justify-between h-20">
         <div className="flex items-center gap-x-12">
-          <img 
-            src={isDarkMode ? LogoDark : LogoLight} 
-            alt="QuizMate Logo" 
-            className="h-[100px] w-[120px] cursor-pointer object-contain" 
-            onClick={() => navigate('/')} 
-          />
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            aria-label="Go to landing page"
+            className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+          >
+            <img 
+              src={isDarkMode ? LogoDark : LogoLight} 
+              alt="QuizMate Logo" 
+              className="h-[100px] w-[120px] object-contain" 
+            />
+          </button>
           <div className={`hidden lg:flex items-center gap-x-8 text-sm font-bold uppercase tracking-widest ${
             isDarkMode ? 'text-slate-400' : 'text-gray-500'
           }`}>
             <a href="#features" className={`transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`}>{t('landingPage.nav.features')}</a>
-            <a href="#solutions" className={`transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`}>{t('landingPage.nav.solutions')}</a>
+            <a href="#features" className={`transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`}>{t('landingPage.nav.solutions')}</a>
             <a href="#pricing" className={`transition-colors ${isDarkMode ? 'hover:text-blue-400' : 'hover:text-[#2563EB]'}`}>{t('landingPage.nav.pricing')}</a>
           </div>
         </div>
         <div className="flex items-center gap-x-3">
           {/* Nút chuyển đổi Dark Mode */}
           <button
+            type="button"
             onClick={toggleDarkMode}
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             className={`p-2.5 rounded-lg border transition-all duration-300 ${
               isDarkMode 
                 ? 'border-slate-700 hover:bg-slate-800 text-yellow-400' 
@@ -60,7 +68,9 @@ const Navbar = () => {
           </button>
           {/* Nút chuyển đổi ngôn ngữ */}
           <button
+            type="button"
             onClick={toggleLanguage}
+            aria-label="Switch language"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors text-sm font-medium ${
               isDarkMode 
                 ? 'border-slate-700 hover:bg-slate-800 text-slate-400' 

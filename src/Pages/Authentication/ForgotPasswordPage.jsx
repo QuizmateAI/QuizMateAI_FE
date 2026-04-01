@@ -8,7 +8,7 @@ import { FcGoogle } from "react-icons/fc";
 import { AiFillApple } from "react-icons/ai";
 import { validateForgotPasswordForm, submitForgotPasswordRequest } from './ForgotPassword';
 import LogoLight from "@/assets/LightMode_Logo.webp";
-import Illustration from "@/assets/QuizmateAI_PIC.png";
+import AuthIllustration from '@/Components/ui/AuthIllustration';
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -71,14 +71,21 @@ const ForgotPasswordPage = () => {
       {/* Header: Logo & Language Toggle */}
       <header className="flex justify-between items-center px-12 py-8">
         <div className="flex items-center gap-2">
-          <div className="w-20 h-20 flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            aria-label="Go to landing page"
+            className="flex h-20 w-20 items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
             <img src={LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
-          </div>
+          </button>
         </div>
         
         {/* Nút đổi ngôn ngữ */}
         <button
+          type="button"
           onClick={toggleLanguage}
+          aria-label="Switch language"
           className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600"
         >
           <Globe className="w-4 h-4" />
@@ -179,11 +186,7 @@ const ForgotPasswordPage = () => {
         {/* Right Side: Decorative Image */}
         <div className="hidden md:flex justify-end relative">
           <div className="relative z-10 w-[550px] h-[750px] bg-gray-100 rounded-[30px] overflow-hidden shadow-xl flex items-center justify-center transition-all duration-500">
-            <img 
-              src={Illustration} 
-              alt="Forgot Password illustration" 
-              className="w-full h-full object-cover"
-            />
+            <AuthIllustration alt="" imgClassName="w-full h-full object-cover" />
           </div>
           <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-0" />
         </div>
