@@ -129,7 +129,7 @@ function RoadmapPhaseGenerateDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className={`sm:max-w-[620px] ${fontClass} ${
+      <DialogContent className={`sm:max-w-[800px] ${fontClass} ${
         isDarkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-gray-200 text-gray-900"
       }`}>
         <DialogHeader>
@@ -245,7 +245,7 @@ function RoadmapPhaseGenerateDialog({
                       key={material?.id || material?.name}
                       type="button"
                       onClick={() => selectable && toggleMaterialSelection(id)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 rounded text-left border transition-colors ${
+                      className={`w-full flex items-start gap-2 px-3 py-2 rounded text-left border transition-colors ${
                         checked
                           ? isDarkMode
                             ? "border-blue-700 bg-blue-950/30"
@@ -255,14 +255,18 @@ function RoadmapPhaseGenerateDialog({
                             : "border-gray-200 hover:bg-gray-50"
                       } ${!selectable ? "opacity-70 cursor-not-allowed" : ""}`}
                     >
-                      {checked ? <CheckSquare className="w-4 h-4 text-blue-500 shrink-0" /> : <Square className="w-4 h-4 text-gray-400 shrink-0" />}
-                      {getMaterialIconByStatus(material?.status)}
+                      {checked ? <CheckSquare className="mt-0.5 w-4 h-4 text-blue-500 shrink-0" /> : <Square className="mt-0.5 w-4 h-4 text-gray-400 shrink-0" />}
+                      <span className="mt-0.5 shrink-0">
+                        {getMaterialIconByStatus(material?.status)}
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm truncate ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{material?.name || material?.title}</p>
+                        <p className={`text-sm leading-5 whitespace-normal break-all ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                          {material?.name || material?.title}
+                        </p>
                         <p className={`text-[11px] uppercase ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>{material?.status || "UNKNOWN"}</p>
                       </div>
                       {!selectable ? (
-                        <span className={`text-[10px] ${isDarkMode ? "text-amber-400" : "text-amber-600"}`}>
+                        <span className={`mt-0.5 shrink-0 text-[10px] ${isDarkMode ? "text-amber-400" : "text-amber-600"}`}>
                           {t("workspace.roadmap.phaseDialog.onlyActive", "Chỉ chọn ACTIVE")}
                         </span>
                       ) : null}

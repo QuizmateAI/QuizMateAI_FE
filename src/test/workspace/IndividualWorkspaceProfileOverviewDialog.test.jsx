@@ -108,6 +108,39 @@ describe('IndividualWorkspaceProfileOverviewDialog', () => {
     expect(screen.queryByText(/Khả Năng Làm Nhanh Và Đúng Ở Nhiều Dạng Câu Hỏi/i)).not.toBeInTheDocument();
   });
 
+  it('keeps roadmap overview labels and adaptation value aligned with the config step', () => {
+    render(
+      <IndividualWorkspaceProfileOverviewDialog
+        open
+        onOpenChange={() => {}}
+        isDarkMode={false}
+        profile={{
+          workspaceSetupStatus: 'DONE',
+          onboardingCompleted: true,
+          workspacePurpose: 'STUDY_NEW',
+          knowledgeLoad: 'BASIC',
+          adaptationMode: 'STRICT',
+          roadmapSpeedMode: 'STANDARD',
+          estimatedTotalDays: 30,
+          recommendedMinutesPerDay: 60,
+        }}
+        materials={[]}
+      />
+    );
+
+    expect(screen.getByText(i18n.t('workspace.profileConfig.fields.knowledgeLoad'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.fields.adaptationMode'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.fields.roadmapSpeedMode'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.fields.estimatedTotalDays'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.fields.recommendedMinutesPerDay'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.knowledgeLoad.BASIC.title'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.adaptationMode.BALANCED.title'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.roadmapSpeedMode.STANDARD.title'))).toBeInTheDocument();
+    expect(screen.getByText(/30 ngày/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/60 phút\/ngày/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/bám sát/i)).not.toBeInTheDocument();
+  });
+
   it('keeps the dialog focused on workspace config even when personalization data is provided', () => {
     render(
       <IndividualWorkspaceProfileOverviewDialog
