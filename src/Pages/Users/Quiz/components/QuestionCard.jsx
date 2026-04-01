@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/Components/ui/input';
 import { getCorrectMatchingPairs, getCorrectTextAnswers, normalizeMatchingPairs } from '../utils/quizTransform';
@@ -108,6 +109,9 @@ function areQuestionCardPropsEqual(prevProps, nextProps) {
   return (
     prevProps.question === nextProps.question
     && prevProps.questionNumber === nextProps.questionNumber
+    && prevProps.showHeaderMeta === nextProps.showHeaderMeta
+    && prevProps.isFlagged === nextProps.isFlagged
+    && prevProps.onToggleFlag === nextProps.onToggleFlag
     && prevProps.showResult === nextProps.showResult
     && prevProps.showExplanation === nextProps.showExplanation
     && prevProps.disabled === nextProps.disabled
@@ -120,7 +124,8 @@ function areQuestionCardPropsEqual(prevProps, nextProps) {
 const QuestionCard = memo(function QuestionCard({
   question, questionNumber, totalQuestions,
   answerValue, selectedAnswers = [], onSelectAnswer, onTextAnswerChange, onMatchingAnswerChange,
-  showResult = false, showExplanation = false, disabled = false, reviewState = null,
+  showResult = false, showExplanation = false, disabled = false, reviewState = null, showHeaderMeta = true,
+  isFlagged = false, onToggleFlag = null,
 }) {
   const isMultiple = question.type === 'MULTIPLE_CHOICE';
   const isTextQuestion = question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK';
@@ -178,6 +183,7 @@ const QuestionCard = memo(function QuestionCard({
   }, [correctMatchingPairs, normalizedMatchingPairs, question.matchingRightOptions]);
   const gradingStatus = String(reviewState?.gradingStatus || question?.gradingStatus || '').toUpperCase();
   const isPendingGrading = gradingStatus === 'PENDING';
+  const showFlagToggle = !isReviewRevealed && typeof onToggleFlag === 'function';
   const correctAnswerIds = Array.isArray(reviewState?.correctAnswerIds) && reviewState.correctAnswerIds.length > 0
     ? reviewState.correctAnswerIds
     : (Array.isArray(question.answers) ? question.answers.filter((answer) => answer.isCorrect).map((answer) => answer.id) : []);
@@ -266,7 +272,9 @@ const QuestionCard = memo(function QuestionCard({
         : (isFullyCorrect
             ? 'border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/50 dark:bg-emerald-950/20'
             : 'border-rose-200 bg-rose-50/80 dark:border-rose-900/50 dark:bg-rose-950/20'))
-    : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800';
+    : (isFlagged
+        ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800/60 dark:bg-amber-950/10'
+        : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800');
 
   const questionNumberToneClass = isReviewRevealed
     ? (isPendingGrading
@@ -274,15 +282,17 @@ const QuestionCard = memo(function QuestionCard({
         : (isFullyCorrect
             ? 'border-emerald-200 bg-emerald-100/80 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
             : 'border-rose-200 bg-rose-100/80 text-rose-700 dark:border-rose-800 dark:bg-rose-900/40 dark:text-rose-200'))
-    : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200';
+    : (isFlagged
+        ? 'border-amber-200 bg-amber-100/80 text-amber-700 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+        : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200');
 
   return (
     <div className={cn(
       'rounded-xl border p-5 shadow-md shadow-slate-900/10 transition-colors dark:shadow-blue-900/30',
       cardToneClass,
     )}>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className={cn('mb-4 flex items-start gap-3', showHeaderMeta || showFlagToggle ? 'justify-between' : 'justify-start')}>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           {Number.isInteger(questionNumber) && questionNumber > 0 && (
             <span className={cn(
               'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-sm font-bold transition-colors',
@@ -293,13 +303,30 @@ const QuestionCard = memo(function QuestionCard({
           )}
           <h3 className="min-w-0 text-base font-bold leading-snug text-slate-800 dark:text-slate-100">{question.content}</h3>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {isReviewRevealed && question.difficulty && (
-            <span className={cn('px-2 py-0.5 rounded text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
-          )}
-          <span className="bg-slate-900 dark:bg-slate-600 text-white px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">{questionNumber}/{totalQuestions}</span>
-          <span className={cn('px-2 py-0.5 rounded text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
-        </div>
+        {(showHeaderMeta || showFlagToggle) && (
+          <div className="flex shrink-0 items-center gap-2">
+            {showFlagToggle && (
+              <button
+                type="button"
+                onClick={onToggleFlag}
+                className={cn(
+                  'inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors',
+                  isFlagged
+                    ? 'border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60'
+                    : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-amber-200 hover:text-amber-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500 dark:hover:border-amber-700 dark:hover:text-amber-300'
+                )}
+                aria-label={isFlagged ? 'Unmark question for review' : 'Mark question for review'}
+                title={isFlagged ? 'Unmark question for review' : 'Mark question for review'}
+              >
+                <Star className={cn('h-4 w-4', isFlagged ? 'fill-current' : '')} />
+              </button>
+            )}
+            <span className="whitespace-nowrap rounded bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white dark:bg-slate-600">{questionNumber}/{totalQuestions}</span>
+            {question.difficulty && (
+              <span className={cn('rounded px-2 py-0.5 text-xs font-semibold', DIFFICULTY_STYLES[question.difficulty])}>{question.difficulty}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {isMultiple && <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 italic">Select all that apply</p>}
