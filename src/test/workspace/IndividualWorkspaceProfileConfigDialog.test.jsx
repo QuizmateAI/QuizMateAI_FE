@@ -1667,4 +1667,63 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
     expect(screen.queryByText(i18n.t('workspace.profileConfig.stepThree.roadmapTitle'))).not.toBeInTheDocument();
   });
+
+  it('TC-W01: moves to step 2 while preserving the step-1 workspace context', async () => {
+    renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
+      knowledge: 'React hooks nang cao',
+      expectedDomainText: 'React',
+    });
+
+    fireEvent.click(getStepCardButton(1));
+
+    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput'))).toHaveValue('React hooks nang cao');
+    expect(getPrimaryDomainDisplay()).toHaveTextContent('React');
+
+    await act(async () => {
+      fireEvent.click(getFooterPrimaryButton());
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
+  });
+
+  it('TC-W02 (adapted): blocks step 3 confirmation when roadmap schedule fields are empty', async () => {
+    renderDialog();
+
+    await moveToStepTwo({
+      purposeText: i18n.t('workspace.profileConfig.purpose.STUDY_NEW.title'),
+      knowledge: 'React hooks nang cao',
+      expectedDomainText: 'React',
+    });
+
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel')), {
+      target: { value: 'Da biet React co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(getLearningGoalPlaceholder('STUDY_NEW')), {
+      target: { value: 'Xay dung duoc mot du an React hoan chinh.' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.strongAreas')), {
+      target: { value: 'Hooks co ban' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.weakAreas')), {
+      target: { value: 'Toi uu hoa hieu nang' },
+    });
+
+    await flushStepTwoAiSuggestions();
+    await moveToStepThree();
+
+    const roadmapNumberInputs = screen.getAllByRole('spinbutton');
+    fireEvent.change(roadmapNumberInputs[0], { target: { value: '' } });
+    fireEvent.change(roadmapNumberInputs[1], { target: { value: '' } });
+
+    await openConfirmProfilePopup();
+
+    expect(screen.getByText(i18n.t('workspace.profileConfig.validation.estimatedTotalDaysRequired'))).toBeInTheDocument();
+    expect(screen.getByText(i18n.t('workspace.profileConfig.validation.recommendedMinutesRequired'))).toBeInTheDocument();
+    expect(screen.queryByText(i18n.t('workspace.profileConfig.actions.confirmProfileUse'))).not.toBeInTheDocument();
+  });
 });
