@@ -2513,7 +2513,7 @@ function WorkspacePage() {
 		}
 
 		// Ghi lá»‹ch sá»­ truy cáº­p khi ngÆ°á»i dÃ¹ng má»Ÿ list view
-		const viewTypeMap = { roadmap: "roadmap", quiz: "quiz", flashcard: "flashcard", mockTest: "mockTest" };
+		const viewTypeMap = { roadmap: "roadmap", quiz: "quiz", flashcard: "flashcard", mockTest: "mockTest", questionStats: "questionStats" };
 		if (viewTypeMap[actionKey]) {
 			addAccessHistory(viewTypeMap[actionKey], viewTypeMap[actionKey], actionKey);
 		}
