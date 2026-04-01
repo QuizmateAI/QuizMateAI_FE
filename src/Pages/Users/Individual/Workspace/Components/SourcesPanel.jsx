@@ -54,10 +54,10 @@ function canOpenSourceDetail(source) {
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED", "ERROR"].includes(status);
 }
 
-// Kiểm tra có thể tick chọn tài liệu không - REJECT, ERROR và đang loading thì không cho chọn
+// Kiểm tra có thể tick chọn tài liệu không - REJECT, WARN, ERROR và đang loading thì không cho chọn
 function canSelectSource(source) {
   const status = source?.status?.toUpperCase();
-  return !["REJECT", "REJECTED", "ERROR", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
+  return !["REJECT", "REJECTED", "WARN", "WARNED", "ERROR", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
 // Kiểm tra có thể xóa tài liệu không - đang loading thì không cho xóa
@@ -84,6 +84,8 @@ function SourcesPanel({
   onToggleCollapse,
   selectedIds: propSelectedIds,
   onSelectionChange,
+  onDetailViewChange,
+  forceCloseDetail = false,
   progressTracking = null
 }) {
   const { t, i18n } = useTranslation();
@@ -103,6 +105,18 @@ function SourcesPanel({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteMultipleDialog, setDeleteMultipleDialog] = useState(false);
   const [deleteMultipleLoading, setDeleteMultipleLoading] = useState(false);
+
+  useEffect(() => {
+    onDetailViewChange?.(Boolean(viewingSource));
+    return () => {
+      onDetailViewChange?.(false);
+    };
+  }, [onDetailViewChange, viewingSource]);
+
+  useEffect(() => {
+    if (!forceCloseDetail) return;
+    setViewingSource(null);
+  }, [forceCloseDetail]);
 
   // Use prop if provided, else use internal state
   const selectedIds = propSelectedIds !== undefined ? propSelectedIds : internalSelectedIds;
@@ -456,9 +470,9 @@ function SourcesPanel({
                   <div 
                     className={`shrink-0 ${canSelectSource(source) ? "cursor-pointer" : "cursor-not-allowed"}`}
                     onClick={() => canSelectSource(source) && toggleSelect(source.id)}
-                    title={isRejected ? "Không thể chọn tài liệu này" : undefined}
+                    title={isRejected ? "Không thể chọn tài liệu này" : isWarn ? "Tài liệu cảnh báo, không thể chọn" : undefined}
                   >
-                    {isRejected
+                    {(isRejected || isWarn)
                       ? <Square className={`w-4 h-4 ${isDarkMode ? "text-red-800" : "text-red-300"} opacity-50`} />
                       : isSelected
                         ? <CheckSquare className="w-4 h-4 text-blue-500" />
