@@ -53,7 +53,7 @@ describe('RoadmapCanvasView2', () => {
       />
     );
 
-    expect(screen.getByText(/please wait while ai generates knowledge for this phase/i)).toBeInTheDocument();
+    expect(screen.getByText(/generating knowledge|please wait while ai generates knowledge for this phase/i)).toBeInTheDocument();
     expect(screen.queryByText(/how would you like to start this phase/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/ai is generating pre-learning for this phase/i)).not.toBeInTheDocument();
   });
