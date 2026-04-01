@@ -32,6 +32,7 @@ vi.mock('@/api/AIAPI', () => ({
 vi.mock('@/api/RoadmapPhaseAPI', () => ({
   getCurrentRoadmapPhaseProgress: vi.fn(),
   submitRoadmapPhaseSkipDecision: vi.fn(),
+  submitRoadmapPhaseRemedialDecision: vi.fn(),
 }));
 
 vi.mock('@/hooks/useWebSocket', () => ({

@@ -323,6 +323,7 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     sourceView: isRoadmapQuizSource ? "roadmap" : "quiz-panel",
     sourceWorkspaceId: Number(effectiveQuiz?.workspaceId) || null,
     sourcePhaseId: Number(effectiveQuiz?.phaseId) || null,
+    sourceRoadmapId: Number(effectiveQuiz?.roadmapId) || null,
   };
   const handleStartQuiz = useCallback((mode) => {
     if (!mode || !quiz?.quizId) return;

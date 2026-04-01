@@ -9,6 +9,7 @@ import {
   createPhaseProgressReview,
   getCurrentRoadmapPhaseProgress,
   getPhaseProgressReview,
+  submitRoadmapPhaseRemedialDecision,
   submitRoadmapPhaseSkipDecision,
 } from "@/api/RoadmapPhaseAPI";
 import {
@@ -18,6 +19,8 @@ import {
   Share2,
   Loader2,
   Sparkles,
+  Lock,
+  Unlock,
 } from "lucide-react";
 
 function RoadmapCanvasView2({
@@ -39,6 +42,7 @@ function RoadmapCanvasView2({
   generatingPreLearningPhaseIds = [],
   skipPreLearningPhaseIds = [],
   quizRefreshToken = 0,
+  onReloadRoadmap,
   progressTracking = null,
   onShareRoadmap,
   onShareQuiz,
@@ -55,6 +59,34 @@ function RoadmapCanvasView2({
     currentPhaseProgress: null,
   });
   const [submittingSkipDecision, setSubmittingSkipDecision] = useState(false);
+  const [submittingRemedialDecision, setSubmittingRemedialDecision] = useState(false);
+  const [remedialState, setRemedialState] = useState({
+    phaseId: null,
+    loadingCurrentPhase: false,
+    currentPhaseProgress: null,
+  });
+  const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
+  const [loadingGlobalCurrentPhase, setLoadingGlobalCurrentPhase] = useState(false);
+
+  const loadGlobalCurrentPhaseProgress = useCallback(async () => {
+    const normalizedRoadmapId = Number(roadmap?.roadmapId);
+    if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) return;
+    
+    setLoadingGlobalCurrentPhase(true);
+    try {
+      const response = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+      const payload = response?.data?.data || response?.data || null;
+      setGlobalCurrentPhasePayload(payload);
+    } catch (e) {
+      console.error("Failed to load global current phase progress", e);
+    } finally {
+      setLoadingGlobalCurrentPhase(false);
+    }
+  }, [roadmap?.roadmapId]);
+
+  useEffect(() => {
+    void loadGlobalCurrentPhaseProgress();
+  }, [loadGlobalCurrentPhaseProgress, quizRefreshToken, roadmap]);
   const [decisionHandledPhaseIds, setDecisionHandledPhaseIds] = useState([]);
   const [phaseReviewState, setPhaseReviewState] = useState({
     loading: false,
@@ -98,6 +130,13 @@ function RoadmapCanvasView2({
     return [...rawPhases].sort((a, b) => Number(a?.phaseIndex ?? 0) - Number(b?.phaseIndex ?? 0));
   }, [roadmap?.phases]);
   const normalizedAdaptationMode = String(adaptationMode || "").toUpperCase();
+
+  const maxUnlockedPhaseIndex = useMemo(() => {
+    if (!globalCurrentPhasePayload?.phaseId) return 0;
+    const globalPhaseId = Number(globalCurrentPhasePayload.phaseId);
+    const idx = phases.findIndex((p) => Number(p.phaseId) === globalPhaseId);
+    return Math.max(0, idx);
+  }, [globalCurrentPhasePayload?.phaseId, phases]);
 
   const getPersistedKnowledgeMap = (storageKey) => {
     if (!storageKey || typeof window === "undefined") {
@@ -448,6 +487,65 @@ function RoadmapCanvasView2({
     skipPreLearningPhaseIds,
   ]);
 
+  useEffect(() => {
+    const normalizedRoadmapId = Number(roadmap?.roadmapId);
+    const normalizedPhaseId = Number(activePhase?.phaseId);
+    const hasPostLearning = (activePhase?.postLearningQuizzes || []).length > 0;
+    const canCheckRemedial = Number.isInteger(normalizedRoadmapId)
+      && normalizedRoadmapId > 0
+      && Number.isInteger(normalizedPhaseId)
+      && normalizedPhaseId > 0
+      && hasPostLearning
+      && normalizedAdaptationMode === "FLEXIBLE";
+
+    if (!canCheckRemedial) {
+      setRemedialState({
+        phaseId: normalizedPhaseId,
+        loadingCurrentPhase: false,
+        currentPhaseProgress: null,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setRemedialState({
+      phaseId: normalizedPhaseId,
+      loadingCurrentPhase: true,
+      currentPhaseProgress: null,
+    });
+
+    (async () => {
+      try {
+        const response = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+        if (cancelled) return;
+        const payload = response?.data?.data || response?.data || null;
+        setRemedialState({
+          phaseId: normalizedPhaseId,
+          loadingCurrentPhase: false,
+          currentPhaseProgress: payload,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load remedial decision state:", error);
+        setRemedialState({
+          phaseId: normalizedPhaseId,
+          loadingCurrentPhase: false,
+          currentPhaseProgress: null,
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activePhase?.phaseId,
+    activePhase?.postLearningQuizzes,
+    normalizedAdaptationMode,
+    quizRefreshToken,
+    roadmap?.roadmapId,
+  ]);
+
   const handleRoadmapPreLearningDecision = useCallback(async (phaseId, skipped) => {
     const normalizedPhaseId = Number(phaseId);
     if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0 || submittingSkipDecision) return;
@@ -470,6 +568,38 @@ function RoadmapCanvasView2({
       setSubmittingSkipDecision(false);
     }
   }, [onCreatePhaseKnowledge, showError, showSuccess, submittingSkipDecision, t]);
+
+  const handleRoadmapRemedialDecision = useCallback(async (phaseId, option) => {
+    const normalizedPhaseId = Number(phaseId);
+    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0 || submittingRemedialDecision) return;
+
+    setSubmittingRemedialDecision(true);
+    try {
+      await submitRoadmapPhaseRemedialDecision(normalizedPhaseId, option);
+      showSuccess(t("workspace.quiz.result.remedialDecisionSuccess", "Remedial roadmap option has been confirmed."));
+      onReloadRoadmap?.();
+
+      const normalizedRoadmapId = Number(roadmap?.roadmapId);
+      if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
+        try {
+          const response = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+          const payload = response?.data?.data || response?.data || null;
+          setRemedialState({
+            phaseId: normalizedPhaseId,
+            loadingCurrentPhase: false,
+            currentPhaseProgress: payload,
+          });
+        } catch (refreshError) {
+          console.error("Failed to refresh remedial decision state:", refreshError);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to submit remedial decision:", error);
+      showError(error?.message || t("workspace.quiz.result.remedialDecisionFail", "Could not update remedial roadmap decision."));
+    } finally {
+      setSubmittingRemedialDecision(false);
+    }
+  }, [onReloadRoadmap, roadmap?.roadmapId, showError, showSuccess, submittingRemedialDecision, t]);
 
   const togglePhase = (phaseId) => {
     setOpenPhaseId((current) => {
@@ -656,7 +786,7 @@ function RoadmapCanvasView2({
                       contextType="KNOWLEDGE"
                       contextId={knowledge.knowledgeId}
                       onCreateQuiz={() => onCreatePhaseKnowledge?.(phase.phaseId)}
-                      onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
+                      onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", roadmapId: Number(roadmap?.roadmapId), phaseId: Number(phase.phaseId) } })}
                       embedded
                       legacyRoadmapUI
                       hideCreateButton
@@ -827,6 +957,14 @@ function RoadmapCanvasView2({
         {activePhase ? [activePhase].map((phase) => {
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
+          const phaseIndex = phases.findIndex((p) => Number(p.phaseId) === normalizedPhaseId);
+          
+          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex;
+          const previousPhaseCompleted = phaseIndex > 0 
+            ? String(phases[phaseIndex - 1]?.status || "").toUpperCase() === "COMPLETED" 
+            : true;
+          const isUnlockable = isLockedPhase && phaseIndex === maxUnlockedPhaseIndex + 1 && previousPhaseCompleted;
+
           const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
           const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
           const isGeneratingPhaseContent = generatingKnowledgePhaseIds.includes(Number(phase.phaseId));
@@ -886,7 +1024,7 @@ function RoadmapCanvasView2({
           const canShowSkipDecision = canRenderPreLearningDecisionCard
             && decisionState.currentPhaseProgress?.skipable === true
             && !isDecisionHandled;
-          const shouldShowPreLearningDecision = isStudyNewRoadmap && !hasPreLearning && !hasKnowledge;
+          const shouldShowPreLearningDecision = isStudyNewRoadmap && !hasPreLearning && !hasKnowledge && !isSkipPreLearningPhase;
           const shouldShowKnowledgePlaceholder = !hasKnowledge && isGeneratingPhaseContent;
           const shouldShowPreLearningPlaceholder = !hasPreLearning
             && isGeneratingPreLearning
@@ -894,6 +1032,16 @@ function RoadmapCanvasView2({
             && !shouldShowPreLearningDecision;
           const shouldShowPostLearningPlaceholder = !hasPostLearning && isGeneratingPhaseContent;
           const shouldLockPostLearning = false;
+          const isFlexibleRoadmap = normalizedAdaptationMode === "FLEXIBLE";
+          const isCurrentRemedialPhase = Number(remedialState?.phaseId) === normalizedPhaseId;
+          const currentRemedialPhaseId = Number(remedialState?.currentPhaseProgress?.phaseId);
+          const canShowRemedialDecision = hasPostLearning
+            && isFlexibleRoadmap
+            && isCurrentRemedialPhase
+            && !remedialState.loadingCurrentPhase
+            && Number.isInteger(currentRemedialPhaseId)
+            && currentRemedialPhaseId === normalizedPhaseId
+            && remedialState?.currentPhaseProgress?.needsRemedialDecision === true;
           return (
             <div key={phase.phaseId} className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white"}`}>
               <button
@@ -932,8 +1080,41 @@ function RoadmapCanvasView2({
               </button>
 
               {isOpen ? (
-                <div className={`border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
-                  <div className="px-4 py-3 space-y-4">
+                <div className={`relative border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
+                  {isLockedPhase && (
+                    <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center backdrop-blur-sm rounded-b-lg ${isDarkMode ? "bg-slate-900/50" : "bg-white/50"}`}>
+                      <div className={`p-4 rounded-xl shadow-lg border max-w-sm text-center ${isDarkMode ? "bg-slate-800 border-slate-700 shadow-blue-900/50" : "bg-white border-slate-300 shadow-slate-900/10"}`}>
+                        <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isDarkMode ? "bg-slate-700" : "bg-slate-100"}`}>
+                          <Lock className={`w-6 h-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
+                        </div>
+                        <h4 className={`text-base font-semibold mb-1 ${fontClass} ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                          {t("workspace.roadmap.canvas.phaseLockedTitle", "Phase này đang bị khóa")}
+                        </h4>
+                        <p className={`text-sm mb-4 ${fontClass} ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                          {t("workspace.roadmap.canvas.phaseLockedDesc", "Vui lòng mở khóa")}
+                        </p>
+                        <Button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isUnlockable) {
+                              onCreatePhasePreLearning(phase.phaseId, { skipPreLearning: false });
+                            }
+                          }}
+                          disabled={!isUnlockable}
+                          className={`w-full font-medium ${fontClass} ${
+                            isUnlockable 
+                              ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                              : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                          }`}
+                        >
+                          <Unlock className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
+                          {t("workspace.roadmap.canvas.unlockPhaseBtn", "Mở khóa Phase")}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <div className={`px-4 py-3 space-y-4 ${isLockedPhase ? "opacity-30 pointer-events-none select-none blur-sm" : ""}`}>
                     {phase?.description ? (
                       <details className="group">
                         <summary className="list-none cursor-pointer">
@@ -975,7 +1156,7 @@ function RoadmapCanvasView2({
                         contextType="PHASE"
                         contextId={phase.phaseId}
                         onCreateQuiz={() => onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false })}
-                        onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
+                        onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", roadmapId: Number(roadmap?.roadmapId), phaseId: Number(phase.phaseId) } })}
                         onShareQuiz={onShareQuiz}
                         embedded
                         legacyRoadmapUI
@@ -1172,7 +1353,7 @@ function RoadmapCanvasView2({
                             contextType="PHASE"
                             contextId={phase.phaseId}
                             onCreateQuiz={() => onCreatePhaseKnowledge?.(phase.phaseId)}
-                            onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", phaseId: Number(phase.phaseId) } })}
+                            onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", roadmapId: Number(roadmap?.roadmapId), phaseId: Number(phase.phaseId) } })}
                             onShareQuiz={onShareQuiz}
                             embedded
                             legacyRoadmapUI
@@ -1183,6 +1364,44 @@ function RoadmapCanvasView2({
                             returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
                           />
                         </div>
+
+                        {remedialState.loadingCurrentPhase && isCurrentRemedialPhase && isFlexibleRoadmap ? (
+                          <p className={`mt-2 text-xs ${isDarkMode ? "text-blue-300/90" : "text-blue-700/90"} ${fontClass}`}>
+                            {t("workspace.quiz.result.loadingCurrentPhase", "Checking your current phase...")}
+                          </p>
+                        ) : null}
+
+                        {canShowRemedialDecision ? (
+                          <div className={`mt-3 rounded-lg border p-4 ${isDarkMode ? "border-blue-700/70 bg-blue-900/20" : "border-blue-200 bg-blue-50/70"}`}>
+                            <p className={`text-sm font-semibold ${isDarkMode ? "text-blue-200" : "text-blue-800"} ${fontClass}`}>
+                              {t("workspace.quiz.result.postLearningDecisionTitle", "Decision after Post-learning")}
+                            </p>
+                            <p className={`mt-2 text-sm leading-relaxed ${isDarkMode ? "text-slate-200" : "text-slate-700"} ${fontClass}`}>
+                              {t("workspace.quiz.result.remedialDecisionHint", "Your post-learning result needs improvement. Choose how to add a remedial phase to your roadmap.")}
+                            </p>
+                            <div className="mt-3 flex flex-col gap-2">
+                              <Button
+                                type="button"
+                                disabled={submittingRemedialDecision}
+                                onClick={() => void handleRoadmapRemedialDecision(normalizedPhaseId, "COMPRESS_TO_KEEP_DEADLINE")}
+                                className="w-full justify-start min-h-[48px] text-left whitespace-normal bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-95"
+                              >
+                                {submittingRemedialDecision ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                {t("workspace.quiz.result.remedialCompressAction", "Create remedial phase and keep current deadline")}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                disabled={submittingRemedialDecision}
+                                onClick={() => void handleRoadmapRemedialDecision(normalizedPhaseId, "EXTEND_DEADLINE")}
+                                className="w-full justify-start min-h-[48px] text-left whitespace-normal transition-all active:scale-95"
+                              >
+                                {submittingRemedialDecision ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                {t("workspace.quiz.result.remedialExtendAction", "Create remedial phase and extend deadline")}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   ) : shouldShowPostLearningPlaceholder ? (
