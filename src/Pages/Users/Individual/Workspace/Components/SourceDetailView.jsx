@@ -1,7 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewMaterial } from "@/api/MaterialAPI";
+import { getExtractedText, getExtractedSummary, getModerationReportDetail, getTaskStatusByTaskId, reviewMaterial } from "@/api/MaterialAPI";
+
+const SUMMARY_TASK_POLL_INTERVAL_MS = 1500;
+const SUMMARY_TASK_MAX_POLL_ATTEMPTS = 40;
+const SUMMARY_REQUEST_DEDUPE_WINDOW_MS = 4000;
+const recentSummaryRequestBySourceId = new Map();
 import InlineSpinner from "@/Components/ui/InlineSpinner";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
@@ -228,6 +233,78 @@ function mergeMaterialSource(previousSource, updatedMaterial) {
   };
 }
 
+function parseSummaryResponse(payload) {
+  if (typeof payload === "string") {
+    return { ready: true, summary: payload };
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return { ready: false, summary: "", taskId: null };
+  }
+
+  const summary = typeof payload.summary === "string"
+    ? payload.summary
+    : typeof payload.extracted_summary === "string"
+      ? payload.extracted_summary
+      : "";
+
+  if (Boolean(payload.ready) && summary) {
+    return { ready: true, summary, taskId: null };
+  }
+
+  if (summary && !payload.taskId && !payload.websocketTaskId) {
+    return { ready: true, summary, taskId: null };
+  }
+
+  const taskId = payload.websocketTaskId ?? payload.taskId ?? null;
+  return {
+    ready: false,
+    summary: "",
+    taskId,
+  };
+}
+
+function isTaskCompleted(status) {
+  const normalizedStatus = String(status || "").toUpperCase();
+  return ["DONE", "COMPLETED", "SUCCESS", "FINISHED"].includes(normalizedStatus);
+}
+
+function isTaskFailed(status) {
+  const normalizedStatus = String(status || "").toUpperCase();
+  return ["FAIL", "FAILED", "ERROR", "CANCELLED", "CANCELED"].includes(normalizedStatus);
+}
+
+function shouldRetryTaskStatusError(error) {
+  const statusCode = error?.statusCode;
+  if (typeof statusCode === "number" && statusCode >= 400) {
+    return false;
+  }
+  return true;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shouldSkipDuplicateSummaryRequest(sourceId) {
+  if (!sourceId) return false;
+  const now = Date.now();
+
+  for (const [id, timestamp] of recentSummaryRequestBySourceId.entries()) {
+    if (now - timestamp > SUMMARY_REQUEST_DEDUPE_WINDOW_MS) {
+      recentSummaryRequestBySourceId.delete(id);
+    }
+  }
+
+  const lastRequestedAt = recentSummaryRequestBySourceId.get(sourceId);
+  if (lastRequestedAt && now - lastRequestedAt < SUMMARY_REQUEST_DEDUPE_WINDOW_MS) {
+    return true;
+  }
+
+  recentSummaryRequestBySourceId.set(sourceId, now);
+  return false;
+}
+
 // Hiển thị chi tiết tài liệu inline trong khu vực học tập — giống NotebookLM
 function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated }) {
   const { t, i18n } = useTranslation();
@@ -241,15 +318,20 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryTaskId, setSummaryTaskId] = useState(null);
   const [moderationReport, setModerationReport] = useState(null);
   const [moderationLoading, setModerationLoading] = useState(false);
   const [moderationDetailOpen, setModerationDetailOpen] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
+  const summaryFetchRef = useRef({ inFlight: false, sourceId: null });
+  const summaryFetchedSourceIdsRef = useRef(new Set());
 
   useEffect(() => {
     setCurrentSource(source);
+    setSummary(null);
+    setSummaryTaskId(null);
     setReviewError("");
     setReviewMessage("");
     setModerationDetailOpen(false);
@@ -269,18 +351,82 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
     }
   }, [currentSource?.id]);
 
-  const fetchSummary = useCallback(async () => {
+  const waitForSummaryTaskCompletion = useCallback(async (taskId) => {
+    if (!taskId) return false;
+
+    for (let attempt = 0; attempt < SUMMARY_TASK_MAX_POLL_ATTEMPTS; attempt += 1) {
+      try {
+        const taskStatus = await getTaskStatusByTaskId(taskId);
+        const status = taskStatus?.status;
+        if (isTaskCompleted(status)) {
+          return true;
+        }
+        if (isTaskFailed(status)) {
+          return false;
+        }
+      } catch (error) {
+        // Dừng polling nếu lỗi HTTP chắc chắn thất bại để tránh spam request.
+        if (!shouldRetryTaskStatusError(error)) {
+          return false;
+        }
+      }
+
+      await wait(SUMMARY_TASK_POLL_INTERVAL_MS);
+    }
+
+    return false;
+  }, []);
+
+  const fetchSummary = useCallback(async (forceRefresh = false) => {
     if (!currentSource?.id) return;
+
+    if (summaryFetchRef.current.inFlight && summaryFetchRef.current.sourceId === currentSource.id) {
+      return;
+    }
+
+    if (!forceRefresh && shouldSkipDuplicateSummaryRequest(currentSource.id)) {
+      return;
+    }
+
+    if (forceRefresh) {
+      recentSummaryRequestBySourceId.delete(currentSource.id);
+    }
+
+    summaryFetchRef.current = { inFlight: true, sourceId: currentSource.id };
     setSummaryLoading(true);
+    setSummaryTaskId(null);
     try {
       const res = await getExtractedSummary(currentSource.id);
-      setSummary(typeof res === "string" ? res : res?.data ?? "");
+      const parsedSummary = parseSummaryResponse(res);
+
+      if (parsedSummary.ready) {
+        setSummary(parsedSummary.summary || "");
+        return;
+      }
+
+      if (!parsedSummary.taskId) {
+        setSummary("");
+        return;
+      }
+
+      setSummaryTaskId(parsedSummary.taskId);
+      const taskCompleted = await waitForSummaryTaskCompletion(parsedSummary.taskId);
+      if (!taskCompleted) {
+        setSummary("");
+        return;
+      }
+
+      const latestSummaryRes = await getExtractedSummary(currentSource.id);
+      const latestSummary = parseSummaryResponse(latestSummaryRes);
+      setSummary(latestSummary.ready ? (latestSummary.summary || "") : "");
     } catch {
       setSummary("");
     } finally {
+      summaryFetchRef.current = { inFlight: false, sourceId: currentSource.id };
+      setSummaryTaskId(null);
       setSummaryLoading(false);
     }
-  }, [currentSource?.id]);
+  }, [currentSource?.id, waitForSummaryTaskCompletion]);
 
   const fetchModerationReport = useCallback(async () => {
     const status = String(currentSource?.status || currentSource?.final_status || "").toUpperCase();
@@ -321,9 +467,17 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
 
   useEffect(() => {
     fetchContent();
-    fetchSummary();
     fetchModerationReport();
-  }, [fetchContent, fetchSummary, fetchModerationReport]);
+  }, [fetchContent, fetchModerationReport]);
+
+  useEffect(() => {
+    const sourceId = currentSource?.id;
+    if (!summaryOpen || !sourceId) return;
+    if (summaryFetchedSourceIdsRef.current.has(sourceId)) return;
+
+    summaryFetchedSourceIdsRef.current.add(sourceId);
+    fetchSummary();
+  }, [summaryOpen, currentSource?.id, fetchSummary]);
 
   const keywords = useMemo(() => extractKeywords(summary), [summary]);
   const contentBlocks = useMemo(() => buildContentBlocks(extractedText), [extractedText]);
@@ -537,10 +691,26 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
 
             {summaryOpen && (
               <div className={`px-4 pb-4 max-h-64 overflow-y-auto`}>
+                <div className="flex justify-end pb-2">
+                  <button
+                    type="button"
+                    onClick={() => fetchSummary(true)}
+                    disabled={summaryLoading}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      summaryLoading
+                        ? isDarkMode ? "bg-slate-700 text-slate-400 cursor-not-allowed" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                        : isDarkMode ? "bg-slate-700 text-slate-200 hover:bg-slate-600" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    } ${fontClass}`}
+                  >
+                    Thử lại
+                  </button>
+                </div>
                 {summaryLoading ? (
                   <div className="flex items-center gap-2 py-3">
                     <InlineSpinner className={`h-4 w-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
-                    <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}>{t("workspace.sources.loadingSummary")}</span>
+                    <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}>
+                      {summaryTaskId ? "Đang tạo tóm tắt tài liệu..." : t("workspace.sources.loadingSummary")}
+                    </span>
                   </div>
                 ) : summary ? (
                   <div className="space-y-3">
