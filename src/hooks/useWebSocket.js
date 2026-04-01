@@ -66,6 +66,60 @@ function normalizeMaterialPayload(payload) {
   };
 }
 
+function toNumberOrNull(value) {
+  const normalized = Number(value);
+  return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
+}
+
+function buildProcessingObjectFromProgressPayload(payload) {
+  if (!payload || typeof payload !== "object") return undefined;
+
+  const data = payload?.data && typeof payload.data === "object" ? payload.data : {};
+  const roadmapId = toNumberOrNull(data?.roadmapId ?? data?.roadmap_id ?? payload?.roadmapId ?? payload?.roadmap_id);
+  const phaseId = toNumberOrNull(data?.phaseId ?? data?.phase_id ?? payload?.phaseId ?? payload?.phase_id);
+  const knowledgeId = toNumberOrNull(data?.knowledgeId ?? data?.knowledge_id ?? payload?.knowledgeId ?? payload?.knowledge_id);
+  const quizId = toNumberOrNull(data?.quizId ?? data?.quiz_id ?? payload?.quizId ?? payload?.quiz_id);
+  const materialId = toNumberOrNull(data?.materialId ?? data?.material_id ?? payload?.materialId ?? payload?.material_id);
+
+  const processingObject = {
+    ...(roadmapId ? { roadmapId } : {}),
+    ...(phaseId ? { phaseId } : {}),
+    ...(knowledgeId ? { knowledgeId } : {}),
+    ...(quizId ? { quizId } : {}),
+    ...(materialId ? { materialId } : {}),
+  };
+
+  return Object.keys(processingObject).length > 0 ? processingObject : undefined;
+}
+
+function enrichProgressWithActiveTaskShape(payload) {
+  if (!payload || typeof payload !== "object") return payload;
+
+  const taskId = String(payload?.websocketTaskId ?? payload?.taskId ?? "").trim();
+  if (!taskId) return payload;
+
+  const normalizedStatus = normalizeStatus(payload?.status ?? payload?.final_status);
+  const percent = Number(payload?.percent ?? payload?.progressPercent ?? payload?.data?.percent ?? payload?.data?.progressPercent ?? 0);
+  const processingObject = payload?.processingObject || buildProcessingObjectFromProgressPayload(payload);
+  const activeTask = {
+    taskId,
+    percent: Number.isFinite(percent) ? percent : 0,
+    status: normalizedStatus || payload?.status,
+    message: payload?.message ?? payload?.data?.message ?? "",
+    ...(processingObject ? { processingObject } : {}),
+  };
+
+  return {
+    ...payload,
+    taskId,
+    ...(normalizedStatus ? { status: normalizedStatus } : {}),
+    ...(processingObject ? { processingObject } : {}),
+    hasActiveTask: true,
+    activeTaskCount: 1,
+    activeTasks: [activeTask],
+  };
+}
+
 /**
  * Hook quản lý WebSocket connection cho realtime updates (STOMP over SockJS)
  * @param {Object} options - WebSocket options
@@ -216,7 +270,7 @@ export function useWebSocket({
             "/user/queue/progress",
             (message) => {
               try {
-                const response = JSON.parse(message.body);
+                const response = enrichProgressWithActiveTaskShape(JSON.parse(message.body));
                 console.log("📊 Progress update received:", response);
                 console.log("   Progress status:", response.status);
 

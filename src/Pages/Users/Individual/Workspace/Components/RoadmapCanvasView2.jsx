@@ -67,6 +67,8 @@ function RoadmapCanvasView2({
   });
   const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
   const [loadingGlobalCurrentPhase, setLoadingGlobalCurrentPhase] = useState(false);
+  const [optimisticUnlockedPhaseIds, setOptimisticUnlockedPhaseIds] = useState([]);
+  const [unlockingPhaseIds, setUnlockingPhaseIds] = useState([]);
 
   const loadGlobalCurrentPhaseProgress = useCallback(async () => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -86,7 +88,7 @@ function RoadmapCanvasView2({
 
   useEffect(() => {
     void loadGlobalCurrentPhaseProgress();
-  }, [loadGlobalCurrentPhaseProgress, quizRefreshToken, roadmap]);
+  }, [loadGlobalCurrentPhaseProgress, roadmap?.roadmapId, selectedPhaseId, openPhaseId]);
   const [decisionHandledPhaseIds, setDecisionHandledPhaseIds] = useState([]);
   const [phaseReviewState, setPhaseReviewState] = useState({
     loading: false,
@@ -131,12 +133,48 @@ function RoadmapCanvasView2({
   }, [roadmap?.phases]);
   const normalizedAdaptationMode = String(adaptationMode || "").toUpperCase();
 
+  const isPhaseFinishedStatus = useCallback((phaseStatus) => {
+    const normalizedStatus = String(phaseStatus || "").toUpperCase();
+    return normalizedStatus === "COMPLETED" || normalizedStatus === "SKIPPED";
+  }, []);
+
   const maxUnlockedPhaseIndex = useMemo(() => {
-    if (!globalCurrentPhasePayload?.phaseId) return 0;
-    const globalPhaseId = Number(globalCurrentPhasePayload.phaseId);
-    const idx = phases.findIndex((p) => Number(p.phaseId) === globalPhaseId);
-    return Math.max(0, idx);
-  }, [globalCurrentPhasePayload?.phaseId, phases]);
+    if (!Array.isArray(phases) || phases.length === 0) return 0;
+
+    const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+    const globalCurrentIndex = Number.isInteger(globalPhaseId)
+      ? phases.findIndex((p) => Number(p.phaseId) === globalPhaseId)
+      : -1;
+
+    let contiguousFinishedCount = 0;
+    for (let index = 0; index < phases.length; index += 1) {
+      if (!isPhaseFinishedStatus(phases[index]?.status)) break;
+      contiguousFinishedCount += 1;
+    }
+    const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
+
+    const unlockedByOptimisticIndex = (optimisticUnlockedPhaseIds || []).reduce((maxIndex, phaseId) => {
+      const normalizedPhaseId = Number(phaseId);
+      if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return maxIndex;
+      const phaseIndex = phases.findIndex((phase) => Number(phase?.phaseId) === normalizedPhaseId);
+      if (phaseIndex < 0) return maxIndex;
+      return Math.max(maxIndex, phaseIndex);
+    }, -1);
+
+    return Math.max(0, globalCurrentIndex, unlockedByStatusIndex, unlockedByOptimisticIndex);
+  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, optimisticUnlockedPhaseIds, phases]);
+
+  const isCurrentPayloadFinished = useMemo(() => {
+    return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
+  }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
+
+  const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+
+  useEffect(() => {
+    setOptimisticUnlockedPhaseIds([]);
+    setUnlockingPhaseIds([]);
+  }, [roadmap?.roadmapId]);
 
   const getPersistedKnowledgeMap = (storageKey) => {
     if (!storageKey || typeof window === "undefined") {
@@ -299,7 +337,7 @@ function RoadmapCanvasView2({
 
   useEffect(() => {
     void syncPhaseReview();
-  }, [syncPhaseReview, quizRefreshToken, activePhase?.phaseId]);
+  }, [syncPhaseReview, activePhase?.phaseId]);
 
   const phaseReviewConfidencePercent = useMemo(() => {
     const rawScore = Number(phaseReviewState?.data?.confidenceScore);
@@ -542,7 +580,6 @@ function RoadmapCanvasView2({
     activePhase?.phaseId,
     activePhase?.postLearningQuizzes,
     normalizedAdaptationMode,
-    quizRefreshToken,
     roadmap?.roadmapId,
   ]);
 
@@ -606,6 +643,7 @@ function RoadmapCanvasView2({
       const next = current === phaseId ? null : phaseId;
       if (next) {
         onPhaseFocus?.(next, { preserveActiveView: true });
+        void loadGlobalCurrentPhaseProgress();
       }
       return next;
     });
@@ -958,12 +996,34 @@ function RoadmapCanvasView2({
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
           const phaseIndex = phases.findIndex((p) => Number(p.phaseId) === normalizedPhaseId);
-          
-          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex;
-          const previousPhaseCompleted = phaseIndex > 0 
-            ? String(phases[phaseIndex - 1]?.status || "").toUpperCase() === "COMPLETED" 
+
+          const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
+            && phase.preLearningQuizzes.length > 0;
+          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+          const previousPhaseCompleted = phaseIndex > 0
+            ? (() => {
+              const previousPhase = phases[phaseIndex - 1] || null;
+              const previousPhaseId = Number(previousPhase?.phaseId);
+              const previousFromPhaseList = isPhaseFinishedStatus(previousPhase?.status);
+
+              const previousFromCurrentPayloadById = isCurrentPayloadFinished
+                && Number.isInteger(currentPayloadPhaseId)
+                && currentPayloadPhaseId > 0
+                && currentPayloadPhaseId === previousPhaseId;
+
+              const previousFromCurrentPayloadByIndex = isCurrentPayloadFinished
+                && Number.isFinite(currentPayloadPhaseIndex)
+                && currentPayloadPhaseIndex >= 0
+                && currentPayloadPhaseIndex >= (phaseIndex - 1);
+
+              return previousFromPhaseList || previousFromCurrentPayloadById || previousFromCurrentPayloadByIndex;
+            })()
             : true;
-          const isUnlockable = isLockedPhase && phaseIndex === maxUnlockedPhaseIndex + 1 && previousPhaseCompleted;
+          const isUnlockingPhase = unlockingPhaseIds.includes(normalizedPhaseId);
+          const isUnlockable = isLockedPhase
+            && phaseIndex === maxUnlockedPhaseIndex + 1
+            && previousPhaseCompleted
+            && !isUnlockingPhase;
 
           const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
           const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
@@ -1095,10 +1155,27 @@ function RoadmapCanvasView2({
                         </p>
                         <Button 
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (isUnlockable) {
-                              onCreatePhasePreLearning(phase.phaseId, { skipPreLearning: false });
+                            if (!isUnlockable) return;
+
+                            setOptimisticUnlockedPhaseIds((current) => {
+                              if (current.includes(normalizedPhaseId)) return current;
+                              return [...current, normalizedPhaseId];
+                            });
+                            setUnlockingPhaseIds((current) => {
+                              if (current.includes(normalizedPhaseId)) return current;
+                              return [...current, normalizedPhaseId];
+                            });
+
+                            try {
+                              await onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false });
+                              void loadGlobalCurrentPhaseProgress();
+                            } catch (error) {
+                              setOptimisticUnlockedPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+                              showError(error?.message || t("workspace.roadmap.phaseUnlockFailed", "Không thể mở khóa phase này."));
+                            } finally {
+                              setUnlockingPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
                             }
                           }}
                           disabled={!isUnlockable}
@@ -1108,8 +1185,10 @@ function RoadmapCanvasView2({
                               : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                           }`}
                         >
-                          <Unlock className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
-                          {t("workspace.roadmap.canvas.unlockPhaseBtn", "Mở khóa Phase")}
+                          {isUnlockingPhase ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}
+                          {isUnlockingPhase
+                            ? t("workspace.roadmap.canvas.unlockingPhaseBtn", "Đang mở khóa...")
+                            : t("workspace.roadmap.canvas.unlockPhaseBtn", "Mở khóa Phase")}
                         </Button>
                       </div>
                     </div>

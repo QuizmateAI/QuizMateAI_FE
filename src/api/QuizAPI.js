@@ -274,6 +274,11 @@ export const getAttemptAssessment = async (attemptId) => {
   return response;
 };
 
+export const getActiveTask = async () => {
+  const response = await api.get('/v1/quiz/active-task');
+  return response;
+};
+
 // Lấy danh sách recommendation PENDING của workspace cá nhân
 export const getPendingRecommendations = async (workspaceId) => {
   const response = await api.get(`/workspace-assessments/pending-recommendations?workspaceId=${workspaceId}`);

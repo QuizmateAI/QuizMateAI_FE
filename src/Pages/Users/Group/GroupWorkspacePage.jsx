@@ -37,6 +37,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
 import { createRoadmap } from '@/api/RoadmapAPI';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
@@ -917,7 +918,27 @@ function GroupWorkspacePage() {
   ]);
 
   // WebSocket
-  const { isConnected: wsConnected } = useWebSocket({
+  const applyRecoveredGroupActiveTaskSnapshot = useCallback((snapshot) => {
+    const hasActiveTask = Boolean(snapshot?.hasActiveTask);
+    const tasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
+
+    if (!hasActiveTask || tasks.length === 0) {
+      setSessionUploadQueue((current) => current.filter((item) => !isProcessingMaterialStatus(item?.status)));
+      void refreshGroupMaterialViews({ silent: true });
+      return;
+    }
+
+    tasks.forEach((task) => {
+      handleRealtimeProgress({
+        ...task,
+        websocketTaskId: task?.taskId,
+        taskId: task?.taskId,
+        ...(task?.processingObject && typeof task.processingObject === 'object' ? task.processingObject : {}),
+      });
+    });
+  }, [handleRealtimeProgress, refreshGroupMaterialViews]);
+
+  const { isConnected: wsConnected, lastMessage: wsLastMessage } = useWebSocket({
     workspaceId: !isCreating ? workspaceId : null,
     enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
     onMaterialUploaded: handleRealtimeMaterialUpdate,
@@ -927,6 +948,21 @@ function GroupWorkspacePage() {
     onMaterialUpdated: handleRealtimeMaterialUpdate,
     onProgress: handleRealtimeProgress,
   });
+
+  const { refreshActiveTaskSnapshot } = useActiveTaskFallback({
+    enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
+    lastWebSocketMessage: wsLastMessage,
+    onSnapshot: (snapshot) => {
+      applyRecoveredGroupActiveTaskSnapshot(snapshot);
+    },
+    silenceThresholdMs: 15000,
+    pollIntervalMs: 15000,
+  });
+
+  useEffect(() => {
+    if (isCreating || !workspaceId || workspaceId === 'new') return;
+    void refreshActiveTaskSnapshot('page-reload');
+  }, [isCreating, refreshActiveTaskSnapshot, workspaceId]);
 
   // Invite handler
   const handleInvite = useCallback(async (email) => {
