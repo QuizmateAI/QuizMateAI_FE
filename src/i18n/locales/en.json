@@ -1645,7 +1645,7 @@
         "easy": "Easy",
         "medium": "Medium",
         "hard": "Hard",
-        "custom": "Custom (Self-config)"
+        "custom": "Custom "
       },
       "bloomLevels": {
         "remember": "Remember",
@@ -1960,6 +1960,11 @@
         "fontRobotoSlab": "Roboto Slab",
         "fontMerriweather": "Merriweather",
         "fontTangerine": "Tangerine",
+        "sessionLabel": "Quiz session",
+        "back": "Go back",
+        "font": "Change font",
+        "language": "Change language",
+        "theme": "Toggle theme",
         "confirmBackTitle": "Are you sure?",
         "confirmBackDescription": "Any unsaved progress might be lost.",
         "cancel": "Cancel",
@@ -1983,8 +1988,17 @@
         "nextQuestion": "Next Question",
         "processingAction": "Processing...",
         "processing": "Processing your submission...",
+        "headerHint": "Finish each question and use the star to mark anything you want to revisit before submitting.",
+        "markedCount": "Marked",
         "confirmSubmitTitle": "Stop and submit your exam?",
         "confirmSubmitDescription": "Your current answers will be submitted immediately.",
+        "confirmSubmitIncompleteTitle": "You still have {{count}} unanswered questions",
+        "confirmSubmitIncompleteDescription": "These questions will be submitted as unanswered. Do you still want to continue?",
+        "confirmSubmitCompletedTitle": "Ready to submit your exam?",
+        "confirmSubmitCompletedDescription": "You have completed all questions. Once submitted, you will not be able to edit your answers.",
+        "unansweredListLabel": "Unanswered questions",
+        "unansweredListMore": "and more...",
+        "allQuestionsCompleted": "All questions are completed.",
         "starting": "Starting"
       },
       "practiceActions": {
@@ -3262,7 +3276,7 @@
     "delete": "Delete",
     "deleteSuccess": "Delete Success",
     "deleting": "Deleting",
-    "desc": "Desc",
+    "desc": "Manage the portfolio of credit packages used within the system.",
     "edit": "Edit",
     "editTitle": "Edit Title",
     "empty": "Empty",
@@ -3294,8 +3308,8 @@
       "price": "Price",
       "status": "Status"
     },
-    "tableTitle": "Table Title",
-    "title": "Title",
+    "tableTitle": "List of credit packages",
+    "title": "Credit package management",
     "toggleStatus": "Toggle Status",
     "updateStatusSuccess": "Update Status Success",
     "updateSuccess": "Update Success"

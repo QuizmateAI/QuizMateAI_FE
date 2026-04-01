@@ -174,23 +174,35 @@ function RoadmapPhaseGenerateDialog({
           </div>
 
           {selectedFiles.length > 0 ? (
-            <div className={`rounded-lg border max-h-36 overflow-y-auto ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+            <div className={`rounded-lg border max-h-36 overflow-x-hidden overflow-y-auto ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
               {selectedFiles.map((file, index) => (
                 <div
                   key={`${file.name}-${index}`}
-                  className={`flex items-center justify-between px-3 py-2 text-sm ${isDarkMode ? "hover:bg-slate-900" : "hover:bg-gray-50"}`}
+                  className={`flex items-start gap-3 px-3 py-2 text-sm ${isDarkMode ? "hover:bg-slate-900" : "hover:bg-gray-50"}`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {getFileIcon(file)}
-                    <span className={`truncate ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{file.name}</span>
-                    <span className={`text-xs shrink-0 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                  <div className="grid min-w-0 flex-1 grid-cols-[auto,minmax(0,1fr),auto] items-start gap-2 overflow-hidden">
+                    <span className="mt-0.5 shrink-0">
+                      {getFileIcon(file)}
+                    </span>
+                    <span
+                      title={file.name}
+                      className={`block min-w-0 overflow-hidden break-all leading-5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
+                      style={{
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: 2,
+                      }}
+                    >
+                      {file.name}
+                    </span>
+                    <span className={`mt-0.5 shrink-0 text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                       {(file.size / 1024 / 1024).toFixed(1)} MB
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeFile(index)}
-                    className="p-1 rounded hover:bg-red-100"
+                    className="mt-0.5 shrink-0 p-1 rounded hover:bg-red-100"
                   >
                     <X className="w-3.5 h-3.5 text-red-500" />
                   </button>

@@ -1,11 +1,10 @@
-import { useReducer, useState, useEffect, useCallback, useRef } from 'react';
+import { useReducer, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
-import { Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock3, FileQuestion, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import QuestionCard from './QuestionCard';
-import HourglassLoader from './HourglassLoader';
 import { saveAttemptAnswers } from '@/api/QuizAPI';
 import { buildSavePayload, hasAnswerValue } from '../utils/quizTransform';
 
@@ -135,6 +134,44 @@ export default function ExamPerQuestion({
   const { currentIndex, timeLeft } = state;
   const currentQuestion = quiz.questions[currentIndex];
   const total = quiz.questions.length;
+  const unansweredQuestionNumbers = useMemo(
+    () => quiz.questions.flatMap((question, index) => (hasAnswerValue(answers?.[question?.id]) ? [] : [index + 1])),
+    [answers, quiz.questions],
+  );
+  const resolveTemplatedText = useCallback((key, fallback, replacements = {}) => {
+    const template = t(key);
+    const base = template === key ? fallback : template;
+    return Object.entries(replacements).reduce(
+      (message, [name, value]) => message.replaceAll(`{{${name}}}`, String(value)),
+      String(base),
+    );
+  }, [t]);
+  const submitConfirmState = useMemo(() => {
+    const unansweredCount = unansweredQuestionNumbers.length;
+    const previewNumbers = unansweredQuestionNumbers.slice(0, 8);
+
+    return {
+      unansweredCount,
+      previewNumbers,
+      hasMore: unansweredCount > previewNumbers.length,
+      title: unansweredCount > 0
+        ? resolveTemplatedText(
+          'workspace.quiz.examActions.confirmSubmitIncompleteTitle',
+          unansweredCount === 1
+            ? 'You still have 1 unanswered question'
+            : `You still have ${unansweredCount} unanswered questions`,
+          { count: unansweredCount },
+        )
+        : t('workspace.quiz.examActions.confirmSubmitCompletedTitle', 'Ready to submit your exam?'),
+      description: unansweredCount > 0
+        ? resolveTemplatedText(
+          'workspace.quiz.examActions.confirmSubmitIncompleteDescription',
+          'These questions will be submitted as unanswered. Do you still want to continue?',
+          { count: unansweredCount },
+        )
+        : t('workspace.quiz.examActions.confirmSubmitCompletedDescription', 'You have completed all questions. Once submitted, you will not be able to edit your answers.'),
+    };
+  }, [resolveTemplatedText, t, unansweredQuestionNumbers]);
 
   useEffect(() => {
     if (!attemptId || initializedAttemptRef.current === attemptId) {
@@ -309,10 +346,12 @@ export default function ExamPerQuestion({
 
   return (
     <div className={cn('max-w-2xl mx-auto', fontClass)}>
-      {/* Timer + Hourglass */}
+      {/* Timer */}
       <div className="flex flex-col items-center mb-6">
-        <div className="bg-slate-200 dark:bg-slate-800 rounded-2xl p-5 inline-flex flex-col items-center border border-slate-300 dark:border-slate-600 shadow-md shadow-slate-900/10 dark:shadow-blue-900/50">
-          <HourglassLoader size="5em" />
+        <div className="inline-flex flex-col items-center rounded-[24px] border border-slate-200 bg-white px-6 py-5 shadow-md shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-800 dark:shadow-blue-900/20">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+            <Clock3 className="h-7 w-7" />
+          </div>
           <div className={cn(
             'text-2xl font-bold font-mono mt-3',
             timeLeft <= 10 ? 'text-red-500 dark:text-red-400 animate-pulse' : 'text-slate-800 dark:text-slate-100',
@@ -327,6 +366,7 @@ export default function ExamPerQuestion({
         question={currentQuestion}
         questionNumber={currentIndex + 1}
         totalQuestions={total}
+        showHeaderMeta={false}
         answerValue={answers[currentQuestion.id]}
         onSelectAnswer={(answerId) => onSelectAnswer(currentQuestion.id, answerId, currentQuestion.type === 'MULTIPLE_CHOICE')}
         onTextAnswerChange={(value) => onTextAnswerChange?.(currentQuestion.id, value)}
@@ -350,11 +390,32 @@ export default function ExamPerQuestion({
       <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
         <DialogContent className="sm:max-w-md border-slate-200 dark:border-slate-700">
           <DialogHeader>
-            <DialogTitle>{t('workspace.quiz.examActions.confirmSubmitTitle', 'Stop and submit your exam?')}</DialogTitle>
+            <DialogTitle>{submitConfirmState.title}</DialogTitle>
             <DialogDescription>
-              {t('workspace.quiz.examActions.confirmSubmitDescription', 'Your current answers will be submitted immediately.')}
+              {submitConfirmState.description}
             </DialogDescription>
           </DialogHeader>
+          {submitConfirmState.unansweredCount > 0 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/70 dark:bg-amber-950/20 dark:text-amber-200">
+              <p className="flex items-center gap-2 font-semibold">
+                <FileQuestion className="h-4 w-4" />
+                {t('workspace.quiz.examActions.unansweredListLabel', 'Unanswered questions')}
+              </p>
+              <p className="mt-2 leading-6">
+                {submitConfirmState.previewNumbers.join(', ')}
+                {submitConfirmState.hasMore
+                  ? ` ${t('workspace.quiz.examActions.unansweredListMore', 'and more...')}`
+                  : ''}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/20 dark:text-emerald-200">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="h-4 w-4" />
+                {t('workspace.quiz.examActions.allQuestionsCompleted', 'All questions are completed.')}
+              </div>
+            </div>
+          )}
           {(nextError || submitError) && (
             <p className="text-sm text-red-600 dark:text-red-400">{nextError || submitError}</p>
           )}

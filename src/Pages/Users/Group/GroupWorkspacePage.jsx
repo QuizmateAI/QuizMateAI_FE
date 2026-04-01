@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
-import SourcesPanel from '@/Pages/Users/Individual/Workspace/Components/SourcesPanel';
 import UploadSourceDialog from './Components/UploadSourceDialog';
+import GroupDocumentsTab from './Components/GroupDocumentsTab';
 import InviteMemberDialog from './Group_leader/InviteMemberDialog';
 import GroupWorkspaceProfileConfigDialog from './Components/GroupWorkspaceProfileConfigDialog';
 import GroupDashboardTab from './Group_leader/GroupDashboardTab';
@@ -21,8 +21,7 @@ import {
   FileText,
   FolderOpen,
   Globe,
-  Loader2,
-  Map,
+  Map as MapIcon,
   PenLine,
   Settings,
   ShieldCheck,
@@ -40,14 +39,192 @@ import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { createRoadmap } from '@/api/RoadmapAPI';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
-import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from '@/api/MaterialAPI';
+import {
+  deleteMaterial,
+  getMaterialsByWorkspace,
+  getPendingGroupMaterials as getPendingGroupMaterialsAPI,
+  reviewGroupMaterial as reviewGroupMaterialAPI,
+  uploadGroupPendingMaterial,
+} from '@/api/MaterialAPI';
 import { getGroupWorkspaceProfile, normalizeGroupWorkspaceProfile } from '@/api/WorkspaceAPI';
 import { getQuizzesByScope, deleteQuiz } from '@/api/QuizAPI';
 import { unwrapApiData } from '@/Utils/apiResponse';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useToast } from '@/context/ToastContext';
+import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
+const GROUP_UPLOAD_ACCEPTED_EXTENSIONS = new Set([
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.ppt',
+  '.pptx',
+  '.xls',
+  '.xlsx',
+  '.txt',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.mp3',
+  '.mp4',
+]);
+
+function clampPercent(percent) {
+  return Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+}
+
+function normalizeMaterialStatus(status) {
+  const normalized = String(status || '').trim().toUpperCase();
+  if (normalized === 'WARNED') return 'WARN';
+  if (normalized === 'REJECTED') return 'REJECT';
+  return normalized;
+}
+
+function isProcessingMaterialStatus(status) {
+  return ['UPLOADING', 'PROCESSING', 'PENDING', 'QUEUED'].includes(normalizeMaterialStatus(status));
+}
+
+function isReviewableMaterialStatus(status) {
+  return ['ACTIVE', 'WARN'].includes(normalizeMaterialStatus(status));
+}
+
+function isTerminalMaterialStatus(status) {
+  return ['ACTIVE', 'WARN', 'ERROR', 'REJECT', 'DELETED'].includes(normalizeMaterialStatus(status));
+}
+
+function getPendingMaterialRenderKey(item, prefix = 'pending', fallbackIndex = 0) {
+  const materialId = Number(item?.materialId ?? item?.id ?? 0);
+  if (Number.isInteger(materialId) && materialId > 0) {
+    return `${prefix}:material:${materialId}`;
+  }
+
+  const taskId = String(item?.taskId ?? item?.websocketTaskId ?? item?.progressKey ?? item?.key ?? '').trim();
+  if (taskId) {
+    return `${prefix}:task:${taskId}`;
+  }
+
+  const uploadedAt = String(item?.uploadedAt ?? '').trim();
+  const title = String(item?.title ?? item?.name ?? 'untitled').trim() || 'untitled';
+  return `${prefix}:fallback:${title}:${uploadedAt}:${fallbackIndex}`;
+}
+
+function renderInlineSpinner(className = 'h-10 w-10', borderClassName = 'border-2') {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block shrink-0 animate-spin rounded-full border-current border-r-transparent ${borderClassName} ${className}`}
+    />
+  );
+}
+
+function inferMaterialType(file) {
+  if (file?.type) return file.type;
+  const fileName = String(file?.name || '').toLowerCase();
+  if (fileName.endsWith('.pdf')) return 'application/pdf';
+  if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) return 'application/msword';
+  if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) return 'application/vnd.ms-powerpoint';
+  if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) return 'application/vnd.ms-excel';
+  if (fileName.endsWith('.txt')) return 'text/plain';
+  if (fileName.endsWith('.mp3')) return 'audio/mpeg';
+  if (fileName.endsWith('.mp4')) return 'video/mp4';
+  if (fileName.endsWith('.png')) return 'image/png';
+  if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) return 'image/jpeg';
+  return 'application/octet-stream';
+}
+
+function getFileExtension(fileName) {
+  const normalized = String(fileName || '').trim().toLowerCase();
+  const dotIndex = normalized.lastIndexOf('.');
+  return dotIndex >= 0 ? normalized.slice(dotIndex) : '';
+}
+
+function isSupportedGroupUploadFile(file) {
+  return GROUP_UPLOAD_ACCEPTED_EXTENSIONS.has(getFileExtension(file?.name));
+}
+
+function mapTransportProgressToDisplay(percent) {
+  const normalized = clampPercent(percent);
+  return Math.max(1, Math.min(24, Math.round((normalized / 100) * 24)));
+}
+
+function mapProcessingProgressToDisplay(percent) {
+  const normalized = clampPercent(percent);
+  return Math.max(25, Math.min(99, 25 + Math.round((normalized / 100) * 74)));
+}
+
+function createUploadSessionKey(file) {
+  return `upload:${Date.now()}:${Math.random().toString(36).slice(2, 8)}:${String(file?.name || 'file')}`;
+}
+
+function getRealtimeMaterialId(payload, fallbackTaskId = null, uploads = []) {
+  const directId = Number(
+    payload?.materialId
+    ?? payload?.material_id
+    ?? payload?.data?.materialId
+    ?? payload?.data?.material_id
+    ?? 0
+  );
+  if (Number.isInteger(directId) && directId > 0) return directId;
+
+  if (!fallbackTaskId) return null;
+  const matchedUpload = (uploads || []).find((item) => String(item?.taskId || '') === String(fallbackTaskId));
+  const matchedId = Number(matchedUpload?.materialId ?? 0);
+  return Number.isInteger(matchedId) && matchedId > 0 ? matchedId : null;
+}
+
+function buildPendingQueueMessage(status, currentLang, isLeader = false) {
+  const normalized = normalizeMaterialStatus(status);
+
+  if (normalized === 'UPLOADING') {
+    return currentLang === 'en'
+      ? 'Uploading the file to the server.'
+      : 'Đang tải tệp lên máy chủ.';
+  }
+
+  if (normalized === 'PROCESSING' || normalized === 'PENDING' || normalized === 'QUEUED') {
+    return currentLang === 'en'
+      ? 'AI is checking this material against the group profile.'
+      : 'AI đang đối chiếu tài liệu này với profile nhóm.';
+  }
+
+  if (normalized === 'ACTIVE') {
+    return isLeader
+      ? (currentLang === 'en'
+        ? 'AI finished processing. You can approve it for the shared source list now.'
+        : 'AI đã xử lý xong. Bạn có thể duyệt ngay để đưa vào nguồn học chung.')
+      : (currentLang === 'en'
+        ? 'AI finished processing. This material is waiting for leader approval.'
+        : 'AI đã xử lý xong. Tài liệu đang chờ leader phê duyệt.');
+  }
+
+  if (normalized === 'WARN') {
+    return isLeader
+      ? (currentLang === 'en'
+        ? 'AI found a warning. Review carefully before approving.'
+        : 'AI đã gắn warning. Cần xem lại kỹ trước khi duyệt.')
+      : (currentLang === 'en'
+        ? 'AI flagged this material. It is waiting for leader review.'
+        : 'AI đã gắn warning cho tài liệu này. Tài liệu đang chờ leader xem lại.');
+  }
+
+  if (normalized === 'ERROR') {
+    return currentLang === 'en'
+      ? 'The system could not finish processing this material.'
+      : 'Hệ thống không thể xử lý xong tài liệu này.';
+  }
+
+  if (normalized === 'REJECT') {
+    return currentLang === 'en'
+      ? 'The material was rejected for this group workspace.'
+      : 'Tài liệu đã bị loại khỏi group workspace này.';
+  }
+
+  return currentLang === 'en'
+    ? 'This material is waiting for an update.'
+    : 'Tài liệu này đang chờ cập nhật mới.';
+}
 
 function readCurrentUser() {
   try {
@@ -112,15 +289,15 @@ function GroupWorkspacePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
-  const { showError, showInfo, showSuccess } = useToast();
+  const { showError, showInfo, showSuccess, showWarning } = useToast();
+  const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [studioCollapsed, setStudioCollapsed] = useState(false);
   const [mobilePanel, setMobilePanel] = useState(null);
 
   // Section navigation via URL
-  const validSections = ['dashboard', 'personalDashboard', 'members', 'notifications', 'flashcard', 'quiz', 'roadmap', 'mockTest', 'challenge', 'settings'];
+  const validSections = ['dashboard', 'personalDashboard', 'documents', 'members', 'notifications', 'flashcard', 'quiz', 'roadmap', 'mockTest', 'challenge', 'settings'];
   const legacySectionMap = { flashcardQuiz: 'quiz' };
   const sectionFromUrl = searchParams.get('section');
   const resolvedSection = legacySectionMap[sectionFromUrl] || sectionFromUrl;
@@ -164,7 +341,13 @@ function GroupWorkspacePage() {
   const [groupLogs, setGroupLogs] = useState([]);
   const [groupLogsLoading, setGroupLogsLoading] = useState(false);
   const [welcomePayload, setWelcomePayload] = useState(null);
+  const [pendingReviewMaterials, setPendingReviewMaterials] = useState([]);
+  const [pendingReviewLoading, setPendingReviewLoading] = useState(false);
+  const [reviewingPendingMaterialId, setReviewingPendingMaterialId] = useState(null);
+  const [sessionUploadQueue, setSessionUploadQueue] = useState([]);
   const settingsRef = useRef(null);
+  const refreshPendingMaterialTimersRef = useRef({});
+  const uploadNotificationsRef = useRef(new Set());
 
   // Members state
   const [members, setMembers] = useState([]);
@@ -259,6 +442,29 @@ function GroupWorkspacePage() {
   const pageShellClass = isDarkMode
     ? 'bg-[#06131a] text-white'
     : 'bg-[linear-gradient(180deg,#fffaf0_0%,#f4fbf7_46%,#eef6ff_100%)] text-slate-900';
+  const resolveUiErrorMessage = useCallback((error) => getErrorMessage(t, error), [t]);
+
+  const patchSessionUpload = useCallback((matcher, patch) => {
+    setSessionUploadQueue((current) => current.map((item) => {
+      if (!matcher(item)) return item;
+      const nextPatch = typeof patch === 'function' ? patch(item) : patch;
+      return {
+        ...item,
+        ...(nextPatch || {}),
+      };
+    }));
+  }, []);
+
+  const removeSessionUpload = useCallback((matcher) => {
+    setSessionUploadQueue((current) => current.filter((item) => !matcher(item)));
+  }, []);
+
+  const clearPendingMaterialRefreshTimer = useCallback((materialId) => {
+    const key = String(materialId || '');
+    if (!key || !refreshPendingMaterialTimersRef.current[key]) return;
+    globalThis.clearTimeout(refreshPendingMaterialTimersRef.current[key]);
+    delete refreshPendingMaterialTimersRef.current[key];
+  }, []);
 
   useEffect(() => {
     if (isCreating || !workspaceId || workspaceId === 'new') return;
@@ -267,15 +473,6 @@ function GroupWorkspacePage() {
       console.error('Failed to fetch group workspace detail:', err);
     });
   }, [currentWorkspace?.workspaceId, currentWorkspaceFromList?.workspaceId, fetchWorkspaceDetail, isCreating, workspaceId]);
-
-  // WebSocket
-  const { isConnected: wsConnected } = useWebSocket({
-    workspaceId: !isCreating ? workspaceId : null,
-    enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
-    onMaterialUploaded: () => fetchSources(),
-    onMaterialDeleted: () => fetchSources(),
-    onMaterialUpdated: () => fetchSources(),
-  });
 
   // Fetch materials
   const fetchSources = useCallback(async () => {
@@ -299,6 +496,68 @@ function GroupWorkspacePage() {
       return [];
     }
   }, [workspaceId, isCreating]);
+
+  const loadPendingReviewMaterials = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+    if (!resolvedWorkspaceId || isCreating || !isLeader) {
+      setPendingReviewMaterials([]);
+      return [];
+    }
+
+    setPendingReviewLoading(true);
+    try {
+      const data = await getPendingGroupMaterialsAPI(resolvedWorkspaceId);
+      const materials = Array.isArray(data)
+        ? data.map((item) => ({
+          id: item.materialId,
+          materialId: item.materialId,
+          title: item.title,
+          name: item.title,
+          type: item.materialType,
+          status: item.status,
+          uploadedAt: item.uploadedAt,
+          needReview: item.needReview !== false,
+          ...item,
+        })).filter((item) => normalizeMaterialStatus(item?.status) !== 'DELETED')
+        : [];
+      setPendingReviewMaterials(materials);
+      return materials;
+    } catch (error) {
+      if (!silent) {
+        showError(resolveUiErrorMessage(error));
+      }
+      console.error('Failed to load pending review materials:', error);
+      setPendingReviewMaterials([]);
+      return [];
+    } finally {
+      setPendingReviewLoading(false);
+    }
+  }, [isCreating, isLeader, resolvedWorkspaceId, resolveUiErrorMessage, showError]);
+
+  const refreshGroupMaterialViews = useCallback(async (options = {}) => {
+    const { silent = true } = options;
+    await fetchSources();
+    if (isLeader) {
+      await loadPendingReviewMaterials({ silent });
+    }
+  }, [fetchSources, isLeader, loadPendingReviewMaterials]);
+
+  const scheduleMaterialViewRefresh = useCallback((materialId) => {
+    const key = String(materialId || '');
+    if (!key) {
+      void refreshGroupMaterialViews({ silent: true });
+      return;
+    }
+
+    clearPendingMaterialRefreshTimer(key);
+    const currentProgress = materialProgress.getProgress(key);
+    const delayMs = Math.max(240, (100 - currentProgress) * 18 + 160);
+
+    refreshPendingMaterialTimersRef.current[key] = globalThis.setTimeout(() => {
+      clearPendingMaterialRefreshTimer(key);
+      void refreshGroupMaterialViews({ silent: true });
+    }, delayMs);
+  }, [clearPendingMaterialRefreshTimer, materialProgress, refreshGroupMaterialViews]);
 
   useEffect(() => {
     if (isCreating || hasCheckedInitialSources) return;
@@ -363,8 +622,13 @@ function GroupWorkspacePage() {
       setHasLoadedGroupProfile(false);
       loadGroupProfile();
       loadGroupLogs();
+      if (isLeader) {
+        loadPendingReviewMaterials({ silent: true });
+      } else {
+        setPendingReviewMaterials([]);
+      }
     }
-  }, [isCreating, loadGroupLogs, loadGroupProfile, resolvedWorkspaceId]);
+  }, [isCreating, isLeader, loadGroupLogs, loadGroupProfile, loadPendingReviewMaterials, resolvedWorkspaceId]);
 
   useEffect(() => {
     if (!resolvedWorkspaceId) {
@@ -380,6 +644,13 @@ function GroupWorkspacePage() {
       setWelcomePayload(null);
     }
   }, [resolvedWorkspaceId]);
+
+  useEffect(() => () => {
+    Object.values(refreshPendingMaterialTimersRef.current).forEach((timerId) => {
+      globalThis.clearTimeout(timerId);
+    });
+    refreshPendingMaterialTimersRef.current = {};
+  }, []);
 
   useEffect(() => {
     if (!isCreating) {
@@ -465,6 +736,198 @@ function GroupWorkspacePage() {
     return () => { cancelled = true; };
   }, [profileUpdateGuardOpen, workspaceId, isCreating]);
 
+  const announceRealtimeMaterialStatus = useCallback((materialId, title, status) => {
+    const normalizedMaterialId = Number(materialId);
+    const normalizedStatus = normalizeMaterialStatus(status);
+    if (!Number.isInteger(normalizedMaterialId) || normalizedMaterialId <= 0 || !normalizedStatus) return;
+
+    const notificationKey = `${normalizedMaterialId}:${normalizedStatus}`;
+    if (uploadNotificationsRef.current.has(notificationKey)) return;
+    uploadNotificationsRef.current.add(notificationKey);
+
+    const materialTitle = title || (currentLang === 'en' ? 'Material' : 'Tài liệu');
+
+    if (normalizedStatus === 'ACTIVE') {
+      showInfo(
+        currentLang === 'en'
+          ? `"${materialTitle}" passed AI checks and is waiting for leader approval.`
+          : `"${materialTitle}" đã qua bước AI và đang chờ leader duyệt.`,
+      );
+      return;
+    }
+
+    if (normalizedStatus === 'WARN') {
+      showWarning(
+        currentLang === 'en'
+          ? `"${materialTitle}" has a warning and needs leader review.`
+          : `"${materialTitle}" có warning và cần leader xem lại.`,
+      );
+      return;
+    }
+
+    if (normalizedStatus === 'ERROR') {
+      showError(
+        currentLang === 'en'
+          ? `The system could not finish processing "${materialTitle}".`
+          : `Hệ thống không thể xử lý xong "${materialTitle}".`,
+      );
+      return;
+    }
+
+    if (normalizedStatus === 'REJECT') {
+      showError(
+        currentLang === 'en'
+          ? `"${materialTitle}" was rejected for this group workspace.`
+          : `"${materialTitle}" đã bị loại khỏi group workspace này.`,
+      );
+    }
+  }, [currentLang, showError, showInfo, showWarning]);
+
+  const handleRealtimeProgress = useCallback((progressPayload) => {
+    const taskId = String(progressPayload?.websocketTaskId ?? progressPayload?.taskId ?? '');
+    const status = normalizeMaterialStatus(progressPayload?.status ?? progressPayload?.final_status);
+    const rawPercent = clampPercent(
+      progressPayload?.percent
+      ?? progressPayload?.progressPercent
+      ?? progressPayload?.data?.percent
+      ?? progressPayload?.data?.progressPercent
+      ?? 0,
+    );
+    const materialId = getRealtimeMaterialId(progressPayload, taskId, sessionUploadQueue);
+
+    if (!materialId && !taskId) return;
+
+    const progressKey = String(materialId || taskId);
+    const nextDisplayPercent = rawPercent > 0 ? mapProcessingProgressToDisplay(rawPercent) : 28;
+    materialProgress.setProgress(progressKey, nextDisplayPercent);
+
+    if (materialId && progressKey !== String(materialId)) {
+      materialProgress.setProgress(String(materialId), Math.max(materialProgress.getProgress(progressKey), nextDisplayPercent), { instant: true });
+      materialProgress.clearProgress(progressKey);
+    }
+
+    patchSessionUpload(
+      (item) => String(item?.progressKey || item?.key) === progressKey || Number(item?.materialId) === Number(materialId),
+      (item) => ({
+        materialId: materialId ?? item.materialId,
+        progressKey: String(materialId || item.progressKey || item.key),
+        taskId: taskId || item.taskId,
+        status: status || item.status || 'PROCESSING',
+        message: buildPendingQueueMessage(status || item.status || 'PROCESSING', currentLang, isLeader),
+      }),
+    );
+
+    if (materialId && isTerminalMaterialStatus(status)) {
+      materialProgress.setProgress(String(materialId), 100);
+      announceRealtimeMaterialStatus(materialId, progressPayload?.title ?? progressPayload?.data?.title, status);
+      scheduleMaterialViewRefresh(materialId);
+    }
+  }, [
+    announceRealtimeMaterialStatus,
+    currentLang,
+    isLeader,
+    materialProgress,
+    patchSessionUpload,
+    scheduleMaterialViewRefresh,
+    sessionUploadQueue,
+  ]);
+
+  const handleRealtimeMaterialUpdate = useCallback((materialPayload) => {
+    const taskId = String(materialPayload?.websocketTaskId ?? materialPayload?.taskId ?? '');
+    const status = normalizeMaterialStatus(materialPayload?.status ?? materialPayload?.final_status);
+    const materialId = getRealtimeMaterialId(materialPayload, taskId, sessionUploadQueue);
+
+    if (!materialId) {
+      void refreshGroupMaterialViews({ silent: true });
+      return;
+    }
+
+    const materialTitle = materialPayload?.title ?? materialPayload?.name ?? null;
+    materialProgress.setProgress(String(materialId), isTerminalMaterialStatus(status) ? 100 : 28);
+
+    patchSessionUpload(
+      (item) => Number(item?.materialId) === Number(materialId) || String(item?.taskId || '') === taskId,
+      (item) => ({
+        materialId,
+        progressKey: String(materialId),
+        taskId: taskId || item.taskId,
+        status: status || item.status || 'PROCESSING',
+        name: materialTitle ?? item.name,
+        title: materialTitle ?? item.title,
+        uploadedAt: materialPayload?.uploadedAt ?? item.uploadedAt,
+        needReview: materialPayload?.needReview ?? item.needReview ?? true,
+        message: buildPendingQueueMessage(status || item.status || 'PROCESSING', currentLang, isLeader),
+      }),
+    );
+
+    if (status === 'DELETED') {
+      removeSessionUpload((item) => Number(item?.materialId) === Number(materialId));
+      materialProgress.clearProgress(String(materialId));
+      void refreshGroupMaterialViews({ silent: true });
+      return;
+    }
+
+    if (isTerminalMaterialStatus(status)) {
+      announceRealtimeMaterialStatus(materialId, materialTitle, status);
+      scheduleMaterialViewRefresh(materialId);
+      return;
+    }
+
+    void refreshGroupMaterialViews({ silent: true });
+  }, [
+    announceRealtimeMaterialStatus,
+    currentLang,
+    isLeader,
+    materialProgress,
+    patchSessionUpload,
+    refreshGroupMaterialViews,
+    removeSessionUpload,
+    scheduleMaterialViewRefresh,
+    sessionUploadQueue,
+  ]);
+
+  const handleReviewPendingMaterial = useCallback(async (item, isApproved) => {
+    const materialId = Number(item?.materialId ?? item?.id ?? 0);
+    if (!Number.isInteger(materialId) || materialId <= 0) return;
+
+    setReviewingPendingMaterialId(materialId);
+    try {
+      await reviewGroupMaterialAPI(materialId, isApproved);
+      removeSessionUpload((entry) => Number(entry?.materialId) === materialId);
+      materialProgress.clearProgress(String(materialId));
+      await refreshGroupMaterialViews({ silent: true });
+      showSuccess(
+        isApproved
+          ? (currentLang === 'en' ? 'Material approved for the group.' : 'Đã duyệt tài liệu vào group.')
+          : (currentLang === 'en' ? 'Material rejected from the group.' : 'Đã từ chối tài liệu khỏi group.'),
+      );
+    } catch (error) {
+      showError(resolveUiErrorMessage(error));
+    } finally {
+      setReviewingPendingMaterialId(null);
+    }
+  }, [
+    currentLang,
+    materialProgress,
+    refreshGroupMaterialViews,
+    removeSessionUpload,
+    resolveUiErrorMessage,
+    showError,
+    showSuccess,
+  ]);
+
+  // WebSocket
+  const { isConnected: wsConnected } = useWebSocket({
+    workspaceId: !isCreating ? workspaceId : null,
+    enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
+    onMaterialUploaded: handleRealtimeMaterialUpdate,
+    onMaterialDeleted: () => {
+      void refreshGroupMaterialViews({ silent: true });
+    },
+    onMaterialUpdated: handleRealtimeMaterialUpdate,
+    onProgress: handleRealtimeProgress,
+  });
+
   // Invite handler
   const handleInvite = useCallback(async (email) => {
     if (!canManageGroup || !canManageMembers) {
@@ -491,50 +954,171 @@ function GroupWorkspacePage() {
       showError('Không thể upload: workspaceId không hợp lệ');
       return;
     }
-    try {
-      const uploadPromises = files.map((file) =>
-        uploadMaterial(file, workspaceId)
-          .then((res) => {
-            const material = res?.data?.data || res?.data || res;
-            return {
-              id: material.materialId,
-              name: material.title,
-              type: material.materialType,
-              status: material.status || 'PROCESSING',
-              uploadedAt: material.uploadedAt,
-              ...material,
-            };
-          })
-          .catch((err) => {
-            console.error('Upload failed for', file.name, err);
-            return null;
-          })
-      );
-      const results = await Promise.all(uploadPromises);
-      const successfulUploads = results.filter((r) => r !== null);
-      if (successfulUploads.length > 0) {
-        setSources((prev) => [...prev, ...successfulUploads]);
-        showInfo(`Uploaded ${successfulUploads.length} file(s) successfully`);
-      } else {
-        showError('All uploads failed');
-      }
-    } catch (err) {
-      console.error('Upload error:', err);
-      showError('Upload failed: ' + (err?.message || 'Unknown error'));
+    const candidateFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    if (candidateFiles.length === 0) {
+      showError(currentLang === 'en' ? 'Please choose at least one file.' : 'Vui lòng chọn ít nhất một tệp.');
+      return;
     }
-  }, [workspaceId, isCreating, showError, showInfo, canUploadSource, currentLang, shouldForceProfileSetup]);
+
+    const invalidFiles = candidateFiles.filter((file) => {
+      if (!file || Number(file.size) <= 0) return true;
+      return !isSupportedGroupUploadFile(file);
+    });
+    const validFiles = candidateFiles.filter((file) => !invalidFiles.includes(file));
+
+    if (invalidFiles.length > 0) {
+      showError(
+        currentLang === 'en'
+          ? `Unsupported or empty files: ${invalidFiles.map((file) => file?.name || 'unknown').join(', ')}.`
+          : `Các tệp không hợp lệ hoặc rỗng: ${invalidFiles.map((file) => file?.name || 'không rõ').join(', ')}.`,
+      );
+    }
+
+    if (validFiles.length === 0) {
+      throw new Error(currentLang === 'en' ? 'No valid file remains for upload.' : 'Không còn tệp hợp lệ để tải lên.');
+    }
+
+    const uploadDrafts = validFiles.map((file) => {
+      const key = createUploadSessionKey(file);
+      return {
+        key,
+        progressKey: key,
+        materialId: null,
+        taskId: null,
+        name: file.name,
+        title: file.name,
+        type: inferMaterialType(file),
+        status: 'UPLOADING',
+        needReview: true,
+        uploadedAt: new Date().toISOString(),
+        source: 'local',
+        message: buildPendingQueueMessage('UPLOADING', currentLang, isLeader),
+      };
+    });
+
+    setSessionUploadQueue((current) => [...uploadDrafts, ...current]);
+    uploadDrafts.forEach((item) => {
+      materialProgress.setProgress(item.progressKey, 1, { instant: true });
+    });
+
+    const settledUploads = await Promise.allSettled(uploadDrafts.map((draft, index) => {
+      const file = validFiles[index];
+      return uploadGroupPendingMaterial(file, workspaceId, {
+        onUploadProgress: (event) => {
+          const totalBytes = Number(event?.total || 0);
+          const loadedBytes = Number(event?.loaded || 0);
+          const rawPercent = totalBytes > 0 ? (loadedBytes / totalBytes) * 100 : 0;
+          materialProgress.setProgress(draft.progressKey, mapTransportProgressToDisplay(rawPercent));
+        },
+      }).then((response) => {
+        const materialId = Number(response?.materialId ?? 0);
+        if (!Number.isInteger(materialId) || materialId <= 0) {
+          throw new Error(currentLang === 'en' ? 'The server did not return a material id.' : 'Server không trả về materialId hợp lệ.');
+        }
+
+        const normalizedStatus = normalizeMaterialStatus(response?.status || 'PROCESSING');
+        const currentProgress = materialProgress.getProgress(draft.progressKey);
+        materialProgress.setProgress(String(materialId), Math.max(25, currentProgress), { instant: true });
+        materialProgress.clearProgress(draft.progressKey);
+
+        patchSessionUpload(
+          (item) => item.key === draft.key,
+          {
+            key: `material:${materialId}`,
+            progressKey: String(materialId),
+            materialId,
+            taskId: response?.websocketTaskId ?? response?.taskId ?? null,
+            status: normalizedStatus,
+            message: response?.message || buildPendingQueueMessage(normalizedStatus, currentLang, isLeader),
+          },
+        );
+
+        if (isLeader) {
+          void loadPendingReviewMaterials({ silent: true });
+        }
+
+        return {
+          materialId,
+          title: file.name,
+          status: normalizedStatus,
+        };
+      }).catch((error) => {
+        const message = resolveUiErrorMessage(error);
+        materialProgress.clearProgress(draft.progressKey);
+        patchSessionUpload(
+          (item) => item.key === draft.key,
+          {
+            status: 'ERROR',
+            message,
+          },
+        );
+        throw new Error(`${file.name}: ${message}`);
+      });
+    }));
+
+    const successfulUploads = settledUploads
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value);
+    const failedUploads = settledUploads
+      .filter((result) => result.status === 'rejected')
+      .map((result) => String(result.reason?.message || result.reason || '').trim())
+      .filter(Boolean);
+
+    if (successfulUploads.length > 0) {
+      showInfo(
+        currentLang === 'en'
+          ? `Submitted ${successfulUploads.length} file(s) to the group review queue.`
+          : `Đã gửi ${successfulUploads.length} tệp vào hàng chờ duyệt của group.`,
+      );
+      showWarning(
+        isLeader
+          ? (currentLang === 'en'
+            ? 'New materials will appear in the shared source list only after you approve them.'
+            : 'Tài liệu mới chỉ xuất hiện trong nguồn học chung sau khi leader duyệt.')
+          : (currentLang === 'en'
+            ? 'Your upload is waiting for leader approval before the whole group can use it.'
+            : 'Tài liệu bạn vừa gửi đang chờ leader duyệt trước khi cả nhóm dùng được.'),
+      );
+    }
+
+    if (failedUploads.length > 0) {
+      showError(
+        currentLang === 'en'
+          ? `Some files failed: ${failedUploads.slice(0, 3).join(' | ')}${failedUploads.length > 3 ? ' ...' : ''}`
+          : `Một số tệp tải lên thất bại: ${failedUploads.slice(0, 3).join(' | ')}${failedUploads.length > 3 ? ' ...' : ''}`,
+      );
+    }
+
+    if (successfulUploads.length === 0) {
+      throw new Error(currentLang === 'en' ? 'All uploads failed.' : 'Toàn bộ upload đều thất bại.');
+    }
+  }, [
+    canUploadSource,
+    currentLang,
+    isCreating,
+    isLeader,
+    loadPendingReviewMaterials,
+    materialProgress,
+    patchSessionUpload,
+    resolveUiErrorMessage,
+    shouldForceProfileSetup,
+    showError,
+    showInfo,
+    showWarning,
+    workspaceId,
+  ]);
 
   // Remove source
-  const handleRemoveSource = useCallback((sourceId) => {
+  const handleRemoveSource = useCallback(async (sourceId) => {
     try {
-      deleteMaterial(sourceId);
+      await deleteMaterial(sourceId);
       setSources((prev) => prev.filter((source) => source.id !== sourceId));
-      showInfo('Material deleted');
-    } catch (err) {
-      console.error('Delete failed:', err);
-      showError('Delete failed: ' + (err?.message || 'Unknown error'));
+      showInfo(currentLang === 'en' ? 'Material deleted.' : 'Đã xóa tài liệu.');
+    } catch (error) {
+      console.error('Delete failed:', error);
+      showError(resolveUiErrorMessage(error));
     }
-  }, [showError, showInfo]);
+  }, [currentLang, resolveUiErrorMessage, showError, showInfo]);
 
   const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
     try {
@@ -546,12 +1130,16 @@ function GroupWorkspacePage() {
       );
       await Promise.all(deletePromises);
       setSources((prev) => prev.filter((source) => !sourceIds.includes(source.id)));
-      showInfo(`Deleted ${sourceIds.length} material(s)`);
-    } catch (err) {
-      console.error('Bulk delete error:', err);
-      showError('Delete failed: ' + (err?.message || 'Unknown error'));
+      showInfo(
+        currentLang === 'en'
+          ? `Deleted ${sourceIds.length} material(s).`
+          : `Đã xóa ${sourceIds.length} tài liệu.`,
+      );
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      showError(resolveUiErrorMessage(error));
     }
-  }, [showError, showInfo]);
+  }, [currentLang, resolveUiErrorMessage, showError, showInfo]);
 
   const handleSelectAllSources = useCallback((selectAll, currentSourceIds) => {
     if (selectAll) {
@@ -568,6 +1156,96 @@ function GroupWorkspacePage() {
       setSelectedSourceIds((prev) => prev.filter((id) => id !== sourceId));
     }
   }, []);
+
+  const pendingReviewDisplayItems = useMemo(() => {
+    const serverItemsByMaterialId = new Map();
+    const serverItemsWithoutMaterialId = [];
+
+    (isLeader ? pendingReviewMaterials : []).forEach((item, index) => {
+      const materialId = Number(item?.materialId ?? item?.id ?? 0);
+      const hasMaterialId = Number.isInteger(materialId) && materialId > 0;
+      const materialIdKey = hasMaterialId ? String(materialId) : null;
+      const progressKey = String(
+        materialIdKey
+        || item?.taskId
+        || item?.websocketTaskId
+        || item?.progressKey
+        || getPendingMaterialRenderKey(item, 'server-progress', index),
+      );
+      const normalizedItem = {
+        ...item,
+        key: getPendingMaterialRenderKey(item, 'server', index),
+        renderKey: getPendingMaterialRenderKey(item, 'server', index),
+        materialId: hasMaterialId ? materialId : null,
+        progress: materialProgress.getProgress(progressKey),
+        source: 'server',
+        ownerLabel: currentLang === 'en' ? 'Official group review queue' : 'Hàng chờ duyệt chính thức của group',
+        message: buildPendingQueueMessage(item?.status, currentLang, true),
+        canApprove: isReviewableMaterialStatus(item?.status),
+        canReject: !isProcessingMaterialStatus(item?.status) && normalizeMaterialStatus(item?.status) !== 'ERROR',
+      };
+
+      if (materialIdKey) {
+        serverItemsByMaterialId.set(materialIdKey, normalizedItem);
+        return;
+      }
+
+      serverItemsWithoutMaterialId.push(normalizedItem);
+    });
+
+    const localOnlyItems = [];
+    sessionUploadQueue.forEach((item, index) => {
+      const materialId = Number(item?.materialId ?? 0);
+      const materialIdKey = Number.isInteger(materialId) && materialId > 0 ? String(materialId) : null;
+      const progressKey = String(item?.progressKey || materialIdKey || item?.key || '');
+      const localProgress = materialProgress.getProgress(progressKey);
+      const localItem = {
+        ...item,
+        key: item?.key || progressKey || getPendingMaterialRenderKey(item, 'local', index),
+        renderKey: getPendingMaterialRenderKey(item, 'local', index),
+        materialId: materialId > 0 ? materialId : null,
+        progress: localProgress,
+        source: item?.source || 'local',
+        ownerLabel: currentLang === 'en' ? 'Submitted from this session' : 'Được gửi từ phiên hiện tại',
+        message: item?.message || buildPendingQueueMessage(item?.status, currentLang, isLeader),
+        canApprove: false,
+        canReject: false,
+      };
+
+      if (materialIdKey && serverItemsByMaterialId.has(materialIdKey)) {
+        const mergedServerItem = serverItemsByMaterialId.get(materialIdKey);
+        serverItemsByMaterialId.set(materialIdKey, {
+          ...localItem,
+          ...mergedServerItem,
+          progress: Math.max(localProgress, mergedServerItem?.progress || 0),
+          message: mergedServerItem?.message || localItem.message,
+        });
+        return;
+      }
+
+      localOnlyItems.push(localItem);
+    });
+
+    const allItems = [
+      ...Array.from(serverItemsByMaterialId.values()),
+      ...serverItemsWithoutMaterialId,
+      ...localOnlyItems,
+    ];
+
+    return allItems.sort((left, right) => {
+      const leftProcessing = isProcessingMaterialStatus(left?.status) ? 1 : 0;
+      const rightProcessing = isProcessingMaterialStatus(right?.status) ? 1 : 0;
+      if (leftProcessing !== rightProcessing) return rightProcessing - leftProcessing;
+
+      const leftReviewable = isReviewableMaterialStatus(left?.status) ? 1 : 0;
+      const rightReviewable = isReviewableMaterialStatus(right?.status) ? 1 : 0;
+      if (leftReviewable !== rightReviewable) return rightReviewable - leftReviewable;
+
+      const leftTime = new Date(left?.uploadedAt || 0).getTime();
+      const rightTime = new Date(right?.uploadedAt || 0).getTime();
+      return rightTime - leftTime;
+    });
+  }, [currentLang, isLeader, materialProgress, pendingReviewMaterials, sessionUploadQueue]);
 
   // Content action handlers — quiz, flashcard, mocktest, roadmap
   const handleStudioAction = useCallback((actionKey) => {
@@ -610,8 +1288,9 @@ function GroupWorkspacePage() {
         console.error('Failed to refresh group workspace detail:', error);
       });
       await loadGroupProfile();
+      await refreshGroupMaterialViews({ silent: true });
     }
-  }, [fetchGroups, fetchWorkspaceDetail, loadGroupProfile, resolvedWorkspaceId]);
+  }, [fetchGroups, fetchWorkspaceDetail, loadGroupProfile, refreshGroupMaterialViews, resolvedWorkspaceId]);
 
   // Xử lý yêu cầu cập nhật onboarding — kiểm tra guard
   const handleRequestGroupProfileUpdate = useCallback(() => {
@@ -814,7 +1493,7 @@ function GroupWorkspacePage() {
     documents: { vi: 'Quản lý tài liệu', en: 'Document Management', icon: FolderOpen },
     flashcard: { vi: 'Thẻ ghi nhớ', en: 'Flashcard', icon: BookOpen },
     quiz: { vi: 'Quiz', en: 'Quiz', icon: PenLine },
-    roadmap: { vi: 'Roadmap', en: 'Roadmap', icon: Map },
+    roadmap: { vi: 'Roadmap', en: 'Roadmap', icon: MapIcon },
     mockTest: { vi: 'Mock Test', en: 'Mock Test', icon: ClipboardList },
     notifications: { vi: 'Hoạt động nhóm', en: 'Group Activity', icon: Bell },
     challenge: { vi: 'Challenge', en: 'Challenge', icon: Swords },
@@ -868,7 +1547,8 @@ function GroupWorkspacePage() {
   };
   const groupStudioActions = [
     ...(isLeader ? [{ key: 'dashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: currentLang === 'en' ? 'System dashboard' : 'Dashboard hệ thống', disabled: false }] : [{ key: 'personalDashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: currentLang === 'en' ? 'Personal dashboard' : 'Dashboard cá nhân', disabled: false }]),
-    { key: 'roadmap', icon: Map, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionTitles?.roadmap?.[currentLang] || 'Roadmap' },
+    { key: 'documents', icon: FolderOpen, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-500/20', label: sectionTitles?.documents?.[currentLang] || 'Documents' },
+    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionTitles?.roadmap?.[currentLang] || 'Roadmap' },
     { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionTitles?.quiz?.[currentLang] || 'Quiz' },
     { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionTitles?.flashcard?.[currentLang] || 'Flashcard' },
     { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionTitles?.mockTest?.[currentLang] || 'Mock Test' },
@@ -996,7 +1676,7 @@ function GroupWorkspacePage() {
                   onClick={() => setActiveSection('roadmap')}
                   className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-700"
                 >
-                  <Map className="h-4 w-4" />
+                  <MapIcon className="h-4 w-4" />
                   {currentLang === 'en' ? 'Open roadmap' : 'Mở roadmap'}
                 </button>
                 <button
@@ -1191,7 +1871,7 @@ function GroupWorkspacePage() {
         readOnly={!canCreateContent}
         role={currentRoleKey}
         createdItems={createdItems}
-        onUploadClick={() => setUploadDialogOpen(true)}
+        onUploadClick={() => handleStudioAction('documents')}
         onChangeView={handleStudioAction}
         onCreateQuiz={handleCreateQuiz}
         onCreateFlashcard={handleCreateFlashcard}
@@ -1223,7 +1903,7 @@ function GroupWorkspacePage() {
       }`} />
       <div className="relative mx-auto max-w-3xl text-center">
         <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] ${isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}`}>
-          {isCheckingMandatoryProfile ? <Loader2 className="h-10 w-10 animate-spin" /> : <ShieldCheck className="h-10 w-10" />}
+          {isCheckingMandatoryProfile ? renderInlineSpinner('h-10 w-10') : <ShieldCheck className="h-10 w-10" />}
         </div>
         <h2 className={`mt-6 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
           {isCheckingMandatoryProfile
@@ -1265,18 +1945,39 @@ function GroupWorkspacePage() {
           return renderPersonalDashboard();
         }
         return (
-          <GroupDashboardTab
-            isDarkMode={isDarkMode}
-            group={resolvedGroupData}
-            members={members}
-            membersLoading={membersLoading}
-            isLeader={isLeader}
-            compactMode
-          />
+          <div className="space-y-5">
+            <GroupDashboardTab
+              isDarkMode={isDarkMode}
+              group={resolvedGroupData}
+              members={members}
+              membersLoading={membersLoading}
+              isLeader={isLeader}
+              compactMode
+            />
+          </div>
         );
 
       case 'personalDashboard':
         return renderPersonalDashboard();
+
+      case 'documents':
+        return (
+          <GroupDocumentsTab
+            isDarkMode={isDarkMode}
+            currentLang={currentLang}
+            isLeader={isLeader}
+            canUploadSource={canUploadSource}
+            sources={sources}
+            pendingItems={pendingReviewDisplayItems}
+            pendingLoading={isLeader ? pendingReviewLoading : false}
+            reviewingMaterialId={reviewingPendingMaterialId}
+            onOpenUpload={() => setUploadDialogOpen(true)}
+            onRefresh={() => refreshGroupMaterialViews({ silent: false })}
+            onApprove={(item) => handleReviewPendingMaterial(item, true)}
+            onReject={(item) => handleReviewPendingMaterial(item, false)}
+            onDeleteSource={handleRemoveSource}
+          />
+        );
 
       case 'members':
         if (isMember) {
@@ -1450,7 +2151,7 @@ function GroupWorkspacePage() {
         <div className={`relative flex min-w-[320px] flex-col items-center gap-4 rounded-[28px] border px-8 py-10 shadow-2xl ${
           isDarkMode ? 'border-white/10 bg-[#09131a]/92 text-white' : 'border-white/80 bg-white/92 text-slate-900'
         }`}>
-          <Loader2 className="h-10 w-10 animate-spin text-cyan-500" />
+          {renderInlineSpinner('h-10 w-10 text-cyan-500')}
           <div className="text-center">
             <p className="text-lg font-semibold">{currentLang === 'en' ? 'Preparing your group workspace' : 'Dang khoi tao group workspace'}</p>
             <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -1476,36 +2177,16 @@ function GroupWorkspacePage() {
           isDarkMode={isDarkMode}
       />
 
-      {/* Main Workspace Area - 3 Column Layout */}
+      {/* Main Workspace Area */}
       <div className="flex flex-1 min-h-0 w-full px-0 py-2 gap-2">
-        {/* Left Panel: Sources */}
-        {!isLeader && !isContributor || shouldForceProfileSetup ? null : (
-        <div className={`${sidebarCollapsed ? 'w-[84px]' : 'w-[300px]'} hidden xl:flex flex-shrink-0 flex-col hide-scrollbar transition-all duration-300`}>
-            <SourcesPanel
-                isOpen={!sidebarCollapsed}
-                onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                onAddSource={() => setUploadDialogOpen(true)}
-                sources={sources}
-                selectedIds={selectedSourceIds}
-                onSelectAll={handleSelectAllSources}
-                onSelectOne={handleSelectOneSource}
-                onRemove={handleRemoveSource}
-                onRemoveMultiple={handleRemoveMultipleSources}
-                disabled={isCreating}
-            />
-        </div>
-            )}
-
         {/* Center Content Area */}
         <main className="flex-1 flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden relative">
           <div className="flex-1 overflow-y-auto w-full hide-scrollbar">
             {!shouldForceProfileSetup ? (
             <div className="xl:hidden sticky top-0 z-20 p-2 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur flex items-center gap-2">
-              {!isMember && (
-                <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => setMobilePanel('sources')}>
-                  {currentLang === 'en' ? 'Sources' : 'Nguồn'}
-                </Button>
-              )}
+              <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => handleStudioAction('documents')}>
+                {currentLang === 'en' ? 'Documents' : 'Tài liệu'}
+              </Button>
               <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => setMobilePanel('studio')}>
                 {currentLang === 'en' ? 'Studio' : 'Studio'}
               </Button>
@@ -1537,25 +2218,6 @@ function GroupWorkspacePage() {
         )}
       </div>
 
-      {mobilePanel === 'sources' && !isMember && !shouldForceProfileSetup && (
-        <div className="xl:hidden fixed inset-0 z-[150] bg-black/45 backdrop-blur-sm" onClick={() => setMobilePanel(null)}>
-          <div className="absolute left-0 top-0 h-full w-[88%] max-w-[360px] p-2" onClick={(event) => event.stopPropagation()}>
-            <SourcesPanel
-              isOpen={true}
-              onToggle={() => setMobilePanel(null)}
-              onAddSource={() => setUploadDialogOpen(true)}
-              sources={sources}
-              selectedIds={selectedSourceIds}
-              onSelectAll={handleSelectAllSources}
-              onSelectOne={handleSelectOneSource}
-              onRemove={handleRemoveSource}
-              onRemoveMultiple={handleRemoveMultipleSources}
-              disabled={isCreating || !canUploadSource}
-            />
-          </div>
-        </div>
-      )}
-
       {mobilePanel === 'studio' && !shouldForceProfileSetup && (
         <div className="xl:hidden fixed inset-0 z-[150] bg-black/45 backdrop-blur-sm" onClick={() => setMobilePanel(null)}>
           <div className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] p-2" onClick={(event) => event.stopPropagation()}>
@@ -1582,7 +2244,7 @@ function GroupWorkspacePage() {
         isDarkMode={isDarkMode}
         onUploadFiles={handleUploadFiles}
         workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
-        onSuggestedImported={fetchSources}
+        onSuggestedImported={() => refreshGroupMaterialViews({ silent: true })}
       />
 
       <InviteMemberDialog
