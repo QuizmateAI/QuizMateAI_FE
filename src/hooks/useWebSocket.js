@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import { getWebSocketUrl } from "@/lib/websocketUrl";
 
 const ACTIVE_WS_REGISTRY_KEY = "quizmate_active_websockets_v1";
 
@@ -142,6 +143,12 @@ export function useWebSocket({
       return;
     }
 
+    const websocketUrl = getWebSocketUrl();
+    if (!websocketUrl) {
+      console.warn("STOMP WebSocket URL is not configured.");
+      return;
+    }
+
     shouldKeepRegistryOnCleanupRef.current = false;
     hasRequestedResyncRef.current = false;
 
@@ -155,7 +162,6 @@ export function useWebSocket({
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    const WS_URL = import.meta.env.VITE_WS_URL || "http://localhost:8080/ws-quiz";
     const token = getAuthToken();
     const connectHeaders = token
       ? { Authorization: `Bearer ${token}` }
@@ -167,7 +173,7 @@ export function useWebSocket({
 
     // Tạo STOMP client với SockJS
     const stompClient = new Client({
-      webSocketFactory: () => new SockJS(WS_URL),
+      webSocketFactory: () => new SockJS(websocketUrl),
 
       connectHeaders,
 

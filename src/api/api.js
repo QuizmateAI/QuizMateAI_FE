@@ -1,13 +1,53 @@
 import axios from 'axios';
 import { clearUserCache } from '@/Utils/userCache';
 
-const configuredBaseUrl = typeof import.meta.env.VITE_API_BASE_URL === 'string'
-  ? import.meta.env.VITE_API_BASE_URL.trim()
-  : '';
-const baseURL = import.meta.env.DEV
+function readEnvString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function safeParseUrl(value) {
+  try {
+    return value ? new URL(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+const configuredBaseUrl = readEnvString(import.meta.env.VITE_API_BASE_URL);
+export const baseURL = import.meta.env.DEV
   ? '/api'
-  : (configuredBaseUrl || 'https://api.quizmateai.io.vn/api');
-const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(baseURL);
+  : (configuredBaseUrl || '/api');
+
+export function getApiOrigin() {
+  const parsedApiUrl = safeParseUrl(configuredBaseUrl);
+
+  if (parsedApiUrl) {
+    return parsedApiUrl.origin;
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  return '';
+}
+
+export function getWebSocketUrl() {
+  const configuredWebSocketUrl = readEnvString(import.meta.env.VITE_WS_URL);
+  if (configuredWebSocketUrl) {
+    return configuredWebSocketUrl;
+  }
+
+  const parsedApiUrl = safeParseUrl(configuredBaseUrl);
+  if (parsedApiUrl) {
+    const normalizedPath = parsedApiUrl.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
+    return `${parsedApiUrl.origin}${normalizedPath}/ws-quiz`;
+  }
+
+  return '/ws-quiz';
+}
+
+const isNgrokUrl = /ngrok-free\.(app|dev)/i.test(configuredBaseUrl || baseURL);
 
 // Tạo instance axios với cấu hình mặc định
 const api = axios.create({

@@ -6,7 +6,7 @@ import { Checkbox } from "@/Components/ui/checkbox";
 import { FloatingInput, FloatingPasswordInput } from "@/Components/ui/floating-input";
 import { ChevronLeft } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
-import Illustration from "@/assets/QuizmateAI_PIC.png";
+import AuthIllustration from '@/Components/ui/AuthIllustration';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -115,7 +115,7 @@ const RegisterPage = () => {
                   required
                 />
                 <label htmlFor="agreeToTerms" className="text-sm text-[#313131] cursor-pointer leading-relaxed">
-                  {t('agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('terms')}</a> {t('and')} <a href="#" className="text-[#FF8682] hover:underline">{t('privacyPolicies')}</a>
+                  {t('agreeToTerms')} <span className="text-[#FF8682]">{t('terms')}</span> {t('and')} <span className="text-[#FF8682]">{t('privacyPolicies')}</span>
                 </label>
               </div>
 
@@ -130,16 +130,15 @@ const RegisterPage = () => {
               {/* Login Link */}
               <p className="text-center text-sm text-[#313131] font-medium">
                 {t('alreadyHaveAccount')} {' '}
-                <a 
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
+                <button 
+                  type="button"
+                  onClick={() => {
                     navigate('/login');
                   }}
                   className="text-[#FF8682] hover:underline cursor-pointer"
                 >
                   {t('login')}
-                </a>
+                </button>
               </p>
 
               {/* Divider */}
@@ -162,11 +161,7 @@ const RegisterPage = () => {
         {/* Right Side: Decorative Image */}
         <div className="hidden md:flex justify-end relative">
           <div className="relative z-10 w-[550px] h-[750px] bg-gray-100 rounded-[30px] overflow-hidden shadow-xl flex items-center justify-center transition-all duration-500">
-            <img 
-              src={Illustration} 
-              alt="Register illustration" 
-              className="w-full h-full object-cover"
-            />
+            <AuthIllustration alt="" imgClassName="w-full h-full object-cover" />
           </div>
           <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-0" />
         </div>

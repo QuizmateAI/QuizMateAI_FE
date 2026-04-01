@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/Components/ui/table";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
-import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
+import CreditIconImage from "@/Components/ui/CreditIconImage";
 
 function getPricingGuideCopy(t) {
   return {
@@ -250,7 +250,7 @@ export default function PricingGuidePage() {
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-lg">
                   <span className={`inline-flex rounded-2xl p-2 ${isDarkMode ? "bg-blue-500/10 ring-1 ring-blue-400/20" : "bg-blue-50 ring-1 ring-blue-100"}`}>
-                    <img src={QuizmateCreditIcon} alt="Quizmate Credit" className="h-10 w-10 rounded-xl" />
+                    <CreditIconImage alt="Quizmate Credit" className="h-10 w-10 rounded-xl" />
                   </span>
                   <span>Quizmate Credit</span>
                 </CardTitle>

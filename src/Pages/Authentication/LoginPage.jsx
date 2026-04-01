@@ -12,7 +12,8 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useLogin } from './Login';
 import { useRegister } from './Register';
 import { useForgotPassword } from './ForgotPassword';
-import Illustration from "@/assets/QuizmateAI_PIC.png";
+import AuthIllustration from '@/Components/ui/AuthIllustration';
+import AuthGoogleProvider, { isGoogleAuthEnabled } from './AuthGoogleProvider';
 
 
 const LoginPageContent = () => {
@@ -29,7 +30,6 @@ const LoginPageContent = () => {
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
     i18n.changeLanguage(newLang);
-    document.documentElement.lang = newLang;
   };
 
   // State để chuyển đổi giữa 'login', 'register' và 'forgot-password'
@@ -46,15 +46,22 @@ const LoginPageContent = () => {
       <header className="flex justify-between items-center px-12 pt-4">
         <div className="flex items-center gap-2">
           {/* Logo - Import từ assets */}
-          <div className="w-[150px] h-[120px] flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            aria-label="Go to landing page"
+            className="flex h-[120px] w-[150px] items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+          >
             <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
-          </div>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Nút chuyển đổi Dark Mode */}
           <button
+            type="button"
             onClick={toggleDarkMode}
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             className={`p-2 rounded-lg border transition-all duration-300 ${isDarkMode
               ? 'border-slate-700 hover:bg-slate-800 text-yellow-400'
               : 'border-gray-200 hover:bg-gray-50 text-gray-600'
@@ -66,7 +73,9 @@ const LoginPageContent = () => {
 
           {/* Nút đổi ngôn ngữ */}
           <button
+            type="button"
             onClick={toggleLanguage}
+            aria-label="Switch language"
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-sm font-medium text-gray-600 dark:text-slate-400"
           >
             <Globe className="w-4 h-4" />
@@ -141,16 +150,15 @@ const LoginPageContent = () => {
                     </label>
                   </div>
                   {/* Chuyển sang View Quên mật khẩu */}
-                  <a
-                    href="/forgot-password"
-                    onClick={(e) => {
-                      e.preventDefault();
+                  <button
+                    type="button"
+                    onClick={() => {
                       setView('forgot-password');
                     }}
                     className="text-sm font-medium text-[#FF8682] hover:underline"
                   >
                     {t('auth.forgotPassword')}
-                  </a>
+                  </button>
                 </div>
 
                 <Button
@@ -162,7 +170,14 @@ const LoginPageContent = () => {
                 </Button>
 
                 <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
-                  {t('auth.noAccount')} <a href="#" onClick={(e) => { e.preventDefault(); setView('register'); loginHook.setError(''); }} className="text-[#FF8682] hover:underline">{t('auth.signUp')}</a>
+                  {t('auth.noAccount')}{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setView('register'); loginHook.setError(''); }}
+                    className="text-[#FF8682] hover:underline"
+                  >
+                    {t('auth.signUp')}
+                  </button>
                 </p>
 
                 <div className="relative flex items-center py-1">
@@ -172,20 +187,22 @@ const LoginPageContent = () => {
                 </div>
 
                 {/* Google Login Button */}
-                <div className="flex justify-center w-full mt-2">
-                  <div className="w-full flex justify-center">
-                    <GoogleLogin
-                      onSuccess={loginHook.handleGoogleSubmit}
-                      onError={() => console.log('Login Failed')}
-                      useOneTap
-                      theme={isDarkMode ? 'filled_black' : 'outline'}
-                      shape="pill"
-                      width="384"
-                      text="signin_with"
-                      locale={currentLang}
-                    />
+                {isGoogleAuthEnabled() ? (
+                  <div className="flex justify-center w-full mt-2">
+                    <div className="w-full flex justify-center">
+                      <GoogleLogin
+                        onSuccess={loginHook.handleGoogleSubmit}
+                        onError={() => loginHook.setError(t('auth.loginGoogleFailed') || 'Dang nhap Google that bai')}
+                        useOneTap
+                        theme={isDarkMode ? 'filled_black' : 'outline'}
+                        shape="pill"
+                        width="384"
+                        text="signin_with"
+                        locale={currentLang}
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </form>
             </div>
           )}
@@ -500,7 +517,7 @@ const LoginPageContent = () => {
                       className="border-gray-300 dark:border-slate-600 data-[state=checked]:bg-[#0455BF] dark:data-[state=checked]:bg-blue-600"
                     />
                     <label htmlFor="agreeToTerms" className="text-sm text-[#313131] dark:text-slate-300 cursor-pointer leading-relaxed">
-                      {t('auth.agreeToTerms')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.terms')}</a> {t('auth.and')} <a href="#" className="text-[#FF8682] hover:underline">{t('auth.privacyPolicies')}</a>
+                      {t('auth.agreeToTerms')} <span className="text-[#FF8682]">{t('auth.terms')}</span> {t('auth.and')} <span className="text-[#FF8682]">{t('auth.privacyPolicies')}</span>
                     </label>
                   </div>
                   {registerHook.fieldErrors?.agreeToTerms && (
@@ -519,17 +536,16 @@ const LoginPageContent = () => {
                   {/* Login Link */}
                   <p className="text-center text-sm text-[#313131] dark:text-slate-300 font-medium">
                     {t('auth.alreadyHaveAccount')} {' '}
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
+                    <button
+                      type="button"
+                      onClick={() => {
                         setView('login');
                         registerHook.resetRegisterState();
                       }}
                       className="text-[#FF8682] hover:underline cursor-pointer"
                     >
                       {t('auth.login')}
-                    </a>
+                    </button>
                   </p>
 
                   {/* Divider */}
@@ -540,20 +556,22 @@ const LoginPageContent = () => {
                   </div>
 
                   {/* Social Login Buttons - Register View */}
-                  <div className="flex justify-center w-full mt-2">
-                    <div className="w-full flex justify-center">
-                      <GoogleLogin
-                        onSuccess={loginHook.handleGoogleSubmit}
-                        onError={() => console.log('Login Failed')}
-                        useOneTap
-                        theme={isDarkMode ? 'filled_black' : 'outline'}
-                        shape="pill"
-                        width="384"
-                        text="signin_with"
-                        locale={currentLang}
-                      />
+                  {isGoogleAuthEnabled() ? (
+                    <div className="flex justify-center w-full mt-2">
+                      <div className="w-full flex justify-center">
+                        <GoogleLogin
+                          onSuccess={loginHook.handleGoogleSubmit}
+                          onError={() => loginHook.setError(t('auth.loginGoogleFailed') || 'Dang nhap Google that bai')}
+                          useOneTap
+                          theme={isDarkMode ? 'filled_black' : 'outline'}
+                          shape="pill"
+                          width="384"
+                          text="signin_with"
+                          locale={currentLang}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </form>
               )}
 
@@ -603,10 +621,9 @@ const LoginPageContent = () => {
         {/* Right Side: Decorative Image */}
         <div className="hidden md:flex justify-end relative">
           <div className="relative z-10 w-[750px] h-[585px] bg-gray-100 dark:bg-slate-900 rounded-[30px] overflow-hidden shadow-xl dark:shadow-blue-900/50 flex items-center justify-center transition-all duration-500 border dark:border-slate-800">
-            <img
-              src={Illustration}
-              alt="Login illustration"
-              className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+            <AuthIllustration
+              alt=""
+              imgClassName="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
             />
           </div>
           <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-blue-50 dark:bg-blue-900/30 rounded-full blur-3xl -z-0" />
@@ -616,4 +633,10 @@ const LoginPageContent = () => {
   );
 };
 
-export default LoginPageContent;
+const LoginPage = () => (
+  <AuthGoogleProvider>
+    <LoginPageContent />
+  </AuthGoogleProvider>
+);
+
+export default LoginPage;

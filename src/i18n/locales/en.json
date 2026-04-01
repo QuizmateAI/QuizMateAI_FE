@@ -1516,6 +1516,7 @@
     "questionStats": {
       "title": "Question Statistics",
       "loading": "Loading statistics...",
+      "loadError": "Failed to load statistics.",
       "retry": "Retry",
       "noData": "No statistics available yet",
       "modeOfficial": "Official",

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getApiOrigin } from '@/api/api';
 
 /**
  * When VNPay redirects back to /api/vnpay/return but the SPA handles that route,
@@ -19,12 +20,7 @@ function buildResultUrlFromParams(search) {
 export default function VnPayReturnRedirect() {
   const [showFallback, setShowFallback] = useState(false);
   const search = typeof window !== 'undefined' ? window.location.search : '';
-  const base = import.meta.env.VITE_API_BASE_URL || '';
-  const apiOrigin = typeof window === 'undefined'
-    ? ''
-    : base.startsWith('http')
-      ? new URL(base).origin
-      : window.location.origin;
+  const apiOrigin = getApiOrigin();
   const error = typeof window !== 'undefined' && apiOrigin === window.location.origin
     ? 'Cấu hình proxy: /api phải trỏ về backend. Hoặc đặt VITE_API_BASE_URL trỏ sang domain API.'
     : null;

@@ -14,6 +14,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
+import { preloadGroupWorkspacePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 import { useToast } from '@/context/ToastContext';
 
 function normalizeHomeTab(value) {
@@ -131,6 +132,7 @@ function HomePage() {
   // Nhảy thẳng vào trang workspace mới (bỏ qua dialog, tạo trực tiếp)
   const handleOpenCreate = async () => {
     try {
+      void preloadWorkspacePage();
       showSuccess(t('home.workspace.creating') || 'Đang tạo workspace...');
       const newWorkspace = await createWorkspace({ title: null });
       if (newWorkspace?.workspaceId) {
@@ -145,6 +147,7 @@ function HomePage() {
   // Nhảy thẳng vào trang group workspace mới
   const handleOpenCreateGroup = async () => {
     try {
+      void preloadGroupWorkspacePage();
       showSuccess(t('home.group.creating') || 'Äang táº¡o group workspace...');
       const newGroupWorkspace = await createGroupWorkspace({ title: null });
       if (!newGroupWorkspace?.workspaceId) {
@@ -286,10 +289,10 @@ function HomePage() {
       <div className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${isDarkMode ? 'bg-slate-950/90 backdrop-blur-sm' : 'bg-white/90 backdrop-blur-sm'}`}>
       {/* Header - giống NotebookLM */}
       <header className={`flex justify-between items-center px-20 ${fontClass} ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
-        <div className="w-[130px]  flex items-center justify-center cursor-pointer" 
+        <div className="w-[130px] flex items-center justify-center" 
         // onClick={() => navigate('/')}
         >
-                   <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} fetchPriority="high" />
+                   <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" width={130} height={40} />
                  </div>
         
         <div className="flex items-center gap-2">

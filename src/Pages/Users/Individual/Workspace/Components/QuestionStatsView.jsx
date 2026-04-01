@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BarChart3,
@@ -347,7 +347,7 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
       const data = response?.data?.data ?? response?.data ?? response ?? null;
       setStats(data);
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Failed to load stats");
+      setError(err?.response?.data?.message || err?.message || t("workspace.questionStats.loadError"));
     } finally {
       setLoading(false);
     }

@@ -28,6 +28,33 @@ jobs:
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
           VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
 
+      - name: Check bundle budget
+        run: npm run check:bundle-budget
+
+      - name: Start preview server
+        run: npm run preview -- --host 127.0.0.1 --port 4173 &
+
+      - name: Wait for preview server
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:4173 > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Preview server did not start in time."
+          exit 1
+
+      - name: Run Lighthouse audit
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            http://127.0.0.1:4173/
+            http://127.0.0.1:4173/pricing
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
       - name: Deploy to S3
         uses: jakejarvis/s3-sync-action@master
         with:

@@ -20,8 +20,8 @@ import ListSpinner from "@/Components/ui/ListSpinner";
 import { Card, CardContent } from "@/Components/ui/card";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
-import QuizmateCreditIcon from "@/assets/Quizmate-Credit.png";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
+import CreditIconImage from "@/Components/ui/CreditIconImage";
 import PlanCard from "@/Pages/Users/Profile/Components/PlanCard";
 import { getActiveUserPlans, getActiveGroupPlan } from "@/api/ManagementSystemAPI";
 
@@ -305,11 +305,7 @@ export default function PlanPage() {
               <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
                 isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
               }`}>
-                <img
-                  src={QuizmateCreditIcon}
-                  alt="Quizmate Credit"
-                  className="w-6 h-6 rounded-full"
-                />
+                <CreditIconImage alt="Quizmate Credit" className="w-6 h-6 rounded-full" />
               </span>
               <span className="text-sm hidden sm:inline">{t("common.wallet")}</span>
             </Button>
@@ -360,11 +356,7 @@ export default function PlanPage() {
                   }`}
                 >
                   {b.icon === "credit" ? (
-                    <img
-                      src={QuizmateCreditIcon}
-                      alt="Quizmate Credit"
-                      className="w-5 h-5 mr-1.5 rounded-md shadow-[0_0_0_4px_rgba(99,102,241,0.10)]"
-                    />
+                    <CreditIconImage alt="Quizmate Credit" className="mr-1.5 w-5 h-5 rounded-md shadow-[0_0_0_4px_rgba(99,102,241,0.10)]" />
                   ) : (
                     <b.icon className="w-3.5 h-3.5 mr-1.5" />
                   )}
@@ -409,7 +401,7 @@ export default function PlanPage() {
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
               isDarkMode ? "bg-blue-600/15 text-blue-300" : "bg-blue-600/10 text-blue-700"
             }`}>
-              <img src={QuizmateCreditIcon} alt="Quizmate Credit" className="w-6 h-6" />
+              <CreditIconImage alt="Quizmate Credit" className="w-6 h-6" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold">{t("plan.creditModel.title")}</p>
