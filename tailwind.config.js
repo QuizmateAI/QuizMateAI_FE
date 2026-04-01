@@ -1,8 +1,6 @@
 import tailwindcssAnimate from "tailwindcss-animate";
 
 const sharedUiFontStack = [
-  '"Be Vietnam Pro"',
-  '"Poppins"',
   'ui-sans-serif',
   'system-ui',
   '-apple-system',

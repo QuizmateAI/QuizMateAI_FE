@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Moon, Sun, Globe, Type } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Globe } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu';
-import { useQuizFont } from '../hooks/useQuizFont';
 
 export default function QuizHeader({ onBack, title, showConfirm, confirmTitle, confirmDescription }) {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { i18n, t } = useTranslation();
-  const { selectedFont, setSelectedFont, fontOptions } = useQuizFont();
   const [showDialog, setShowDialog] = useState(false);
 
   const handleBackClick = () => {
@@ -53,27 +51,6 @@ export default function QuizHeader({ onBack, title, showConfirm, confirmTitle, c
           </div>
 
           <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50/90 px-2 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-xl shrink-0" aria-label={t('workspace.quiz.header.font', 'Change font')}>
-                  <Type className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[220px]">
-                {fontOptions.map((fontOption) => (
-                  <DropdownMenuItem
-                    key={fontOption.key}
-                    onClick={() => setSelectedFont(fontOption.key)}
-                    className={selectedFont === fontOption.key ? 'bg-slate-100 dark:bg-slate-800' : ''}
-                  >
-                    <span style={{ fontFamily: fontOption.family }}>
-                      {t(fontOption.labelKey, fontOption.defaultLabel)}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-xl shrink-0" aria-label={t('workspace.quiz.header.language', 'Change language')}>

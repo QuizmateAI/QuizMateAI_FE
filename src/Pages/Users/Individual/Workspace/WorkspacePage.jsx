@@ -3,14 +3,8 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
 import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
 import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
-import RoadmapJourPanel from "@/Pages/Users/Individual/Workspace/Components/RoadmapJourPanel";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
-import UploadSourceDialog from "@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog";
-import RoadmapPhaseGenerateDialog from "@/Pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog";
-import IndividualWorkspaceProfileConfigDialog from "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog";
-import IndividualWorkspaceProfileOverviewDialog from "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog";
-import WorkspaceOnboardingUpdateGuardDialog from "@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog";
 import { Globe, Moon, Sun, UserCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -40,6 +34,14 @@ import { deleteQuiz, getQuizzesByScope, shareQuizToCommunity } from "@/api/QuizA
 import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 import { inferProcessingRoadmapGenerationIds } from "@/Pages/Users/Individual/Workspace/utils/roadmapProcessing";
+import ListSpinner from "@/Components/ui/ListSpinner";
+
+const LazyRoadmapJourPanel = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/RoadmapJourPanel"));
+const LazyUploadSourceDialog = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog"));
+const LazyRoadmapPhaseGenerateDialog = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog"));
+const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"));
+const LazyIndividualWorkspaceProfileOverviewDialog = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog"));
+const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(() => import("@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog"));
 
 const VIEW_TO_PATH = {
 	roadmap: "roadmap",
@@ -199,6 +201,22 @@ function delay(ms) {
 	});
 }
 
+function DeferredWorkspacePanel({ children }) {
+	return (
+		<React.Suspense fallback={<ListSpinner variant="section" className="h-full" />}>
+			{children}
+		</React.Suspense>
+	);
+}
+
+function DeferredWorkspaceDialog({ children }) {
+	return (
+		<React.Suspense fallback={null}>
+			{children}
+		</React.Suspense>
+	);
+}
+
 function WorkspacePage() {
 	const { workspaceId } = useParams();
 	const location = useLocation();
@@ -221,7 +239,7 @@ function WorkspacePage() {
 	const [mockTestGenerationStartedAt, setMockTestGenerationStartedAt] = useState(null);
 	const [mockTestGenerationElapsedSeconds, setMockTestGenerationElapsedSeconds] = useState(0);
 
-	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace } = useWorkspace();
+	const { currentWorkspace, fetchWorkspaceDetail, editWorkspace } = useWorkspace({ enabled: false });
 	const progressTracking = useProgressTracking({
 		scopeKey: workspaceId ? `workspace:${workspaceId}` : null,
 	});
@@ -415,6 +433,7 @@ function WorkspacePage() {
 	const shouldStackSidePanels = workspaceLayoutWidth > 0 && workspaceLayoutWidth < minWidthForChatWithOneSidePanel;
 	const isRoadmapJourActive = activeView === "roadmap"
 		|| (quizBackTarget?.view === "roadmap" && (activeView === "quizDetail" || activeView === "editQuiz"));
+	const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] = useState(false);
 	const isOnWorkspaceQuizRoute = useMemo(() => {
 		if (!workspaceId || !location.pathname) return false;
 		return new RegExp(`^/workspace/${workspaceId}/(?:quiz(?:/|$)|roadmap/quiz(?:/|$))`).test(location.pathname);
@@ -429,6 +448,13 @@ function WorkspacePage() {
 			: 0;
 		return clampPercent(progressFromTask > 0 ? progressFromTask : roadmapPhaseGenerationProgress);
 	}, [progressTracking?.progressByTaskId, roadmapPhaseGenerationProgress, roadmapPhaseGenerationTaskId]);
+	const shouldRenderRoadmapJourPanel = hasActivatedRoadmapPanel || isRoadmapJourActive;
+
+	useEffect(() => {
+		if (isRoadmapJourActive) {
+			setHasActivatedRoadmapPanel(true);
+		}
+	}, [isRoadmapJourActive]);
 
 	useEffect(() => {
 		if (!workspaceId) {
@@ -440,6 +466,8 @@ function WorkspacePage() {
 		}
 
 		let cancelled = false;
+		let idleHandle = null;
+		let timeoutHandle = null;
 
 		const syncExistingWorkspaceContent = async () => {
 			try {
@@ -472,10 +500,24 @@ function WorkspacePage() {
 			}
 		};
 
-		syncExistingWorkspaceContent();
+		if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+			idleHandle = window.requestIdleCallback(() => {
+				void syncExistingWorkspaceContent();
+			}, { timeout: 1200 });
+		} else {
+			timeoutHandle = window.setTimeout(() => {
+				void syncExistingWorkspaceContent();
+			}, 350);
+		}
 
 		return () => {
 			cancelled = true;
+			if (idleHandle !== null && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+				window.cancelIdleCallback(idleHandle);
+			}
+			if (timeoutHandle !== null && typeof window !== "undefined") {
+				window.clearTimeout(timeoutHandle);
+			}
 		};
 	}, [workspaceId, activeView]);
 
@@ -1370,10 +1412,6 @@ function WorkspacePage() {
 			return null;
 		}
 	}, [workspaceId]);
-
-	useEffect(() => {
-		void refreshWorkspacePersonalization();
-	}, [refreshWorkspacePersonalization]);
 
 	const toggleLanguage = () => {
 		const newLang = currentLang === "vi" ? "en" : "vi";
@@ -2939,24 +2977,28 @@ function WorkspacePage() {
 												progressTracking={progressTracking}
 											/>
 										</div>
-										<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
-											<RoadmapJourPanel
-												isDarkMode={isDarkMode}
-												workspaceId={workspaceId}
-												selectedPhaseId={selectedRoadmapPhaseId}
-												onSelectPhase={handleSelectRoadmapPhase}
-												reloadToken={roadmapReloadToken}
-												isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
-												roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
-												progressTracking={progressTracking}
-												generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
-												generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
-												generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
-												generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
-												isCollapsed={false}
-												onToggleCollapse={handleToggleSourcesCollapse}
-											/>
-										</div>
+										{shouldRenderRoadmapJourPanel ? (
+											<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
+												<DeferredWorkspacePanel>
+													<LazyRoadmapJourPanel
+														isDarkMode={isDarkMode}
+														workspaceId={workspaceId}
+														selectedPhaseId={selectedRoadmapPhaseId}
+														onSelectPhase={handleSelectRoadmapPhase}
+														reloadToken={roadmapReloadToken}
+														isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+														roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
+														progressTracking={progressTracking}
+														generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+														generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+														generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
+														generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+														isCollapsed={false}
+														onToggleCollapse={handleToggleSourcesCollapse}
+													/>
+												</DeferredWorkspacePanel>
+											</div>
+										) : null}
 									</div>
 								</div>
 
@@ -3003,24 +3045,28 @@ function WorkspacePage() {
 											progressTracking={progressTracking}
 										/>
 									</div>
-									<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
-										<RoadmapJourPanel
-											isDarkMode={isDarkMode}
-											workspaceId={workspaceId}
-											selectedPhaseId={selectedRoadmapPhaseId}
-											onSelectPhase={handleSelectRoadmapPhase}
-											reloadToken={roadmapReloadToken}
-											isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
-											roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
-											progressTracking={progressTracking}
-											generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
-											generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
-											generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
-											generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
-											isCollapsed={isSourcesCollapsed}
-											onToggleCollapse={handleToggleSourcesCollapse}
-										/>
-									</div>
+									{shouldRenderRoadmapJourPanel ? (
+										<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
+											<DeferredWorkspacePanel>
+												<LazyRoadmapJourPanel
+													isDarkMode={isDarkMode}
+													workspaceId={workspaceId}
+													selectedPhaseId={selectedRoadmapPhaseId}
+													onSelectPhase={handleSelectRoadmapPhase}
+													reloadToken={roadmapReloadToken}
+													isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+													roadmapPhaseGenerationProgress={effectiveRoadmapPhaseGenerationProgress}
+													progressTracking={progressTracking}
+													generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+													generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+													generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
+													generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+													isCollapsed={isSourcesCollapsed}
+													onToggleCollapse={handleToggleSourcesCollapse}
+												/>
+											</DeferredWorkspacePanel>
+										</div>
+									) : null}
 								</div>
 							</div>
 
@@ -3125,62 +3171,82 @@ function WorkspacePage() {
 			</div>
 
 			{/* Dialog táº£i tÃ i liá»‡u */}
-			<UploadSourceDialog
-				open={uploadDialogOpen}
-				onOpenChange={setUploadDialogOpen}
-				isDarkMode={isDarkMode}
-				onUploadFiles={handleUploadFiles}
-				workspaceId={workspaceId}
-				onSuggestedImported={fetchSources}
-			/>
+			{uploadDialogOpen ? (
+				<DeferredWorkspaceDialog>
+					<LazyUploadSourceDialog
+						open={uploadDialogOpen}
+						onOpenChange={setUploadDialogOpen}
+						isDarkMode={isDarkMode}
+						onUploadFiles={handleUploadFiles}
+						workspaceId={workspaceId}
+						onSuggestedImported={fetchSources}
+					/>
+				</DeferredWorkspaceDialog>
+			) : null}
 
-			<RoadmapPhaseGenerateDialog
-				open={phaseGenerateDialogOpen}
-				onOpenChange={setPhaseGenerateDialogOpen}
-				isDarkMode={isDarkMode}
-				materials={sources}
-				defaultSelectedMaterialIds={phaseGenerateDialogDefaultIds}
-				submitting={isSubmittingRoadmapPhaseRequest}
-				onSubmit={handleSubmitRoadmapPhaseDialog}
-			/>
+			{phaseGenerateDialogOpen ? (
+				<DeferredWorkspaceDialog>
+					<LazyRoadmapPhaseGenerateDialog
+						open={phaseGenerateDialogOpen}
+						onOpenChange={setPhaseGenerateDialogOpen}
+						isDarkMode={isDarkMode}
+						materials={sources}
+						defaultSelectedMaterialIds={phaseGenerateDialogDefaultIds}
+						submitting={isSubmittingRoadmapPhaseRequest}
+						onSubmit={handleSubmitRoadmapPhaseDialog}
+					/>
+				</DeferredWorkspaceDialog>
+			) : null}
 
-			<IndividualWorkspaceProfileConfigDialog
-				initialData={workspaceProfile}
-				open={profileConfigOpen}
-				onOpenChange={handleProfileConfigChange}
-				onSave={handleSaveProfileConfig}
-				onConfirm={handleConfirmProfileConfig}
-				onUploadFiles={handleUploadFiles}
-				isDarkMode={isDarkMode}
-				uploadedMaterials={sources}
-				workspaceId={workspaceId}
-				forceStartAtStepOne={isProfileUpdateMode || (openProfileConfig && !isProfileConfigured)}
-				mockTestGenerationState={mockTestGenerationState}
-				mockTestGenerationMessage={mockTestGenerationDisplayMessage}
-				mockTestGenerationProgress={mockTestGenerationProgress}
-			/>
+			{profileConfigOpen ? (
+				<DeferredWorkspaceDialog>
+					<LazyIndividualWorkspaceProfileConfigDialog
+						initialData={workspaceProfile}
+						open={profileConfigOpen}
+						onOpenChange={handleProfileConfigChange}
+						onSave={handleSaveProfileConfig}
+						onConfirm={handleConfirmProfileConfig}
+						onUploadFiles={handleUploadFiles}
+						isDarkMode={isDarkMode}
+						uploadedMaterials={sources}
+						workspaceId={workspaceId}
+						forceStartAtStepOne={isProfileUpdateMode || (openProfileConfig && !isProfileConfigured)}
+						mockTestGenerationState={mockTestGenerationState}
+						mockTestGenerationMessage={mockTestGenerationDisplayMessage}
+						mockTestGenerationProgress={mockTestGenerationProgress}
+					/>
+				</DeferredWorkspaceDialog>
+			) : null}
 
-			<IndividualWorkspaceProfileOverviewDialog
-				open={profileOverviewOpen}
-				onOpenChange={handleProfileOverviewChange}
-				isDarkMode={isDarkMode}
-				profile={workspaceProfile}
-				personalization={workspacePersonalization}
-				materials={sources}
-				onEditProfile={handleRequestProfileUpdate}
-				editLocked={profileEditLocked}
-			/>
+			{profileOverviewOpen ? (
+				<DeferredWorkspaceDialog>
+					<LazyIndividualWorkspaceProfileOverviewDialog
+						open={profileOverviewOpen}
+						onOpenChange={handleProfileOverviewChange}
+						isDarkMode={isDarkMode}
+						profile={workspaceProfile}
+						personalization={workspacePersonalization}
+						materials={sources}
+						onEditProfile={handleRequestProfileUpdate}
+						editLocked={profileEditLocked}
+					/>
+				</DeferredWorkspaceDialog>
+			) : null}
 
-			<WorkspaceOnboardingUpdateGuardDialog
-				open={profileUpdateGuardOpen}
-				onOpenChange={setProfileUpdateGuardOpen}
-				isDarkMode={isDarkMode}
-				currentLang={i18n.language?.startsWith('en') ? 'en' : 'vi'}
-				materialCount={materialCountForProfile}
-				hasLearningData={hasWorkspaceLearningDataAtRisk}
-				onDeleteAndContinue={handleDeleteMaterialsForProfileUpdate}
-				deleting={isResettingWorkspaceForProfileUpdate}
-			/>
+			{profileUpdateGuardOpen ? (
+				<DeferredWorkspaceDialog>
+					<LazyWorkspaceOnboardingUpdateGuardDialog
+						open={profileUpdateGuardOpen}
+						onOpenChange={setProfileUpdateGuardOpen}
+						isDarkMode={isDarkMode}
+						currentLang={i18n.language?.startsWith('en') ? 'en' : 'vi'}
+						materialCount={materialCountForProfile}
+						hasLearningData={hasWorkspaceLearningDataAtRisk}
+						onDeleteAndContinue={handleDeleteMaterialsForProfileUpdate}
+						deleting={isResettingWorkspaceForProfileUpdate}
+					/>
+				</DeferredWorkspaceDialog>
+			) : null}
 
 
 		</div>

@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect, memo, useMemo } from "react";
+import React, { useState, useRef, useEffect, memo, useMemo, useCallback } from "react";
 import { MoreVertical, Plus, Pencil, Trash2, FolderOpen, Search, Share2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Pagination from "./Pagination";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
+import { preloadWorkspacePage } from "@/lib/routeLoaders";
 
 // Bổ sung displayTitle cho workspace không có tiêu đề: đầu tiên = untitledTitle, thứ 2 = (1), thứ 3 = (2)...
 function enrichWorkspacesWithDisplayTitle(workspaces, untitledTitle) {
@@ -118,12 +119,27 @@ const WorkspaceMenu = memo(function WorkspaceMenu({ onEdit, onDelete, onShare, i
 });
 
 // Card workspace - memo để tối ưu render khi list thay đổi
-const WorkspaceCard = memo(function WorkspaceCard({ ws, idx, isDarkMode, onEdit, onDelete, onShare, locale, untitledTitle, noDescription }) {
-  const navigate = useNavigateWithLoading();
+const WorkspaceCard = memo(function WorkspaceCard({
+  ws,
+  idx,
+  isDarkMode,
+  onEdit,
+  onDelete,
+  onShare,
+  locale,
+  untitledTitle,
+  noDescription,
+  onOpenWorkspace,
+  onPrefetchWorkspace,
+}) {
   const cardBg = getCardColor(idx, isDarkMode);
+  const handleOpenWorkspace = () => onOpenWorkspace(ws.workspaceId);
   return (
     <div
-      onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+      onClick={handleOpenWorkspace}
+      onMouseEnter={onPrefetchWorkspace}
+      onFocus={onPrefetchWorkspace}
+      onTouchStart={onPrefetchWorkspace}
       className={`${cardBg} rounded-xl h-56 p-5 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between relative group border ${
         isDarkMode ? "border-slate-800" : "border-gray-200"
       } overflow-hidden`}
@@ -188,6 +204,42 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
 
   // Thông tin pagination mặc định nếu không có
   const paginationInfo = pagination || { page: 0, size: 10, totalPages: 0, totalElements: 0 };
+  const handlePrefetchWorkspacePage = useCallback(() => {
+    void preloadWorkspacePage();
+  }, []);
+
+  const handleOpenWorkspace = useCallback((workspaceId) => {
+    void preloadWorkspacePage();
+    navigate(`/workspace/${workspaceId}`);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    let idleHandle = null;
+    let timeoutHandle = null;
+
+    if ("requestIdleCallback" in window) {
+      idleHandle = window.requestIdleCallback(() => {
+        void preloadWorkspacePage();
+      }, { timeout: 1500 });
+    } else {
+      timeoutHandle = window.setTimeout(() => {
+        void preloadWorkspacePage();
+      }, 400);
+    }
+
+    return () => {
+      if (idleHandle !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== null) {
+        window.clearTimeout(timeoutHandle);
+      }
+    };
+  }, []);
 
   // Trạng thái loading
   if (loading) {
@@ -257,7 +309,10 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
                 {sorted.map((ws) => (
                   <div
                     key={ws.workspaceId}
-                    onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+                    onClick={() => handleOpenWorkspace(ws.workspaceId)}
+                    onMouseEnter={handlePrefetchWorkspacePage}
+                    onFocus={handlePrefetchWorkspacePage}
+                    onTouchStart={handlePrefetchWorkspacePage}
                     className={`grid grid-cols-[minmax(260px,2fr)_minmax(220px,1.4fr)_minmax(140px,0.8fr)_40px] gap-4 px-4 py-3 text-sm cursor-pointer group transition-colors ${
                       isDarkMode ? "text-slate-300 hover:bg-slate-800/50" : "text-gray-700 hover:bg-gray-50"
                     }`}
@@ -304,6 +359,9 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
                 : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/50"
             }`}
             onClick={onOpenCreate}
+            onMouseEnter={handlePrefetchWorkspacePage}
+            onFocus={handlePrefetchWorkspacePage}
+            onTouchStart={handlePrefetchWorkspacePage}
           >
             <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
               isDarkMode ? "bg-blue-950/50" : "bg-blue-100"
@@ -335,6 +393,8 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
               locale={locale}
               untitledTitle={untitledTitle}
               noDescription={noDescription}
+              onOpenWorkspace={handleOpenWorkspace}
+              onPrefetchWorkspace={handlePrefetchWorkspacePage}
             />
           ))}
           </div>
