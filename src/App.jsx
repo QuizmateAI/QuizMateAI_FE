@@ -36,6 +36,7 @@ const PlanManagement = lazy(() => import('./Pages/Admin/PlanManagement'));
 const CreditPackageManagement = lazy(() => import('./Pages/Admin/CreditPackageManagement'));
 const AdminPaymentManagement = lazy(() => import('./Pages/Admin/AdminPaymentManagement'));
 const SystemSettingManagement = lazy(() => import('./Pages/Admin/SystemSettingManagement'));
+const AiActionPolicyManagement = lazy(() => import('./Pages/Admin/AiActionPolicyManagement'));
 
 // Quiz
 const PracticeQuizPage = lazy(() => import('./Pages/Users/Quiz/PracticeQuizPage'));
@@ -107,6 +108,7 @@ function MainRoutes() {
           <Route path="credit" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
             <Route path="system-settings" element={<SystemSettingManagement />} />
+            <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
         </Route>
       </Route>
 

@@ -38,6 +38,7 @@ function mapPlanCatalogToPaymentPlan(raw) {
       processImage: e.canProcessImage,
       processVideo: e.canProcessVideo,
       processAudio: e.canProcessAudio,
+      canCreateRoadMap: e.canCreateRoadMap,
       hasAiCompanionMode: e.hasAiCompanionMode,
       hasAiContentStructuring: e.hasWorkspaceAnalytics,
       hasPersonalizedLearningAnalytic: e.hasWorkspaceAnalytics,

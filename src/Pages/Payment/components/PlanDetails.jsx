@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import {
-  Layers, FileText, Users, Sparkles, Image, FileSpreadsheet, Presentation, CheckCircle2,
+  Layers, FileText, Users, Sparkles, Image, FileSpreadsheet, Presentation, CheckCircle2, Map,
 } from 'lucide-react';
 
 const LIMIT_ICONS = {
@@ -18,6 +18,7 @@ const FEATURE_ICONS = {
   processWord: FileSpreadsheet,
   processSlide: Presentation,
   processImage: Image,
+  canCreateRoadMap: Map,
   hasAiCompanionMode: Sparkles,
   hasAiContentStructuring: Sparkles,
 };
