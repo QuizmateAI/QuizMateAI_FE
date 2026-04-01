@@ -9,7 +9,10 @@ import QuizHeader from './components/QuizHeader';
 import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { generateRoadmapPhaseContent } from '@/api/AIAPI';
-import { getCurrentRoadmapPhaseProgress, submitRoadmapPhaseSkipDecision } from '@/api/RoadmapPhaseAPI';
+import {
+  getCurrentRoadmapPhaseProgress,
+  submitRoadmapPhaseSkipDecision,
+} from '@/api/RoadmapPhaseAPI';
 import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 
@@ -216,6 +219,11 @@ export default function QuizResultPage() {
     ?? normalizePositiveInteger(storedResultContext?.sourceWorkspaceId);
   const sourcePhaseId = normalizePositiveInteger(location.state?.sourcePhaseId)
     ?? normalizePositiveInteger(storedResultContext?.sourcePhaseId);
+  const sourceRoadmapId = normalizePositiveInteger(location.state?.sourceRoadmapId)
+    ?? normalizePositiveInteger(storedResultContext?.sourceRoadmapId)
+    ?? normalizePositiveInteger(quizDetails?.roadmapId)
+    ?? normalizePositiveInteger(result?.roadmapId)
+    ?? normalizePositiveInteger(quizRawDetails?.roadmapId);
   const returnPathWorkspaceId = useMemo(() => {
     if (!returnToQuizPath) return null;
     const matched = returnToQuizPath.match(/\/workspace\/(\d+)/);
@@ -255,6 +263,7 @@ export default function QuizResultPage() {
       sourceView: sourceView || null,
       sourceWorkspaceId,
       sourcePhaseId,
+      sourceRoadmapId,
     });
   }, [
     attemptId,
@@ -264,19 +273,22 @@ export default function QuizResultPage() {
     reviewMode,
     returnToQuizPath,
     sourcePhaseId,
+    sourceRoadmapId,
     sourceView,
     sourceWorkspaceId,
   ]);
 
   const directQuizDetailBackPath = Number.isInteger(resolvedWorkspaceIdForBack) && resolvedWorkspaceIdForBack > 0 && hasQuizIdForBack
     ? (sourceView === 'roadmap'
-      ? `/workspace/${resolvedWorkspaceIdForBack}/roadmap/quiz/${normalizedQuizIdForBack}`
+      ? (sourceRoadmapId && sourcePhaseId
+        ? `/workspace/${resolvedWorkspaceIdForBack}/roadmap/${sourceRoadmapId}/phase/${sourcePhaseId}/quiz/${normalizedQuizIdForBack}`
+        : `/workspace/${resolvedWorkspaceIdForBack}/roadmap/quiz/${normalizedQuizIdForBack}`)
       : `/workspace/${resolvedWorkspaceIdForBack}/quiz/${normalizedQuizIdForBack}`)
     : null;
 
   const canUseReturnPathAsQuizDetail = useMemo(() => {
     if (!returnToQuizPath) return false;
-    return /\/workspace\/\d+\/(?:quiz(?:\/\d+)?|roadmap\/quiz\/\d+)(?:\?|$)/.test(returnToQuizPath);
+    return /\/workspace\/\d+\/(?:quiz(?:\/\d+)?|roadmap\/(?:\d+\/phase\/\d+\/)?quiz\/\d+)(?:\?|$)/.test(returnToQuizPath);
   }, [returnToQuizPath]);
 
   const resumeAttemptPath = useMemo(() => {
@@ -439,6 +451,7 @@ export default function QuizResultPage() {
     setKnowledgeGenerationTriggered(triggered);
     setKnowledgeGenerationHydrated(true);
   }, [preLearningGenerateDedupeKey]);
+
   const fetchAssessment = useCallback(async () => {
     if (!attemptId) return;
     setAssessmentLoading(true);
@@ -1272,7 +1285,7 @@ export default function QuizResultPage() {
                   </div>
                 )}
 
-                {!loadingCurrentPhase && !canShowSkipDecision && (
+                {!loadingCurrentPhase && preLearningGenerationContext.isPreLearningQuiz && !canShowSkipDecision && (
                   <Button
                     type="button"
                     onClick={handleGenerateKnowledgeAfterPreLearning}

@@ -5,7 +5,9 @@ import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
 import LoadingSpinner from '@/Components/ui/LoadingSpinner';
+import RouteMetaManager from '@/Components/seo/RouteMetaManager';
 import { launchConfig } from '@/lib/launchConfig';
+import { loadGroupWorkspacePage, loadWorkspacePage } from '@/lib/routeLoaders';
 import './i18n';
 import './App.css';
 
@@ -20,8 +22,8 @@ const HomePage = lazy(() => import('./Pages/Users/Home/HomePage'));
 const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
 const PlanPage = lazy(() => import('./Pages/Users/Plan/PlanPage'));
 const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
-const WorkspacePage = lazy(() => import('./Pages/Users/Individual/Workspace/WorkspacePage'));
-const GroupWorkspacePage = lazy(() => import('./Pages/Users/Group/GroupWorkspacePage'));
+const WorkspacePage = lazy(loadWorkspacePage);
+const GroupWorkspacePage = lazy(loadGroupWorkspacePage);
 const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/GroupManagementPage'));
 const AcceptInvitationPage = lazy(() => import('./Pages/Users/Group/AcceptInvitationPage'));
 
@@ -159,6 +161,7 @@ function App() {
   return (
     <ToastProvider>
       <Router>
+        <RouteMetaManager />
         <AppContent />
       </Router>
     </ToastProvider>

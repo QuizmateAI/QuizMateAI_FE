@@ -2,25 +2,35 @@ import React from "react";
 import { UploadCloud, Sparkles, Route, BadgeCheck, Layers, Map, Rows3 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
-import CreateQuizForm from "./CreateQuizForm";
-import CreateFlashcardForm from "./CreateFlashcardForm";
-import RoadmapCanvasView from "./RoadmapCanvasView";
-import QuizListView from "./QuizListView";
-import CommunityQuizExplorerView from "./CommunityQuizExplorerView";
-import QuizDetailView from "./QuizDetailView";
-import EditQuizForm from "./EditQuizForm";
-import FlashcardListView from "./FlashcardListView";
-import FlashcardDetailView from "./FlashcardDetailView";
-import MockTestListView from "./MockTestListView";
-import CreateMockTestForm from "./CreateMockTestForm";
-import MockTestDetailView from "./MockTestDetailView";
-import EditMockTestForm from "./EditMockTestForm";
-import PostLearningListView from "./PostLearningListView";
-import CreatePostLearningForm from "./CreatePostLearningForm";
-import QuestionStatsView from "./QuestionStatsView";
+import ListSpinner from "@/Components/ui/ListSpinner";
+
+const LazyCreateQuizForm = React.lazy(() => import("./CreateQuizForm"));
+const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
+const LazyRoadmapCanvasView = React.lazy(() => import("./RoadmapCanvasView"));
+const LazyQuizListView = React.lazy(() => import("./QuizListView"));
+const LazyCommunityQuizExplorerView = React.lazy(() => import("./CommunityQuizExplorerView"));
+const LazyQuizDetailView = React.lazy(() => import("./QuizDetailView"));
+const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
+const LazyFlashcardListView = React.lazy(() => import("./FlashcardListView"));
+const LazyFlashcardDetailView = React.lazy(() => import("./FlashcardDetailView"));
+const LazyMockTestListView = React.lazy(() => import("./MockTestListView"));
+const LazyCreateMockTestForm = React.lazy(() => import("./CreateMockTestForm"));
+const LazyMockTestDetailView = React.lazy(() => import("./MockTestDetailView"));
+const LazyEditMockTestForm = React.lazy(() => import("./EditMockTestForm"));
+const LazyPostLearningListView = React.lazy(() => import("./PostLearningListView"));
+const LazyCreatePostLearningForm = React.lazy(() => import("./CreatePostLearningForm"));
+const LazyQuestionStatsView = React.lazy(() => import("./QuestionStatsView"));
+
+function DeferredPanel({ children }) {
+  return (
+    <React.Suspense fallback={<ListSpinner variant="section" className="flex-1" />}>
+      {children}
+    </React.Suspense>
+  );
+}
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onRoadmapPhaseFocus, onCreatePhaseKnowledge, onCreateKnowledgeQuizForKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, adaptationMode = "", isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingKnowledgeQuizKnowledgeKeys = [], knowledgeQuizRefreshByKey = {}, generatingPreLearningPhaseIds = [], skipPreLearningPhaseIds = [], roadmapReloadToken = 0, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, onShareQuiz, onShareRoadmap }) {
+function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onRoadmapPhaseFocus, onCreatePhaseKnowledge, onCreateKnowledgeQuizForKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, adaptationMode = "", isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingKnowledgeQuizKnowledgeKeys = [], knowledgeQuizRefreshByKey = {}, generatingPreLearningPhaseIds = [], skipPreLearningPhaseIds = [], roadmapReloadToken = 0, onReloadRoadmap, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, onShareQuiz, onShareRoadmap }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -71,7 +81,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
     switch (activeView) {
       case "roadmap":
         return (
-          <RoadmapCanvasView
+          <LazyRoadmapCanvasView
             isDarkMode={isDarkMode}
             onCreateRoadmap={onCreateRoadmap}
             onCreateRoadmapPhases={onCreateRoadmapPhases}
@@ -91,6 +101,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
             skipPreLearningPhaseIds={skipPreLearningPhaseIds}
             reloadToken={roadmapReloadToken}
+            onReloadRoadmap={onReloadRoadmap}
             createdItems={createdRoadmaps}
             workspaceId={workspaceId}
             forcedCanvasView={roadmapCanvasView}
@@ -103,7 +114,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
         );
       case "quiz":
         return (
-          <QuizListView
+          <LazyQuizListView
             isDarkMode={isDarkMode}
             onCreateQuiz={() => onChangeView?.("createQuiz")}
             onViewQuiz={onViewQuiz}
@@ -118,33 +129,33 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
           />
         );
       case "communityQuiz":
-        return <CommunityQuizExplorerView isDarkMode={isDarkMode} workspaceId={workspaceId} onBackToQuiz={() => onChangeView?.("quiz")} />;
+        return <LazyCommunityQuizExplorerView isDarkMode={isDarkMode} workspaceId={workspaceId} onBackToQuiz={() => onChangeView?.("quiz")} />;
       case "flashcard":
-        return <FlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="WORKSPACE" contextId={workspaceId} disableCreate={shouldDisableCreateFlashcard} />;
+        return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="WORKSPACE" contextId={workspaceId} disableCreate={shouldDisableCreateFlashcard} />;
       case "mockTest":
-        return <MockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="WORKSPACE" contextId={workspaceId} />;
       case "postLearning":
-        return <PostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <LazyPostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="WORKSPACE" contextId={workspaceId} />;
       case "questionStats":
-        return <QuestionStatsView workspaceId={workspaceId} isDarkMode={isDarkMode} />;
+        return <LazyQuestionStatsView workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "createQuiz":
-        return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
+        return <LazyCreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "createFlashcard":
-        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
+        return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "flashcardDetail":
-        return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
+        return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
       case "quizDetail":
-        return selectedQuiz ? <QuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
+        return selectedQuiz ? <LazyQuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
       case "editQuiz":
-        return selectedQuiz ? <EditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
+        return selectedQuiz ? <LazyEditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
       case "createMockTest":
-        return <CreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
       case "createPostLearning":
-        return <CreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
       case "mockTestDetail":
-        return selectedMockTest ? <MockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
+        return selectedMockTest ? <LazyMockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
       case "editMockTest":
-        return selectedMockTest ? <EditMockTestForm isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onSave={onSaveMockTest} /> : null;
+        return selectedMockTest ? <LazyEditMockTestForm isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onSave={onSaveMockTest} /> : null;
       default:
         return null;
     }
@@ -199,7 +210,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             </div>
           </div>
         ) : null}
-        {listContent}
+        <DeferredPanel>{listContent}</DeferredPanel>
       </section>
     );
   }
@@ -209,23 +220,23 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
   const renderActiveContent = () => {
     switch (activeView) {
       case "createQuiz":
-        return <CreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
+        return <LazyCreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "createFlashcard":
-        return <CreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
+        return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
       case "flashcardDetail":
-        return selectedFlashcard ? <FlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
+        return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
       case "quizDetail":
-        return selectedQuiz ? <QuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
+        return selectedQuiz ? <LazyQuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
       case "editQuiz":
-        return selectedQuiz ? <EditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
+        return selectedQuiz ? <LazyEditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
       case "createMockTest":
-        return <CreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
       case "createPostLearning":
-        return <CreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
+        return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
       case "mockTestDetail":
-        return selectedMockTest ? <MockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
+        return selectedMockTest ? <LazyMockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
       case "editMockTest":
-        return selectedMockTest ? <EditMockTestForm isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onSave={onSaveMockTest} /> : null;
+        return selectedMockTest ? <LazyEditMockTestForm isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onSave={onSaveMockTest} /> : null;
       default:
         return null;
     }
@@ -239,7 +250,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
       <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
         isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
       }`}>
-        {activeContent}
+        <DeferredPanel>{activeContent}</DeferredPanel>
       </section>
     );
   }
