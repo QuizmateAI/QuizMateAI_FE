@@ -318,3 +318,19 @@ export const getMyWallet = async () => {
   const response = await api.get('/credit-wallet/me');
   return response;
 };
+
+// AI Action Policy APIs — maps to AiActionPolicyController (/api/ai-action-policies/...)
+export const getAllAiActionPolicies = async () => {
+  const response = await api.get('/ai-action-policies');
+  return response;
+};
+
+export const getAiActionPolicy = async (actionKey) => {
+  const response = await api.get(`/ai-action-policies/${actionKey}`);
+  return response;
+};
+
+export const updateAiActionPolicy = async (actionKey, data) => {
+  const response = await api.put(`/ai-action-policies/${actionKey}`, data);
+  return response;
+};
