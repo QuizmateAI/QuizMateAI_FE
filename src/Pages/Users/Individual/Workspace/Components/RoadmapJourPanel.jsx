@@ -253,7 +253,6 @@ function RoadmapJourPanel({
                       const isProcessingPhase = !isCompletedPhase && (
                         normalizedPhaseStatus === "PROCESSING"
                         || isGeneratingByClientState
-                        || (phaseProcessingPercent > 0 && phaseProcessingPercent < 100)
                       );
                       return (
                         <button
