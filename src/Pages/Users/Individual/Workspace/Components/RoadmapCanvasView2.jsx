@@ -1035,13 +1035,11 @@ function RoadmapCanvasView2({
           const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
           const phasePostLearningPercent = progressTracking?.getPostLearningProgress(normalizedPhaseId) ?? 0;
           const phaseProcessingPercent = Math.max(phaseKnowledgePercent, phasePreLearningPercent, phasePostLearningPercent, 0);
-          const hasPendingProgress = phaseProcessingPercent > 0 && phaseProcessingPercent < 100;
           const isProcessingPhase = !isCompletedPhase && (
             normalizedPhaseStatus === "PROCESSING"
             || isGeneratingPhaseContent
             || isGeneratingKnowledgeQuiz
             || isGeneratingPreLearning
-            || hasPendingProgress
           );
           const phaseStatusLabel = isCompletedPhase
             ? t("workspace.quiz.statusLabels.COMPLETED", "Completed")
