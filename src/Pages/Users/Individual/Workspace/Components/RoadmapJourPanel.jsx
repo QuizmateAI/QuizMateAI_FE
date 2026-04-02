@@ -78,12 +78,34 @@ function RoadmapJourPanel({
     return [...rawPhases].sort((a, b) => Number(a?.phaseIndex ?? 0) - Number(b?.phaseIndex ?? 0));
   }, [roadmap?.phases]);
 
+  const isPhaseFinishedStatus = useCallback((phaseStatus) => {
+    const normalizedStatus = String(phaseStatus || "").toUpperCase();
+    return normalizedStatus === "COMPLETED" || normalizedStatus === "SKIPPED";
+  }, []);
+
   const maxUnlockedPhaseIndex = useMemo(() => {
-    if (!globalCurrentPhasePayload?.phaseId) return 0;
-    const globalPhaseId = Number(globalCurrentPhasePayload.phaseId);
-    const idx = phases.findIndex((p) => Number(p.phaseId) === globalPhaseId);
-    return Math.max(0, idx);
-  }, [globalCurrentPhasePayload?.phaseId, phases]);
+    if (!Array.isArray(phases) || phases.length === 0) return 0;
+
+    const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+    const globalCurrentIndex = Number.isInteger(globalPhaseId)
+      ? phases.findIndex((phase) => Number(phase?.phaseId) === globalPhaseId)
+      : -1;
+
+    let contiguousFinishedCount = 0;
+    for (let index = 0; index < phases.length; index += 1) {
+      if (!isPhaseFinishedStatus(phases[index]?.status)) break;
+      contiguousFinishedCount += 1;
+    }
+    const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
+
+    return Math.max(0, globalCurrentIndex, unlockedByStatusIndex);
+  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, phases]);
+
+  const isCurrentPayloadFinished = useMemo(() => {
+    return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
+  }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
+  const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
 
   const effectiveSelectedPhaseId = selectedPhaseIdProp ?? selectedPhaseId;
 
@@ -191,7 +213,29 @@ function RoadmapJourPanel({
                     {phases.map((phase, index) => {
                       const normalizedPhaseId = Number(phase?.phaseId);
                       const active = effectiveSelectedPhaseId === phase.phaseId;
-                      const isLockedPhase = index > maxUnlockedPhaseIndex;
+                      const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
+                        && phase.preLearningQuizzes.length > 0;
+                      const isLockedPhase = index > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+                      const previousPhaseCompleted = index > 0
+                        ? (() => {
+                          const previousPhase = phases[index - 1] || null;
+                          const previousPhaseId = Number(previousPhase?.phaseId);
+                          const previousFromPhaseList = isPhaseFinishedStatus(previousPhase?.status);
+                          const previousFromCurrentPayloadById = isCurrentPayloadFinished
+                            && Number.isInteger(currentPayloadPhaseId)
+                            && currentPayloadPhaseId > 0
+                            && currentPayloadPhaseId === previousPhaseId;
+                          const previousFromCurrentPayloadByIndex = isCurrentPayloadFinished
+                            && Number.isFinite(currentPayloadPhaseIndex)
+                            && currentPayloadPhaseIndex >= 0
+                            && currentPayloadPhaseIndex >= (index - 1);
+
+                          return previousFromPhaseList || previousFromCurrentPayloadById || previousFromCurrentPayloadByIndex;
+                        })()
+                        : true;
+                      const isUnlockable = isLockedPhase
+                        && index === (maxUnlockedPhaseIndex + 1)
+                        && previousPhaseCompleted;
                       const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
                       const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
                       const phaseKnowledgePercent = progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0;
@@ -209,7 +253,6 @@ function RoadmapJourPanel({
                       const isProcessingPhase = !isCompletedPhase && (
                         normalizedPhaseStatus === "PROCESSING"
                         || isGeneratingByClientState
-                        || (phaseProcessingPercent > 0 && phaseProcessingPercent < 100)
                       );
                       return (
                         <button
@@ -228,7 +271,11 @@ function RoadmapJourPanel({
                               : "border-l-transparent bg-transparent hover:bg-slate-50"}`}
                         >
                           {isLockedPhase ? (
-                            <Lock className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+                            <Lock className={`w-4 h-4 shrink-0 ${
+                              isUnlockable
+                                ? (isDarkMode ? "text-blue-400" : "text-blue-600")
+                                : (isDarkMode ? "text-slate-500" : "text-slate-400")
+                            }`} />
                           ) : isCompletedPhase ? (
                             <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
                           ) : isProcessingPhase ? (
@@ -241,7 +288,9 @@ function RoadmapJourPanel({
                             containerClassName="flex-1"
                             className={`text-sm ${
                               isLockedPhase 
-                                ? (isDarkMode ? "text-slate-500" : "text-slate-400")
+                                ? (isUnlockable
+                                  ? (isDarkMode ? "text-blue-300" : "text-blue-700")
+                                  : (isDarkMode ? "text-slate-500" : "text-slate-400"))
                                 : (isDarkMode ? "text-slate-200" : "text-gray-900")
                             } ${fontClass}`}
                             alwaysRun={active}

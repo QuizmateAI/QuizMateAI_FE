@@ -4,14 +4,13 @@ import { Button } from "@/Components/ui/button";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import QuizListView from "./QuizListView";
 import { useToast } from "@/context/ToastContext";
-import { getAttemptAssessment, getQuizHistory } from "@/api/QuizAPI";
 import {
   createPhaseProgressReview,
   getCurrentRoadmapPhaseProgress,
   getPhaseProgressReview,
   submitRoadmapPhaseRemedialDecision,
-  submitRoadmapPhaseSkipDecision,
 } from "@/api/RoadmapPhaseAPI";
+import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -50,15 +49,6 @@ function RoadmapCanvasView2({
   const { t } = useTranslation();
   const { showError, showSuccess } = useToast();
   const [openPhaseId, setOpenPhaseId] = useState(null);
-  const [decisionState, setDecisionState] = useState({
-    phaseId: null,
-    loadingAssessment: false,
-    assessmentStatus: "NOT_AVAILABLE",
-    assessmentData: null,
-    loadingCurrentPhase: false,
-    currentPhaseProgress: null,
-  });
-  const [submittingSkipDecision, setSubmittingSkipDecision] = useState(false);
   const [submittingRemedialDecision, setSubmittingRemedialDecision] = useState(false);
   const [remedialState, setRemedialState] = useState({
     phaseId: null,
@@ -67,6 +57,8 @@ function RoadmapCanvasView2({
   });
   const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
   const [loadingGlobalCurrentPhase, setLoadingGlobalCurrentPhase] = useState(false);
+  const [optimisticUnlockedPhaseIds, setOptimisticUnlockedPhaseIds] = useState([]);
+  const [unlockingPhaseIds, setUnlockingPhaseIds] = useState([]);
 
   const loadGlobalCurrentPhaseProgress = useCallback(async () => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -86,17 +78,11 @@ function RoadmapCanvasView2({
 
   useEffect(() => {
     void loadGlobalCurrentPhaseProgress();
-  }, [loadGlobalCurrentPhaseProgress, quizRefreshToken, roadmap]);
-  const [decisionHandledPhaseIds, setDecisionHandledPhaseIds] = useState([]);
+  }, [loadGlobalCurrentPhaseProgress, roadmap?.roadmapId, selectedPhaseId, openPhaseId]);
   const [phaseReviewState, setPhaseReviewState] = useState({
     loading: false,
     data: null,
     phaseId: null,
-  });
-  const preLearningDecisionFetchRef = useRef({
-    inFlightKey: null,
-    lastLoadedKey: null,
-    lastLoadedAt: 0,
   });
   const phaseReviewInFlightRef = useRef(false);
   const getDefaultOpenKnowledgeMap = (phaseList = []) => {
@@ -131,12 +117,48 @@ function RoadmapCanvasView2({
   }, [roadmap?.phases]);
   const normalizedAdaptationMode = String(adaptationMode || "").toUpperCase();
 
+  const isPhaseFinishedStatus = useCallback((phaseStatus) => {
+    const normalizedStatus = String(phaseStatus || "").toUpperCase();
+    return normalizedStatus === "COMPLETED" || normalizedStatus === "SKIPPED";
+  }, []);
+
   const maxUnlockedPhaseIndex = useMemo(() => {
-    if (!globalCurrentPhasePayload?.phaseId) return 0;
-    const globalPhaseId = Number(globalCurrentPhasePayload.phaseId);
-    const idx = phases.findIndex((p) => Number(p.phaseId) === globalPhaseId);
-    return Math.max(0, idx);
-  }, [globalCurrentPhasePayload?.phaseId, phases]);
+    if (!Array.isArray(phases) || phases.length === 0) return 0;
+
+    const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+    const globalCurrentIndex = Number.isInteger(globalPhaseId)
+      ? phases.findIndex((p) => Number(p.phaseId) === globalPhaseId)
+      : -1;
+
+    let contiguousFinishedCount = 0;
+    for (let index = 0; index < phases.length; index += 1) {
+      if (!isPhaseFinishedStatus(phases[index]?.status)) break;
+      contiguousFinishedCount += 1;
+    }
+    const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
+
+    const unlockedByOptimisticIndex = (optimisticUnlockedPhaseIds || []).reduce((maxIndex, phaseId) => {
+      const normalizedPhaseId = Number(phaseId);
+      if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return maxIndex;
+      const phaseIndex = phases.findIndex((phase) => Number(phase?.phaseId) === normalizedPhaseId);
+      if (phaseIndex < 0) return maxIndex;
+      return Math.max(maxIndex, phaseIndex);
+    }, -1);
+
+    return Math.max(0, globalCurrentIndex, unlockedByStatusIndex, unlockedByOptimisticIndex);
+  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, optimisticUnlockedPhaseIds, phases]);
+
+  const isCurrentPayloadFinished = useMemo(() => {
+    return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
+  }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
+
+  const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+
+  useEffect(() => {
+    setOptimisticUnlockedPhaseIds([]);
+    setUnlockingPhaseIds([]);
+  }, [roadmap?.roadmapId]);
 
   const getPersistedKnowledgeMap = (storageKey) => {
     if (!storageKey || typeof window === "undefined") {
@@ -194,6 +216,27 @@ function RoadmapCanvasView2({
     ? openPhaseId
     : fallbackPhaseId;
   const activePhase = phases.find((phase) => phase.phaseId === effectiveOpenPhaseId) || null;
+
+  const {
+    decisionState,
+    submittingSkipDecision,
+    decisionHandledPhaseIds,
+    canShowSkipDecision,
+    canShowGenerateKnowledgeFallback,
+    shouldRenderDecisionCard,
+    handleRoadmapPreLearningDecision,
+  } = useRoadmapPreLearningDecision({
+    roadmap,
+    activePhase,
+    onCreatePhaseKnowledge,
+    onSkipSuccess: async () => {
+      await onReloadRoadmap?.();
+      await loadGlobalCurrentPhaseProgress();
+    },
+    showError,
+    showSuccess,
+    t,
+  });
 
   const hasCompletedPostLearning = useCallback((phase) => {
     const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
@@ -299,7 +342,7 @@ function RoadmapCanvasView2({
 
   useEffect(() => {
     void syncPhaseReview();
-  }, [syncPhaseReview, quizRefreshToken, activePhase?.phaseId]);
+  }, [syncPhaseReview, activePhase?.phaseId]);
 
   const phaseReviewConfidencePercent = useMemo(() => {
     const rawScore = Number(phaseReviewState?.data?.confidenceScore);
@@ -333,159 +376,6 @@ function RoadmapCanvasView2({
       timeStyle: "short",
     }).format(parsedDate);
   }, [phaseReviewState?.data?.assessedAt]);
-
-  const loadPreLearningDecisionState = useCallback(async (phase) => {
-    const normalizedPhaseId = Number(phase?.phaseId);
-    const normalizedRoadmapId = Number(roadmap?.roadmapId);
-    const normalizedWorkspaceId = Number(roadmap?.workspaceId);
-    const hasValidContext = Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0
-      && Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
-      && Number.isInteger(normalizedWorkspaceId) && normalizedWorkspaceId > 0;
-
-    const preLearningQuizzes = Array.isArray(phase?.preLearningQuizzes) ? phase.preLearningQuizzes : [];
-    const attemptedPreLearningQuiz = preLearningQuizzes
-      .filter((quiz) => quiz?.myAttempted === true)
-      .sort((a, b) => {
-        const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
-        const bTime = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
-        return bTime - aTime;
-      })[0] || null;
-
-    if (!hasValidContext || !attemptedPreLearningQuiz?.quizId) {
-      setDecisionState({
-        phaseId: normalizedPhaseId,
-        loadingAssessment: false,
-        assessmentStatus: "NOT_AVAILABLE",
-        assessmentData: null,
-        loadingCurrentPhase: false,
-        currentPhaseProgress: null,
-      });
-      return;
-    }
-
-    const requestKey = `${normalizedRoadmapId}:${normalizedPhaseId}:${Number(attemptedPreLearningQuiz?.quizId)}`;
-    const now = Date.now();
-    if (preLearningDecisionFetchRef.current.inFlightKey === requestKey) {
-      return;
-    }
-    if (
-      preLearningDecisionFetchRef.current.lastLoadedKey === requestKey
-      && (now - preLearningDecisionFetchRef.current.lastLoadedAt) < 1200
-    ) {
-      return;
-    }
-
-    preLearningDecisionFetchRef.current.inFlightKey = requestKey;
-
-    setDecisionState({
-      phaseId: normalizedPhaseId,
-      loadingAssessment: true,
-      assessmentStatus: "NOT_AVAILABLE",
-      assessmentData: null,
-      loadingCurrentPhase: false,
-      currentPhaseProgress: null,
-    });
-
-    try {
-      const historyResponse = await getQuizHistory(attemptedPreLearningQuiz.quizId);
-      const attempts = Array.isArray(historyResponse?.data) ? historyResponse.data : [];
-      const latestCompletedAttempt = attempts
-        .filter((attempt) => String(attempt?.status || "").toUpperCase() === "COMPLETED")
-        .sort((a, b) => {
-          const aTime = new Date(a?.submittedAt || a?.createdAt || 0).getTime();
-          const bTime = new Date(b?.submittedAt || b?.createdAt || 0).getTime();
-          if (aTime !== bTime) return bTime - aTime;
-          return Number(b?.attemptId || 0) - Number(a?.attemptId || 0);
-        })[0] || null;
-
-      const latestAttemptId = Number(latestCompletedAttempt?.attemptId);
-      if (!Number.isInteger(latestAttemptId) || latestAttemptId <= 0) {
-        setDecisionState((current) => ({
-          ...current,
-          phaseId: normalizedPhaseId,
-          loadingAssessment: false,
-          assessmentStatus: "NOT_AVAILABLE",
-          assessmentData: null,
-        }));
-        return;
-      }
-
-      const assessmentResponse = await getAttemptAssessment(latestAttemptId);
-      const assessmentPayload = assessmentResponse?.data?.data || assessmentResponse?.data || null;
-      const assessmentStatus = assessmentPayload?.status || "NOT_AVAILABLE";
-      const assessmentData = assessmentStatus === "READY" ? assessmentPayload : null;
-
-      setDecisionState((current) => ({
-        ...current,
-        phaseId: normalizedPhaseId,
-        loadingAssessment: false,
-        assessmentStatus,
-        assessmentData,
-      }));
-
-      const isAssessmentReady = assessmentStatus === "READY" && Boolean(assessmentData);
-      if (!isAssessmentReady) return;
-
-      setDecisionState((current) => ({
-        ...current,
-        phaseId: normalizedPhaseId,
-        loadingCurrentPhase: true,
-      }));
-
-      const phaseProgressResponse = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
-      const phaseProgressPayload = phaseProgressResponse?.data?.data || phaseProgressResponse?.data || null;
-
-      setDecisionState((current) => ({
-        ...current,
-        phaseId: normalizedPhaseId,
-        loadingCurrentPhase: false,
-        currentPhaseProgress: phaseProgressPayload,
-      }));
-    } catch (error) {
-      console.error("Failed to load post pre-learning decision state:", error);
-      setDecisionState((current) => ({
-        ...current,
-        phaseId: normalizedPhaseId,
-        loadingAssessment: false,
-        loadingCurrentPhase: false,
-        assessmentStatus: "NOT_AVAILABLE",
-        assessmentData: null,
-        currentPhaseProgress: null,
-      }));
-    } finally {
-      preLearningDecisionFetchRef.current.lastLoadedKey = requestKey;
-      preLearningDecisionFetchRef.current.lastLoadedAt = Date.now();
-      preLearningDecisionFetchRef.current.inFlightKey = null;
-    }
-  }, [roadmap?.roadmapId, roadmap?.workspaceId]);
-
-  useEffect(() => {
-    if (!activePhase) return;
-
-    const normalizedPhaseId = Number(activePhase?.phaseId);
-    const hasPreLearning = (activePhase?.preLearningQuizzes || []).length > 0;
-    const hasKnowledge = (activePhase?.knowledges || []).length > 0;
-    const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);
-
-    if (!isStudyNewRoadmap || !hasPreLearning || hasKnowledge || isSkipPreLearningPhase) {
-      setDecisionState({
-        phaseId: normalizedPhaseId,
-        loadingAssessment: false,
-        assessmentStatus: "NOT_AVAILABLE",
-        assessmentData: null,
-        loadingCurrentPhase: false,
-        currentPhaseProgress: null,
-      });
-      return;
-    }
-
-    void loadPreLearningDecisionState(activePhase);
-  }, [
-    activePhase,
-    isStudyNewRoadmap,
-    loadPreLearningDecisionState,
-    skipPreLearningPhaseIds,
-  ]);
 
   useEffect(() => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -542,32 +432,8 @@ function RoadmapCanvasView2({
     activePhase?.phaseId,
     activePhase?.postLearningQuizzes,
     normalizedAdaptationMode,
-    quizRefreshToken,
     roadmap?.roadmapId,
   ]);
-
-  const handleRoadmapPreLearningDecision = useCallback(async (phaseId, skipped) => {
-    const normalizedPhaseId = Number(phaseId);
-    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0 || submittingSkipDecision) return;
-
-    setSubmittingSkipDecision(true);
-    try {
-      if (skipped) {
-        await submitRoadmapPhaseSkipDecision(normalizedPhaseId, true);
-        setDecisionHandledPhaseIds((current) => Array.from(new Set([...current, normalizedPhaseId])));
-        showSuccess(t("workspace.quiz.result.skipPhaseSuccess", "Current phase has been skipped successfully."));
-        return;
-      }
-
-      await onCreatePhaseKnowledge?.(normalizedPhaseId, { skipPreLearning: false });
-      setDecisionHandledPhaseIds((current) => Array.from(new Set([...current, normalizedPhaseId])));
-    } catch (error) {
-      console.error("Failed to update pre-learning decision:", error);
-      showError(error?.message || t("workspace.quiz.result.skipPhaseFail", "Could not update skip decision for this phase."));
-    } finally {
-      setSubmittingSkipDecision(false);
-    }
-  }, [onCreatePhaseKnowledge, showError, showSuccess, submittingSkipDecision, t]);
 
   const handleRoadmapRemedialDecision = useCallback(async (phaseId, option) => {
     const normalizedPhaseId = Number(phaseId);
@@ -606,6 +472,7 @@ function RoadmapCanvasView2({
       const next = current === phaseId ? null : phaseId;
       if (next) {
         onPhaseFocus?.(next, { preserveActiveView: true });
+        void loadGlobalCurrentPhaseProgress();
       }
       return next;
     });
@@ -958,12 +825,34 @@ function RoadmapCanvasView2({
           const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
           const phaseIndex = phases.findIndex((p) => Number(p.phaseId) === normalizedPhaseId);
-          
-          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex;
-          const previousPhaseCompleted = phaseIndex > 0 
-            ? String(phases[phaseIndex - 1]?.status || "").toUpperCase() === "COMPLETED" 
+
+          const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
+            && phase.preLearningQuizzes.length > 0;
+          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+          const previousPhaseCompleted = phaseIndex > 0
+            ? (() => {
+              const previousPhase = phases[phaseIndex - 1] || null;
+              const previousPhaseId = Number(previousPhase?.phaseId);
+              const previousFromPhaseList = isPhaseFinishedStatus(previousPhase?.status);
+
+              const previousFromCurrentPayloadById = isCurrentPayloadFinished
+                && Number.isInteger(currentPayloadPhaseId)
+                && currentPayloadPhaseId > 0
+                && currentPayloadPhaseId === previousPhaseId;
+
+              const previousFromCurrentPayloadByIndex = isCurrentPayloadFinished
+                && Number.isFinite(currentPayloadPhaseIndex)
+                && currentPayloadPhaseIndex >= 0
+                && currentPayloadPhaseIndex >= (phaseIndex - 1);
+
+              return previousFromPhaseList || previousFromCurrentPayloadById || previousFromCurrentPayloadByIndex;
+            })()
             : true;
-          const isUnlockable = isLockedPhase && phaseIndex === maxUnlockedPhaseIndex + 1 && previousPhaseCompleted;
+          const isUnlockingPhase = unlockingPhaseIds.includes(normalizedPhaseId);
+          const isUnlockable = isLockedPhase
+            && phaseIndex === maxUnlockedPhaseIndex + 1
+            && previousPhaseCompleted
+            && !isUnlockingPhase;
 
           const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
           const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
@@ -975,13 +864,11 @@ function RoadmapCanvasView2({
           const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
           const phasePostLearningPercent = progressTracking?.getPostLearningProgress(normalizedPhaseId) ?? 0;
           const phaseProcessingPercent = Math.max(phaseKnowledgePercent, phasePreLearningPercent, phasePostLearningPercent, 0);
-          const hasPendingProgress = phaseProcessingPercent > 0 && phaseProcessingPercent < 100;
           const isProcessingPhase = !isCompletedPhase && (
             normalizedPhaseStatus === "PROCESSING"
             || isGeneratingPhaseContent
             || isGeneratingKnowledgeQuiz
             || isGeneratingPreLearning
-            || hasPendingProgress
           );
           const phaseStatusLabel = isCompletedPhase
             ? t("workspace.quiz.statusLabels.COMPLETED", "Completed")
@@ -996,40 +883,23 @@ function RoadmapCanvasView2({
           const passedKnowledgeCount = knowledgeItems.filter((knowledge) =>
             (knowledge?.quizzes || []).some((quiz) => quiz?.myPassed === true)
           ).length;
-          const preLearningQuizzes = phase.preLearningQuizzes || [];
-          const hasAttemptedPreLearning = preLearningQuizzes.some((quiz) => {
-            const attempted = quiz?.myAttempted === true;
-            const passed = quiz?.myPassed === true;
-            const status = String(quiz?.status || "").toUpperCase();
-            return attempted || passed || status === "COMPLETED";
-          });
-          const shouldShowCreatePhaseContentAction = hasPreLearning
-            && hasAttemptedPreLearning
-            && !hasKnowledge
-            && !isGeneratingKnowledge;
           const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);
           const isOpenPhase = Number(effectiveOpenPhaseId) === normalizedPhaseId;
           const isDecisionHandled = decisionHandledPhaseIds.includes(normalizedPhaseId);
-          const isPhaseDecisionReady = isOpenPhase
-            && decisionState.phaseId === normalizedPhaseId
-            && decisionState.assessmentStatus === "READY"
-            && Boolean(decisionState.assessmentData);
-          const canRenderPreLearningDecisionCard = isStudyNewRoadmap
-            && hasPreLearning
-            && !hasKnowledge
-            && !isSkipPreLearningPhase
-            && isPhaseDecisionReady;
+          const canRenderPreLearningDecisionCard = isOpenPhase
+            && shouldRenderDecisionCard
+            && decisionState.phaseId === normalizedPhaseId;
           const isGeneratingKnowledgeForPhase = generatingKnowledgePhaseIds.includes(normalizedPhaseId)
             || generatingKnowledgeQuizPhaseIds.includes(normalizedPhaseId);
-          const canShowSkipDecision = canRenderPreLearningDecisionCard
-            && decisionState.currentPhaseProgress?.skipable === true
-            && !isDecisionHandled;
-          const shouldShowPreLearningDecision = isStudyNewRoadmap && !hasPreLearning && !hasKnowledge && !isSkipPreLearningPhase;
+          const shouldShowPreLearningDecision = isStudyNewRoadmap
+            && !hasPreLearning
+            && !hasKnowledge
+            && !isSkipPreLearningPhase;
           const shouldShowKnowledgePlaceholder = !hasKnowledge && isGeneratingPhaseContent;
           const shouldShowPreLearningPlaceholder = !hasPreLearning
             && isGeneratingPreLearning
             && !isSkipPreLearningPhase
-            && !shouldShowPreLearningDecision;
+            && !canRenderPreLearningDecisionCard;
           const shouldShowPostLearningPlaceholder = !hasPostLearning && isGeneratingPhaseContent;
           const shouldLockPostLearning = false;
           const isFlexibleRoadmap = normalizedAdaptationMode === "FLEXIBLE";
@@ -1095,10 +965,27 @@ function RoadmapCanvasView2({
                         </p>
                         <Button 
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (isUnlockable) {
-                              onCreatePhasePreLearning(phase.phaseId, { skipPreLearning: false });
+                            if (!isUnlockable) return;
+
+                            setOptimisticUnlockedPhaseIds((current) => {
+                              if (current.includes(normalizedPhaseId)) return current;
+                              return [...current, normalizedPhaseId];
+                            });
+                            setUnlockingPhaseIds((current) => {
+                              if (current.includes(normalizedPhaseId)) return current;
+                              return [...current, normalizedPhaseId];
+                            });
+
+                            try {
+                              await onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false });
+                              void loadGlobalCurrentPhaseProgress();
+                            } catch (error) {
+                              setOptimisticUnlockedPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
+                              showError(error?.message || t("workspace.roadmap.phaseUnlockFailed", "Không thể mở khóa phase này."));
+                            } finally {
+                              setUnlockingPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
                             }
                           }}
                           disabled={!isUnlockable}
@@ -1108,8 +995,10 @@ function RoadmapCanvasView2({
                               : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
                           }`}
                         >
-                          <Unlock className="w-4 h-4" style={{ marginRight: '0.5rem' }} />
-                          {t("workspace.roadmap.canvas.unlockPhaseBtn", "Mở khóa Phase")}
+                          {isUnlockingPhase ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}
+                          {isUnlockingPhase
+                            ? t("workspace.roadmap.canvas.unlockingPhaseBtn", "Đang mở khóa...")
+                            : t("workspace.roadmap.canvas.unlockPhaseBtn", "Mở khóa Phase")}
                         </Button>
                       </div>
                     </div>
@@ -1214,7 +1103,7 @@ function RoadmapCanvasView2({
                             </div>
                           ) : null}
 
-                          {!decisionState.loadingCurrentPhase && !canShowSkipDecision ? (
+                          {!decisionState.loadingCurrentPhase && canShowGenerateKnowledgeFallback ? (
                             <div className="mt-3">
                               <Button
                                 type="button"
