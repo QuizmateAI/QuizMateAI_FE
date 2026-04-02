@@ -14,7 +14,8 @@
     "subscriptions": "Subscriptions",
     "creditPackages": "Credit Packs",
     "payments": "Payments",
-    "systemSettings": "System Settings"
+    "systemSettings": "System Settings",
+    "aiActionPolicies": "AI Policies"
   },
   "sidebarSections": {
     "overview": "Overview",
@@ -46,6 +47,132 @@
     "resyncConfirm": "Sync Now",
     "resyncing": "Syncing...",
     "resyncSuccess": "Credit package prices synced successfully"
+  },
+  "aiActionPolicy": {
+    "title": "AI Action Policies",
+    "subtitle": "Configure credit costs for each AI feature",
+    "refresh": "Refresh",
+    "categoryGenerate": "AI Content Generation",
+    "categoryProcess": "Document Processing",
+    "active": "Active",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "updateSuccess": "Policy updated successfully",
+    "descriptionPlaceholder": "Policy description...",
+    "baseCost": "Base cost",
+    "unitCost": "Unit cost",
+    "unitSize": "Unit size",
+    "formula": "Cost formula",
+    "formulaResult": "Cost =",
+    "formulaCeil": "round up",
+    "formulaFixedNote": "fixed per usage",
+    "formulaSummary": "Each usage costs {{base}} QMC flat, plus {{unit}} QMC for every {{size}} {{mode}}. Partial units are rounded up.",
+    "costMode": {
+      "label": "Cost mode",
+      "FIXED": "Fixed",
+      "PER_QUESTION": "Per question",
+      "PER_ITEM": "Per item",
+      "PER_PAGE": "Per page",
+      "PER_WORD": "Per word",
+      "PER_CELL": "Per cell",
+      "PER_SECOND": "Per second"
+    },
+    "costModeUnit": {
+      "PER_QUESTION": "questions",
+      "PER_ITEM": "items",
+      "PER_PAGE": "pages",
+      "PER_WORD": "words",
+      "PER_CELL": "cells",
+      "PER_SECOND": "seconds"
+    },
+    "actions": {
+      "generateQuiz": {
+        "title": "Generate Quiz",
+        "description": "Credit charged when generating a quiz with AI, based on total question count.",
+        "baseCost": "Quiz setup fee",
+        "unitCost": "Cost per question",
+        "unitSize": "Questions per unit"
+      },
+      "generateFlashcards": {
+        "title": "Generate Flashcards",
+        "description": "Credit charged when generating flashcards with AI, based on total card count.",
+        "baseCost": "Flashcard set fee",
+        "unitCost": "Cost per card",
+        "unitSize": "Cards per unit"
+      },
+      "generateMockTest": {
+        "title": "Generate Mock Test",
+        "description": "Credit charged when generating a mock test with AI, based on total question count.",
+        "baseCost": "Mock test setup fee",
+        "unitCost": "Cost per question",
+        "unitSize": "Questions per unit"
+      },
+      "generateRoadmapQuiz": {
+        "title": "Generate Roadmap Quiz",
+        "description": "Credit charged when generating a roadmap knowledge quiz, based on question count.",
+        "baseCost": "Setup fee",
+        "unitCost": "Cost per question",
+        "unitSize": "Questions per unit"
+      },
+      "processPdf": {
+        "title": "Process PDF",
+        "description": "Credit charged for PDF processing, based on total page count.",
+        "baseCost": "Base fee per file",
+        "unitCost": "Cost per page",
+        "unitSize": "Pages per unit"
+      },
+      "processImage": {
+        "title": "Process Image",
+        "description": "Credit charged for image processing, fixed cost per upload.",
+        "baseCost": "Cost per image"
+      },
+      "processText": {
+        "title": "Process Text",
+        "description": "Credit charged for plain text processing, based on total word count.",
+        "baseCost": "Base fee per file",
+        "unitCost": "Cost per 1,000 words",
+        "unitSize": "Words per unit"
+      },
+      "processDocx": {
+        "title": "Process Word",
+        "description": "Credit charged for Word document processing, based on total word count.",
+        "baseCost": "Base fee per file",
+        "unitCost": "Cost per 1,000 words",
+        "unitSize": "Words per unit"
+      },
+      "processXlsx": {
+        "title": "Process Excel",
+        "description": "Credit charged for Excel processing, based on populated cell count.",
+        "baseCost": "Base fee per file",
+        "unitCost": "Cost per cell group",
+        "unitSize": "Cells per unit"
+      },
+      "processPptx": {
+        "title": "Process PowerPoint",
+        "description": "Credit charged for PowerPoint processing, based on slide count.",
+        "baseCost": "Base fee per file",
+        "unitCost": "Cost per slide",
+        "unitSize": "Slides per unit"
+      },
+      "processAudio": {
+        "title": "Process Audio",
+        "description": "Credit charged for audio processing, based on duration in seconds.",
+        "baseCost": "Base fee per file",
+        "unitCost": "Cost per minute",
+        "unitSize": "Seconds per unit"
+      },
+      "processVideo": {
+        "title": "Process Video",
+        "description": "Credit charged for video processing, based on duration in seconds.",
+        "baseCost": "Base fee per file",
+        "unitCost": "Cost per minute",
+        "unitSize": "Seconds per unit"
+      }
+    }
   },
   "dashboard": {
     "systemOverview": "System Overview",
@@ -3085,6 +3212,7 @@
       "processImage": "Image Processing",
       "processVideo": "Video Processing",
       "processAudio": "Audio Processing",
+      "canCreateRoadMap": "Roadmap Creation",
       "hasAiCompanionMode": "AI Companion Mode",
       "hasAiContentStructuring": "AI Content Structuring",
       "hasPersonalizedLearningAnalytic": "Personalized Learning Analytics",

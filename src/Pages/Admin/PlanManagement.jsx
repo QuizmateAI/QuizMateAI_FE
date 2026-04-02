@@ -5,7 +5,7 @@ import {
   Package, Check, X, Zap, Coins,
   ToggleLeft, ToggleRight, Users, User,
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
-  Presentation, Bot, BarChart3, AlignLeft,
+  Presentation, Bot, BarChart3, AlignLeft, Map,
   BookOpenText, SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -52,6 +52,7 @@ const EMPTY_ENTITLEMENT = {
   canBuyCredit: true,
   bonusCreditOnPlanPurchase: 0,
   hasAdvanceQuizConfig: false,
+  canCreateRoadMap: false,
   hasAiCompanionMode: false,
   hasWorkspaceAnalytics: false,
   hasAiSummaryAndTextReading: false,
@@ -68,6 +69,7 @@ const ENTITLEMENT_TOGGLES = {
   canProcessAudio:        { label: 'Audio',            icon: Headphones },
   canBuyCredit:           { label: 'Buy Credit',       icon: Coins },
   hasAdvanceQuizConfig:   { label: 'Advanced Quiz',    icon: SlidersHorizontal },
+  canCreateRoadMap:       { label: 'Create Roadmap',   icon: Map },
   hasAiCompanionMode:     { label: 'AI Companion',     icon: Bot },
   hasWorkspaceAnalytics:  { label: 'Analytics',        icon: BarChart3 },
   hasAiSummaryAndTextReading: { label: 'AI Summary',   icon: BookOpenText },
