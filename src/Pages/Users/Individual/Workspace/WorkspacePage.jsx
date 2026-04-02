@@ -1995,8 +1995,59 @@ function WorkspacePage() {
 	]);
 
 	const applyRecoveredActiveTaskSnapshot = useCallback((snapshot) => {
-		const hasActiveTask = Boolean(snapshot?.hasActiveTask);
-		const tasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
+		const snapshotTasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
+		const currentWorkspaceId = Number(workspaceId);
+		const currentRoadmapId = Number(roadmapAiRoadmapId);
+		const knownMaterialIds = new Set(
+			normalizePositiveIds((sources || []).map((item) => Number(item?.id))),
+		);
+
+		const tasks = snapshotTasks.filter((task) => {
+			const normalizedStatus = String(task?.status || "").toUpperCase();
+			if (normalizedStatus === "ROADMAP_MODERATION_DONE") {
+				return false;
+			}
+
+			const processingObject = (task?.processingObject && typeof task.processingObject === "object")
+				? task.processingObject
+				: {};
+
+			const taskWorkspaceId = Number(processingObject?.workspaceId ?? 0);
+			if (
+				Number.isInteger(taskWorkspaceId)
+				&& taskWorkspaceId > 0
+				&& Number.isInteger(currentWorkspaceId)
+				&& currentWorkspaceId > 0
+				&& taskWorkspaceId !== currentWorkspaceId
+			) {
+				return false;
+			}
+
+			const taskRoadmapId = Number(processingObject?.roadmapId ?? 0);
+			if (
+				Number.isInteger(taskRoadmapId)
+				&& taskRoadmapId > 0
+				&& Number.isInteger(currentRoadmapId)
+				&& currentRoadmapId > 0
+				&& taskRoadmapId !== currentRoadmapId
+			) {
+				return false;
+			}
+
+			const taskMaterialId = Number(processingObject?.materialId ?? 0);
+			if (
+				Number.isInteger(taskMaterialId)
+				&& taskMaterialId > 0
+				&& knownMaterialIds.size > 0
+				&& !knownMaterialIds.has(taskMaterialId)
+			) {
+				return false;
+			}
+
+			return true;
+		});
+
+		const hasActiveTask = Boolean(snapshot?.hasActiveTask) && tasks.length > 0;
 
 		if (!hasActiveTask || tasks.length === 0) {
 			clearPreLearningRequestGuard({ all: true });
@@ -2154,7 +2205,15 @@ function WorkspacePage() {
 		setGeneratingKnowledgePhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgePhaseIds)));
 		setGeneratingKnowledgeQuizPhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgeQuizPhaseIds)));
 		setGeneratingKnowledgeQuizKnowledgeKeys(Array.from(recoveredKnowledgeQuizKeys));
-	}, [bumpRoadmapReloadToken, clearPreLearningRequestGuard, fetchSources, progressTracking]);
+	}, [
+		bumpRoadmapReloadToken,
+		clearPreLearningRequestGuard,
+		fetchSources,
+		progressTracking,
+		roadmapAiRoadmapId,
+		sources,
+		workspaceId,
+	]);
 
 	// WebSocket nhận realtime update cho tài liệu và roadmap AI progress
 	const { isConnected: wsConnected, lastMessage: wsLastMessage } = useWebSocket({
@@ -2445,6 +2504,14 @@ function WorkspacePage() {
 				bumpRoadmapReloadToken();
 				return;
 			}
+
+				if (status === "ROADMAP_MODERATION_DONE") {
+					if (websocketTaskId) {
+						progressTracking.clearProgress('task', websocketTaskId);
+					}
+					void fetchSources();
+					return;
+				}
 
 			if (status === "ERROR") {
 				const phaseId = progressPhaseId;
