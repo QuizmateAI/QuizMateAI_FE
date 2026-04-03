@@ -822,6 +822,20 @@ export default function QuizResultPage() {
 
       setKnowledgeGenerationTriggered(true);
       showSuccess(t('workspace.quiz.result.generateKnowledgeSuccess', 'Đã gửi yêu cầu tạo knowledge cho phase này.'));
+      const normalizedWorkspaceId = Number(workspaceId);
+const normalizedPhaseId = Number(phaseId);
+if (
+Number.isInteger(normalizedWorkspaceId)
+&& normalizedWorkspaceId > 0
+&& Number.isInteger(normalizedPhaseId)
+&& normalizedPhaseId > 0
+) {
+navigate(`/workspace/${normalizedWorkspaceId}/roadmap?phaseId=${normalizedPhaseId}`, { replace: true });
+return;
+}
+
+handleBack();
+
     } catch (error) {
       unmarkPhaseContentGenerating(workspaceId, phaseId);
       console.error('Failed to generate roadmap phase content after pre-learning:', error);
@@ -835,6 +849,8 @@ export default function QuizResultPage() {
     knowledgeGenerationTriggered,
     preLearningGenerateDedupeKey,
     preLearningGenerationContext,
+    navigate,
+handleBack,
     showError,
     showSuccess,
     t,

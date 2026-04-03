@@ -37,6 +37,7 @@ import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/Utils/getErrorMessage";
 import { inferProcessingRoadmapGenerationIds } from "@/Pages/Users/Individual/Workspace/utils/roadmapProcessing";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import { normalizeRuntimeTaskSignal } from "@/lib/runtimeTaskSignal";
 
 const LazyRoadmapJourPanel = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/RoadmapJourPanel"));
 const LazyUploadSourceDialog = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog"));
@@ -315,11 +316,8 @@ function WorkspacePage() {
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
+	const [hasStudioManualPreference, setHasStudioManualPreference] = useState(false);
 	const [isMaterialDetailOpen, setIsMaterialDetailOpen] = useState(false);
-	const [isResizingPanels, setIsResizingPanels] = useState(false);
-	const [leftPanelWidth, setLeftPanelWidth] = useState(350);
-	const [rightPanelWidth, setRightPanelWidth] = useState(350);
-	const leftWidthBeforeMaterialDetailRef = useRef(null);
 	const workspaceLayoutRef = useRef(null);
 	const [workspaceLayoutWidth, setWorkspaceLayoutWidth] = useState(0);
 
@@ -435,55 +433,44 @@ function WorkspacePage() {
 
 	// Side-panel sizing constants
 	const COLLAPSED_WIDTH = 56;
-	const DEFAULT_SIDE_PANEL_WIDTH = 280;
-	const MIN_PANEL_PERCENT = 0.2;
-	const COLLAPSED_HANDLE_WIDTH = 8;
-	const EXPANDED_HANDLE_WIDTH = 16;
-	const dragStateRef = useRef(null);
+	const PANEL_GAP = 16;
+	const SOURCES_PANEL_MIN_WIDTH = 320;
+	const SOURCES_PANEL_DETAIL_WIDTH = 380;
+	const STUDIO_PANEL_MIN_WIDTH = 288;
+	const CHAT_PANEL_MIN_WIDTH = 760;
+	const CHAT_PANEL_COMFORT_WIDTH = 840;
 
-	const getScreenWidth = useCallback(() => {
-		if (typeof window !== "undefined" && Number(window.innerWidth) > 0) {
-			return window.innerWidth;
-		}
-		return workspaceLayoutWidth || 0;
-	}, [workspaceLayoutWidth]);
-
-	const getBaseMinPanelWidth = useCallback(() => {
-		const screenWidth = getScreenWidth();
-		if (!screenWidth) return 220;
-		return Math.max(220, Math.floor(screenWidth * MIN_PANEL_PERCENT));
-	}, [getScreenWidth]);
-
-	const getChatMinWidth = useCallback(() => {
-		const screenWidth = getScreenWidth();
-		if (!screenWidth) return 220;
-		return Math.max(220, Math.floor(screenWidth * MIN_PANEL_PERCENT));
-	}, [getScreenWidth]);
-
-	const getMaterialDetailMinWidth = useCallback(() => {
-		const baseMin = getBaseMinPanelWidth();
-		const roadmapJourActive = activeView === "roadmap"
-			|| (quizBackTarget?.view === "roadmap" && (activeView === "quizDetail" || activeView === "editQuiz"));
-		if (!isMaterialDetailOpen || isSourcesCollapsed || roadmapJourActive) return baseMin;
-		const viewportBasedMin = Math.floor((window?.innerWidth || 0) * 0.4);
-		return Math.max(baseMin, viewportBasedMin);
-	}, [activeView, getBaseMinPanelWidth, isMaterialDetailOpen, isSourcesCollapsed, quizBackTarget?.view]);
-
-	const effectiveLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : leftPanelWidth;
-	const effectiveRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : rightPanelWidth;
-
-	const getRequiredLayoutWidth = useCallback((sourcesCollapsed, studioCollapsed) => {
-		const currentLeftWidth = sourcesCollapsed ? COLLAPSED_WIDTH : leftPanelWidth;
-		const currentRightWidth = studioCollapsed ? COLLAPSED_WIDTH : rightPanelWidth;
-		const leftHandleWidth = sourcesCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
-		const rightHandleWidth = studioCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
-		return getChatMinWidth() + currentLeftWidth + currentRightWidth + leftHandleWidth + rightHandleWidth;
-	}, [getChatMinWidth, leftPanelWidth, rightPanelWidth]);
-
-	const minWidthForChatWithOneSidePanel = getRequiredLayoutWidth(false, true);
-	const shouldStackSidePanels = workspaceLayoutWidth > 0 && workspaceLayoutWidth < minWidthForChatWithOneSidePanel;
 	const isRoadmapJourActive = activeView === "roadmap"
 		|| (quizBackTarget?.view === "roadmap" && (activeView === "quizDetail" || activeView === "editQuiz"));
+	const shouldProtectSourcesSpace = isMaterialDetailOpen || isRoadmapJourActive;
+	const sourcesPanelTargetWidth = useMemo(() => (
+		shouldProtectSourcesSpace ? SOURCES_PANEL_DETAIL_WIDTH : SOURCES_PANEL_MIN_WIDTH
+	), [shouldProtectSourcesSpace]);
+	const bothExpandedHardMinLayoutWidth = sourcesPanelTargetWidth + STUDIO_PANEL_MIN_WIDTH + CHAT_PANEL_MIN_WIDTH + (PANEL_GAP * 2);
+	const bothExpandedPreferredLayoutWidth = sourcesPanelTargetWidth + STUDIO_PANEL_MIN_WIDTH + CHAT_PANEL_COMFORT_WIDTH + (PANEL_GAP * 2);
+	const sourcesPriorityMinLayoutWidth = sourcesPanelTargetWidth + COLLAPSED_WIDTH + CHAT_PANEL_MIN_WIDTH + (PANEL_GAP * 2);
+	const railsOnlyMinLayoutWidth = (COLLAPSED_WIDTH * 2) + CHAT_PANEL_MIN_WIDTH + (PANEL_GAP * 2);
+	const shouldStackSidePanels = workspaceLayoutWidth > 0
+		&& (
+			workspaceLayoutWidth < railsOnlyMinLayoutWidth
+			|| (shouldProtectSourcesSpace && workspaceLayoutWidth < sourcesPriorityMinLayoutWidth)
+		);
+	const shouldPreferStudioCollapse = !shouldStackSidePanels
+		&& workspaceLayoutWidth > 0
+		&& workspaceLayoutWidth < bothExpandedPreferredLayoutWidth;
+	const shouldForceStudioCollapse = !shouldStackSidePanels
+		&& workspaceLayoutWidth > 0
+		&& workspaceLayoutWidth < bothExpandedHardMinLayoutWidth;
+	const shouldForceSourcesCollapse = !shouldStackSidePanels
+		&& workspaceLayoutWidth > 0
+		&& workspaceLayoutWidth < sourcesPriorityMinLayoutWidth;
+	const effectiveSourcesCollapsed = !shouldStackSidePanels && (isSourcesCollapsed || shouldForceSourcesCollapse);
+	const effectiveStudioCollapsed = !shouldStackSidePanels && (
+		shouldForceStudioCollapse
+		|| (hasStudioManualPreference ? isStudioCollapsed : shouldPreferStudioCollapse)
+	);
+	const effectiveLeftWidth = effectiveSourcesCollapsed ? COLLAPSED_WIDTH : sourcesPanelTargetWidth;
+	const effectiveRightWidth = effectiveStudioCollapsed ? COLLAPSED_WIDTH : STUDIO_PANEL_MIN_WIDTH;
 	const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] = useState(false);
 	const isOnWorkspaceQuizRoute = useMemo(() => {
 		if (!workspaceId || !location.pathname) return false;
@@ -647,148 +634,18 @@ function WorkspacePage() {
 	]);
 
 	const handleToggleSourcesCollapse = useCallback(() => {
-		const nextSourcesCollapsed = !isSourcesCollapsed;
-
-		if (nextSourcesCollapsed) {
-			setIsSourcesCollapsed(true);
-			return;
-		}
-
-		setLeftPanelWidth((current) => Math.max(current || DEFAULT_SIDE_PANEL_WIDTH, getMaterialDetailMinWidth()));
-		setIsSourcesCollapsed(false);
-	}, [DEFAULT_SIDE_PANEL_WIDTH, getMaterialDetailMinWidth, isSourcesCollapsed]);
+		setIsSourcesCollapsed(effectiveSourcesCollapsed ? false : true);
+	}, [effectiveSourcesCollapsed]);
 
 	const handleToggleStudioCollapse = useCallback(() => {
-		const nextStudioCollapsed = !isStudioCollapsed;
-
-		if (nextStudioCollapsed) {
-			setIsStudioCollapsed(true);
-			return;
-		}
-
-		setRightPanelWidth((current) => Math.max(current || DEFAULT_SIDE_PANEL_WIDTH, getBaseMinPanelWidth()));
-		setIsStudioCollapsed(false);
-	}, [DEFAULT_SIDE_PANEL_WIDTH, getBaseMinPanelWidth, isStudioCollapsed]);
-
-	const handleStartResize = useCallback((side, event) => {
-		if (shouldStackSidePanels) return;
-		if (side === "left" && isSourcesCollapsed) return;
-		if (side === "right" && isStudioCollapsed) return;
-		if (!workspaceLayoutRef.current) return;
-
-		event.preventDefault();
-		setIsResizingPanels(true);
-		document.body.style.userSelect = "none";
-		document.body.style.cursor = "ew-resize";
-		dragStateRef.current = { side };
-	}, [isSourcesCollapsed, isStudioCollapsed, shouldStackSidePanels]);
-
-	useEffect(() => {
-		const handleMouseMove = (event) => {
-			if (!dragStateRef.current || !workspaceLayoutRef.current || workspaceLayoutWidth <= 0) return;
-
-			const rect = workspaceLayoutRef.current.getBoundingClientRect();
-			const leftHandleWidth = isSourcesCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
-			const rightHandleWidth = isStudioCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
-			const minChatWidth = getChatMinWidth();
-			const minSideWidth = getBaseMinPanelWidth();
-
-			if (dragStateRef.current.side === "left") {
-				const proposed = event.clientX - rect.left;
-				const minLeftWidth = getMaterialDetailMinWidth();
-				const fixedRightWidth = isStudioCollapsed ? COLLAPSED_WIDTH : Math.max(rightPanelWidth, minSideWidth);
-				const maxLeftWidth = Math.max(
-					minLeftWidth,
-					workspaceLayoutWidth - fixedRightWidth - minChatWidth - leftHandleWidth - rightHandleWidth
-				);
-				const clamped = Math.min(Math.max(proposed, minLeftWidth), maxLeftWidth);
-				setLeftPanelWidth(clamped);
-				return;
-			}
-
-			if (dragStateRef.current.side === "right") {
-				const proposed = rect.right - event.clientX;
-				const minRightWidth = minSideWidth;
-				const fixedLeftWidth = isSourcesCollapsed ? COLLAPSED_WIDTH : Math.max(leftPanelWidth, getMaterialDetailMinWidth());
-				const maxRightWidth = Math.max(
-					minRightWidth,
-					workspaceLayoutWidth - fixedLeftWidth - minChatWidth - leftHandleWidth - rightHandleWidth
-				);
-				const clamped = Math.min(Math.max(proposed, minRightWidth), maxRightWidth);
-				setRightPanelWidth(clamped);
-			}
-		};
-
-		const handleMouseUp = () => {
-			dragStateRef.current = null;
-			setIsResizingPanels(false);
-			document.body.style.userSelect = "";
-			document.body.style.cursor = "";
-		};
-
-		window.addEventListener("mousemove", handleMouseMove);
-		window.addEventListener("mouseup", handleMouseUp);
-
-		return () => {
-			window.removeEventListener("mousemove", handleMouseMove);
-			window.removeEventListener("mouseup", handleMouseUp);
-		};
-	}, [getBaseMinPanelWidth, getChatMinWidth, getMaterialDetailMinWidth, isSourcesCollapsed, isStudioCollapsed, leftPanelWidth, rightPanelWidth, workspaceLayoutWidth]);
-
-	useEffect(() => {
-		if (isSourcesCollapsed) return;
-		const minWidth = getMaterialDetailMinWidth();
-		setLeftPanelWidth((current) => Math.max(current, minWidth));
-	}, [getMaterialDetailMinWidth, isSourcesCollapsed, isMaterialDetailOpen]);
-
-	useEffect(() => {
-		const shouldApplyMaterialDetailMin = isMaterialDetailOpen && !isSourcesCollapsed && !isRoadmapJourActive;
-
-		if (shouldApplyMaterialDetailMin) {
-			if (leftWidthBeforeMaterialDetailRef.current == null) {
-				leftWidthBeforeMaterialDetailRef.current = leftPanelWidth;
-			}
-			setLeftPanelWidth((current) => Math.max(current, getMaterialDetailMinWidth()));
-			return;
-		}
-
-		if (leftWidthBeforeMaterialDetailRef.current != null) {
-			const restoredWidth = Math.max(getBaseMinPanelWidth(), leftWidthBeforeMaterialDetailRef.current);
-			setLeftPanelWidth(restoredWidth);
-			leftWidthBeforeMaterialDetailRef.current = null;
-		}
-	}, [getBaseMinPanelWidth, getMaterialDetailMinWidth, isMaterialDetailOpen, isRoadmapJourActive, isSourcesCollapsed, leftPanelWidth]);
+		setHasStudioManualPreference(true);
+		setIsStudioCollapsed(effectiveStudioCollapsed ? false : true);
+	}, [effectiveStudioCollapsed]);
 
 	useEffect(() => {
 		if (!isRoadmapJourActive) return;
 		setIsMaterialDetailOpen(false);
 	}, [isRoadmapJourActive]);
-
-	useEffect(() => {
-		if (!workspaceLayoutWidth) return;
-		const minSideWidth = getBaseMinPanelWidth();
-		const minChatWidth = getChatMinWidth();
-		const leftHandleWidth = isSourcesCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
-		const rightHandleWidth = isStudioCollapsed ? COLLAPSED_HANDLE_WIDTH : EXPANDED_HANDLE_WIDTH;
-
-		if (!isSourcesCollapsed) {
-			setLeftPanelWidth((current) => Math.max(current, getMaterialDetailMinWidth()));
-		}
-
-		if (!isStudioCollapsed) {
-			setRightPanelWidth((current) => Math.max(current, minSideWidth));
-		}
-
-		if (!isSourcesCollapsed && !isStudioCollapsed) {
-			const maxTotalSides = workspaceLayoutWidth - minChatWidth - leftHandleWidth - rightHandleWidth;
-			setLeftPanelWidth((currentLeft) => {
-				const safeLeft = Math.max(currentLeft, getMaterialDetailMinWidth());
-				const currentRight = Math.max(rightPanelWidth, minSideWidth);
-				if (safeLeft + currentRight <= maxTotalSides) return safeLeft;
-				return Math.max(getMaterialDetailMinWidth(), maxTotalSides - currentRight);
-			});
-		}
-	}, [getBaseMinPanelWidth, getChatMinWidth, getMaterialDetailMinWidth, isSourcesCollapsed, isStudioCollapsed, rightPanelWidth, workspaceLayoutWidth]);
 
 	useEffect(() => {
 		const container = workspaceLayoutRef.current;
@@ -1996,8 +1853,59 @@ function WorkspacePage() {
 	]);
 
 	const applyRecoveredActiveTaskSnapshot = useCallback((snapshot) => {
-		const hasActiveTask = Boolean(snapshot?.hasActiveTask);
-		const tasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
+		const snapshotTasks = Array.isArray(snapshot?.activeTasks) ? snapshot.activeTasks : [];
+		const currentWorkspaceId = Number(workspaceId);
+		const currentRoadmapId = Number(roadmapAiRoadmapId);
+		const knownMaterialIds = new Set(
+			normalizePositiveIds((sources || []).map((item) => Number(item?.id))),
+		);
+
+		const tasks = snapshotTasks.filter((task) => {
+			const normalizedStatus = String(task?.status || "").toUpperCase();
+			if (normalizedStatus === "ROADMAP_MODERATION_DONE") {
+				return false;
+			}
+
+			const processingObject = (task?.processingObject && typeof task.processingObject === "object")
+				? task.processingObject
+				: {};
+
+			const taskWorkspaceId = Number(processingObject?.workspaceId ?? 0);
+			if (
+				Number.isInteger(taskWorkspaceId)
+				&& taskWorkspaceId > 0
+				&& Number.isInteger(currentWorkspaceId)
+				&& currentWorkspaceId > 0
+				&& taskWorkspaceId !== currentWorkspaceId
+			) {
+				return false;
+			}
+
+			const taskRoadmapId = Number(processingObject?.roadmapId ?? 0);
+			if (
+				Number.isInteger(taskRoadmapId)
+				&& taskRoadmapId > 0
+				&& Number.isInteger(currentRoadmapId)
+				&& currentRoadmapId > 0
+				&& taskRoadmapId !== currentRoadmapId
+			) {
+				return false;
+			}
+
+			const taskMaterialId = Number(processingObject?.materialId ?? 0);
+			if (
+				Number.isInteger(taskMaterialId)
+				&& taskMaterialId > 0
+				&& knownMaterialIds.size > 0
+				&& !knownMaterialIds.has(taskMaterialId)
+			) {
+				return false;
+			}
+
+			return true;
+		});
+
+		const hasActiveTask = Boolean(snapshot?.hasActiveTask) && tasks.length > 0;
 
 		if (!hasActiveTask || tasks.length === 0) {
 			clearPreLearningRequestGuard({ all: true });
@@ -2029,36 +1937,17 @@ function WorkspacePage() {
 		const recoveredKnowledgeQuizKeys = new Set();
 
 		tasks.forEach((task) => {
-			const normalizedStatus = String(task?.status || "").toUpperCase();
-			const normalizedMessage = String(task?.message || "").toUpperCase();
-			const taskId = String(task?.taskId || "").trim();
-			const percent = clampPercent(task?.percent ?? 0);
-			const processingObject = (task?.processingObject && typeof task.processingObject === "object") ? task.processingObject : {};
-			const taskType = String(processingObject?.taskType || "").toUpperCase();
-			const progressQuizId = Number(processingObject?.quizId ?? 0);
-			const progressPhaseId = Number(processingObject?.phaseId ?? 0);
-			const progressKnowledgeId = Number(processingObject?.knowledgeId ?? 0);
-			const progressRoadmapId = Number(processingObject?.roadmapId ?? 0);
-			const hasValidQuizId = Number.isInteger(progressQuizId) && progressQuizId > 0;
-			const hasValidPhaseId = Number.isInteger(progressPhaseId) && progressPhaseId > 0;
-			const isGenericStatus = normalizedStatus === "PROCESSING" || normalizedStatus === "START";
-			const hasExplicitRoadmapPhaseSignal = normalizedStatus === "ROADMAP_PHASES_PROCESSING"
-				|| (isGenericStatus && taskType === "ROADMAP_PHASES");
-			const hasGenericRoadmapPhaseSignal = normalizedStatus === "PROCESSING"
-				&& !hasValidQuizId
-				&& !hasValidPhaseId
-				&& (
-					normalizedMessage.includes("PHASE")
-					|| normalizedMessage.includes("ROADMAP")
-					|| normalizedMessage.includes("NGU CANH PHASE")
-					|| normalizedMessage.includes("NGU CANH")
-				);
-			const isTaskStillProcessing = !(
-				normalizedStatus.includes("COMPLETED")
-				|| normalizedStatus.includes("ERROR")
-				|| normalizedStatus.includes("FAILED")
-				|| normalizedStatus.includes("CANCEL")
-			);
+			const signal = normalizeRuntimeTaskSignal(task, { source: "active-task" });
+			const normalizedStatus = signal.status;
+			const taskId = String(signal.taskId || "").trim();
+			const percent = clampPercent(signal.percent ?? 0);
+			const progressQuizId = Number(signal.quizId ?? 0);
+			const progressPhaseId = Number(signal.phaseId ?? 0);
+			const progressKnowledgeId = Number(signal.knowledgeId ?? 0);
+			const progressRoadmapId = Number(signal.roadmapId ?? 0);
+			const hasExplicitRoadmapPhaseSignal = signal.hasExplicitRoadmapPhaseSignal;
+			const hasGenericRoadmapPhaseSignal = signal.hasGenericRoadmapPhaseSignal;
+			const isTaskStillProcessing = signal.isTaskStillProcessing;
 
 			if (taskId) {
 				progressTracking.updateTaskProgress(taskId, percent);
@@ -2095,22 +1984,13 @@ function WorkspacePage() {
 				bumpRoadmapReloadToken();
 			}
 
-			const isPreLearningByStatus = normalizedStatus.includes("PRE_LEARNING");
-			const isPreLearningByTaskType = isGenericStatus && taskType === "ROADMAP_PRE_LEARNING";
-			const isPreLearning = isPreLearningByStatus || isPreLearningByTaskType;
+			const isPreLearningRecovered = signal.isPreLearningSignal;
+			const isPhaseContent = signal.isPhaseContentSignal;
+			const isKnowledgeQuiz = signal.isKnowledgeQuizSignal;
+			const isKnowledgeByStatus = signal.isKnowledgeSignal;
+			const isPostLearningByStatus = signal.isPostLearningSignal;
 
-			const isPhaseContentByStatus = normalizedStatus.includes("ROADMAP_PHASE_CONTENT");
-			const isPhaseContentByTaskType = isGenericStatus && taskType === "ROADMAP_PHASE_CONTENT";
-			const isPhaseContent = isPhaseContentByStatus || isPhaseContentByTaskType;
-
-			const isKnowledgeQuizByStatus = normalizedStatus.includes("KNOWLEDGE_QUIZ");
-			const isKnowledgeQuizByTaskType = isGenericStatus && taskType === "ROADMAP_KNOWLEDGE_QUIZ";
-			const isKnowledgeQuiz = isKnowledgeQuizByStatus || isKnowledgeQuizByTaskType;
-
-			const isKnowledgeByStatus = normalizedStatus.includes("KNOWLEDGE") && !isKnowledgeQuiz;
-			const isPostLearningByStatus = normalizedStatus.includes("POST_LEARNING");
-
-			if (isPreLearning && Number.isInteger(progressPhaseId) && progressPhaseId > 0 && percent > 0) {
+			if (isPreLearningRecovered && Number.isInteger(progressPhaseId) && progressPhaseId > 0 && percent > 0) {
 				progressTracking.updatePreLearningProgress(progressPhaseId, percent);
 			}
 
@@ -2129,7 +2009,7 @@ function WorkspacePage() {
 				return;
 			}
 
-			if (isPreLearning && Number.isInteger(progressPhaseId) && progressPhaseId > 0) {
+			if (isPreLearningRecovered && Number.isInteger(progressPhaseId) && progressPhaseId > 0) {
 				recoveredPreLearningPhaseIds.add(progressPhaseId);
 			}
 
@@ -2155,7 +2035,15 @@ function WorkspacePage() {
 		setGeneratingKnowledgePhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgePhaseIds)));
 		setGeneratingKnowledgeQuizPhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgeQuizPhaseIds)));
 		setGeneratingKnowledgeQuizKnowledgeKeys(Array.from(recoveredKnowledgeQuizKeys));
-	}, [bumpRoadmapReloadToken, clearPreLearningRequestGuard, fetchSources, progressTracking]);
+	}, [
+		bumpRoadmapReloadToken,
+		clearPreLearningRequestGuard,
+		fetchSources,
+		progressTracking,
+		roadmapAiRoadmapId,
+		sources,
+		workspaceId,
+	]);
 
 	// WebSocket nhận realtime update cho tài liệu và roadmap AI progress
 	const { isConnected: wsConnected, lastMessage: wsLastMessage } = useWebSocket({
@@ -2172,49 +2060,15 @@ function WorkspacePage() {
 			fetchSources();
 		},
 		onProgress: (progress) => {
-			const status = String(progress?.status || "").toUpperCase();
-			const progressData = (progress?.data && typeof progress.data === "object")
-				? progress.data
-				: (progress || {});
-			const progressPhaseId = Number(
-				progressData?.phaseId
-				?? progressData?.phase_id
-				?? progress?.phaseId
-				?? progress?.phase_id
-			);
-			const progressRoadmapId = Number(
-				progressData?.roadmapId
-				?? progressData?.roadmap_id
-				?? progress?.roadmapId
-				?? progress?.roadmap_id
-			);
-			const progressPercent = clampPercent(
-				progress?.percent
-				?? progress?.progressPercent
-				?? progressData?.percent
-				?? progressData?.progressPercent
-				?? 0
-			);
-			const websocketTaskId = progress?.websocketTaskId ?? progress?.taskId;
-			const materialId = Number(progress?.materialId ?? progress?.material_id ?? 0);
-			const progressQuizId = Number(
-				progressData?.quizId
-				?? progressData?.quiz_id
-				?? progress?.quizId
-				?? progress?.quiz_id
-				?? 0
-			);
-			const progressStep = String(progress?.step ?? progressData?.step ?? "").toUpperCase();
-			const progressMessage = String(progress?.message ?? progressData?.message ?? "").toUpperCase();
-			const isQuizSignal = Number.isInteger(progressQuizId) && progressQuizId > 0
-				|| (
-					!status.startsWith("ROADMAP_")
-					&& (
-						status.includes("QUIZ")
-						|| progressStep.includes("QUIZ")
-						|| progressMessage.includes("QUIZ")
-					)
-				);
+			const signal = normalizeRuntimeTaskSignal(progress, { source: "websocket" });
+			const status = String(signal.status || "").toUpperCase();
+			const progressPhaseId = Number(signal.phaseId ?? 0);
+			const progressRoadmapId = Number(signal.roadmapId ?? 0);
+			const progressPercent = clampPercent(signal.percent ?? 0);
+			const websocketTaskId = signal.taskId;
+			const materialId = Number(signal.materialId ?? 0);
+			const progressQuizId = Number(signal.quizId ?? 0);
+			const isQuizSignal = signal.isQuizSignal;
 
 			// Cập nhật progress tracking cho task và material
 			if (websocketTaskId) {
@@ -2245,15 +2099,10 @@ function WorkspacePage() {
 				});
 			}
 			if (progressPercent > 0) {
-				const isPreLearningSignal = status.includes("PRE_LEARNING")
-					|| progressStep.includes("PRE_LEARNING")
-					|| progressMessage.includes("PRE-LEARNING")
-					|| progressMessage.includes("PRE LEARNING");
-				const isKnowledgeSignal = status.includes("KNOWLEDGE") || progressStep.includes("KNOWLEDGE");
-				const isKnowledgeQuizSignal = status.includes("KNOWLEDGE_QUIZ")
-					|| progressStep.includes("GENERATING")
-					|| progressMessage.includes("QUIZ");
-				const isPostLearningSignal = status.includes("POST_LEARNING") || progressStep.includes("POST_LEARNING");
+				const isPreLearningSignal = signal.isPreLearningSignal;
+				const isKnowledgeSignal = signal.isKnowledgeSignal;
+				const isKnowledgeQuizSignal = signal.isKnowledgeQuizSignal;
+				const isPostLearningSignal = signal.isPostLearningSignal;
 
 				let inferredPhaseId = progressPhaseId;
 				if ((!Number.isInteger(inferredPhaseId) || inferredPhaseId <= 0)
@@ -2446,6 +2295,14 @@ function WorkspacePage() {
 				bumpRoadmapReloadToken();
 				return;
 			}
+
+				if (status === "ROADMAP_MODERATION_DONE") {
+					if (websocketTaskId) {
+						progressTracking.clearProgress('task', websocketTaskId);
+					}
+					void fetchSources();
+					return;
+				}
 
 			if (status === "ERROR") {
 				const phaseId = progressPhaseId;
@@ -3459,11 +3316,11 @@ function WorkspacePage() {
 							</div>
 						</div>
 					) : (
-						<div className="flex h-full">
+						<div className="flex h-full gap-4">
 							{/* Source panel (left) */}
 							<div
 								style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
-								className={`shrink-0 h-full ${isResizingPanels ? "transition-none" : "transition-[width,min-width] duration-300 ease-in-out"}`}
+								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
 							>
 								<div className="relative h-full overflow-hidden">
 									<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
@@ -3473,14 +3330,14 @@ function WorkspacePage() {
 											onAddSource={handleUploadClickSafe}
 											onRemoveSource={handleRemoveSource}
 											onRemoveMultiple={handleRemoveMultipleSources}
-												selectedIds={selectedSourceIds}
+											selectedIds={selectedSourceIds}
 											onSelectionChange={setSelectedSourceIds}
 											onSourceUpdated={(updatedSource) => {
 												setSources((prev) => prev.map((item) => item.id === updatedSource.id ? { ...item, ...updatedSource } : item));
 											}}
 											onDetailViewChange={setIsMaterialDetailOpen}
 											forceCloseDetail={isRoadmapJourActive}
-											isCollapsed={isSourcesCollapsed}
+											isCollapsed={effectiveSourcesCollapsed}
 											onToggleCollapse={handleToggleSourcesCollapse}
 											progressTracking={progressTracking}
 										/>
@@ -3501,7 +3358,7 @@ function WorkspacePage() {
 													generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
 													generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
 													generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
-													isCollapsed={isSourcesCollapsed}
+													isCollapsed={effectiveSourcesCollapsed}
 													onToggleCollapse={handleToggleSourcesCollapse}
 												/>
 											</DeferredWorkspacePanel>
@@ -3577,7 +3434,6 @@ function WorkspacePage() {
 									quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
 								/>
 							</div>
-
 							{/* Right resize handle */}
 							<div
 								onMouseDown={(event) => handleStartResize("right", event)}
@@ -3591,13 +3447,13 @@ function WorkspacePage() {
 							{/* Studio panel (right) */}
 							<div
 								style={{ width: effectiveRightWidth, minWidth: effectiveRightWidth }}
-								className={`shrink-0 h-full ${isResizingPanels ? "transition-none" : "transition-[width,min-width] duration-300 ease-in-out"}`}
+								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
 							>
 								<StudioPanel
 									isDarkMode={isDarkMode}
 									onAction={handleStudioAction}
 									accessHistory={accessHistory}
-									isCollapsed={isStudioCollapsed}
+									isCollapsed={effectiveStudioCollapsed}
 									onToggleCollapse={handleToggleStudioCollapse}
 									activeView={activeView}
 									shouldDisableQuiz={shouldDisableQuiz}
