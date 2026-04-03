@@ -73,7 +73,7 @@ export const getSuggestedResources = async (workspaceId, page = 0, size = 15) =>
 };
 
 // Goi AI de de xuat tai lieu hoc tap theo profile workspace
-export const suggestResourcesByWorkspace = async ({ workspaceId, limit = 5 }) => {
+export const suggestResourcesByWorkspace = async ({ workspaceId, limit = 10 }) => {
   const response = await api.post('/ai/resources:suggest', {
     workspaceId: Number(workspaceId),
     limit,

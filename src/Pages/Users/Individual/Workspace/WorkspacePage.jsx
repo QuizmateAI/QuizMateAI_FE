@@ -469,6 +469,9 @@ function WorkspacePage() {
 		shouldForceStudioCollapse
 		|| (hasStudioManualPreference ? isStudioCollapsed : shouldPreferStudioCollapse)
 	);
+	const getChatMinWidth = useCallback(() => {
+		return CHAT_PANEL_MIN_WIDTH;
+	}, []);
 	const effectiveLeftWidth = effectiveSourcesCollapsed ? COLLAPSED_WIDTH : sourcesPanelTargetWidth;
 	const effectiveRightWidth = effectiveStudioCollapsed ? COLLAPSED_WIDTH : STUDIO_PANEL_MIN_WIDTH;
 	const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] = useState(false);
@@ -3195,7 +3198,7 @@ function WorkspacePage() {
 				<div ref={workspaceLayoutRef} className="max-w-[1740px] mx-auto px-4 py-4 h-full">
 					{/* Layout workspace: bình thường là 3 cột, màn hình quá nhỏ thì đưa sources + studio xuống dưới */}
 					{shouldStackSidePanels ? (
-						<div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-4">
+						<div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-2">
 							<div className="min-h-0">
 								<ChatPanel
 									isDarkMode={isDarkMode}
@@ -3252,7 +3255,7 @@ function WorkspacePage() {
 								/>
 							</div>
 
-							<div className="grid min-h-0 grid-cols-2 gap-4">
+							<div className="grid min-h-0 grid-cols-2 gap-2">
 								<div className="min-w-0 min-h-0">
 									<div className="relative h-full overflow-hidden">
 										<div className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
@@ -3316,7 +3319,7 @@ function WorkspacePage() {
 							</div>
 						</div>
 					) : (
-						<div className="flex h-full gap-4">
+						<div className="flex h-full gap-1">
 							{/* Source panel (left) */}
 							<div
 								style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
@@ -3369,8 +3372,7 @@ function WorkspacePage() {
 
 							{/* Left resize handle */}
 							<div
-								onMouseDown={(event) => handleStartResize("left", event)}
-								className={`shrink-0 flex items-center justify-center ${isResizingPanels ? "transition-none" : "transition-all duration-300 ease-in-out"} ${isSourcesCollapsed ? "w-2" : "w-4"} ${isSourcesCollapsed ? "cursor-default" : "cursor-ew-resize"}`}
+								className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${isSourcesCollapsed ? "w-2" : "w-4"} cursor-default`}
 							>
 								{!isSourcesCollapsed && (
 									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
@@ -3436,8 +3438,7 @@ function WorkspacePage() {
 							</div>
 							{/* Right resize handle */}
 							<div
-								onMouseDown={(event) => handleStartResize("right", event)}
-								className={`shrink-0 flex items-center justify-center ${isResizingPanels ? "transition-none" : "transition-all duration-300 ease-in-out"} ${isStudioCollapsed ? "w-2" : "w-4"} ${isStudioCollapsed ? "cursor-default" : "cursor-ew-resize"}`}
+								className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${isStudioCollapsed ? "w-2" : "w-4"} cursor-default`}
 							>
 								{!isStudioCollapsed && (
 									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
