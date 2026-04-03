@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   generateAIQuiz,
+  previewAIQuizStructure,
   getBloomSkills,
   getDifficultyDefinitions,
   getQuestionTypes,
@@ -32,6 +33,94 @@ import {
 const formatPreviewValue = (value) => {
   const rounded = Math.round((Number(value) || 0) * 100) / 100;
   return Number(rounded.toFixed(2)).toString();
+};
+
+const STRUCTURE_DIFFICULTY_OPTIONS = ["EASY", "MEDIUM", "HARD"];
+
+const normalizeStructureItems = (items) => (
+  (Array.isArray(items) ? items : []).map((item) => ({
+    difficulty: String(item?.difficulty || "MEDIUM").toUpperCase(),
+    questionType: String(item?.questionType || "SINGLE_CHOICE").toUpperCase(),
+    bloomSkill: String(item?.bloomSkill || "REMEMBER").toUpperCase(),
+    quantity: Math.max(1, Math.round(Number(item?.quantity) || 1)),
+  }))
+);
+
+const parseStructureJsonItems = (structureJson) => {
+  if (!structureJson) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(structureJson);
+    return normalizeStructureItems(parsed?.items);
+  } catch (error) {
+    console.error("Failed to parse structureJson:", error);
+    return [];
+  }
+};
+
+const toPercentRatios = (entries, total) => {
+  if (!entries.length || total <= 0) {
+    return entries.map(([key]) => ({ key, ratio: 0 }));
+  }
+
+  const mapped = entries.map(([key, value]) => ({
+    key,
+    ratio: Math.round(((value / total) * 100) * 100) / 100,
+  }));
+
+  const assigned = mapped.reduce((sum, item) => sum + item.ratio, 0);
+  const delta = Math.round((100 - assigned) * 100) / 100;
+  if (mapped.length > 0 && delta !== 0) {
+    mapped[mapped.length - 1].ratio = Math.max(0, Math.round((mapped[mapped.length - 1].ratio + delta) * 100) / 100);
+  }
+
+  return mapped;
+};
+
+const serializeStructureConfigPayload = (payload) => {
+  if (!payload) {
+    return "";
+  }
+
+  const normalizedQuestionTypes = (Array.isArray(payload.questionTypes) ? payload.questionTypes : [])
+    .map((item) => ({
+      questionTypeId: Number(item?.questionTypeId),
+      ratio: Number(item?.ratio) || 0,
+    }))
+    .filter((item) => Number.isFinite(item.questionTypeId))
+    .sort((left, right) => left.questionTypeId - right.questionTypeId);
+
+  const normalizedBloomSkills = (Array.isArray(payload.bloomSkills) ? payload.bloomSkills : [])
+    .map((item) => ({
+      bloomId: Number(item?.bloomId),
+      ratio: Number(item?.ratio) || 0,
+    }))
+    .filter((item) => Number.isFinite(item.bloomId))
+    .sort((left, right) => left.bloomId - right.bloomId);
+
+  return JSON.stringify({
+    totalQuestion: Number(payload.totalQuestion) || 0,
+    questionTypeUnit: Boolean(payload.questionTypeUnit),
+    bloomUnit: Boolean(payload.bloomUnit),
+    questionUnit: Boolean(payload.questionUnit),
+    easyRatio: Number(payload.easyRatio) || 0,
+    mediumRatio: Number(payload.mediumRatio) || 0,
+    hardRatio: Number(payload.hardRatio) || 0,
+    questionTypes: normalizedQuestionTypes,
+    bloomSkills: normalizedBloomSkills,
+  });
+};
+
+const normalizeStructurePreviewResponse = (response) => {
+  const payload = response?.data ?? response ?? {};
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  return {
+    totalQuestion: Number(payload?.totalQuestion) || 0,
+    structureJson: String(payload?.structureJson || ""),
+    items,
+  };
 };
 
 export const useCreateQuizAiForm = ({
@@ -73,6 +162,15 @@ export const useCreateQuizAiForm = ({
   const [questionUnit, setQuestionUnit] = useState(false);
   const [metadataLoading, setMetadataLoading] = useState(false);
   const [metadataError, setMetadataError] = useState("");
+  const [structurePreview, setStructurePreview] = useState(null);
+  const [structurePreviewLoading, setStructurePreviewLoading] = useState(false);
+  const [structurePreviewError, setStructurePreviewError] = useState("");
+  const [structureConfigSignature, setStructureConfigSignature] = useState("");
+  const [isStructureEditing, setIsStructureEditing] = useState(false);
+  const [editableStructureItems, setEditableStructureItems] = useState([]);
+  const structurePreviewSnapshotRef = useRef(null);
+  const structureConfigSnapshotRef = useRef(null);
+  const structureConfigSignatureSnapshotRef = useRef("");
 
   const prevDifficultyUnitRef = useRef(questionUnit);
   const prevQuestionTypeUnitRef = useRef(questionTypeUnit);
@@ -458,6 +556,17 @@ export const useCreateQuizAiForm = ({
     t,
   ]);
 
+  const canFetchStructurePreview = useMemo(() => {
+    const previewBlockingFields = [
+      "aiTotalQuestions",
+      "aiDifficulty",
+      "selectedQTypes",
+      "selectedBloomSkills",
+    ];
+
+    return previewBlockingFields.every((fieldKey) => !aiValidationState.fieldErrors[fieldKey]);
+  }, [aiValidationState.fieldErrors]);
+
   useEffect(() => {
     latestErrorRef.current = error;
   }, [error]);
@@ -768,6 +877,382 @@ export const useCreateQuizAiForm = ({
     });
   }, [bloomUnit, getTargetTotal]);
 
+  const applyStructureItemsToConfig = useCallback((items) => {
+    const normalizedItems = normalizeStructureItems(items);
+    const totalQuestion = normalizedItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const safeTotal = Math.max(1, totalQuestion);
+
+    const difficultyCounts = normalizedItems.reduce((accumulator, item) => {
+      const key = String(item?.difficulty || "").toUpperCase();
+      if (!accumulator[key]) {
+        accumulator[key] = 0;
+      }
+      accumulator[key] += Number(item.quantity) || 0;
+      return accumulator;
+    }, {});
+
+    const difficultyPercentEntries = toPercentRatios([
+      ["EASY", difficultyCounts.EASY || 0],
+      ["MEDIUM", difficultyCounts.MEDIUM || 0],
+      ["HARD", difficultyCounts.HARD || 0],
+    ], safeTotal);
+
+    const toDifficultyValue = (key) => {
+      const matched = difficultyPercentEntries.find((entry) => entry.key === key);
+      return matched ? matched.ratio : 0;
+    };
+
+    setSelectedDifficultyId("CUSTOM");
+    setQuestionUnit(false);
+    setLockedDifficultyLevel(null);
+    setCustomDifficulty({
+      easy: toDifficultyValue("EASY"),
+      medium: toDifficultyValue("MEDIUM"),
+      hard: toDifficultyValue("HARD"),
+    });
+
+    const qTypeCountMap = normalizedItems.reduce((accumulator, item) => {
+      const typeKey = String(item?.questionType || "").toUpperCase();
+      accumulator[typeKey] = (accumulator[typeKey] || 0) + (Number(item.quantity) || 0);
+      return accumulator;
+    }, {});
+
+    const bloomCountMap = normalizedItems.reduce((accumulator, item) => {
+      const bloomKey = String(item?.bloomSkill || "").toUpperCase();
+      accumulator[bloomKey] = (accumulator[bloomKey] || 0) + (Number(item.quantity) || 0);
+      return accumulator;
+    }, {});
+
+    const qTypeEntries = Object.entries(qTypeCountMap)
+      .filter(([, count]) => Number(count) > 0)
+      .map(([typeName, count]) => {
+        const matchedType = qTypes.find(
+          (item) => String(item?.questionType || "").toUpperCase() === typeName
+        );
+        if (!matchedType?.questionTypeId) {
+          return null;
+        }
+
+        return {
+          questionTypeId: matchedType.questionTypeId,
+          count: Number(count) || 0,
+        };
+      })
+      .filter(Boolean);
+
+    const bloomEntries = Object.entries(bloomCountMap)
+      .filter(([, count]) => Number(count) > 0)
+      .map(([bloomName, count]) => {
+        const matchedBloom = bloomSkills.find(
+          (item) => String(item?.bloomName || "").toUpperCase() === bloomName
+        );
+        if (!matchedBloom?.bloomId) {
+          return null;
+        }
+
+        return {
+          bloomId: matchedBloom.bloomId,
+          count: Number(count) || 0,
+        };
+      })
+      .filter(Boolean);
+
+    const qTypeRatios = questionTypeUnit
+      ? qTypeEntries.map((entry) => ({ ...entry, ratio: entry.count }))
+      : toPercentRatios(
+        qTypeEntries.map((entry) => [entry.questionTypeId, entry.count]),
+        safeTotal
+      ).map((entry) => ({
+        questionTypeId: entry.key,
+        ratio: entry.ratio,
+      }));
+
+    const bloomRatios = bloomUnit
+      ? bloomEntries.map((entry) => ({ ...entry, ratio: entry.count }))
+      : toPercentRatios(
+        bloomEntries.map((entry) => [entry.bloomId, entry.count]),
+        safeTotal
+      ).map((entry) => ({
+        bloomId: entry.key,
+        ratio: entry.ratio,
+      }));
+
+    setSelectedQTypes(qTypeRatios.map((entry) => ({
+      questionTypeId: entry.questionTypeId,
+      ratio: Number(entry.ratio) || 0,
+      isLocked: true,
+    })));
+
+    setSelectedBloomSkills(bloomRatios.map((entry) => ({
+      bloomId: entry.bloomId,
+      ratio: Number(entry.ratio) || 0,
+      isLocked: true,
+    })));
+  }, [bloomSkills, bloomUnit, qTypes, questionTypeUnit]);
+
+  const buildStructurePreviewPayload = useCallback(() => ({
+    totalQuestion: Number(aiTotalQuestions) || 0,
+    questionTypeUnit,
+    bloomUnit,
+    questionUnit,
+    easyRatio: Number(difficultyRatios.easy) || 0,
+    mediumRatio: Number(difficultyRatios.medium) || 0,
+    hardRatio: Number(difficultyRatios.hard) || 0,
+    questionTypes: selectedQTypes.map((item) => ({
+      questionTypeId: item.questionTypeId,
+      ratio: Number(item.ratio) || 0,
+    })),
+    bloomSkills: selectedBloomSkills.map((item) => ({
+      bloomId: item.bloomId,
+      ratio: Number(item.ratio) || 0,
+    })),
+  }), [
+    aiTotalQuestions,
+    bloomUnit,
+    difficultyRatios.easy,
+    difficultyRatios.hard,
+    difficultyRatios.medium,
+    questionTypeUnit,
+    questionUnit,
+    selectedBloomSkills,
+    selectedQTypes,
+  ]);
+
+  const currentStructureConfigSignature = useMemo(
+    () => serializeStructureConfigPayload(buildStructurePreviewPayload()),
+    [buildStructurePreviewPayload]
+  );
+
+  const isStructureOutdated = useMemo(() => {
+    if (!structurePreview?.structureJson) {
+      return false;
+    }
+
+    if (isStructureEditing) {
+      return false;
+    }
+
+    if (!structureConfigSignature) {
+      return false;
+    }
+
+    return structureConfigSignature !== currentStructureConfigSignature;
+  }, [
+    currentStructureConfigSignature,
+    isStructureEditing,
+    structureConfigSignature,
+    structurePreview?.structureJson,
+  ]);
+
+  const handlePreviewStructure = useCallback(async () => {
+    setStructurePreviewError("");
+    setStructurePreviewLoading(true);
+
+    try {
+      const previewPayload = buildStructurePreviewPayload();
+      const nextSignature = serializeStructureConfigPayload(previewPayload);
+      const response = await previewAIQuizStructure(previewPayload);
+      const normalizedPreview = normalizeStructurePreviewResponse(response);
+      console.log("[AI Quiz][Structure Preview] structureJson:", normalizedPreview.structureJson);
+      setStructurePreview(normalizedPreview);
+      setStructureConfigSignature(nextSignature);
+      return normalizedPreview;
+    } catch (previewError) {
+      console.error("Failed to preview AI quiz structure:", previewError);
+      setStructurePreview(null);
+      setStructurePreviewError(previewError?.message || t("workspace.quiz.aiConfig.structurePreviewFailed"));
+      return null;
+    } finally {
+      setStructurePreviewLoading(false);
+    }
+  }, [buildStructurePreviewPayload, t]);
+
+  const handleStartStructureEdit = useCallback(async () => {
+    let preview = structurePreview;
+    if (!preview?.structureJson) {
+      preview = await handlePreviewStructure();
+    }
+
+    if (!preview) {
+      return;
+    }
+
+    const parsedItems = parseStructureJsonItems(preview.structureJson);
+    const fallbackItems = normalizeStructureItems(preview.items);
+    const nextItems = parsedItems.length > 0 ? parsedItems : fallbackItems;
+
+    structurePreviewSnapshotRef.current = preview;
+    structureConfigSignatureSnapshotRef.current = structureConfigSignature;
+    structureConfigSnapshotRef.current = {
+      aiTotalQuestions,
+      selectedDifficultyId,
+      questionUnit,
+      lockedDifficultyLevel,
+      customDifficulty,
+      selectedQTypes,
+      selectedBloomSkills,
+    };
+    setEditableStructureItems(nextItems);
+    setIsStructureEditing(true);
+    applyStructureItemsToConfig(nextItems);
+  }, [
+    aiTotalQuestions,
+    applyStructureItemsToConfig,
+    customDifficulty,
+    handlePreviewStructure,
+    lockedDifficultyLevel,
+    questionUnit,
+    selectedBloomSkills,
+    selectedDifficultyId,
+    selectedQTypes,
+    structurePreview,
+  ]);
+
+  const updateStructureFromEditableItems = useCallback((nextItems) => {
+    const normalizedItems = normalizeStructureItems(nextItems);
+    const totalQuestion = normalizedItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+    const nextStructureJson = JSON.stringify({ items: normalizedItems });
+
+    setEditableStructureItems(normalizedItems);
+    setStructurePreview((previousPreview) => {
+      if (!previousPreview) {
+        return previousPreview;
+      }
+
+      return {
+        ...previousPreview,
+        structureJson: nextStructureJson,
+        totalQuestion,
+      };
+    });
+
+    applyStructureItemsToConfig(normalizedItems);
+  }, [applyStructureItemsToConfig]);
+
+  const handleStructureItemChange = useCallback((index, field, value) => {
+    if (!Array.isArray(editableStructureItems) || index < 0 || index >= editableStructureItems.length) {
+      return;
+    }
+
+    const nextItems = editableStructureItems.map((item, itemIndex) => {
+      if (itemIndex !== index) {
+        return item;
+      }
+
+      if (field === "quantity") {
+        return {
+          ...item,
+          quantity: Math.max(1, Math.round(Number(value) || 1)),
+        };
+      }
+
+      return {
+        ...item,
+        [field]: String(value || "").toUpperCase(),
+      };
+    });
+
+    updateStructureFromEditableItems(nextItems);
+  }, [editableStructureItems, updateStructureFromEditableItems]);
+
+  const handleAddStructureItem = useCallback(() => {
+    const currentTotal = (Array.isArray(editableStructureItems) ? editableStructureItems : [])
+      .reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
+    const targetTotal = Math.max(0, Number(aiTotalQuestions) || 0);
+
+    if (targetTotal > 0 && currentTotal >= targetTotal) {
+      return;
+    }
+
+    const nextItems = [
+      {
+        difficulty: "EASY",
+        questionType: "SINGLE_CHOICE",
+        bloomSkill: "REMEMBER",
+        quantity: 1,
+      },
+      ...(Array.isArray(editableStructureItems) ? editableStructureItems : []),
+    ];
+
+    updateStructureFromEditableItems(nextItems);
+  }, [aiTotalQuestions, editableStructureItems, updateStructureFromEditableItems]);
+
+  const handleRemoveStructureItem = useCallback((index) => {
+    if (!Array.isArray(editableStructureItems) || editableStructureItems.length <= 1) {
+      return;
+    }
+
+    if (index < 0 || index >= editableStructureItems.length) {
+      return;
+    }
+
+    const nextItems = editableStructureItems.filter((_, itemIndex) => itemIndex !== index);
+    updateStructureFromEditableItems(nextItems);
+  }, [editableStructureItems, updateStructureFromEditableItems]);
+
+  const handleMoveStructureItem = useCallback((fromIndex, toIndex) => {
+    if (!Array.isArray(editableStructureItems) || editableStructureItems.length === 0) {
+      return;
+    }
+
+    const normalizedFromIndex = Number(fromIndex);
+    const normalizedToIndex = Number(toIndex);
+
+    if (!Number.isInteger(normalizedFromIndex) || !Number.isInteger(normalizedToIndex)) {
+      return;
+    }
+
+    if (normalizedFromIndex < 0 || normalizedToIndex < 0) {
+      return;
+    }
+
+    if (normalizedFromIndex >= editableStructureItems.length || normalizedToIndex >= editableStructureItems.length) {
+      return;
+    }
+
+    if (normalizedFromIndex === normalizedToIndex) {
+      return;
+    }
+
+    const nextItems = [...editableStructureItems];
+    const [movedItem] = nextItems.splice(normalizedFromIndex, 1);
+    nextItems.splice(normalizedToIndex, 0, movedItem);
+
+    updateStructureFromEditableItems(nextItems);
+  }, [editableStructureItems, updateStructureFromEditableItems]);
+
+  const handleCancelStructureEdit = useCallback(() => {
+    if (!isStructureEditing) {
+      return;
+    }
+
+    const snapshot = structurePreviewSnapshotRef.current;
+    if (snapshot) {
+      setStructurePreview(snapshot);
+      setStructurePreviewError("");
+    }
+
+    if (structureConfigSignatureSnapshotRef.current) {
+      setStructureConfigSignature(structureConfigSignatureSnapshotRef.current);
+    }
+
+    const configSnapshot = structureConfigSnapshotRef.current;
+    if (configSnapshot) {
+      setAiTotalQuestions(configSnapshot.aiTotalQuestions);
+      setSelectedDifficultyId(configSnapshot.selectedDifficultyId);
+      setQuestionUnit(configSnapshot.questionUnit);
+      setLockedDifficultyLevel(configSnapshot.lockedDifficultyLevel);
+      setCustomDifficulty(configSnapshot.customDifficulty);
+      setSelectedQTypes(configSnapshot.selectedQTypes);
+      setSelectedBloomSkills(configSnapshot.selectedBloomSkills);
+    } else if (snapshot?.items) {
+      applyStructureItemsToConfig(snapshot.items);
+    }
+
+    setEditableStructureItems([]);
+    setIsStructureEditing(false);
+  }, [applyStructureItemsToConfig, isStructureEditing]);
+
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     setError("");
@@ -781,6 +1266,14 @@ export const useCreateQuizAiForm = ({
         }
         return;
       }
+
+      let structureJson = String(structurePreview?.structureJson || "");
+      if (!structureJson) {
+        const previewResult = await handlePreviewStructure();
+        structureJson = String(previewResult?.structureJson || "");
+      }
+
+      console.log("[AI Quiz][Generate] structureJson:", structureJson);
 
       const payload = {
         title: String(aiName || "").trim(),
@@ -796,6 +1289,7 @@ export const useCreateQuizAiForm = ({
         workspaceId: defaultContextId,
         totalQuestion: aiTotalQuestions,
         prompt: aiPrompt,
+        structure: structureJson,
         outputLanguage: i18nLanguage === "vi" ? "Vietnamese" : "English",
         questionTypeUnit,
         questionTypes: selectedQTypes.map((item) => ({
@@ -840,6 +1334,7 @@ export const useCreateQuizAiForm = ({
     aiTotalQuestions,
     aiValidationState,
     bloomUnit,
+    handlePreviewStructure,
     defaultContextId,
     difficultyRatios.easy,
     difficultyRatios.hard,
@@ -854,6 +1349,7 @@ export const useCreateQuizAiForm = ({
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
+    structurePreview?.structureJson,
     t,
   ]);
 
@@ -896,6 +1392,14 @@ export const useCreateQuizAiForm = ({
       lockedDifficultyLevel,
       metadataError,
       metadataLoading,
+      structurePreview,
+      structurePreviewError,
+      structurePreviewLoading,
+      isStructureOutdated,
+      isStructureEditing,
+      editableStructureItems,
+      structureDifficultyOptions: STRUCTURE_DIFFICULTY_OPTIONS,
+      canFetchStructurePreview,
       minimumAiDurationMinutes,
       qTypes,
       questionTypeUnit,
@@ -926,6 +1430,13 @@ export const useCreateQuizAiForm = ({
       handleToggleDifficultyLock,
       handleToggleQTypeLock,
       handleToggleQuestionTypeSelection,
+      handlePreviewStructure,
+      handleStartStructureEdit,
+      handleCancelStructureEdit,
+      handleStructureItemChange,
+      handleAddStructureItem,
+      handleRemoveStructureItem,
+      handleMoveStructureItem,
       setAiTimerMode,
       setBloomUnit,
       setQuestionTypeUnit,
