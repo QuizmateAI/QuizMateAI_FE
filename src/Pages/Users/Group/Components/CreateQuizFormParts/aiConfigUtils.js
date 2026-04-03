@@ -83,6 +83,7 @@ export const buildAiQuizPayload = ({
   aiEasyDuration,
   aiMediumDuration,
   aiHardDuration,
+  structure,
 }) => {
   const normalizedQTypes = normalizeItemRatios(selectedQTypes, "questionTypeId");
   const normalizedBloomSkills = normalizeItemRatios(selectedBloomSkills, "bloomId");
@@ -106,6 +107,7 @@ export const buildAiQuizPayload = ({
     workspaceId,
     totalQuestion: aiTotalQuestions,
     prompt: aiPrompt,
+    structure: String(structure || ""),
     outputLanguage: aiOutputLanguage,
     questionTypeUnit,
     questionTypes: normalizedQTypes,

@@ -1,15 +1,29 @@
+import { useRef, useState } from "react";
 import {
   BrainCircuit,
   CheckCircle2,
   CheckSquare,
   FileText,
+  GripVertical,
   Info,
+  ListTree,
   Loader2,
   Lock,
   Sliders,
   Sparkles,
+  Trash2,
   Unlock,
+  Wand2,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/Components/ui/dialog";
+import { Button } from "@/Components/ui/button";
 import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
 
@@ -78,6 +92,14 @@ function CreateQuizAiFormContent({
     selectedMaterialIds,
     selectedQTypes,
     selectedSourceItems,
+    structurePreview,
+    structurePreviewError,
+    structurePreviewLoading,
+    isStructureOutdated,
+    isStructureEditing,
+    editableStructureItems,
+    structureDifficultyOptions,
+    canFetchStructurePreview,
   } = state;
   const {
     handleAiDurationBlur,
@@ -101,11 +123,100 @@ function CreateQuizAiFormContent({
     handleToggleDifficultyLock,
     handleToggleQTypeLock,
     handleToggleQuestionTypeSelection,
+    handlePreviewStructure,
+    handleStartStructureEdit,
+    handleCancelStructureEdit,
+    handleStructureItemChange,
+    handleAddStructureItem,
+    handleRemoveStructureItem,
+    handleMoveStructureItem,
     setAiTimerMode,
     setBloomUnit,
     setQuestionTypeUnit,
     setQuestionUnit,
   } = handlers;
+  const dragSourceIndexRef = useRef(-1);
+  const dragCurrentIndexRef = useRef(-1);
+  const [showStructureEditConfirm, setShowStructureEditConfirm] = useState(false);
+  const [showStructureCancelConfirm, setShowStructureCancelConfirm] = useState(false);
+  const [draggingIndex, setDraggingIndex] = useState(-1);
+  const [dropTargetIndex, setDropTargetIndex] = useState(-1);
+  const structureItemsForDisplay = isStructureEditing ? editableStructureItems : structurePreview?.items;
+  const structureCurrentCount = (Array.isArray(structureItemsForDisplay) ? structureItemsForDisplay : [])
+    .reduce((sum, item) => sum + (Number(item?.quantity) || 0), 0);
+  const structureTargetCount = Math.max(0, Number(aiTotalQuestions) || 0);
+  const isStructureCountMissing = structureTargetCount > 0 && structureCurrentCount < structureTargetCount;
+  const canAddMoreStructureItem = structureTargetCount <= 0 || structureCurrentCount < structureTargetCount;
+  const showStructureOutdatedOverlay = Boolean(isStructureOutdated && structurePreview?.structureJson);
+
+  const onStructureDragStart = (index) => {
+    dragSourceIndexRef.current = index;
+    dragCurrentIndexRef.current = index;
+    setDraggingIndex(index);
+  };
+
+  const onStructureDragEnd = () => {
+    dragSourceIndexRef.current = -1;
+    dragCurrentIndexRef.current = -1;
+    setDraggingIndex(-1);
+    setDropTargetIndex(-1);
+  };
+
+  const onStructureDragOverCard = (event, targetIndex) => {
+    if (!isStructureEditing) {
+      return;
+    }
+
+    const currentIndex = dragCurrentIndexRef.current;
+    if (currentIndex < 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const cardRect = event.currentTarget.getBoundingClientRect();
+    const pointerOffsetY = event.clientY - cardRect.top;
+    const placeAfter = pointerOffsetY > cardRect.height / 2;
+
+    const adjustedTargetIndex = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+    const nextIndex = placeAfter ? adjustedTargetIndex + 1 : adjustedTargetIndex;
+    const boundedNextIndex = Math.max(0, Math.min(nextIndex, Math.max(0, editableStructureItems.length - 1)));
+
+    setDropTargetIndex(placeAfter ? Math.min(targetIndex + 1, editableStructureItems.length) : targetIndex);
+
+    if (boundedNextIndex === currentIndex) {
+      return;
+    }
+
+    handleMoveStructureItem(currentIndex, boundedNextIndex);
+    dragCurrentIndexRef.current = boundedNextIndex;
+    setDraggingIndex(boundedNextIndex);
+  };
+
+  const onStructureDragLeaveCard = (targetIndex) => {
+    if (!isStructureEditing) {
+      return;
+    }
+
+    if (dropTargetIndex === targetIndex) {
+      setDropTargetIndex(-1);
+    }
+  };
+
+  const onStructureDrop = () => {
+    const sourceIndex = dragSourceIndexRef.current;
+    dragSourceIndexRef.current = -1;
+    dragCurrentIndexRef.current = -1;
+    setDraggingIndex(-1);
+    setDropTargetIndex(-1);
+    if (!isStructureEditing) {
+      return;
+    }
+
+    if (sourceIndex < 0) {
+      return;
+    }
+  };
 
   return (
     <div className="space-y-5 pb-4">
@@ -620,6 +731,401 @@ function CreateQuizAiFormContent({
           <p className="mt-2 text-xs text-red-500">{fieldErrors.aiPrompt}</p>
         )}
       </div>
+
+      <div className={`relative overflow-hidden rounded-2xl border transition-all ${isDarkMode ? "border-cyan-900/40 bg-slate-900/60 shadow-2xl shadow-blue-950/20" : "border-cyan-100 bg-white shadow-2xl shadow-slate-900/5"}`}>
+        <div className={`${showStructureOutdatedOverlay ? "opacity-20 pointer-events-none select-none" : ""}`}>
+        <div className={`border-b px-4 py-3 ${isDarkMode ? "border-cyan-900/30 bg-gradient-to-r from-cyan-950/20 to-transparent" : "border-cyan-100 bg-gradient-to-r from-cyan-50/80 to-transparent"}`}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${isDarkMode ? "bg-cyan-500/15 text-cyan-300" : "bg-cyan-100 text-cyan-600"}`}>
+                  <ListTree className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                    {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+                  </h3>
+                  <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                    {t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {(Array.isArray(structurePreview?.items) && structurePreview.items.length > 0) && !isStructureEditing && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePreviewStructure}
+                    disabled={structurePreviewLoading || !canFetchStructurePreview}
+                    className={`inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                      isDarkMode
+                        ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+                        : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    }`}
+                  >
+                    {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                    {structurePreviewLoading
+                      ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Đang tạo cấu trúc...")
+                      : t("workspace.quiz.aiConfig.structurePreviewAction", "Cấu hình chi tiết")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowStructureEditConfirm(true)}
+                    disabled={structurePreviewLoading || !canFetchStructurePreview}
+                    className={`inline-flex min-w-[140px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                      isDarkMode
+                        ? "border-amber-500/30 bg-amber-500/10 text-amber-100 hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    }`}
+                  >
+                    {t("workspace.quiz.aiConfig.structureEditAction", "Chỉnh sửa")}
+                  </button>
+                </>
+              )}
+
+              {isStructureEditing && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleAddStructureItem}
+                    disabled={!canAddMoreStructureItem}
+                    className={`inline-flex min-w-[140px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                      isDarkMode
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    }`}
+                  >
+                    {t("workspace.quiz.aiConfig.structureAddQuestionAction", "Thêm câu")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowStructureCancelConfirm(true)}
+                    className={`inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                      isDarkMode
+                        ? "border-red-500/30 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+                        : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                    }`}
+                  >
+                    {t("workspace.quiz.aiConfig.structureCancelEditAction", "Hủy chỉnh sửa")}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 p-4">
+          {structurePreviewError && (
+            <div className={`rounded-xl border px-3 py-2 text-xs ${isDarkMode ? "border-red-900/40 bg-red-950/25 text-red-300" : "border-red-200 bg-red-50 text-red-700"}`}>
+              {structurePreviewError}
+            </div>
+          )}
+
+          {(Array.isArray(structurePreview?.items) && structurePreview.items.length > 0) && (
+            <div className={`grid gap-3 md:grid-cols-2`}>
+              <div className={`rounded-xl border px-4 py-3 ${isStructureCountMissing
+                ? (isDarkMode ? "border-red-500/40 bg-red-950/25" : "border-red-200 bg-red-50")
+                : (isDarkMode ? "border-cyan-900/40 bg-cyan-950/15" : "border-cyan-100 bg-cyan-50/70")}`}
+              >
+                <p className={`text-[11px] uppercase tracking-[0.22em] ${isStructureCountMissing
+                  ? (isDarkMode ? "text-red-300/90" : "text-red-700/80")
+                  : (isDarkMode ? "text-cyan-300/80" : "text-cyan-700/70")}`}
+                >
+                  {t("workspace.quiz.aiConfig.totalQuestions")}
+                </p>
+                <p className={`mt-1 text-2xl font-semibold leading-none ${isStructureCountMissing
+                  ? (isDarkMode ? "text-red-200" : "text-red-700")
+                  : (isDarkMode ? "text-white" : "text-slate-900")}`}
+                >
+                  {isStructureCountMissing
+                    ? `${structureCurrentCount}/${structureTargetCount}`
+                    : (Number(structurePreview?.totalQuestion) || structureCurrentCount || 0)}
+                </p>
+              </div>
+              <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white"}`}>
+                <p className={`text-[11px] uppercase tracking-[0.22em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                  {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+                </p>
+                <p className={`mt-1 text-2xl font-semibold leading-none ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                  {Array.isArray(structurePreview?.items) ? structurePreview.items.length : 0}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {(isStructureEditing ? editableStructureItems : structurePreview?.items)?.length > 0 ? (
+            <div className="space-y-2">
+              {(isStructureEditing ? editableStructureItems : structurePreview.items).map((item, index) => (
+                <div
+                  key={`${item.difficulty || "NA"}-${item.questionType || "NA"}-${item.bloomSkill || "NA"}-${index}`}
+                  className={`group relative overflow-hidden rounded-2xl border px-4 py-4 transition-all duration-300 ${
+                    isDarkMode
+                      ? "bg-slate-900/60"
+                      : "bg-white"
+                  } ${
+                    draggingIndex === index
+                      ? (isDarkMode
+                          ? "z-20 scale-[1.01] border-cyan-500/70 shadow-2xl shadow-cyan-900/30 opacity-90"
+                          : "z-20 scale-[1.01] border-cyan-300 shadow-2xl shadow-slate-900/10 opacity-90")
+                      : dropTargetIndex === index
+                        ? (isDarkMode
+                            ? "border-cyan-400/70 ring-2 ring-cyan-500/30"
+                            : "border-cyan-300 ring-2 ring-cyan-200")
+                        : (isDarkMode
+                            ? "border-slate-800 hover:-translate-y-0.5 hover:border-cyan-700/40"
+                            : "border-slate-200 hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-lg hover:shadow-slate-900/5")
+                  }`}
+                  draggable={isStructureEditing}
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = "move";
+                    onStructureDragStart(index);
+                  }}
+                  onDragEnd={onStructureDragEnd}
+                  onDragOver={(event) => {
+                    event.dataTransfer.dropEffect = "move";
+                    onStructureDragOverCard(event, index);
+                  }}
+                  onDragLeave={() => onStructureDragLeaveCard(index)}
+                  onDrop={onStructureDrop}
+                >
+                  {isStructureEditing && dropTargetIndex === index && draggingIndex !== index && (
+                    <div className={`pointer-events-none absolute inset-x-3 top-1.5 h-0.5 rounded-full ${isDarkMode ? "bg-cyan-400/80" : "bg-cyan-500"}`} />
+                  )}
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-3">
+                      {isStructureEditing && (
+                        <span
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border cursor-grab transition-all active:cursor-grabbing ${
+                            draggingIndex === index
+                              ? (isDarkMode ? "border-cyan-500/70 bg-cyan-500/20 text-cyan-200" : "border-cyan-300 bg-cyan-50 text-cyan-700")
+                              : (isDarkMode ? "border-slate-700 bg-slate-950 text-slate-300 hover:border-cyan-700/50" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-200 hover:text-cyan-700")
+                          }`}
+                          title={t("workspace.quiz.aiConfig.structureDragHint", "Kéo để đổi vị trí")}
+                        >
+                          <GripVertical className="h-4 w-4" />
+                        </span>
+                      )}
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-[11px] font-bold ${isDarkMode ? "border-slate-800 bg-slate-950 text-cyan-200" : "border-slate-200 bg-slate-50 text-cyan-700"}`}>
+                        #{index + 1}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2.5 w-2.5 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
+                          <p className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                            {item.quantity || 0} {t("workspace.quiz.aiConfig.countUnit")}
+                          </p>
+                        </div>
+                        <p className={`mt-0.5 text-[11px] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                          {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")} #{index + 1}
+                        </p>
+                      </div>
+                    </div>
+
+                    {isStructureEditing ? (
+                      <div className="flex items-end gap-2 overflow-x-auto pb-1 text-xs md:overflow-visible">
+                        <label className="flex min-w-[150px] flex-1 flex-col gap-1">
+                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")}</span>
+                          <select
+                            className={`rounded-lg border px-2 py-1.5 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200" : "border-slate-200 bg-white text-slate-700"}`}
+                            value={String(item.difficulty || "").toUpperCase()}
+                            onChange={(event) => handleStructureItemChange(index, "difficulty", event.target.value)}
+                          >
+                            {structureDifficultyOptions.map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="flex min-w-[180px] flex-[1.3] flex-col gap-1">
+                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")}</span>
+                          <select
+                            className={`rounded-lg border px-2 py-1.5 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200" : "border-slate-200 bg-white text-slate-700"}`}
+                            value={String(item.questionType || "").toUpperCase()}
+                            onChange={(event) => handleStructureItemChange(index, "questionType", event.target.value)}
+                          >
+                            {qTypes.map((questionType) => (
+                              <option key={questionType.questionTypeId} value={questionType.questionType}>
+                                {getQuestionTypeLabel(questionType.questionType)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="flex min-w-[170px] flex-[1.15] flex-col gap-1">
+                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureBloom", "Bloom")}</span>
+                          <select
+                            className={`rounded-lg border px-2 py-1.5 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200" : "border-slate-200 bg-white text-slate-700"}`}
+                            value={String(item.bloomSkill || "").toUpperCase()}
+                            onChange={(event) => handleStructureItemChange(index, "bloomSkill", event.target.value)}
+                          >
+                            {bloomSkills.map((skill) => (
+                              <option key={skill.bloomId} value={skill.bloomName}>{skill.bloomName}</option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="flex min-w-[88px] w-[88px] flex-col gap-1">
+                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureQuantity", "Số câu")}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            className={`rounded-lg border px-2 py-1.5 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200" : "border-slate-200 bg-white text-slate-700"}`}
+                            value={Number(item.quantity) || 1}
+                            onChange={(event) => handleStructureItemChange(index, "quantity", event.target.value)}
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveStructureItem(index)}
+                          disabled={editableStructureItems.length <= 1}
+                          className={`inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg border transition-all active:scale-95 ${
+                            isDarkMode
+                              ? "border-red-500/30 bg-red-500/10 text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                              : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          }`}
+                          title={t("workspace.quiz.aiConfig.structureRemoveAction", "Xóa câu")}
+                          aria-label={t("workspace.quiz.aiConfig.structureRemoveAction", "Xóa câu")}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                          <span className={`h-2 w-2 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
+                          {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{item.difficulty || "-"}</strong>
+                        </span>
+                        <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                          {t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
+                        </span>
+                        <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                          {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{item.bloomSkill || "-"}</strong>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={`rounded-2xl border px-4 py-8 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-400" : "border-slate-200 bg-white text-slate-600"}`}>
+              <div className="flex flex-col items-center justify-center gap-3 text-center">
+                <p>{t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}</p>
+                <button
+                  type="button"
+                  onClick={handlePreviewStructure}
+                  disabled={structurePreviewLoading || !canFetchStructurePreview}
+                  className={`inline-flex min-w-[190px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                    isDarkMode
+                      ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+                      : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  }`}
+                >
+                  {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                  {t("workspace.quiz.aiConfig.structureFetchAction", "Lấy cấu hình chi tiết")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        </div>
+
+        {showStructureOutdatedOverlay && (
+          <div className={`absolute inset-0 z-10 flex items-center justify-center p-4 ${isDarkMode ? "bg-slate-950/45" : "bg-white/45"}`}>
+            <div className={`max-w-xl rounded-2xl border px-5 py-4 text-center shadow-2xl ${isDarkMode ? "border-amber-700/50 bg-slate-900/95 text-slate-100" : "border-amber-200 bg-white/95 text-slate-900"}`}>
+              <p className={`text-sm font-medium ${isDarkMode ? "text-amber-200" : "text-amber-700"}`}>
+                {t(
+                  "workspace.quiz.aiConfig.structureOutdatedWarning",
+                  "Thiết lập ở trên đã khác với cấu trúc quiz hiện tại, vui lòng lấy lại cấu hình chi tiết"
+                )}
+              </p>
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handlePreviewStructure}
+                  disabled={structurePreviewLoading || !canFetchStructurePreview}
+                  className={`inline-flex min-w-[190px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                    isDarkMode
+                      ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+                      : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  }`}
+                >
+                  {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                  {t("workspace.quiz.aiConfig.structureFetchAction", "Lấy cấu hình chi tiết")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={showStructureEditConfirm} onOpenChange={setShowStructureEditConfirm}>
+        <DialogContent className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}>
+          <DialogHeader>
+            <DialogTitle>{t("workspace.quiz.aiConfig.structureEditAction", "Chỉnh sửa")}</DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
+              {t(
+                "workspace.quiz.aiConfig.structureEditConfirm",
+                "Nếu chỉnh sửa cấu trúc, các thông số cấu hình ở trên sẽ thay đổi. Bạn có muốn tiếp tục?"
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowStructureEditConfirm(false)}
+              className={isDarkMode ? "border-slate-600 text-slate-200" : ""}
+            >
+              {t("workspace.quiz.cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={async () => {
+                setShowStructureEditConfirm(false);
+                await handleStartStructureEdit();
+              }}
+              className="bg-[#2563EB] text-white hover:bg-blue-700"
+            >
+              {t("workspace.quiz.continue", "Tiếp tục")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showStructureCancelConfirm} onOpenChange={setShowStructureCancelConfirm}>
+        <DialogContent className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}>
+          <DialogHeader>
+            <DialogTitle>{t("workspace.quiz.aiConfig.structureCancelEditAction", "Hủy chỉnh sửa")}</DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
+              {t("workspace.quiz.aiConfig.structureCancelConfirm", "Mọi thay đổi của bạn sẽ bị hủy.")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowStructureCancelConfirm(false)}
+              className={isDarkMode ? "border-slate-600 text-slate-200" : ""}
+            >
+              {t("workspace.quiz.cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setShowStructureCancelConfirm(false);
+                handleCancelStructureEdit();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {t("workspace.quiz.confirm", "Xác nhận")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
