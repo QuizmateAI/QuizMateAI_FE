@@ -112,16 +112,27 @@ export function useRoadmapPreLearningDecision({
 
   const normalizedActivePhaseId = Number(activePhase?.phaseId);
   const hasActivePhase = Number.isInteger(normalizedActivePhaseId) && normalizedActivePhaseId > 0;
+  const currentPayloadPhaseId = Number(decisionState.currentPhaseProgress?.phaseId);
+  const isCurrentPayloadForActivePhase = Number.isInteger(currentPayloadPhaseId)
+    && currentPayloadPhaseId > 0
+    && currentPayloadPhaseId === normalizedActivePhaseId;
+  const normalizedCurrentStatus = String(decisionState.currentPhaseProgress?.status || "").toUpperCase();
+  const isCurrentPhaseCompleted = normalizedCurrentStatus === "COMPLETED";
   const isDecisionHandled = hasActivePhase && decisionHandledPhaseIds.includes(normalizedActivePhaseId);
   const canShowSkipDecision = hasActivePhase
-    && decisionState.phaseId === normalizedActivePhaseId
+    && isCurrentPayloadForActivePhase
     && decisionState.currentPhaseProgress?.skipable === true
     && !isDecisionHandled;
   const canShowGenerateKnowledgeFallback = hasActivePhase
-    && decisionState.phaseId === normalizedActivePhaseId
+    && isCurrentPayloadForActivePhase
     && !decisionState.loadingCurrentPhase
     && !canShowSkipDecision;
-  const shouldRenderDecisionCard = hasActivePhase && decisionState.phaseId === normalizedActivePhaseId;
+  const hasSkipableDecision = decisionState.currentPhaseProgress?.skipable === true
+    || decisionState.currentPhaseProgress?.skipable === false;
+  const shouldRenderDecisionCard = hasActivePhase
+    && isCurrentPayloadForActivePhase
+    && hasSkipableDecision
+    && !isCurrentPhaseCompleted;
 
   return {
     decisionState,
