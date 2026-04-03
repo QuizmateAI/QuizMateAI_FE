@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { createFullQuiz } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace, getPhasesByRoadmap, getKnowledgesByPhase, createRoadmap, createPhase, createKnowledge } from "@/api/RoadmapAPI";
 import { getMaterialsByWorkspace } from "@/api/MaterialAPI";
-import { generateAIQuiz, getQuestionTypes, getDifficultyDefinitions, getBloomSkills } from "@/api/AIAPI";
+import { generateAIQuiz, previewAIQuizStructure, getQuestionTypes, getDifficultyDefinitions, getBloomSkills } from "@/api/AIAPI";
 import { getWorkspacesByUser } from "@/api/WorkspaceAPI";
 import QuickCreateDialog from "@/Pages/Users/Individual/Workspace/Components/QuickCreateDialog";
 import AIQuizTab from "./AIQuizTab";
@@ -315,6 +315,9 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [bloomUnit, setBloomUnit] = useState(false); // false: %, true: count
   const [questionUnit, setQuestionUnit] = useState(false); // false: %, true: count
   const [aiOutputLanguage, setAiOutputLanguage] = useState("Vietnamese");
+  const [structurePreview, setStructurePreview] = useState(null);
+  const [structurePreviewLoading, setStructurePreviewLoading] = useState(false);
+  const [structurePreviewError, setStructurePreviewError] = useState("");
   const prevQuestionTypeUnitRef = useRef(questionTypeUnit);
   const prevBloomUnitRef = useRef(bloomUnit);
   const aiGeneralSectionRef = useRef(null);
@@ -575,6 +578,81 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
     const parsed = bloomUnit ? Math.round(raw) : raw;
     setSelectedBloomSkills(prev => prev.map(x => x.bloomId === id ? { ...x, ratio: parsed } : x));
   };
+
+  const normalizeStructurePreviewResponse = (response) => {
+    const payload = response?.data ?? response ?? {};
+    return {
+      totalQuestion: Number(payload?.totalQuestion) || 0,
+      structureJson: String(payload?.structureJson || ""),
+      items: Array.isArray(payload?.items) ? payload.items : [],
+    };
+  };
+
+  const buildStructurePreviewPayload = () => {
+    const selectedDifficulty = difficultyDefs.find((d) => d.id === selectedDifficultyId);
+    const difficultyRatios = selectedDifficultyId === "CUSTOM"
+      ? {
+          easy: Math.max(0, Number(customDifficulty.easy) || 0),
+          medium: Math.max(0, Number(customDifficulty.medium) || 0),
+          hard: Math.max(0, Number(customDifficulty.hard) || 0),
+        }
+      : {
+          easy: Math.max(0, Number(selectedDifficulty?.easyRatio) || 0),
+          medium: Math.max(0, Number(selectedDifficulty?.mediumRatio) || 0),
+          hard: Math.max(0, Number(selectedDifficulty?.hardRatio) || 0),
+        };
+
+    return {
+      totalQuestion: Number(aiTotalQuestions) || 0,
+      questionTypeUnit,
+      bloomUnit,
+      questionUnit,
+      easyRatio: difficultyRatios.easy,
+      mediumRatio: difficultyRatios.medium,
+      hardRatio: difficultyRatios.hard,
+      questionTypes: selectedQTypes.map((item) => ({
+        questionTypeId: item.questionTypeId,
+        ratio: Number(item.ratio) || 0,
+      })),
+      bloomSkills: selectedBloomSkills.map((item) => ({
+        bloomId: item.bloomId,
+        ratio: Number(item.ratio) || 0,
+      })),
+    };
+  };
+
+  const handlePreviewStructure = useCallback(async () => {
+    setStructurePreviewError("");
+    setStructurePreviewLoading(true);
+
+    try {
+      const response = await previewAIQuizStructure(buildStructurePreviewPayload());
+      const normalizedPreview = normalizeStructurePreviewResponse(response);
+      console.log("[AI Quiz][Structure Preview] structureJson:", normalizedPreview.structureJson);
+      setStructurePreview(normalizedPreview);
+      return normalizedPreview;
+    } catch (previewError) {
+      console.error("Failed to preview AI quiz structure:", previewError);
+      setStructurePreview(null);
+      setStructurePreviewError(previewError?.message || t("workspace.quiz.aiConfig.structurePreviewFailed"));
+      return null;
+    } finally {
+      setStructurePreviewLoading(false);
+    }
+  }, [
+    aiTotalQuestions,
+    bloomUnit,
+    customDifficulty.easy,
+    customDifficulty.hard,
+    customDifficulty.medium,
+    difficultyDefs,
+    questionTypeUnit,
+    questionUnit,
+    selectedBloomSkills,
+    selectedDifficultyId,
+    selectedQTypes,
+    t,
+  ]);
 
   const aiValidationState = useMemo(() => {
     const nextFieldErrors = {};
@@ -1096,6 +1174,14 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           return;
         }
 
+        let structureJson = String(structurePreview?.structureJson || "");
+        if (!structureJson) {
+          const previewResult = await handlePreviewStructure();
+          structureJson = String(previewResult?.structureJson || "");
+        }
+
+        console.log("[AI Quiz][Generate] structureJson:", structureJson);
+
         const payload = buildAiQuizPayload({
           aiName,
           selectedMaterialIds,
@@ -1117,6 +1203,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
           aiEasyDuration,
           aiMediumDuration,
           aiHardDuration,
+          structure: structureJson,
         });
         
         const result = await generateAIQuiz(payload);
@@ -1310,6 +1397,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
               bloomSkills: aiBloomSectionRef,
             }}
             minimumDurationMinutes={minimumAiDurationMinutes}
+            structurePreview={structurePreview}
+            structurePreviewLoading={structurePreviewLoading}
+            structurePreviewError={structurePreviewError}
+            onPreviewStructure={handlePreviewStructure}
           />
         )}
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2 } from "lucide-react";
+import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2 } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
 
 function AIQuizTab({
@@ -60,6 +60,10 @@ function AIQuizTab({
   setFieldErrors,
   sectionRefs,
   minimumDurationMinutes,
+  structurePreview,
+  structurePreviewLoading,
+  structurePreviewError,
+  onPreviewStructure,
 }) {
   const requiredMark = <span className="ml-1 text-red-500">*</span>;
 
@@ -550,6 +554,141 @@ function AIQuizTab({
           </div>
           {fieldErrors.selectedBloomSkills && (
             <p className="mt-3 text-xs text-red-500">{fieldErrors.selectedBloomSkills}</p>
+          )}
+        </div>
+      </div>
+
+      <div className={`overflow-hidden rounded-2xl border transition-all ${isDarkMode ? "border-cyan-900/40 bg-slate-900/60 shadow-2xl shadow-blue-950/20" : "border-cyan-100 bg-white shadow-2xl shadow-slate-900/5"}`}>
+        <div className={`border-b px-4 py-3 ${isDarkMode ? "border-cyan-900/30 bg-gradient-to-r from-cyan-950/20 to-transparent" : "border-cyan-100 bg-gradient-to-r from-cyan-50/80 to-transparent"}`}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${isDarkMode ? "bg-cyan-500/15 text-cyan-300" : "bg-cyan-100 text-cyan-600"}`}>
+                  <ListTree className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                    {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+                  </h3>
+                  <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                    {t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onPreviewStructure}
+              disabled={structurePreviewLoading}
+              className={`inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                isDarkMode
+                  ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-70"
+              }`}
+            >
+              {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+              {structurePreviewLoading
+                ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Đang tạo cấu trúc...")
+                : t("workspace.quiz.aiConfig.structurePreviewAction", "Cấu hình chi tiết")}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-3 p-4">
+          {structurePreviewError && (
+            <div className={`rounded-xl border px-3 py-2 text-xs ${isDarkMode ? "border-red-900/40 bg-red-950/25 text-red-300" : "border-red-200 bg-red-50 text-red-700"}`}>
+              {structurePreviewError}
+            </div>
+          )}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? "border-cyan-900/40 bg-cyan-950/15" : "border-cyan-100 bg-cyan-50/70"}`}>
+              <p className={`text-[11px] uppercase tracking-[0.22em] ${isDarkMode ? "text-cyan-300/80" : "text-cyan-700/70"}`}>
+                {t("workspace.quiz.aiConfig.totalQuestions")}
+              </p>
+              <p className={`mt-1 text-2xl font-semibold leading-none ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                {Number(structurePreview?.totalQuestion) || 0}
+              </p>
+            </div>
+            <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white"}`}>
+              <p className={`text-[11px] uppercase tracking-[0.22em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+              </p>
+              <p className={`mt-1 text-2xl font-semibold leading-none ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                {Array.isArray(structurePreview?.items) ? structurePreview.items.length : 0}
+              </p>
+            </div>
+          </div>
+
+          {Array.isArray(structurePreview?.items) && structurePreview.items.length > 0 ? (
+            <div className="space-y-2">
+              {structurePreview.items.map((item, index) => (
+                <div
+                  key={`${item.difficulty || "NA"}-${item.questionType || "NA"}-${item.bloomSkill || "NA"}-${index}`}
+                  className={`group relative overflow-hidden rounded-2xl border px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 ${
+                    isDarkMode
+                      ? "border-slate-800 bg-slate-900/60 hover:border-cyan-700/40"
+                      : "border-slate-200 bg-white hover:border-cyan-200 hover:shadow-lg hover:shadow-slate-900/5"
+                  }`}
+                >
+                  <div className={`absolute inset-y-0 left-0 w-1 ${isDarkMode ? "bg-cyan-400/80" : "bg-cyan-500"}`} />
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-[11px] font-bold ${isDarkMode ? "border-slate-800 bg-slate-950 text-cyan-200" : "border-slate-200 bg-slate-50 text-cyan-700"}`}>
+                        <span className="flex flex-col items-center leading-none">
+                          <span>#{index + 1}</span>
+                          <span className="mt-0.5 text-[10px] font-medium opacity-80">{item.quantity || 0} câu</span>
+                        </span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2.5 w-2.5 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
+                          <p className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-slate-900"}`}>
+                            {item.quantity || 0} {t("workspace.quiz.aiConfig.countUnit")}
+                          </p>
+                        </div>
+                        <p className={`mt-0.5 text-[11px] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                          {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")} #{index + 1}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs md:justify-end">
+                      <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                        <span className={`h-2 w-2 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
+                        {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{item.difficulty || "-"}</strong>
+                      </span>
+                      <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                        {t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
+                      </span>
+                      <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                        {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{item.bloomSkill || "-"}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={`rounded-2xl border px-4 py-8 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-400" : "border-slate-200 bg-white text-slate-600"}`}>
+              <div className="flex flex-col items-center justify-center gap-3 text-center">
+                <p>{t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}</p>
+                <button
+                  type="button"
+                  onClick={onPreviewStructure}
+                  disabled={structurePreviewLoading}
+                  className={`inline-flex min-w-[190px] items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all active:scale-95 ${
+                    isDarkMode
+                      ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                      : "border-cyan-200 bg-white text-cyan-700 shadow-sm hover:bg-cyan-50 disabled:cursor-not-allowed disabled:opacity-70"
+                  }`}
+                >
+                  {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                  {t("workspace.quiz.aiConfig.structureFetchAction", "Lấy cấu hình chi tiết")}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -30,6 +30,12 @@ export const generateAIQuiz = async (data) => {
   return response;
 };
 
+// Preview cau truc quiz du kien bang AI
+export const previewAIQuizStructure = async (data) => {
+  const response = await api.post('/ai/quiz-structure:preview', data);
+  return response;
+};
+
 // Tao phase roadmap bang AI (async)
 export const generateRoadmapPhases = async (data) => {
   const response = await api.post('/ai/roadmap-phases:generated', data);
