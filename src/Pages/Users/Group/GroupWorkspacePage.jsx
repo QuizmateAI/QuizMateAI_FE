@@ -53,6 +53,7 @@ import { unwrapApiData } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
+import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
@@ -785,16 +786,28 @@ function GroupWorkspacePage() {
   }, [currentLang, showError, showInfo, showWarning]);
 
   const handleRealtimeProgress = useCallback((progressPayload) => {
-    const taskId = String(progressPayload?.websocketTaskId ?? progressPayload?.taskId ?? '');
-    const status = normalizeMaterialStatus(progressPayload?.status ?? progressPayload?.final_status);
+    const signal = normalizeRuntimeTaskSignal(progressPayload, { source: 'websocket' });
+    const taskId = String(signal.taskId || '');
+    const status = normalizeMaterialStatus(signal.status ?? progressPayload?.final_status);
     const rawPercent = clampPercent(
-      progressPayload?.percent
-      ?? progressPayload?.progressPercent
-      ?? progressPayload?.data?.percent
-      ?? progressPayload?.data?.progressPercent
-      ?? 0,
+      signal.percent
+      ?? progressPayload?.percent
+      ?? progressPayload?.progressPercent,
     );
-    const materialId = getRealtimeMaterialId(progressPayload, taskId, sessionUploadQueue);
+    const normalizedMaterialId = Number(signal.materialId ?? 0);
+    const materialId = getRealtimeMaterialId(
+      {
+        ...progressPayload,
+        ...(Number.isInteger(normalizedMaterialId) && normalizedMaterialId > 0
+          ? {
+            materialId: normalizedMaterialId,
+            material_id: normalizedMaterialId,
+          }
+          : {}),
+      },
+      taskId,
+      sessionUploadQueue,
+    );
 
     if (!materialId && !taskId) return;
 
@@ -834,9 +847,23 @@ function GroupWorkspacePage() {
   ]);
 
   const handleRealtimeMaterialUpdate = useCallback((materialPayload) => {
-    const taskId = String(materialPayload?.websocketTaskId ?? materialPayload?.taskId ?? '');
-    const status = normalizeMaterialStatus(materialPayload?.status ?? materialPayload?.final_status);
-    const materialId = getRealtimeMaterialId(materialPayload, taskId, sessionUploadQueue);
+    const signal = normalizeRuntimeTaskSignal(materialPayload, { source: 'websocket' });
+    const taskId = String(signal.taskId || '');
+    const status = normalizeMaterialStatus(signal.status ?? materialPayload?.final_status);
+    const normalizedMaterialId = Number(signal.materialId ?? 0);
+    const materialId = getRealtimeMaterialId(
+      {
+        ...materialPayload,
+        ...(Number.isInteger(normalizedMaterialId) && normalizedMaterialId > 0
+          ? {
+            materialId: normalizedMaterialId,
+            material_id: normalizedMaterialId,
+          }
+          : {}),
+      },
+      taskId,
+      sessionUploadQueue,
+    );
 
     if (!materialId) {
       void refreshGroupMaterialViews({ silent: true });
@@ -929,11 +956,17 @@ function GroupWorkspacePage() {
     }
 
     tasks.forEach((task) => {
+      const signal = normalizeRuntimeTaskSignal(task, { source: 'active-task' });
+      if (!signal.taskId && !signal.materialId) return;
+
       handleRealtimeProgress({
         ...task,
-        websocketTaskId: task?.taskId,
-        taskId: task?.taskId,
-        ...(task?.processingObject && typeof task.processingObject === 'object' ? task.processingObject : {}),
+        ...signal,
+        websocketTaskId: signal.taskId,
+        taskId: signal.taskId,
+        percent: signal.percent,
+        progressPercent: signal.percent,
+        ...(signal.processingObject && typeof signal.processingObject === 'object' ? signal.processingObject : {}),
       });
     });
   }, [handleRealtimeProgress, refreshGroupMaterialViews]);

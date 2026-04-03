@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  AlertCircle,
   BarChart3,
   CheckCircle2,
-  XCircle,
   Clock,
+  Loader2,
+  RefreshCw,
   Target,
   TrendingUp,
-  ChevronDown,
-  Loader2,
-  AlertCircle,
-  RefreshCw,
+  XCircle,
 } from "lucide-react";
 import { getIndividualWorkspaceQuestionStats } from "@/api/WorkspaceAPI";
 
@@ -20,44 +19,130 @@ const ATTEMPT_MODES = [
   { value: "ALL", labelKey: "workspace.questionStats.modeAll" },
 ];
 
+const DIFFICULTY_KEYS = ["EASY", "MEDIUM", "HARD", "CUSTOM", "UNSPECIFIED"];
+const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "CREATE", "APPLY"];
+
+const BLOOM_COLORS = {
+  REMEMBER: {
+    main: "#6366f1",
+    bar: "bg-indigo-500",
+    light: "bg-indigo-100 text-indigo-700",
+    dark: "bg-indigo-950/50 text-indigo-300",
+  },
+  UNDERSTAND: {
+    main: "#06b6d4",
+    bar: "bg-cyan-500",
+    light: "bg-cyan-100 text-cyan-700",
+    dark: "bg-cyan-950/50 text-cyan-300",
+  },
+  APPLY: {
+    main: "#22c55e",
+    bar: "bg-emerald-500",
+    light: "bg-emerald-100 text-emerald-700",
+    dark: "bg-emerald-950/50 text-emerald-300",
+  },
+  ANALYZE: {
+    main: "#f59e0b",
+    bar: "bg-amber-500",
+    light: "bg-amber-100 text-amber-700",
+    dark: "bg-amber-950/50 text-amber-300",
+  },
+  EVALUATE: {
+    main: "#ef4444",
+    bar: "bg-red-500",
+    light: "bg-red-100 text-red-700",
+    dark: "bg-red-950/50 text-red-300",
+  },
+  CREATE: {
+    main: "#a855f7",
+    bar: "bg-fuchsia-500",
+    light: "bg-fuchsia-100 text-fuchsia-700",
+    dark: "bg-fuchsia-950/50 text-fuchsia-300",
+  },
+};
+
 function pct(value, total) {
-  if (!total || total === 0) return 0;
-  return Math.round((value / total) * 100);
+  if (!total || total <= 0) return 0;
+  return Math.round((Number(value || 0) / total) * 100);
 }
 
 function fmtAccuracy(accuracy) {
   if (accuracy == null) return "0%";
-  return `${Math.round(accuracy * 100)}%`;
+  return `${Math.round(Number(accuracy) * 100)}%`;
 }
 
-function ProgressBar({ value, max, color = "bg-emerald-500", className = "" }) {
-  const percent = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
-  return (
-    <div className={`h-2 rounded-full bg-gray-200 dark:bg-slate-700 overflow-hidden ${className}`}>
-      <div
-        className={`h-full rounded-full transition-all duration-500 ease-out ${color}`}
-        style={{ width: `${percent}%` }}
-      />
-    </div>
-  );
+function fmtNumber(value) {
+  return Number(value ?? 0).toLocaleString();
 }
 
-function StatCard({ icon: Icon, label, value, subValue, color, isDarkMode }) {
-  return (
-    <div className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl px-4 py-4 h-full ${isDarkMode ? "bg-slate-800/60" : "bg-white"} border ${isDarkMode ? "border-slate-700/50" : "border-gray-100"} shadow-sm`}>
-      <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${color}`}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <p className={`text-2xl font-bold leading-tight ${isDarkMode ? "text-white" : "text-gray-900"}`}>{value}</p>
-      <p className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{label}</p>
-      {subValue && (
-        <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{subValue}</p>
-      )}
-    </div>
-  );
+function panelClasses(isDarkMode) {
+  return isDarkMode
+    ? "border-slate-800/80 bg-slate-900/70 shadow-[0_24px_50px_rgba(2,6,23,0.28)]"
+    : "border-slate-200/90 bg-white shadow-[0_24px_50px_rgba(15,23,42,0.08)]";
 }
 
-const DIFFICULTY_KEYS = ["EASY", "MEDIUM", "HARD", "CUSTOM", "UNSPECIFIED"];
+function insetPanelClasses(isDarkMode) {
+  return isDarkMode
+    ? "border-slate-800/70 bg-slate-950/45"
+    : "border-slate-200 bg-slate-50/80";
+}
+
+function mutedTextClasses(isDarkMode) {
+  return isDarkMode ? "text-slate-400" : "text-slate-500";
+}
+
+function getAccuracyTone(pctValue, isDarkMode) {
+  if (pctValue >= 70) {
+    return {
+      textClass: isDarkMode ? "text-emerald-300" : "text-emerald-600",
+      softClass: isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-50 text-emerald-700",
+      ringColor: isDarkMode ? "#34d399" : "#10b981",
+      glowClass: isDarkMode ? "bg-emerald-400/10" : "bg-emerald-200/70",
+      barClass: "bg-emerald-500",
+    };
+  }
+
+  if (pctValue >= 40) {
+    return {
+      textClass: isDarkMode ? "text-amber-300" : "text-amber-600",
+      softClass: isDarkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-50 text-amber-700",
+      ringColor: isDarkMode ? "#fbbf24" : "#f59e0b",
+      glowClass: isDarkMode ? "bg-amber-400/10" : "bg-amber-200/70",
+      barClass: "bg-amber-500",
+    };
+  }
+
+  return {
+    textClass: isDarkMode ? "text-rose-300" : "text-rose-600",
+    softClass: isDarkMode ? "bg-rose-950/50 text-rose-300" : "bg-rose-50 text-rose-700",
+    ringColor: isDarkMode ? "#fb7185" : "#ef4444",
+    glowClass: isDarkMode ? "bg-rose-400/10" : "bg-rose-200/70",
+    barClass: "bg-rose-500",
+  };
+}
+
+function getDifficultyStyle(label, isDarkMode) {
+  const normalized = String(label || "").toUpperCase();
+  if (normalized === "EASY") return isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-100 text-emerald-700";
+  if (normalized === "MEDIUM") return isDarkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-100 text-amber-700";
+  if (normalized === "HARD") return isDarkMode ? "bg-rose-950/50 text-rose-300" : "bg-rose-100 text-rose-700";
+  return isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700";
+}
+
+function getBucketBadgeStyle(label, isDarkMode, bucketType) {
+  const normalized = String(label || "").toUpperCase();
+
+  if (bucketType === "difficulty" || DIFFICULTY_KEYS.includes(normalized)) {
+    return getDifficultyStyle(normalized, isDarkMode);
+  }
+
+  const bloomMeta = BLOOM_COLORS[normalized];
+  if (bloomMeta) {
+    return isDarkMode ? bloomMeta.dark : bloomMeta.light;
+  }
+
+  return isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700";
+}
 
 function translateLabel(label, t, bucketType) {
   const upper = String(label || "").toUpperCase();
@@ -65,68 +150,562 @@ function translateLabel(label, t, bucketType) {
     const translated = t(`workspace.questionStats.difficulty.${upper}`, "");
     if (translated) return translated;
   }
+
   const bloomTranslated = t(`workspace.questionStats.bloom.${upper}`, "");
   if (bloomTranslated) return bloomTranslated;
+
   return label;
 }
 
-function BucketTable({ title, buckets, isDarkMode, t, isLifetime = false, bucketType = "difficulty" }) {
-  if (!buckets || buckets.length === 0) return null;
+function getRenderableBloomBuckets(buckets = []) {
+  const available = buckets.filter((bucket) => String(bucket?.label || "").toUpperCase() !== "UNSPECIFIED");
+  const bucketMap = Object.fromEntries(
+    available.map((bucket) => [String(bucket?.label || "").toUpperCase(), bucket]),
+  );
+
+  return BLOOM_ORDER.map((key) => bucketMap[key]).filter(Boolean);
+}
+
+function polarToCartesian(cx, cy, radius, angleDeg) {
+  const angleRad = ((angleDeg - 90) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleRad),
+    y: cy + radius * Math.sin(angleRad),
+  };
+}
+
+function ProgressBar({
+  value,
+  max,
+  isDarkMode,
+  barClassName = "bg-blue-500",
+  trackClassName = "",
+  className = "",
+}) {
+  const percent = max > 0 ? Math.min(100, Math.round((Number(value || 0) / max) * 100)) : 0;
+  const resolvedTrackClass = trackClassName || (isDarkMode ? "bg-slate-800" : "bg-slate-100");
 
   return (
-    <div className="mt-4">
-      <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{title}</h4>
-      <div className={`rounded-xl overflow-hidden border ${isDarkMode ? "border-slate-700/50" : "border-gray-100"}`}>
-        <table className="w-full text-sm">
+    <div className={`h-2.5 overflow-hidden rounded-full ${resolvedTrackClass} ${className}`}>
+      <div
+        className={`h-full rounded-full transition-[width] duration-500 ease-out ${barClassName}`}
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  );
+}
+
+function ModeSwitcher({ attemptMode, onChange, isDarkMode, t, compact = false }) {
+  return (
+    <div className={`grid grid-cols-3 rounded-2xl border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/80" : "border-slate-200 bg-white/90"}`}>
+      {ATTEMPT_MODES.map((mode) => {
+        const active = mode.value === attemptMode;
+
+        return (
+          <button
+            key={mode.value}
+            type="button"
+            onClick={() => onChange(mode.value)}
+            className={`rounded-xl font-semibold transition-all ${
+              active
+                ? "bg-blue-600 text-white shadow-[0_10px_24px_rgba(37,99,235,0.28)]"
+                : isDarkMode
+                  ? "text-slate-300 hover:bg-slate-800"
+                  : "text-slate-600 hover:bg-slate-100"
+            } ${compact ? "px-2 py-2 text-[11px]" : "px-3 py-2 text-xs"}`}
+            aria-pressed={active}
+          >
+            {t(mode.labelKey)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  subValue,
+  iconClassName,
+  accentClassName,
+  isDarkMode,
+  compact = false,
+}) {
+  return (
+    <div className={`relative overflow-hidden rounded-[24px] border ${compact ? "p-3.5" : "p-4"} ${insetPanelClasses(isDarkMode)}`}>
+      <div className={`absolute inset-x-0 top-0 h-1 ${accentClassName}`} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className={`flex items-center justify-center rounded-2xl ${compact ? "h-9 w-9" : "h-11 w-11"} ${iconClassName}`}>
+            <Icon className={compact ? "h-4.5 w-4.5" : "h-5 w-5"} />
+          </div>
+          <p className={`font-semibold uppercase tracking-[0.16em] ${compact ? "mt-3 text-[10px]" : "mt-4 text-[11px]"} ${mutedTextClasses(isDarkMode)}`}>
+            {label}
+          </p>
+          <p className={`${compact ? "mt-1 text-xl" : "mt-1 text-2xl"} font-semibold ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+            {value}
+          </p>
+        </div>
+        {subValue ? (
+          <span className={`shrink-0 rounded-full ${compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1 text-[11px]"} font-semibold ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-slate-700"}`}>
+            {subValue}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function MetricBar({
+  icon: Icon,
+  label,
+  value,
+  total,
+  barClassName,
+  badgeClassName,
+  iconClassName,
+  isDarkMode,
+}) {
+  return (
+    <div className={`rounded-2xl border p-4 ${insetPanelClasses(isDarkMode)}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconClassName}`}>
+            <Icon className="h-4.5 w-4.5" />
+          </div>
+          <div className="min-w-0">
+            <p className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{label}</p>
+            <p className={`text-xs ${mutedTextClasses(isDarkMode)}`}>
+              {fmtNumber(value)} / {fmtNumber(total)}
+            </p>
+          </div>
+        </div>
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeClassName}`}>
+          {pct(value, total)}%
+        </span>
+      </div>
+
+      <ProgressBar
+        value={value}
+        max={total}
+        isDarkMode={isDarkMode}
+        barClassName={barClassName}
+        className="mt-3"
+      />
+    </div>
+  );
+}
+
+function AccuracyRing({ accuracy, size = 148, strokeWidth = 12, isDarkMode, label }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const pctValue = Math.round((accuracy ?? 0) * 100);
+  const offset = circumference - (pctValue / 100) * circumference;
+  const tone = getAccuracyTone(pctValue, isDarkMode);
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <div className={`absolute inset-4 rounded-full blur-2xl ${tone.glowClass}`} />
+      <svg width={size} height={size} className="relative -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={isDarkMode ? "#1e293b" : "#e2e8f0"}
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={tone.ringColor}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className={`text-3xl font-bold ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>{pctValue}%</span>
+        <span className={`mt-1 text-xs font-medium ${mutedTextClasses(isDarkMode)}`}>{label}</span>
+      </div>
+    </div>
+  );
+}
+
+function RadarChart({ buckets, isDarkMode, t, compact = false }) {
+  if (compact) {
+    return <BloomPerformanceList buckets={buckets} isDarkMode={isDarkMode} t={t} />;
+  }
+
+  const filtered = getRenderableBloomBuckets(buckets);
+  if (filtered.length < 3) return null;
+
+  const size = 360;
+  const center = size / 2;
+  const maxRadius = 96;
+  const levels = 5;
+  const angleStep = 360 / filtered.length;
+  const gridRings = Array.from({ length: levels }, (_, index) => (maxRadius / levels) * (index + 1));
+
+  const gridPolygons = gridRings.map((radius) => (
+    filtered
+      .map((_, index) => {
+        const point = polarToCartesian(center, center, radius, index * angleStep);
+        return `${point.x},${point.y}`;
+      })
+      .join(" ")
+  ));
+
+  const dataPoints = filtered.map((bucket, index) => {
+    const accuracyPct = Math.round((bucket?.accuracyInMode ?? 0) * 100);
+    const radius = Math.max(2, (accuracyPct / 100) * maxRadius);
+    return polarToCartesian(center, center, radius, index * angleStep);
+  });
+
+  const labels = filtered.map((bucket, index) => {
+    const angle = index * angleStep;
+    const point = polarToCartesian(center, center, maxRadius + 46, angle);
+    const accuracyPct = Math.round((bucket?.accuracyInMode ?? 0) * 100);
+    const key = String(bucket?.label || "").toUpperCase();
+    const colorMeta = BLOOM_COLORS[key] || { main: "#94a3b8" };
+    const normalizedAngle = ((angle % 360) + 360) % 360;
+    const textAnchor = normalizedAngle > 20 && normalizedAngle < 160
+      ? "start"
+      : normalizedAngle > 200 && normalizedAngle < 340
+        ? "end"
+        : "middle";
+
+    return {
+      key,
+      label: translateLabel(bucket?.label, t, "bloom"),
+      point,
+      accuracyPct,
+      color: colorMeta.main,
+      textAnchor,
+    };
+  });
+
+  return (
+    <div className={`rounded-[28px] border p-5 md:p-6 ${panelClasses(isDarkMode)}`}>
+      <div className="flex flex-col gap-1">
+        <h3 className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+          {t("workspace.questionStats.radarTitle")}
+        </h3>
+        <p className={`text-sm ${mutedTextClasses(isDarkMode)}`}>
+          {t("workspace.questionStats.radarSubtitle")}
+        </p>
+      </div>
+
+      <div className="mt-6 mx-auto aspect-square w-full max-w-[360px]">
+        <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full">
+          {gridPolygons.map((points, index) => (
+            <polygon
+              key={`grid-${points}`}
+              points={points}
+              fill="none"
+              stroke={isDarkMode ? "#334155" : "#cbd5e1"}
+              strokeWidth={0.8}
+              opacity={index === gridPolygons.length - 1 ? 0.55 : 0.28}
+            />
+          ))}
+
+          {filtered.map((_, index) => {
+            const point = polarToCartesian(center, center, maxRadius, index * angleStep);
+            return (
+              <line
+                key={`axis-${index}`}
+                x1={center}
+                y1={center}
+                x2={point.x}
+                y2={point.y}
+                stroke={isDarkMode ? "#334155" : "#cbd5e1"}
+                strokeWidth={0.8}
+                opacity={0.4}
+              />
+            );
+          })}
+
+          <polygon
+            points={dataPoints.map((point) => `${point.x},${point.y}`).join(" ")}
+            fill={isDarkMode ? "rgba(59,130,246,0.14)" : "rgba(59,130,246,0.10)"}
+            stroke={isDarkMode ? "#60a5fa" : "#2563eb"}
+            strokeWidth={2}
+            strokeLinejoin="round"
+          />
+
+          {dataPoints.map((point, index) => (
+            <circle
+              key={`dot-${index}`}
+              cx={point.x}
+              cy={point.y}
+              r={4}
+              fill={isDarkMode ? "#93c5fd" : "#2563eb"}
+              stroke={isDarkMode ? "#0f172a" : "#ffffff"}
+              strokeWidth={2}
+            />
+          ))}
+
+          {labels.map((item) => (
+            <g key={item.key}>
+              <text
+                x={item.point.x}
+                y={item.point.y - 6}
+                textAnchor={item.textAnchor}
+                dominantBaseline="middle"
+                style={{
+                  fill: isDarkMode ? "#cbd5e1" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {item.label}
+              </text>
+              <text
+                x={item.point.x}
+                y={item.point.y + 10}
+                textAnchor={item.textAnchor}
+                dominantBaseline="middle"
+                style={{
+                  fill: item.color,
+                  fontSize: 12,
+                  fontWeight: 700,
+                }}
+              >
+                {item.accuracyPct}%
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {filtered.map((bucket) => {
+          const key = String(bucket?.label || "").toUpperCase();
+          const colorMeta = BLOOM_COLORS[key];
+
+          return (
+            <span
+              key={key}
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${isDarkMode ? "bg-slate-950/70 text-slate-200" : "bg-slate-100 text-slate-700"}`}
+            >
+              <span className={`h-2 w-2 rounded-full ${colorMeta?.bar || "bg-slate-400"}`} />
+              {translateLabel(bucket?.label, t, "bloom")}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BloomPerformanceList({ buckets, isDarkMode, t }) {
+  const rows = getRenderableBloomBuckets(buckets);
+  if (rows.length === 0) return null;
+
+  return (
+    <div className={`rounded-[28px] border p-4 ${panelClasses(isDarkMode)}`}>
+      <div className="flex flex-col gap-1">
+        <h3 className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+          {t("workspace.questionStats.radarTitle")}
+        </h3>
+        <p className={`text-sm ${mutedTextClasses(isDarkMode)}`}>
+          {t("workspace.questionStats.radarSubtitle")}
+        </p>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {rows.map((bucket) => {
+          const key = String(bucket?.label || "").toUpperCase();
+          const tone = BLOOM_COLORS[key];
+          const accuracyPct = Math.round(Number(bucket?.accuracyInMode || 0) * 100);
+          const total = Number(bucket?.totalWorkspaceQuestions || bucket?.totalAnsweredQuestionAttemptsInMode || 0);
+
+          return (
+            <div key={key} className={`rounded-2xl border p-4 ${insetPanelClasses(isDarkMode)}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getBucketBadgeStyle(key, isDarkMode, "bloom")}`}>
+                    {translateLabel(bucket?.label, t, "bloom")}
+                  </span>
+                  <p className={`mt-3 text-sm ${mutedTextClasses(isDarkMode)}`}>
+                    {fmtNumber(total)} {t("workspace.questionStats.total")}
+                  </p>
+                </div>
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${getAccuracyTone(accuracyPct, isDarkMode).softClass}`}>
+                  {accuracyPct}%
+                </span>
+              </div>
+
+              <ProgressBar
+                value={accuracyPct}
+                max={100}
+                isDarkMode={isDarkMode}
+                barClassName={tone?.bar || "bg-slate-400"}
+                className="mt-4"
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BucketTable({
+  title,
+  buckets,
+  isDarkMode,
+  t,
+  isLifetime = false,
+  bucketType = "difficulty",
+  forceCardLayout = false,
+}) {
+  if (!Array.isArray(buckets) || buckets.length === 0) return null;
+
+  const rows = buckets.map((bucket, index) => {
+    const total = isLifetime ? bucket?.totalAnsweredQuestionAttemptsInMode : bucket?.totalWorkspaceQuestions;
+    const correct = isLifetime ? bucket?.correctQuestionAttemptsInMode : bucket?.correctQuestionsInMode;
+    const incorrect = isLifetime ? bucket?.incorrectQuestionAttemptsInMode : bucket?.incorrectQuestionsInMode;
+    const accuracy = bucket?.accuracyInMode ?? 0;
+    const accuracyPct = Math.round(Number(accuracy) * 100);
+
+    return {
+      key: bucket?.label || index,
+      label: translateLabel(bucket?.label, t, bucketType),
+      badgeClassName: getBucketBadgeStyle(bucket?.label, isDarkMode, bucketType),
+      total: Number(total || 0),
+      correct: Number(correct || 0),
+      incorrect: Number(incorrect || 0),
+      accuracy,
+      accuracyPct,
+      accuracyTone: getAccuracyTone(accuracyPct, isDarkMode),
+    };
+  });
+
+  const showCardLayout = forceCardLayout;
+
+  return (
+    <div className={`rounded-[28px] border p-4 ${panelClasses(isDarkMode)}`}>
+      <div className="flex items-center gap-3">
+        <h4 className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>{title}</h4>
+        <div className={`h-px flex-1 ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`} />
+      </div>
+
+      <div className={`mt-4 space-y-3 ${showCardLayout ? "" : "md:hidden"}`}>
+        {rows.map((row) => (
+          <div key={row.key} className={`rounded-2xl border p-4 ${insetPanelClasses(isDarkMode)}`}>
+            <div className="flex items-center justify-between gap-3">
+              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${row.badgeClassName}`}>
+                {row.label}
+              </span>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.accuracyTone.softClass}`}>
+                {fmtAccuracy(row.accuracy)}
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${mutedTextClasses(isDarkMode)}`}>
+                  {isLifetime ? t("workspace.questionStats.attempts") : t("workspace.questionStats.total")}
+                </p>
+                <p className={`mt-1 text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                  {fmtNumber(row.total)}
+                </p>
+              </div>
+              <div>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${mutedTextClasses(isDarkMode)}`}>
+                  {t("workspace.questionStats.correct")}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-emerald-500">{fmtNumber(row.correct)}</p>
+              </div>
+              <div>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${mutedTextClasses(isDarkMode)}`}>
+                  {t("workspace.questionStats.incorrect")}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-rose-500">{fmtNumber(row.incorrect)}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className={`text-xs font-medium ${mutedTextClasses(isDarkMode)}`}>
+                  {t("workspace.questionStats.accuracy")}
+                </span>
+                <span className={`text-sm font-semibold ${row.accuracyTone.textClass}`}>
+                  {fmtAccuracy(row.accuracy)}
+                </span>
+              </div>
+              <ProgressBar
+                value={row.accuracyPct}
+                max={100}
+                isDarkMode={isDarkMode}
+                barClassName={row.accuracyTone.barClass}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className={`mt-4 overflow-x-auto ${showCardLayout ? "hidden" : "hidden md:block"}`}>
+        <table className="min-w-[640px] w-full text-sm">
           <thead>
-            <tr className={isDarkMode ? "bg-slate-800/80" : "bg-gray-50"}>
-              <th className={`text-left px-3 py-2 font-medium ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {t("workspace.questionStats.label")}
-              </th>
-              <th className={`text-center px-3 py-2 font-medium ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+            <tr className={isDarkMode ? "text-slate-400" : "text-slate-500"}>
+              <th className="px-4 py-3 text-left font-semibold">{t("workspace.questionStats.label")}</th>
+              <th className="px-4 py-3 text-center font-semibold">
                 {isLifetime ? t("workspace.questionStats.attempts") : t("workspace.questionStats.total")}
               </th>
-              <th className={`text-center px-3 py-2 font-medium text-emerald-500`}>
-                <CheckCircle2 className="w-3.5 h-3.5 inline-block mr-1" />
+              <th className="px-4 py-3 text-center font-semibold text-emerald-500">
                 {t("workspace.questionStats.correct")}
               </th>
-              <th className={`text-center px-3 py-2 font-medium text-red-500`}>
-                <XCircle className="w-3.5 h-3.5 inline-block mr-1" />
+              <th className="px-4 py-3 text-center font-semibold text-rose-500">
                 {t("workspace.questionStats.incorrect")}
               </th>
-              <th className={`text-center px-3 py-2 font-medium ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {t("workspace.questionStats.accuracy")}
-              </th>
+              <th className="px-4 py-3 text-right font-semibold">{t("workspace.questionStats.accuracy")}</th>
             </tr>
           </thead>
           <tbody>
-            {buckets.map((bucket, index) => {
-              const total = isLifetime ? bucket.totalAnsweredQuestionAttemptsInMode : bucket.totalWorkspaceQuestions;
-              const correct = isLifetime ? bucket.correctQuestionAttemptsInMode : bucket.correctQuestionsInMode;
-              const incorrect = isLifetime ? bucket.incorrectQuestionAttemptsInMode : bucket.incorrectQuestionsInMode;
-              const accuracy = bucket.accuracyInMode;
-
-              return (
-                <tr
-                  key={bucket.label || index}
-                  className={`${isDarkMode ? "border-slate-700/30 hover:bg-slate-800/40" : "border-gray-50 hover:bg-gray-50/50"} border-t transition-colors`}
-                >
-                  <td className={`px-3 py-2 font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                    <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-semibold ${getDifficultyStyle(bucket.label, isDarkMode)}`}>
-                      {translateLabel(bucket.label, t, bucketType)}
+            {rows.map((row, index) => (
+              <tr
+                key={row.key}
+                className={`${index > 0 ? (isDarkMode ? "border-t border-slate-800/80" : "border-t border-slate-200") : ""} ${
+                  isDarkMode ? "hover:bg-slate-800/30" : "hover:bg-slate-50"
+                } transition-colors`}
+              >
+                <td className="px-4 py-3">
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${row.badgeClassName}`}>
+                    {row.label}
+                  </span>
+                </td>
+                <td className={`px-4 py-3 text-center font-medium ${isDarkMode ? "text-slate-200" : "text-slate-700"}`}>
+                  {fmtNumber(row.total)}
+                </td>
+                <td className="px-4 py-3 text-center font-semibold text-emerald-500">
+                  {fmtNumber(row.correct)}
+                </td>
+                <td className="px-4 py-3 text-center font-semibold text-rose-500">
+                  {fmtNumber(row.incorrect)}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-3">
+                    <ProgressBar
+                      value={row.accuracyPct}
+                      max={100}
+                      isDarkMode={isDarkMode}
+                      barClassName={row.accuracyTone.barClass}
+                      className="hidden w-24 lg:block"
+                    />
+                    <span className={`font-semibold ${row.accuracyTone.textClass}`}>
+                      {fmtAccuracy(row.accuracy)}
                     </span>
-                  </td>
-                  <td className={`text-center px-3 py-2 ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{total ?? 0}</td>
-                  <td className="text-center px-3 py-2 text-emerald-600 dark:text-emerald-400 font-medium">{correct ?? 0}</td>
-                  <td className="text-center px-3 py-2 text-red-500 dark:text-red-400 font-medium">{incorrect ?? 0}</td>
-                  <td className="text-center px-3 py-2">
-                    <span className={`font-bold ${accuracy > 0.7 ? "text-emerald-600 dark:text-emerald-400" : accuracy > 0.4 ? "text-amber-600 dark:text-amber-400" : "text-red-500 dark:text-red-400"}`}>
-                      {fmtAccuracy(accuracy)}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -134,197 +713,15 @@ function BucketTable({ title, buckets, isDarkMode, t, isLifetime = false, bucket
   );
 }
 
-function getDifficultyStyle(label, isDarkMode) {
-  const normalized = String(label || "").toUpperCase();
-  if (normalized === "EASY") return isDarkMode ? "bg-emerald-900/40 text-emerald-400" : "bg-emerald-100 text-emerald-700";
-  if (normalized === "MEDIUM") return isDarkMode ? "bg-amber-900/40 text-amber-400" : "bg-amber-100 text-amber-700";
-  if (normalized === "HARD") return isDarkMode ? "bg-red-900/40 text-red-400" : "bg-red-100 text-red-700";
-  return isDarkMode ? "bg-slate-700 text-slate-300" : "bg-gray-100 text-gray-600";
-}
-
-const BLOOM_COLORS = {
-  REMEMBER:    { main: "#6366f1", bg: "bg-indigo-500" },
-  UNDERSTAND:  { main: "#06b6d4", bg: "bg-cyan-500" },
-  APPLY:       { main: "#22c55e", bg: "bg-emerald-500" },
-  ANALYZE:     { main: "#f59e0b", bg: "bg-amber-500" },
-  EVALUATE:    { main: "#ef4444", bg: "bg-red-500" },
-  CREATE:      { main: "#a855f7", bg: "bg-purple-500" },
-};
-
-function polarToCartesian(cx, cy, r, angleDeg) {
-  const angleRad = ((angleDeg - 90) * Math.PI) / 180;
-  return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) };
-}
-
-const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "CREATE", "APPLY"];
-
-function RadarChart({ buckets, isDarkMode, t }) {
-  if (!buckets || buckets.length < 3) return null;
-
-  const available = buckets.filter((b) => b.label !== "UNSPECIFIED");
-  if (available.length < 3) return null;
-
-  const bucketMap = Object.fromEntries(available.map((b) => [b.label.toUpperCase(), b]));
-  const filtered = BLOOM_ORDER.map((key) => bucketMap[key]).filter(Boolean);
-  if (filtered.length < 3) return filtered.length === 0 ? null : null;
-
-  const size = 360;
-  const cx = size / 2;
-  const cy = size / 2;
-  const maxR = 95;
-  const levels = 5;
-  const angleStep = 360 / filtered.length;
-
-  const gridCircles = Array.from({ length: levels }, (_, i) => (maxR / levels) * (i + 1));
-
-  const gridPolygons = gridCircles.map((r) => {
-    return filtered.map((_, j) => {
-      const p = polarToCartesian(cx, cy, r, j * angleStep);
-      return `${p.x},${p.y}`;
-    }).join(" ");
-  });
-
-  const dataPoints = filtered.map((bucket, i) => {
-    const pctVal = Math.round((bucket.accuracyInMode ?? 0) * 100);
-    const r = (pctVal / 100) * maxR;
-    return polarToCartesian(cx, cy, Math.max(r, 2), i * angleStep);
-  });
-  const dataPolygon = dataPoints.map((p) => `${p.x},${p.y}`).join(" ");
-
-  const labelDistance = maxR + 50;
-  const labels = filtered.map((bucket, i) => {
-    const angle = i * angleStep;
-    const p = polarToCartesian(cx, cy, labelDistance, angle);
-    const pctVal = Math.round((bucket.accuracyInMode ?? 0) * 100);
-    const colorInfo = BLOOM_COLORS[bucket.label.toUpperCase()] || { main: "#94a3b8" };
-    const normAngle = ((angle % 360) + 360) % 360;
-    const anchor = normAngle > 20 && normAngle < 160 ? "start" : normAngle > 200 && normAngle < 340 ? "end" : "middle";
-    return { ...p, angle, label: translateLabel(bucket.label, t, "bloom"), pct: pctVal, color: colorInfo.main, key: bucket.label, anchor };
-  });
-
+function StatePanel({ icon: Icon, message, isDarkMode, iconClassName, action = null, spinning = false }) {
   return (
-    <div className={`rounded-2xl p-5 pb-3 border ${isDarkMode ? "bg-slate-800/40 border-slate-700/50" : "bg-white border-gray-100"} shadow-sm`}>
-      <div className="mb-0">
-        <h3 className={`text-sm font-bold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          {t("workspace.questionStats.radarTitle")}
-        </h3>
-        <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-          {t("workspace.questionStats.radarSubtitle")}
-        </p>
-      </div>
-      <div className="flex items-center justify-center overflow-visible">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} overflow="visible">
-          {/* Grid polygons */}
-          {gridPolygons.map((points, i) => (
-            <polygon
-              key={i}
-              points={points}
-              fill="none"
-              stroke={isDarkMode ? "#334155" : "#d1d5db"}
-              strokeWidth={0.6}
-              opacity={i === levels - 1 ? 0.6 : 0.3}
-            />
-          ))}
-
-          {/* Axis lines */}
-          {filtered.map((_, i) => {
-            const p = polarToCartesian(cx, cy, maxR, i * angleStep);
-            return (
-              <line
-                key={i}
-                x1={cx} y1={cy} x2={p.x} y2={p.y}
-                stroke={isDarkMode ? "#334155" : "#d1d5db"}
-                strokeWidth={0.6}
-                opacity={0.3}
-              />
-            );
-          })}
-
-          {/* Data area fill */}
-          <polygon
-            points={dataPolygon}
-            fill={isDarkMode ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.08)"}
-            stroke={isDarkMode ? "#818cf8" : "#6366f1"}
-            strokeWidth={2}
-            strokeLinejoin="round"
-          />
-
-          {/* Data points */}
-          {dataPoints.map((p, i) => (
-            <circle
-              key={i}
-              cx={p.x} cy={p.y} r={3.5}
-              fill={isDarkMode ? "#818cf8" : "#6366f1"}
-              stroke={isDarkMode ? "#1e293b" : "#ffffff"}
-              strokeWidth={2}
-            />
-          ))}
-
-          {/* Labels */}
-          {labels.map((item) => (
-            <g key={item.key}>
-              <text
-                x={item.x}
-                y={item.y - 6}
-                textAnchor={item.anchor}
-                dominantBaseline="middle"
-                className={`text-[12px] font-semibold ${isDarkMode ? "fill-slate-300" : "fill-gray-600"}`}
-              >
-                {item.label}
-              </text>
-              <text
-                x={item.x}
-                y={item.y + 10}
-                textAnchor={item.anchor}
-                dominantBaseline="middle"
-                className="text-[12px] font-bold"
-                fill={item.color}
-              >
-                {item.pct}%
-              </text>
-            </g>
-          ))}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-function AccuracyRing({ accuracy, size = 120, strokeWidth = 10, isDarkMode, label }) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const pctValue = Math.round((accuracy ?? 0) * 100);
-  const offset = circumference - (pctValue / 100) * circumference;
-
-  const color = pctValue >= 70 ? "text-emerald-500" : pctValue >= 40 ? "text-amber-500" : "text-red-500";
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={isDarkMode ? "#334155" : "#e5e7eb"}
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className={`${color} transition-all duration-700 ease-out`}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-2xl font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>{pctValue}%</span>
-        <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{label}</span>
+    <div className="flex min-h-full items-center justify-center p-4 md:p-5 xl:p-6">
+      <div className={`flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-[28px] border px-6 py-12 text-center ${panelClasses(isDarkMode)}`}>
+        <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${isDarkMode ? "bg-slate-800" : "bg-slate-100"}`}>
+          <Icon className={`h-7 w-7 ${iconClassName} ${spinning ? "animate-spin" : ""}`} />
+        </div>
+        <p className={`text-sm ${mutedTextClasses(isDarkMode)}`}>{message}</p>
+        {action}
       </div>
     </div>
   );
@@ -332,16 +729,24 @@ function AccuracyRing({ accuracy, size = 120, strokeWidth = 10, isDarkMode, labe
 
 export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
   const { t } = useTranslation();
+  const containerRef = React.useRef(null);
 
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [attemptMode, setAttemptMode] = useState("OFFICIAL");
-  const [modeOpen, setModeOpen] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  const fetchStats = async (mode) => {
+  const fetchStats = useCallback(async (mode) => {
+    if (!workspaceId) {
+      setStats(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+
     try {
       const response = await getIndividualWorkspaceQuestionStats(workspaceId, mode);
       const data = response?.data?.data ?? response?.data ?? response ?? null;
@@ -351,254 +756,333 @@ export default function QuestionStatsView({ workspaceId, isDarkMode = false }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t, workspaceId]);
 
   useEffect(() => {
-    if (workspaceId) fetchStats(attemptMode);
-  }, [workspaceId, attemptMode]);
+    if (!workspaceId) return;
+    fetchStats(attemptMode);
+  }, [attemptMode, fetchStats, workspaceId]);
 
-  const current = stats?.currentQuestionStats;
-  const lifetime = stats?.lifetimeQuestionAttemptStats;
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return undefined;
+
+    const updateWidth = () => {
+      setContainerWidth(element.clientWidth || 0);
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver === "undefined") return undefined;
+
+    const observer = new ResizeObserver(() => updateWidth());
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <Loader2 className={`w-8 h-8 animate-spin ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
-        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-          {t("workspace.questionStats.loading")}
-        </p>
-      </div>
+      <StatePanel
+        icon={Loader2}
+        message={t("workspace.questionStats.loading")}
+        isDarkMode={isDarkMode}
+        iconClassName={isDarkMode ? "text-slate-300" : "text-slate-500"}
+        spinning
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3">
-        <AlertCircle className="w-8 h-8 text-red-400" />
-        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{error}</p>
-        <button
-          onClick={() => fetchStats(attemptMode)}
-          className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"}`}
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          {t("workspace.questionStats.retry")}
-        </button>
-      </div>
+      <StatePanel
+        icon={AlertCircle}
+        message={error}
+        isDarkMode={isDarkMode}
+        iconClassName="text-rose-500"
+        action={(
+          <button
+            type="button"
+            onClick={() => fetchStats(attemptMode)}
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              isDarkMode
+                ? "bg-slate-800 text-slate-100 hover:bg-slate-700"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
+          >
+            <RefreshCw className="h-4 w-4" />
+            {t("workspace.questionStats.retry")}
+          </button>
+        )}
+      />
     );
   }
+
+  const current = stats?.currentQuestionStats;
+  const lifetime = stats?.lifetimeQuestionAttemptStats;
 
   if (!stats || !current) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-2">
-        <BarChart3 className={`w-10 h-10 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-        <p className={`text-sm ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-          {t("workspace.questionStats.noData")}
-        </p>
-      </div>
+      <StatePanel
+        icon={BarChart3}
+        message={t("workspace.questionStats.noData")}
+        isDarkMode={isDarkMode}
+        iconClassName={isDarkMode ? "text-slate-500" : "text-slate-400"}
+      />
     );
   }
 
-  const selectedModeLabel = ATTEMPT_MODES.find((m) => m.value === attemptMode)?.labelKey;
+  const selectedModeLabel = ATTEMPT_MODES.find((mode) => mode.value === attemptMode)?.labelKey || ATTEMPT_MODES[0].labelKey;
+  const totalQuestions = Number(current?.totalWorkspaceQuestions || 0);
+  const attemptedQuestions = Number(current?.attemptedQuestionsInMode || 0);
+  const correctQuestions = Number(current?.correctQuestionsInMode || 0);
+  const incorrectQuestions = Number(current?.incorrectQuestionsInMode || 0);
+  const pendingQuestions = Number(current?.pendingQuestionsInMode || 0);
+  const attemptedPercent = pct(attemptedQuestions, totalQuestions);
+  const hasRadar = getRenderableBloomBuckets(current?.byBloom).length >= 3;
+  const isDense = containerWidth > 0 && containerWidth < 760;
+  const isUltraCompact = containerWidth > 0 && containerWidth < 560;
+  const contentPaddingClass = isUltraCompact ? "space-y-3 p-3" : "space-y-4 p-4";
+  const summaryGridClass = isUltraCompact ? "grid-cols-1" : "grid-cols-2";
 
   return (
-    <div className={`h-full overflow-y-auto rounded-2xl ${isDarkMode ? "bg-slate-900/50" : "bg-gray-50/80"}`}>
-      <div className="p-5 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className={`flex items-center justify-center w-9 h-9 rounded-xl ${isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-600"}`}>
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className={`text-base font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                {t("workspace.questionStats.title")}
-              </h2>
-              <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {stats.workspaceName}
-              </p>
-            </div>
-          </div>
-
-          {/* Attempt mode selector */}
-          <div className="relative">
-            <button
-              onClick={() => setModeOpen(!modeOpen)}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition ${isDarkMode
-                ? "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
-                : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              {t(selectedModeLabel)}
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${modeOpen ? "rotate-180" : ""}`} />
-            </button>
-            {modeOpen && (
-              <div className={`absolute right-0 top-full mt-1 z-50 rounded-lg border shadow-lg overflow-hidden ${isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"}`}>
-                {ATTEMPT_MODES.map((mode) => (
-                  <button
-                    key={mode.value}
-                    onClick={() => { setAttemptMode(mode.value); setModeOpen(false); }}
-                    className={`block w-full text-left text-xs px-4 py-2 transition ${attemptMode === mode.value
-                      ? isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-50 text-blue-600"
-                      : isDarkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    {t(mode.labelKey)}
-                  </button>
-                ))}
+    <div ref={containerRef} className="h-full overflow-y-auto">
+      <div className={contentPaddingClass}>
+        <div className={`rounded-[28px] border ${isUltraCompact ? "p-4" : "p-5"} ${panelClasses(isDarkMode)}`}>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-4">
+              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] ${isDarkMode ? "bg-blue-500/15 text-blue-300" : "bg-blue-100 text-blue-600"}`}>
+                <BarChart3 className="h-6 w-6" />
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Overview: Accuracy Ring + Summary Cards */}
-        <div className={`rounded-2xl p-5 border ${isDarkMode ? "bg-slate-800/40 border-slate-700/50" : "bg-white border-gray-100"} shadow-sm`}>
-          <div className="flex items-center gap-6">
-            <AccuracyRing accuracy={current.accuracyInMode} isDarkMode={isDarkMode} label={t("workspace.questionStats.accuracy")} />
-
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                  {t("workspace.questionStats.progress")}
-                </span>
-                <span className={`text-sm font-bold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                  {current.attemptedQuestionsInMode}/{current.totalWorkspaceQuestions}
-                </span>
-              </div>
-              <ProgressBar
-                value={current.attemptedQuestionsInMode}
-                max={current.totalWorkspaceQuestions}
-                color="bg-blue-500"
-              />
-
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="text-center">
-                  <p className="text-emerald-500 text-lg font-bold">{current.correctQuestionsInMode}</p>
-                  <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{t("workspace.questionStats.correct")}</p>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className={`${isUltraCompact ? "text-lg" : "text-xl"} font-semibold ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+                    {t("workspace.questionStats.title")}
+                  </h2>
+                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}>
+                    {t(selectedModeLabel)}
+                  </span>
                 </div>
-                <div className="text-center">
-                  <p className="text-red-500 text-lg font-bold">{current.incorrectQuestionsInMode}</p>
-                  <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{t("workspace.questionStats.incorrect")}</p>
-                </div>
-                <div className="text-center">
-                  <p className={`text-lg font-bold ${isDarkMode ? "text-amber-400" : "text-amber-500"}`}>{current.pendingQuestionsInMode}</p>
-                  <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{t("workspace.questionStats.pending")}</p>
-                </div>
+                <p className={`mt-1 text-sm ${mutedTextClasses(isDarkMode)}`}>{stats?.workspaceName}</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Radar + Summary stat cards — side by side */}
-        <div className="grid grid-cols-[1fr_1fr] gap-4 items-stretch">
-          {current.byBloom && current.byBloom.length >= 3 && (
-            <RadarChart
-              buckets={current.byBloom}
+            <ModeSwitcher
+              attemptMode={attemptMode}
+              onChange={setAttemptMode}
               isDarkMode={isDarkMode}
               t={t}
-            />
-          )}
-          <div className="grid grid-cols-2 gap-3 content-stretch">
-            <StatCard
-              icon={Target}
-              label={t("workspace.questionStats.totalQuestions")}
-              value={current.totalWorkspaceQuestions}
-              color={isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-600"}
-              isDarkMode={isDarkMode}
-            />
-            <StatCard
-              icon={CheckCircle2}
-              label={t("workspace.questionStats.attempted")}
-              value={current.attemptedQuestionsInMode}
-              subValue={`${pct(current.attemptedQuestionsInMode, current.totalWorkspaceQuestions)}%`}
-              color={isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600"}
-              isDarkMode={isDarkMode}
-            />
-            <StatCard
-              icon={TrendingUp}
-              label={t("workspace.questionStats.accuracyLabel")}
-              value={fmtAccuracy(current.accuracyInMode)}
-              color={isDarkMode ? "bg-purple-900/30 text-purple-400" : "bg-purple-100 text-purple-600"}
-              isDarkMode={isDarkMode}
-            />
-            <StatCard
-              icon={Clock}
-              label={t("workspace.questionStats.pendingGrading")}
-              value={current.pendingQuestionsInMode}
-              color={isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600"}
-              isDarkMode={isDarkMode}
+              compact={isUltraCompact}
             />
           </div>
         </div>
 
-        {/* Current Question Stats - By Difficulty */}
-        <div>
-          <h3 className={`text-sm font-bold mb-1 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-            {t("workspace.questionStats.currentStatsTitle")}
-          </h3>
-          <p className={`text-xs mb-3 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-            {t("workspace.questionStats.currentStatsDesc")}
-          </p>
-          <BucketTable
-            title={t("workspace.questionStats.byDifficulty")}
-            buckets={current.byDifficulty}
+        <div className={`grid gap-3 ${summaryGridClass}`}>
+          <StatCard
+            icon={Target}
+            label={t("workspace.questionStats.totalQuestions")}
+            value={fmtNumber(totalQuestions)}
+            subValue={t(selectedModeLabel)}
+            iconClassName={isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-600"}
+            accentClassName="bg-gradient-to-r from-blue-500 to-cyan-400"
             isDarkMode={isDarkMode}
-            t={t}
-            bucketType="difficulty"
+            compact
           />
-          <BucketTable
-            title={t("workspace.questionStats.byBloom")}
-            buckets={current.byBloom}
+          <StatCard
+            icon={CheckCircle2}
+            label={t("workspace.questionStats.attempted")}
+            value={fmtNumber(attemptedQuestions)}
+            subValue={`${attemptedPercent}%`}
+            iconClassName={isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-100 text-emerald-600"}
+            accentClassName="bg-emerald-500"
             isDarkMode={isDarkMode}
-            t={t}
-            bucketType="bloom"
+            compact
+          />
+          <StatCard
+            icon={TrendingUp}
+            label={t("workspace.questionStats.accuracyLabel")}
+            value={fmtAccuracy(current?.accuracyInMode)}
+            iconClassName={isDarkMode ? "bg-fuchsia-950/50 text-fuchsia-300" : "bg-fuchsia-100 text-fuchsia-600"}
+            accentClassName="bg-fuchsia-500"
+            isDarkMode={isDarkMode}
+            compact
+          />
+          <StatCard
+            icon={Clock}
+            label={t("workspace.questionStats.pendingGrading")}
+            value={fmtNumber(pendingQuestions)}
+            subValue={`${pct(pendingQuestions, totalQuestions)}%`}
+            iconClassName={isDarkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-100 text-amber-600"}
+            accentClassName="bg-amber-500"
+            isDarkMode={isDarkMode}
+            compact
           />
         </div>
 
-        {/* Lifetime Question Attempt Stats */}
-        {lifetime && (
-          <div>
-            <h3 className={`text-sm font-bold mb-1 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-              {t("workspace.questionStats.lifetimeStatsTitle")}
-            </h3>
-            <p className={`text-xs mb-3 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-              {t("workspace.questionStats.lifetimeStatsDesc")}
-            </p>
+        <div className={`rounded-[28px] border ${isUltraCompact ? "p-4" : "p-5"} ${panelClasses(isDarkMode)}`}>
+          <div className={`flex ${isDense ? "flex-col" : "items-center"} gap-5`}>
+            <div className={`flex ${isUltraCompact ? "flex-col items-start" : "items-center"} gap-4`}>
+              <AccuracyRing
+                accuracy={current?.accuracyInMode}
+                isDarkMode={isDarkMode}
+                label={t("workspace.questionStats.accuracy")}
+                size={isUltraCompact ? 112 : 120}
+                strokeWidth={10}
+              />
+              <div className="space-y-3">
+                <div>
+                  <p className={`text-sm font-medium ${mutedTextClasses(isDarkMode)}`}>
+                    {t("workspace.questionStats.progress")}
+                  </p>
+                  <div className="mt-1 flex items-end gap-2">
+                    <span className={`${isUltraCompact ? "text-3xl" : "text-4xl"} font-bold leading-none ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+                      {fmtNumber(attemptedQuestions)}
+                    </span>
+                    <span className={`pb-1 text-base font-medium ${mutedTextClasses(isDarkMode)}`}>
+                      / {fmtNumber(totalQuestions)}
+                    </span>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
+                  {attemptedPercent}% {t("workspace.questionStats.attempted")}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-4">
+              <ProgressBar
+                value={attemptedQuestions}
+                max={totalQuestions}
+                isDarkMode={isDarkMode}
+                barClassName="bg-gradient-to-r from-blue-500 to-cyan-400"
+                className="h-3"
+              />
+
+              <div className="space-y-3">
+                <MetricBar
+                  icon={CheckCircle2}
+                  label={t("workspace.questionStats.correct")}
+                  value={correctQuestions}
+                  total={totalQuestions}
+                  iconClassName={isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-100 text-emerald-600"}
+                  badgeClassName={isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-50 text-emerald-700"}
+                  barClassName="bg-emerald-500"
+                  isDarkMode={isDarkMode}
+                />
+                <MetricBar
+                  icon={XCircle}
+                  label={t("workspace.questionStats.incorrect")}
+                  value={incorrectQuestions}
+                  total={totalQuestions}
+                  iconClassName={isDarkMode ? "bg-rose-950/50 text-rose-300" : "bg-rose-100 text-rose-600"}
+                  badgeClassName={isDarkMode ? "bg-rose-950/50 text-rose-300" : "bg-rose-50 text-rose-700"}
+                  barClassName="bg-rose-500"
+                  isDarkMode={isDarkMode}
+                />
+                <MetricBar
+                  icon={Clock}
+                  label={t("workspace.questionStats.pending")}
+                  value={pendingQuestions}
+                  total={totalQuestions}
+                  iconClassName={isDarkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-100 text-amber-600"}
+                  badgeClassName={isDarkMode ? "bg-amber-950/50 text-amber-300" : "bg-amber-50 text-amber-700"}
+                  barClassName="bg-amber-500"
+                  isDarkMode={isDarkMode}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {hasRadar ? (
+          <RadarChart buckets={current?.byBloom} isDarkMode={isDarkMode} t={t} compact />
+        ) : null}
+
+        <section className="space-y-4">
+          <div>
+            <h3 className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+              {t("workspace.questionStats.currentStatsTitle")}
+            </h3>
+            <p className={`mt-1 text-sm ${mutedTextClasses(isDarkMode)}`}>
+              {t("workspace.questionStats.currentStatsDesc")}
+            </p>
+          </div>
+
+          <div className="grid gap-4 grid-cols-1">
+            <BucketTable
+              title={t("workspace.questionStats.byDifficulty")}
+              buckets={current?.byDifficulty}
+              isDarkMode={isDarkMode}
+              t={t}
+              bucketType="difficulty"
+              forceCardLayout
+            />
+            <BucketTable
+              title={t("workspace.questionStats.byBloom")}
+              buckets={current?.byBloom}
+              isDarkMode={isDarkMode}
+              t={t}
+              bucketType="bloom"
+              forceCardLayout
+            />
+          </div>
+        </section>
+
+        {lifetime ? (
+          <section className="space-y-4">
+            <div>
+              <h3 className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                {t("workspace.questionStats.lifetimeStatsTitle")}
+              </h3>
+              <p className={`mt-1 text-sm ${mutedTextClasses(isDarkMode)}`}>
+                {t("workspace.questionStats.lifetimeStatsDesc")}
+              </p>
+            </div>
+
+            <div className={`grid gap-3 ${isUltraCompact ? "grid-cols-1" : "grid-cols-2"}`}>
               <StatCard
                 icon={BarChart3}
                 label={t("workspace.questionStats.totalAttempts")}
-                value={lifetime.totalQuestionAttempts}
-                color={isDarkMode ? "bg-indigo-900/30 text-indigo-400" : "bg-indigo-100 text-indigo-600"}
+                value={fmtNumber(lifetime?.totalQuestionAttempts)}
+                iconClassName={isDarkMode ? "bg-indigo-950/50 text-indigo-300" : "bg-indigo-100 text-indigo-600"}
+                accentClassName="bg-indigo-500"
                 isDarkMode={isDarkMode}
+                compact
               />
               <StatCard
                 icon={TrendingUp}
                 label={t("workspace.questionStats.lifetimeAccuracy")}
-                value={fmtAccuracy(lifetime.accuracy)}
-                color={isDarkMode ? "bg-teal-900/30 text-teal-400" : "bg-teal-100 text-teal-600"}
+                value={fmtAccuracy(lifetime?.accuracy)}
+                iconClassName={isDarkMode ? "bg-teal-950/50 text-teal-300" : "bg-teal-100 text-teal-600"}
+                accentClassName="bg-teal-500"
                 isDarkMode={isDarkMode}
+                compact
               />
             </div>
 
-            <BucketTable
-              title={t("workspace.questionStats.byDifficulty")}
-              buckets={lifetime.byDifficulty}
-              isDarkMode={isDarkMode}
-              t={t}
-              isLifetime
-              bucketType="difficulty"
-            />
-            <BucketTable
-              title={t("workspace.questionStats.byBloom")}
-              buckets={lifetime.byBloom}
-              isDarkMode={isDarkMode}
-              t={t}
-              isLifetime
-              bucketType="bloom"
-            />
-          </div>
-        )}
+            <div className="grid gap-4 grid-cols-1">
+              <BucketTable
+                title={t("workspace.questionStats.byDifficulty")}
+                buckets={lifetime?.byDifficulty}
+                isDarkMode={isDarkMode}
+                t={t}
+                isLifetime
+                bucketType="difficulty"
+                forceCardLayout
+              />
+              <BucketTable
+                title={t("workspace.questionStats.byBloom")}
+                buckets={lifetime?.byBloom}
+                isDarkMode={isDarkMode}
+                t={t}
+                isLifetime
+                bucketType="bloom"
+                forceCardLayout
+              />
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );
