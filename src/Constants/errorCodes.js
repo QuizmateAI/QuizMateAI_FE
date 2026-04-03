@@ -1,9 +1,9 @@
 /**
- * Mapping BE error code → i18n key.
- * Đồng bộ với: com.example.quizmateai_be.exception.ErrorCode
+ * Map BE error codes to i18n keys.
+ * Keep in sync with com.example.quizmateai_be.exception.ErrorCode.
  *
- * ⚠️ Các code trùng (1071-1078) giữa Challenge và QuizAttempt:
- *    BE cần fix, FE fallback sang message gốc từ server.
+ * Note: codes 1071-1078 overlap between Challenge and QuizAttempt.
+ * FE falls back to the original BE message for those codes.
  */
 const ERROR_CODES = {
   // ========== XÁC THỰC / TÀI KHOẢN ==========
@@ -117,6 +117,9 @@ const ERROR_CODES = {
   1081: 'error.defaultPlanCannotDelete',
   1082: 'error.defaultPlanCannotUpdateType',
   1064: 'error.defaultPlanCannotInactive',
+
+  // ========== CREDIT ==========
+  1129: 'error.insufficientCredit',
 };
 
 export default ERROR_CODES;
