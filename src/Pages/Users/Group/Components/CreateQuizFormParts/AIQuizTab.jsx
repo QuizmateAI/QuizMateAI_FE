@@ -2,6 +2,15 @@ import React from "react";
 import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2 } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
 
+const QUESTION_TYPE_LABEL_FALLBACKS = {
+  SINGLE_CHOICE: "Single choice",
+  MULTIPLE_CHOICE: "Multiple choice",
+  SHORT_ANSWER: "Short answer",
+  TRUE_FALSE: "True/False",
+  FILL_IN_BLANK: "Fill in the blank",
+  IMAGED_BASED: "Image based",
+};
+
 function AIQuizTab({
   t,
   isDarkMode,
@@ -66,6 +75,11 @@ function AIQuizTab({
   onPreviewStructure,
 }) {
   const requiredMark = <span className="ml-1 text-red-500">*</span>;
+  const getQuestionTypeLabel = React.useCallback((questionType) => {
+    const normalizedType = String(questionType || "").toUpperCase();
+    const fallbackLabel = QUESTION_TYPE_LABEL_FALLBACKS[normalizedType] || questionType || "-";
+    return t(`workspace.quiz.aiConfig.questionTypeLabels.${normalizedType}`, fallbackLabel);
+  }, [t]);
 
   const normalizeIntegerInput = (value) => {
     if (value === "") return "";
