@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useRef } from "react";
 import { getActiveTask } from "@/api/QuizAPI";
+import { normalizeRuntimeTaskSignal } from "@/lib/runtimeTaskSignal";
 
 function normalizeActiveTaskSnapshot(response) {
   const payload = response?.data || response || {};
-  const declaredTasks = Array.isArray(payload?.activeTasks) ? payload.activeTasks : [];
+  const declaredTasks = Array.isArray(payload?.activeTasks)
+    ? payload.activeTasks
+      .map((task) => normalizeRuntimeTaskSignal(task, { source: "active-task" }))
+      .filter((task) => task.taskId)
+    : [];
 
-  const fallbackTask = payload?.taskId
-    ? [{
-      taskId: payload.taskId,
+  const fallbackTaskId = payload?.taskId ?? payload?.task_id ?? payload?.websocketTaskId ?? payload?.websocket_task_id;
+  const fallbackTask = fallbackTaskId
+    ? [normalizeRuntimeTaskSignal({
+      taskId: fallbackTaskId,
+      websocketTaskId: payload.websocketTaskId ?? payload?.websocket_task_id,
       percent: payload?.percent,
+      progressPercent: payload?.progressPercent,
       status: payload?.status,
       message: payload?.message,
       processingObject: payload?.processingObject,
-    }]
+    }, { source: "active-task" })].filter((task) => task.taskId)
     : [];
 
   const activeTasks = declaredTasks.length > 0 ? declaredTasks : fallbackTask;
