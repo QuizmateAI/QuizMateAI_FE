@@ -886,11 +886,12 @@ function RoadmapCanvasView2({
           const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);
           const isOpenPhase = Number(effectiveOpenPhaseId) === normalizedPhaseId;
           const isDecisionHandled = decisionHandledPhaseIds.includes(normalizedPhaseId);
-          const canRenderPreLearningDecisionCard = isOpenPhase
-            && shouldRenderDecisionCard
-            && decisionState.phaseId === normalizedPhaseId;
           const isGeneratingKnowledgeForPhase = generatingKnowledgePhaseIds.includes(normalizedPhaseId)
             || generatingKnowledgeQuizPhaseIds.includes(normalizedPhaseId);
+          const canRenderPreLearningDecisionCard = isOpenPhase
+            && shouldRenderDecisionCard
+            && decisionState.phaseId === normalizedPhaseId
+            && !isGeneratingKnowledgeForPhase;
           const shouldShowPreLearningDecision = isStudyNewRoadmap
             && !hasPreLearning
             && !hasKnowledge

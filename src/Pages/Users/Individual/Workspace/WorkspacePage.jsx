@@ -36,6 +36,7 @@ import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 import { inferProcessingRoadmapGenerationIds } from "@/Pages/Users/Individual/Workspace/utils/roadmapProcessing";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import { normalizeRuntimeTaskSignal } from "@/lib/runtimeTaskSignal";
 
 const LazyRoadmapJourPanel = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/RoadmapJourPanel"));
 const LazyUploadSourceDialog = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog"));
@@ -1935,36 +1936,17 @@ function WorkspacePage() {
 		const recoveredKnowledgeQuizKeys = new Set();
 
 		tasks.forEach((task) => {
-			const normalizedStatus = String(task?.status || "").toUpperCase();
-			const normalizedMessage = String(task?.message || "").toUpperCase();
-			const taskId = String(task?.taskId || "").trim();
-			const percent = clampPercent(task?.percent ?? 0);
-			const processingObject = (task?.processingObject && typeof task.processingObject === "object") ? task.processingObject : {};
-			const taskType = String(processingObject?.taskType || "").toUpperCase();
-			const progressQuizId = Number(processingObject?.quizId ?? 0);
-			const progressPhaseId = Number(processingObject?.phaseId ?? 0);
-			const progressKnowledgeId = Number(processingObject?.knowledgeId ?? 0);
-			const progressRoadmapId = Number(processingObject?.roadmapId ?? 0);
-			const hasValidQuizId = Number.isInteger(progressQuizId) && progressQuizId > 0;
-			const hasValidPhaseId = Number.isInteger(progressPhaseId) && progressPhaseId > 0;
-			const isGenericStatus = normalizedStatus === "PROCESSING" || normalizedStatus === "START";
-			const hasExplicitRoadmapPhaseSignal = normalizedStatus === "ROADMAP_PHASES_PROCESSING"
-				|| (isGenericStatus && taskType === "ROADMAP_PHASES");
-			const hasGenericRoadmapPhaseSignal = normalizedStatus === "PROCESSING"
-				&& !hasValidQuizId
-				&& !hasValidPhaseId
-				&& (
-					normalizedMessage.includes("PHASE")
-					|| normalizedMessage.includes("ROADMAP")
-					|| normalizedMessage.includes("NGU CANH PHASE")
-					|| normalizedMessage.includes("NGU CANH")
-				);
-			const isTaskStillProcessing = !(
-				normalizedStatus.includes("COMPLETED")
-				|| normalizedStatus.includes("ERROR")
-				|| normalizedStatus.includes("FAILED")
-				|| normalizedStatus.includes("CANCEL")
-			);
+			const signal = normalizeRuntimeTaskSignal(task, { source: "active-task" });
+			const normalizedStatus = signal.status;
+			const taskId = String(signal.taskId || "").trim();
+			const percent = clampPercent(signal.percent ?? 0);
+			const progressQuizId = Number(signal.quizId ?? 0);
+			const progressPhaseId = Number(signal.phaseId ?? 0);
+			const progressKnowledgeId = Number(signal.knowledgeId ?? 0);
+			const progressRoadmapId = Number(signal.roadmapId ?? 0);
+			const hasExplicitRoadmapPhaseSignal = signal.hasExplicitRoadmapPhaseSignal;
+			const hasGenericRoadmapPhaseSignal = signal.hasGenericRoadmapPhaseSignal;
+			const isTaskStillProcessing = signal.isTaskStillProcessing;
 
 			if (taskId) {
 				progressTracking.updateTaskProgress(taskId, percent);
@@ -2001,22 +1983,13 @@ function WorkspacePage() {
 				bumpRoadmapReloadToken();
 			}
 
-			const isPreLearningByStatus = normalizedStatus.includes("PRE_LEARNING");
-			const isPreLearningByTaskType = isGenericStatus && taskType === "ROADMAP_PRE_LEARNING";
-			const isPreLearning = isPreLearningByStatus || isPreLearningByTaskType;
+			const isPreLearningRecovered = signal.isPreLearningSignal;
+			const isPhaseContent = signal.isPhaseContentSignal;
+			const isKnowledgeQuiz = signal.isKnowledgeQuizSignal;
+			const isKnowledgeByStatus = signal.isKnowledgeSignal;
+			const isPostLearningByStatus = signal.isPostLearningSignal;
 
-			const isPhaseContentByStatus = normalizedStatus.includes("ROADMAP_PHASE_CONTENT");
-			const isPhaseContentByTaskType = isGenericStatus && taskType === "ROADMAP_PHASE_CONTENT";
-			const isPhaseContent = isPhaseContentByStatus || isPhaseContentByTaskType;
-
-			const isKnowledgeQuizByStatus = normalizedStatus.includes("KNOWLEDGE_QUIZ");
-			const isKnowledgeQuizByTaskType = isGenericStatus && taskType === "ROADMAP_KNOWLEDGE_QUIZ";
-			const isKnowledgeQuiz = isKnowledgeQuizByStatus || isKnowledgeQuizByTaskType;
-
-			const isKnowledgeByStatus = normalizedStatus.includes("KNOWLEDGE") && !isKnowledgeQuiz;
-			const isPostLearningByStatus = normalizedStatus.includes("POST_LEARNING");
-
-			if (isPreLearning && Number.isInteger(progressPhaseId) && progressPhaseId > 0 && percent > 0) {
+			if (isPreLearningRecovered && Number.isInteger(progressPhaseId) && progressPhaseId > 0 && percent > 0) {
 				progressTracking.updatePreLearningProgress(progressPhaseId, percent);
 			}
 
@@ -2035,7 +2008,7 @@ function WorkspacePage() {
 				return;
 			}
 
-			if (isPreLearning && Number.isInteger(progressPhaseId) && progressPhaseId > 0) {
+			if (isPreLearningRecovered && Number.isInteger(progressPhaseId) && progressPhaseId > 0) {
 				recoveredPreLearningPhaseIds.add(progressPhaseId);
 			}
 
@@ -2086,49 +2059,15 @@ function WorkspacePage() {
 			fetchSources();
 		},
 		onProgress: (progress) => {
-			const status = String(progress?.status || "").toUpperCase();
-			const progressData = (progress?.data && typeof progress.data === "object")
-				? progress.data
-				: (progress || {});
-			const progressPhaseId = Number(
-				progressData?.phaseId
-				?? progressData?.phase_id
-				?? progress?.phaseId
-				?? progress?.phase_id
-			);
-			const progressRoadmapId = Number(
-				progressData?.roadmapId
-				?? progressData?.roadmap_id
-				?? progress?.roadmapId
-				?? progress?.roadmap_id
-			);
-			const progressPercent = clampPercent(
-				progress?.percent
-				?? progress?.progressPercent
-				?? progressData?.percent
-				?? progressData?.progressPercent
-				?? 0
-			);
-			const websocketTaskId = progress?.websocketTaskId ?? progress?.taskId;
-			const materialId = Number(progress?.materialId ?? progress?.material_id ?? 0);
-			const progressQuizId = Number(
-				progressData?.quizId
-				?? progressData?.quiz_id
-				?? progress?.quizId
-				?? progress?.quiz_id
-				?? 0
-			);
-			const progressStep = String(progress?.step ?? progressData?.step ?? "").toUpperCase();
-			const progressMessage = String(progress?.message ?? progressData?.message ?? "").toUpperCase();
-			const isQuizSignal = Number.isInteger(progressQuizId) && progressQuizId > 0
-				|| (
-					!status.startsWith("ROADMAP_")
-					&& (
-						status.includes("QUIZ")
-						|| progressStep.includes("QUIZ")
-						|| progressMessage.includes("QUIZ")
-					)
-				);
+			const signal = normalizeRuntimeTaskSignal(progress, { source: "websocket" });
+			const status = String(signal.status || "").toUpperCase();
+			const progressPhaseId = Number(signal.phaseId ?? 0);
+			const progressRoadmapId = Number(signal.roadmapId ?? 0);
+			const progressPercent = clampPercent(signal.percent ?? 0);
+			const websocketTaskId = signal.taskId;
+			const materialId = Number(signal.materialId ?? 0);
+			const progressQuizId = Number(signal.quizId ?? 0);
+			const isQuizSignal = signal.isQuizSignal;
 
 			// Cập nhật progress tracking cho task và material
 			if (websocketTaskId) {
@@ -2159,15 +2098,10 @@ function WorkspacePage() {
 				});
 			}
 			if (progressPercent > 0) {
-				const isPreLearningSignal = status.includes("PRE_LEARNING")
-					|| progressStep.includes("PRE_LEARNING")
-					|| progressMessage.includes("PRE-LEARNING")
-					|| progressMessage.includes("PRE LEARNING");
-				const isKnowledgeSignal = status.includes("KNOWLEDGE") || progressStep.includes("KNOWLEDGE");
-				const isKnowledgeQuizSignal = status.includes("KNOWLEDGE_QUIZ")
-					|| progressStep.includes("GENERATING")
-					|| progressMessage.includes("QUIZ");
-				const isPostLearningSignal = status.includes("POST_LEARNING") || progressStep.includes("POST_LEARNING");
+				const isPreLearningSignal = signal.isPreLearningSignal;
+				const isKnowledgeSignal = signal.isKnowledgeSignal;
+				const isKnowledgeQuizSignal = signal.isKnowledgeQuizSignal;
+				const isPostLearningSignal = signal.isPostLearningSignal;
 
 				let inferredPhaseId = progressPhaseId;
 				if ((!Number.isInteger(inferredPhaseId) || inferredPhaseId <= 0)
