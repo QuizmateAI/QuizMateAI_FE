@@ -3018,6 +3018,7 @@
     "adminCannotUseUserFeatures": "Only regular users can create groups, workspaces and use user features. Admin and Super Admin do not have this permission.",
     "materialNotFound": "Material not found.",
     "planFeatureNotSupported": "This feature is not supported by your plan.",
+    "insufficientCredit": "Insufficient credit balance. Please top up to continue.",
     "defaultPlanExistsForType": "A default plan already exists for this type.",
     "challengeNotFound": "Challenge does not exist.",
     "invalidChallengeTime": "Start time must be before end time.",

@@ -34,6 +34,7 @@ import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/M
 import { deleteQuiz, getQuizzesByScope, shareQuizToCommunity } from "@/api/QuizAPI";
 import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
+import { getErrorMessage } from "@/Utils/getErrorMessage";
 import { inferProcessingRoadmapGenerationIds } from "@/Pages/Users/Individual/Workspace/utils/roadmapProcessing";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { normalizeRuntimeTaskSignal } from "@/lib/runtimeTaskSignal";
@@ -303,7 +304,7 @@ function WorkspacePage() {
 	const mockTestShouldCloseAfterStartRef = useRef(false);
 	const mockTestGenerationStorageKey = workspaceId ? `workspace_${workspaceId}_mockTestGeneration` : null;
 
-	// State quáº£n lÃ½ tÃ i liá»‡u (sources) â€" mock data, sáº½ káº¿t ná»'i API sau
+	// Source state. Still mock-data-friendly, but wired to API fetches.
 	const [sources, setSources] = useState([]);
 	const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
 	const [createdItems, setCreatedItems] = useState([]);
@@ -311,7 +312,7 @@ function WorkspacePage() {
 	const [quizGenerationProgressByQuizId, setQuizGenerationProgressByQuizId] = useState({});
 	const [accessHistory, setAccessHistory] = useState([]);
 
-	// State quáº£n lÃ½ dialog upload â€" chá»‰ má»Ÿ khi workspace chÆ°a cÃ³ tÃ i liá»‡u sau láº§n fetch Ä'áº§u tiÃªn
+	// Upload dialog state. Auto-open only when the first fetch returns no materials.
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 	const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 	const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
@@ -320,7 +321,7 @@ function WorkspacePage() {
 	const workspaceLayoutRef = useRef(null);
 	const [workspaceLayoutWidth, setWorkspaceLayoutWidth] = useState(0);
 
-	// Tráº¡ng thÃ¡i hiá»ƒn thá»‹ ná»™i dung chÃ­nh â€" Æ°u tiÃªn route hiá»‡n táº¡i, khÃ´ng dÃ¹ng sessionStorage
+	// Main content state. Prefer the current route instead of sessionStorage.
 	const [activeView, setActiveView] = useState(() => {
 		if (!workspaceId) return null;
 
@@ -335,12 +336,12 @@ function WorkspacePage() {
 
 		return null;
 	});
-	// State lÆ°u quiz Ä'ang Ä'Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
+	// Selected quiz state for detail and edit flows
 	const [selectedQuiz, setSelectedQuiz] = useState(null);
 	const [quizBackTarget, setQuizBackTarget] = useState(null);
-	// State lÆ°u flashcard Ä'ang Ä'Æ°á»£c xem chi tiáº¿t
+	// Selected flashcard state for detail flow
 	const [selectedFlashcard, setSelectedFlashcard] = useState(null);
-	// State lÆ°u mock test Ä'ang Ä'Æ°á»£c xem chi tiáº¿t hoáº·c chá»‰nh sá»­a
+	// Selected mock-test state for detail and edit flows
 	const [selectedMockTest, setSelectedMockTest] = useState(null);
 	const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
 	const [roadmapReloadToken, setRoadmapReloadToken] = useState(0);
@@ -430,7 +431,7 @@ function WorkspacePage() {
 		};
 	}, []);
 
-	// Háº±ng sá»' kÃ­ch thÆ°á»›c panel
+	// Side-panel sizing constants
 	const COLLAPSED_WIDTH = 56;
 	const PANEL_GAP = 16;
 	const SOURCES_PANEL_MIN_WIDTH = 320;
@@ -1404,7 +1405,7 @@ function WorkspacePage() {
 			setSources(visibleSources);
 			return visibleSources;
 		} catch (err) {
-			console.error("âŒ [fetchSources] Failed to fetch materials:", err);
+			console.error("[fetchSources] Failed to fetch materials:", err);
 			return [];
 		}
 	}, [workspaceId, reconcileMaterialProgress]);
@@ -2369,7 +2370,7 @@ function WorkspacePage() {
 		void refreshActiveTaskSnapshot("page-reload");
 	}, [workspaceId, refreshActiveTaskSnapshot]);
 
-	// Fetch workspace, initial sources, vÃ  kiá»ƒm tra profile
+	// Fetch workspace, initial sources, and profile status
 	useEffect(() => {
 		if (!workspaceId) return;
 
@@ -2385,8 +2386,8 @@ function WorkspacePage() {
 
 				if (!isMounted) return;
 
-				// Kiá»ƒm tra xem profile Ä'Ã£ Ä'Æ°á»£c config hay chÆ°a:
-				// Hiá»‡n táº¡i: chá»‰ cáº§n cÃ³ learningGoal (báº¯t buá»™c) lÃ  coi nhÆ° Ä'Ã£ cáº¥u hÃ¬nh
+				// Consider the profile configured once onboarding-required data is available.
+				// Right now, learningGoal is the required field for this gate.
 				const profileData = extractProfileData(profileRes);
 				console.log("[RoadmapGate][WorkspacePage] Initial profile fetch", {
 					workspaceId,
@@ -2469,11 +2470,11 @@ function WorkspacePage() {
 		startMockTestGenerationPolling,
 	]);
 
-	// Xá»­ lÃ½ Ä'Ã³ng/má»Ÿ profile config dialog
+	// Handle profile config dialog open/close
 	const handleProfileConfigChange = useCallback((open) => {
 		setProfileConfigOpen(open);
 		if (open) {
-			// Refetch profile khi má»Ÿ Ä'á»ƒ luÃ´n cÃ³ dá»¯ liá»‡u má»›i nháº¥t (bao gá»"m targetLevelId)
+			// Refetch the profile on open so the dialog uses the latest data.
 			getIndividualWorkspaceProfile(workspaceId)
 				.then((res) => {
 					const profileData = extractProfileData(res);
@@ -2792,19 +2793,20 @@ function WorkspacePage() {
 		return () => window.removeEventListener('popstate', handlePopState);
 	}, [isProfileConfigured, profileConfigOpen]);
 
-	// Xá»­ lÃ½ upload file tÃ i liá»‡u - SONG SONG Ä'á»ƒ tÄƒng tá»'c
+	// Upload materials in parallel for better throughput
 	const handleUploadFiles = useCallback(async (files) => {
         try {
             const uploadPromises = files.map((file) => uploadMaterial(file, workspaceId));
             await Promise.all(uploadPromises);
             return await fetchSources();
         } catch (error) {
-            console.error("Failed to upload files:", error);
+            const msg = getErrorMessage(t, error);
+            showError(msg);
             throw error;
         }
-	}, [workspaceId, fetchSources]);
+	}, [workspaceId, fetchSources, t, showError]);
 
-	// XÃ³a tÃ i liá»‡u Ä'Æ¡n láº»
+	// Delete a single material
 	const handleRemoveSource = useCallback(async (sourceId) => {
         try {
             await deleteMaterial(sourceId);
@@ -2814,10 +2816,10 @@ function WorkspacePage() {
         }
 	}, [fetchSources]);
 
-	// XÃ³a nhiá»u tÃ i liá»‡u cÃ¹ng lÃºc - SONG SONG
+	// Delete multiple materials in parallel
 	const handleRemoveMultipleSources = useCallback(async (sourceIds) => {
         try {
-            // XÃ³a táº¥t cáº£ files song song thay vÃ¬ tuáº§n tá»±
+            // Delete all selected files in parallel instead of sequentially
             const deletePromises = sourceIds.map(id => deleteMaterial(id));
             await Promise.all(deletePromises);
             fetchSources();
@@ -2826,22 +2828,22 @@ function WorkspacePage() {
         }
 	}, [fetchSources]);
 
-	// HÃ m thÃªm vÃ o lá»‹ch sá»­ truy cáº­p â€" ghi nháº­n má»—i láº§n truy cáº­p list view
+	// Track recent list-view access history
 	const addAccessHistory = useCallback((name, type, actionKey) => {
 		setAccessHistory((prev) => {
-			// XÃ³a trÃ¹ng náº¿u Ä'Ã£ cÃ³ item cÃ¹ng actionKey
+			// Remove duplicates when the same actionKey already exists
 			const filtered = prev.filter((item) => item.actionKey !== actionKey);
 			return [{ name, type, actionKey, accessedAt: new Date().toISOString() }, ...filtered].slice(0, 20);
 		});
 	}, []);
 
-	// Xá»­ lÃ½ action tá»« Studio Panel â€" hiá»ƒn thá»‹ form inline trong ChatPanel
+	// Handle Studio Panel actions and render inline forms in ChatPanel
 	const handleStudioAction = useCallback((actionKey) => {
 		if (actionKey === "roadmap" && shouldDisableRoadmapForStudio) {
 			return;
 		}
 
-		// Ghi lá»‹ch sá»­ truy cáº­p khi ngÆ°á»i dÃ¹ng má»Ÿ list view
+		// Track access history when the user opens a list view
 		const viewTypeMap = { roadmap: "roadmap", quiz: "quiz", flashcard: "flashcard", mockTest: "mockTest", questionStats: "questionStats" };
 		if (viewTypeMap[actionKey]) {
 			addAccessHistory(viewTypeMap[actionKey], viewTypeMap[actionKey], actionKey);
@@ -2868,7 +2870,7 @@ function WorkspacePage() {
 		setActiveView("roadmap");
 	}, []);
 
-	// Xá»­ lÃ½ táº¡o quiz â€" callback khi CreateQuizForm hoÃ n táº¥t API multi-step
+	// Handle quiz creation callback after the multi-step API completes
 	const handleCreateQuiz = useCallback(async (data) => {
 		const normalizedQuizId = Number(data?.quizId ?? data?.id ?? 0);
 		const websocketTaskId = data?.websocketTaskId ?? data?.taskId ?? null;
@@ -2896,7 +2898,7 @@ function WorkspacePage() {
 			}));
 		}
 
-		// Quiz Ä'Ã£ Ä'Æ°á»£c táº¡o xong tá»« CreateQuizForm â†' chuyá»ƒn vá» list view
+		// Quiz was created successfully. Return to the list view.
 		setActiveView("quiz");
 	}, []);
 
@@ -2913,7 +2915,7 @@ function WorkspacePage() {
 		);
 	}, [showSuccess, t]);
 
-	// Xá»­ lÃ½ xem chi tiáº¿t quiz â€" khi click vÃ o quiz trong danh sÃ¡ch
+	// Open quiz detail when the user selects a quiz from the list
 	const handleViewQuiz = useCallback((quiz, options = null) => {
 		const backTarget = options?.backTarget || null;
 		setSelectedQuiz(quiz);
@@ -2924,44 +2926,44 @@ function WorkspacePage() {
 		setActiveView("quizDetail");
 	}, []);
 
-	// Xá»­ lÃ½ chuyá»ƒn sang chá»‰nh sá»­a quiz â€" tá»« detail view
+	// Move from quiz detail to edit mode
 	const handleEditQuiz = useCallback((quiz) => {
 		setSelectedQuiz(quiz);
 		setActiveView("editQuiz");
 	}, []);
 
-	// Xá»­ lÃ½ lÆ°u quiz sau khi chá»‰nh sá»­a â€" quay vá» detail view
+	// Save quiz edits and return to detail view
 	const handleSaveQuiz = useCallback((updatedQuiz) => {
 		setSelectedQuiz((prev) => ({ ...prev, ...updatedQuiz }));
 		setActiveView("quizDetail");
 	}, []);
 
-	// Xá»­ lÃ½ táº¡o flashcard â€" callback tá»« CreateFlashcardForm (API Ä'Ã£ gá»i xong)
+	// Handle flashcard creation callback after the API flow finishes
 	const handleCreateFlashcard = useCallback(async () => {
-		// Chuyá»ƒn vá» list view Ä'á»ƒ reload danh sÃ¡ch
+		// Return to the list view so it can refresh
 		setActiveView("flashcard");
 	}, []);
 
-	// Xá»­ lÃ½ xem chi tiáº¿t flashcard â€" khi click vÃ o flashcard trong danh sÃ¡ch
+	// Open flashcard detail from the list
 	const handleViewFlashcard = useCallback((flashcard) => {
 		setSelectedFlashcard(flashcard);
 		setActiveView("flashcardDetail");
 	}, []);
 
-	// Xá»­ lÃ½ xÃ³a flashcard â€" gá»i API xÃ³a flashcard set
+	// Delete a flashcard set via API
 	const handleDeleteFlashcard = useCallback(async (flashcard) => {
 		if (!window.confirm(t("workspace.confirmDeleteFlashcard"))) return;
 		try {
 			const { deleteFlashcardSet } = await import("@/api/FlashcardAPI");
 			await deleteFlashcardSet(flashcard.flashcardSetId);
-			// Quay vá» list view Ä'á»ƒ reload danh sÃ¡ch
+			// Return to the list view so it can refresh
 			setActiveView("flashcard");
 		} catch (err) {
-			console.error("XÃ³a flashcard tháº¥t báº¡i:", err);
+			console.error("Delete flashcard failed:", err);
 		}
 	}, []);
 
-	// Xá»­ lÃ½ táº¡o roadmap â€" gá»i API táº¡o roadmap cho workspace cÃ¡ nhÃ¢n
+	// Create a roadmap for the individual workspace
 	const handleCreateRoadmap = useCallback(async (data) => {
 		try {
 			await createRoadmapForWorkspace({
@@ -2974,13 +2976,13 @@ function WorkspacePage() {
 			});
 			setActiveView("roadmap");
 		} catch (err) {
-			// Lá»—i táº¡o roadmap â€" log Ä'á»ƒ debug
-			console.error("Táº¡o roadmap tháº¥t báº¡i:", err);
+			// Log roadmap creation errors for debugging
+			console.error("Create roadmap failed:", err);
 			throw err;
 		}
 	}, [workspaceId]);
 
-	// Quay vá» list view tÆ°Æ¡ng á»©ng khi báº¥m nÃºt Back trong form táº¡o
+	// Go back to the matching list view when the user presses Back in a form
 	const handleBackFromForm = useCallback(() => {
 		if (activeView === "quizDetail" && quizBackTarget?.view === "roadmap") {
 			const phaseId = Number(quizBackTarget?.phaseId);
@@ -3013,24 +3015,24 @@ function WorkspacePage() {
 		setActiveView(nextView);
 	}, [activeView, navigate, quizBackTarget, workspaceId]);
 
-	// Xá»­ lÃ½ táº¡o mock test â€" quay vá» list sau khi táº¡o thÃ nh cÃ´ng
+	// Return to the mock-test list after creation succeeds
 	const handleCreateMockTest = useCallback(async () => {
 		setActiveView("mockTest");
 	}, []);
 
-	// Xá»­ lÃ½ xem chi tiáº¿t mock test
+	// Open mock-test detail view
 	const handleViewMockTest = useCallback((mt) => {
 		setSelectedMockTest(mt);
 		setActiveView("mockTestDetail");
 	}, []);
 
-	// Xá»­ lÃ½ chá»‰nh sá»­a mock test
+	// Open mock-test edit view
 	const handleEditMockTest = useCallback((mt) => {
 		setSelectedMockTest(mt);
 		setActiveView("editMockTest");
 	}, []);
 
-	// Xá»­ lÃ½ lÆ°u mock test sau khi chá»‰nh sá»­a
+	// Save mock-test edits and return to detail view
 	const handleSaveMockTest = useCallback((updatedMt) => {
 		setSelectedMockTest((prev) => ({ ...prev, ...updatedMt }));
 		setActiveView("mockTestDetail");
@@ -3097,14 +3099,14 @@ function WorkspacePage() {
 		</div>
 	);
 
-	// Xá»­ lÃ½ nÃºt click Ä'á»ƒ má»Ÿ Upload Dialog â€" Pháº£i check config trÆ°á»›c
+	// Open the upload dialog only after the profile passes validation
 	const handleUploadClickSafe = useCallback(() => {
 		if (!isProfileConfigured) {
-			// Profile chÆ°a cáº¥u hÃ¬nh Ä'á»§, yÃªu cáº§u cáº­p nháº­t Profile trÆ°á»›c
+			// Profile is incomplete. Open profile config first.
 			setProfileConfigOpen(true);
 			setProfileOverviewOpen(false);
 		} else {
-			// Profile há»£p lá»‡, cho phÃ©p upload
+			// Profile is valid. Allow uploads.
 			setUploadDialogOpen(true);
 		}
 	}, [isProfileConfigured]);
@@ -3315,7 +3317,7 @@ function WorkspacePage() {
 						</div>
 					) : (
 						<div className="flex h-full gap-4">
-							{/* Panel nguá»"n tÃ i liá»‡u (trÃ¡i) */}
+							{/* Source panel (left) */}
 							<div
 								style={{ width: effectiveLeftWidth, minWidth: effectiveLeftWidth }}
 								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
@@ -3365,9 +3367,18 @@ function WorkspacePage() {
 								</div>
 							</div>
 
+							{/* Left resize handle */}
+							<div
+								onMouseDown={(event) => handleStartResize("left", event)}
+								className={`shrink-0 flex items-center justify-center ${isResizingPanels ? "transition-none" : "transition-all duration-300 ease-in-out"} ${isSourcesCollapsed ? "w-2" : "w-4"} ${isSourcesCollapsed ? "cursor-default" : "cursor-ew-resize"}`}
+							>
+								{!isSourcesCollapsed && (
+									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
+								)}
+							</div>
 
-							{/* Panel khu vá»±c há»c táº­p (giá»¯a) */}
-							<div style={{ minWidth: CHAT_PANEL_MIN_WIDTH }} className="flex-1 min-w-0 h-full">
+							{/* Learning area panel (center) */}
+							<div style={{ minWidth: getChatMinWidth() }} className="flex-1 min-w-0 h-full">
 								<ChatPanel
 									isDarkMode={isDarkMode}
 									sources={sources}
@@ -3423,9 +3434,17 @@ function WorkspacePage() {
 									quizGenerationProgressByQuizId={quizGenerationProgressByQuizId}
 								/>
 							</div>
+							{/* Right resize handle */}
+							<div
+								onMouseDown={(event) => handleStartResize("right", event)}
+								className={`shrink-0 flex items-center justify-center ${isResizingPanels ? "transition-none" : "transition-all duration-300 ease-in-out"} ${isStudioCollapsed ? "w-2" : "w-4"} ${isStudioCollapsed ? "cursor-default" : "cursor-ew-resize"}`}
+							>
+								{!isStudioCollapsed && (
+									<div className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`} />
+								)}
+							</div>
 
-
-							{/* Panel Studio (pháº£i) */}
+							{/* Studio panel (right) */}
 							<div
 								style={{ width: effectiveRightWidth, minWidth: effectiveRightWidth }}
 								className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
@@ -3448,7 +3467,7 @@ function WorkspacePage() {
 				</div>
 			</div>
 
-			{/* Dialog táº£i tÃ i liá»‡u */}
+			{/* Upload dialog */}
 			{uploadDialogOpen ? (
 				<DeferredWorkspaceDialog>
 					<LazyUploadSourceDialog

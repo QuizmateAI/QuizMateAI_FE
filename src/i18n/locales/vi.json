@@ -2705,6 +2705,7 @@
     "adminCannotUseUserFeatures": "Chỉ người dùng thường mới có quyền tạo nhóm, Không gian Học tập và sử dụng các tính năng. Admin và Super Admin không có quyền này.",
     "materialNotFound": "Không tìm thấy tài liệu.",
     "planFeatureNotSupported": "Gói không hỗ trợ tính năng này.",
+    "insufficientCredit": "Số dư credit không đủ. Vui lòng nạp thêm để tiếp tục.",
     "defaultPlanExistsForType": "Gói mặc định đã tồn tại cho loại này.",
     "challengeNotFound": "Thử thách không tồn tại.",
     "invalidChallengeTime": "Thời gian bắt đầu phải trước thời gian kết thúc.",
