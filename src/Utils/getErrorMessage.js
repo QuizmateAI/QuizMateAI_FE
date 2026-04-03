@@ -1,11 +1,11 @@
 import ERROR_CODES from '@/Constants/errorCodes';
 
 /**
- * Lấy i18n key tương ứng với error code từ BE.
- * Ưu tiên: i18n key (nếu có mapping) → message gốc từ server → fallback mặc định.
+ * Resolve the i18n key for a BE error code.
+ * Priority: mapped i18n key -> original server message -> default fallback.
  *
- * @param {object} error - Object lỗi từ axios interceptor { statusCode, message, data }
- * @returns {{ key: string|null, fallbackMessage: string }} i18n key và message dự phòng
+ * @param {object} error - Axios-style error object { statusCode, message, data }
+ * @returns {{ key: string|null, fallbackMessage: string }} Resolved i18n key and fallback message
  */
 export function getErrorInfo(error) {
   const code = error?.data?.code;
@@ -16,11 +16,11 @@ export function getErrorInfo(error) {
 }
 
 /**
- * Trả về message hiển thị cho người dùng, tự động dùng i18n nếu có.
+ * Build the error message shown to the user, preferring i18n when available.
  *
- * @param {Function} t - Hàm t() từ react-i18next
- * @param {object} error - Object lỗi từ axios interceptor
- * @returns {string} Chuỗi thông báo lỗi
+ * @param {Function} t - react-i18next t() function
+ * @param {object} error - Axios-style error object
+ * @returns {string} User-facing error message
  */
 export function getErrorMessage(t, error) {
   const { key, fallbackMessage } = getErrorInfo(error);
@@ -30,11 +30,11 @@ export function getErrorMessage(t, error) {
 
   if (key) {
     const translated = t(key);
-    // Nếu i18n trả về chính key (chưa có bản dịch) → dùng message gốc
+    // If i18n returns the key unchanged, fall back to the server message.
     if (translated !== key) return translated;
   }
 
-  // Chuẩn hóa các lỗi kỹ thuật phổ biến từ BE/HTTP về message thân thiện.
+  // Normalize common BE/HTTP technical errors to a friendlier message.
   if (!Number.isNaN(statusCode) && statusCode >= 500) {
     return t('error.internalServer');
   }
