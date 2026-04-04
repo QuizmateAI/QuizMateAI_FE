@@ -45,6 +45,7 @@ function mapPlanCatalogToPaymentPlan(raw) {
       hasAiTextReadingAndSummarization: e.hasAiSummaryAndTextReading,
       hasAdvancedAiConfiguration: e.hasAdvanceQuizConfig,
     },
+    bonusCreditOnPlanPurchase: e.bonusCreditOnPlanPurchase ?? 0,
   };
 }
 

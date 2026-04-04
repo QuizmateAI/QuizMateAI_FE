@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import {
@@ -171,6 +172,7 @@ function MetricCard({ icon: Icon, label, value, tone, isDarkMode, subtext }) {
 function AiAuditManagement() {
   const { i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const [searchParams] = useSearchParams();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [filters, setFilters] = useState({
@@ -262,6 +264,23 @@ function AiAuditManagement() {
   useEffect(() => {
     filtersRef.current = filters;
   }, [filters]);
+
+  useEffect(() => {
+    const taskId = String(searchParams.get('taskId') || '').trim();
+    if (!taskId || taskId === filtersRef.current.taskId) {
+      return;
+    }
+
+    const nextFilters = {
+      ...filtersRef.current,
+      taskId,
+    };
+
+    filtersRef.current = nextFilters;
+    setFilters(nextFilters);
+    setPage(0);
+    fetchAuditLogs(0, pageSizeRef.current, nextFilters);
+  }, [searchParams]);
 
   useEffect(() => {
     fetchAuditLogs(page, pageSize, filters);

@@ -35,6 +35,8 @@ import StudioPanel from '@/Pages/Users/Individual/Workspace/Components/StudioPan
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
+import { usePlanEntitlements } from '@/hooks/usePlanEntitlements';
+import PlanUpgradeModal from '@/Components/plan/PlanUpgradeModal';
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
@@ -291,6 +293,9 @@ function GroupWorkspacePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const planEntitlements = usePlanEntitlements();
+  const [planUpgradeModalOpen, setPlanUpgradeModalOpen] = useState(false);
+  const [planUpgradeFeatureName, setPlanUpgradeFeatureName] = useState(undefined);
   const { showError, showInfo, showSuccess, showWarning } = useToast();
   const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -318,6 +323,9 @@ function GroupWorkspacePage() {
 
   // Create mode
   const isCreating = workspaceId === 'new';
+  const studioPlanLockedActions = [
+    ...(!planEntitlements.hasWorkspaceAnalytics ? ['questionStats'] : []),
+  ];
   const openProfileConfig = Boolean(location.state?.openProfileConfig);
   const [profileConfigOpen, setProfileConfigOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
@@ -1334,10 +1342,17 @@ function GroupWorkspacePage() {
       return;
     }
 
+    // Plan-gated actions
+    if (actionKey === 'questionStats' && !planEntitlements.hasWorkspaceAnalytics) {
+      setPlanUpgradeFeatureName('Thống kê workspace');
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
+
     setActiveSection(actionKey);
     setActiveView(actionKey);
     setMobilePanel(null);
-  }, [setActiveSection, currentRoleKey, showInfo, currentLang, shouldForceProfileSetup]);
+  }, [setActiveSection, currentRoleKey, showInfo, currentLang, shouldForceProfileSetup, planEntitlements.hasWorkspaceAnalytics]);
 
   const handleDismissWelcome = useCallback(() => {
     if (!resolvedWorkspaceId) return;
@@ -1509,6 +1524,11 @@ function GroupWorkspacePage() {
       showInfo(currentLang === 'en' ? 'Member cannot create roadmap.' : 'Member không có quyền tạo roadmap.');
       return;
     }
+    if (!planEntitlements.canCreateRoadmap) {
+      setPlanUpgradeFeatureName('Tạo lộ trình học tập');
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
     try {
       await createRoadmap({ workspaceId, ...data, mode: 'ai', name: data.name || 'Roadmap', goal: data.goal || data.description || '', description: data.goal || data.description || '' });
       setActiveView('roadmap');
@@ -1516,7 +1536,7 @@ function GroupWorkspacePage() {
       console.error('Tạo roadmap thất bại:', err);
       throw err;
     }
-  }, [workspaceId, canCreateContent, currentLang, showInfo]);
+  }, [workspaceId, canCreateContent, currentLang, showInfo, planEntitlements.canCreateRoadmap]);
 
   const handleCreateMockTest = useCallback(async () => {
     if (!canCreateContent) {
@@ -1959,6 +1979,7 @@ function GroupWorkspacePage() {
         onViewMockTest={handleViewMockTest}
         onEditMockTest={handleEditMockTest}
         onSaveMockTest={handleSaveMockTest}
+        planEntitlements={planEntitlements}
       />
     </div>
   );
@@ -2282,6 +2303,7 @@ function GroupWorkspacePage() {
             onToggleCollapse={() => setStudioCollapsed((prev) => !prev)}
                 isDarkMode={isDarkMode}
                 hideAccessHistory={true}
+                planLockedActions={studioPlanLockedActions}
             />
         </div>
         )}
@@ -2301,6 +2323,7 @@ function GroupWorkspacePage() {
               onToggleCollapse={() => setMobilePanel(null)}
               isDarkMode={isDarkMode}
               hideAccessHistory={true}
+              planLockedActions={studioPlanLockedActions}
             />
           </div>
         </div>
@@ -2314,6 +2337,7 @@ function GroupWorkspacePage() {
         onUploadFiles={handleUploadFiles}
         workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
         onSuggestedImported={() => refreshGroupMaterialViews({ silent: true })}
+        planEntitlements={planEntitlements}
       />
 
       <InviteMemberDialog
@@ -2352,6 +2376,13 @@ function GroupWorkspacePage() {
         hasLearningData={groupHasLearningData}
         onDeleteAndContinue={handleDeleteMaterialsForGroupProfileUpdate}
         deleting={isResettingWorkspaceForProfileUpdate}
+      />
+
+      <PlanUpgradeModal
+        open={planUpgradeModalOpen}
+        onOpenChange={setPlanUpgradeModalOpen}
+        featureName={planUpgradeFeatureName}
+        isDarkMode={isDarkMode}
       />
 
     </div>
