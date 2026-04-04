@@ -1638,6 +1638,8 @@
     "quiz": {
       "createTitle": "Tạo Quiz",
       "createDesc": "Tạo bài kiểm tra cho Không gian.",
+      "continue": "Tiếp tục",
+      "confirm": "Xác nhận",
       "tabManual": "Tạo thủ công",
       "tabAI": "Tạo bằng AI",
       "name": "Tên Quiz",
@@ -1855,7 +1857,11 @@
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
+        "nameMaxLength": "Tiêu đề quiz không được vượt quá {{max}} ký tự.",
+        "nameMaxLengthHint": "Tối đa {{max}} ký tự.",
         "requiredFieldsHint": "Các trường có dấu * là bắt buộc.",
+        "totalQuestionsRange": "Tổng số câu phải nằm trong khoảng từ {{min}} đến {{max}}.",
+        "totalQuestionsRangeHint": "Nhập số câu trong khoảng từ {{min}} đến {{max}}.",
         "contextRequired": "Vui lòng chọn vị trí tạo quiz.",
         "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
         "correctAnswerRequiredInline": "Chưa chọn đáp án đúng cho câu này.",
@@ -1875,7 +1881,11 @@
         "allDurationsRequired": "Vui lòng nhập thời gian cho tất cả các mức độ khó.",
         "mediumDurationMustBeGreaterThanEasy": "Thời gian câu trung bình phải cao hơn thời gian câu dễ.",
         "hardDurationMustBeGreaterThanMedium": "Thời gian câu khó phải cao hơn thời gian câu trung bình.",
-        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho quiz."
+        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho quiz.",
+        "durationAutoAdjusted": "Thời gian đã được tự động điều chỉnh thành {{minutes}} phút để đáp ứng thời lượng tối thiểu cho mỗi câu."
+        ,
+        "minimumTimePerQuestion": "Mỗi câu cần ít nhất 30 giây. Với {{count}} câu, thời gian phải từ {{minutes}} phút.",
+        "minimumTimePerQuestionHint": "Tối thiểu {{minutes}} phút (30 giây/câu)."
       },
       "contextSelector": {
         "title": "Vị trí tạo Quiz",
