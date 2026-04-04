@@ -1741,6 +1741,8 @@
     "quiz": {
       "createTitle": "Create Quiz",
       "createDesc": "Create a quiz for your workspace.",
+      "continue": "Continue",
+      "confirm": "Confirm",
       "tabManual": "Manual",
       "tabAI": "AI Generate",
       "name": "Quiz Name",
@@ -1969,6 +1971,8 @@
         "nameMaxLength": "Quiz title must be at most {{max}} characters.",
         "nameMaxLengthHint": "Maximum {{max}} characters.",
         "requiredFieldsHint": "Fields marked with * are required.",
+        "totalQuestionsRange": "Total questions must be between {{min}} and {{max}}.",
+        "totalQuestionsRangeHint": "Enter from {{min}} to {{max}} questions.",
         "contextRequired": "Please choose where to create the quiz.",
         "correctAnswerRequired": "Question {{index}} has no correct answer selected.",
         "correctAnswerRequiredInline": "No correct answer selected for this question.",
@@ -1988,6 +1992,7 @@
         "mediumDurationMustBeGreaterThanEasy": "Medium difficulty duration must be greater than easy difficulty duration.",
         "hardDurationMustBeGreaterThanMedium": "Hard difficulty duration must be greater than medium difficulty duration.",
         "timeDurationRequired": "Please enter total duration for the quiz.",
+        "durationAutoAdjusted": "Duration was adjusted to {{minutes}} minutes to satisfy the minimum time per question.",
         "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
         "minimumTimePerQuestion": "Minimum Time Per Question",
         "minimumTimePerQuestionHint": "Minimum Time Per Question Hint"
