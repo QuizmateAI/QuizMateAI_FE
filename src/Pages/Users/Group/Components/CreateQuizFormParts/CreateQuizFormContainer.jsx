@@ -109,7 +109,7 @@ const makeDefaultQuestion = (difficulty = "medium") => ({
 });
 
 // Form tạo Quiz cho Group — hiển thị inline trong ChatPanel thay vì popup
-function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType: defaultContextType = "GROUP", contextId: defaultContextId }) {
+function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType: defaultContextType = "GROUP", contextId: defaultContextId, planEntitlements = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [tab, setTab] = useState("manual");
@@ -1401,6 +1401,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             structurePreviewLoading={structurePreviewLoading}
             structurePreviewError={structurePreviewError}
             onPreviewStructure={handlePreviewStructure}
+            hasAdvanceQuizConfig={planEntitlements?.hasAdvanceQuizConfig ?? false}
           />
         )}
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
@@ -8,6 +8,7 @@ import LoadingSpinner from '@/Components/ui/LoadingSpinner';
 import RouteMetaManager from '@/Components/seo/RouteMetaManager';
 import { launchConfig } from '@/lib/launchConfig';
 import { loadGroupWorkspacePage, loadWorkspacePage } from '@/lib/routeLoaders';
+import PlanUpgradeModal from '@/Components/plan/PlanUpgradeModal';
 import './i18n';
 import './App.css';
 
@@ -54,6 +55,9 @@ const SuperAdminDashboard = lazy(() => import('./Pages/SuperAdmin/SuperAdminDash
 const AdminManagement = lazy(() => import('./Pages/SuperAdmin/AdminManagement'));
 const RbacManagement = lazy(() => import('./Pages/SuperAdmin/RbacManagement'));
 const AiAuditManagement = lazy(() => import('./Pages/SuperAdmin/AiAuditManagement'));
+const AiProvidersOverview = lazy(() => import('./Pages/SuperAdmin/AiProvidersOverview'));
+const AiModelsManagement = lazy(() => import('./Pages/SuperAdmin/AiModelsManagement'));
+const AiCostManagement = lazy(() => import('./Pages/SuperAdmin/AiCostManagement'));
 const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
 
@@ -99,6 +103,9 @@ function MainRoutes() {
           <Route index element={<SuperAdminDashboard />} />
           <Route path="admins" element={<AdminManagement />} />
           <Route path="rbac" element={<RbacManagement />} />
+          <Route path="ai-providers" element={<AiProvidersOverview />} />
+          <Route path="ai-models" element={<AiModelsManagement />} />
+          <Route path="ai-costs" element={<AiCostManagement />} />
           <Route path="ai-audit" element={<AiAuditManagement />} />
           <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="users" element={<UserManagement />} />
@@ -139,6 +146,18 @@ function LaunchRoutes() {
   );
 }
 
+function PlanGuardListener() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener('planUpgradeRequired', handler);
+    return () => window.removeEventListener('planUpgradeRequired', handler);
+  }, []);
+
+  return <PlanUpgradeModal open={open} onOpenChange={setOpen} />;
+}
+
 function AppContent() {
   if (launchConfig.enabled) {
     return (
@@ -164,6 +183,7 @@ function App() {
     <ToastProvider>
       <Router>
         <RouteMetaManager />
+        <PlanGuardListener />
         <AppContent />
       </Router>
     </ToastProvider>

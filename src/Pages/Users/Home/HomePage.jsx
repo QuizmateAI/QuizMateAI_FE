@@ -16,6 +16,7 @@ import { useGroup } from '@/hooks/useGroup';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { preloadGroupWorkspacePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 import { useToast } from '@/context/ToastContext';
+import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 
 function normalizeHomeTab(value) {
   if (value === 'group') return 'group';
@@ -98,6 +99,7 @@ function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { showError, showSuccess } = useToast();
   const activeTab = normalizeHomeTab(searchParams.get('tab'));
+  const { summary: currentPlanSummary } = useCurrentSubscription();
 
   // Prefetch cả workspace VÀ groups ngay khi load trang → chuyển tab instant (<1s)
   const {
@@ -123,7 +125,6 @@ function HomePage() {
 
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
-
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
     i18n.changeLanguage(newLang);
@@ -299,11 +300,23 @@ function HomePage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/plan')}
-            className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
+            onClick={() => navigate('/plan', { state: { from: '/home' } })}
+            className={`flex h-10 max-w-[320px] items-center gap-2 rounded-full px-4 ${
+              isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
+            }`}
           >
             <CreditCard className="w-4 h-4" />
             <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
+            {currentPlanSummary ? (
+              <>
+                <span className={`hidden h-1 w-1 rounded-full md:inline-block ${
+                  isDarkMode ? 'bg-slate-500' : 'bg-slate-300'
+                }`} />
+                <span className="hidden max-w-[140px] truncate text-sm font-semibold md:inline">
+                  {currentPlanSummary.planName}
+                </span>
+              </>
+            ) : null}
           </Button>
           <div ref={settingsRef} className="relative">
             <Button
@@ -441,9 +454,9 @@ function HomePage() {
         
       </main>
       </div>
-          <div className="pt-[190px] px-20 py-12">
-  {renderTabContent()}
-</div>
+      <div className="pt-[190px] px-20 py-12">
+        {renderTabContent()}
+      </div>
 
       {/* Dialogs */}
       <EditWorkspaceDialog

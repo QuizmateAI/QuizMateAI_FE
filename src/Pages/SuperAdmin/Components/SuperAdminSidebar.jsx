@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   Users, UsersRound,
   PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote, Bot, ChevronDown, ChevronRight,
-  Settings2, Cpu,
+  Settings2, Cpu, ReceiptText,
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -67,7 +67,7 @@ const MENU_SECTIONS = [
     ],
   },
   {
-    labelKey: 'sidebarSections.system',
+    labelKey: 'sidebarSections.accessControl',
     items: [
       {
         icon: Shield,
@@ -81,6 +81,29 @@ const MENU_SECTIONS = [
         path: '/super-admin/rbac',
         matchPrefix: true,
       },
+    ],
+  },
+  {
+    labelKey: 'sidebarSections.aiGovernance',
+    items: [
+      {
+        icon: Cpu,
+        labelKey: 'sidebar.aiProviders',
+        path: '/super-admin/ai-providers',
+        matchPrefix: true,
+      },
+      {
+        icon: Cpu,
+        labelKey: 'sidebar.aiModels',
+        path: '/super-admin/ai-models',
+        matchPrefix: true,
+      },
+      {
+        icon: ReceiptText,
+        labelKey: 'sidebar.aiCosts',
+        path: '/super-admin/ai-costs',
+        matchPrefix: true,
+      },
       {
         icon: Bot,
         labelKey: 'sidebar.aiAudit',
@@ -88,15 +111,20 @@ const MENU_SECTIONS = [
         matchPrefix: true,
       },
       {
-        icon: Settings2,
-        labelKey: 'sidebar.systemSettings',
-        path: '/super-admin/system-settings',
-        matchPrefix: true,
-      },
-      {
         icon: Cpu,
         labelKey: 'sidebar.aiActionPolicies',
         path: '/super-admin/ai-action-policies',
+        matchPrefix: true,
+      },
+    ],
+  },
+  {
+    labelKey: 'sidebarSections.platformConfig',
+    items: [
+      {
+        icon: Settings2,
+        labelKey: 'sidebar.systemSettings',
+        path: '/super-admin/system-settings',
         matchPrefix: true,
       },
     ],

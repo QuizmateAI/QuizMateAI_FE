@@ -28,7 +28,7 @@ function DeferredPanel({ children }) {
 }
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER" }) {
+function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER", planEntitlements = null }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -175,7 +175,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
     
     switch (activeView) {
       case "createQuiz":
-        return <LazyCreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
+        return <LazyCreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="GROUP" contextId={workspaceId} planEntitlements={planEntitlements} />;
       case "createFlashcard":
         return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} />;
       case "flashcardDetail":

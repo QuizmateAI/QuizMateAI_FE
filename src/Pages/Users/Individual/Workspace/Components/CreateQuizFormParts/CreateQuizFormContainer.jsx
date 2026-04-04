@@ -15,6 +15,7 @@ function CreateQuizForm({
   contextId: defaultContextId,
   selectedSourceIds = [],
   sources = [],
+  planEntitlements = null,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -186,6 +187,7 @@ function CreateQuizForm({
             getQuestionTypeLabel,
             isDarkMode,
             t,
+            hasAdvanceQuizConfig: planEntitlements?.hasAdvanceQuizConfig ?? false,
           }}
         />
       </div>

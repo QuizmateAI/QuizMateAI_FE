@@ -55,6 +55,7 @@ function mapPlanCatalogToCard(plan) {
       hasAiTextReadingAndSummarization: e.hasAiSummaryAndTextReading,
       hasAdvancedAiConfiguration: e.hasAdvanceQuizConfig,
     },
+    bonusCreditOnPlanPurchase: e.bonusCreditOnPlanPurchase ?? 0,
   };
 }
 
