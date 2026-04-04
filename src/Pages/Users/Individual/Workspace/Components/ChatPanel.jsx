@@ -29,18 +29,74 @@ function DeferredPanel({ children }) {
   );
 }
 
-// Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, selectedSourceIds = [], selectedRoadmapPhaseId = null, onCreateRoadmapPhases, onRoadmapPhaseFocus, onCreatePhaseKnowledge, onCreateKnowledgeQuizForKnowledge, onCreatePhasePreLearning, isStudyNewRoadmap = false, adaptationMode = "", isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, generatingKnowledgePhaseIds = [], generatingKnowledgeQuizPhaseIds = [], generatingKnowledgeQuizKnowledgeKeys = [], knowledgeQuizRefreshByKey = {}, generatingPreLearningPhaseIds = [], skipPreLearningPhaseIds = [], roadmapReloadToken = 0, onReloadRoadmap, shouldDisableQuiz = false, shouldDisableFlashcard = false, shouldDisableRoadmap = false, showRoadmapAction = true, shouldDisableCreateQuiz = false, shouldDisableCreateFlashcard = false, progressTracking = null, quizGenerationTaskByQuizId = null, quizGenerationProgressByQuizId = null, onShareQuiz, onShareRoadmap }) {
+function ChatPanel({
+  isDarkMode = false,
+  sources = [],
+  activeView = null,
+  onUploadClick,
+  onChangeView,
+  onCreateQuiz,
+  onCreateFlashcard,
+  onCreateRoadmap,
+  onCreateMockTest,
+  onCreatePostLearning,
+  onBack,
+  workspaceId = null,
+  selectedQuiz = null,
+  onViewQuiz,
+  onEditQuiz,
+  onSaveQuiz,
+  selectedFlashcard = null,
+  onViewFlashcard,
+  onDeleteFlashcard,
+  selectedMockTest = null,
+  onViewMockTest,
+  onEditMockTest,
+  onSaveMockTest,
+  onViewPostLearning,
+  selectedSourceIds = [],
+  selectedRoadmapPhaseId = null,
+  onCreateRoadmapPhases,
+  onRoadmapPhaseFocus,
+  onCreatePhaseKnowledge,
+  onCreateKnowledgeQuizForKnowledge,
+  onCreatePhasePreLearning,
+  isStudyNewRoadmap = false,
+  adaptationMode = "",
+  isGeneratingRoadmapPhases = false,
+  roadmapPhaseGenerationProgress = 0,
+  generatingKnowledgePhaseIds = [],
+  generatingKnowledgeQuizPhaseIds = [],
+  generatingKnowledgeQuizKnowledgeKeys = [],
+  knowledgeQuizRefreshByKey = {},
+  generatingPreLearningPhaseIds = [],
+  skipPreLearningPhaseIds = [],
+  roadmapReloadToken = 0,
+  onReloadRoadmap,
+  shouldDisableQuiz = false,
+  shouldDisableFlashcard = false,
+  shouldDisableRoadmap = false,
+  showRoadmapAction = true,
+  shouldDisableCreateQuiz = false,
+  shouldDisableCreateFlashcard = false,
+  progressTracking = null,
+  quizGenerationTaskByQuizId = null,
+  quizGenerationProgressByQuizId = null,
+  onShareQuiz,
+  onShareRoadmap,
+  planEntitlements = null,
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+
   const getIsActionDisabled = React.useCallback((actionKey) => {
     if (actionKey === "quiz") return shouldDisableQuiz;
     if (actionKey === "flashcard") return shouldDisableFlashcard;
     if (actionKey === "roadmap") return shouldDisableRoadmap;
     return false;
   }, [shouldDisableFlashcard, shouldDisableQuiz, shouldDisableRoadmap]);
-  // Không ẩn roadmap action ở ChatPanel: nếu không đủ điều kiện thì hiển thị dạng disabled để đồng bộ Studio Panel
+
   const isRoadmapQuickActionDisabled = !showRoadmapAction || getIsActionDisabled("roadmap");
   const areAllQuickActionsDisabled = isRoadmapQuickActionDisabled
     && getIsActionDisabled("quiz")
@@ -72,12 +128,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
     setRoadmapCanvasView(view);
   }, []);
 
-  const renderListView = () => {
-    // Lọc createdItems theo loại tương ứng
-    const createdRoadmaps = createdItems.filter(i => i.type === "Roadmap");
-    const createdQuizzes = createdItems.filter(i => i.type === "Quiz");
-    const createdFlashcards = createdItems.filter(i => i.type === "Flashcard");
-
+  const renderContent = () => {
     switch (activeView) {
       case "roadmap":
         return (
@@ -102,7 +153,6 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             skipPreLearningPhaseIds={skipPreLearningPhaseIds}
             reloadToken={roadmapReloadToken}
             onReloadRoadmap={onReloadRoadmap}
-            createdItems={createdRoadmaps}
             workspaceId={workspaceId}
             forcedCanvasView={roadmapCanvasView}
             onCanvasViewChange={setRoadmapCanvasView}
@@ -129,19 +179,72 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
           />
         );
       case "communityQuiz":
-        return <LazyCommunityQuizExplorerView isDarkMode={isDarkMode} workspaceId={workspaceId} onBackToQuiz={() => onChangeView?.("quiz")} />;
+        return (
+          <LazyCommunityQuizExplorerView
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            onBackToQuiz={() => onChangeView?.("quiz")}
+          />
+        );
       case "flashcard":
-        return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="WORKSPACE" contextId={workspaceId} disableCreate={shouldDisableCreateFlashcard} />;
+        return (
+          <LazyFlashcardListView
+            isDarkMode={isDarkMode}
+            onCreateFlashcard={() => onChangeView?.("createFlashcard")}
+            onViewFlashcard={onViewFlashcard}
+            onDeleteFlashcard={onDeleteFlashcard}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            disableCreate={shouldDisableCreateFlashcard}
+          />
+        );
       case "mockTest":
-        return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="WORKSPACE" contextId={workspaceId} />;
+        return (
+          <LazyMockTestListView
+            isDarkMode={isDarkMode}
+            onCreateMockTest={() => onChangeView?.("createMockTest")}
+            onViewMockTest={onViewMockTest}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+          />
+        );
       case "postLearning":
-        return <LazyPostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="WORKSPACE" contextId={workspaceId} />;
+        return (
+          <LazyPostLearningListView
+            isDarkMode={isDarkMode}
+            onCreatePostLearning={() => onChangeView?.("createPostLearning")}
+            onViewPostLearning={onViewPostLearning}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+          />
+        );
       case "questionStats":
         return <LazyQuestionStatsView workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "createQuiz":
-        return <LazyCreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
+        return (
+          <LazyCreateQuizForm
+            isDarkMode={isDarkMode}
+            onCreateQuiz={onCreateQuiz}
+            onBack={onBack}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            selectedSourceIds={selectedSourceIds}
+            sources={sources}
+            planEntitlements={planEntitlements}
+          />
+        );
       case "createFlashcard":
-        return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
+        return (
+          <LazyCreateFlashcardForm
+            isDarkMode={isDarkMode}
+            onCreateFlashcard={onCreateFlashcard}
+            onBack={onBack}
+            contextType="WORKSPACE"
+            contextId={workspaceId}
+            selectedSourceIds={selectedSourceIds}
+            sources={sources}
+          />
+        );
       case "flashcardDetail":
         return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
       case "quizDetail":
@@ -161,8 +264,9 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
     }
   };
 
-  const listContent = renderListView();
-  if (listContent) {
+  const content = renderContent();
+
+  if (content) {
     return (
       <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
         isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
@@ -177,7 +281,7 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
                 type="button"
                 size="sm"
                 onClick={() => onCreateRoadmapPhases?.()}
-                title="Làm mới quy trình tạo phase (dev only)"
+                title="Refresh roadmap phases"
                 className={`h-8 rounded-full px-3 ${isDarkMode ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700" : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"} border`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,76 +290,35 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
                 <span className={`text-xs ml-1 ${fontClass}`}>Refresh</span>
               </Button>
               <div className="inline-flex items-center gap-1 rounded-full border p-1">
-              <Button
-                type="button"
-                size="sm"
-                variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
-                onClick={() => handleSwitchRoadmapView("view1")}
-                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-              >
-                <Rows3 className="w-4 h-4 mr-1.5" />
-                <span className={fontClass}>View 1</span>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
-                onClick={() => handleSwitchRoadmapView("view2")}
-                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-              >
-                <Map className="w-4 h-4 mr-1.5" />
-                <span className={fontClass}>View 2</span>
-              </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                  onClick={() => handleSwitchRoadmapView("view1")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Rows3 className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>View 1</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
+                  onClick={() => handleSwitchRoadmapView("view2")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Map className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>View 2</span>
+                </Button>
               </div>
             </div>
           </div>
         ) : null}
-        <DeferredPanel>{listContent}</DeferredPanel>
+        <DeferredPanel>{content}</DeferredPanel>
       </section>
     );
   }
 
-  // Khi đang hiển thị form tạo nội dung — render inline thay vì popup
-  // Render form phù hợp dựa vào activeView
-  const renderActiveContent = () => {
-    switch (activeView) {
-      case "createQuiz":
-        return <LazyCreateQuizForm isDarkMode={isDarkMode} onCreateQuiz={onCreateQuiz} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
-      case "createFlashcard":
-        return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} selectedSourceIds={selectedSourceIds} sources={sources} />;
-      case "flashcardDetail":
-        return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} /> : null;
-      case "quizDetail":
-        return selectedQuiz ? <LazyQuizDetailView isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onEdit={onEditQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
-      case "editQuiz":
-        return selectedQuiz ? <LazyEditQuizForm isDarkMode={isDarkMode} quiz={selectedQuiz} onBack={onBack} onSave={onSaveQuiz} contextType="WORKSPACE" contextId={workspaceId} /> : null;
-      case "createMockTest":
-        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
-      case "createPostLearning":
-        return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="WORKSPACE" contextId={workspaceId} />;
-      case "mockTestDetail":
-        return selectedMockTest ? <LazyMockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={onEditMockTest} /> : null;
-      case "editMockTest":
-        return selectedMockTest ? <LazyEditMockTestForm isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onSave={onSaveMockTest} /> : null;
-      default:
-        return null;
-    }
-  };
-
-  const activeContent = renderActiveContent();
-
-  // Nếu có form đang hiển thị (createQuiz, createFlashcard, createRoadmap) — render inline
-  if (activeContent) {
-    return (
-      <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
-        isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
-      }`}>
-        <DeferredPanel>{activeContent}</DeferredPanel>
-      </section>
-    );
-  }
-
-  // Fallback: Nếu không có nội dung nào được hiển thị, hiển thị màn hình chào mừng
   return (
     <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
       isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
@@ -272,29 +335,28 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
         </div>
         <div>
           <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-            {t("workspace.chat.emptyTitle", "Chào mừng đến với Workspace")}
+            {t("workspace.chat.emptyTitle", "Welcome to your workspace")}
           </p>
           <p className={`text-sm mt-1.5 max-w-md ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-            {t("workspace.chat.emptyDesc", "Chọn một chức năng bên dưới để bắt đầu")}
+            {t("workspace.chat.emptyDesc", "Choose one of the actions below to get started.")}
           </p>
         </div>
 
         {areAllQuickActionsDisabled && (
           <div className={`flex flex-col items-center gap-3 p-4 rounded-xl border w-full max-w-lg ${isDarkMode ? "bg-amber-950/20 border-amber-900/30" : "bg-amber-50 border-amber-200"}`}>
             <p className={`text-sm text-center ${isDarkMode ? "text-amber-400" : "text-amber-700"} ${fontClass}`}>
-              {t("workspace.chat.requireUpload", "Vui lòng tải tài liệu lên để có thể sử dụng các chức năng này.")}
+              {t("workspace.chat.requireUpload", "Upload materials first to unlock these actions.")}
             </p>
             <Button
               onClick={onUploadClick}
               className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-9 flex items-center gap-2 transition-all active:scale-95"
             >
               <UploadCloud className="w-4 h-4" />
-              <span className={fontClass}>{t("workspace.chat.upload", "Tải tài liệu lên")}</span>
+              <span className={fontClass}>{t("workspace.chat.upload", "Upload materials")}</span>
             </Button>
           </div>
         )}
 
-        {/* Lối tắt nhanh đến 3 chức năng chính */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-lg">
           {[
             {
@@ -322,30 +384,32 @@ function ChatPanel({ isDarkMode = false, sources = [], activeView = null, create
             const isDisabled = mode.key === "roadmap"
               ? isRoadmapQuickActionDisabled
               : getIsActionDisabled(mode.key);
+
             return (
-            <Button
-              key={mode.key}
-              type="button"
-              disabled={isDisabled}
-              onClick={() => onChangeView?.(mode.key)}
-              className={`rounded-xl p-4 h-auto text-center border transition-all flex flex-col items-center justify-center ${
-                isDisabled
-                  ? (isDarkMode ? "opacity-50 cursor-not-allowed bg-slate-800/30 border-slate-800" : "opacity-50 cursor-not-allowed bg-gray-50/50 border-gray-200")
-                  : (isDarkMode
-                    ? "bg-slate-800/50 border-slate-700 hover:border-slate-600 text-slate-200 hover:bg-slate-800 cursor-pointer"
-                    : "bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-800 hover:bg-gray-100 cursor-pointer")
-              }`}
-              variant="outline"
-            >
-              <mode.icon className={`w-5 h-5 mb-2 ${isDisabled ? "text-gray-400 dark:text-slate-500" : mode.color}`} />
-              <p className={`text-xs font-medium ${isDisabled ? (isDarkMode ? "text-slate-400" : "text-gray-500") : (isDarkMode ? "text-slate-200" : "text-gray-800")} ${fontClass}`}>
-                {mode.label}
-              </p>
-              <p className={`text-[10px] mt-0.5 whitespace-normal leading-tight ${isDarkMode ? "text-slate-500" : "text-gray-500"} ${fontClass}`}>
-                {mode.description}
-              </p>
-            </Button>
-          )})}
+              <Button
+                key={mode.key}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => onChangeView?.(mode.key)}
+                className={`rounded-xl p-4 h-auto text-center border transition-all flex flex-col items-center justify-center ${
+                  isDisabled
+                    ? (isDarkMode ? "opacity-50 cursor-not-allowed bg-slate-800/30 border-slate-800" : "opacity-50 cursor-not-allowed bg-gray-50/50 border-gray-200")
+                    : (isDarkMode
+                      ? "bg-slate-800/50 border-slate-700 hover:border-slate-600 text-slate-200 hover:bg-slate-800 cursor-pointer"
+                      : "bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-800 hover:bg-gray-100 cursor-pointer")
+                }`}
+                variant="outline"
+              >
+                <mode.icon className={`w-5 h-5 mb-2 ${isDisabled ? "text-gray-400 dark:text-slate-500" : mode.color}`} />
+                <p className={`text-xs font-medium ${isDisabled ? (isDarkMode ? "text-slate-400" : "text-gray-500") : (isDarkMode ? "text-slate-200" : "text-gray-800")} ${fontClass}`}>
+                  {mode.label}
+                </p>
+                <p className={`text-[10px] mt-0.5 whitespace-normal leading-tight ${isDarkMode ? "text-slate-500" : "text-gray-500"} ${fontClass}`}>
+                  {mode.description}
+                </p>
+              </Button>
+            );
+          })}
         </div>
       </div>
     </section>

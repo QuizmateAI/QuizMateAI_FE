@@ -24,8 +24,19 @@ import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import {
-  getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus,
+  getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus, getAiModels, getPlanById,
 } from '@/api/ManagementSystemAPI';
+import {
+  AI_MODEL_GROUP_OPTIONS,
+  buildFunctionAssignmentMap,
+  buildFunctionAssignmentsPayload,
+  buildAiModelAssignmentMap,
+  buildAiModelAssignmentsPayload,
+  getAiActionLabel,
+  getAiActionAllowedProviders,
+  groupAiActionsByModelGroup,
+  filterAiModelsForAction,
+} from '@/lib/aiModelCatalog';
 
 // Form mặc định cho PlanCatalog (khớp với PlanCatalogCreateRequest)
 const EMPTY_FORM = {
@@ -58,6 +69,9 @@ const EMPTY_ENTITLEMENT = {
   hasAiSummaryAndTextReading: false,
 };
 
+const EMPTY_AI_MODEL_ASSIGNMENTS = buildAiModelAssignmentMap([]);
+const EMPTY_FUNCTION_ASSIGNMENTS = buildFunctionAssignmentMap([]);
+
 const ENTITLEMENT_TOGGLES = {
   canProcessPdf:          { label: 'PDF',              icon: FileText },
   canProcessWord:         { label: 'Word',             icon: FileType },
@@ -74,6 +88,8 @@ const ENTITLEMENT_TOGGLES = {
   hasWorkspaceAnalytics:  { label: 'Analytics',        icon: BarChart3 },
   hasAiSummaryAndTextReading: { label: 'AI Summary',   icon: BookOpenText },
 };
+
+const extractApiData = (response) => response?.data?.data ?? response?.data ?? response ?? null;
 
 function PlanManagement() {
   const { t, i18n } = useTranslation();
@@ -99,6 +115,9 @@ function PlanManagement() {
   const [editingPlan, setEditingPlan] = useState(null);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [entitlement, setEntitlement] = useState({ ...EMPTY_ENTITLEMENT });
+  const [aiModelAssignments, setAiModelAssignments] = useState({ ...EMPTY_AI_MODEL_ASSIGNMENTS });
+  const [functionAssignmentMap, setFunctionAssignmentMap] = useState({ ...EMPTY_FUNCTION_ASSIGNMENTS });
+  const [availableAiModels, setAvailableAiModels] = useState([]);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingPlan, setDeletingPlan] = useState(null);
@@ -107,23 +126,28 @@ function PlanManagement() {
   const [detailPlan, setDetailPlan] = useState(null);
 
   useEffect(() => {
-    const fetchPlans = async () => {
+    const fetchCatalogs = async () => {
       setIsLoading(true);
       try {
-        const res = await getAllPlans();
-        const data = res?.data ?? res;
-        setPlans(Array.isArray(data) ? data : []);
+        const [plansRes, modelsRes] = await Promise.all([
+          getAllPlans(),
+          getAiModels(),
+        ]);
+        const planData = extractApiData(plansRes);
+        const modelData = extractApiData(modelsRes);
+        setPlans(Array.isArray(planData) ? planData : []);
+        setAvailableAiModels(Array.isArray(modelData) ? modelData : []);
       } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
       finally { setIsLoading(false); }
     };
-    fetchPlans();
+    fetchCatalogs();
   }, [t, showError]);
 
   const fetchPlans = async () => {
     setIsLoading(true);
     try {
       const res = await getAllPlans();
-      const data = res?.data ?? res;
+      const data = extractApiData(res);
       setPlans(Array.isArray(data) ? data : []);
     } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
     finally { setIsLoading(false); }
@@ -133,10 +157,12 @@ function PlanManagement() {
     setEditingPlan(null);
     setFormData({ ...EMPTY_FORM });
     setEntitlement({ ...EMPTY_ENTITLEMENT });
+    setAiModelAssignments({ ...EMPTY_AI_MODEL_ASSIGNMENTS });
+    setFunctionAssignmentMap({ ...EMPTY_FUNCTION_ASSIGNMENTS });
     setIsFormOpen(true);
   };
 
-  const openEditForm = (plan) => {
+  const populatePlanForm = (plan) => {
     setEditingPlan(plan);
     // Backend returns USER | WORKSPACE; normalize legacy GROUP_WORKSPACE for dropdown
     const planScope = (plan.planScope === 'GROUP_WORKSPACE' || plan.planScope === 'WORKSPACE') ? 'WORKSPACE' : (plan.planScope || 'USER');
@@ -149,7 +175,20 @@ function PlanManagement() {
       description: plan.description || '',
     });
     setEntitlement(plan.entitlement ? { ...EMPTY_ENTITLEMENT, ...plan.entitlement } : { ...EMPTY_ENTITLEMENT });
+    setAiModelAssignments(buildAiModelAssignmentMap(plan.aiModelAssignments || []));
+    setFunctionAssignmentMap(buildFunctionAssignmentMap(plan.aiFunctionAssignments || []));
     setIsFormOpen(true);
+  };
+
+  const openEditForm = async (plan) => {
+    try {
+      const response = await getPlanById(plan.planCatalogId);
+      const detail = extractApiData(response);
+      populatePlanForm(detail || plan);
+    } catch (err) {
+      showError(getFriendlyError(err, 'subscription.fetchError'));
+      populatePlanForm(plan);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -168,6 +207,8 @@ function PlanManagement() {
           maxMaterialInWorkspace: entitlement.maxMaterialInWorkspace != null ? parseInt(entitlement.maxMaterialInWorkspace, 10) || 0 : 0,
           bonusCreditOnPlanPurchase: entitlement.bonusCreditOnPlanPurchase != null ? parseInt(entitlement.bonusCreditOnPlanPurchase, 10) || 0 : 0,
         },
+        aiModelAssignments: buildAiModelAssignmentsPayload(aiModelAssignments),
+        aiFunctionAssignments: buildFunctionAssignmentsPayload(functionAssignmentMap),
       };
 
       if (editingPlan) {
@@ -184,6 +225,8 @@ function PlanManagement() {
           price: payload.price,
           description: payload.description,
           entitlement: payload.entitlement,
+          aiModelAssignments: payload.aiModelAssignments,
+          aiFunctionAssignments: payload.aiFunctionAssignments,
         });
         showSuccess(t('subscription.createSuccess'));
       }
@@ -255,6 +298,15 @@ function PlanManagement() {
   }`;
 
   const sectionCls = `rounded-xl border p-4 ${dk ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-50/80 border-slate-100'}`;
+  const getAssignedModelForPlan = (plan, modelGroup) => {
+    const assignment = Array.isArray(plan?.aiModelAssignments)
+      ? plan.aiModelAssignments.find((item) => item.modelGroup === modelGroup)
+      : null;
+
+    if (!assignment) return null;
+
+    return availableAiModels.find((model) => String(model.aiModelId) === String(assignment.aiModelId)) ?? assignment;
+  };
 
   return (
     <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
@@ -334,7 +386,7 @@ function PlanManagement() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-4">
+                <TableRow><TableCell colSpan={8} className="text-center py-4">
                   <ListSpinner variant="table" />
                 </TableCell></TableRow>
               ) : filteredPlans.length > 0 ? filteredPlans.map((plan) => (
@@ -402,7 +454,7 @@ function PlanManagement() {
                   </TableCell>
                 </TableRow>
               )) : (
-                <TableRow><TableCell colSpan={7} className="text-center py-20 text-slate-400 text-sm italic">{t('subscription.noPlans')}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400 text-sm italic">{t('subscription.noPlans')}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -598,6 +650,129 @@ function PlanManagement() {
               </div>
             </div>
 
+            <div className={sectionCls}>
+              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>
+                {t('subscription.aiModels.title')}
+              </p>
+              <div className="grid grid-cols-1 gap-4">
+                {AI_MODEL_GROUP_OPTIONS.map((group) => {
+                  const groupModels = availableAiModels.filter((model) => model.modelGroup === group.value);
+                  return (
+                    <div key={group.value} className={`rounded-xl border p-4 ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-white'}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
+                            {t(group.labelKey)}
+                          </p>
+                          <p className={`text-xs mt-1 ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {t('subscription.aiModels.groupHint')}
+                          </p>
+                        </div>
+                        <span className={`text-xs font-medium ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
+                          {groupModels.length} model
+                        </span>
+                      </div>
+                      <select
+                        value={aiModelAssignments[group.value] ?? ''}
+                        onChange={(e) => setAiModelAssignments((prev) => ({ ...prev, [group.value]: e.target.value }))}
+                        className={`${selectCls} mt-3`}
+                        style={dk ? { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` } : undefined}
+                      >
+                        <option value="">{t('subscription.aiModels.noAssignment')}</option>
+                        {groupModels.map((model) => (
+                          <option
+                            key={model.aiModelId}
+                            value={model.aiModelId}
+                            disabled={model.status !== 'ACTIVE' && String(model.aiModelId) !== String(aiModelAssignments[group.value] ?? '')}
+                          >
+                            {model.displayName} ({model.provider} / {model.modelCode}){model.status !== 'ACTIVE' ? ` • ${model.status}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <details className={sectionCls} open>
+              <summary className={`flex cursor-pointer list-none items-center justify-between text-xs font-bold uppercase tracking-wider ${dk ? 'text-fuchsia-400' : 'text-fuchsia-600'}`}>
+                <span>{t('subscription.aiFunctionOverrides.title', { defaultValue: 'AI Function Overrides' })}</span>
+                <span className={`text-[11px] normal-case tracking-normal ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
+                  {t('subscription.aiFunctionOverrides.hint', { defaultValue: 'Override a specific action, or leave empty to keep the model group default.' })}
+                </span>
+              </summary>
+              <div className="mt-4 grid gap-4">
+                {groupAiActionsByModelGroup().map((group) => {
+                  return (
+                    <div key={group.value} className={`rounded-xl border p-4 ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-white'}`}>
+                      <div className="mb-4">
+                        <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
+                          {t(group.labelKey)}
+                        </p>
+                        <p className={`mt-1 text-xs ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
+                          {t('subscription.aiFunctionOverrides.groupHint', { defaultValue: 'Each override here only affects this action key. Empty value keeps the model group assignment above.' })}
+                        </p>
+                      </div>
+                      <div className="grid gap-3">
+                        {group.actions.map((actionKey) => (
+                          (() => {
+                            const actionModels = filterAiModelsForAction(actionKey, availableAiModels);
+                            const allowedProviders = getAiActionAllowedProviders(actionKey);
+                            const isProviderRestricted = allowedProviders.length === 1;
+                            return (
+                              <div
+                                key={actionKey}
+                                className={`grid gap-3 rounded-xl border p-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-slate-50/80'}`}
+                              >
+                                <div>
+                                  <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
+                                    {getAiActionLabel(actionKey, t)}
+                                  </p>
+                                  <p className={`mt-1 text-xs ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    {isProviderRestricted
+                                      ? t('subscription.aiFunctionOverrides.providerHint', {
+                                        defaultValue: 'Supported provider: {{provider}}. Empty value uses the resolved {{provider}} default.',
+                                        provider: allowedProviders[0],
+                                      })
+                                      : t('subscription.aiFunctionOverrides.defaultHint', {
+                                        defaultValue: 'Default from capability: {{group}}',
+                                        group: t(group.labelKey),
+                                      })}
+                                  </p>
+                                </div>
+                                <select
+                                  value={functionAssignmentMap[actionKey] ?? ''}
+                                  onChange={(e) => setFunctionAssignmentMap((prev) => ({ ...prev, [actionKey]: e.target.value }))}
+                                  className={selectCls}
+                                  style={dk ? { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` } : undefined}
+                                >
+                                  <option value="">
+                                    {isProviderRestricted
+                                      ? t('subscription.aiFunctionOverrides.useResolvedDefault', { defaultValue: 'Use resolved compatible default model' })
+                                      : t('subscription.aiFunctionOverrides.useGroupDefault', { defaultValue: 'Use capability default model' })}
+                                  </option>
+                                  {actionModels.map((model) => (
+                                    <option
+                                      key={`${actionKey}-${model.aiModelId}`}
+                                      value={model.aiModelId}
+                                      disabled={model.status !== 'ACTIVE' && String(model.aiModelId) !== String(functionAssignmentMap[actionKey] ?? '')}
+                                    >
+                                      {model.displayName} ({model.provider} / {model.modelCode}){model.status !== 'ACTIVE' ? ` • ${model.status}` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })()
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+
             <div className={`flex justify-end gap-3 pt-2 border-t ${dk ? 'border-white/[0.06]' : 'border-slate-100'}`}>
               <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className={`rounded-lg cursor-pointer ${dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>
                 {t('auth.cancel')}
@@ -626,7 +801,7 @@ function PlanManagement() {
 
       {/* ──── Plan Detail Dialog ──── */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent hideClose className={`max-w-xl max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden ${dk ? 'bg-[#0f1629] border-white/[0.08]' : 'bg-white'}`}>
+        <DialogContent hideClose className={`max-w-4xl max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden ${dk ? 'bg-[#0f1629] border-white/[0.08]' : 'bg-white'}`}>
           {detailPlan && (
             <>
               {/* Fixed header */}
@@ -710,6 +885,42 @@ function PlanManagement() {
                     </div>
                   </div>
                 )}
+
+                <div className={sectionCls}>
+                  <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>
+                    {t('subscription.aiModels.title')}
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {AI_MODEL_GROUP_OPTIONS.map((group) => {
+                      const assignedModel = getAssignedModelForPlan(detailPlan, group.value);
+
+                      return (
+                        <div
+                          key={group.value}
+                          className={`rounded-xl border px-4 py-3 ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-white'}`}
+                        >
+                          <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
+                            {t(group.labelKey)}
+                          </p>
+                          {assignedModel ? (
+                            <>
+                              <p className={`mt-2 text-sm font-medium ${dk ? 'text-slate-200' : 'text-slate-700'}`}>
+                                {assignedModel.displayName || assignedModel.modelCode || `#${assignedModel.aiModelId}`}
+                              </p>
+                              <p className={`mt-1 text-xs ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
+                                {assignedModel.provider || '-'} / {assignedModel.modelCode || `#${assignedModel.aiModelId}`}
+                              </p>
+                            </>
+                          ) : (
+                            <p className={`mt-2 text-sm italic ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
+                              {t('subscription.aiModels.noAssignment')}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </>
           )}
