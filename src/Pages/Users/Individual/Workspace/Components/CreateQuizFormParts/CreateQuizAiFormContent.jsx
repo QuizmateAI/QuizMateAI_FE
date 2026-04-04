@@ -26,6 +26,7 @@ import {
 import { Button } from "@/Components/ui/button";
 import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
+import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
 
 function CreateQuizAiFormContent({
   classes,
@@ -57,6 +58,7 @@ function CreateQuizAiFormContent({
     t,
     fontClass,
     isDarkMode,
+    hasAdvanceQuizConfig = false,
   } = ui;
   const {
     aiDuration,
@@ -550,6 +552,12 @@ function CreateQuizAiFormContent({
         )}
       </div>
 
+      <PlanGatedFeature
+        allowed={hasAdvanceQuizConfig}
+        featureName={t("workspace.quiz.aiConfig.advancedConfig", "Cấu hình quiz nâng cao")}
+        isDarkMode={isDarkMode}
+        className="block w-full"
+      >
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div ref={aiQuestionTypesSectionRef} className={getAiSectionCardClass(["selectedQTypes"])}>
           <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
@@ -714,6 +722,7 @@ function CreateQuizAiFormContent({
           )}
         </div>
       </div>
+      </PlanGatedFeature>
 
       <div ref={aiPromptSectionRef} className={getAiSectionCardClass(["aiPrompt"])}>
         <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>

@@ -8,6 +8,7 @@ import {
 } from "@/Components/ui/dialog";
 import { Button } from "@/Components/ui/button";
 import {
+  Crown,
   UploadCloud,
   FileText,
   Image,
@@ -29,6 +30,63 @@ import {
   processYoutubeResource,
 } from "@/api/AIAPI";
 import { useToast } from "@/context/ToastContext";
+import PlanUpgradeModal from "@/Components/plan/PlanUpgradeModal";
+
+// Map MIME type prefix/patterns to entitlement keys
+const MIME_TO_ENTITLEMENT = {
+  "application/pdf": "canUploadPdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "canUploadWord",
+  "application/msword": "canUploadWord",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "canUploadSlide",
+  "application/vnd.ms-powerpoint": "canUploadSlide",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "canUploadExcel",
+  "application/vnd.ms-excel": "canUploadExcel",
+  "text/plain": "canUploadText",
+};
+
+// Extension to entitlement key (fallback for MIME prefix checks)
+const EXT_TO_ENTITLEMENT = {
+  ".pdf": "canUploadPdf",
+  ".docx": "canUploadWord",
+  ".doc": "canUploadWord",
+  ".pptx": "canUploadSlide",
+  ".ppt": "canUploadSlide",
+  ".xlsx": "canUploadExcel",
+  ".xls": "canUploadExcel",
+  ".txt": "canUploadText",
+  ".png": "canUploadImage",
+  ".jpg": "canUploadImage",
+  ".jpeg": "canUploadImage",
+  ".mp3": "canUploadAudio",
+  ".wav": "canUploadAudio",
+  ".mp4": "canUploadVideo",
+};
+
+function getEntitlementKeyForFile(file) {
+  const mime = (file.type || "").toLowerCase();
+  if (MIME_TO_ENTITLEMENT[mime]) return MIME_TO_ENTITLEMENT[mime];
+  if (mime.startsWith("image/")) return "canUploadImage";
+  if (mime.startsWith("audio/")) return "canUploadAudio";
+  if (mime.startsWith("video/")) return "canUploadVideo";
+  // Fallback by extension
+  const name = (file.name || "").toLowerCase();
+  const ext = Object.keys(EXT_TO_ENTITLEMENT).find((e) => name.endsWith(e));
+  return ext ? EXT_TO_ENTITLEMENT[ext] : null;
+}
+
+function buildAcceptString(ent) {
+  if (!ent) return ".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.png,.mp3,.mp4";
+  const parts = [];
+  if (ent.canUploadPdf) parts.push(".pdf");
+  if (ent.canUploadWord) parts.push(".docx", ".doc");
+  if (ent.canUploadSlide) parts.push(".pptx", ".ppt");
+  if (ent.canUploadExcel) parts.push(".xlsx", ".xls");
+  if (ent.canUploadText) parts.push(".txt");
+  if (ent.canUploadImage) parts.push(".png", ".jpg", ".jpeg");
+  if (ent.canUploadAudio) parts.push(".mp3", ".wav");
+  if (ent.canUploadVideo) parts.push(".mp4");
+  return parts.join(",") || ".pdf";
+}
 
 const SUGGESTED_RESOURCES_LIMIT = 5;
 
@@ -68,6 +126,7 @@ function UploadSourceDialogBase({
   workspaceId,
   onSuggestedImported,
   variant = "default",
+  planEntitlements = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showError, showSuccess, showInfo } = useToast();
@@ -82,6 +141,35 @@ function UploadSourceDialogBase({
   const [webUrl, setWebUrl] = useState("");
   const [showWebInput, setShowWebInput] = useState(false);
   const fileInputRef = useRef(null);
+
+  const [planBlockedModalOpen, setPlanBlockedModalOpen] = useState(false);
+  const [planBlockedFeature, setPlanBlockedFeature] = useState(null);
+
+  const acceptString = useMemo(() => buildAcceptString(planEntitlements), [planEntitlements]);
+
+  const isFileAllowed = (file) => {
+    if (!planEntitlements) return true;
+    const key = getEntitlementKeyForFile(file);
+    if (!key) return true;
+    return planEntitlements[key] === true;
+  };
+
+  const filterAndNotifyFiles = (files) => {
+    const allowed = [];
+    let hadBlocked = false;
+    for (const file of files) {
+      if (isFileAllowed(file)) {
+        allowed.push(file);
+      } else {
+        hadBlocked = true;
+      }
+    }
+    if (hadBlocked) {
+      setPlanBlockedFeature("Loại tệp này");
+      setPlanBlockedModalOpen(true);
+    }
+    return allowed;
+  };
 
   const [showSuggestedPanel, setShowSuggestedPanel] = useState(false);
   const [suggestedResources, setSuggestedResources] = useState([]);
@@ -100,15 +188,17 @@ function UploadSourceDialogBase({
   );
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedFiles((prev) => [...prev, ...files]);
+    const files = filterAndNotifyFiles(Array.from(e.target.files || []));
+    if (files.length > 0) setSelectedFiles((prev) => [...prev, ...files]);
+    // Reset input so same file can be re-selected after blocking
+    e.target.value = "";
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setDragOver(false);
-    const files = Array.from(e.dataTransfer.files || []);
-    setSelectedFiles((prev) => [...prev, ...files]);
+    const files = filterAndNotifyFiles(Array.from(e.dataTransfer.files || []));
+    if (files.length > 0) setSelectedFiles((prev) => [...prev, ...files]);
   };
 
   const handleAddWebUrl = async () => {
@@ -209,8 +299,8 @@ function UploadSourceDialogBase({
         setSelectedFiles([]);
       }
       onOpenChange(false);
-    } catch {
-      // Lỗi xử lý ở component cha
+    } catch (error) {
+      showError(error?.message || t("workspace.upload.uploadError", "Không thể tải tài liệu lên."));
     } finally {
       setUploading(false);
     }
@@ -226,8 +316,8 @@ function UploadSourceDialogBase({
       await handleImportSuggestions({ closeAfterImport: false });
       showSuccess(t("workspace.upload.uploadAllSuccess"));
       onOpenChange(false);
-    } catch {
-      // Lỗi đã được hiển thị tại nguồn gọi API
+    } catch (error) {
+      showError(error?.message || t("workspace.upload.uploadError", "Không thể tải tài liệu lên."));
     } finally {
       setUploading(false);
     }
@@ -289,6 +379,7 @@ function UploadSourceDialogBase({
   }, [open, showSuggestedPanel, normalizedWorkspaceId]);
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className={`sm:max-w-[760px] max-h-screen overflow-y-auto overflow-x-hidden ${fontClass} ${
         isDarkMode ? "bg-slate-950 border-slate-800 text-white" : "bg-white border-gray-200 text-gray-900"
@@ -405,21 +496,37 @@ function UploadSourceDialogBase({
                     {t("workspace.upload.uploadFileButton", "Tải tệp lên")}
                   </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowWebInput(true)}
-                    disabled={uploading || importingSuggestions || processingWebLink}
-                    className={`h-12 rounded-full transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
-                  >
-                    <span className="inline-flex items-center mr-2">
-                      <Link2 className="w-4 h-4" />
-                      <Youtube className="w-4 h-4 -ml-1 text-red-500" />
-                    </span>
-                    {t("workspace.upload.webYoutubeButton", "Liên kết YouTube")}
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (planEntitlements && !planEntitlements.canUploadVideo) {
+                          setPlanBlockedFeature("Liên kết YouTube (video)");
+                          setPlanBlockedModalOpen(true);
+                          return;
+                        }
+                        setShowWebInput(true);
+                      }}
+                      disabled={uploading || importingSuggestions || processingWebLink}
+                      className={`h-12 rounded-full transition-all active:scale-95 ${
+                        planEntitlements && !planEntitlements.canUploadVideo ? "opacity-60" : ""
+                      } ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
+                    >
+                      <span className="inline-flex items-center mr-2">
+                        <Link2 className="w-4 h-4" />
+                        <Youtube className="w-4 h-4 -ml-1 text-red-500" />
+                      </span>
+                      {t("workspace.upload.webYoutubeButton", "Liên kết YouTube")}
+                    </Button>
+                    {planEntitlements && !planEntitlements.canUploadVideo && (
+                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center pointer-events-none z-10">
+                        <Crown className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.png,.mp3,.mp4" className="hidden" onChange={handleFileSelect} />
+                <input ref={fileInputRef} type="file" multiple accept={acceptString} className="hidden" onChange={handleFileSelect} />
               </div>
 
               {selectedFiles.length > 0 && (
@@ -612,6 +719,14 @@ function UploadSourceDialogBase({
       </DialogContent>
 
     </Dialog>
+
+    <PlanUpgradeModal
+      open={planBlockedModalOpen}
+      onOpenChange={setPlanBlockedModalOpen}
+      featureName={planBlockedFeature}
+      isDarkMode={isDarkMode}
+    />
+  </>
   );
 }
 

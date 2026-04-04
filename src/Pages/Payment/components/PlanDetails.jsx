@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import {
-  Layers, FileText, Users, Sparkles, Image, FileSpreadsheet, Presentation, CheckCircle2, Map,
+  Layers, FileText, Users, Sparkles, Image, FileSpreadsheet, Presentation, CheckCircle2, Map, Gift,
 } from 'lucide-react';
 
 const LIMIT_ICONS = {
@@ -42,6 +42,7 @@ export default function PlanDetails({ plan }) {
   );
 
   return (
+    <>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* Limits */}
       <div className={`rounded-2xl p-4 ${
@@ -105,5 +106,21 @@ export default function PlanDetails({ plan }) {
         </ul>
       </div>
     </div>
+
+    {/* Bonus credit on plan purchase */}
+    {Number(plan.bonusCreditOnPlanPurchase) > 0 && (
+      <div className={`flex items-center gap-3 rounded-2xl p-4 mt-4 ring-1 ring-inset ${
+        isDarkMode ? 'bg-amber-500/10 ring-amber-500/20' : 'bg-amber-50 ring-amber-200'
+      }`}>
+        <Gift className={`w-5 h-5 shrink-0 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+        <span className={`text-sm font-semibold ${isDarkMode ? 'text-amber-300' : 'text-amber-800'}`}>
+          {t('payment.bonusCredit', {
+            count: plan.bonusCreditOnPlanPurchase,
+            defaultValue: `Tặng ${plan.bonusCreditOnPlanPurchase} credit khi mua gói này`,
+          })}
+        </span>
+      </div>
+    )}
+    </>
   );
 }
