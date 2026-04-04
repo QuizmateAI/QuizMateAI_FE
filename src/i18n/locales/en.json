@@ -10,6 +10,9 @@
     "logout": "Logout",
     "adminAccounts": "Admin Accounts",
     "rbac": "RBAC System",
+    "aiProviders": "AI Providers",
+    "aiModels": "AI Models",
+    "aiCosts": "AI Costs",
     "aiAudit": "AI Audit",
     "subscriptions": "Subscriptions",
     "creditPackages": "Credit Packs",
@@ -21,7 +24,10 @@
     "overview": "Overview",
     "workspace": "Users & groups",
     "commerce": "Plans & payments",
-    "system": "Internal systems"
+    "system": "Internal systems",
+    "accessControl": "Access control",
+    "aiGovernance": "AI governance",
+    "platformConfig": "Platform config"
   },
   "systemSettings": {
     "title": "System Settings",
@@ -52,12 +58,38 @@
     "title": "AI Action Policies",
     "subtitle": "Configure credit costs for each AI feature",
     "refresh": "Refresh",
+    "empty": "No AI policies found.",
     "categoryGenerate": "AI Content Generation",
+    "categoryAnalysis": "AI Analysis",
     "categoryProcess": "Document Processing",
+    "sectionAiFunctions": "AI-powered features",
+    "sectionAnalysis": "Analysis",
+    "sectionDocuments": "Documents",
+    "colAction": "Action",
+    "colCategory": "Category",
+    "colCostMode": "Cost mode",
+    "colFormula": "Formula",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "formulaCommon": "Common formula",
+    "appliedMetric": "Applied metric",
+    "tableExplanation": "Explanation",
+    "formulaPatternFixed": "Total cost = base cost",
+    "formulaPatternVariable": "Total cost = base cost + unit cost x ceil(applied metric / unit size)",
+    "metricFixedUsage": "Fixed charge per usage",
+    "metricByUnit": "Based on {{unit}} count",
+    "explanationFixed": "{{baseLabel}} is currently {{base}} QMC for each usage.",
+    "explanationVariable": "{{baseLabel}} is {{base}} QMC, {{unitLabelName}} is {{unit}} QMC, and {{sizeLabel}} is {{size}}. The system charges based on {{metric}}.",
     "active": "Active",
     "statusActive": "Active",
     "statusInactive": "Inactive",
     "edit": "Edit",
+    "editTitle": "Edit AI Policy",
+    "editDescription": "Update display name, description, status, and the credit formula for this action.",
+    "actionKey": "Action key",
+    "displayName": "Display name",
+    "description": "Description",
+    "noDescription": "No description yet.",
     "cancel": "Cancel",
     "save": "Save",
     "saving": "Saving...",
@@ -95,82 +127,124 @@
         "description": "Credit charged when generating a quiz with AI, based on total question count.",
         "baseCost": "Quiz setup fee",
         "unitCost": "Cost per question",
-        "unitSize": "Questions per unit"
+        "unitSize": "Questions per unit",
+        "metric": "Total generated question count"
       },
       "generateFlashcards": {
         "title": "Generate Flashcards",
         "description": "Credit charged when generating flashcards with AI, based on total card count.",
         "baseCost": "Flashcard set fee",
         "unitCost": "Cost per card",
-        "unitSize": "Cards per unit"
+        "unitSize": "Cards per unit",
+        "metric": "Total generated flashcard count"
       },
       "generateMockTest": {
         "title": "Generate Mock Test",
         "description": "Credit charged when generating a mock test with AI, based on total question count.",
         "baseCost": "Mock test setup fee",
         "unitCost": "Cost per question",
-        "unitSize": "Questions per unit"
+        "unitSize": "Questions per unit",
+        "metric": "Total question count in the mock test"
+      },
+      "previewQuizStructure": {
+        "title": "Preview Quiz Structure",
+        "description": "Credit charged each time AI drafts a quiz structure preview before quiz generation.",
+        "baseCost": "Cost per preview",
+        "metric": "Each quiz structure preview request"
       },
       "generateRoadmapQuiz": {
-        "title": "Generate Roadmap Quiz",
+        "title": "Generate quiz in roadmap",
         "description": "Credit charged when generating a roadmap knowledge quiz, based on question count.",
         "baseCost": "Setup fee",
         "unitCost": "Cost per question",
-        "unitSize": "Questions per unit"
+        "unitSize": "Questions per unit",
+        "metric": "Total roadmap quiz question count"
+      },
+      "analyzeStudyProfileKnowledge": {
+        "title": "Analyze Study Profile Knowledge",
+        "description": "Credit charged each time AI analyzes the study profile knowledge input.",
+        "baseCost": "Cost per analysis",
+        "metric": "Each knowledge analysis request"
+      },
+      "suggestStudyProfileFields": {
+        "title": "Suggest Study Profile Fields",
+        "description": "Credit charged each time AI suggests study profile fields.",
+        "baseCost": "Cost per suggestion",
+        "metric": "Each field suggestion request"
+      },
+      "suggestStudyProfileExamTemplates": {
+        "title": "Suggest Study Profile Exam Templates",
+        "description": "Credit charged each time AI suggests or generates study profile exam templates.",
+        "baseCost": "Cost per suggestion",
+        "metric": "Each exam template suggestion request"
+      },
+      "validateStudyProfileConsistency": {
+        "title": "Validate Study Profile Consistency",
+        "description": "Credit charged each time AI validates study profile consistency.",
+        "baseCost": "Cost per validation",
+        "metric": "Each consistency validation request"
       },
       "processPdf": {
         "title": "Process PDF",
         "description": "Credit charged for PDF processing, based on total page count.",
         "baseCost": "Base fee per file",
         "unitCost": "Cost per page",
-        "unitSize": "Pages per unit"
+        "unitSize": "Pages per unit",
+        "metric": "Total PDF page count"
       },
       "processImage": {
         "title": "Process Image",
         "description": "Credit charged for image processing, fixed cost per upload.",
-        "baseCost": "Cost per image"
+        "baseCost": "Cost per image",
+        "metric": "Each uploaded image"
       },
       "processText": {
         "title": "Process Text",
         "description": "Credit charged for plain text processing, based on total word count.",
         "baseCost": "Base fee per file",
         "unitCost": "Cost per 1,000 words",
-        "unitSize": "Words per unit"
+        "unitSize": "Words per unit",
+        "metric": "Total text word count"
       },
       "processDocx": {
         "title": "Process Word",
         "description": "Credit charged for Word document processing, based on total word count.",
         "baseCost": "Base fee per file",
         "unitCost": "Cost per 1,000 words",
-        "unitSize": "Words per unit"
+        "unitSize": "Words per unit",
+        "metric": "Total Word document word count"
       },
       "processXlsx": {
         "title": "Process Excel",
         "description": "Credit charged for Excel processing, based on populated cell count.",
         "baseCost": "Base fee per file",
         "unitCost": "Cost per cell group",
-        "unitSize": "Cells per unit"
+        "unitSize": "Cells per unit",
+        "metric": "Total populated cell count"
       },
       "processPptx": {
         "title": "Process PowerPoint",
         "description": "Credit charged for PowerPoint processing, based on slide count.",
         "baseCost": "Base fee per file",
         "unitCost": "Cost per slide",
-        "unitSize": "Slides per unit"
+        "unitSize": "Slides per unit",
+        "metric": "Total slide count"
       },
       "processAudio": {
         "title": "Process Audio",
         "description": "Credit charged for audio processing, based on duration in seconds.",
         "baseCost": "Base fee per file",
         "unitCost": "Cost per minute",
-        "unitSize": "Seconds per unit"
+        "unitSize": "Seconds per unit",
+        "metric": "Total audio duration in seconds"
       },
       "processVideo": {
         "title": "Process Video",
         "description": "Credit charged for video processing, based on duration in seconds.",
         "baseCost": "Base fee per file",
         "unitCost": "Cost per minute",
-        "unitSize": "Seconds per unit"
+        "unitSize": "Seconds per unit",
+        "metric": "Total video duration in seconds"
       }
     }
   },
@@ -747,6 +821,215 @@
       "individual": "Individual",
       "group": "Group",
       "totalRevenue": "Total Revenue"
+    },
+    "aiModels": {
+      "title": "AI Models by capability",
+      "groupHint": "Choose the default model for this capability in the selected plan.",
+      "noAssignment": "No model assigned"
+    }
+  },
+  "aiModels": {
+    "title": "AI Model Catalog",
+    "subtitle": "Manage the system model catalog, activation state, and pricing versions per capability.",
+    "refresh": "Refresh",
+    "add": "Add model",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "systemDefault": "System default",
+    "noDescription": "No description yet",
+    "unassigned": "Not assigned to any plan",
+    "empty": "No models match the current filters.",
+    "stats": {
+      "total": "Total models",
+      "totalHint": "Models stored in the system catalog",
+      "active": "Active",
+      "activeHint": "Eligible for new plan assignments",
+      "assigned": "Assigned",
+      "assignedHint": "Used by at least one plan",
+      "archived": "Archived",
+      "archivedHint": "Kept only for historical records"
+    },
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Display name, model code, provider...",
+      "provider": "Provider",
+      "allProviders": "All providers",
+      "group": "Capability group",
+      "allGroups": "All groups",
+      "status": "Status",
+      "allStatuses": "All statuses"
+    },
+    "table": {
+      "model": "Model",
+      "group": "Capability",
+      "pricing": "Active pricing",
+      "input": "Input",
+      "output": "Output",
+      "assignedPlans": "Assigned plans",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "groups": {
+      "TEXT_GENERATION": "Text generation",
+      "DOCUMENT_PROCESSING": "Document processing",
+      "TRANSCRIPTION": "Transcription",
+      "TEXT_TO_SPEECH": "Text to speech"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "ARCHIVED": "Archived"
+    },
+    "pricing": {
+      "input": "Input price / 1M tokens",
+      "output": "Output price / 1M tokens",
+      "effectiveFrom": "Effective from",
+      "effectiveTo": "Effective to",
+      "updatedAt": "Updated",
+      "source": "Source",
+      "sourceHint": "Rate / provider",
+      "historyHint": "Saved point",
+      "none": "No pricing version yet",
+      "state": "State",
+      "activeNow": "Active now",
+      "history": "Historical",
+      "historyTitle": "Pricing version history",
+      "historyDescription": "Track the active version and the pricing milestones stored for this model.",
+      "totalVersions": "Versions",
+      "addVersion": "Add pricing version",
+      "formDescription": "Enter source pricing in USD or pull it from the official source, and the system will convert it to VND.",
+      "officialTitle": "Official pricing",
+      "officialDescription": "Auto-fetch input and output pricing from official OpenAI or Gemini pages when the model is supported.",
+      "officialSync": "Fetch official pricing",
+      "officialSource": "Open official source",
+      "officialTier": "Tier",
+      "officialUnsupported": "This model does not currently support official auto pricing.",
+      "previewVnd": "Converted",
+      "openEndedHint": "Leave blank if this pricing version has no end date yet.",
+      "submit": "Save pricing version"
+    },
+    "actions": {
+      "menu": "Open action menu",
+      "pricing": "Manage pricing",
+      "edit": "Edit model",
+      "toggle": "Toggle status",
+      "archive": "Archive model",
+      "delete": "Delete model"
+    },
+    "dialogs": {
+      "createTitle": "Create AI model",
+      "createDescription": "Add a new model so the system can assign it by capability and plan.",
+      "editTitle": "Edit AI model",
+      "editDescription": "Update the display metadata and capability group for this model.",
+      "pricingTitle": "Model pricing",
+      "pricingDescription": "Manage model input/output pricing and sync it from official sources when needed.",
+      "deleteTitle": "Delete AI model",
+      "deleteDescription": "Are you sure you want to delete \"{{name}}\"? If the model has usage history, the backend will archive it instead of hard deleting it."
+    },
+    "form": {
+      "provider": "Provider",
+      "group": "Capability group",
+      "modelCode": "Model code",
+      "displayName": "Display name",
+      "description": "Description",
+      "systemDefault": "Use as system fallback",
+      "systemDefaultHint": "Only used when a plan does not have a valid mapping or when legacy flows require a fallback."
+    },
+    "messages": {
+      "createSuccess": "Model created successfully",
+      "updateSuccess": "Model updated successfully",
+      "priceSuccess": "Pricing version added successfully",
+      "statusSuccess": "Model status updated successfully",
+      "deleteSuccess": "Model deletion processed successfully"
+    }
+  },
+  "aiCosts": {
+    "title": "AI Costs",
+    "subtitle": "Track revenue, provider spend, and margin for every billable AI request.",
+    "refresh": "Refresh",
+    "clear": "Clear filters",
+    "apply": "Apply",
+    "empty": "No requests match the current filters.",
+    "metrics": {
+      "requests": "Requests",
+      "matched": "matched requests",
+      "revenue": "Recorded revenue",
+      "credits": "credits charged",
+      "providerCost": "Provider cost",
+      "tokens": "tokens processed",
+      "profit": "Gross profit",
+      "unmatched": "unmatched requests"
+    },
+    "filters": {
+      "taskId": "Task ID",
+      "actorUserId": "User ID",
+      "plan": "Plan",
+      "allPlans": "All plans",
+      "provider": "Provider",
+      "allProviders": "All providers",
+      "group": "Capability",
+      "allGroups": "All capabilities",
+      "action": "Action",
+      "allActions": "All actions",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "from": "From",
+      "to": "To"
+    },
+    "table": {
+      "request": "Request",
+      "plan": "Plan / Model",
+      "charged": "Revenue",
+      "tokens": "Tokens",
+      "cost": "Cost & margin",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "units": {
+      "credit": "credit"
+    },
+    "formula": {
+      "creditUnit": "Credit unit price",
+      "prompt": "Input tokens",
+      "output": "Output tokens",
+      "thought": "Thought tokens",
+      "completion": "Completion tokens",
+      "total": "Total tokens",
+      "chargedVnd": "Charged VND",
+      "providerCost": "Provider cost",
+      "profit": "Profit",
+      "tokenPrice": "Effective token price",
+      "tokenBudget": "Equivalent token budget",
+      "tokenMargin": "Equivalent token margin"
+    },
+    "status": {
+      "SUCCESS": "Success",
+      "ERROR": "Error",
+      "FAILED": "Failed",
+      "UNMATCHED": "Unmatched"
+    },
+    "actions": {
+      "details": "Details",
+      "audit": "AI Audit"
+    },
+    "detail": {
+      "title": "Request cost detail",
+      "ledger": "Business ledger",
+      "action": "Action",
+      "plan": "Plan",
+      "model": "Model",
+      "group": "Capability",
+      "status": "Status",
+      "createdAt": "Created at",
+      "formula": "Conversion formula",
+      "tokens": "Token breakdown",
+      "explain": "Explanation",
+      "explainCharged": "This request charged {{credit}} credits, equivalent to {{vnd}} using the snapshotted credit unit price.",
+      "explainProvider": "Provider cost is derived from {{prompt}} input tokens and {{output}} output tokens, totaling {{cost}}.",
+      "explainMargin": "At the current selling price, this request corresponds to a {{tokenBudget}} token budget and leaves a margin of {{tokenMargin}} tokens."
     }
   },
   "auth": {
@@ -1697,6 +1980,7 @@
       "supportedFormats": "Supported: pdf, docx, doc, pptx, ppt, xlsx, xls, txt, png, mp3, mp4",
       "suggestMore": "Suggest more materials",
       "suggestedResourcesTitle": "Suggested materials",
+      "relevanceRate": "Relevance",
       "refreshSuggested": "Refresh",
       "getSuggestedResources": "Get suggested materials",
       "importSuggested": "Upload suggested files",

@@ -98,6 +98,15 @@ api.interceptors.response.use(
     const errorMessage = data?.message || (validationErrors && typeof validationErrors === 'object'
       ? Object.values(validationErrors).join(', ')
       : null) || 'Có lỗi xảy ra, vui lòng thử lại';
+
+    // Phát sự kiện toàn cục khi BE trả về lỗi giới hạn gói (safety net cho UI guards)
+    const businessCode = data?.code;
+    if (businessCode === 1066 || businessCode === 1056) {
+      window.dispatchEvent(new CustomEvent('planUpgradeRequired', {
+        detail: { message: data?.message, code: businessCode },
+      }));
+    }
+
     return Promise.reject({
       statusCode: error.response?.status,
       code: data?.code,
