@@ -84,6 +84,7 @@ function ChatPanel({
   quizGenerationProgressByQuizId = null,
   onShareQuiz,
   onShareRoadmap,
+  planEntitlements = null,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -229,6 +230,7 @@ function ChatPanel({
             contextId={workspaceId}
             selectedSourceIds={selectedSourceIds}
             sources={sources}
+            planEntitlements={planEntitlements}
           />
         );
       case "createFlashcard":

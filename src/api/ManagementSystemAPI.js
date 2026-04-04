@@ -178,6 +178,122 @@ export const getAiAuditLogs = async ({
   return response;
 };
 
+export const getAiModels = async ({ provider, modelGroup, status } = {}) => {
+  const params = new URLSearchParams();
+  if (provider) params.append('provider', String(provider));
+  if (modelGroup) params.append('modelGroup', String(modelGroup));
+  if (status) params.append('status', String(status));
+  const response = await api.get(`/management/ai-models${params.toString() ? `?${params.toString()}` : ''}`);
+  return response;
+};
+
+export const getAiModelById = async (id) => {
+  const response = await api.get(`/management/ai-models/${id}`);
+  return response;
+};
+
+export const getUsdVndExchangeRate = async () => {
+  const response = await api.get('/management/ai-models/exchange-rate/usd-vnd');
+  return response;
+};
+
+export const getAiModelOfficialPricing = async (id) => {
+  const response = await api.get(`/management/ai-models/${id}/official-pricing`);
+  return response;
+};
+
+export const getAiProviderHealth = async () => {
+  const response = await api.get('/management/ai-health');
+  return response;
+};
+
+export const createAiModel = async (data) => {
+  const response = await api.post('/management/ai-models', data);
+  return response;
+};
+
+export const updateAiModel = async (id, data) => {
+  const response = await api.put(`/management/ai-models/${id}`, data);
+  return response;
+};
+
+export const updateAiModelStatus = async (id, status) => {
+  const response = await api.patch(`/management/ai-models/${id}/status`, { status });
+  return response;
+};
+
+export const addAiModelPriceVersion = async (id, data) => {
+  const response = await api.post(`/management/ai-models/${id}/price-versions`, data);
+  return response;
+};
+
+export const deleteAiModel = async (id) => {
+  const response = await api.delete(`/management/ai-models/${id}`);
+  return response;
+};
+
+export const getAiCostRequests = async ({
+  taskId,
+  actorUserId,
+  chargedWorkspaceId,
+  chargedUserId,
+  planCatalogId,
+  provider,
+  modelGroup,
+  actionKey,
+  status,
+  from,
+  to,
+  page = 0,
+  size = 20,
+} = {}) => {
+  const params = new URLSearchParams();
+  params.append('page', String(page));
+  params.append('size', String(size));
+  if (taskId) params.append('taskId', String(taskId));
+  if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (chargedWorkspaceId != null && chargedWorkspaceId !== '') params.append('chargedWorkspaceId', String(chargedWorkspaceId));
+  if (chargedUserId != null && chargedUserId !== '') params.append('chargedUserId', String(chargedUserId));
+  if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
+  if (provider) params.append('provider', String(provider));
+  if (modelGroup) params.append('modelGroup', String(modelGroup));
+  if (actionKey) params.append('actionKey', String(actionKey));
+  if (status) params.append('status', String(status));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const response = await api.get(`/management/ai-costs/requests?${params.toString()}`);
+  return response;
+};
+
+export const getAiCostSummary = async ({
+  taskId,
+  actorUserId,
+  chargedWorkspaceId,
+  chargedUserId,
+  planCatalogId,
+  provider,
+  modelGroup,
+  actionKey,
+  status,
+  from,
+  to,
+} = {}) => {
+  const params = new URLSearchParams();
+  if (taskId) params.append('taskId', String(taskId));
+  if (actorUserId != null && actorUserId !== '') params.append('actorUserId', String(actorUserId));
+  if (chargedWorkspaceId != null && chargedWorkspaceId !== '') params.append('chargedWorkspaceId', String(chargedWorkspaceId));
+  if (chargedUserId != null && chargedUserId !== '') params.append('chargedUserId', String(chargedUserId));
+  if (planCatalogId != null && planCatalogId !== '') params.append('planCatalogId', String(planCatalogId));
+  if (provider) params.append('provider', String(provider));
+  if (modelGroup) params.append('modelGroup', String(modelGroup));
+  if (actionKey) params.append('actionKey', String(actionKey));
+  if (status) params.append('status', String(status));
+  if (from) params.append('from', String(from));
+  if (to) params.append('to', String(to));
+  const response = await api.get(`/management/ai-costs/summary${params.toString() ? `?${params.toString()}` : ''}`);
+  return response;
+};
+
 export const getGroupLogs = async (workspaceId) => {
   const response = await api.get(`/management/groups/${workspaceId}/logs`);
   return response;
@@ -214,6 +330,12 @@ export const deletePlan = async (planId) => {
 export const updatePlanStatus = async (planId, status) => {
   // Gọi vào @PatchMapping("/{id}/status") với body PlanCatalogStatusUpdateRequest { status }
   const response = await api.patch(`/plan-catalog/${planId}/status`, { status });
+  return response;
+};
+
+/** Lấy gói hiện tại của user đang đăng nhập, bao gồm entitlements */
+export const getCurrentUserPlan = async () => {
+  const response = await api.get('/user/current-plan');
   return response;
 };
 
@@ -316,6 +438,11 @@ export const resyncCreditPackagePrices = async () => {
 // Credit Wallet APIs — maps to CreditWalletController (/api/credit-wallet/...)
 export const getMyWallet = async () => {
   const response = await api.get('/credit-wallet/me');
+  return response;
+};
+
+export const getMyWalletTransactions = async (page = 0, size = 20) => {
+  const response = await api.get(`/credit-wallet/me/transactions?page=${page}&size=${size}`);
   return response;
 };
 

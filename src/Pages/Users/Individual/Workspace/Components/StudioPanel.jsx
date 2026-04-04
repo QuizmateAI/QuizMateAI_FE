@@ -6,6 +6,7 @@ import {
   CreditCard,
   ChevronRight,
   ChevronsRight,
+  Crown,
   LayoutGrid,
   FileCheck,
   Map,
@@ -96,6 +97,8 @@ function StudioPanel({
   shouldDisableRoadmap = false,
   hideAccessHistory = false,
   customActions = null,
+  // Array of action keys that are locked behind a plan upgrade (e.g. ["questionStats"])
+  planLockedActions = [],
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -171,31 +174,42 @@ function StudioPanel({
           {visibleActions.map((action) => {
             const Icon = action.icon;
             const isDisabled = getIsActionDisabled(action.key);
+            const isPlanLocked = planLockedActions.includes(action.key);
             return (
-              <button
-                key={action.key}
-                type="button"
-                disabled={isDisabled}
-                onClick={() => {
-                  setHoverTooltip(null);
-                  onAction?.(action.key);
-                }}
-                onMouseEnter={(event) => showTooltip(event, action.label || t(`workspace.studio.actions.${action.key}`))}
-                onMouseLeave={() => setHoverTooltip(null)}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                  isDisabled
-                    ? isDarkMode
-                      ? "bg-slate-800 opacity-50 cursor-not-allowed"
-                      : "bg-gray-50 opacity-50 cursor-not-allowed"
-                    : highlightKey === action.key
-                      ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
-                      : isDarkMode
-                        ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <Icon className={`w-4.5 h-4.5 ${isDisabled ? "text-gray-400" : action.color}`} />
-              </button>
+              <div key={action.key} className="relative">
+                <button
+                  type="button"
+                  disabled={isDisabled && !isPlanLocked}
+                  onClick={() => {
+                    setHoverTooltip(null);
+                    onAction?.(action.key);
+                  }}
+                  onMouseEnter={(event) => showTooltip(event, action.label || t(`workspace.studio.actions.${action.key}`))}
+                  onMouseLeave={() => setHoverTooltip(null)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
+                    isPlanLocked
+                      ? isDarkMode
+                        ? "bg-slate-800 opacity-60 cursor-pointer"
+                        : "bg-gray-50 opacity-60 cursor-pointer"
+                      : isDisabled
+                        ? isDarkMode
+                          ? "bg-slate-800 opacity-50 cursor-not-allowed"
+                          : "bg-gray-50 opacity-50 cursor-not-allowed"
+                        : highlightKey === action.key
+                          ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
+                          : isDarkMode
+                            ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <Icon className={`w-4.5 h-4.5 ${isDisabled && !isPlanLocked ? "text-gray-400" : action.color}`} />
+                </button>
+                {isPlanLocked && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center pointer-events-none z-10">
+                    <Crown className="w-2.5 h-2.5 text-white" />
+                  </div>
+                )}
+              </div>
             );
           })}
 
@@ -254,35 +268,46 @@ function StudioPanel({
         {visibleActions.map((action) => {
           const Icon = action.icon;
           const isDisabled = getIsActionDisabled(action.key);
+          const isPlanLocked = planLockedActions.includes(action.key);
           return (
-            <button
-              key={action.key}
-              disabled={isDisabled}
-              onClick={() => onAction?.(action.key)}
-              className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${
-                isDisabled
-                  ? isDarkMode
-                    ? "bg-slate-800/40 border border-slate-800 opacity-50 cursor-not-allowed"
-                    : "bg-gray-50 border border-gray-100 opacity-50 cursor-not-allowed"
-                  : highlightKey === action.key
+            <div key={action.key} className="relative">
+              <button
+                disabled={isDisabled && !isPlanLocked}
+                onClick={() => onAction?.(action.key)}
+                className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${
+                  isPlanLocked
                     ? isDarkMode
-                      ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20"
-                      : "bg-blue-50 border border-blue-200"
-                    : isDarkMode
-                      ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700"
-                      : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
-              }`}
-            >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDisabled ? "bg-gray-200 dark:bg-slate-700" : action.bg}`}>
-                <Icon className={`w-4.5 h-4.5 ${isDisabled ? "text-gray-400" : action.color}`} />
-              </div>
-              <span className={`text-sm font-medium flex-1 ${isDisabled ? "text-gray-400" : isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                {action.label || t(`workspace.studio.actions.${action.key}`)}
-              </span>
-              {!isDisabled && (
-                <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-              )}
-            </button>
+                      ? "bg-slate-800/40 border border-slate-800 opacity-60 cursor-pointer"
+                      : "bg-gray-50 border border-gray-100 opacity-60 cursor-pointer"
+                    : isDisabled
+                      ? isDarkMode
+                        ? "bg-slate-800/40 border border-slate-800 opacity-50 cursor-not-allowed"
+                        : "bg-gray-50 border border-gray-100 opacity-50 cursor-not-allowed"
+                      : highlightKey === action.key
+                        ? isDarkMode
+                          ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20"
+                          : "bg-blue-50 border border-blue-200"
+                        : isDarkMode
+                          ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700"
+                          : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDisabled && !isPlanLocked ? "bg-gray-200 dark:bg-slate-700" : action.bg}`}>
+                  <Icon className={`w-4.5 h-4.5 ${isDisabled && !isPlanLocked ? "text-gray-400" : action.color}`} />
+                </div>
+                <span className={`text-sm font-medium flex-1 ${isDisabled && !isPlanLocked ? "text-gray-400" : isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                  {action.label || t(`workspace.studio.actions.${action.key}`)}
+                </span>
+                {isPlanLocked && (
+                  <div className="flex items-center gap-1">
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                  </div>
+                )}
+                {!isDisabled && !isPlanLocked && (
+                  <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+                )}
+              </button>
+            </div>
           );
         })}
       </div>

@@ -72,7 +72,7 @@ export default function PaymentSidebar({ plan, workspaceId, needGroupSelect = fa
             <p className="text-sm">{t('payment.selectGroupFirst')}</p>
           </div>
         ) : (
-          <PaymentMethods planId={plan.planId} planType={plan.type} workspaceId={workspaceId} />
+          <PaymentMethods planId={plan.planId} planName={plan.planName} planType={plan.type} workspaceId={workspaceId} />
         )}
 
         {/* Security note */}
