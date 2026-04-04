@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { Check, Gift } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import PayButton from "@/Components/ui/PayButton";
 import { Badge } from "@/Components/ui/badge";
@@ -97,6 +97,19 @@ export default function PlanCard({
               </span>
             </div>
           ))}
+
+          {/* Bonus credit on purchase */}
+          {Number(plan.bonusCreditOnPlanPurchase) > 0 && (
+            <div className="flex items-center gap-2">
+              <Gift className={`w-4 h-4 flex-shrink-0 ${isDarkMode ? "text-amber-400" : "text-amber-500"}`} />
+              <span className={`text-sm font-semibold ${isDarkMode ? "text-amber-300" : "text-amber-700"}`}>
+                {t("payment.bonusCredit", {
+                  count: plan.bonusCreditOnPlanPurchase,
+                  defaultValue: `+${plan.bonusCreditOnPlanPurchase} credit bonus khi mua`,
+                })}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="mt-auto w-full shrink-0 rounded-lg overflow-hidden">

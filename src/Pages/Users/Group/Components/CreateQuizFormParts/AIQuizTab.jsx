@@ -1,6 +1,7 @@
 import React from "react";
 import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2 } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
+import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
 
 const QUESTION_TYPE_LABEL_FALLBACKS = {
   SINGLE_CHOICE: "Single choice",
@@ -73,6 +74,7 @@ function AIQuizTab({
   structurePreviewLoading,
   structurePreviewError,
   onPreviewStructure,
+  hasAdvanceQuizConfig = false,
 }) {
   const requiredMark = <span className="ml-1 text-red-500">*</span>;
   const getQuestionTypeLabel = React.useCallback((questionType) => {
@@ -464,6 +466,12 @@ function AIQuizTab({
         )}
       </div>
 
+      <PlanGatedFeature
+        allowed={hasAdvanceQuizConfig}
+        featureName={t("workspace.quiz.aiConfig.advancedConfig", "Cấu hình quiz nâng cao")}
+        isDarkMode={isDarkMode}
+        className="block w-full"
+      >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div ref={sectionRefs?.questionTypes} className={getSectionClassName(["selectedQTypes"])}>
           <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
@@ -571,6 +579,7 @@ function AIQuizTab({
           )}
         </div>
       </div>
+      </PlanGatedFeature>
 
       <div className={`overflow-hidden rounded-2xl border transition-all ${isDarkMode ? "border-cyan-900/40 bg-slate-900/60 shadow-2xl shadow-blue-950/20" : "border-cyan-100 bg-white shadow-2xl shadow-slate-900/5"}`}>
         <div className={`border-b px-4 py-3 ${isDarkMode ? "border-cyan-900/30 bg-gradient-to-r from-cyan-950/20 to-transparent" : "border-cyan-100 bg-gradient-to-r from-cyan-50/80 to-transparent"}`}>

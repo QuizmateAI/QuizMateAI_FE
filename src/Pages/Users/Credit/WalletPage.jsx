@@ -25,9 +25,10 @@ import { getErrorMessage } from "@/Utils/getErrorMessage";
 import {
   getMyWallet,
   getPurchaseableCreditPackages,
-  getUserPayments,
+  getMyWalletTransactions,
 } from "@/api/ManagementSystemAPI";
-import { createMomoCreditPayment } from "@/api/PaymentAPI";
+import { createMomoCreditPayment, createVnPayCreditPayment } from "@/api/PaymentAPI";
+import { getCachedSubscription } from "@/Utils/userCache";
 
 function formatNumber(n, locale) {
   return new Intl.NumberFormat(locale).format(n);
@@ -66,6 +67,10 @@ export default function WalletPage() {
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
   const [buyingPackageId, setBuyingPackageId] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState("momo");
+
+  const subscription = getCachedSubscription();
+  const canBuyCredit = subscription?.entitlement?.canBuyCredit !== false;
 
   const getFriendlyError = (err) => {
     const mapped = getErrorMessage(t, err);
@@ -91,10 +96,10 @@ export default function WalletPage() {
       setIsLoadingTransactions(true);
       setIsLoadingPackages(true);
       try {
-        const [walletRes, packagesRes, paymentsRes] = await Promise.all([
+        const [walletRes, packagesRes, txRes] = await Promise.all([
           getMyWallet(),
           getPurchaseableCreditPackages(),
-          getUserPayments(0, 10),
+          getMyWalletTransactions(0, 20),
         ]);
 
         if (cancelled) return;
@@ -105,24 +110,16 @@ export default function WalletPage() {
         const pkgData = packagesRes?.data ?? packagesRes;
         setPackages(Array.isArray(pkgData) ? pkgData : []);
 
-        const page = paymentsRes?.data ?? paymentsRes;
-        const content = page?.content ?? [];
-        const mappedTx = Array.isArray(content)
-          ? content.map((p) => {
-              const statusRaw = (p.paymentStatus || "").toUpperCase();
-              let status = "PENDING";
-              if (statusRaw === "COMPLETED") status = "SUCCESS";
-              else if (statusRaw === "FAILED" || statusRaw === "CANCELLED") status = "FAILED";
-
-              return {
-                id: p.orderId || `PAY-${p.paymentId}`,
-                time: p.paidAt || p.expiresAt,
-                amount: p.amount ?? 0,
-                type: "TOPUP",
-                status,
-              };
-            })
-          : [];
+        const page = txRes?.data ?? txRes;
+        const content = page?.content ?? (Array.isArray(page) ? page : []);
+        const mappedTx = content.map((tx) => ({
+          id: tx.creditTransactionId,
+          time: tx.createdAt,
+          amount: tx.creditChange ?? 0,
+          type: tx.transactionType ?? "UNKNOWN",
+          source: tx.sourceType ?? "",
+          note: tx.note ?? "",
+        }));
         setTransactions(mappedTx);
       } catch (err) {
         if (!cancelled) {
@@ -147,7 +144,9 @@ export default function WalletPage() {
     if (!pkg?.creditPackageId) return;
     try {
       setBuyingPackageId(pkg.creditPackageId);
-      const res = await createMomoCreditPayment(pkg.creditPackageId);
+      const res = paymentMethod === "vnpay"
+        ? await createVnPayCreditPayment(pkg.creditPackageId)
+        : await createMomoCreditPayment(pkg.creditPackageId);
       const data = res?.data ?? res;
       const payUrl = data?.payUrl;
       if (payUrl) {
@@ -334,12 +333,41 @@ export default function WalletPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Payment method toggle */}
+              {canBuyCredit && (
+                <div className={`inline-flex rounded-full p-0.5 ring-1 ring-inset mb-1 ${isDarkMode ? "bg-slate-800 ring-slate-700" : "bg-slate-100 ring-slate-200"}`}>
+                  {[
+                    { key: "momo", label: "MoMo" },
+                    { key: "vnpay", label: "VNPay QR" },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setPaymentMethod(key)}
+                      className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        paymentMethod === key
+                          ? isDarkMode ? "bg-blue-600 text-white shadow" : "bg-white text-slate-900 shadow"
+                          : isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {!canBuyCredit && (
+                <p className={`text-sm py-2 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                  {t("wallet.cannotBuyCredit", { defaultValue: "Gói hiện tại của bạn không hỗ trợ mua credit. Hãy nâng cấp gói để tiếp tục." })}
+                </p>
+              )}
+
               {isLoadingPackages && packages.length === 0 && (
                 <p className={isDarkMode ? "text-slate-400 text-sm" : "text-slate-600 text-sm"}>
                   ...
                 </p>
               )}
-              {packages.map((pkg) => {
+              {canBuyCredit && packages.map((pkg) => {
                 const base = pkg.baseCredit ?? 0;
                 const bonus = pkg.bonusCredit ?? 0;
                 const totalCredits = base + bonus;
@@ -430,23 +458,21 @@ export default function WalletPage() {
                   ) : (
                     transactions.map((tx) => (
                       <TableRow key={tx.id} className={isDarkMode ? "border-slate-800" : "border-slate-200"}>
-                        <TableCell className="font-semibold">{tx.id}</TableCell>
+                        <TableCell className={`font-semibold text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>#{tx.id}</TableCell>
                         <TableCell className={isDarkMode ? "text-slate-300" : "text-slate-700"}>
                           {formatTime(tx.time, currentLang)}
                         </TableCell>
                         <TableCell className={isDarkMode ? "text-slate-300" : "text-slate-700"}>
-                          {t(`wallet.types.${tx.type}`)}
+                          {t(`wallet.types.${tx.type}`, { defaultValue: tx.type })}
                         </TableCell>
                         <TableCell className={`font-bold tabular-nums ${tx.amount >= 0 ? (isDarkMode ? "text-emerald-400" : "text-emerald-700") : (isDarkMode ? "text-amber-400" : "text-amber-700")}`}>
                           {tx.amount >= 0 ? "+" : ""}{formatNumber(tx.amount, currentLang === "vi" ? "vi-VN" : "en-US")}
                         </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                            tx.status === "SUCCESS"
-                              ? isDarkMode ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30" : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                              : isDarkMode ? "bg-slate-700/40 text-slate-300 ring-1 ring-slate-600/50" : "bg-slate-100 text-slate-700 ring-1 ring-slate-200"
+                            isDarkMode ? "bg-slate-700/40 text-slate-300 ring-1 ring-slate-600/50" : "bg-slate-100 text-slate-700 ring-1 ring-slate-200"
                           }`}>
-                            {t(`wallet.status.${tx.status}`)}
+                            {t(`wallet.source.${tx.source}`, { defaultValue: tx.source || "—" })}
                           </span>
                         </TableCell>
                       </TableRow>

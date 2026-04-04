@@ -3,11 +3,43 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Crown, Shield, AlertCircle } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
-import { getPurchasablePlans } from "@/api/PaymentAPI";
+import { getActiveUserPlans, getActiveGroupPlan } from "@/api/ManagementSystemAPI";
 import { Badge } from "@/Components/ui/badge";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import PlanCard from "./PlanCard";
+
+function mapPlanCatalogToCard(plan) {
+  const e = plan.entitlement ?? {};
+  return {
+    planId: plan.planCatalogId,
+    planName: plan.displayName,
+    price: plan.price ?? 0,
+    type: plan.planScope === "USER" ? "INDIVIDUAL" : "GROUP",
+    durationInDay: 999999,
+    planLimit: {
+      maxWorkspace: e.maxIndividualWorkspace,
+      maxMaterialPerWorkspace: e.maxMaterialInWorkspace,
+    },
+    planFeature: {
+      processPdf: e.canProcessPdf,
+      processWord: e.canProcessWord,
+      processSlide: e.canProcessSlide,
+      processExcel: e.canProcessExcel,
+      processText: e.canProcessText,
+      processImage: e.canProcessImage,
+      processVideo: e.canProcessVideo,
+      processAudio: e.canProcessAudio,
+      canCreateRoadMap: e.canCreateRoadMap,
+      hasAiCompanionMode: e.hasAiCompanionMode,
+      hasAiContentStructuring: e.hasWorkspaceAnalytics,
+      hasPersonalizedLearningAnalytic: e.hasWorkspaceAnalytics,
+      hasAiTextReadingAndSummarization: e.hasAiSummaryAndTextReading,
+      hasAdvancedAiConfiguration: e.hasAdvanceQuizConfig,
+    },
+    bonusCreditOnPlanPurchase: e.bonusCreditOnPlanPurchase ?? 0,
+  };
+}
 
 export default function SubscriptionTab() {
   const { t } = useTranslation();
@@ -27,9 +59,18 @@ export default function SubscriptionTab() {
 
   useEffect(() => {
     let cancelled = false;
-    getPurchasablePlans(planType)
-      .then((res) => {
-        if (!cancelled) { setPlans(res.data ?? []); setLoading(false); }
+    const fetch = planType === "GROUP"
+      ? getActiveGroupPlan().then((res) => {
+          const data = res?.data;
+          return data ? [data] : [];
+        })
+      : getActiveUserPlans().then((res) => {
+          const data = res?.data ?? res;
+          return Array.isArray(data) ? data : [];
+        });
+    fetch
+      .then((list) => {
+        if (!cancelled) { setPlans(list.map(mapPlanCatalogToCard)); setLoading(false); }
       })
       .catch(() => {
         if (!cancelled) { setError(t("profile.subscription.loadError")); setLoading(false); }

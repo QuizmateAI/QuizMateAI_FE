@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { Loader2 } from 'lucide-react';
 import { createMomoPayment, createVnPayPayment } from '@/api/PaymentAPI';
+import { setPendingPlanPurchase } from '@/Utils/planPurchaseState';
 import MomoLogo from '@/assets/MOMO-Logo.png';
 import VnpayLogo from '@/assets/Logo-VNPAY-QR-1.webp';
 
@@ -11,7 +12,7 @@ const METHODS = [
   { id: 'vnpay', alt: 'VNPay', logo: VnpayLogo },
 ];
 
-export default function PaymentMethods({ planId, planType, workspaceId }) {
+export default function PaymentMethods({ planId, planName, planType, workspaceId }) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const [selected, setSelected] = useState(null);
@@ -30,6 +31,7 @@ export default function PaymentMethods({ planId, planType, workspaceId }) {
         const res = await createMomoPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         if (payUrl) {
+          setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
           window.location.href = payUrl;
           return;
         }
@@ -38,6 +40,7 @@ export default function PaymentMethods({ planId, planType, workspaceId }) {
         const res = await createVnPayPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         if (payUrl) {
+          setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
           window.location.href = payUrl;
           return;
         }
@@ -48,7 +51,7 @@ export default function PaymentMethods({ planId, planType, workspaceId }) {
     } finally {
       setLoading(false);
     }
-  }, [selected, planId, planType, workspaceId, t]);
+  }, [selected, planId, planName, planType, workspaceId, t]);
 
   return (
     <div>
