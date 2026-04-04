@@ -88,7 +88,7 @@ function buildAcceptString(ent) {
   return parts.join(",") || ".pdf";
 }
 
-const SUGGESTED_RESOURCES_LIMIT = 5;
+const SUGGESTED_RESOURCES_LIMIT = 10;
 
 function normalizeWorkspaceId(workspaceId) {
   const id = Number(workspaceId);
@@ -109,13 +109,8 @@ function getSuggestedItemIcon(item) {
   return <Link2 className="w-4 h-4 text-blue-500 shrink-0" />;
 }
 
-function getSuggestedTypeLabel(item) {
-  const rawText = `${item?.title || ""} ${item?.link || ""}`.toLowerCase();
-  if (rawText.includes(".pdf")) return "PDF";
-  if (rawText.includes(".doc") || rawText.includes(".docx")) return "DOCX";
-  if (rawText.includes(".png") || rawText.includes(".jpg") || rawText.includes(".jpeg")) return "IMAGE";
-  if (rawText.includes(".mp4") || rawText.includes(".mov")) return "VIDEO";
-  return "URL";
+function isSuggestionImportable(item) {
+  return Boolean(item?.importable);
 }
 
 function UploadSourceDialogBase({
@@ -258,7 +253,7 @@ function UploadSourceDialogBase({
       const response = await getSuggestedResources(normalizedWorkspaceId, 0, SUGGESTED_RESOURCES_LIMIT);
       const list = extractSuggestedList(response).slice(0, SUGGESTED_RESOURCES_LIMIT);
       setSuggestedResources(list);
-      setSelectedSuggestionIds((prev) => prev.filter((id) => list.some((item) => Number(item?.suggestionId) === Number(id))));
+      setSelectedSuggestionIds((prev) => prev.filter((id) => list.some((item) => Number(item?.suggestionId) === Number(id) && isSuggestionImportable(item))));
       return list;
     } catch (error) {
       showError(error?.message || t("workspace.upload.suggestLoadError"));
@@ -335,7 +330,8 @@ function UploadSourceDialogBase({
     onOpenChange(val);
   };
 
-  const toggleSuggestion = (suggestionId) => {
+  const toggleSuggestion = (suggestionId, importable = true) => {
+    if (!importable) return;
     if (!Number.isInteger(suggestionId) || suggestionId <= 0) return;
     setSelectedSuggestionIds((prev) => {
       if (prev.includes(suggestionId)) {
@@ -578,7 +574,7 @@ function UploadSourceDialogBase({
               )}
 
               {showSuggestedPanel && (
-            <div className={`rounded-2xl border p-3 ${isDarkMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-slate-50"}`}>
+            <div className={`rounded-2xl border p-3 ${isDarkMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-white"}`}>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="min-w-0">
                   <h4 className={`text-sm font-semibold truncate ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
@@ -615,7 +611,8 @@ function UploadSourceDialogBase({
                   {visibleSuggestedResources.map((item, index) => {
                     const suggestionId = Number(item?.suggestionId ?? item?.suggestId);
                     const isChecked = selectedSuggestionIds.includes(suggestionId);
-                    const typeLabel = getSuggestedTypeLabel(item);
+                    const isImportable = isSuggestionImportable(item);
+                    const relevanceScore = Number(item?.relevanceScore ?? 0);
                     return (
                       <div
                         key={Number.isInteger(suggestionId) && suggestionId > 0 ? suggestionId : `${item?.link || "item"}_${index}`}
@@ -623,35 +620,43 @@ function UploadSourceDialogBase({
                         tabIndex={0}
                         type="button"
                         onClick={() => {
-                          toggleSuggestion(suggestionId);
+                          toggleSuggestion(suggestionId, isImportable);
                         }}
                         onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
+                          if ((event.key === "Enter" || event.key === " ") && isImportable) {
                             event.preventDefault();
-                            toggleSuggestion(suggestionId);
+                            toggleSuggestion(suggestionId, isImportable);
                           }
                         }}
-                        className={`w-full text-left rounded-xl border px-3 py-3 transition-all cursor-pointer ${
+                        aria-disabled={!isImportable}
+                        className={`w-full text-left rounded-xl border px-3 py-3 transition-all ${
                           isDarkMode
-                            ? "border-slate-800 bg-slate-950/40 hover:bg-slate-900"
-                            : "border-slate-200 bg-white hover:bg-slate-50"
+                            ? `${isImportable ? "cursor-pointer border-slate-800 bg-slate-950/40 hover:border-blue-700/60 hover:bg-blue-950/20" : "cursor-not-allowed border-slate-700 border-dashed bg-slate-900/70 opacity-60"}`
+                            : `${isImportable ? "cursor-pointer border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/60" : "cursor-not-allowed border-slate-300 border-dashed bg-slate-200/80 opacity-65"}`
                         }`}
                       >
                         <div className="flex items-start gap-2.5">
-                          <div className="pt-0.5">{isChecked ? <CheckSquare className="w-4 h-4 text-blue-500" /> : <Square className={`w-4 h-4 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />}</div>
+                          <div className="pt-0.5">
+                            {isImportable && isChecked ? <CheckSquare className="w-4 h-4 text-blue-500" /> : <Square className={`w-4 h-4 ${isImportable ? (isDarkMode ? "text-slate-500" : "text-slate-400") : "text-slate-400"}`} />}
+                          </div>
                           {getSuggestedItemIcon(item)}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <p className={`text-sm font-semibold leading-5 ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
                                 {item?.title || "Untitled"}
                               </p>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${isDarkMode ? "border-slate-700 text-slate-400" : "border-slate-300 text-slate-500"}`}>
-                                {typeLabel}
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${isDarkMode ? "border-slate-700 text-slate-300" : "border-slate-300 text-slate-600"}`}>
+                                {`${t("workspace.upload.relevanceRate", "Tỷ lệ phù hợp")} : ${relevanceScore}%`}
                               </span>
                             </div>
                             <p className={`text-xs mt-1 line-clamp-2 leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
                               {item?.snippet || item?.link}
                             </p>
+                            {item?.relevanceReason ? (
+                              <p className={`text-xs mt-1.5 line-clamp-2 leading-5 ${isDarkMode ? "text-amber-300" : "text-amber-700"}`}>
+                                {item.relevanceReason}
+                              </p>
+                            ) : null}
                             <a
                               href={item?.link || "#"}
                               target="_blank"
