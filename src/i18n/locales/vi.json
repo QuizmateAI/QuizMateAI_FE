@@ -1966,6 +1966,7 @@
       "supportedFormats": "Hỗ trợ: pdf, docx, doc, pptx, ppt, xlsx, xls, txt, png, mp3, mp4",
       "suggestMore": "Gợi ý thêm tài liệu",
       "suggestedResourcesTitle": "Các tài liệu được gợi ý",
+      "relevanceRate": "Tỷ lệ phù hợp",
       "refreshSuggested": "Làm mới",
       "getSuggestedResources": "Lấy tài liệu",
       "importSuggested": "Tải file gợi ý",

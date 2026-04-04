@@ -1980,6 +1980,7 @@
       "supportedFormats": "Supported: pdf, docx, doc, pptx, ppt, xlsx, xls, txt, png, mp3, mp4",
       "suggestMore": "Suggest more materials",
       "suggestedResourcesTitle": "Suggested materials",
+      "relevanceRate": "Relevance",
       "refreshSuggested": "Refresh",
       "getSuggestedResources": "Get suggested materials",
       "importSuggested": "Upload suggested files",
