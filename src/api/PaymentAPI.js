@@ -5,10 +5,6 @@ export const getPlanById = (planId) => {
   return api.get(`/plan-catalog/${planId}`);
 };
 
-export const getPurchasablePlans = (type) => {
-  return api.get('/plan/purchasable', { params: { type } });
-};
-
 export const createMomoPayment = (planId, workspaceId = null) => {
   if (workspaceId) {
     return api.post(`/momo/create-workspace/${workspaceId}`);
@@ -27,5 +23,10 @@ export const createVnPayPayment = (planId, workspaceId = null) => {
 export const createMomoCreditPayment = (creditPackageId, workspaceId = null) => {
   const params = workspaceId ? { workspaceId } : {};
   return api.post(`/momo/create-credit/${creditPackageId}`, null, { params });
+};
+
+export const createVnPayCreditPayment = (creditPackageId, workspaceId = null) => {
+  const params = workspaceId ? { workspaceId } : {};
+  return api.post(`/vnpay/create-credit/${creditPackageId}`, null, { params });
 };
 

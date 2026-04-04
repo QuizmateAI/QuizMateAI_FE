@@ -4,10 +4,19 @@ import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, XCircle, ArrowLeft, Home, ReceiptText, Settings, Globe, Moon, Sun, CreditCard } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import { Badge } from '@/Components/ui/badge';
 import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
 import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
+import { createPlanSummaryFromPurchase, useCurrentSubscription } from '@/hooks/useCurrentSubscription';
+import {
+  clearPendingPlanPurchase,
+  getRecentPlanPurchase,
+  getPendingPlanPurchase,
+  markPendingPlanPurchaseSucceeded,
+} from '@/Utils/planPurchaseState';
+import { setCachedSubscription } from '@/Utils/userCache';
 
 export default function PaymentResultPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -37,6 +46,7 @@ export default function PaymentResultPage() {
   const status = searchParams.get('status');
   const resultCode = searchParams.get('resultCode') || '';
   const isSuccess = status === 'success' || resultCode === '0' || resultCode === '00';
+  const { summary: currentPlanSummary } = useCurrentSubscription({ enabled: isSuccess });
 
   const details = useMemo(() => ({
     orderId: searchParams.get('orderId') || '',
@@ -67,6 +77,40 @@ export default function PaymentResultPage() {
     { label: t('paymentResult.payType'), value: details.payType === 'qr' ? 'QR Code' : details.payType },
     { label: t('paymentResult.time'), value: formattedTime },
   ], [t, details, formattedAmount, formattedTime]);
+  const fallbackPlanSummary = useMemo(() => {
+    if (!isSuccess) return null;
+    const purchase = getPendingPlanPurchase() ?? getRecentPlanPurchase();
+    return createPlanSummaryFromPurchase(purchase);
+  }, [isSuccess]);
+  const activePlanSummary = fallbackPlanSummary ?? currentPlanSummary;
+  const formattedPlanEndDate = useMemo(() => {
+    if (!activePlanSummary?.endDate) return '';
+
+    try {
+      return new Intl.DateTimeFormat(currentLang === 'vi' ? 'vi-VN' : 'en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }).format(new Date(activePlanSummary.endDate));
+    } catch {
+      return activePlanSummary.endDate;
+    }
+  }, [activePlanSummary?.endDate, currentLang]);
+  const planTypeLabel = activePlanSummary?.planType === 'GROUP'
+    ? t('plan.types.group')
+    : t('plan.types.individual');
+
+  useEffect(() => {
+    if (!isSuccess) {
+      clearPendingPlanPurchase();
+      return;
+    }
+
+    const successfulPurchase = markPendingPlanPurchaseSucceeded();
+    if (!successfulPurchase) return;
+
+    setCachedSubscription(null);
+  }, [isSuccess]);
 
   return (
     <div className={`min-h-screen ${fontClass} transition-colors ${
@@ -190,6 +234,58 @@ export default function PaymentResultPage() {
               ))}
             </dl>
           </div>
+
+          {isSuccess && activePlanSummary ? (
+            <div className={`rounded-2xl p-4 mb-6 ring-1 ring-inset ${
+              isDarkMode ? 'bg-blue-500/10 ring-blue-400/20' : 'bg-blue-50 ring-blue-200'
+            }`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className={`text-xs font-bold uppercase tracking-widest ${
+                      isDarkMode ? 'text-blue-200/80' : 'text-blue-700'
+                    }`}>
+                      {t('paymentResult.currentPlan', { defaultValue: 'Gói hiện tại' })}
+                    </p>
+                  </div>
+                  <p className={`mt-2 text-lg font-bold truncate ${
+                    isDarkMode ? 'text-slate-50' : 'text-slate-900'
+                  }`}>
+                    {activePlanSummary.planName}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Badge
+                      variant="outline"
+                      className={isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-blue-200 bg-white text-slate-700'}
+                    >
+                      {planTypeLabel}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={isDarkMode ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}
+                    >
+                      {t('profile.subscription.activeStatus')}
+                    </Badge>
+                  </div>
+                  <p className={`mt-3 text-sm ${
+                    isDarkMode ? 'text-slate-300' : 'text-slate-600'
+                  }`}>
+                    {formattedPlanEndDate
+                      ? t('paymentResult.planExpiresAt', {
+                        date: formattedPlanEndDate,
+                        defaultValue: `Hiệu lực đến ${formattedPlanEndDate}`,
+                      })
+                      : t('paymentResult.planReadyHint', {
+                        defaultValue: 'Gói đã sẵn sàng để bạn tiếp tục học tập.',
+                      })}
+                  </p>
+                </div>
+                <CreditCard className={`w-5 h-5 flex-shrink-0 ${
+                  isDarkMode ? 'text-blue-300' : 'text-blue-600'
+                }`} />
+              </div>
+            </div>
+          ) : null}
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3">
