@@ -46,6 +46,15 @@ function formatTime(iso, locale = "vi") {
   }
 }
 
+const EMPTY_WALLET_SUMMARY = {
+  balance: 0,
+  totalAvailableCredits: 0,
+  regularCreditBalance: 0,
+  planCreditBalance: 0,
+  hasActivePlan: false,
+  planCreditExpiresAt: null,
+};
+
 export default function WalletPage() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -60,7 +69,7 @@ export default function WalletPage() {
     i18n.changeLanguage(newLang);
   };
 
-  const [balance, setBalance] = useState(0);
+  const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [transactions, setTransactions] = useState([]);
   const [packages, setPackages] = useState([]);
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
@@ -105,7 +114,15 @@ export default function WalletPage() {
         if (cancelled) return;
 
         const walletData = walletRes?.data ?? walletRes;
-        setBalance(walletData?.balance ?? 0);
+        setWalletSummary({
+          ...EMPTY_WALLET_SUMMARY,
+          ...walletData,
+          totalAvailableCredits: walletData?.totalAvailableCredits ?? walletData?.balance ?? 0,
+          regularCreditBalance: walletData?.regularCreditBalance ?? 0,
+          planCreditBalance: walletData?.planCreditBalance ?? 0,
+          hasActivePlan: Boolean(walletData?.hasActivePlan),
+          planCreditExpiresAt: walletData?.planCreditExpiresAt ?? null,
+        });
 
         const pkgData = packagesRes?.data ?? packagesRes;
         setPackages(Array.isArray(pkgData) ? pkgData : []);
@@ -292,10 +309,10 @@ export default function WalletPage() {
               <div className={`rounded-2xl p-5 ring-1 ring-inset ${
                 isDarkMode ? "bg-slate-950/40 ring-slate-700/60" : "bg-slate-50 ring-slate-200"
               }`}>
-                <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{t("wallet.balance")}</p>
+                <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{t("wallet.totalAvailable")}</p>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className={`text-4xl font-extrabold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                    {formatNumber(balance, currentLang === "vi" ? "vi-VN" : "en-US")}
+                    {formatNumber(walletSummary.totalAvailableCredits, currentLang === "vi" ? "vi-VN" : "en-US")}
                   </span>
                   <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
                     {t("wallet.creditsUnit")}
@@ -304,6 +321,35 @@ export default function WalletPage() {
                 <div className={`mt-3 inline-flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                   <Sparkles className="w-4 h-4 text-indigo-500" />
                   {t("wallet.hint")}
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className={`rounded-2xl px-4 py-3 ring-1 ring-inset ${
+                    isDarkMode ? "bg-slate-900/60 ring-slate-700/60" : "bg-white/80 ring-slate-200"
+                  }`}>
+                    <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                      {t("wallet.regularCredits")}
+                    </p>
+                    <p className={`mt-2 text-2xl font-bold tabular-nums ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+                      {formatNumber(walletSummary.regularCreditBalance, currentLang === "vi" ? "vi-VN" : "en-US")}
+                    </p>
+                  </div>
+                  {walletSummary.hasActivePlan && (
+                    <div className={`rounded-2xl px-4 py-3 ring-1 ring-inset ${
+                      isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-50 ring-blue-200"
+                    }`}>
+                      <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDarkMode ? "text-blue-200" : "text-blue-700"}`}>
+                        {t("wallet.planCredits")}
+                      </p>
+                      <p className={`mt-2 text-2xl font-bold tabular-nums ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+                        {formatNumber(walletSummary.planCreditBalance, currentLang === "vi" ? "vi-VN" : "en-US")}
+                      </p>
+                      {walletSummary.planCreditExpiresAt && (
+                        <p className={`mt-2 text-xs ${isDarkMode ? "text-blue-100/80" : "text-blue-800"}`}>
+                          {t("wallet.expiresAt")}: {formatTime(walletSummary.planCreditExpiresAt, currentLang)}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="mt-4">
                   <Button

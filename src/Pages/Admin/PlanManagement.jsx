@@ -61,7 +61,7 @@ const EMPTY_ENTITLEMENT = {
   canProcessVideo: false,
   canProcessAudio: false,
   canBuyCredit: true,
-  bonusCreditOnPlanPurchase: 0,
+  planIncludedCredits: 0,
   hasAdvanceQuizConfig: false,
   canCreateRoadMap: false,
   hasAiCompanionMode: false,
@@ -205,7 +205,7 @@ function PlanManagement() {
           ...entitlement,
           maxIndividualWorkspace: entitlement.maxIndividualWorkspace != null ? parseInt(entitlement.maxIndividualWorkspace, 10) || 0 : 0,
           maxMaterialInWorkspace: entitlement.maxMaterialInWorkspace != null ? parseInt(entitlement.maxMaterialInWorkspace, 10) || 0 : 0,
-          bonusCreditOnPlanPurchase: entitlement.bonusCreditOnPlanPurchase != null ? parseInt(entitlement.bonusCreditOnPlanPurchase, 10) || 0 : 0,
+          planIncludedCredits: entitlement.planIncludedCredits != null ? parseInt(entitlement.planIncludedCredits, 10) || 0 : 0,
         },
         aiModelAssignments: buildAiModelAssignmentsPayload(aiModelAssignments),
         aiFunctionAssignments: buildFunctionAssignmentsPayload(functionAssignmentMap),
@@ -583,12 +583,12 @@ function PlanManagement() {
                   />
                 </div>
                 <div>
-                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Bonus Credit on purchase</Label>
+                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Included credits</Label>
                   <Input
                     type="number"
                     min="0"
-                    value={entitlement.bonusCreditOnPlanPurchase ?? ''}
-                    onChange={(e) => setEntitlement({ ...entitlement, bonusCreditOnPlanPurchase: e.target.value })}
+                    value={entitlement.planIncludedCredits ?? ''}
+                    onChange={(e) => setEntitlement({ ...entitlement, planIncludedCredits: e.target.value })}
                     className={`${inputCls} h-9`}
                   />
                 </div>
@@ -859,8 +859,8 @@ function PlanManagement() {
                         <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.maxMaterialInWorkspace ?? '—'}</span>
                       </div>
                       <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
-                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Bonus Credit</span>
-                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.bonusCreditOnPlanPurchase ?? 0}</span>
+                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Included credits</span>
+                        <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.planIncludedCredits ?? 0}</span>
                       </div>
                     </div>
                     <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>Features</p>
