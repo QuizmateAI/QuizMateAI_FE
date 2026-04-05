@@ -84,6 +84,49 @@ function formatDateTime(value, locale = 'vi-VN') {
   });
 }
 
+function toFiniteNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getEquivalentTokensFromAmount(amountVnd, effectiveTokenPriceVnd) {
+  const amount = toFiniteNumber(amountVnd);
+  const tokenPrice = toFiniteNumber(effectiveTokenPriceVnd);
+  if (amount === null || tokenPrice === null || tokenPrice <= 0) return null;
+  return amount / tokenPrice;
+}
+
+function getChargedTokenEquivalent(row) {
+  return toFiniteNumber(row?.tokenBudgetEquivalent)
+    ?? getEquivalentTokensFromAmount(row?.chargedVnd, row?.effectiveTokenPriceVnd);
+}
+
+function getProfitTokenEquivalent(row) {
+  return toFiniteNumber(row?.tokenMarginEquivalent)
+    ?? getEquivalentTokensFromAmount(row?.profitVnd, row?.effectiveTokenPriceVnd);
+}
+
+function getActualTokenEquivalent(row) {
+  const chargedTokens = getChargedTokenEquivalent(row);
+  const profitTokens = getProfitTokenEquivalent(row);
+
+  if (chargedTokens !== null && profitTokens !== null) {
+    return Math.max(chargedTokens - profitTokens, 0);
+  }
+
+  return getEquivalentTokensFromAmount(row?.providerCostVnd, row?.effectiveTokenPriceVnd);
+}
+
+function formatEquivalentToken(value, locale = 'vi-VN') {
+  const parsed = toFiniteNumber(value);
+  if (parsed === null) return '-';
+  const hasFraction = Math.abs(parsed % 1) > 0.000001;
+  return parsed.toLocaleString(locale, {
+    maximumFractionDigits: hasFraction ? 2 : 0,
+  });
+}
+
 function getStatusBadgeClass(status, isDarkMode) {
   const normalized = String(status || '').toUpperCase();
   if (normalized === 'SUCCESS') {
@@ -95,30 +138,6 @@ function getStatusBadgeClass(status, isDarkMode) {
   return isDarkMode ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' : 'bg-rose-50 text-rose-700 border-rose-200';
 }
 
-function getChargeScopeLabel(scope, t) {
-  const normalized = String(scope || '').toUpperCase();
-  if (normalized === 'USER') {
-    return t('aiCosts.scope.user', { defaultValue: 'Cá nhân' });
-  }
-  if (normalized === 'WORKSPACE') {
-    return t('aiCosts.scope.workspace', { defaultValue: 'Workspace' });
-  }
-  return normalized || '-';
-}
-
-function getChargeTargetLabel(row, t) {
-  if (String(row?.chargeScope || '').toUpperCase() === 'WORKSPACE') {
-    return t('aiCosts.target.workspace', {
-      defaultValue: 'WS #{{id}}',
-      id: row?.chargedWorkspaceId ?? '-',
-    });
-  }
-  return t('aiCosts.target.user', {
-    defaultValue: 'User #{{id}}',
-    id: row?.chargedUserId ?? row?.actorUserId ?? '-',
-  });
-}
-
 function getOutputTokens(row) {
   return Number(row?.completionTokens || 0) + Number(row?.thoughtTokens || 0);
 }
@@ -127,18 +146,18 @@ function TokenBreakdownCell({ row, isDarkMode, t }) {
   const outputTokens = getOutputTokens(row);
 
   return (
-    <div className={`min-w-[220px] overflow-hidden rounded-2xl border ${isDarkMode ? 'border-slate-800 bg-slate-950/80' : 'border-slate-200 bg-slate-50'}`}>
-      <div className={`grid grid-cols-2 ${isDarkMode ? 'divide-x divide-slate-800' : 'divide-x divide-slate-200'}`}>
-        <div className="px-3 py-2.5">
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+    <div className="mx-auto min-w-[240px]">
+      <div className="grid grid-cols-2 gap-2">
+        <div className={`rounded-2xl border px-3 py-3 text-center ${isDarkMode ? 'border-sky-900/80 bg-sky-500/10' : 'border-sky-200 bg-sky-50'}`}>
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-sky-300/70' : 'text-sky-600/70'}`}>
             {t('aiCosts.tokens.input', { defaultValue: 'Input' })}
           </p>
           <p className={`mt-1 text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
             {formatInteger(row?.promptTokens)}
           </p>
         </div>
-        <div className="px-3 py-2.5">
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+        <div className={`rounded-2xl border px-3 py-3 text-center ${isDarkMode ? 'border-emerald-900/80 bg-emerald-500/10' : 'border-emerald-200 bg-emerald-50'}`}>
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-emerald-300/70' : 'text-emerald-600/70'}`}>
             {t('aiCosts.tokens.output', { defaultValue: 'Output' })}
           </p>
           <p className={`mt-1 text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -146,8 +165,8 @@ function TokenBreakdownCell({ row, isDarkMode, t }) {
           </p>
         </div>
       </div>
-      <div className={`px-3 py-2.5 ${isDarkMode ? 'border-t border-slate-800 bg-slate-900/70' : 'border-t border-slate-200 bg-white/70'}`}>
-        <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+      <div className={`mt-2 rounded-2xl border px-3 py-3 text-center ${isDarkMode ? 'border-violet-900/80 bg-violet-500/10' : 'border-violet-200 bg-violet-50'}`}>
+        <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-violet-300/70' : 'text-violet-600/70'}`}>
           {t('aiCosts.tokens.total', { defaultValue: 'Total' })}
         </p>
         <p className={`mt-1 text-base font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
@@ -181,6 +200,7 @@ function AiCostManagement() {
   const { showError } = useToast();
   const navigate = useNavigate();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const numberLocale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
 
   const [plans, setPlans] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -203,6 +223,18 @@ function AiCostManagement() {
     from: '',
     to: '',
   });
+
+  const resetFilters = {
+    taskId: '',
+    actorUserId: '',
+    planCatalogId: '',
+    provider: '',
+    modelGroup: '',
+    actionKey: '',
+    status: '',
+    from: '',
+    to: '',
+  };
 
   const fetchPlans = async () => {
     try {
@@ -280,6 +312,10 @@ function AiCostManagement() {
     setPage(0);
     fetchCostData(0, pageSize, filters);
   };
+
+  const detailActualTokenEquivalent = detailRow ? getActualTokenEquivalent(detailRow) : null;
+  const isDetailProfitPositive = Number(detailRow?.profitVnd || 0) >= 0;
+  const tableStroke = isDarkMode ? 'border-slate-700' : 'border-slate-300';
 
   return (
     <div className={`space-y-6 p-6 ${fontClass}`}>
@@ -379,7 +415,6 @@ function AiCostManagement() {
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" onClick={() => {
-            const resetFilters = { taskId: '', actorUserId: '', planCatalogId: '', provider: '', modelGroup: '', actionKey: '', status: '', from: '', to: '' };
             setFilters(resetFilters);
             setPage(0);
             fetchCostData(0, pageSize, resetFilters);
@@ -391,18 +426,23 @@ function AiCostManagement() {
         </div>
       </div>
 
-      <div className={`overflow-hidden rounded-2xl border ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
-        <Table className="min-w-[1440px]">
+      <div className={`overflow-hidden rounded-2xl border-2 ${isDarkMode ? 'border-slate-700 bg-slate-900 shadow-lg shadow-slate-950/20' : 'border-slate-300 bg-white shadow-md shadow-slate-200/70'}`}>
+        <div className={`border-b-2 px-5 py-3 text-xs ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-slate-300' : 'border-slate-300 bg-slate-100 text-slate-600'}`}>
+          {t('aiCosts.table.legend', {
+            defaultValue: 'Cột Người dùng trả hiển thị số credit và số tiền người dùng đã trả. Cột Chi phí thực tế dùng token model thực tế để tính ra chi phí. Lợi nhuận là tiền người dùng trả trừ chi phí thực tế; số âm nghĩa là đang lỗ.',
+          })}
+        </div>
+        <Table className="min-w-[1600px]">
           <TableHeader>
-            <TableRow className={isDarkMode ? 'border-slate-800 bg-slate-800/50' : 'bg-slate-50'}>
-              <TableHead className="w-[220px]">{t('aiCosts.table.request')}</TableHead>
-              <TableHead className="w-[170px]">{t('aiCosts.table.context', { defaultValue: 'Ngữ cảnh' })}</TableHead>
-              <TableHead className="w-[170px]">{t('aiCosts.table.plan', { defaultValue: 'Gói' })}</TableHead>
-              <TableHead className="w-[190px]">{t('aiCosts.table.model', { defaultValue: 'Model' })}</TableHead>
-              <TableHead className="w-[150px]">{t('aiCosts.table.charged')}</TableHead>
-              <TableHead className="w-[250px]">{t('aiCosts.table.tokens')}</TableHead>
-              <TableHead className="w-[190px]">{t('aiCosts.table.cost')}</TableHead>
-              <TableHead className="w-[120px]">{t('aiCosts.table.status')}</TableHead>
+            <TableRow className={`border-b-2 ${tableStroke} ${isDarkMode ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
+              <TableHead className={`w-[220px] border-r ${tableStroke}`}>{t('aiCosts.table.request')}</TableHead>
+              <TableHead className={`w-[170px] border-r ${tableStroke}`}>{t('aiCosts.table.plan', { defaultValue: 'Gói' })}</TableHead>
+              <TableHead className={`w-[190px] border-r ${tableStroke}`}>{t('aiCosts.table.model', { defaultValue: 'Model' })}</TableHead>
+              <TableHead className={`w-[250px] border-r text-center ${tableStroke}`}>{t('aiCosts.table.tokens')}</TableHead>
+              <TableHead className={`w-[190px] border-r ${tableStroke}`}>{t('aiCosts.table.charged')}</TableHead>
+              <TableHead className={`w-[190px] border-r ${tableStroke}`}>{t('aiCosts.table.actual', { defaultValue: 'Chi phí thực tế' })}</TableHead>
+              <TableHead className={`w-[190px] border-r ${tableStroke}`}>{t('aiCosts.table.profit', { defaultValue: 'Lợi nhuận' })}</TableHead>
+              <TableHead className={`w-[120px] border-r ${tableStroke}`}>{t('aiCosts.table.status')}</TableHead>
               <TableHead className="w-[72px] text-right">{t('aiCosts.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -412,83 +452,98 @@ function AiCostManagement() {
             ) : requests.length === 0 ? (
               <TableRow><TableCell colSpan={9} className={`py-16 text-center text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.empty')}</TableCell></TableRow>
             ) : (
-              requests.map((row) => (
-                <TableRow key={row.aiUsageId} className={isDarkMode ? 'border-slate-800 hover:bg-slate-800/30' : 'hover:bg-slate-50'}>
-                  <TableCell className="py-4">
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{getAiActionLabel(row.actionKey, t)}</p>
-                    <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{row.taskId || '-'}</p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{formatDateTime(row.createdAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}</p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {t('aiCosts.context.actor', {
-                        defaultValue: 'User #{{id}}',
-                        id: row.actorUserId ?? '-',
-                      })}
-                    </p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {t('aiCosts.context.scope', { defaultValue: 'Phạm vi' })}: {getChargeScopeLabel(row.chargeScope, t)}
-                    </p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                      {getChargeTargetLabel(row, t)}
-                    </p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.planDisplayName || '-'}</p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{row.planCode || '-'}</p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.provider || '-'}</p>
-                    <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{row.modelCode || '-'}</p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{getAiModelGroupLabel(row.modelGroup, t)}</p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatInteger(row.chargedCredit)} {t('aiCosts.units.credit')}</p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{formatVnd(row.chargedVnd)}</p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <TokenBreakdownCell row={row} isDarkMode={isDarkMode} t={t} />
-                  </TableCell>
-                  <TableCell className="py-4 text-xs">
-                    <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatVnd(row.providerCostVnd)}</p>
-                    <p className={`mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{formatUsd(row.providerCostUsd)}</p>
-                    <p className={`mt-1 ${Number(row.profitVnd || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{t('aiCosts.formula.profit')}: {formatVnd(row.profitVnd)}</p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(row.requestStatus, isDarkMode)}`}>{t(`aiCosts.status.${row.requestStatus}`, row.requestStatus)}</span>
-                  </TableCell>
-                  <TableCell className="py-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className={isDarkMode ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
+              requests.map((row) => {
+                const actualTokenEquivalent = getActualTokenEquivalent(row);
+                const isProfitPositive = Number(row.profitVnd || 0) >= 0;
+
+                return (
+                  <TableRow key={row.aiUsageId} className={`border-b ${tableStroke} ${isDarkMode ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50'}`}>
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
+                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{getAiActionLabel(row.actionKey, t)}</p>
+                      <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{row.taskId || '-'}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{formatDateTime(row.createdAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}</p>
+                    </TableCell>
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
+                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.planDisplayName || '-'}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{row.planCode || '-'}</p>
+                    </TableCell>
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
+                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.provider || '-'}</p>
+                      <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{row.modelCode || '-'}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{getAiModelGroupLabel(row.modelGroup, t)}</p>
+                    </TableCell>
+                    <TableCell className={`py-4 text-center align-middle border-r ${tableStroke}`}>
+                      <TokenBreakdownCell row={row} isDarkMode={isDarkMode} t={t} />
+                    </TableCell>
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke} ${isDarkMode ? 'bg-sky-950/20' : 'bg-sky-50/55'}`}>
+                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                        {formatVnd(row.chargedVnd)}
+                      </p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-sky-200/80' : 'text-sky-700/80'}`}>
+                        {formatInteger(row.chargedCredit)} {t('aiCosts.units.credit')}
+                      </p>
+                    </TableCell>
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke} ${isDarkMode ? 'bg-amber-950/20' : 'bg-amber-50/55'}`}>
+                      <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                        {formatEquivalentToken(actualTokenEquivalent, numberLocale)} {t('aiCosts.units.tokenEquivalent', { defaultValue: 'token' })}
+                      </p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{formatVnd(row.providerCostVnd)}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-amber-200/80' : 'text-amber-700/80'}`}>{formatUsd(row.providerCostUsd)}</p>
+                    </TableCell>
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke} ${
+                      isProfitPositive
+                        ? (isDarkMode ? 'bg-emerald-950/20' : 'bg-emerald-50/65')
+                        : (isDarkMode ? 'bg-rose-950/20' : 'bg-rose-50/65')
+                    }`}>
+                      <p className={`text-sm font-semibold ${isProfitPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {formatVnd(row.profitVnd)}
+                      </p>
+                      <p className={`mt-1 text-xs ${
+                        isProfitPositive
+                          ? (isDarkMode ? 'text-emerald-200/80' : 'text-emerald-700/80')
+                          : (isDarkMode ? 'text-rose-200/80' : 'text-rose-700/80')
+                      }`}>
+                        {isProfitPositive
+                          ? t('aiCosts.table.profitGainHint', { defaultValue: 'QuizMate đang có lãi' })
+                          : t('aiCosts.table.profitLossHint', { defaultValue: 'QuizMate đang bị lỗ' })}
+                      </p>
+                    </TableCell>
+                    <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(row.requestStatus, isDarkMode)}`}>{t(`aiCosts.status.${row.requestStatus}`, row.requestStatus)}</span>
+                    </TableCell>
+                    <TableCell className="py-4 text-right align-middle">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className={isDarkMode ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className={`w-40 ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100' : ''}`}
                         >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className={`w-40 ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100' : ''}`}
-                      >
-                        <DropdownMenuItem onSelect={() => setDetailRow(row)} className="cursor-pointer">
-                          {t('aiCosts.actions.details')}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className={isDarkMode ? 'bg-slate-700' : ''} />
-                        <DropdownMenuItem
-                          onSelect={() => navigate(`/super-admin/ai-audit?taskId=${encodeURIComponent(row.taskId || '')}`)}
-                          disabled={!row.taskId}
-                          className="cursor-pointer"
-                        >
-                          {t('aiCosts.actions.audit')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                          <DropdownMenuItem onSelect={() => setDetailRow(row)} className="cursor-pointer">
+                            {t('aiCosts.actions.details')}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator className={isDarkMode ? 'bg-slate-700' : ''} />
+                          <DropdownMenuItem
+                            onSelect={() => navigate(`/super-admin/ai-audit?taskId=${encodeURIComponent(row.taskId || '')}`)}
+                            disabled={!row.taskId}
+                            className="cursor-pointer"
+                          >
+                            {t('aiCosts.actions.audit')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -523,13 +578,13 @@ function AiCostManagement() {
               <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
                 <h3 className={`text-sm font-bold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('aiCosts.detail.formula')}</h3>
                 <div className="mt-4 space-y-2 text-sm">
+                  <p>{t('aiCosts.formula.chargedCredit', 'Credit người dùng trả')}: <span className="font-semibold">{formatInteger(detailRow.chargedCredit)} {t('aiCosts.units.credit')}</span></p>
                   <p>{t('aiCosts.formula.chargedVnd')}: <span className="font-semibold">{formatVnd(detailRow.chargedVnd)}</span></p>
+                  <p>{t('aiCosts.formula.actualCostTokens', 'Token thực tế')}: <span className="font-semibold">{formatEquivalentToken(detailActualTokenEquivalent, numberLocale)} {t('aiCosts.units.tokenEquivalent', { defaultValue: 'token' })}</span></p>
                   <p>{t('aiCosts.formula.providerCost')}: <span className="font-semibold">{formatVnd(detailRow.providerCostVnd)}</span></p>
                   <p>{t('aiCosts.formula.providerCostUsd', 'Provider cost (USD)')}: <span className="font-semibold">{formatUsd(detailRow.providerCostUsd)}</span></p>
-                  <p>{t('aiCosts.formula.profit')}: <span className={`font-semibold ${Number(detailRow.profitVnd || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{formatVnd(detailRow.profitVnd)}</span></p>
+                  <p>{t('aiCosts.formula.profit')}: <span className={`font-semibold ${isDetailProfitPositive ? 'text-emerald-500' : 'text-rose-500'}`}>{formatVnd(detailRow.profitVnd)}</span></p>
                   <p>{t('aiCosts.formula.tokenPrice')}: <span className="font-semibold">{formatDecimal(detailRow.effectiveTokenPriceVnd)}</span></p>
-                  <p>{t('aiCosts.formula.tokenBudget')}: <span className="font-semibold">{formatDecimal(detailRow.tokenBudgetEquivalent)}</span></p>
-                  <p>{t('aiCosts.formula.tokenMargin')}: <span className="font-semibold">{formatDecimal(detailRow.tokenMarginEquivalent)}</span></p>
                 </div>
               </div>
               <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
@@ -546,9 +601,19 @@ function AiCostManagement() {
               <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
                 <h3 className={`text-sm font-bold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('aiCosts.detail.explain')}</h3>
                 <div className="mt-4 space-y-2 text-sm">
-                  <p>{t('aiCosts.detail.explainCharged', { credit: formatInteger(detailRow.chargedCredit), vnd: formatVnd(detailRow.chargedVnd) })}</p>
-                  <p>{t('aiCosts.detail.explainProvider', { prompt: formatInteger(detailRow.promptTokens), output: formatInteger((detailRow.completionTokens || 0) + (detailRow.thoughtTokens || 0)), cost: formatVnd(detailRow.providerCostVnd) })}</p>
-                  <p>{t('aiCosts.detail.explainMargin', { tokenBudget: formatDecimal(detailRow.tokenBudgetEquivalent), tokenMargin: formatDecimal(detailRow.tokenMarginEquivalent) })}</p>
+                  <p>{t('aiCosts.detail.explainCharged', {
+                    credit: formatInteger(detailRow.chargedCredit),
+                    vnd: formatVnd(detailRow.chargedVnd),
+                  })}</p>
+                  <p>{t('aiCosts.detail.explainProvider', {
+                    prompt: formatInteger(detailRow.promptTokens),
+                    output: formatInteger((detailRow.completionTokens || 0) + (detailRow.thoughtTokens || 0)),
+                    actualTokens: formatEquivalentToken(detailActualTokenEquivalent, numberLocale),
+                    cost: formatVnd(detailRow.providerCostVnd),
+                  })}</p>
+                  <p>{t('aiCosts.detail.explainMargin', {
+                    profitVnd: formatVnd(detailRow.profitVnd),
+                  })}</p>
                 </div>
               </div>
             </div>

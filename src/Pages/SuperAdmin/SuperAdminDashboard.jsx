@@ -2,14 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowRight,
   CheckCircle2,
   Clock3,
   CreditCard,
-  Package,
-  RefreshCw,
   Wallet,
-  WalletCards,
   XCircle,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
@@ -78,40 +74,203 @@ function formatCurrency(value, locale, compact = false) {
   }).format(amount);
 }
 
-function buildRevenueSeries(payments, locale, days = 7) {
-  const formatter = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' });
-  const totalsByDay = new Map();
-  const countsByDay = new Map();
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+function startOfDay(date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
 
-  for (let offset = days - 1; offset >= 0; offset -= 1) {
-    const day = new Date(start);
-    day.setDate(start.getDate() - offset);
-    const key = day.toISOString().slice(0, 10);
-    totalsByDay.set(key, 0);
-    countsByDay.set(key, 0);
+function startOfWeek(date) {
+  const next = startOfDay(date);
+  const day = next.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  next.setDate(next.getDate() + diff);
+  return next;
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addDays(date, amount) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function addMonths(date, amount) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+}
+
+function getIsoWeekNumber(date) {
+  const target = startOfDay(date);
+  target.setDate(target.getDate() + 4 - (target.getDay() || 7));
+  const yearStart = new Date(target.getFullYear(), 0, 1);
+  return Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+}
+
+function formatWeekInputValue(date) {
+  const week = String(getIsoWeekNumber(date)).padStart(2, '0');
+  return `${date.getFullYear()}-W${week}`;
+}
+
+function parseWeekInputValue(value) {
+  const match = /^(\d{4})-W(\d{2})$/.exec(String(value || ''));
+  if (!match) return startOfWeek(new Date());
+  const year = Number(match[1]);
+  const week = Number(match[2]);
+  const januaryFourth = new Date(year, 0, 4);
+  const firstWeekStart = startOfWeek(januaryFourth);
+  return addDays(firstWeekStart, (week - 1) * 7);
+}
+
+function formatMonthInputValue(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function parseMonthInputValue(value) {
+  const match = /^(\d{4})-(\d{2})$/.exec(String(value || ''));
+  if (!match) return startOfMonth(new Date());
+  return new Date(Number(match[1]), Number(match[2]) - 1, 1);
+}
+
+function buildAvailableYearOptions(payments) {
+  const currentYear = new Date().getFullYear();
+  const minYearFromData = payments.reduce((minYear, payment) => {
+    const rawTime = getPaymentTimestamp(payment);
+    if (!rawTime) return minYear;
+    const date = new Date(rawTime);
+    if (Number.isNaN(date.getTime())) return minYear;
+    return Math.min(minYear, date.getFullYear());
+  }, currentYear);
+
+  const options = [];
+  for (let year = currentYear; year >= minYearFromData; year -= 1) {
+    options.push({ value: String(year), label: String(year) });
+  }
+  return options;
+}
+
+function buildAvailableWeekOptions(year, locale) {
+  const numericYear = Number(year);
+  const today = startOfDay(new Date());
+  const yearStart = new Date(numericYear, 0, 1);
+  const yearEnd = new Date(numericYear, 11, 31);
+  const maxDate = numericYear === today.getFullYear() ? today : yearEnd;
+  const options = [];
+
+  let cursor = startOfWeek(yearStart);
+
+  while (cursor <= maxDate) {
+    const actualStart = new Date(cursor);
+    const actualEnd = addDays(actualStart, 6);
+    const start = actualStart < yearStart ? yearStart : actualStart;
+    const end = actualEnd > maxDate ? maxDate : actualEnd;
+
+    if (start <= end) {
+      options.push({
+        value: formatWeekInputValue(actualStart),
+        label: `${formatRangeLabel(start, end, locale)}`,
+        start,
+        end,
+      });
+    }
+
+    cursor = addDays(cursor, 7);
   }
 
-  payments.forEach((payment) => {
-    const rawTime = getPaymentTimestamp(payment);
-    if (!rawTime) return;
-    const date = new Date(rawTime);
-    if (Number.isNaN(date.getTime())) return;
-    date.setHours(0, 0, 0, 0);
-    const key = date.toISOString().slice(0, 10);
-    if (!totalsByDay.has(key)) return;
-    totalsByDay.set(key, safeNumber(totalsByDay.get(key)) + safeNumber(payment?.amount));
-    countsByDay.set(key, safeNumber(countsByDay.get(key)) + 1);
-  });
+  return options.reverse();
+}
 
-  return Array.from(totalsByDay.entries()).map(([key, total]) => {
-    const date = new Date(key);
+function buildAvailableMonthOptions(year, locale) {
+  const numericYear = Number(year);
+  const today = new Date();
+  const maxMonth = numericYear === today.getFullYear() ? today.getMonth() : 11;
+  const options = [];
+
+  for (let monthIndex = 0; monthIndex <= maxMonth; monthIndex += 1) {
+    const start = new Date(numericYear, monthIndex, 1);
+    const rawEnd = new Date(numericYear, monthIndex + 1, 0);
+    const end = numericYear === today.getFullYear() && monthIndex === today.getMonth()
+      ? startOfDay(today)
+      : rawEnd;
+
+    options.push({
+      value: formatMonthInputValue(start),
+      label: new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(start),
+      start,
+      end,
+    });
+  }
+
+  return options.reverse();
+}
+
+function formatRangeLabel(start, end, locale) {
+  return new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' }).format(start)
+    + ` - `
+    + new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' }).format(end);
+}
+
+function buildRevenueSeries(payments, locale, rangeStart, rangeEnd, aggregation = 'day') {
+  const periods = [];
+  const end = startOfDay(rangeEnd);
+
+  if (aggregation === 'month') {
+    let cursor = startOfMonth(rangeStart);
+    while (cursor <= end) {
+      const periodStart = new Date(cursor);
+      const rawEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+      const periodEnd = rawEnd > end ? end : rawEnd;
+      periods.push({
+        key: formatMonthInputValue(periodStart),
+        start: periodStart,
+        end: periodEnd,
+        label: new Intl.DateTimeFormat(locale, { month: '2-digit' }).format(periodStart),
+      });
+      cursor = addMonths(cursor, 1);
+    }
+  } else {
+    const formatter = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' });
+    let cursor = startOfDay(rangeStart);
+
+    while (cursor <= end) {
+      periods.push({
+        key: cursor.toISOString().slice(0, 10),
+        start: new Date(cursor),
+        end: new Date(cursor),
+        label: formatter.format(cursor),
+      });
+      cursor = addDays(cursor, 1);
+    }
+  }
+
+  return periods.map((period) => {
+    const total = payments.reduce((sum, payment) => {
+      const rawTime = getPaymentTimestamp(payment);
+      if (!rawTime) return sum;
+      const date = new Date(rawTime);
+      if (Number.isNaN(date.getTime())) return sum;
+      const paymentDay = startOfDay(date);
+      return paymentDay >= period.start && paymentDay <= period.end
+        ? sum + safeNumber(payment?.amount)
+        : sum;
+    }, 0);
+
+    const count = payments.reduce((sum, payment) => {
+      const rawTime = getPaymentTimestamp(payment);
+      if (!rawTime) return sum;
+      const date = new Date(rawTime);
+      if (Number.isNaN(date.getTime())) return sum;
+      const paymentDay = startOfDay(date);
+      return paymentDay >= period.start && paymentDay <= period.end ? sum + 1 : sum;
+    }, 0);
+
     return {
-      key,
-      label: formatter.format(date),
-      total: safeNumber(total),
-      count: safeNumber(countsByDay.get(key)),
+      key: period.key,
+      label: period.label,
+      total,
+      count,
     };
   });
 }
@@ -165,45 +324,6 @@ function MetricCard({ label, value, helper, icon: Icon, accentClass, darkMode = 
   );
 }
 
-function ActionCard({ title, description, value, icon: Icon, accentClass, onClick, darkMode = false }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'group rounded-[22px] border p-4 text-left transition-all duration-200 hover:-translate-y-0.5',
-        darkMode
-          ? 'border-slate-800 bg-slate-950/70 hover:border-slate-700 hover:bg-slate-900'
-          : 'border-slate-200 bg-slate-50/80 hover:border-slate-300 hover:bg-white',
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className={cn('rounded-2xl p-3', accentClass)}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <ArrowRight
-          className={cn(
-            'h-4 w-4 transition-colors',
-            darkMode ? 'text-slate-500 group-hover:text-slate-200' : 'text-slate-400 group-hover:text-slate-700',
-          )}
-        />
-      </div>
-      <p className={cn('mt-4 text-sm font-semibold', darkMode ? 'text-white' : 'text-slate-950')}>{title}</p>
-      <p className={cn('mt-1 line-clamp-2 text-xs leading-5', darkMode ? 'text-slate-400' : 'text-slate-600')}>
-        {description}
-      </p>
-      <div
-        className={cn(
-          'mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-medium',
-          darkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-700',
-        )}
-      >
-        {value}
-      </div>
-    </button>
-  );
-}
-
 function SuperAdminDashboard() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -222,6 +342,10 @@ function SuperAdminDashboard() {
   const [error, setError] = useState('');
   const [loadIssues, setLoadIssues] = useState([]);
   const [lastRefreshedAt, setLastRefreshedAt] = useState(null);
+  const [revenueView, setRevenueView] = useState('year');
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [selectedWeek, setSelectedWeek] = useState(() => formatWeekInputValue(startOfWeek(new Date())));
+  const [selectedMonth, setSelectedMonth] = useState(() => formatMonthInputValue(startOfMonth(new Date())));
 
   const fetchDashboard = async () => {
     setIsLoading(true);
@@ -294,6 +418,18 @@ function SuperAdminDashboard() {
   const totalAccounts = safeNumber(systemOverview.totalUsers);
 
   const completedPayments = payments.filter((payment) => getPaymentStatus(payment) === 'COMPLETED');
+  const availableYearOptions = buildAvailableYearOptions(completedPayments);
+  const effectiveSelectedYear = availableYearOptions.some((option) => option.value === selectedYear)
+    ? selectedYear
+    : (availableYearOptions[0]?.value ?? String(new Date().getFullYear()));
+  const availableWeekOptions = buildAvailableWeekOptions(effectiveSelectedYear, locale);
+  const availableMonthOptions = buildAvailableMonthOptions(effectiveSelectedYear, locale);
+  const effectiveSelectedWeek = availableWeekOptions.some((option) => option.value === selectedWeek)
+    ? selectedWeek
+    : (availableWeekOptions[0]?.value ?? formatWeekInputValue(startOfWeek(new Date())));
+  const effectiveSelectedMonth = availableMonthOptions.some((option) => option.value === selectedMonth)
+    ? selectedMonth
+    : (availableMonthOptions[0]?.value ?? formatMonthInputValue(startOfMonth(new Date())));
   const pendingPayments = payments.filter((payment) => getPaymentStatus(payment) === 'PENDING');
   const failedPayments = payments.filter((payment) => getPaymentStatus(payment) === 'FAILED');
   const cancelledPayments = payments.filter((payment) => getPaymentStatus(payment) === 'CANCELLED');
@@ -304,15 +440,67 @@ function SuperAdminDashboard() {
   const failedRevenue = failedOrCancelledPayments.reduce((sum, payment) => sum + safeNumber(payment?.amount), 0);
   const averageOrderValue = completedPayments.length > 0 ? completedRevenue / completedPayments.length : 0;
   const paymentSuccessRate = totalPayments > 0 ? Math.round((completedPayments.length / totalPayments) * 100) : 0;
-  const revenuePerAccount = totalAccounts > 0 ? completedRevenue / totalAccounts : 0;
-
-  const revenueSeries = buildRevenueSeries(completedPayments, locale, 7);
+  const selectedWeekOption = availableWeekOptions.find((option) => option.value === effectiveSelectedWeek) ?? availableWeekOptions[0];
+  const selectedMonthOption = availableMonthOptions.find((option) => option.value === effectiveSelectedMonth) ?? availableMonthOptions[0];
+  const selectedYearStart = new Date(Number(effectiveSelectedYear), 0, 1);
+  const selectedYearEnd = Number(effectiveSelectedYear) === new Date().getFullYear()
+    ? startOfDay(new Date())
+    : new Date(Number(effectiveSelectedYear), 11, 31);
+  const activeRange = revenueView === 'month'
+    ? selectedMonthOption
+    : revenueView === 'week'
+      ? selectedWeekOption
+      : {
+          value: effectiveSelectedYear,
+          label: effectiveSelectedYear,
+          start: selectedYearStart,
+          end: selectedYearEnd,
+        };
+  const revenueSeries = buildRevenueSeries(
+    completedPayments,
+    locale,
+    activeRange.start,
+    activeRange.end,
+    revenueView === 'year' ? 'month' : 'day',
+  );
   const maxRevenuePoint = revenueSeries.reduce(
     (largest, point) => (point.total > largest.total ? point : largest),
     { key: '', label: '-', total: 0, count: 0 },
   );
   const maxRevenueValue = Math.max(...revenueSeries.map((point) => point.total), 0);
   const recentCompletedRevenue = revenueSeries.reduce((sum, point) => sum + point.total, 0);
+  const revenueViewOptions = [
+    { key: 'year', label: t('dashboard.viewByYear') },
+    { key: 'week', label: t('dashboard.viewByWeek') },
+    { key: 'month', label: t('dashboard.viewByMonth') },
+  ];
+  const revenueWindowTitle = revenueView === 'year'
+    ? t('dashboard.revenueWindowYearTitle')
+    : revenueView === 'month'
+    ? t('dashboard.revenueWindowMonthTitle')
+    : revenueView === 'week'
+      ? t('dashboard.revenueWindowWeekTitle')
+      : t('dashboard.revenueWindow');
+  const revenueWindowDescription = revenueView === 'year'
+    ? t('dashboard.revenueWindowYearDesc')
+    : revenueView === 'month'
+    ? t('dashboard.revenueWindowMonthDesc')
+    : revenueView === 'week'
+      ? t('dashboard.revenueWindowWeekDesc')
+      : t('dashboard.revenueWindowDesc');
+  const revenueWindowLabel = revenueView === 'year'
+    ? t('dashboard.revenueSelectedYear')
+    : revenueView === 'month'
+    ? t('dashboard.revenueSelectedMonth')
+    : revenueView === 'week'
+      ? t('dashboard.revenueSelectedWeek')
+      : t('dashboard.revenueSelectedRange');
+  const peakPeriodLabel = revenueView === 'year'
+    ? t('dashboard.peakMonth')
+    : revenueView === 'month'
+      ? t('dashboard.peakDay')
+      : t('dashboard.peakDay');
+  const revenuePerAccount = totalAccounts > 0 ? recentCompletedRevenue / totalAccounts : 0;
 
   const latestTransaction =
     [...payments].sort(
@@ -438,174 +626,8 @@ function SuperAdminDashboard() {
     },
   ];
 
-  const financeActionItems = [
-    {
-      title: t('sidebar.payments'),
-      description: t('dashboard.actionDescriptions.payments'),
-      value: totalPayments.toLocaleString(locale),
-      icon: WalletCards,
-      accentClass: isDarkMode ? 'bg-emerald-500/14 text-emerald-300' : 'bg-emerald-50 text-emerald-700',
-      path: '/super-admin/payments',
-    },
-    {
-      title: t('sidebar.subscriptions'),
-      description: t('dashboard.actionDescriptions.plans'),
-      value: totalPlans.toLocaleString(locale),
-      icon: Package,
-      accentClass: isDarkMode ? 'bg-sky-500/14 text-sky-300' : 'bg-sky-50 text-sky-700',
-      path: '/super-admin/plan',
-    },
-    {
-      title: t('sidebar.creditPackages'),
-      description: t('dashboard.actionDescriptions.creditPackages'),
-      value: totalCreditPackages.toLocaleString(locale),
-      icon: Wallet,
-      accentClass: isDarkMode ? 'bg-amber-500/14 text-amber-300' : 'bg-amber-50 text-amber-700',
-      path: '/super-admin/credit',
-    },
-  ];
-
   return (
     <div className={`space-y-6 p-6 ${fontClass}`}>
-      <section
-        className={cn(
-          'relative overflow-hidden rounded-[32px] border p-6 shadow-[0_26px_70px_-42px_rgba(15,23,42,0.22)]',
-          isDarkMode
-            ? 'border-slate-800 bg-slate-950'
-            : 'border-slate-200/80 bg-[linear-gradient(135deg,#f2faf5_0%,#ffffff_46%,#fff8ef_100%)]',
-        )}
-      >
-        <div
-          className={cn(
-            'pointer-events-none absolute inset-0',
-            isDarkMode
-              ? 'bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(245,158,11,0.14),transparent_26%)]'
-              : 'bg-[radial-gradient(circle_at_top_left,rgba(110,231,183,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(253,224,71,0.18),transparent_24%)]',
-          )}
-        />
-
-        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
-          <div className="max-w-3xl">
-            <Badge
-              variant="outline"
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-semibold',
-                isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-emerald-200 bg-white/85 text-emerald-700',
-              )}
-            >
-              {t('dashboard.financeBoard')}
-            </Badge>
-            <h1 className={cn('mt-4 text-3xl font-black tracking-tight md:text-4xl', isDarkMode ? 'text-white' : 'text-slate-950')}>
-              {t('dashboard.revenueCommandDeck')}
-            </h1>
-            <p className={cn('mt-3 max-w-2xl text-sm leading-6 md:text-base', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-              {t('dashboard.revenueCommandDeckDesc')}
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              <Badge
-                variant="outline"
-                className={cn(
-                  'rounded-full px-3 py-1 text-xs font-semibold',
-                  isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white/90 text-slate-700',
-                )}
-              >
-                {t('dashboard.totalPayments')}: {isLoading ? '...' : totalPayments.toLocaleString(locale)}
-              </Badge>
-              <Badge
-                variant="outline"
-                className={cn(
-                  'rounded-full px-3 py-1 text-xs font-semibold',
-                  isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white/90 text-slate-700',
-                )}
-              >
-                {t('dashboard.totalPlans')}: {isLoading ? '...' : totalPlans.toLocaleString(locale)}
-              </Badge>
-              <Badge
-                variant="outline"
-                className={cn(
-                  'rounded-full px-3 py-1 text-xs font-semibold',
-                  isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white/90 text-slate-700',
-                )}
-              >
-                {t('dashboard.totalCreditPackages')}: {isLoading ? '...' : totalCreditPackages.toLocaleString(locale)}
-              </Badge>
-            </div>
-          </div>
-
-          <div
-            className={cn(
-              'rounded-[28px] border p-5',
-              isDarkMode ? 'border-slate-800 bg-slate-900/80' : 'border-emerald-100 bg-white/88',
-            )}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {t('dashboard.recognizedRevenue')}
-                </p>
-                <p className={cn('mt-3 text-3xl font-semibold tracking-tight', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                  {isLoading ? '...' : formatCurrency(completedRevenue, locale)}
-                </p>
-              </div>
-              <div className={cn('rounded-2xl p-3', isDarkMode ? 'bg-emerald-500/14 text-emerald-300' : 'bg-emerald-50 text-emerald-700')}>
-                <Wallet className="h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80')}>
-                <p className={cn('text-xs uppercase tracking-[0.16em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                  {t('dashboard.pendingRevenue')}
-                </p>
-                <p className={cn('mt-2 text-lg font-semibold', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                  {isLoading ? '...' : formatCurrency(pendingRevenue, locale)}
-                </p>
-              </div>
-              <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80')}>
-                <p className={cn('text-xs uppercase tracking-[0.16em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                  {t('dashboard.latestPayment')}
-                </p>
-                <p className={cn('mt-2 text-sm font-semibold leading-6', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                  {isLoading ? '...' : formatDateTime(getPaymentTimestamp(latestTransaction), locale)}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-              <Badge
-                variant="outline"
-                className={cn(
-                  'rounded-full px-3 py-1 text-xs font-semibold',
-                  isDarkMode ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700',
-                )}
-              >
-                {t('dashboard.successRateValue', { value: paymentSuccessRate })}
-              </Badge>
-              <div className="flex items-center gap-2">
-                {lastRefreshedAt ? (
-                  <span className={cn('text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                    {t('dashboard.lastSync')}: {formatDateTime(lastRefreshedAt, locale)}
-                  </span>
-                ) : null}
-                <Button
-                  variant="outline"
-                  onClick={fetchDashboard}
-                  disabled={isLoading}
-                  className={cn(
-                    'rounded-2xl px-4',
-                    isDarkMode ? 'border-slate-700 bg-slate-950 text-slate-100 hover:bg-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
-                  )}
-                >
-                  <RefreshCw className={cn('mr-2 h-4 w-4', isLoading ? 'animate-spin' : '')} />
-                  {t('common.refresh')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {error ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
           {error}
@@ -639,18 +661,106 @@ function SuperAdminDashboard() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_380px]">
         <div className="space-y-6">
-          <SurfaceCard title={t('dashboard.revenueWindow')} description={t('dashboard.revenueWindowDesc')} darkMode={isDarkMode}>
+          <SurfaceCard title={revenueWindowTitle} description={revenueWindowDescription} darkMode={isDarkMode}>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {revenueViewOptions.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setRevenueView(option.key)}
+                  className={cn(
+                    'rounded-full px-3 py-1.5 text-sm font-semibold transition-colors cursor-pointer',
+                    revenueView === option.key
+                      ? isDarkMode
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-slate-950 text-white'
+                      : isDarkMode
+                        ? 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <div className="mb-4">
+              <label className={cn('mb-1 block text-sm font-medium', isDarkMode ? 'text-slate-300' : 'text-slate-700')}>
+                {t('dashboard.selectYear')}
+              </label>
+              <select
+                value={effectiveSelectedYear}
+                onChange={(event) => setSelectedYear(event.target.value)}
+                className={cn(
+                  'rounded-xl border px-3 py-2 text-sm outline-none transition-colors',
+                  isDarkMode
+                    ? 'border-slate-700 bg-slate-900 text-slate-100'
+                    : 'border-slate-300 bg-white text-slate-900',
+                )}
+              >
+                {availableYearOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {revenueView === 'week' ? (
+              <div className="mb-4">
+                <label className={cn('mb-1 block text-sm font-medium', isDarkMode ? 'text-slate-300' : 'text-slate-700')}>
+                  {t('dashboard.selectWeek')}
+                </label>
+                <select
+                  value={effectiveSelectedWeek}
+                  onChange={(event) => setSelectedWeek(event.target.value)}
+                  className={cn(
+                    'rounded-xl border px-3 py-2 text-sm outline-none transition-colors',
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-900 text-slate-100'
+                      : 'border-slate-300 bg-white text-slate-900',
+                  )}
+                >
+                  {availableWeekOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            {revenueView === 'month' ? (
+              <div className="mb-4">
+                <label className={cn('mb-1 block text-sm font-medium', isDarkMode ? 'text-slate-300' : 'text-slate-700')}>
+                  {t('dashboard.selectMonth')}
+                </label>
+                <select
+                  value={effectiveSelectedMonth}
+                  onChange={(event) => setSelectedMonth(event.target.value)}
+                  className={cn(
+                    'rounded-xl border px-3 py-2 text-sm outline-none transition-colors',
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-900 text-slate-100'
+                      : 'border-slate-300 bg-white text-slate-900',
+                  )}
+                >
+                  {availableMonthOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             {revenueSeries.some((point) => point.total > 0) ? (
               <>
                 <div className="grid gap-3 md:grid-cols-3">
                   <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50/80')}>
-                    <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{t('dashboard.revenueLast7Days')}</p>
+                    <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{revenueWindowLabel}</p>
                     <p className={cn('mt-2 text-2xl font-semibold', isDarkMode ? 'text-white' : 'text-slate-950')}>
                       {formatCurrency(recentCompletedRevenue, locale)}
                     </p>
                   </div>
                   <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50/80')}>
-                    <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{t('dashboard.peakDay')}</p>
+                    <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{peakPeriodLabel}</p>
                     <p className={cn('mt-2 text-2xl font-semibold', isDarkMode ? 'text-white' : 'text-slate-950')}>
                       {maxRevenuePoint.label}
                     </p>
@@ -666,8 +776,14 @@ function SuperAdminDashboard() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-7 gap-3">
-                  {revenueSeries.map((point) => {
+                <div className="mt-6 overflow-x-auto">
+                  <div
+                    className="grid gap-3 min-w-max"
+                    style={{
+                      gridTemplateColumns: `repeat(${revenueSeries.length}, minmax(${revenueView === 'year' ? 88 : 56}px, 1fr))`,
+                    }}
+                  >
+                    {revenueSeries.map((point) => {
                     const height = point.total > 0 && maxRevenueValue > 0 ? Math.max(24, Math.round((point.total / maxRevenueValue) * 176)) : 12;
                     return (
                       <div key={point.key} className="flex min-w-0 flex-col items-center gap-3">
@@ -697,6 +813,7 @@ function SuperAdminDashboard() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               </>
             ) : (
@@ -856,65 +973,6 @@ function SuperAdminDashboard() {
             )}
           </SurfaceCard>
 
-          <SurfaceCard title={t('dashboard.monetizationSurface')} description={t('dashboard.monetizationSurfaceDesc')} darkMode={isDarkMode}>
-            <div className="grid gap-3">
-              {[
-                { label: t('dashboard.totalPlans'), value: totalPlans.toLocaleString(locale) },
-                { label: t('dashboard.totalCreditPackages'), value: totalCreditPackages.toLocaleString(locale) },
-                { label: t('dashboard.totalPayments'), value: totalPayments.toLocaleString(locale) },
-                { label: t('dashboard.totalUsers'), value: totalAccounts.toLocaleString(locale) },
-              ].map((item) => (
-                <div key={item.label} className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50/80')}>
-                  <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{item.label}</p>
-                  <p className={cn('mt-2 text-xl font-semibold', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                    {isLoading ? '...' : item.value}
-                  </p>
-                </div>
-              ))}
-
-              <div className={cn('rounded-[20px] border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50/80')}>
-                <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{t('dashboard.targetMix')}</p>
-                {targetMix.length > 0 ? (
-                  <div className="mt-3 space-y-3">
-                    {targetMix.map((item) => (
-                      <div key={item.key} className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                            {item.label}
-                          </p>
-                          <p className={cn('text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                            {item.count.toLocaleString(locale)} {t('dashboard.transactions')}
-                          </p>
-                        </div>
-                        <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                          {formatCurrency(item.amount, locale, true)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={cn('mt-3 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>{t('dashboard.noPayments')}</p>
-                )}
-              </div>
-            </div>
-          </SurfaceCard>
-
-          <SurfaceCard title={t('dashboard.financeActions')} description={t('dashboard.financeActionsDesc')} darkMode={isDarkMode}>
-            <div className="grid gap-3">
-              {financeActionItems.map((item) => (
-                <ActionCard
-                  key={item.path}
-                  title={item.title}
-                  description={item.description}
-                  value={isLoading ? '...' : item.value}
-                  icon={item.icon}
-                  accentClass={item.accentClass}
-                  onClick={() => navigate(item.path)}
-                  darkMode={isDarkMode}
-                />
-              ))}
-            </div>
-          </SurfaceCard>
         </div>
       </div>
     </div>

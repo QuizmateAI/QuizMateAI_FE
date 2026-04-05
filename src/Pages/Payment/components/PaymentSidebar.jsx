@@ -4,15 +4,23 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { ShieldCheck, AlertTriangle } from 'lucide-react';
 import PaymentMethods from './PaymentMethods';
 
-export default function PaymentSidebar({ plan, workspaceId, needGroupSelect = false }) {
+export default function PaymentSidebar({
+  plan,
+  creditPackage,
+  workspaceId,
+  needGroupSelect = false,
+}) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
+  const isCreditPayment = Boolean(creditPackage);
+  const item = creditPackage ?? plan;
 
-  const isForever = Number(plan.durationInDay) >= 999999;
+  const isForever = Number(plan?.durationInDay) >= 999999;
+  const totalCredits = Number(creditPackage?.baseCredit ?? 0) + Number(creditPackage?.bonusCredit ?? 0);
 
   const formattedPrice = useMemo(
-    () => new Intl.NumberFormat('vi-VN').format(plan.price),
-    [plan.price]
+    () => new Intl.NumberFormat('vi-VN').format(item?.price ?? 0),
+    [item?.price]
   );
 
   return (
@@ -35,7 +43,9 @@ export default function PaymentSidebar({ plan, workspaceId, needGroupSelect = fa
         }`}>
           <div className="flex items-center justify-between text-sm">
             <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-              {plan.planName}
+              {isCreditPayment
+                ? `${new Intl.NumberFormat('vi-VN').format(totalCredits)} ${t('wallet.creditsUnit')}`
+                : plan.planName}
             </span>
             <span className={`font-semibold tabular-nums ${
               isDarkMode ? 'text-slate-200' : 'text-slate-800'
@@ -43,14 +53,25 @@ export default function PaymentSidebar({ plan, workspaceId, needGroupSelect = fa
               {formattedPrice}₫
             </span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-              {t('payment.duration')}
-            </span>
-            <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-              {isForever ? t('plan.durationForeverShort') : `${plan.durationInDay} ${t('payment.days')}`}
-            </span>
-          </div>
+          {isCreditPayment ? (
+            <div className="flex items-center justify-between text-sm">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
+                {t('wallet.bonus')}
+              </span>
+              <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                +{new Intl.NumberFormat('vi-VN').format(creditPackage?.bonusCredit ?? 0)} {t('wallet.creditsUnit')}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between text-sm">
+              <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
+                {t('payment.duration')}
+              </span>
+              <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                {isForever ? t('plan.durationForeverShort') : `${plan.durationInDay} ${t('payment.days')}`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Total */}
@@ -72,7 +93,14 @@ export default function PaymentSidebar({ plan, workspaceId, needGroupSelect = fa
             <p className="text-sm">{t('payment.selectGroupFirst')}</p>
           </div>
         ) : (
-          <PaymentMethods planId={plan.planId} planName={plan.planName} planType={plan.type} workspaceId={workspaceId} />
+          <PaymentMethods
+            paymentType={isCreditPayment ? 'credit' : 'plan'}
+            planId={plan?.planId}
+            planName={plan?.planName}
+            planType={plan?.type}
+            workspaceId={workspaceId}
+            creditPackageId={creditPackage?.creditPackageId}
+          />
         )}
 
         {/* Security note */}
