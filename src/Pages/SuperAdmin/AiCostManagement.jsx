@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, Coins, DatabaseZap, ReceiptText, RefreshCw, Search, Wallet } from 'lucide-react';
+import { ArrowUpRight, Coins, DatabaseZap, MoreVertical, ReceiptText, RefreshCw, Search, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/Components/ui/dropdown-menu';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import {
@@ -86,6 +93,69 @@ function getStatusBadgeClass(status, isDarkMode) {
     return isDarkMode ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200';
   }
   return isDarkMode ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' : 'bg-rose-50 text-rose-700 border-rose-200';
+}
+
+function getChargeScopeLabel(scope, t) {
+  const normalized = String(scope || '').toUpperCase();
+  if (normalized === 'USER') {
+    return t('aiCosts.scope.user', { defaultValue: 'Cá nhân' });
+  }
+  if (normalized === 'WORKSPACE') {
+    return t('aiCosts.scope.workspace', { defaultValue: 'Workspace' });
+  }
+  return normalized || '-';
+}
+
+function getChargeTargetLabel(row, t) {
+  if (String(row?.chargeScope || '').toUpperCase() === 'WORKSPACE') {
+    return t('aiCosts.target.workspace', {
+      defaultValue: 'WS #{{id}}',
+      id: row?.chargedWorkspaceId ?? '-',
+    });
+  }
+  return t('aiCosts.target.user', {
+    defaultValue: 'User #{{id}}',
+    id: row?.chargedUserId ?? row?.actorUserId ?? '-',
+  });
+}
+
+function getOutputTokens(row) {
+  return Number(row?.completionTokens || 0) + Number(row?.thoughtTokens || 0);
+}
+
+function TokenBreakdownCell({ row, isDarkMode, t }) {
+  const outputTokens = getOutputTokens(row);
+
+  return (
+    <div className={`min-w-[220px] overflow-hidden rounded-2xl border ${isDarkMode ? 'border-slate-800 bg-slate-950/80' : 'border-slate-200 bg-slate-50'}`}>
+      <div className={`grid grid-cols-2 ${isDarkMode ? 'divide-x divide-slate-800' : 'divide-x divide-slate-200'}`}>
+        <div className="px-3 py-2.5">
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            {t('aiCosts.tokens.input', { defaultValue: 'Input' })}
+          </p>
+          <p className={`mt-1 text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {formatInteger(row?.promptTokens)}
+          </p>
+        </div>
+        <div className="px-3 py-2.5">
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+            {t('aiCosts.tokens.output', { defaultValue: 'Output' })}
+          </p>
+          <p className={`mt-1 text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {formatInteger(outputTokens)}
+          </p>
+        </div>
+      </div>
+      <div className={`px-3 py-2.5 ${isDarkMode ? 'border-t border-slate-800 bg-slate-900/70' : 'border-t border-slate-200 bg-white/70'}`}>
+        <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+          {t('aiCosts.tokens.total', { defaultValue: 'Total' })}
+        </p>
+        <p className={`mt-1 text-base font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          {formatInteger(row?.totalTokens)}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function MetricCard({ label, value, icon: Icon, tone, isDarkMode, subtext }) {
@@ -322,23 +392,25 @@ function AiCostManagement() {
       </div>
 
       <div className={`overflow-hidden rounded-2xl border ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm'}`}>
-        <Table>
+        <Table className="min-w-[1440px]">
           <TableHeader>
             <TableRow className={isDarkMode ? 'border-slate-800 bg-slate-800/50' : 'bg-slate-50'}>
-              <TableHead>{t('aiCosts.table.request')}</TableHead>
-              <TableHead>{t('aiCosts.table.plan')}</TableHead>
-              <TableHead>{t('aiCosts.table.charged')}</TableHead>
-              <TableHead>{t('aiCosts.table.tokens')}</TableHead>
-              <TableHead>{t('aiCosts.table.cost')}</TableHead>
-              <TableHead>{t('aiCosts.table.status')}</TableHead>
-              <TableHead className="text-right">{t('aiCosts.table.actions')}</TableHead>
+              <TableHead className="w-[220px]">{t('aiCosts.table.request')}</TableHead>
+              <TableHead className="w-[170px]">{t('aiCosts.table.context', { defaultValue: 'Ngữ cảnh' })}</TableHead>
+              <TableHead className="w-[170px]">{t('aiCosts.table.plan', { defaultValue: 'Gói' })}</TableHead>
+              <TableHead className="w-[190px]">{t('aiCosts.table.model', { defaultValue: 'Model' })}</TableHead>
+              <TableHead className="w-[150px]">{t('aiCosts.table.charged')}</TableHead>
+              <TableHead className="w-[250px]">{t('aiCosts.table.tokens')}</TableHead>
+              <TableHead className="w-[190px]">{t('aiCosts.table.cost')}</TableHead>
+              <TableHead className="w-[120px]">{t('aiCosts.table.status')}</TableHead>
+              <TableHead className="w-[72px] text-right">{t('aiCosts.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="py-12 text-center"><ListSpinner variant="table" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="py-12 text-center"><ListSpinner variant="table" /></TableCell></TableRow>
             ) : requests.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className={`py-16 text-center text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.empty')}</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className={`py-16 text-center text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.empty')}</TableCell></TableRow>
             ) : (
               requests.map((row) => (
                 <TableRow key={row.aiUsageId} className={isDarkMode ? 'border-slate-800 hover:bg-slate-800/30' : 'hover:bg-slate-50'}>
@@ -348,34 +420,72 @@ function AiCostManagement() {
                     <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{formatDateTime(row.createdAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}</p>
                   </TableCell>
                   <TableCell className="py-4">
+                    <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {t('aiCosts.context.actor', {
+                        defaultValue: 'User #{{id}}',
+                        id: row.actorUserId ?? '-',
+                      })}
+                    </p>
+                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {t('aiCosts.context.scope', { defaultValue: 'Phạm vi' })}: {getChargeScopeLabel(row.chargeScope, t)}
+                    </p>
+                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      {getChargeTargetLabel(row, t)}
+                    </p>
+                  </TableCell>
+                  <TableCell className="py-4">
                     <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.planDisplayName || '-'}</p>
                     <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{row.planCode || '-'}</p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{row.provider || '-'} / {getAiModelGroupLabel(row.modelGroup, t)}</p>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.provider || '-'}</p>
+                    <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{row.modelCode || '-'}</p>
+                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{getAiModelGroupLabel(row.modelGroup, t)}</p>
                   </TableCell>
                   <TableCell className="py-4">
                     <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatInteger(row.chargedCredit)} {t('aiCosts.units.credit')}</p>
                     <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{formatVnd(row.chargedVnd)}</p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.formula.creditUnit')}: {formatVnd(row.creditUnitPriceVndSnapshot)}</p>
                   </TableCell>
-                  <TableCell className="py-4 text-xs">
-                    <p>{t('aiCosts.formula.prompt')}: <span className="font-semibold">{formatInteger(row.promptTokens)}</span></p>
-                    <p className="mt-1">{t('aiCosts.formula.output')}: <span className="font-semibold">{formatInteger((row.completionTokens || 0) + (row.thoughtTokens || 0))}</span></p>
-                    <p className="mt-1">{t('aiCosts.formula.total')}: <span className="font-semibold">{formatInteger(row.totalTokens)}</span></p>
+                  <TableCell className="py-4">
+                    <TokenBreakdownCell row={row} isDarkMode={isDarkMode} t={t} />
                   </TableCell>
                   <TableCell className="py-4 text-xs">
                     <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatVnd(row.providerCostVnd)}</p>
                     <p className={`mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{formatUsd(row.providerCostUsd)}</p>
                     <p className={`mt-1 ${Number(row.profitVnd || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{t('aiCosts.formula.profit')}: {formatVnd(row.profitVnd)}</p>
-                    <p className={`mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiCosts.formula.tokenBudget')}: {formatDecimal(row.tokenBudgetEquivalent)}</p>
                   </TableCell>
                   <TableCell className="py-4">
                     <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(row.requestStatus, isDarkMode)}`}>{t(`aiCosts.status.${row.requestStatus}`, row.requestStatus)}</span>
                   </TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => setDetailRow(row)}>{t('aiCosts.actions.details')}</Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/super-admin/ai-audit?taskId=${encodeURIComponent(row.taskId || '')}`)}>{t('aiCosts.actions.audit')}</Button>
-                    </div>
+                  <TableCell className="py-4 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className={isDarkMode ? 'text-slate-300 hover:bg-slate-800 hover:text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className={`w-40 ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100' : ''}`}
+                      >
+                        <DropdownMenuItem onSelect={() => setDetailRow(row)} className="cursor-pointer">
+                          {t('aiCosts.actions.details')}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className={isDarkMode ? 'bg-slate-700' : ''} />
+                        <DropdownMenuItem
+                          onSelect={() => navigate(`/super-admin/ai-audit?taskId=${encodeURIComponent(row.taskId || '')}`)}
+                          disabled={!row.taskId}
+                          className="cursor-pointer"
+                        >
+                          {t('aiCosts.actions.audit')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))

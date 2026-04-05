@@ -84,6 +84,7 @@ function ChatPanel({
   quizGenerationProgressByQuizId = null,
   onShareQuiz,
   onShareRoadmap,
+  onEditRoadmapConfig,
   planEntitlements = null,
 }) {
   const { t, i18n } = useTranslation();
@@ -160,6 +161,7 @@ function ChatPanel({
             progressTracking={progressTracking}
             onShareRoadmap={onShareRoadmap}
             onShareQuiz={onShareQuiz}
+            onEditRoadmapConfig={onEditRoadmapConfig}
           />
         );
       case "quiz":

@@ -15,8 +15,10 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ChevronDown,
+  Eye,
   Share2,
   Loader2,
+  Pencil,
   Sparkles,
   Lock,
   Unlock,
@@ -45,6 +47,8 @@ function RoadmapCanvasView2({
   progressTracking = null,
   onShareRoadmap,
   onShareQuiz,
+  onViewRoadmapConfig,
+  onEditRoadmapConfig,
 }) {
   const { t } = useTranslation();
   const { showError, showSuccess } = useToast();
@@ -703,10 +707,12 @@ function RoadmapCanvasView2({
               <details className="group">
                 <summary className="list-none cursor-pointer">
                   <div className="flex items-center justify-between gap-2">
-                    <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                      {roadmap?.title}
-                    </p>
-                    <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                        {roadmap?.title}
+                      </p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 shrink-0 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
                   </div>
                 </summary>
                 <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
@@ -714,9 +720,11 @@ function RoadmapCanvasView2({
                 </p>
               </details>
             ) : (
-              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                {roadmap?.title}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                  {roadmap?.title}
+                </p>
+              </div>
             )}
             {roadmap?.aiSuggest ? (
               <details className={`group mt-3 rounded-md p-3 text-sm ${isDarkMode ? "bg-yellow-950/30 border border-yellow-800 text-yellow-200" : "bg-yellow-50 border border-yellow-200 text-yellow-700"}`}>
@@ -742,8 +750,31 @@ function RoadmapCanvasView2({
               ) : null}
             </div>
           </div>
-          {onShareRoadmap && roadmap?.roadmapId ? (
-            <div className="mt-3 flex justify-end">
+          {onViewRoadmapConfig || onEditRoadmapConfig || (onShareRoadmap && roadmap?.roadmapId) ? (
+            <div className="mt-3 flex flex-wrap justify-end gap-2">
+              {onViewRoadmapConfig ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onViewRoadmapConfig}
+                  className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  {t("workspace.roadmap.viewConfig", "View config")}
+                </Button>
+              ) : null}
+              {onEditRoadmapConfig ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onEditRoadmapConfig}
+                  className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  {t("workspace.roadmap.editConfigAction", "Edit")}
+                </Button>
+              ) : null}
+              {onShareRoadmap && roadmap?.roadmapId ? (
               <Button
                 type="button"
                 variant="outline"
@@ -753,6 +784,7 @@ function RoadmapCanvasView2({
                 <Share2 className="w-4 h-4 mr-2" />
                 {t("home.actions.share", "Share")}
               </Button>
+              ) : null}
             </div>
           ) : null}
         </div>

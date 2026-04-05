@@ -9,7 +9,6 @@ import GroupDashboardTab from './Group_leader/GroupDashboardTab';
 import GroupMembersTab from './Group_leader/GroupMembersTab';
 import GroupSettingsTab from './Group_leader/GroupSettingsTab';
 import ChatPanel from './Components/ChatPanel';
-import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
 import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
 import {
   Activity,
@@ -22,10 +21,12 @@ import {
   FolderOpen,
   Globe,
   Map as MapIcon,
+  Moon,
   PenLine,
   Settings,
   ShieldCheck,
   Sparkles,
+  Sun,
   Swords,
   UserPlus,
   Users,
@@ -40,7 +41,17 @@ import PlanUpgradeModal from '@/Components/plan/PlanUpgradeModal';
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
-import { createRoadmap } from '@/api/RoadmapAPI';
+import {
+  createRoadmap,
+  setupGroupRoadmapConfig,
+  updateGroupRoadmapConfig,
+  getRoadmapStructureById,
+  deleteRoadmapKnowledgeById,
+  deleteRoadmapPhaseById,
+} from '@/api/RoadmapAPI';
+
+const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
+const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigSummaryDialog"));
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
   deleteMaterial,
@@ -57,6 +68,8 @@ import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
+import { generateRoadmapPhases } from '@/api/AIAPI';
+import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 const GROUP_UPLOAD_ACCEPTED_EXTENSIONS = new Set([
@@ -96,6 +109,18 @@ function isReviewableMaterialStatus(status) {
 
 function isTerminalMaterialStatus(status) {
   return ['ACTIVE', 'WARN', 'ERROR', 'REJECT', 'DELETED'].includes(normalizeMaterialStatus(status));
+}
+
+function resolveNeedReviewFlag(...candidates) {
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue;
+    return Boolean(candidate);
+  }
+  return true;
+}
+
+function shouldTrackInLeaderReviewQueue(status, needReview) {
+  return isProcessingMaterialStatus(status) || Boolean(needReview);
 }
 
 function getPendingMaterialRenderKey(item, prefix = 'pending', fallbackIndex = 0) {
@@ -178,7 +203,7 @@ function getRealtimeMaterialId(payload, fallbackTaskId = null, uploads = []) {
   return Number.isInteger(matchedId) && matchedId > 0 ? matchedId : null;
 }
 
-function buildPendingQueueMessage(status, currentLang, isLeader = false) {
+function buildPendingQueueMessage(status, currentLang, isLeader = false, needReview = true) {
   const normalized = normalizeMaterialStatus(status);
 
   if (normalized === 'UPLOADING') {
@@ -194,6 +219,12 @@ function buildPendingQueueMessage(status, currentLang, isLeader = false) {
   }
 
   if (normalized === 'ACTIVE') {
+    if (isLeader && !needReview) {
+      return currentLang === 'en'
+        ? 'AI finished processing. This material is now in the shared source list.'
+        : 'AI đã xử lý xong. Tài liệu đã vào danh sách tài liệu chung.';
+    }
+
     return isLeader
       ? (currentLang === 'en'
         ? 'AI finished processing. You can approve it for the shared source list now.'
@@ -292,10 +323,14 @@ function GroupWorkspacePage() {
   const navigate = useNavigateWithLoading();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
-  const { isDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const planEntitlements = usePlanEntitlements();
   const [planUpgradeModalOpen, setPlanUpgradeModalOpen] = useState(false);
   const [planUpgradeFeatureName, setPlanUpgradeFeatureName] = useState(undefined);
+  const [roadmapConfigEditOpen, setRoadmapConfigEditOpen] = useState(false);
+  const [roadmapConfigViewOpen, setRoadmapConfigViewOpen] = useState(false);
+  const [roadmapConfigDialogMode, setRoadmapConfigDialogMode] = useState('setup');
+  const [roadmapReloadToken, setRoadmapReloadToken] = useState(0);
   const { showError, showInfo, showSuccess, showWarning } = useToast();
   const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -321,6 +356,10 @@ function GroupWorkspacePage() {
     setSelectedMockTest(null);
   };
 
+  const bumpRoadmapReloadToken = useCallback(() => {
+    setRoadmapReloadToken((current) => current + 1);
+  }, []);
+
   // Create mode
   const isCreating = workspaceId === 'new';
   const studioPlanLockedActions = [
@@ -344,8 +383,10 @@ function GroupWorkspacePage() {
   const [selectedMockTest, setSelectedMockTest] = useState(null);
   const [sources, setSources] = useState([]);
   const [selectedSourceIds, setSelectedSourceIds] = useState([]);
+  const [selectedRoadmapSourceIds, setSelectedRoadmapSourceIds] = useState([]);
   const [createdItems, setCreatedItems] = useState([]);
   const [groupProfile, setGroupProfile] = useState(null);
+  const [groupRoadmapConfig, setGroupRoadmapConfig] = useState(null);
   const [groupProfileLoading, setGroupProfileLoading] = useState(false);
   const [hasLoadedGroupProfile, setHasLoadedGroupProfile] = useState(isCreating);
   const [groupLogs, setGroupLogs] = useState([]);
@@ -395,6 +436,53 @@ function GroupWorkspacePage() {
     if (String(currentWorkspace?.workspaceId) === String(workspaceId)) return currentWorkspace;
     return null;
   })();
+
+  const currentRoadmapId = useMemo(() => {
+    const candidates = [
+      currentGroupWorkspace?.roadmapId,
+      currentWorkspace?.roadmapId,
+      currentWorkspaceFromList?.roadmapId,
+      groupProfile?.roadmapId,
+      groupProfile?.data?.roadmapId,
+    ];
+
+    for (const candidate of candidates) {
+      const normalized = Number(candidate);
+      if (Number.isInteger(normalized) && normalized > 0) {
+        return normalized;
+      }
+    }
+
+    return null;
+  }, [
+    currentGroupWorkspace?.roadmapId,
+    currentWorkspace?.roadmapId,
+    currentWorkspaceFromList?.roadmapId,
+    groupProfile?.roadmapId,
+    groupProfile?.data?.roadmapId,
+  ]);
+
+  const groupProfileRoadmapConfig = useMemo(
+    () => extractRoadmapConfigValues(groupProfile || {}),
+    [groupProfile]
+  );
+
+  const effectiveGroupRoadmapConfig = useMemo(() => {
+    if (hasMeaningfulRoadmapConfig(groupRoadmapConfig || {})) {
+      return extractRoadmapConfigValues(groupRoadmapConfig);
+    }
+
+    if (hasMeaningfulRoadmapConfig(groupProfileRoadmapConfig)) {
+      return extractRoadmapConfigValues(groupProfileRoadmapConfig);
+    }
+
+    return {};
+  }, [groupProfileRoadmapConfig, groupRoadmapConfig]);
+
+  const hasGroupRoadmapConfig = useMemo(
+    () => hasMeaningfulRoadmapConfig(effectiveGroupRoadmapConfig),
+    [effectiveGroupRoadmapConfig]
+  );
 
   const currentGroupFromGroups = groups.find((g) => String(g.workspaceId) === String(workspaceId));
 
@@ -613,6 +701,25 @@ function GroupWorkspacePage() {
     }
   }, [resolvedWorkspaceId, isCreating]);
 
+  const loadGroupRoadmapConfig = useCallback(async () => {
+    if (!currentRoadmapId) {
+      setGroupRoadmapConfig(null);
+      return;
+    }
+
+    try {
+      const response = await getRoadmapStructureById(currentRoadmapId);
+      const payload = response?.data?.data || response?.data || response || null;
+      setGroupRoadmapConfig(extractRoadmapConfigValues(payload || {}));
+    } catch (error) {
+      const status = Number(error?.response?.status);
+      if (status !== 404) {
+        console.error('Failed to load group roadmap config:', error);
+      }
+      setGroupRoadmapConfig(null);
+    }
+  }, [currentRoadmapId]);
+
   const loadGroupLogs = useCallback(async () => {
     if (!resolvedWorkspaceId || isCreating) return;
     setGroupLogsLoading(true);
@@ -639,6 +746,10 @@ function GroupWorkspacePage() {
       }
     }
   }, [isCreating, isLeader, loadGroupLogs, loadGroupProfile, loadPendingReviewMaterials, resolvedWorkspaceId]);
+
+  useEffect(() => {
+    void loadGroupRoadmapConfig();
+  }, [loadGroupRoadmapConfig]);
 
   useEffect(() => {
     if (!resolvedWorkspaceId) {
@@ -746,7 +857,7 @@ function GroupWorkspacePage() {
     return () => { cancelled = true; };
   }, [profileUpdateGuardOpen, workspaceId, isCreating]);
 
-  const announceRealtimeMaterialStatus = useCallback((materialId, title, status) => {
+  const announceRealtimeMaterialStatus = useCallback((materialId, title, status, needReview = true) => {
     const normalizedMaterialId = Number(materialId);
     const normalizedStatus = normalizeMaterialStatus(status);
     if (!Number.isInteger(normalizedMaterialId) || normalizedMaterialId <= 0 || !normalizedStatus) return;
@@ -758,6 +869,15 @@ function GroupWorkspacePage() {
     const materialTitle = title || (currentLang === 'en' ? 'Material' : 'Tài liệu');
 
     if (normalizedStatus === 'ACTIVE') {
+      if (isLeader && !needReview) {
+        showSuccess(
+          currentLang === 'en'
+            ? `"${materialTitle}" passed AI checks and was added to the shared source list.`
+            : `"${materialTitle}" đã qua bước AI và được đưa thẳng vào danh sách tài liệu chung.`,
+        );
+        return;
+      }
+
       showInfo(
         currentLang === 'en'
           ? `"${materialTitle}" passed AI checks and is waiting for leader approval.`
@@ -791,7 +911,7 @@ function GroupWorkspacePage() {
           : `"${materialTitle}" đã bị loại khỏi group workspace này.`,
       );
     }
-  }, [currentLang, showError, showInfo, showWarning]);
+  }, [currentLang, isLeader, showError, showInfo, showSuccess, showWarning]);
 
   const handleRealtimeProgress = useCallback((progressPayload) => {
     const signal = normalizeRuntimeTaskSignal(progressPayload, { source: 'websocket' });
@@ -820,6 +940,18 @@ function GroupWorkspacePage() {
     if (!materialId && !taskId) return;
 
     const progressKey = String(materialId || taskId);
+    const existingSessionUpload = sessionUploadQueue.find((item) => (
+      String(item?.progressKey || item?.key || '') === progressKey
+      || Number(item?.materialId) === Number(materialId)
+      || String(item?.taskId || '') === taskId
+    ));
+    const resolvedNeedReview = resolveNeedReviewFlag(
+      progressPayload?.needReview,
+      progressPayload?.data?.needReview,
+      signal.processingObject?.needReview,
+      existingSessionUpload?.needReview,
+      !isLeader,
+    );
     const nextDisplayPercent = rawPercent > 0 ? mapProcessingProgressToDisplay(rawPercent) : 28;
     materialProgress.setProgress(progressKey, nextDisplayPercent);
 
@@ -835,13 +967,18 @@ function GroupWorkspacePage() {
         progressKey: String(materialId || item.progressKey || item.key),
         taskId: taskId || item.taskId,
         status: status || item.status || 'PROCESSING',
-        message: buildPendingQueueMessage(status || item.status || 'PROCESSING', currentLang, isLeader),
+        needReview: resolvedNeedReview,
+        message: buildPendingQueueMessage(status || item.status || 'PROCESSING', currentLang, isLeader, resolvedNeedReview),
       }),
     );
 
     if (materialId && isTerminalMaterialStatus(status)) {
       materialProgress.setProgress(String(materialId), 100);
-      announceRealtimeMaterialStatus(materialId, progressPayload?.title ?? progressPayload?.data?.title, status);
+      announceRealtimeMaterialStatus(materialId, progressPayload?.title ?? progressPayload?.data?.title, status, resolvedNeedReview);
+      if (isLeader && !shouldTrackInLeaderReviewQueue(status, resolvedNeedReview)) {
+        removeSessionUpload((item) => Number(item?.materialId) === Number(materialId) || String(item?.taskId || '') === taskId);
+        materialProgress.clearProgress(String(materialId));
+      }
       scheduleMaterialViewRefresh(materialId);
     }
   }, [
@@ -850,6 +987,7 @@ function GroupWorkspacePage() {
     isLeader,
     materialProgress,
     patchSessionUpload,
+    removeSessionUpload,
     scheduleMaterialViewRefresh,
     sessionUploadQueue,
   ]);
@@ -879,6 +1017,17 @@ function GroupWorkspacePage() {
     }
 
     const materialTitle = materialPayload?.title ?? materialPayload?.name ?? null;
+    const existingSessionUpload = sessionUploadQueue.find((item) => (
+      Number(item?.materialId) === Number(materialId)
+      || String(item?.taskId || '') === taskId
+    ));
+    const resolvedNeedReview = resolveNeedReviewFlag(
+      materialPayload?.needReview,
+      materialPayload?.data?.needReview,
+      signal.processingObject?.needReview,
+      existingSessionUpload?.needReview,
+      !isLeader,
+    );
     materialProgress.setProgress(String(materialId), isTerminalMaterialStatus(status) ? 100 : 28);
 
     patchSessionUpload(
@@ -891,8 +1040,8 @@ function GroupWorkspacePage() {
         name: materialTitle ?? item.name,
         title: materialTitle ?? item.title,
         uploadedAt: materialPayload?.uploadedAt ?? item.uploadedAt,
-        needReview: materialPayload?.needReview ?? item.needReview ?? true,
-        message: buildPendingQueueMessage(status || item.status || 'PROCESSING', currentLang, isLeader),
+        needReview: resolvedNeedReview,
+        message: buildPendingQueueMessage(status || item.status || 'PROCESSING', currentLang, isLeader, resolvedNeedReview),
       }),
     );
 
@@ -904,7 +1053,11 @@ function GroupWorkspacePage() {
     }
 
     if (isTerminalMaterialStatus(status)) {
-      announceRealtimeMaterialStatus(materialId, materialTitle, status);
+      announceRealtimeMaterialStatus(materialId, materialTitle, status, resolvedNeedReview);
+      if (isLeader && !shouldTrackInLeaderReviewQueue(status, resolvedNeedReview)) {
+        removeSessionUpload((item) => Number(item?.materialId) === Number(materialId) || String(item?.taskId || '') === taskId);
+        materialProgress.clearProgress(String(materialId));
+      }
       scheduleMaterialViewRefresh(materialId);
       return;
     }
@@ -1066,10 +1219,10 @@ function GroupWorkspacePage() {
         title: file.name,
         type: inferMaterialType(file),
         status: 'UPLOADING',
-        needReview: true,
+        needReview: !isLeader,
         uploadedAt: new Date().toISOString(),
         source: 'local',
-        message: buildPendingQueueMessage('UPLOADING', currentLang, isLeader),
+        message: buildPendingQueueMessage('UPLOADING', currentLang, isLeader, !isLeader),
       };
     });
 
@@ -1100,13 +1253,17 @@ function GroupWorkspacePage() {
 
         patchSessionUpload(
           (item) => item.key === draft.key,
-          {
-            key: `material:${materialId}`,
-            progressKey: String(materialId),
-            materialId,
-            taskId: response?.websocketTaskId ?? response?.taskId ?? null,
-            status: normalizedStatus,
-            message: response?.message || buildPendingQueueMessage(normalizedStatus, currentLang, isLeader),
+          () => {
+            const resolvedNeedReview = resolveNeedReviewFlag(response?.needReview, draft.needReview, !isLeader);
+            return {
+              key: `material:${materialId}`,
+              progressKey: String(materialId),
+              materialId,
+              taskId: response?.websocketTaskId ?? response?.taskId ?? null,
+              status: normalizedStatus,
+              needReview: resolvedNeedReview,
+              message: response?.message || buildPendingQueueMessage(normalizedStatus, currentLang, isLeader, resolvedNeedReview),
+            };
           },
         );
 
@@ -1257,7 +1414,7 @@ function GroupWorkspacePage() {
         progress: materialProgress.getProgress(progressKey),
         source: 'server',
         ownerLabel: currentLang === 'en' ? 'Official group review queue' : 'Hàng chờ duyệt chính thức của group',
-        message: buildPendingQueueMessage(item?.status, currentLang, true),
+        message: buildPendingQueueMessage(item?.status, currentLang, true, item?.needReview !== false),
         canApprove: isReviewableMaterialStatus(item?.status),
         canReject: !isProcessingMaterialStatus(item?.status) && normalizeMaterialStatus(item?.status) !== 'ERROR',
       };
@@ -1272,6 +1429,10 @@ function GroupWorkspacePage() {
 
     const localOnlyItems = [];
     sessionUploadQueue.forEach((item, index) => {
+      if (isLeader && !shouldTrackInLeaderReviewQueue(item?.status, item?.needReview)) {
+        return;
+      }
+
       const materialId = Number(item?.materialId ?? 0);
       const materialIdKey = Number.isInteger(materialId) && materialId > 0 ? String(materialId) : null;
       const progressKey = String(item?.progressKey || materialIdKey || item?.key || '');
@@ -1284,7 +1445,7 @@ function GroupWorkspacePage() {
         progress: localProgress,
         source: item?.source || 'local',
         ownerLabel: currentLang === 'en' ? 'Submitted from this session' : 'Được gửi từ phiên hiện tại',
-        message: item?.message || buildPendingQueueMessage(item?.status, currentLang, isLeader),
+        message: item?.message || buildPendingQueueMessage(item?.status, currentLang, isLeader, item?.needReview),
         canApprove: false,
         canReject: false,
       };
@@ -1386,6 +1547,42 @@ function GroupWorkspacePage() {
     setProfileConfigOpen(true);
   }, [profileEditLocked]);
 
+  const resetCurrentRoadmapStructure = useCallback(async () => {
+    const roadmapId = currentRoadmapId;
+    if (!roadmapId) return;
+
+    try {
+      const roadmapResponse = await getRoadmapStructureById(roadmapId);
+      const roadmapData = roadmapResponse?.data?.data || roadmapResponse?.data || roadmapResponse || null;
+      const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
+
+      for (const phase of phases) {
+        const knowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+        for (const knowledge of knowledges) {
+          const knowledgeId = Number(knowledge?.knowledgeId);
+          const phaseId = Number(phase?.phaseId);
+
+          if (!Number.isInteger(knowledgeId) || knowledgeId <= 0 || !Number.isInteger(phaseId) || phaseId <= 0) {
+            continue;
+          }
+
+          await deleteRoadmapKnowledgeById(knowledgeId, phaseId);
+        }
+      }
+
+      for (const phase of phases) {
+        const phaseId = Number(phase?.phaseId);
+        if (!Number.isInteger(phaseId) || phaseId <= 0) continue;
+        await deleteRoadmapPhaseById(phaseId, roadmapId);
+      }
+    } catch (roadmapError) {
+      const status = Number(roadmapError?.response?.status);
+      if (status !== 404) {
+        console.error('Failed to reset roadmap structure for group profile update:', roadmapError);
+      }
+    }
+  }, [currentRoadmapId]);
+
   // Xóa toàn bộ dữ liệu workspace để cho phép cập nhật onboarding
   const handleDeleteMaterialsForGroupProfileUpdate = useCallback(async () => {
     if (!workspaceId || isResettingWorkspaceForProfileUpdate) return;
@@ -1417,36 +1614,7 @@ function GroupWorkspacePage() {
       }
 
       // 3. Xóa roadmap structure nếu có
-      try {
-        const roadmapId = groupProfile?.roadmapId
-          || groupProfile?.data?.roadmapId
-          || null;
-        if (roadmapId) {
-          const { getRoadmapStructureById, deleteRoadmapKnowledgeById, deleteRoadmapPhaseById } = await import('@/api/RoadmapAPI');
-          const roadmapResponse = await getRoadmapStructureById(roadmapId);
-          const roadmapData = roadmapResponse?.data?.data || roadmapResponse?.data || roadmapResponse || null;
-          const phases = Array.isArray(roadmapData?.phases) ? roadmapData.phases : [];
-          for (const phase of phases) {
-            const knowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
-            for (const knowledge of knowledges) {
-              const knowledgeId = Number(knowledge?.knowledgeId);
-              const phaseId = Number(phase?.phaseId);
-              if (!Number.isInteger(knowledgeId) || knowledgeId <= 0 || !Number.isInteger(phaseId) || phaseId <= 0) continue;
-              await deleteRoadmapKnowledgeById(knowledgeId, phaseId);
-            }
-          }
-          for (const phase of phases) {
-            const phaseId = Number(phase?.phaseId);
-            if (!Number.isInteger(phaseId) || phaseId <= 0) continue;
-            await deleteRoadmapPhaseById(phaseId, roadmapId);
-          }
-        }
-      } catch (roadmapError) {
-        const status = Number(roadmapError?.response?.status);
-        if (status !== 404) {
-          console.error('Failed to reset roadmap structure for group profile update:', roadmapError);
-        }
-      }
+      await resetCurrentRoadmapStructure();
 
       // 4. Xóa tài liệu
       const materialIds = sources
@@ -1459,6 +1627,7 @@ function GroupWorkspacePage() {
 
       await fetchWorkspaceDetail(workspaceId).catch(() => {});
       await loadGroupProfile();
+      bumpRoadmapReloadToken();
 
       setProfileUpdateGuardOpen(false);
       setProfileConfigOpen(true);
@@ -1480,10 +1649,11 @@ function GroupWorkspacePage() {
   }, [
     workspaceId,
     isResettingWorkspaceForProfileUpdate,
-    groupProfile,
     sources,
     fetchWorkspaceDetail,
     loadGroupProfile,
+    bumpRoadmapReloadToken,
+    resetCurrentRoadmapStructure,
     showSuccess,
     showError,
     currentLang,
@@ -1530,13 +1700,181 @@ function GroupWorkspacePage() {
       return;
     }
     try {
-      await createRoadmap({ workspaceId, ...data, mode: 'ai', name: data.name || 'Roadmap', goal: data.goal || data.description || '', description: data.goal || data.description || '' });
+      const result = await createRoadmap({ workspaceId, ...data, mode: 'ai', name: data.name || 'Roadmap', goal: data.goal || data.description || '', description: data.goal || data.description || '' });
+      const hasRoadmapConfig = Boolean(
+        data?.knowledgeLoad
+        || data?.adaptationMode
+        || data?.roadmapSpeedMode
+        || Number(data?.estimatedTotalDays) > 0
+        || Number(data?.recommendedMinutesPerDay || data?.estimatedMinutesPerDay) > 0
+      );
+      // After roadmap creation, save config if provided
+      const roadmapId = result?.data?.data?.roadmapId || result?.data?.roadmapId;
+      if (roadmapId && hasRoadmapConfig) {
+        try {
+          await updateGroupRoadmapConfig(roadmapId, data);
+        } catch (configErr) {
+          console.warn('Lưu config roadmap thất bại:', configErr);
+        }
+      }
+      await fetchWorkspaceDetail(workspaceId).catch(() => {});
+      await loadGroupProfile();
       setActiveView('roadmap');
     } catch (err) {
       console.error('Tạo roadmap thất bại:', err);
       throw err;
     }
-  }, [workspaceId, canCreateContent, currentLang, showInfo, planEntitlements.canCreateRoadmap]);
+  }, [workspaceId, canCreateContent, currentLang, fetchWorkspaceDetail, loadGroupProfile, showInfo, planEntitlements.canCreateRoadmap]);
+
+  const [roadmapConfigInitialValues, setRoadmapConfigInitialValues] = useState({});
+
+  const openRoadmapConfigDialog = useCallback((mode = 'edit') => {
+    setRoadmapConfigDialogMode(mode);
+    setRoadmapConfigInitialValues(effectiveGroupRoadmapConfig);
+    setRoadmapConfigEditOpen(true);
+  }, [effectiveGroupRoadmapConfig]);
+
+  const handleOpenRoadmapConfigSetup = useCallback(() => {
+    openRoadmapConfigDialog('setup');
+  }, [openRoadmapConfigDialog]);
+
+  const handleOpenRoadmapConfigEdit = useCallback(() => {
+    openRoadmapConfigDialog(hasGroupRoadmapConfig ? 'edit' : 'setup');
+  }, [hasGroupRoadmapConfig, openRoadmapConfigDialog]);
+
+  const handleOpenRoadmapConfigView = useCallback(() => {
+    setRoadmapConfigViewOpen(true);
+  }, []);
+
+  const roadmapSelectableSources = useMemo(
+    () => sources.filter((source) => isReviewableMaterialStatus(source?.status)),
+    [sources],
+  );
+
+  useEffect(() => {
+    const candidateIds = roadmapSelectableSources
+      .map((source) => Number(source?.id))
+      .filter((materialId) => Number.isInteger(materialId) && materialId > 0);
+
+    setSelectedRoadmapSourceIds((current) => {
+      const nextSelectedIds = current.filter((materialId) => candidateIds.includes(Number(materialId)));
+      if (nextSelectedIds.length > 0 || candidateIds.length === 0) {
+        return nextSelectedIds;
+      }
+      return candidateIds;
+    });
+  }, [roadmapSelectableSources]);
+
+  const handleToggleRoadmapSourceSelection = useCallback((sourceId) => {
+    const normalizedSourceId = Number(sourceId);
+    if (!Number.isInteger(normalizedSourceId) || normalizedSourceId <= 0) return;
+
+    setSelectedRoadmapSourceIds((current) => (
+      current.includes(normalizedSourceId)
+        ? current.filter((materialId) => materialId !== normalizedSourceId)
+        : [...current, normalizedSourceId]
+    ));
+  }, []);
+
+  const handleToggleAllRoadmapSourceSelections = useCallback((shouldSelectAll) => {
+    if (!shouldSelectAll) {
+      setSelectedRoadmapSourceIds([]);
+      return;
+    }
+
+    setSelectedRoadmapSourceIds(
+      roadmapSelectableSources
+        .map((source) => Number(source?.id))
+        .filter((materialId) => Number.isInteger(materialId) && materialId > 0),
+    );
+  }, [roadmapSelectableSources]);
+
+  const resolveGroupRoadmapMaterialIds = useCallback(() => {
+    const reviewableMaterialIds = roadmapSelectableSources
+      .map((source) => Number(source?.id))
+      .filter((materialId) => Number.isInteger(materialId) && materialId > 0);
+
+    return selectedRoadmapSourceIds
+      .filter((materialId) => reviewableMaterialIds.includes(Number(materialId)))
+      .map((materialId) => Number(materialId))
+      .filter((materialId, index, array) => Number.isInteger(materialId) && materialId > 0 && array.indexOf(materialId) === index);
+  }, [roadmapSelectableSources, selectedRoadmapSourceIds]);
+
+  const handleCreateGroupRoadmapPhases = useCallback(async () => {
+    if (!canCreateContent) {
+      showInfo(currentLang === 'en' ? 'Member cannot create roadmap phases.' : 'Member không có quyền tạo phase roadmap.');
+      return;
+    }
+
+    if (!hasGroupRoadmapConfig) {
+      handleOpenRoadmapConfigSetup();
+      return;
+    }
+
+    const roadmapId = currentRoadmapId;
+    if (!roadmapId) {
+      showError(currentLang === 'en' ? 'No roadmap config found for this group yet.' : 'Nhóm này chưa có cấu hình roadmap hợp lệ.');
+      return;
+    }
+
+    const materialIds = resolveGroupRoadmapMaterialIds();
+    if (materialIds.length === 0) {
+      showInfo(currentLang === 'en' ? 'Please select at least one material before generating phases.' : 'Vui lòng chọn ít nhất 1 tài liệu trước khi tạo phase.');
+      return;
+    }
+
+    try {
+      await generateRoadmapPhases({ roadmapId, materialIds });
+      setActiveView('roadmap');
+      bumpRoadmapReloadToken();
+      showSuccess(
+        currentLang === 'en'
+          ? 'Roadmap phase generation has started.'
+          : 'Đã gửi yêu cầu tạo phase cho roadmap.'
+      );
+    } catch (error) {
+      showError(error?.message || (currentLang === 'en' ? 'Failed to generate roadmap phases.' : 'Không thể tạo phase roadmap.'));
+    }
+  }, [
+    canCreateContent,
+    currentLang,
+    currentRoadmapId,
+    handleOpenRoadmapConfigSetup,
+    hasGroupRoadmapConfig,
+    resolveGroupRoadmapMaterialIds,
+    showError,
+    showInfo,
+    showSuccess,
+    bumpRoadmapReloadToken,
+  ]);
+
+  const handleSaveRoadmapConfig = useCallback(async (values) => {
+    if (!workspaceId) throw new Error('No workspace found');
+
+    if (roadmapConfigDialogMode === 'setup') {
+      await setupGroupRoadmapConfig(workspaceId, values);
+    } else {
+      const roadmapId = currentRoadmapId;
+      if (!roadmapId) throw new Error('No roadmap found');
+      await updateGroupRoadmapConfig(roadmapId, values);
+      await resetCurrentRoadmapStructure();
+    }
+
+    await fetchWorkspaceDetail(workspaceId).catch(() => {});
+    await loadGroupProfile();
+    await loadGroupRoadmapConfig();
+    bumpRoadmapReloadToken();
+    setActiveView('roadmap');
+  }, [
+    roadmapConfigDialogMode,
+    workspaceId,
+    currentRoadmapId,
+    resetCurrentRoadmapStructure,
+    fetchWorkspaceDetail,
+    loadGroupProfile,
+    loadGroupRoadmapConfig,
+    bumpRoadmapReloadToken,
+  ]);
 
   const handleCreateMockTest = useCallback(async () => {
     if (!canCreateContent) {
@@ -1575,18 +1913,18 @@ function GroupWorkspacePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isSettingsOpen]);
 
-  // ——— Section titles ———
-  const sectionTitles = {
-    dashboard: { vi: 'Dashboard', en: 'Dashboard', icon: null },
-    members: { vi: 'Quản lý thành viên', en: 'Member Management', icon: Users },
-    documents: { vi: 'Quản lý tài liệu', en: 'Document Management', icon: FolderOpen },
-    flashcard: { vi: 'Thẻ ghi nhớ', en: 'Flashcard', icon: BookOpen },
-    quiz: { vi: 'Quiz', en: 'Quiz', icon: PenLine },
-    roadmap: { vi: 'Roadmap', en: 'Roadmap', icon: MapIcon },
-    mockTest: { vi: 'Mock Test', en: 'Mock Test', icon: ClipboardList },
-    notifications: { vi: 'Hoạt động nhóm', en: 'Group Activity', icon: Bell },
-    challenge: { vi: 'Challenge', en: 'Challenge', icon: Swords },
-    settings: { vi: 'Cài đặt', en: 'Settings', icon: Settings },
+  const primaryDashboardSectionKey = isLeader ? 'dashboard' : 'personalDashboard';
+  const sectionLabels = {
+    dashboard: t('groupWorkspace.studio.systemDashboard'),
+    personalDashboard: t('groupWorkspace.studio.personalDashboard'),
+    documents: t('groupWorkspace.studio.documents'),
+    roadmap: t('workspace.studio.actions.roadmap'),
+    quiz: t('workspace.studio.actions.quiz'),
+    flashcard: t('workspace.studio.actions.flashcard'),
+    mockTest: t('workspace.studio.actions.mockTest'),
+    notifications: t('groupWorkspace.studio.activity'),
+    members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
+    settings: t('workspaceSettings'),
   };
 
   const resolvedGroupData = {
@@ -1635,15 +1973,17 @@ function GroupWorkspacePage() {
       ?? null,
   };
   const groupStudioActions = [
-    ...(isLeader ? [{ key: 'dashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: currentLang === 'en' ? 'System dashboard' : 'Dashboard hệ thống', disabled: false }] : [{ key: 'personalDashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: currentLang === 'en' ? 'Personal dashboard' : 'Dashboard cá nhân', disabled: false }]),
-    { key: 'documents', icon: FolderOpen, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-500/20', label: sectionTitles?.documents?.[currentLang] || 'Documents' },
-    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionTitles?.roadmap?.[currentLang] || 'Roadmap' },
-    { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionTitles?.quiz?.[currentLang] || 'Quiz' },
-    { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionTitles?.flashcard?.[currentLang] || 'Flashcard' },
-    { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionTitles?.mockTest?.[currentLang] || 'Mock Test' },
-    { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionTitles?.notifications?.[currentLang] || 'Notifications', disabled: false },
-    { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: isLeader ? (currentLang === 'en' ? 'Member management' : 'Quản lý thành viên') : (currentLang === 'en' ? 'Members status' : 'Tình trạng thành viên'), disabled: isMember },
-    { key: 'settings', icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20', label: sectionTitles?.settings?.[currentLang] || 'Settings', disabled: !isLeader || !canManageGroup }
+    ...(isLeader
+      ? [{ key: 'dashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.dashboard, disabled: false }]
+      : [{ key: 'personalDashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.personalDashboard, disabled: false }]),
+    { key: 'documents', icon: FolderOpen, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-500/20', label: sectionLabels.documents },
+    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.roadmap },
+    { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionLabels.quiz },
+    { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard },
+    { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest },
+    { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionLabels.notifications, disabled: false },
+    { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: sectionLabels.members, disabled: isMember },
+    { key: 'settings', icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20', label: sectionLabels.settings, disabled: !isLeader || !canManageGroup }
   ];
 
   const renderActivityFeed = (compact = false) => (
@@ -1862,7 +2202,7 @@ function GroupWorkspacePage() {
                   {currentLang === 'en' ? 'Rules and norms' : 'Nội quy và cách vận hành'}
                 </p>
                 <p className={`mt-2 text-sm leading-7 whitespace-pre-line ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                  {resolvedGroupData.rules || (currentLang === 'en' ? 'No additional rules yet.' : 'Chưa có nội quy bổ sung.')}
+                  {resolvedGroupData.rules || t('groupWorkspace.profile.noRules')}
                 </p>
               </div>
 
@@ -1909,11 +2249,11 @@ function GroupWorkspacePage() {
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {membersLoading ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'}`}>
-                {currentLang === 'en' ? 'Loading members...' : 'Đang tải danh sách thành viên...'}
+                {t('groupWorkspace.members.loading')}
               </div>
             ) : members.length === 0 ? (
               <div className={`rounded-[22px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'}`}>
-                {currentLang === 'en' ? 'No member data yet.' : 'Chưa có dữ liệu thành viên.'}
+                {t('groupWorkspace.members.empty')}
               </div>
             ) : (
               members.slice(0, 6).map((member) => (
@@ -1968,6 +2308,7 @@ function GroupWorkspacePage() {
         onCreateMockTest={handleCreateMockTest}
         onBack={handleBackFromForm}
         workspaceId={workspaceId}
+        roadmapReloadToken={roadmapReloadToken}
         selectedQuiz={selectedQuiz}
         onViewQuiz={handleViewQuiz}
         onEditQuiz={handleEditQuiz}
@@ -1980,6 +2321,27 @@ function GroupWorkspacePage() {
         onEditMockTest={handleEditMockTest}
         onSaveMockTest={handleSaveMockTest}
         planEntitlements={planEntitlements}
+        onCreateRoadmapPhases={handleCreateGroupRoadmapPhases}
+        roadmapSelectableMaterials={hasGroupRoadmapConfig ? roadmapSelectableSources : []}
+        selectedRoadmapMaterialIds={hasGroupRoadmapConfig ? selectedRoadmapSourceIds : []}
+        onToggleRoadmapMaterial={hasGroupRoadmapConfig ? handleToggleRoadmapSourceSelection : undefined}
+        onToggleAllRoadmapMaterials={hasGroupRoadmapConfig ? handleToggleAllRoadmapSourceSelections : undefined}
+        onViewRoadmapConfig={hasGroupRoadmapConfig ? handleOpenRoadmapConfigView : undefined}
+        onEditRoadmapConfig={isLeader && hasGroupRoadmapConfig ? handleOpenRoadmapConfigEdit : undefined}
+        roadmapEmptyStateTitle={!hasGroupRoadmapConfig
+          ? t('workspace.roadmap.groupSetupPromptTitle', currentLang === 'en' ? 'Set up a roadmap for your group' : 'Bạn hãy thiết lập lộ trình cho nhóm')
+          : ''}
+        roadmapEmptyStateDescription={!hasGroupRoadmapConfig
+          ? t(
+            'workspace.roadmap.groupSetupPromptDescription',
+            currentLang === 'en'
+              ? 'Set the knowledge amount, pacing, total days, and daily study time first so the roadmap matches the group learning plan.'
+              : 'Hãy thiết lập lượng kiến thức, nhịp học, số ngày dự kiến và số phút học mỗi ngày để roadmap bám đúng kế hoạch học của nhóm.'
+          )
+          : ''}
+        roadmapEmptyStateActionLabel={!hasGroupRoadmapConfig
+          ? t('workspace.roadmap.setupButton', currentLang === 'en' ? 'Set up roadmap' : 'Thiết lập lộ trình')
+          : ''}
       />
     </div>
   );
@@ -2117,18 +2479,16 @@ function GroupWorkspacePage() {
                 <Swords className={`h-10 w-10 ${isDarkMode ? 'text-orange-300' : 'text-orange-500'}`} />
               </div>
               <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {currentLang === 'en' ? 'Challenge Arena' : 'Đấu trường Challenge'}
+                {t('groupWorkspace.challenge.title')}
               </h3>
               <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                {currentLang === 'en'
-                  ? 'Compete with your group members in real-time quizzes and challenges. This feature is coming soon!'
-                  : 'Thi đấu cùng các thành viên trong nhóm qua các bài quiz và challenge theo thời gian thực. Tính năng sắp ra mắt!'}
+                {t('groupWorkspace.challenge.description')}
               </p>
               <div className={`mx-auto mt-6 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold ${
                 isDarkMode ? 'border-orange-400/20 bg-orange-400/10 text-orange-200' : 'border-orange-200 bg-orange-50 text-orange-700'
               }`}>
                 <Sparkles className="h-4 w-4" />
-                {currentLang === 'en' ? 'Coming Soon' : 'Sắp ra mắt'}
+                {t('groupWorkspace.challenge.badge')}
               </div>
             </div>
           </div>
@@ -2165,13 +2525,44 @@ function GroupWorkspacePage() {
     }
   }, [location.pathname, location.search, location.state, navigate, shouldForceProfileSetup]);
 
+  const headerActionClass = `rounded-full h-9 px-4 flex items-center gap-2 ${
+    isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-900' : 'border-gray-200'
+  }`;
+
   const settingsMenu = (
-    <div ref={settingsRef} className="relative z-[140]">
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        type="button"
+        onClick={toggleLanguage}
+        className={`${headerActionClass} min-w-[4.25rem] justify-center`}
+        title={t('common.language')}
+      >
+        <Globe className="h-4 w-4 shrink-0" />
+        <span className="hidden min-w-[1.75rem] uppercase sm:inline">
+          {currentLang === 'vi' ? 'VI' : 'EN'}
+        </span>
+      </Button>
+
+      <Button
+        variant="outline"
+        type="button"
+        onClick={toggleDarkMode}
+        className={`${headerActionClass} min-w-[6rem] justify-center`}
+        title={t('common.theme')}
+      >
+        {isDarkMode ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
+        <span className="hidden min-w-[3.25rem] md:inline">
+          {isDarkMode ? t('common.dark') : t('common.light')}
+        </span>
+      </Button>
+
+      <div ref={settingsRef} className="relative z-[140]">
         <Button
             variant="outline"
             type="button"
             onClick={() => setIsSettingsOpen((prev) => !prev)}
-            className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-gray-200"}`}
+            className={headerActionClass}
         >
             <Settings className="w-4 h-4" />
             <span className={fontClass}>{t("workspace.header.settings")}</span>
@@ -2181,12 +2572,12 @@ function GroupWorkspacePage() {
             <div className={`absolute right-0 mt-2 w-56 rounded-xl border shadow-xl ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"} py-2`}>
                 <button
                     type="button"
-                    onClick={() => { setActiveSection("dashboard"); setIsSettingsOpen(false); }}
+                    onClick={() => { setActiveSection(primaryDashboardSectionKey); setIsSettingsOpen(false); }}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-200" : "hover:bg-gray-50 text-gray-700"}`}
                 >
                     <span className={`flex items-center gap-2 ${fontClass}`}>
                         <Globe className="w-4 h-4" />
-                        {sectionTitles?.dashboard?.[currentLang] || t("Dashboard", "Dashboard")}
+                        {sectionLabels[primaryDashboardSectionKey]}
                     </span>
                 </button>
                 {isLeader && (
@@ -2197,7 +2588,7 @@ function GroupWorkspacePage() {
                 >
                     <span className={`flex items-center gap-2 ${fontClass}`}>
                         <Users className="w-4 h-4" />
-                        {sectionTitles?.members?.[currentLang] || t("Members", "Members")}
+                        {sectionLabels.members}
                     </span>
                 </button>
                 )}
@@ -2227,6 +2618,7 @@ function GroupWorkspacePage() {
                 </button>
             </div>
         )}
+      </div>
     </div>
   );
 
@@ -2243,11 +2635,9 @@ function GroupWorkspacePage() {
         }`}>
           {renderInlineSpinner('h-10 w-10 text-cyan-500')}
           <div className="text-center">
-            <p className="text-lg font-semibold">{currentLang === 'en' ? 'Preparing your group workspace' : 'Dang khoi tao group workspace'}</p>
+            <p className="text-lg font-semibold">{t('groupWorkspace.bootstrap.title')}</p>
             <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {currentLang === 'en'
-                ? 'The setup wizard will open as soon as the draft workspace is ready.'
-                : 'Wizard setup se mo ngay khi workspace nhap duoc tao xong.'}
+              {t('groupWorkspace.bootstrap.description')}
             </p>
           </div>
         </div>
@@ -2261,8 +2651,7 @@ function GroupWorkspacePage() {
       <WorkspaceHeader
           workspaceTitle={currentGroupName}
           workspaceName={currentGroupName}
-          settingsMenu={<></>}
-          userProfileComponent={<UserProfilePopover align="end" />}
+          settingsMenu={settingsMenu}
           wsConnected={wsConnected}
           isDarkMode={isDarkMode}
       />
@@ -2278,7 +2667,7 @@ function GroupWorkspacePage() {
                 {currentLang === 'en' ? 'Documents' : 'Tài liệu'}
               </Button>
               <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => setMobilePanel('studio')}>
-                {currentLang === 'en' ? 'Studio' : 'Studio'}
+                {t('workspace.studio.title')}
               </Button>
               <span className={`ml-auto text-[11px] font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentRoleKey}</span>
             </div>
@@ -2384,6 +2773,27 @@ function GroupWorkspacePage() {
         featureName={planUpgradeFeatureName}
         isDarkMode={isDarkMode}
       />
+
+      <React.Suspense fallback={null}>
+        <LazyRoadmapConfigEditDialog
+          open={roadmapConfigEditOpen}
+          onOpenChange={setRoadmapConfigEditOpen}
+          isDarkMode={isDarkMode}
+          initialValues={roadmapConfigInitialValues}
+          mode={roadmapConfigDialogMode}
+          hasExistingRoadmap={Boolean(hasGroupRoadmapConfig && currentRoadmapId)}
+          onSave={handleSaveRoadmapConfig}
+        />
+      </React.Suspense>
+
+      <React.Suspense fallback={null}>
+        <LazyRoadmapConfigSummaryDialog
+          open={roadmapConfigViewOpen}
+          onOpenChange={setRoadmapConfigViewOpen}
+          isDarkMode={isDarkMode}
+          values={effectiveGroupRoadmapConfig}
+        />
+      </React.Suspense>
 
     </div>
   );

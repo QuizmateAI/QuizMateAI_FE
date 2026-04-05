@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
+import { BookOpen, BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, Compass, Eye, FileText, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Pencil, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
@@ -145,6 +145,38 @@ function buildLayout(phases, phaseOffsets, knowledgeOffsets) {
   return { phaseLayouts, connections };
 }
 
+function normalizeEmptyStateMaterialId(material) {
+  const materialId = Number(material?.id ?? material?.materialId ?? 0);
+  return Number.isInteger(materialId) && materialId > 0 ? materialId : null;
+}
+
+function formatEmptyStateMaterialType(material) {
+  const rawType = String(material?.type ?? material?.materialType ?? "").trim();
+  if (!rawType) return "FILE";
+
+  const normalizedType = rawType.toLowerCase();
+  if (normalizedType.includes("pdf")) return "PDF";
+  if (normalizedType.includes("word") || normalizedType.includes("doc")) return "DOCX";
+  if (normalizedType.includes("spreadsheet") || normalizedType.includes("excel") || normalizedType.includes("xls")) return "XLSX";
+  if (normalizedType.includes("presentation") || normalizedType.includes("powerpoint") || normalizedType.includes("ppt")) return "PPTX";
+  if (normalizedType.includes("image")) return "IMAGE";
+  if (normalizedType.includes("audio")) return "AUDIO";
+  if (normalizedType.includes("video")) return "VIDEO";
+  return rawType.toUpperCase();
+}
+
+function formatEmptyStateMaterialDate(value, language) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat(language === "en" ? "en-GB" : "vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 function RoadmapCanvasView({
   isDarkMode = false,
   workspaceId = null,
@@ -172,9 +204,19 @@ function RoadmapCanvasView({
   selectedPhaseId = null,
   disableCreate = false,
   hideCreateButton = false,
+  onEmptyStateAction,
+  emptyStateTitle = "",
+  emptyStateDescription = "",
+  emptyStateActionLabel = "",
   progressTracking = null,
   onShareRoadmap,
   onShareQuiz,
+  onViewRoadmapConfig,
+  onEditRoadmapConfig,
+  emptyStateMaterials = [],
+  selectedEmptyStateMaterialIds = [],
+  onToggleEmptyStateMaterial,
+  onToggleAllEmptyStateMaterials,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -195,6 +237,29 @@ function RoadmapCanvasView({
   const [transform, setTransform] = useState({ x: -CENTER_X + 520, y: -CENTER_Y + 390, scale: 1 });
   const hasLoadedRoadmapRef = useRef(false);
   const roadmapRef = useRef(null);
+  const normalizedEmptyStateMaterialIds = useMemo(
+    () => selectedEmptyStateMaterialIds
+      .map((materialId) => Number(materialId))
+      .filter((materialId, index, array) => Number.isInteger(materialId) && materialId > 0 && array.indexOf(materialId) === index),
+    [selectedEmptyStateMaterialIds],
+  );
+  const selectableEmptyStateMaterials = useMemo(
+    () => (Array.isArray(emptyStateMaterials) ? emptyStateMaterials : [])
+      .map((material, index) => {
+        const materialId = normalizeEmptyStateMaterialId(material);
+        return materialId
+          ? { ...material, __materialId: materialId, __renderKey: `empty-state-material:${materialId}` }
+          : { ...material, __materialId: null, __renderKey: `empty-state-material:fallback:${index}` };
+      })
+      .filter((material) => Number.isInteger(material.__materialId) && material.__materialId > 0),
+    [emptyStateMaterials],
+  );
+  const hasEmptyStateMaterialPicker = selectableEmptyStateMaterials.length > 0
+    && typeof onToggleEmptyStateMaterial === "function";
+  const areAllEmptyStateMaterialsSelected = hasEmptyStateMaterialPicker
+    && selectableEmptyStateMaterials.every((material) => normalizedEmptyStateMaterialIds.includes(material.__materialId));
+  const shouldDisableEmptyStateAction = disableCreate
+    || (hasEmptyStateMaterialPicker && normalizedEmptyStateMaterialIds.length === 0);
 
   useEffect(() => {
     roadmapRef.current = roadmap;
@@ -372,6 +437,33 @@ function RoadmapCanvasView({
     quiz: t("workspace.roadmap.canvas.quiz"),
     flashcard: t("workspace.roadmap.canvas.flashcard"),
   }), [t]);
+
+  const renderRoadmapConfigActionButtons = useCallback((buttonClassName = "") => (
+    <>
+      {onViewRoadmapConfig ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onViewRoadmapConfig}
+          className={buttonClassName || `rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+        >
+          <Eye className="mr-2 h-4 w-4" />
+          <span className={fontClass}>{t("workspace.roadmap.viewConfig", "View config")}</span>
+        </Button>
+      ) : null}
+      {onEditRoadmapConfig ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onEditRoadmapConfig}
+          className={buttonClassName || `rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+        >
+          <Pencil className="mr-2 h-4 w-4" />
+          <span className={fontClass}>{t("workspace.roadmap.editConfigAction", "Edit")}</span>
+        </Button>
+      ) : null}
+    </>
+  ), [fontClass, isDarkMode, onEditRoadmapConfig, onViewRoadmapConfig, t]);
 
   const handleSelectCanvasView = useCallback(async (canvasView) => {
     if (!canvasView) return;
@@ -676,29 +768,113 @@ function RoadmapCanvasView({
 
   if (!roadmap || !hasPhase) {
     return (
-      <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-gray-500"}`}>
-        <div className="max-w-2xl text-center">
-          <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl ${isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-600"}`}>
-            <BookOpen className="w-8 h-8" />
-          </div>
-          <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-            {t("workspace.roadmap.emptyRoadmapTitle", "Welcome to roadmap")}
-          </p>
-          <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-            {t("workspace.roadmap.emptyRoadmapDescription", "Generate phases with AI to start your learning roadmap from selected materials.")}
-          </p>
-          {!hideCreateButton && (
-            <div className="mt-6 flex items-center justify-center">
-              <Button
-                type="button"
-                disabled={isCreatingRoadmap || disableCreate}
-                onClick={() => onCreateRoadmapPhases?.()}
-                className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
-              >
-                {t("workspace.roadmap.createPhaseButton", "Create phases")}
-              </Button>
+      <div className={`flex h-full w-full flex-col px-8 pb-8 pt-4 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-gray-500"}`}>
+        {onViewRoadmapConfig || onEditRoadmapConfig ? (
+          <div className="mb-3 flex w-full items-start justify-end">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {renderRoadmapConfigActionButtons("rounded-full")}
             </div>
-          )}
+          </div>
+        ) : null}
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center pt-4">
+          <div className="max-w-2xl text-center">
+            <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl ${isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-600"}`}>
+              <BookOpen className="w-8 h-8" />
+            </div>
+            <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+              {emptyStateTitle || t("workspace.roadmap.emptyRoadmapTitle", "Welcome to roadmap")}
+            </p>
+            <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+              {emptyStateDescription || t("workspace.roadmap.emptyRoadmapDescription", "Generate phases with AI to start your learning roadmap from selected materials.")}
+            </p>
+            {!hideCreateButton && (
+              <div className="mt-6 flex items-center justify-center">
+                <Button
+                  type="button"
+                  disabled={isCreatingRoadmap || shouldDisableEmptyStateAction}
+                  onClick={() => (onEmptyStateAction || onCreateRoadmapPhases)?.()}
+                  className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
+                >
+                  {emptyStateActionLabel || t("workspace.roadmap.createPhaseButton", "Create phases")}
+                </Button>
+              </div>
+            )}
+          </div>
+          {hasEmptyStateMaterialPicker ? (
+            <div className={`mt-8 w-full rounded-[28px] border p-5 ${isDarkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200 bg-slate-50/70"}`}>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
+                    {t("workspace.roadmap.materialPicker.title", "Materials for phase generation")}
+                  </p>
+                  <p className={`mt-1 text-xs leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
+                    {t("workspace.roadmap.materialPicker.description", "Choose the documents AI should use when drafting roadmap phases for this group.")}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? "bg-white/[0.08] text-slate-100" : "bg-white text-slate-700 border border-slate-200"}`}>
+                    {normalizedEmptyStateMaterialIds.length}/{selectableEmptyStateMaterials.length} {t("workspace.roadmap.materialPicker.selected", "selected")}
+                  </span>
+                  {typeof onToggleAllEmptyStateMaterials === "function" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => onToggleAllEmptyStateMaterials(!areAllEmptyStateMaterialsSelected)}
+                      className={`h-9 rounded-full px-4 text-xs ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"}`}
+                    >
+                      {areAllEmptyStateMaterialsSelected
+                        ? t("workspace.roadmap.materialPicker.clearAll", "Clear all")
+                        : t("workspace.roadmap.materialPicker.selectAll", "Select all")}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {selectableEmptyStateMaterials.map((material) => {
+                  const isSelected = normalizedEmptyStateMaterialIds.includes(material.__materialId);
+                  const materialTitle = material?.title || material?.name || t("workspace.roadmap.materialPicker.untitled", "Untitled material");
+
+                  return (
+                    <button
+                      key={material.__renderKey}
+                      type="button"
+                      onClick={() => onToggleEmptyStateMaterial?.(material.__materialId)}
+                      className={`rounded-[22px] border p-4 text-left transition ${isSelected
+                        ? (isDarkMode ? "border-blue-400/50 bg-blue-500/10" : "border-blue-300 bg-blue-50")
+                        : (isDarkMode ? "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50")
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected
+                          ? (isDarkMode ? "border-blue-300 bg-blue-400/20 text-blue-200" : "border-blue-500 bg-blue-500 text-white")
+                          : (isDarkMode ? "border-slate-600 text-slate-500" : "border-slate-300 text-slate-300")
+                        }`}>
+                          {isSelected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-current opacity-70" />}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start gap-2">
+                            <FileText className={`mt-0.5 h-4 w-4 shrink-0 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
+                            <p className={`line-clamp-2 text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
+                              {materialTitle}
+                            </p>
+                          </div>
+                          <div className={`mt-3 flex flex-wrap items-center gap-2 text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
+                            <span className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${isDarkMode ? "bg-white/[0.07] text-slate-200" : "bg-slate-100 text-slate-700"}`}>
+                              {formatEmptyStateMaterialType(material)}
+                            </span>
+                            {formatEmptyStateMaterialDate(material?.uploadedAt, i18n.language) ? (
+                              <span>{formatEmptyStateMaterialDate(material?.uploadedAt, i18n.language)}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -733,6 +909,8 @@ function RoadmapCanvasView({
         progressTracking={progressTracking}
         onShareRoadmap={onShareRoadmap}
         onShareQuiz={onShareQuiz}
+        onViewRoadmapConfig={onViewRoadmapConfig}
+        onEditRoadmapConfig={onEditRoadmapConfig}
       />
     );
   }
@@ -754,6 +932,7 @@ function RoadmapCanvasView({
         </div>
 
         <div className="flex items-center gap-2">
+          {renderRoadmapConfigActionButtons()}
           {onShareRoadmap && roadmap?.roadmapId ? (
             <Button
               type="button"

@@ -10,32 +10,28 @@ import {
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/Components/ui/table';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/Components/ui/dialog';
-import { Switch } from '@/Components/ui/switch';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
+import PlanFormWizard from '@/Pages/Admin/components/PlanFormWizard';
 import {
   getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus, getAiModels, getPlanById,
 } from '@/api/ManagementSystemAPI';
 import {
   AI_MODEL_GROUP_OPTIONS,
+  filterSupportedAiModels,
   buildFunctionAssignmentMap,
   buildFunctionAssignmentsPayload,
   buildAiModelAssignmentMap,
   buildAiModelAssignmentsPayload,
-  getAiActionLabel,
-  getAiActionAllowedProviders,
-  groupAiActionsByModelGroup,
-  filterAiModelsForAction,
 } from '@/lib/aiModelCatalog';
 
 // Form mặc định cho PlanCatalog (khớp với PlanCatalogCreateRequest)
@@ -43,7 +39,7 @@ const EMPTY_FORM = {
   code: '',
   displayName: '',
   planScope: 'USER',
-  planLevel: '',
+  planLevel: '0',
   price: '0',
   description: '',
 };
@@ -67,6 +63,7 @@ const EMPTY_ENTITLEMENT = {
   hasAiCompanionMode: false,
   hasWorkspaceAnalytics: false,
   hasAiSummaryAndTextReading: false,
+  hasAiQuizAssessmentAndRecommendation: false,
 };
 
 const EMPTY_AI_MODEL_ASSIGNMENTS = buildAiModelAssignmentMap([]);
@@ -82,11 +79,12 @@ const ENTITLEMENT_TOGGLES = {
   canProcessVideo:        { label: 'Video',            icon: Film },
   canProcessAudio:        { label: 'Audio',            icon: Headphones },
   canBuyCredit:           { label: 'Buy Credit',       icon: Coins },
-  hasAdvanceQuizConfig:   { label: 'Advanced Quiz',    icon: SlidersHorizontal },
+  hasAdvanceQuizConfig:   { label: 'Advanced Quiz Types', icon: SlidersHorizontal },
   canCreateRoadMap:       { label: 'Create Roadmap',   icon: Map },
   hasAiCompanionMode:     { label: 'AI Companion',     icon: Bot },
   hasWorkspaceAnalytics:  { label: 'Analytics',        icon: BarChart3 },
   hasAiSummaryAndTextReading: { label: 'AI Summary',   icon: BookOpenText },
+  hasAiQuizAssessmentAndRecommendation: { label: 'AI Quiz Assessment', icon: Zap },
 };
 
 const extractApiData = (response) => response?.data?.data ?? response?.data ?? response ?? null;
@@ -136,7 +134,7 @@ function PlanManagement() {
         const planData = extractApiData(plansRes);
         const modelData = extractApiData(modelsRes);
         setPlans(Array.isArray(planData) ? planData : []);
-        setAvailableAiModels(Array.isArray(modelData) ? modelData : []);
+        setAvailableAiModels(filterSupportedAiModels(Array.isArray(modelData) ? modelData : []));
       } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
       finally { setIsLoading(false); }
     };
@@ -170,7 +168,9 @@ function PlanManagement() {
       code: plan.code || '',
       displayName: plan.displayName || '',
       planScope,
-      planLevel: plan.planLevel != null ? String(plan.planLevel) : '',
+      planLevel: planScope === 'WORKSPACE'
+        ? ''
+        : (plan.planLevel != null ? String(plan.planLevel) : '0'),
       price: plan.price != null ? String(plan.price) : '0',
       description: plan.description || '',
     });
@@ -285,17 +285,6 @@ function PlanManagement() {
   const userScopeCount = plans.filter(p => p.planScope === 'USER').length;
   const workspaceScopeCount = plans.filter(p => p.planScope === 'WORKSPACE').length;
   const activeCount = plans.filter(p => isActive(p.status)).length;
-
-  const inputCls = `mt-1.5 h-10 rounded-lg transition-colors duration-200 ${
-    dk ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-500 focus:ring-blue-500/20'
-       : 'bg-white border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-blue-500/20'
-  }`;
-
-  const selectCls = `mt-1.5 w-full h-10 rounded-lg border px-3 text-sm transition-colors duration-200 cursor-pointer ${
-    dk
-      ? 'bg-slate-800 border-slate-600 text-slate-100 pr-9 appearance-none bg-no-repeat bg-[length:1.25rem] bg-[right_0.5rem_center] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 plan-scope-select-dark'
-      : 'bg-white border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
-  }`;
 
   const sectionCls = `rounded-xl border p-4 ${dk ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-50/80 border-slate-100'}`;
   const getAssignedModelForPlan = (plan, modelGroup) => {
@@ -461,329 +450,29 @@ function PlanManagement() {
         </div>
       </div>
 
-      {/* ──── Create / Edit Dialog ──── */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent hideClose className={`max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden ${dk ? 'bg-[#0f1629] border-white/[0.08]' : 'bg-white'}`}>
-          {/* Fixed header */}
-          <div className={`flex-shrink-0 px-6 pt-6 pb-4 border-b ${dk ? 'border-white/[0.06]' : 'border-slate-100'}`}>
-            <DialogHeader className="p-0 space-y-1">
-              <DialogTitle className={`text-xl font-bold ${dk ? 'text-white' : 'text-slate-900'}`}>
-                {editingPlan ? t('subscription.editPlan') : t('subscription.addPlan')}
-              </DialogTitle>
-              <DialogDescription className={dk ? 'text-slate-400' : 'text-slate-500'}>
-                {editingPlan ? t('subscription.editPlanDesc') : t('subscription.addPlanDesc')}
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6">
-            {/* Basic Info */}
-            <div className={sectionCls}>
-              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-blue-400' : 'text-blue-600'}`}>
-                Basic Information
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Code *</Label>
-                  <Input
-                    required
-                    disabled={!!editingPlan}
-                    value={formData.code}
-                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    placeholder="BASIC, PRO, GROUP_TEAM..."
-                    className={inputCls}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.name')} *</Label>
-                    <Input
-                      required
-                      value={formData.displayName}
-                      onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                      placeholder="Plan cho USER, Plan cho Group workspace..."
-                      className={inputCls}
-                    />
-                  </div>
-                  <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Scope *</Label>
-                    <select
-                      disabled={!!editingPlan}
-                      value={formData.planScope}
-                      onChange={(e) => setFormData({ ...formData, planScope: e.target.value })}
-                      className={selectCls}
-                      style={dk ? { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` } : undefined}
-                    >
-                      <option value="USER">USER</option>
-                      <option value="WORKSPACE">Group workspace</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Level</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      disabled={!!editingPlan}
-                      value={formData.planLevel}
-                      onChange={(e) => setFormData({ ...formData, planLevel: e.target.value })}
-                      placeholder="0, 1, 2..."
-                      className={inputCls}
-                    />
-                  </div>
-                  <div>
-                    <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>{t('subscription.form.price')} (VND)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="0"
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>Description</Label>
-                  <Input
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Mô tả ngắn về Plan..."
-                    className={inputCls}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Entitlement: limits & features */}
-            <div className={sectionCls}>
-              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                Entitlement & Limits
-              </p>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max individual workspace</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={entitlement.maxIndividualWorkspace ?? ''}
-                    onChange={(e) => setEntitlement({ ...entitlement, maxIndividualWorkspace: e.target.value })}
-                    className={`${inputCls} h-9`}
-                  />
-                </div>
-                <div>
-                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max material / workspace</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={entitlement.maxMaterialInWorkspace ?? ''}
-                    onChange={(e) => setEntitlement({ ...entitlement, maxMaterialInWorkspace: e.target.value })}
-                    className={`${inputCls} h-9`}
-                  />
-                </div>
-                <div>
-                  <Label className={`text-[11px] font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Included credits</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={entitlement.planIncludedCredits ?? ''}
-                    onChange={(e) => setEntitlement({ ...entitlement, planIncludedCredits: e.target.value })}
-                    className={`${inputCls} h-9`}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const next = { ...entitlement };
-                    Object.keys(ENTITLEMENT_TOGGLES).forEach((k) => { next[k] = true; });
-                    setEntitlement(next);
-                  }}
-                  className={`rounded-lg cursor-pointer text-xs ${dk ? 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10' : 'border-emerald-600/50 text-emerald-600 hover:bg-emerald-50'}`}
-                >
-                  Bật hết
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const next = { ...entitlement };
-                    Object.keys(ENTITLEMENT_TOGGLES).forEach((k) => { next[k] = false; });
-                    setEntitlement(next);
-                  }}
-                  className={`rounded-lg cursor-pointer text-xs ${dk ? 'border-slate-600 text-slate-400 hover:bg-white/5' : 'border-slate-300 text-slate-500 hover:bg-slate-50'}`}
-                >
-                  Tắt hết
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(ENTITLEMENT_TOGGLES).map(([key, meta]) => {
-                  const checked = entitlement[key] ?? false;
-                  const Icon = meta.icon;
-                  return (
-                    <label
-                      key={key}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${
-                        checked
-                          ? dk ? 'bg-white/[0.06] ring-1 ring-white/10' : 'bg-blue-50/80 ring-1 ring-blue-200'
-                          : dk ? 'hover:bg-white/[0.03]' : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <Switch
-                        checked={checked}
-                        onCheckedChange={(val) => setEntitlement({ ...entitlement, [key]: val })}
-                      />
-                      <Icon className={`w-4 h-4 flex-shrink-0 ${checked ? 'text-blue-400' : dk ? 'text-slate-600' : 'text-slate-300'}`} />
-                      <span className={`text-sm font-medium transition-colors ${
-                        checked
-                          ? dk ? 'text-white' : 'text-slate-800'
-                          : dk ? 'text-slate-500' : 'text-slate-400'
-                      }`}>{meta.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className={sectionCls}>
-              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>
-                {t('subscription.aiModels.title')}
-              </p>
-              <div className="grid grid-cols-1 gap-4">
-                {AI_MODEL_GROUP_OPTIONS.map((group) => {
-                  const groupModels = availableAiModels.filter((model) => model.modelGroup === group.value);
-                  return (
-                    <div key={group.value} className={`rounded-xl border p-4 ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-white'}`}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
-                            {t(group.labelKey)}
-                          </p>
-                          <p className={`text-xs mt-1 ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
-                            {t('subscription.aiModels.groupHint')}
-                          </p>
-                        </div>
-                        <span className={`text-xs font-medium ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
-                          {groupModels.length} model
-                        </span>
-                      </div>
-                      <select
-                        value={aiModelAssignments[group.value] ?? ''}
-                        onChange={(e) => setAiModelAssignments((prev) => ({ ...prev, [group.value]: e.target.value }))}
-                        className={`${selectCls} mt-3`}
-                        style={dk ? { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` } : undefined}
-                      >
-                        <option value="">{t('subscription.aiModels.noAssignment')}</option>
-                        {groupModels.map((model) => (
-                          <option
-                            key={model.aiModelId}
-                            value={model.aiModelId}
-                            disabled={model.status !== 'ACTIVE' && String(model.aiModelId) !== String(aiModelAssignments[group.value] ?? '')}
-                          >
-                            {model.displayName} ({model.provider} / {model.modelCode}){model.status !== 'ACTIVE' ? ` • ${model.status}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <details className={sectionCls} open>
-              <summary className={`flex cursor-pointer list-none items-center justify-between text-xs font-bold uppercase tracking-wider ${dk ? 'text-fuchsia-400' : 'text-fuchsia-600'}`}>
-                <span>{t('subscription.aiFunctionOverrides.title', { defaultValue: 'AI Function Overrides' })}</span>
-                <span className={`text-[11px] normal-case tracking-normal ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
-                  {t('subscription.aiFunctionOverrides.hint', { defaultValue: 'Override a specific action, or leave empty to keep the model group default.' })}
-                </span>
-              </summary>
-              <div className="mt-4 grid gap-4">
-                {groupAiActionsByModelGroup().map((group) => {
-                  return (
-                    <div key={group.value} className={`rounded-xl border p-4 ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-white'}`}>
-                      <div className="mb-4">
-                        <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
-                          {t(group.labelKey)}
-                        </p>
-                        <p className={`mt-1 text-xs ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
-                          {t('subscription.aiFunctionOverrides.groupHint', { defaultValue: 'Each override here only affects this action key. Empty value keeps the model group assignment above.' })}
-                        </p>
-                      </div>
-                      <div className="grid gap-3">
-                        {group.actions.map((actionKey) => (
-                          (() => {
-                            const actionModels = filterAiModelsForAction(actionKey, availableAiModels);
-                            const allowedProviders = getAiActionAllowedProviders(actionKey);
-                            const isProviderRestricted = allowedProviders.length === 1;
-                            return (
-                              <div
-                                key={actionKey}
-                                className={`grid gap-3 rounded-xl border p-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] ${dk ? 'border-white/[0.06] bg-white/[0.02]' : 'border-slate-100 bg-slate-50/80'}`}
-                              >
-                                <div>
-                                  <p className={`text-sm font-semibold ${dk ? 'text-white' : 'text-slate-800'}`}>
-                                    {getAiActionLabel(actionKey, t)}
-                                  </p>
-                                  <p className={`mt-1 text-xs ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
-                                    {isProviderRestricted
-                                      ? t('subscription.aiFunctionOverrides.providerHint', {
-                                        defaultValue: 'Supported provider: {{provider}}. Empty value uses the resolved {{provider}} default.',
-                                        provider: allowedProviders[0],
-                                      })
-                                      : t('subscription.aiFunctionOverrides.defaultHint', {
-                                        defaultValue: 'Default from capability: {{group}}',
-                                        group: t(group.labelKey),
-                                      })}
-                                  </p>
-                                </div>
-                                <select
-                                  value={functionAssignmentMap[actionKey] ?? ''}
-                                  onChange={(e) => setFunctionAssignmentMap((prev) => ({ ...prev, [actionKey]: e.target.value }))}
-                                  className={selectCls}
-                                  style={dk ? { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` } : undefined}
-                                >
-                                  <option value="">
-                                    {isProviderRestricted
-                                      ? t('subscription.aiFunctionOverrides.useResolvedDefault', { defaultValue: 'Use resolved compatible default model' })
-                                      : t('subscription.aiFunctionOverrides.useGroupDefault', { defaultValue: 'Use capability default model' })}
-                                  </option>
-                                  {actionModels.map((model) => (
-                                    <option
-                                      key={`${actionKey}-${model.aiModelId}`}
-                                      value={model.aiModelId}
-                                      disabled={model.status !== 'ACTIVE' && String(model.aiModelId) !== String(functionAssignmentMap[actionKey] ?? '')}
-                                    >
-                                      {model.displayName} ({model.provider} / {model.modelCode}){model.status !== 'ACTIVE' ? ` • ${model.status}` : ''}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            );
-                          })()
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </details>
-
-            <div className={`flex justify-end gap-3 pt-2 border-t ${dk ? 'border-white/[0.06]' : 'border-slate-100'}`}>
-              <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} className={`rounded-lg cursor-pointer ${dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>
-                {t('auth.cancel')}
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-lg shadow-blue-600/25 cursor-pointer">
-                {isSubmitting ? t('subscription.submitting') : editingPlan ? t('subscription.save') : t('subscription.create')}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {isFormOpen ? (
+        <PlanFormWizard
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
+          isDarkMode={dk}
+          t={t}
+          editingPlan={editingPlan}
+          isSubmitting={isSubmitting}
+          formData={formData}
+          setFormData={setFormData}
+          entitlement={entitlement}
+          setEntitlement={setEntitlement}
+          entitlementToggles={ENTITLEMENT_TOGGLES}
+          aiModelAssignments={aiModelAssignments}
+          setAiModelAssignments={setAiModelAssignments}
+          functionAssignmentMap={functionAssignmentMap}
+          setFunctionAssignmentMap={setFunctionAssignmentMap}
+          availableAiModels={availableAiModels}
+          plans={plans}
+          onSubmit={handleSubmit}
+          onValidationError={showError}
+        />
+      ) : null}
 
       {/* ──── Delete Confirmation ──── */}
       <Dialog open={isDeleteOpen} onOpenChange={(open) => { if (!open && !isSubmitting) setIsDeleteOpen(false); }}>

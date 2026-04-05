@@ -41,6 +41,8 @@ function WorkspaceProfileStepThree({
   errors,
   disabled = false,
   onFieldChange,
+  roadmapTitle,
+  roadmapDescription,
 }) {
   const inputClass = cn(
     'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all',
@@ -60,6 +62,8 @@ function WorkspaceProfileStepThree({
     estimatedTotalDays || recommendedRoadmapDays
   );
   const currentMinutesPerDay = Number(values.recommendedMinutesPerDay) || null;
+  const resolvedRoadmapTitle = roadmapTitle || t('workspace.profileConfig.stepThree.roadmapTitle');
+  const resolvedRoadmapDescription = roadmapDescription || t('workspace.profileConfig.stepThree.roadmapDescription');
   const isCustomDaySelection = Boolean(
     showRoadmap
     && estimatedTotalDays
@@ -173,8 +177,8 @@ function WorkspaceProfileStepThree({
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold">{t('workspace.profileConfig.stepThree.roadmapTitle')}</h3>
-              <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{t('workspace.profileConfig.stepThree.roadmapDescription')}</p>
+              <h3 className="text-lg font-semibold">{resolvedRoadmapTitle}</h3>
+              <p className={cn('mt-1 text-sm leading-6', mutedClass)}>{resolvedRoadmapDescription}</p>
             </div>
           </div>
 
