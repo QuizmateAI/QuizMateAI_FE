@@ -196,7 +196,7 @@ function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled,
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'rounded-[22px] border p-4 text-left transition-all duration-200 hover:scale-[1.02]',
+        'h-full rounded-[22px] border p-4 text-left transition-all duration-200 hover:scale-[1.02]',
         active
           ? isDarkMode
             ? 'border-cyan-400/40 bg-cyan-500/10'
@@ -207,7 +207,7 @@ function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled,
         disabled && 'cursor-not-allowed opacity-60'
       )}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex h-full items-start gap-3">
         <div className={cn(
           'flex h-10 w-10 items-center justify-center rounded-2xl border',
           active
@@ -239,47 +239,6 @@ function SummaryItem({ label, value, isDarkMode }) {
       <p className={cn('mt-1.5 text-sm font-medium leading-6', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>
         {value}
       </p>
-    </div>
-  );
-}
-
-function WorkflowStepCard({ stepLabel, title, description, active, complete, icon: Icon, isDarkMode }) {
-  return (
-    <div
-      className={cn(
-        'rounded-[22px] border p-4 transition-all duration-200',
-        complete
-          ? isDarkMode
-            ? 'border-emerald-400/25 bg-emerald-500/10'
-            : 'border-emerald-200 bg-emerald-50/90'
-          : active
-            ? isDarkMode
-              ? 'border-cyan-400/30 bg-cyan-500/10'
-              : 'border-cyan-200 bg-cyan-50/90'
-            : isDarkMode
-              ? 'border-white/10 bg-white/[0.03]'
-              : 'border-slate-200 bg-white'
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <div className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border',
-          complete
-            ? isDarkMode ? 'border-emerald-300/30 bg-emerald-400/15 text-emerald-100' : 'border-emerald-200 bg-white text-emerald-700'
-            : active
-              ? isDarkMode ? 'border-cyan-300/30 bg-cyan-400/15 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
-              : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
-        )}>
-          {complete ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-        </div>
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-75">{stepLabel}</p>
-          <p className="mt-1 text-sm font-semibold">{title}</p>
-          <p className={cn('mt-1 text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
-            {description}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
@@ -396,27 +355,6 @@ function GroupWorkspaceProfileConfigMirror({
     },
   ]), [t]);
 
-  const workflowSteps = useMemo(() => ([
-    {
-      id: 1,
-      icon: BrainCircuit,
-      title: t('groupProfileConfig.stepTwo.workflow.describeTitle'),
-      description: t('groupProfileConfig.stepTwo.workflow.describeDescription'),
-    },
-    {
-      id: 2,
-      icon: Compass,
-      title: t('groupProfileConfig.stepTwo.workflow.domainTitle'),
-      description: t('groupProfileConfig.stepTwo.workflow.domainDescription'),
-    },
-    {
-      id: 3,
-      icon: Sparkles,
-      title: t('groupProfileConfig.stepTwo.workflow.modeTitle'),
-      description: t('groupProfileConfig.stepTwo.workflow.modeDescription'),
-    },
-  ]), [t]);
-
   const readinessItems = useMemo(() => ([
     {
       label: t('groupProfileConfig.stepTwo.ready.knowledge'),
@@ -433,7 +371,12 @@ function GroupWorkspaceProfileConfigMirror({
       ready: Boolean(learningMode),
       value: summary.mode,
     },
-  ]), [domain, knowledge, learningMode, summary.mode, t]);
+    {
+      label: t('groupProfileConfig.stepTwo.groupGoal'),
+      ready: Boolean(groupLearningGoal.trim()),
+      value: groupLearningGoal.trim() || t('groupProfileConfig.stepTwo.ready.pending'),
+    },
+  ]), [domain, groupLearningGoal, knowledge, learningMode, summary.mode, t]);
 
   const selectedDomainOption = useMemo(
     () => domainOptions.find((option) => option.label === domain) || null,
@@ -443,6 +386,7 @@ function GroupWorkspaceProfileConfigMirror({
     knowledge.trim()
     && domain.trim()
     && learningMode
+    && groupLearningGoal.trim()
     && (learningMode !== 'MOCK_TEST' || examName.trim())
   );
 
@@ -666,6 +610,7 @@ function GroupWorkspaceProfileConfigMirror({
       }
     }
     if (!learningMode) nextErrors.learningMode = t('groupProfileConfig.validation.learningMode');
+    if (!groupLearningGoal.trim()) nextErrors.groupLearningGoal = t('groupProfileConfig.validation.groupGoal');
     if (learningMode === 'MOCK_TEST' && !examName.trim()) {
       nextErrors.examName = t('groupProfileConfig.validation.examName');
     }
@@ -999,58 +944,54 @@ function GroupWorkspaceProfileConfigMirror({
             <div className={cn('grid gap-8', step === 2 && 'lg:grid-cols-[minmax(0,1.2fr)_320px]')}>
               <section className={cn('rounded-[30px] border p-5', panelClass)}>
                 <div className="space-y-7">
-                  <div className={cn(
-                    'rounded-[26px] border p-5',
-                    isDarkMode ? 'border-cyan-400/20 bg-cyan-500/8' : 'border-cyan-100 bg-[linear-gradient(135deg,#f0fbff,#f8fdff)]'
-                  )}>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', mutedClass)}>
-                            {t('groupProfileConfig.stepTwo.workflow.eyebrow')}
-                          </p>
-                          <h3 className="mt-2 text-lg font-semibold">{t('groupProfileConfig.stepTwo.workflow.title')}</h3>
-                          <p className={cn('mt-2 text-sm leading-6', mutedClass)}>
-                            {t('groupProfileConfig.stepTwo.workflow.description')}
-                          </p>
-                        </div>
-                        {isStudyNewMode ? (
-                          <span className={cn(
-                            'rounded-full px-3 py-1.5 text-xs font-semibold',
-                            isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-100 text-emerald-700'
-                          )}>
-                            {t('groupProfileConfig.stepTwo.roadmap.studyNewBadge')}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-3">
-                        {workflowSteps.map((item, index) => (
-                          <WorkflowStepCard
-                            key={item.id}
-                            stepLabel={`${t('groupProfileConfig.common.step')} ${index + 1}`}
-                            title={item.title}
-                            description={item.description}
-                            active={(index === 0 && Boolean(knowledge.trim())) || (index === 1 && Boolean(domain.trim())) || (index === 2 && Boolean(learningMode))}
-                            complete={(index === 0 && Boolean(knowledge.trim())) || (index === 1 && Boolean(domain.trim())) || (index === 2 && Boolean(learningMode))}
-                            icon={item.icon}
-                            isDarkMode={isDarkMode}
-                          />
-                        ))}
-                      </div>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.learningMode')} <span className="text-rose-500">*</span></p>
+                      <span className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', mutedClass)}>
+                        {t('groupProfileConfig.stepTwo.modePrompt')}
+                      </span>
                     </div>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {LEARNING_MODES.map((item) => (
+                        <ChoiceCard
+                          key={item.value}
+                          active={learningMode === item.value}
+                          onClick={() => {
+                            setLearningMode(item.value);
+                            setErrors((prev) => ({ ...prev, learningMode: undefined, examName: undefined }));
+                            if (item.value === 'STUDY_NEW') {
+                              setRoadmapEnabled(true);
+                            }
+                            if (item.value !== 'MOCK_TEST') {
+                              setExamName('');
+                            }
+                          }}
+                          icon={item.icon}
+                          title={isVi ? item.labelVi : item.labelEn}
+                          description={item.value === 'STUDY_NEW'
+                            ? t('groupProfileConfig.stepTwo.studyNewDescription')
+                            : item.value === 'REVIEW'
+                              ? t('groupProfileConfig.stepTwo.reviewDescription')
+                              : t('groupProfileConfig.stepTwo.mockTestDescription')}
+                          disabled={loading || submitting}
+                          isDarkMode={isDarkMode}
+                        />
+                      ))}
+                    </div>
+                    <FieldError message={errors.learningMode} />
                   </div>
 
                   <div className="space-y-3">
                     <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.knowledgeLabel')} <span className="text-rose-500">*</span></label>
                     <textarea
+                      rows={4}
                       value={knowledge}
                       onChange={(e) => {
                         setKnowledge(e.target.value);
                         setDomain('');
                         setErrors((prev) => ({ ...prev, knowledge: undefined, domain: undefined }));
                       }}
-                      className={cn(inputClass, 'min-h-[168px] resize-none')}
+                      className={cn(inputClass, 'min-h-[112px] resize-none')}
                       placeholder={t('groupProfileConfig.stepTwo.knowledgePlaceholder')}
                     />
                     <p className={cn('text-xs leading-5', mutedClass)}>
@@ -1226,43 +1167,6 @@ function GroupWorkspaceProfileConfigMirror({
 
                   {analysisStatus !== 'success' ? <FieldError message={errors.domain} /> : null}
 
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.learningMode')} <span className="text-rose-500">*</span></p>
-                      <span className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', mutedClass)}>
-                        {t('groupProfileConfig.stepTwo.modePrompt')}
-                      </span>
-                    </div>
-                    <div className="grid gap-3">
-                      {LEARNING_MODES.map((item) => (
-                        <ChoiceCard
-                          key={item.value}
-                          active={learningMode === item.value}
-                          onClick={() => {
-                            setLearningMode(item.value);
-                            setErrors((prev) => ({ ...prev, learningMode: undefined, examName: undefined }));
-                            if (item.value === 'STUDY_NEW') {
-                              setRoadmapEnabled(true);
-                            }
-                            if (item.value !== 'MOCK_TEST') {
-                              setExamName('');
-                            }
-                          }}
-                          icon={item.icon}
-                          title={isVi ? item.labelVi : item.labelEn}
-                          description={item.value === 'STUDY_NEW'
-                            ? t('groupProfileConfig.stepTwo.studyNewDescription')
-                            : item.value === 'REVIEW'
-                              ? t('groupProfileConfig.stepTwo.reviewDescription')
-                              : t('groupProfileConfig.stepTwo.mockTestDescription')}
-                          disabled={loading || submitting}
-                          isDarkMode={isDarkMode}
-                        />
-                      ))}
-                    </div>
-                    <FieldError message={errors.learningMode} />
-                  </div>
-
                   {learningMode === 'MOCK_TEST' ? (
                     <div className="space-y-3">
                       <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.examName')} <span className="text-rose-500">*</span></label>
@@ -1272,8 +1176,17 @@ function GroupWorkspaceProfileConfigMirror({
                   ) : null}
 
                   <div className="space-y-3">
-                    <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.groupGoal')}</label>
-                    <textarea value={groupLearningGoal} onChange={(e) => setGroupLearningGoal(e.target.value)} className={cn(inputClass, 'min-h-[120px] resize-none')} placeholder={t('groupProfileConfig.stepTwo.groupGoalPlaceholder')} />
+                    <label className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.groupGoal')} <span className="text-rose-500">*</span></label>
+                    <textarea
+                      value={groupLearningGoal}
+                      onChange={(e) => {
+                        setGroupLearningGoal(e.target.value);
+                        setErrors((prev) => ({ ...prev, groupLearningGoal: undefined }));
+                      }}
+                      className={cn(inputClass, 'min-h-[120px] resize-none')}
+                      placeholder={t('groupProfileConfig.stepTwo.groupGoalPlaceholder')}
+                    />
+                    <FieldError message={errors.groupLearningGoal} />
                   </div>
 
                   <div className="space-y-3">

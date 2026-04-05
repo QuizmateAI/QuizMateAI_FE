@@ -59,12 +59,13 @@ import {
 import {
   AI_MODEL_GROUP_OPTIONS,
   AI_MODEL_STATUS_OPTIONS,
+  filterSupportedAiModels,
   getAiModelGroupLabel,
   getAiModelGroupMeta,
 } from '@/lib/aiModelCatalog';
 import { cn } from '@/lib/utils';
 
-const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI', 'ANTHROPIC'];
+const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 
 const EMPTY_FORM = {
   provider: 'OPENAI',
@@ -234,7 +235,7 @@ function AiModelsManagement() {
         status: filters.status || undefined,
       });
       const data = extractData(response);
-      const nextModels = Array.isArray(data) ? data : [];
+      const nextModels = filterSupportedAiModels(Array.isArray(data) ? data : []);
       setModels(nextModels);
       return nextModels;
     } catch (error) {

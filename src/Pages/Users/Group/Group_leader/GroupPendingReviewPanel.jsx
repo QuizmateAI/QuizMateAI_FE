@@ -151,13 +151,13 @@ export default function GroupPendingReviewPanel({
         </span>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-5 grid gap-3 lg:grid-cols-2">
         {loading ? (
-          <div className={`rounded-[22px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'}`}>
+          <div className={`lg:col-span-2 rounded-[22px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'}`}>
             {currentLang === 'en' ? 'Loading material queue...' : 'Đang tải hàng chờ tài liệu...'}
           </div>
         ) : items.length === 0 ? (
-          <div className={`rounded-[22px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'}`}>
+          <div className={`lg:col-span-2 rounded-[22px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'}`}>
             {isLeader
               ? (currentLang === 'en' ? 'No material is waiting for leader review.' : 'Hiện chưa có tài liệu nào chờ leader duyệt.')
               : (currentLang === 'en' ? 'No recent upload is being tracked in this session.' : 'Hiện chưa có upload nào đang được theo dõi trong phiên này.')}

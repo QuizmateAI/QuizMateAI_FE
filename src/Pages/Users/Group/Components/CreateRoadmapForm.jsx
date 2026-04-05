@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/Components/ui/button";
 import { ArrowLeft, Eye, GitBranch, Loader2, Rows3, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import WorkspaceProfileStepThree from "@/Pages/Users/Individual/Workspace/Components/WorkspaceProfileWizard/WorkspaceProfileStepThree";
 
 function CreateRoadmapForm({ isDarkMode = false, onCreateRoadmap, onBack, hasPrelearning = true }) {
   const { t, i18n } = useTranslation();
@@ -11,6 +12,21 @@ function CreateRoadmapForm({ isDarkMode = false, onCreateRoadmap, onBack, hasPre
   const [goal, setGoal] = useState("");
   const [canvasView, setCanvasView] = useState("view1");
 
+  // Roadmap config fields
+  const [configValues, setConfigValues] = useState({
+    workspacePurpose: "STUDY_NEW",
+    enableRoadmap: true,
+    knowledgeLoad: "",
+    adaptationMode: "",
+    roadmapSpeedMode: "",
+    estimatedTotalDays: "",
+    recommendedMinutesPerDay: "",
+  });
+
+  const handleConfigFieldChange = (field, value) => {
+    setConfigValues((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
@@ -19,6 +35,11 @@ function CreateRoadmapForm({ isDarkMode = false, onCreateRoadmap, onBack, hasPre
         name: name.trim(),
         goal: goal.trim(),
         canvasView,
+        knowledgeLoad: configValues.knowledgeLoad,
+        adaptationMode: configValues.adaptationMode,
+        roadmapSpeedMode: configValues.roadmapSpeedMode,
+        estimatedTotalDays: configValues.estimatedTotalDays,
+        recommendedMinutesPerDay: configValues.recommendedMinutesPerDay,
       });
     } catch {
       // Error handling stays in parent flow.
@@ -113,6 +134,16 @@ function CreateRoadmapForm({ isDarkMode = false, onCreateRoadmap, onBack, hasPre
             <div className={`rounded-xl border px-3 py-2.5 text-xs leading-5 ${isDarkMode ? "border-slate-700 bg-slate-800/70 text-slate-300" : "border-sky-200 bg-white text-gray-600"}`}>
               {t("workspace.roadmap.aiGenerateHint")}
             </div>
+
+            {/* Roadmap Configuration */}
+            <WorkspaceProfileStepThree
+              t={t}
+              isDarkMode={isDarkMode}
+              values={configValues}
+              errors={{}}
+              disabled={submitting}
+              onFieldChange={handleConfigFieldChange}
+            />
 
             <div>
               <label className={labelCls}>{t("workspace.roadmap.canvasViewLabel")}</label>

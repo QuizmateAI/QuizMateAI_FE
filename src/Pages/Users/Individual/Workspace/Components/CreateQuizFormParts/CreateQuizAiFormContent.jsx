@@ -27,6 +27,7 @@ import { Button } from "@/Components/ui/button";
 import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
 import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
+import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 
 function CreateQuizAiFormContent({
   classes,
@@ -552,12 +553,6 @@ function CreateQuizAiFormContent({
         )}
       </div>
 
-      <PlanGatedFeature
-        allowed={hasAdvanceQuizConfig}
-        featureName={t("workspace.quiz.aiConfig.advancedConfig", "Cấu hình quiz nâng cao")}
-        isDarkMode={isDarkMode}
-        className="block w-full"
-      >
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div ref={aiQuestionTypesSectionRef} className={getAiSectionCardClass(["selectedQTypes"])}>
           <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
@@ -577,8 +572,8 @@ function CreateQuizAiFormContent({
           <div className="mb-3 flex flex-wrap gap-2">
             {qTypes.map((questionType) => {
               const isSelected = selectedQTypes.some((item) => item.questionTypeId === questionType.questionTypeId);
-
-              return (
+              const isAdvancedType = isAdvancedQuizQuestionType(questionType.questionType);
+              const questionTypeChip = (
                 <button
                   key={questionType.questionTypeId}
                   type="button"
@@ -592,6 +587,21 @@ function CreateQuizAiFormContent({
                   {isSelected && <CheckCircle2 className="h-3 w-3 shrink-0" />}
                   {getQuestionTypeLabel(questionType.questionType)}
                 </button>
+              );
+
+              if (!isAdvancedType || hasAdvanceQuizConfig) {
+                return questionTypeChip;
+              }
+
+              return (
+                <PlanGatedFeature
+                  key={questionType.questionTypeId}
+                  allowed={false}
+                  featureName={t("workspace.quiz.aiConfig.advancedConfig", "Loại quiz nâng cao")}
+                  isDarkMode={isDarkMode}
+                >
+                  {questionTypeChip}
+                </PlanGatedFeature>
               );
             })}
           </div>
@@ -722,7 +732,6 @@ function CreateQuizAiFormContent({
           )}
         </div>
       </div>
-      </PlanGatedFeature>
 
       <div ref={aiPromptSectionRef} className={getAiSectionCardClass(["aiPrompt"])}>
         <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>

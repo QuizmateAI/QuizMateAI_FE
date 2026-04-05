@@ -56,6 +56,8 @@ import {
 
 	getRoadmapStructureById,
 
+	updateRoadmapConfig,
+
 } from "@/api/RoadmapAPI";
 
 import { getMaterialsByWorkspace, deleteMaterial, uploadMaterial } from "@/api/MaterialAPI";
@@ -89,6 +91,8 @@ const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(() => import("@/Pa
 const LazyIndividualWorkspaceProfileOverviewDialog = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog"));
 
 const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(() => import("@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog"));
+
+const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
 
 
 
@@ -653,6 +657,19 @@ function WorkspacePage() {
 		|| Boolean(extractRoadmapIdFromProfile(workspaceProfile));
 
 	const workspaceAdaptationMode = String(workspaceProfile?.adaptationMode || workspaceProfile?.data?.adaptationMode || "").toUpperCase();
+
+	const [roadmapConfigEditOpen, setRoadmapConfigEditOpen] = useState(false);
+
+	const roadmapConfigInitialValues = useMemo(() => ({
+		knowledgeLoad: workspaceProfile?.knowledgeLoad || '',
+		adaptationMode: workspaceAdaptationMode || '',
+		roadmapSpeedMode: workspaceProfile?.roadmapSpeedMode
+			|| (workspaceProfile?.speedMode === 'MEDIUM' ? 'STANDARD' : workspaceProfile?.speedMode || ''),
+		estimatedTotalDays: workspaceProfile?.estimatedTotalDays || '',
+		recommendedMinutesPerDay: workspaceProfile?.recommendedMinutesPerDay
+			|| workspaceProfile?.estimatedMinutesPerDay || '',
+	}), [workspaceProfile, workspaceAdaptationMode]);
+
 
 
 
@@ -1272,8 +1289,6 @@ function WorkspacePage() {
 
 	});
 
-
-
 	// Fetch workspace, initial sources, and profile status
 
 	useEffect(() => {
@@ -1600,6 +1615,27 @@ function WorkspacePage() {
 
 	}, [workspaceProfile]);
 
+
+
+	const handleSaveRoadmapConfig = useCallback(async (values) => {
+		const roadmapId = extractRoadmapIdFromProfile(workspaceProfile);
+		if (!roadmapId) throw new Error('No roadmap found');
+		await updateRoadmapConfig(roadmapId, values);
+		await resetRoadmapStructureForProfileUpdate();
+		setRoadmapHasPhases(false);
+		setIsRoadmapStructureMissing(false);
+		resetRoadmapRuntimeState({ clearPresence: true });
+		await loadWorkspaceProfileData();
+		bumpRoadmapReloadToken();
+	}, [
+		workspaceProfile,
+		resetRoadmapStructureForProfileUpdate,
+		setRoadmapHasPhases,
+		setIsRoadmapStructureMissing,
+		resetRoadmapRuntimeState,
+		loadWorkspaceProfileData,
+		bumpRoadmapReloadToken,
+	]);
 
 
 	const handleDeleteMaterialsForProfileUpdate = useCallback(async () => {
@@ -2762,6 +2798,8 @@ function WorkspacePage() {
 
 		planEntitlements,
 
+		onEditRoadmapConfig: () => setRoadmapConfigEditOpen(true),
+
 	};
 
 
@@ -2862,6 +2900,8 @@ function WorkspacePage() {
 
 			onAction={handleStudioAction}
 
+			onEditRoadmapConfig={extractRoadmapIdFromProfile(workspaceProfile) ? () => setRoadmapConfigEditOpen(true) : undefined}
+
 			accessHistory={accessHistory}
 
 			isCollapsed={isCollapsed}
@@ -2869,6 +2909,8 @@ function WorkspacePage() {
 			onToggleCollapse={handleToggleStudioCollapse}
 
 			activeView={activeView}
+
+			canEditRoadmapConfig={Boolean(extractRoadmapIdFromProfile(workspaceProfile))}
 
 			shouldDisableQuiz={shouldDisableQuiz}
 
@@ -3346,7 +3388,16 @@ function WorkspacePage() {
 
 			/>
 
-
+			<React.Suspense fallback={null}>
+				<LazyRoadmapConfigEditDialog
+					open={roadmapConfigEditOpen}
+					onOpenChange={setRoadmapConfigEditOpen}
+					isDarkMode={isDarkMode}
+					initialValues={roadmapConfigInitialValues}
+					hasExistingRoadmap={Boolean(extractRoadmapIdFromProfile(workspaceProfile))}
+					onSave={handleSaveRoadmapConfig}
+				/>
+			</React.Suspense>
 
 		</div>
 
@@ -3357,11 +3408,6 @@ function WorkspacePage() {
 
 
 export default WorkspacePage;
-
-
-
-
-
 
 
 
