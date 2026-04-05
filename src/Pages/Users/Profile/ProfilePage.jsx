@@ -56,6 +56,24 @@ const TabsTrigger = ({ active, onClick, children, className, isDarkMode }) => (
 const TabsContent = ({ active, children, className }) =>
   active ? <div className={`mt-6 animate-in fade-in-50 duration-300 ${className}`}>{children}</div> : null;
 
+const EMPTY_WALLET_SUMMARY = {
+  balance: 0,
+  totalAvailableCredits: 0,
+  regularCreditBalance: 0,
+  planCreditBalance: 0,
+  hasActivePlan: false,
+  planCreditExpiresAt: null,
+};
+
+const formatWalletDateTime = (iso, lang) => {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleString(lang === "vi" ? "vi-VN" : "en-US");
+  } catch {
+    return iso;
+  }
+};
+
 // --- Skill Radar Chart Component ---
 const SkillRadarChart = ({ skills, isDarkMode }) => {
   const levels = [1, 2, 3, 4, 5];
@@ -172,7 +190,7 @@ function ProfilePage() {
   const [message, setMessage] = useState({ type: "", text: "" });
 
   // Ví Credit
-  const [walletBalance, setWalletBalance] = useState(null);
+  const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [loadingWallet, setLoadingWallet] = useState(true);
 
   // Mock data cho analytics
@@ -239,9 +257,17 @@ function ProfilePage() {
       setLoadingWallet(true);
       const res = await getMyWallet();
       const data = res?.data ?? res;
-      setWalletBalance(typeof data?.balance === "number" ? data.balance : 0);
+      setWalletSummary({
+        ...EMPTY_WALLET_SUMMARY,
+        ...data,
+        totalAvailableCredits: data?.totalAvailableCredits ?? data?.balance ?? 0,
+        regularCreditBalance: data?.regularCreditBalance ?? 0,
+        planCreditBalance: data?.planCreditBalance ?? 0,
+        hasActivePlan: Boolean(data?.hasActivePlan),
+        planCreditExpiresAt: data?.planCreditExpiresAt ?? null,
+      });
     } catch {
-      setWalletBalance(0);
+      setWalletSummary(EMPTY_WALLET_SUMMARY);
     } finally {
       setLoadingWallet(false);
     }
@@ -575,7 +601,7 @@ function ProfilePage() {
                               isDarkMode ? "text-slate-400" : "text-slate-500"
                             }`}
                           >
-                            {t("wallet.balance")}
+                            {t("wallet.totalAvailable")}
                           </p>
                         </div>
                       </div>
@@ -585,8 +611,36 @@ function ProfilePage() {
                             ? "..."
                             : new Intl.NumberFormat(
                                 currentLang === "vi" ? "vi-VN" : "en-US"
-                              ).format(walletBalance ?? 0)}
+                              ).format(walletSummary.totalAvailableCredits ?? 0)}
                         </p>
+                        {!loadingWallet && (
+                          <div className={`mt-1 space-y-1 text-[11px] ${
+                            isDarkMode ? "text-slate-400" : "text-slate-500"
+                          }`}>
+                            <p>
+                              {t("wallet.regularCredits")}:{" "}
+                              {new Intl.NumberFormat(
+                                currentLang === "vi" ? "vi-VN" : "en-US"
+                              ).format(walletSummary.regularCreditBalance ?? 0)}
+                            </p>
+                            {walletSummary.hasActivePlan && (
+                              <>
+                                <p>
+                                  {t("wallet.planCredits")}:{" "}
+                                  {new Intl.NumberFormat(
+                                    currentLang === "vi" ? "vi-VN" : "en-US"
+                                  ).format(walletSummary.planCreditBalance ?? 0)}
+                                </p>
+                                {walletSummary.planCreditExpiresAt && (
+                                  <p>
+                                    {t("wallet.expiresAt")}:{" "}
+                                    {formatWalletDateTime(walletSummary.planCreditExpiresAt, currentLang)}
+                                  </p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={() =>
