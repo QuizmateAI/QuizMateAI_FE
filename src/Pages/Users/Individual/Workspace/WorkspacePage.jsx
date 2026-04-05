@@ -12,7 +12,7 @@ import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 
 import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
 
-import { Globe, Moon, Sun, UserCircle } from "lucide-react";
+import { Moon, Sun, UserCircle } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 
@@ -2568,7 +2568,7 @@ function WorkspacePage() {
 
 	const settingsMenu = (
 
-		<div className="flex items-center gap-2">
+		<div className="flex items-center gap-3">
 
 			<Button
 
@@ -2578,18 +2578,17 @@ function WorkspacePage() {
 
 				onClick={handleWorkspaceProfileClick}
 
-				className={`${headerActionClass} lg:min-w-[14rem] lg:justify-start`}
+				className={`${headerActionClass} h-9 px-3 justify-center`}
 
 				title={t("workspace.settingsMenu.workspaceProfile")}
+
+				aria-label={t("workspace.settingsMenu.workspaceProfile")}
 
 			>
 
 				<UserCircle className="h-4 w-4 shrink-0" />
-
 				<span className="app-topbar-action-label hidden lg:inline">
-
-					{t("workspace.settingsMenu.workspaceProfile")}
-
+					{currentLang === "vi" ? "Hồ sơ" : "Profile"}
 				</span>
 
 			</Button>
@@ -2604,18 +2603,16 @@ function WorkspacePage() {
 
 				onClick={toggleLanguage}
 
-				className={`${headerActionClass} min-w-[4.25rem] justify-center`}
+				className={`${headerActionClass} h-9 w-9 justify-center`}
 
 				title={t("common.language")}
 
+				aria-label={t("common.language")}
+
 			>
 
-				<Globe className="h-4 w-4 shrink-0" />
-
-				<span className="app-topbar-action-value hidden sm:inline min-w-[1.75rem] uppercase">
-
-					{currentLang === "vi" ? "VI" : "EN"}
-
+				<span className="text-base leading-none" aria-hidden="true">
+					{currentLang === "vi" ? "🇻🇳" : "🇬🇧"}
 				</span>
 
 			</Button>
@@ -2630,19 +2627,15 @@ function WorkspacePage() {
 
 				onClick={toggleDarkMode}
 
-				className={`${headerActionClass} min-w-[6rem] justify-center`}
+				className={`${headerActionClass} h-9 w-9 justify-center`}
 
 				title={t("common.theme")}
+
+				aria-label={t("common.theme")}
 
 			>
 
 				{isDarkMode ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
-
-				<span className="app-topbar-action-value hidden md:inline min-w-[3.25rem]">
-
-					{isDarkMode ? t("common.dark") : t("common.light")}
-
-				</span>
 
 			</Button>
 

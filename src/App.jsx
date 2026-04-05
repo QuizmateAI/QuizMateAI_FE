@@ -46,6 +46,7 @@ const QuizResultPage = lazy(() => import('./Pages/Users/Quiz/QuizResultPage'));
 
 // Payment
 const PaymentPage = lazy(() => import('./Pages/Payment/PaymentPage'));
+const CreditPaymentPage = lazy(() => import('./Pages/Payment/CreditPaymentPage'));
 const PaymentResultPage = lazy(() => import('./Pages/Payment/PaymentResultPage'));
 const VnPayReturnRedirect = lazy(() => import('./Pages/Payment/VnPayReturnRedirect'));
 
@@ -82,6 +83,7 @@ function MainRoutes() {
       {/* Route cần đăng nhập (User) - Super Admin, Admin không được vào */}
       <Route element={<ProtectedRoute allowedRoles={['USER']} />}>
         <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/payment/credit" element={<CreditPaymentPage />} />
         <Route path="/payment/result" element={<PaymentResultPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/plan" element={<PlanPage />} />

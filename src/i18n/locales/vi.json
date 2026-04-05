@@ -326,7 +326,24 @@
     "revenueWindow": "Khung doanh thu 7 ngày",
     "revenueWindowDesc": "Theo dõi doanh thu hoàn tất theo từng ngày để nhìn ra đỉnh và đáy ngắn hạn.",
     "revenueLast7Days": "Doanh thu 7 ngày",
+    "viewByYear": "Năm",
+    "viewByWeek": "Tuần",
+    "viewByMonth": "Tháng",
+    "revenueWindowYearTitle": "Doanh thu theo năm",
+    "revenueWindowMonthTitle": "Doanh thu theo tháng",
+    "revenueWindowWeekTitle": "Doanh thu theo tuần",
+    "revenueWindowYearDesc": "Tổng hợp doanh thu theo 12 tháng của năm đã chọn, không tính các mốc ở tương lai.",
+    "revenueWindowMonthDesc": "Xem doanh thu theo từng ngày trong tháng đã chọn, chỉ tính tới ngày hiện tại nếu đó là tháng hiện tại.",
+    "revenueWindowWeekDesc": "Xem doanh thu theo từng ngày trong tuần đã chọn, chỉ tính tới ngày hiện tại nếu đó là tuần hiện tại.",
+    "revenueSelectedYear": "Doanh thu năm đã chọn",
+    "revenueSelectedMonth": "Doanh thu tháng đã chọn",
+    "revenueSelectedWeek": "Doanh thu tuần đã chọn",
+    "revenueSelectedRange": "Doanh thu khoảng đã chọn",
+    "selectYear": "Chọn năm",
+    "selectWeek": "Chọn tuần",
+    "selectMonth": "Chọn tháng",
     "peakDay": "Ngày cao nhất",
+    "peakMonth": "Tháng cao nhất",
     "revenuePerUser": "Doanh thu / người dùng",
     "orders": "đơn",
     "transactions": "giao dịch",
@@ -687,9 +704,9 @@
     "cancel": "Đóng"
   },
   "plan": {
-    "title": "Gói của bạn",
-    "subtitle": "Gói có thể mua vĩnh viễn. Khi dùng các tính năng AI, bạn sẽ trừ dần Credit trong ví.",
-    "heroBadge": "Chọn gói & bắt đầu ngay",
+    "title": "Chọn gói học phù hợp",
+    "subtitle": "Mở khóa đúng mức hỗ trợ AI bạn cần để học nhanh hơn, mà không phải đọc quá nhiều thông số kỹ thuật.",
+    "heroBadge": "Gói AI cho học tập",
     "backToHome": "Về trang chủ",
     "back": "Quay lại",
     "types": {
@@ -703,8 +720,9 @@
     },
     "creditModel": {
       "title": "Mô hình Credit cho AI",
-      "desc": "Bạn có thể sở hữu plan vĩnh viễn. Mỗi lần dùng AI sẽ tiêu hao Credit. Hết Credit thì chỉ cần nạp thêm để dùng tiếp.",
-      "cta": "Mở ví Credit"
+      "desc": "Bạn mua plan một lần, sau đó chỉ cần nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
+      "cta": "Mở ví Credit",
+      "guide": "Xem cách tính Credit"
     },
     "noPlans": "Chưa có plan nào cho danh mục này.",
     "loadError": "Không thể tải danh sách plan. Vui lòng thử lại.",
@@ -713,15 +731,92 @@
     "durationForever": "Vĩnh viễn",
     "durationForeverShort": "Vĩnh viễn",
     "upgrade": "Chọn plan",
+    "currentCta": "Đang sử dụng",
+    "teamCta": "Bắt đầu cho nhóm",
     "thanhToan": "Thanh toán",
     "defaultPlan": "Gói mặc định",
+    "descriptions": {
+      "free": "Bắt đầu với các tính năng cốt lõi để tạo quiz và học thử.",
+      "freeWithLimits": "Phù hợp để bắt đầu với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",
+      "standard": "Nâng cấp trải nghiệm học với nhiều công cụ AI hữu ích hơn mỗi ngày.",
+      "recommended": "Mở khóa quy trình học đầy đủ với AI hỗ trợ rõ ràng và thực tế hơn.",
+      "premium": "Phù hợp cho nhu cầu học chuyên sâu với nhiều hỗ trợ AI và góc nhìn phân tích hơn.",
+      "group": "Thiết kế cho nhóm học hoặc lớp nhỏ cần dùng AI chung trên cùng một không gian.",
+      "groupWithLimits": "Không gian học chung cho nhóm với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",
+      "includesPrevious": "Bao gồm toàn bộ {{previousPlan}}, thêm {{extras}}.",
+      "includesPreviousSimple": "Bao gồm toàn bộ {{previousPlan}} với trải nghiệm học đầy đủ hơn.",
+      "extraFormats": "hỗ trợ {{formats}}",
+      "higherLimits": "giới hạn học tập cao hơn"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "word": "Word",
+      "slide": "Slide",
+      "excel": "Excel",
+      "text": "Text",
+      "image": "Hình ảnh",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "bullets": {
+      "groupCollab": "Dùng chung cho học nhóm và cộng tác trên cùng tài liệu",
+      "includesPrevious": "Bao gồm mọi tính năng của {{planName}}",
+      "singleFormat": "Hỗ trợ nhập tài liệu từ {{format}}",
+      "multiFormat": "Hỗ trợ nhập {{formats}}",
+      "multiFormatMore": "Hỗ trợ nhập {{formats}} và thêm {{count}} định dạng khác",
+      "addedFormats": "Thêm hỗ trợ {{formats}}",
+      "coreAi": "Đủ cho các nhu cầu tạo quiz AI cơ bản",
+      "limitWithMaterials": "{{workspaces}} workspace và {{materials}} tài liệu mỗi workspace",
+      "limitWorkspacesOnly": "{{workspaces}} workspace để quản lý tài liệu học tập",
+      "limitMaterialsOnly": "{{materials}} tài liệu cho mỗi workspace",
+      "upgradedLimits": "Nâng lên {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace",
+      "roadmaps": "Tạo lộ trình học AI theo tài liệu và mục tiêu",
+      "companion": "Có AI đồng hành để hỏi đáp và luyện tập nhanh",
+      "summaries": "Tóm tắt và đọc hiểu tài liệu nhanh hơn với AI",
+      "analytics": "Theo dõi tiến độ và điểm yếu để học có trọng tâm hơn",
+      "advancedQuiz": "Mở khóa kiểu quiz nâng cao cho luyện tập sâu hơn",
+      "bonusCredits": "Tặng kèm {{count}} Credit khi mua"
+    },
+    "featureNames": {
+      "roadmaps": "lộ trình học AI",
+      "companion": "AI đồng hành",
+      "summaries": "tóm tắt tài liệu",
+      "analytics": "phân tích học tập",
+      "advancedQuiz": "quiz nâng cao",
+      "multiformatImport": "hỗ trợ tài liệu đa định dạng",
+      "bonusCredits": "Credit tặng kèm"
+    },
+    "studyFeatures": {
+      "title": "Công cụ học tập nổi bật",
+      "subtitle": "Các gói trả phí mở rộng thêm nhiều cách dùng AI hữu ích trong quá trình học.",
+      "roadmap": {
+        "title": "Lộ trình học AI",
+        "desc": "Chuyển tài liệu thành các bước học rõ ràng để bám theo dễ hơn."
+      },
+      "companion": {
+        "title": "AI đồng hành",
+        "desc": "Hỏi nhanh, ôn nhanh và tiếp tục mạch học mà không bị ngắt quãng."
+      },
+      "summary": {
+        "title": "Tóm tắt thông minh",
+        "desc": "Biến nội dung dài thành ý chính ngắn gọn để ôn lại nhanh hơn."
+      },
+      "analytics": {
+        "title": "Phân tích học tập",
+        "desc": "Nhìn rõ điểm mạnh, điểm yếu và tiến độ để điều chỉnh cách học."
+      },
+      "advancedQuiz": {
+        "title": "Quiz nâng cao",
+        "desc": "Mở thêm kiểu câu hỏi và cấu hình linh hoạt cho luyện tập chuyên sâu."
+      }
+    },
     "notes": {
-      "permanentTitle": "Plan có thể mua vĩnh viễn",
-      "permanentDesc": "Plan không nhất thiết phải gia hạn theo tháng. Một số plan được bán dạng vĩnh viễn tùy cấu hình hệ thống.",
+      "permanentTitle": "Mua một lần, dùng lâu dài",
+      "permanentDesc": "Plan không bắt buộc theo tháng. Tùy cấu hình hệ thống, bạn có thể sở hữu plan dạng vĩnh viễn.",
       "creditsTitle": "AI dùng theo Credit",
-      "creditsDesc": "Các tính năng AI (tạo quiz/flashcard/mock test/companion...) sẽ trừ Credit dựa trên mức sử dụng.",
-      "refundTitle": "Thanh toán an toàn",
-      "refundDesc": "Quy trình thanh toán được bảo mật. Bạn có thể xem lịch sử mua Credit trong ví."
+      "creditsDesc": "Các tính năng AI chỉ trừ Credit khi bạn thực sự dùng, nên dễ kiểm soát chi phí hơn.",
+      "refundTitle": "Thanh toán rõ ràng",
+      "refundDesc": "Thanh toán được bảo mật và lịch sử mua Credit luôn có thể xem lại trong ví."
     }
   },
   "wallet": {
@@ -977,7 +1072,7 @@
   },
   "aiCosts": {
     "title": "Chi phí AI",
-    "subtitle": "Theo dõi doanh thu, chi phí provider và biên lợi nhuận trên từng request AI.",
+    "subtitle": "Tách rõ số người dùng trả, chi phí thực tế và phần lợi nhuận của từng request AI.",
     "refresh": "Làm mới",
     "clear": "Xóa lọc",
     "apply": "Áp dụng",
@@ -985,11 +1080,11 @@
     "metrics": {
       "requests": "Tổng request",
       "matched": "Request có thể đối soát",
-      "revenue": "Doanh thu ghi nhận",
+      "revenue": "Người dùng trả",
       "credits": "Credit đã thu",
-      "providerCost": "Chi phí provider",
+      "providerCost": "Chi phí thực tế",
       "tokens": "Token đã xử lý",
-      "profit": "Lợi nhuận gộp",
+      "profit": "Lợi nhuận QuizMate",
       "unmatched": "Request chưa đối soát"
     },
     "filters": {
@@ -1010,15 +1105,21 @@
     },
     "table": {
       "request": "Request",
-      "plan": "Gói / Model",
-      "charged": "Doanh thu",
+      "plan": "Gói",
       "tokens": "Token",
-      "cost": "Chi phí & lợi nhuận",
+      "charged": "Người dùng trả",
+      "actual": "Chi phí thực tế",
+      "profit": "Lợi nhuận",
+      "legend": "Cột Người dùng trả hiển thị số credit và số tiền người dùng đã trả. Cột Chi phí thực tế dùng token model thực tế để tính ra chi phí. Lợi nhuận là tiền người dùng trả trừ chi phí thực tế; số âm nghĩa là đang lỗ.",
+      "profitHint": "Phần QuizMate giữ lại",
+      "profitGainHint": "QuizMate đang có lãi",
+      "profitLossHint": "QuizMate đang bị lỗ",
       "status": "Trạng thái",
       "actions": "Thao tác"
     },
     "units": {
-      "credit": "credit"
+      "credit": "credit",
+      "tokenEquivalent": "token"
     },
     "formula": {
       "creditUnit": "Đơn giá credit",
@@ -1027,10 +1128,12 @@
       "thought": "Thought token",
       "completion": "Completion token",
       "total": "Tổng token",
-      "chargedVnd": "Doanh thu VND",
-      "providerCost": "Chi phí provider",
-      "profit": "Lợi nhuận",
-      "tokenPrice": "Giá token hiệu dụng",
+      "chargedVnd": "Người dùng trả (VND)",
+      "chargedCredit": "Credit người dùng trả",
+      "providerCost": "Chi phí thực tế",
+      "profit": "Lợi nhuận QuizMate",
+      "tokenPrice": "Đơn giá quy đổi / token",
+      "actualCostTokens": "Token thực tế",
       "tokenBudget": "Ngân sách token tương đương",
       "tokenMargin": "Biên token tương đương"
     },
@@ -1045,7 +1148,7 @@
       "audit": "AI Audit"
     },
     "detail": {
-      "title": "Chi tiết chi phí request",
+      "title": "Chi tiết thu - chi request",
       "ledger": "Sổ cái nghiệp vụ",
       "action": "Chức năng",
       "plan": "Gói",
@@ -1053,12 +1156,12 @@
       "group": "Capability",
       "status": "Trạng thái",
       "createdAt": "Thời gian tạo",
-      "formula": "Công thức quy đổi",
+      "formula": "Thu - chi quy đổi",
       "tokens": "Số liệu token",
-      "explain": "Giải thích",
-      "explainCharged": "Request này đã thu {{credit}} credit, tương đương {{vnd}} theo đơn giá credit đã chụp tại thời điểm giao dịch.",
-      "explainProvider": "Chi phí provider được tính từ {{prompt}} input token và {{output}} output token thực tế, tương đương {{cost}}.",
-      "explainMargin": "Với mức thu hiện tại, request này tương đương ngân sách {{tokenBudget}} token và còn biên {{tokenMargin}} token."
+      "explain": "Cách hiểu số liệu",
+      "explainCharged": "Người dùng đã trả {{credit}} credit, tương ứng {{vnd}} cho request này.",
+      "explainProvider": "Chi phí thực tế được tính từ {{prompt}} input token và {{output}} output token, tổng khoảng {{actualTokens}} token với chi phí {{cost}}.",
+      "explainMargin": "Lợi nhuận được tính bằng tiền người dùng trả trừ đi chi phí thực tế. Giá trị hiện tại là {{profitVnd}}; số âm nghĩa là đang lỗ."
     }
   },
   "auth": {

@@ -2,7 +2,12 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { Loader2 } from 'lucide-react';
-import { createMomoPayment, createVnPayPayment } from '@/api/PaymentAPI';
+import {
+  createMomoCreditPayment,
+  createMomoPayment,
+  createVnPayCreditPayment,
+  createVnPayPayment,
+} from '@/api/PaymentAPI';
 import { setPendingPlanPurchase } from '@/Utils/planPurchaseState';
 import MomoLogo from '@/assets/MOMO-Logo.png';
 import VnpayLogo from '@/assets/Logo-VNPAY-QR-1.webp';
@@ -12,7 +17,14 @@ const METHODS = [
   { id: 'vnpay', alt: 'VNPay', logo: VnpayLogo },
 ];
 
-export default function PaymentMethods({ planId, planName, planType, workspaceId }) {
+export default function PaymentMethods({
+  paymentType = 'plan',
+  planId,
+  planName,
+  planType,
+  workspaceId,
+  creditPackageId,
+}) {
   const { t } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const [selected, setSelected] = useState(null);
@@ -26,21 +38,30 @@ export default function PaymentMethods({ planId, planName, planType, workspaceId
 
     try {
       const targetWorkspaceId = planType === 'GROUP' ? workspaceId : null;
+      const isCreditPayment = paymentType === 'credit';
 
       if (selected === 'momo') {
-        const res = await createMomoPayment(planId, targetWorkspaceId);
+        const res = isCreditPayment
+          ? await createMomoCreditPayment(creditPackageId, targetWorkspaceId)
+          : await createMomoPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         if (payUrl) {
-          setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
+          if (!isCreditPayment) {
+            setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
+          }
           window.location.href = payUrl;
           return;
         }
         setError(t('payment.momoError'));
       } else if (selected === 'vnpay') {
-        const res = await createVnPayPayment(planId, targetWorkspaceId);
+        const res = isCreditPayment
+          ? await createVnPayCreditPayment(creditPackageId, targetWorkspaceId)
+          : await createVnPayPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
         if (payUrl) {
-          setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
+          if (!isCreditPayment) {
+            setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
+          }
           window.location.href = payUrl;
           return;
         }
@@ -51,7 +72,7 @@ export default function PaymentMethods({ planId, planName, planType, workspaceId
     } finally {
       setLoading(false);
     }
-  }, [selected, planId, planName, planType, workspaceId, t]);
+  }, [selected, paymentType, planId, planName, planType, workspaceId, creditPackageId, t]);
 
   return (
     <div>
