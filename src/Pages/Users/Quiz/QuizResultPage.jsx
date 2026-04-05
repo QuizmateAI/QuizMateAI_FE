@@ -561,6 +561,7 @@ export default function QuizResultPage() {
     };
   }, [pendingGradingCount, reviewQuestions]);
   const isGradingPending = pendingGradingCount > 0;
+  const shouldShowAssessmentSection = assessmentLoading || assessmentStatus !== 'NOT_AVAILABLE';
 
   useEffect(() => {
     setReviewMode(shouldStartInReviewMode);
@@ -1161,9 +1162,11 @@ handleBack,
               </div>
             </div>
 
-            <SectionDivider label={t('workspace.quiz.result.assessmentSection', 'Nhận xét của Quizmate AI')} />
+            {shouldShowAssessmentSection && (
+              <>
+                <SectionDivider label={t('workspace.quiz.result.assessmentSection', 'Nhận xét của Quizmate AI')} />
 
-            <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
+                <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
                   <Sparkles className="w-4 h-4" />
@@ -1177,12 +1180,6 @@ handleBack,
 
               {(assessmentLoading && !assessmentData) && (
                 <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
-              )}
-
-              {!assessmentLoading && assessmentStatus === 'NOT_AVAILABLE' && (
-                <div className="rounded-lg border border-slate-200/80 bg-slate-50/90 p-4 text-sm text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/50 dark:text-slate-300">
-                  {assessmentData?.message || t('workspace.quiz.result.assessmentUnavailable', 'Chưa có đánh giá AI cho lượt làm này. Hoàn thành thêm bài quiz để nhận gợi ý tiếp theo.')}
-                </div>
               )}
 
               {assessmentStatus === 'PROCESSING' && (
@@ -1252,7 +1249,9 @@ handleBack,
                   )}
                 </div>
               )}
-            </div>
+                </div>
+              </>
+            )}
 
             {canTriggerKnowledgeAfterPreLearning && isAssessmentReady && (
               <div className="rounded-xl border border-blue-200/80 dark:border-blue-700/70 bg-blue-50/70 dark:bg-blue-900/20 p-4 mb-6 text-left space-y-3">
