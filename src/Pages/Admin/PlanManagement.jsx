@@ -102,6 +102,11 @@ function PlanManagement() {
     return t(fallbackKey);
   };
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const pageFontStyle = {
+    fontFamily: i18n.language === 'en'
+      ? '"Poppins", var(--quiz-ui-font)'
+      : '"Be Vietnam Pro", var(--quiz-ui-font)',
+  };
   const dk = isDarkMode;
 
   const [plans, setPlans] = useState([]);
@@ -286,7 +291,7 @@ function PlanManagement() {
   const workspaceScopeCount = plans.filter(p => p.planScope === 'WORKSPACE').length;
   const activeCount = plans.filter(p => isActive(p.status)).length;
 
-  const sectionCls = `rounded-xl border p-4 ${dk ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-50/80 border-slate-100'}`;
+  const sectionCls = `rounded-xl border p-4 ${dk ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-slate-50/90 border-slate-200'}`;
   const getAssignedModelForPlan = (plan, modelGroup) => {
     const assignment = Array.isArray(plan?.aiModelAssignments)
       ? plan.aiModelAssignments.find((item) => item.modelGroup === modelGroup)
@@ -298,14 +303,14 @@ function PlanManagement() {
   };
 
   return (
-    <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
+    <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`} style={pageFontStyle}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
         <div>
-          <h1 className={`text-3xl font-black tracking-tight ${dk ? 'text-white' : 'text-slate-900'}`}>
+          <h1 className={`text-3xl font-black tracking-tight ${dk ? 'text-white' : 'text-slate-950'}`}>
             {t('subscription.title')}
           </h1>
-          <p className={`mt-1 ${dk ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
+          <p className={`mt-1 text-[15px] ${dk ? 'text-slate-400' : 'text-slate-600'} font-semibold`}>
             {t('subscription.desc')}
           </p>
         </div>
@@ -326,13 +331,13 @@ function PlanManagement() {
           { label: t('subscription.stats.activeSubs'), value: `${activeCount}/${plans.length}`, icon: Zap, from: 'from-amber-400', to: 'to-orange-500', shadow: 'shadow-amber-500/20' },
         ].map((s) => (
           <div key={s.label} className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] cursor-default ${
-            dk ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white border border-slate-100 shadow-sm'
+            dk ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white border border-slate-200 shadow-[0_10px_35px_-22px_rgba(15,23,42,0.35)]'
           }`}>
             <div className={`absolute top-0 right-0 w-24 h-24 rounded-full bg-gradient-to-br ${s.from} ${s.to} opacity-[0.08] -translate-y-6 translate-x-6`} />
             <div className="flex items-center justify-between relative">
               <div>
-                <p className={`text-xs font-semibold uppercase tracking-wider ${dk ? 'text-slate-500' : 'text-slate-400'}`}>{s.label}</p>
-                <p className={`text-3xl font-black mt-1 ${dk ? 'text-white' : 'text-slate-900'}`}>{s.value}</p>
+                <p className={`text-xs font-bold uppercase tracking-[0.14em] ${dk ? 'text-slate-500' : 'text-slate-500'}`}>{s.label}</p>
+                <p className={`text-3xl font-black mt-1 ${dk ? 'text-white' : 'text-slate-950'}`}>{s.value}</p>
               </div>
               <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${s.from} ${s.to} flex items-center justify-center shadow-lg ${s.shadow}`}>
                 <s.icon className="w-5 h-5 text-white" />
@@ -343,15 +348,15 @@ function PlanManagement() {
       </div>
 
       {/* Plans Table */}
-      <div className={`rounded-2xl border overflow-hidden transition-colors ${dk ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-white border-slate-200 shadow-sm'}`}>
-        <div className={`flex flex-col md:flex-row items-center justify-between gap-4 p-5 border-b ${dk ? 'border-white/[0.06]' : 'border-slate-100'}`}>
-          <h2 className={`text-lg font-bold ${dk ? 'text-white' : 'text-slate-800'}`}>
-            {t('subscription.planList')} <span className={`font-normal text-sm ${dk ? 'text-slate-500' : 'text-slate-400'}`}>({filteredPlans.length})</span>
+      <div className={`rounded-2xl border overflow-hidden transition-colors ${dk ? 'bg-white/[0.02] border-white/[0.06]' : 'bg-white border-slate-200 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)]'}`}>
+        <div className={`flex flex-col md:flex-row items-center justify-between gap-4 p-5 border-b ${dk ? 'border-white/[0.06]' : 'border-slate-200'}`}>
+          <h2 className={`text-xl font-extrabold tracking-tight ${dk ? 'text-white' : 'text-slate-900'}`}>
+            {t('subscription.planList')} <span className={`font-semibold text-sm ${dk ? 'text-slate-500' : 'text-slate-500'}`}>({filteredPlans.length})</span>
           </h2>
           <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input placeholder={t('subscription.searchPlan')} className={`pl-10 h-10 rounded-xl ${dk ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30' : 'border-slate-200'}`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${dk ? 'text-slate-400' : 'text-slate-500'}`} />
+              <Input placeholder={t('subscription.searchPlan')} className={`pl-10 h-10 rounded-xl ${dk ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30' : 'border-slate-300 text-slate-800 placeholder:text-slate-500'}`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
             <Button variant="outline" size="icon" onClick={fetchPlans} disabled={isLoading} className={`h-10 w-10 rounded-xl cursor-pointer ${dk ? 'border-white/10 hover:bg-white/5' : ''}`}>
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -362,15 +367,15 @@ function PlanManagement() {
         <div className="overflow-x-auto">
           <Table className="table-auto min-w-full text-left">
             <TableHeader>
-              <TableRow className={dk ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50/80 border-b border-slate-100'}>
-                <TableHead className="w-[50px] font-semibold text-xs uppercase tracking-wider text-slate-400">ID</TableHead>
-                <TableHead className="w-[140px] font-semibold text-xs uppercase tracking-wider text-slate-400">Code</TableHead>
-                <TableHead className="w-[220px] font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.name')}</TableHead>
-                <TableHead className="w-[90px] font-semibold text-xs uppercase tracking-wider text-slate-400">Scope</TableHead>
-                <TableHead className="w-[80px] font-semibold text-xs uppercase tracking-wider text-slate-400">Level</TableHead>
-                <TableHead className="w-[130px] font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.price')}</TableHead>
-                <TableHead className="w-[90px] text-center font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.status')}</TableHead>
-                <TableHead className="w-[130px] text-right font-semibold text-xs uppercase tracking-wider text-slate-400">{t('subscription.table.actions')}</TableHead>
+              <TableRow className={dk ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50 border-b border-slate-200'}>
+                <TableHead className="w-[50px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">ID</TableHead>
+                <TableHead className="w-[140px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Code</TableHead>
+                <TableHead className="w-[220px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.name')}</TableHead>
+                <TableHead className="w-[90px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Scope</TableHead>
+                <TableHead className="w-[80px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Level</TableHead>
+                <TableHead className="w-[130px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.price')}</TableHead>
+                <TableHead className="w-[90px] text-center font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.status')}</TableHead>
+                <TableHead className="w-[130px] text-right font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -379,9 +384,9 @@ function PlanManagement() {
                   <ListSpinner variant="table" />
                 </TableCell></TableRow>
               ) : filteredPlans.length > 0 ? filteredPlans.map((plan) => (
-                <TableRow key={plan.planCatalogId} className={`border-b transition-colors cursor-pointer ${dk ? 'border-white/[0.04] hover:bg-white/[0.03]' : 'border-slate-50 hover:bg-blue-50/30'}`}>
+                <TableRow key={plan.planCatalogId} className={`border-b transition-colors cursor-pointer ${dk ? 'border-white/[0.04] hover:bg-white/[0.03]' : 'border-slate-100 hover:bg-slate-50/90'}`}>
                   <TableCell className="font-mono text-sm font-semibold text-blue-500">{plan.planCatalogId}</TableCell>
-                  <TableCell className="font-mono text-xs text-slate-400">{plan.code}</TableCell>
+                  <TableCell className={`font-mono text-xs font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{plan.code}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
@@ -395,23 +400,25 @@ function PlanManagement() {
                         }
                       </div>
                       <div>
-                        <p className={`font-semibold text-sm ${dk ? 'text-white' : 'text-slate-800'}`}>{plan.displayName}</p>
-                        <p className="text-xs text-slate-400">{plan.description}</p>
+                        <p className={`font-bold text-[15px] ${dk ? 'text-white' : 'text-slate-900'}`}>{plan.displayName}</p>
+                        <p className={`text-xs font-medium ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{plan.description}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100/10 text-slate-300">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold ${
+                      dk ? 'bg-slate-100/10 text-slate-300' : 'bg-slate-100 text-slate-700'
+                    }`}>
                       {plan.planScope === 'WORKSPACE' ? 'Group workspace' : plan.planScope}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className={`font-mono text-sm ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <span className={`font-mono text-sm font-semibold ${dk ? 'text-slate-300' : 'text-slate-700'}`}>
                       {plan.planLevel ?? '-'}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className={`font-bold ${(plan.price ?? 0) === 0 ? 'text-emerald-500' : dk ? 'text-white' : 'text-slate-800'}`}>
+                    <span className={`font-extrabold ${(plan.price ?? 0) === 0 ? 'text-emerald-600' : dk ? 'text-white' : 'text-slate-900'}`}>
                       {formatCurrency(plan.price)}
                     </span>
                   </TableCell>
@@ -443,7 +450,7 @@ function PlanManagement() {
                   </TableCell>
                 </TableRow>
               )) : (
-                <TableRow><TableCell colSpan={8} className="text-center py-20 text-slate-400 text-sm italic">{t('subscription.noPlans')}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className={`text-center py-20 text-sm italic font-medium ${dk ? 'text-slate-500' : 'text-slate-500'}`}>{t('subscription.noPlans')}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

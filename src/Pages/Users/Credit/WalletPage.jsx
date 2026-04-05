@@ -27,7 +27,6 @@ import {
   getPurchaseableCreditPackages,
   getMyWalletTransactions,
 } from "@/api/ManagementSystemAPI";
-import { createMomoCreditPayment, createVnPayCreditPayment } from "@/api/PaymentAPI";
 import { getCachedSubscription } from "@/Utils/userCache";
 
 function formatNumber(n, locale) {
@@ -55,6 +54,31 @@ const EMPTY_WALLET_SUMMARY = {
   planCreditExpiresAt: null,
 };
 
+function normalizeWalletSummary(walletData) {
+  return {
+    ...EMPTY_WALLET_SUMMARY,
+    ...walletData,
+    totalAvailableCredits: walletData?.totalAvailableCredits ?? walletData?.balance ?? 0,
+    regularCreditBalance: walletData?.regularCreditBalance ?? 0,
+    planCreditBalance: walletData?.planCreditBalance ?? 0,
+    hasActivePlan: Boolean(walletData?.hasActivePlan),
+    planCreditExpiresAt: walletData?.planCreditExpiresAt ?? null,
+  };
+}
+
+function normalizeTransactions(page) {
+  const content = page?.content ?? (Array.isArray(page) ? page : []);
+  return content.map((tx) => ({
+    id: tx.creditTransactionId,
+    time: tx.createdAt,
+    amount: tx.creditChange ?? 0,
+    type: tx.transactionType ?? "UNKNOWN",
+    source: tx.sourceType ?? "",
+    note: tx.note ?? "",
+    balanceAfter: tx.balanceAfter ?? null,
+  }));
+}
+
 export default function WalletPage() {
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -75,8 +99,6 @@ export default function WalletPage() {
   const [isLoadingWallet, setIsLoadingWallet] = useState(true);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true);
   const [isLoadingPackages, setIsLoadingPackages] = useState(true);
-  const [buyingPackageId, setBuyingPackageId] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("momo");
 
   const subscription = getCachedSubscription();
   const canBuyCredit = subscription?.entitlement?.canBuyCredit !== false;
@@ -114,29 +136,32 @@ export default function WalletPage() {
         if (cancelled) return;
 
         const walletData = walletRes?.data ?? walletRes;
-        setWalletSummary({
-          ...EMPTY_WALLET_SUMMARY,
-          ...walletData,
-          totalAvailableCredits: walletData?.totalAvailableCredits ?? walletData?.balance ?? 0,
-          regularCreditBalance: walletData?.regularCreditBalance ?? 0,
-          planCreditBalance: walletData?.planCreditBalance ?? 0,
-          hasActivePlan: Boolean(walletData?.hasActivePlan),
-          planCreditExpiresAt: walletData?.planCreditExpiresAt ?? null,
-        });
+        const normalizedWallet = normalizeWalletSummary(walletData);
 
         const pkgData = packagesRes?.data ?? packagesRes;
-        setPackages(Array.isArray(pkgData) ? pkgData : []);
 
         const page = txRes?.data ?? txRes;
-        const content = page?.content ?? (Array.isArray(page) ? page : []);
-        const mappedTx = content.map((tx) => ({
-          id: tx.creditTransactionId,
-          time: tx.createdAt,
-          amount: tx.creditChange ?? 0,
-          type: tx.transactionType ?? "UNKNOWN",
-          source: tx.sourceType ?? "",
-          note: tx.note ?? "",
-        }));
+        let mappedTx = normalizeTransactions(page);
+        let finalWallet = normalizedWallet;
+
+        const latestTxBalance = mappedTx[0]?.balanceAfter;
+        const walletBalance = normalizedWallet.totalAvailableCredits ?? 0;
+
+        // Avoid showing a split-brain snapshot when balance and history are fetched
+        // around the same moment while multiple AI charges are still committing.
+        if (latestTxBalance != null && latestTxBalance !== walletBalance) {
+          const [walletRetryRes, txRetryRes] = await Promise.all([
+            getMyWallet(),
+            getMyWalletTransactions(0, 20),
+          ]);
+          if (cancelled) return;
+
+          finalWallet = normalizeWalletSummary(walletRetryRes?.data ?? walletRetryRes);
+          mappedTx = normalizeTransactions(txRetryRes?.data ?? txRetryRes);
+        }
+
+        setWalletSummary(finalWallet);
+        setPackages(Array.isArray(pkgData) ? pkgData : []);
         setTransactions(mappedTx);
       } catch (err) {
         if (!cancelled) {
@@ -157,25 +182,11 @@ export default function WalletPage() {
     };
   }, [showError, t]);
 
-  const buyCredits = async (pkg) => {
+  const buyCredits = (pkg) => {
     if (!pkg?.creditPackageId) return;
-    try {
-      setBuyingPackageId(pkg.creditPackageId);
-      const res = paymentMethod === "vnpay"
-        ? await createVnPayCreditPayment(pkg.creditPackageId)
-        : await createMomoCreditPayment(pkg.creditPackageId);
-      const data = res?.data ?? res;
-      const payUrl = data?.payUrl;
-      if (payUrl) {
-        window.location.href = payUrl;
-      } else {
-        showError(t("error.unknown"));
-      }
-    } catch (err) {
-      showError(getFriendlyError(err));
-    } finally {
-      setBuyingPackageId(null);
-    }
+    navigate(`/payment/credit?creditPackageId=${pkg.creditPackageId}`, {
+      state: { from: "/wallet" },
+    });
   };
 
   const backTo = location.state?.from || "/plan";
@@ -379,29 +390,6 @@ export default function WalletPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Payment method toggle */}
-              {canBuyCredit && (
-                <div className={`inline-flex rounded-full p-0.5 ring-1 ring-inset mb-1 ${isDarkMode ? "bg-slate-800 ring-slate-700" : "bg-slate-100 ring-slate-200"}`}>
-                  {[
-                    { key: "momo", label: "MoMo" },
-                    { key: "vnpay", label: "VNPay QR" },
-                  ].map(({ key, label }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setPaymentMethod(key)}
-                      className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                        paymentMethod === key
-                          ? isDarkMode ? "bg-blue-600 text-white shadow" : "bg-white text-slate-900 shadow"
-                          : isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {!canBuyCredit && (
                 <p className={`text-sm py-2 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
                   {t("wallet.cannotBuyCredit", { defaultValue: "Gói hiện tại của bạn không hỗ trợ mua credit. Hãy nâng cấp gói để tiếp tục." })}
@@ -422,8 +410,7 @@ export default function WalletPage() {
                   key={pkg.creditPackageId ?? totalCredits}
                   type="button"
                   onClick={() => buyCredits(pkg)}
-                  disabled={buyingPackageId === pkg.creditPackageId}
-                  className={`w-full text-left rounded-2xl p-4 ring-1 ring-inset transition-all active:scale-[0.99] cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed ${
+                  className={`w-full text-left rounded-2xl p-4 ring-1 ring-inset transition-all active:scale-[0.99] cursor-pointer ${
                     isDarkMode
                       ? "bg-slate-950/30 ring-slate-700/60 hover:bg-slate-800/60"
                       : "bg-white ring-slate-200 hover:bg-slate-50"
@@ -452,7 +439,7 @@ export default function WalletPage() {
                       <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${
                         isDarkMode ? "bg-blue-600/15 text-blue-300" : "bg-blue-50 text-blue-700"
                       }`}>
-                        {buyingPackageId === pkg.creditPackageId ? t("payment.processing") : t("wallet.buyNow")}
+                        {t("wallet.buyNow")}
                       </span>
                     </div>
                   </div>

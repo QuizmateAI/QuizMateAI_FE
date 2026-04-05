@@ -326,7 +326,24 @@
     "revenueWindow": "7-day revenue window",
     "revenueWindowDesc": "See the recent completed revenue rhythm by day so peaks and drops are visible at a glance.",
     "revenueLast7Days": "Revenue in 7 days",
+    "viewByYear": "Year",
+    "viewByWeek": "Week",
+    "viewByMonth": "Month",
+    "revenueWindowYearTitle": "Revenue by year",
+    "revenueWindowMonthTitle": "Revenue by month",
+    "revenueWindowWeekTitle": "Revenue by week",
+    "revenueWindowYearDesc": "Aggregate revenue across the 12 months of the selected year, excluding future periods.",
+    "revenueWindowMonthDesc": "See revenue by day within the selected month, up to today when the current month is selected.",
+    "revenueWindowWeekDesc": "See revenue by day within the selected week, up to today when the current week is selected.",
+    "revenueSelectedYear": "Revenue in selected year",
+    "revenueSelectedMonth": "Revenue in selected month",
+    "revenueSelectedWeek": "Revenue in selected week",
+    "revenueSelectedRange": "Revenue in selected range",
+    "selectYear": "Select year",
+    "selectWeek": "Select week",
+    "selectMonth": "Select month",
     "peakDay": "Peak day",
+    "peakMonth": "Peak month",
     "revenuePerUser": "Revenue per user",
     "orders": "orders",
     "transactions": "transactions",
@@ -662,9 +679,9 @@
     "cancel": "Close"
   },
   "plan": {
-    "title": "Your Plan",
-    "subtitle": "Plans can be purchased permanently. AI features consume Credits from your wallet.",
-    "heroBadge": "Pick a plan and start",
+    "title": "Choose your learning plan",
+    "subtitle": "Pick the level of AI support you need without wading through a long list of technical settings.",
+    "heroBadge": "AI plans for learning",
     "backToHome": "Back to Home",
     "back": "Back",
     "types": {
@@ -678,8 +695,9 @@
     },
     "creditModel": {
       "title": "Credit model for AI",
-      "desc": "Own your plan permanently. Each AI action consumes Credits. When you run out, just top up to continue.",
-      "cta": "Open Credit Wallet"
+      "desc": "Buy the plan once, then top up Credits only when you need more AI usage.",
+      "cta": "Open Credit Wallet",
+      "guide": "See credit pricing"
     },
     "noPlans": "No plans available for this category.",
     "loadError": "Unable to load plans. Please try again.",
@@ -688,15 +706,92 @@
     "durationForever": "Forever",
     "durationForeverShort": "Forever",
     "upgrade": "Choose plan",
+    "currentCta": "Currently using",
+    "teamCta": "Start team plan",
     "thanhToan": "Payment",
     "defaultPlan": "Default plan",
+    "descriptions": {
+      "free": "Start with the essentials for quiz creation and lightweight study sessions.",
+      "freeWithLimits": "A solid starting point with {{workspaces}} workspaces and {{materials}} materials in each workspace.",
+      "standard": "Expand your daily study flow with more helpful AI tools.",
+      "recommended": "Unlock the full learning workflow with clearer, more practical AI support.",
+      "premium": "Built for focused study sessions with broader AI support and deeper insight.",
+      "group": "Designed for study groups or classrooms that want shared AI-powered workflows.",
+      "groupWithLimits": "A shared study space with {{workspaces}} workspaces and {{materials}} materials per workspace.",
+      "includesPrevious": "Everything in {{previousPlan}}, plus {{extras}}.",
+      "includesPreviousSimple": "Everything in {{previousPlan}}, with a fuller study workflow.",
+      "extraFormats": "support for {{formats}}",
+      "higherLimits": "higher study limits"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "word": "Word",
+      "slide": "Slide",
+      "excel": "Excel",
+      "text": "Text",
+      "image": "images",
+      "video": "video",
+      "audio": "audio"
+    },
+    "bullets": {
+      "groupCollab": "Shared setup for team study and collaborative material work",
+      "includesPrevious": "Everything included in {{planName}}",
+      "singleFormat": "Import materials from {{format}}",
+      "multiFormat": "Import {{formats}}",
+      "multiFormatMore": "Import {{formats}} and {{count}} more formats",
+      "addedFormats": "Adds support for {{formats}}",
+      "coreAi": "Covers the core AI quiz workflow",
+      "limitWithMaterials": "{{workspaces}} workspaces and {{materials}} materials per workspace",
+      "limitWorkspacesOnly": "{{workspaces}} workspaces to organize study materials",
+      "limitMaterialsOnly": "{{materials}} materials in each workspace",
+      "upgradedLimits": "Upgrades to {{workspaces}} workspaces and {{materials}} materials per workspace",
+      "roadmaps": "Generate AI study roadmaps from your materials and goals",
+      "companion": "Use an AI companion for quick questions and guided practice",
+      "summaries": "Read and summarize dense materials faster with AI",
+      "analytics": "Track progress and weak spots with learning analytics",
+      "advancedQuiz": "Unlock more advanced quiz types for deeper practice",
+      "bonusCredits": "Includes {{count}} bonus Credits on purchase"
+    },
+    "featureNames": {
+      "roadmaps": "AI study roadmaps",
+      "companion": "AI companion",
+      "summaries": "smart summaries",
+      "analytics": "learning analytics",
+      "advancedQuiz": "advanced quiz modes",
+      "multiformatImport": "multi-format material support",
+      "bonusCredits": "bonus Credits"
+    },
+    "studyFeatures": {
+      "title": "Premium study tools",
+      "subtitle": "Paid plans unlock more practical ways to use AI throughout your study workflow.",
+      "roadmap": {
+        "title": "AI study roadmaps",
+        "desc": "Turn materials into a step-by-step study path that is easier to follow."
+      },
+      "companion": {
+        "title": "AI companion",
+        "desc": "Ask quick questions, review faster, and keep momentum while you study."
+      },
+      "summary": {
+        "title": "Smart summaries",
+        "desc": "Condense long materials into the main ideas so review takes less time."
+      },
+      "analytics": {
+        "title": "Learning analytics",
+        "desc": "Spot strengths, weak areas, and progress patterns sooner."
+      },
+      "advancedQuiz": {
+        "title": "Advanced quiz modes",
+        "desc": "Unlock broader quiz setups and more flexible practice sessions."
+      }
+    },
     "notes": {
-      "permanentTitle": "Plans can be permanent",
-      "permanentDesc": "Plans are not necessarily monthly. Some plans can be sold as permanent depending on system configuration.",
+      "permanentTitle": "Buy once, keep access longer",
+      "permanentDesc": "Plans do not have to be monthly. Depending on configuration, some plans can be purchased permanently.",
       "creditsTitle": "AI is credit-based",
-      "creditsDesc": "AI features (quiz/flashcards/mock tests/companion...) consume Credits based on usage.",
-      "refundTitle": "Secure checkout",
-      "refundDesc": "Payments are secured. You can review your Credit purchase history in the wallet."
+      "creditsDesc": "AI features only consume Credits when you actually use them, so spend stays easier to control.",
+      "refundTitle": "Clear checkout flow",
+      "refundDesc": "Payments are secured and your Credit purchase history stays available in the wallet."
     }
   },
   "wallet": {
@@ -952,7 +1047,7 @@
   },
   "aiCosts": {
     "title": "AI Costs",
-    "subtitle": "Track revenue, provider spend, and margin for every billable AI request.",
+    "subtitle": "Separate what the user paid, the actual provider spend, and the margin kept on each AI request.",
     "refresh": "Refresh",
     "clear": "Clear filters",
     "apply": "Apply",
@@ -960,11 +1055,11 @@
     "metrics": {
       "requests": "Requests",
       "matched": "matched requests",
-      "revenue": "Recorded revenue",
+      "revenue": "User paid",
       "credits": "credits charged",
-      "providerCost": "Provider cost",
+      "providerCost": "Actual cost",
       "tokens": "tokens processed",
-      "profit": "Gross profit",
+      "profit": "QuizMate margin",
       "unmatched": "unmatched requests"
     },
     "filters": {
@@ -985,15 +1080,21 @@
     },
     "table": {
       "request": "Request",
-      "plan": "Plan / Model",
-      "charged": "Revenue",
+      "plan": "Plan",
       "tokens": "Tokens",
-      "cost": "Cost & margin",
+      "charged": "User paid",
+      "actual": "Actual cost",
+      "profit": "Profit",
+      "legend": "User paid shows the charged credits and VND amount. Actual cost uses real model tokens to derive provider spend. Profit is user-paid amount minus actual cost; a negative value means a loss.",
+      "profitHint": "Kept by QuizMate",
+      "profitGainHint": "QuizMate is profitable",
+      "profitLossHint": "QuizMate is taking a loss",
       "status": "Status",
       "actions": "Actions"
     },
     "units": {
-      "credit": "credit"
+      "credit": "credit",
+      "tokenEquivalent": "token"
     },
     "formula": {
       "creditUnit": "Credit unit price",
@@ -1002,10 +1103,12 @@
       "thought": "Thought tokens",
       "completion": "Completion tokens",
       "total": "Total tokens",
-      "chargedVnd": "Charged VND",
-      "providerCost": "Provider cost",
-      "profit": "Profit",
-      "tokenPrice": "Effective token price",
+      "chargedVnd": "User paid (VND)",
+      "chargedCredit": "Charged credits",
+      "providerCost": "Actual cost",
+      "profit": "QuizMate profit",
+      "tokenPrice": "Conversion price / token",
+      "actualCostTokens": "Actual-cost tokens",
       "tokenBudget": "Equivalent token budget",
       "tokenMargin": "Equivalent token margin"
     },
@@ -1020,7 +1123,7 @@
       "audit": "AI Audit"
     },
     "detail": {
-      "title": "Request cost detail",
+      "title": "Request revenue & cost detail",
       "ledger": "Business ledger",
       "action": "Action",
       "plan": "Plan",
@@ -1028,12 +1131,12 @@
       "group": "Capability",
       "status": "Status",
       "createdAt": "Created at",
-      "formula": "Conversion formula",
+      "formula": "Converted revenue & spend",
       "tokens": "Token breakdown",
-      "explain": "Explanation",
-      "explainCharged": "This request charged {{credit}} credits, equivalent to {{vnd}} using the snapshotted credit unit price.",
-      "explainProvider": "Provider cost is derived from {{prompt}} input tokens and {{output}} output tokens, totaling {{cost}}.",
-      "explainMargin": "At the current selling price, this request corresponds to a {{tokenBudget}} token budget and leaves a margin of {{tokenMargin}} tokens."
+      "explain": "How to read this",
+      "explainCharged": "The user paid {{credit}} credits for this request, which equals {{vnd}}.",
+      "explainProvider": "The actual spend is derived from {{prompt}} input tokens and {{output}} output tokens, totaling about {{actualTokens}} tokens and {{cost}}.",
+      "explainMargin": "Profit is calculated as user-paid amount minus actual provider cost. The current value is {{profitVnd}}; a negative value means a loss."
     }
   },
   "auth": {
