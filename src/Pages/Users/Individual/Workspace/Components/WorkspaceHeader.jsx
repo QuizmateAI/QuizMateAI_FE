@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/Components/ui/button";
 import { Pencil, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import WebSocketStatus from "@/Components/features/WebSocketStatus";
+import CreditIconImage from "@/Components/ui/CreditIconImage";
+import { getMyWallet } from "@/api/ManagementSystemAPI";
 // import UpgradePlanDialog from "@/Pages/Payment/components/UpgradePlanDialog";
 import {
   Dialog,
@@ -17,6 +19,22 @@ import {
   DialogDescription,
 } from "@/Components/ui/dialog";
 import { Input } from "@/Components/ui/input";
+
+const EMPTY_WALLET_SUMMARY = {
+  totalAvailableCredits: 0,
+  regularCreditBalance: 0,
+  planCreditBalance: 0,
+  hasActivePlan: false,
+  planCreditExpiresAt: null,
+};
+
+function formatNumber(value, locale) {
+  try {
+    return new Intl.NumberFormat(locale).format(Number(value) || 0);
+  } catch {
+    return String(value ?? 0);
+  }
+}
 
 function WorkspaceHeader({
   settingsMenu = null,
@@ -30,12 +48,16 @@ function WorkspaceHeader({
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const walletLocale = i18n.language === "vi" ? "vi-VN" : "en-US";
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
+  const [loadingWallet, setLoadingWallet] = useState(true);
   // const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const openEditDialog = () => {
@@ -56,6 +78,37 @@ function WorkspaceHeader({
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchWallet = async () => {
+      setLoadingWallet(true);
+      try {
+        const res = await getMyWallet();
+        const data = res?.data ?? res;
+        if (cancelled) return;
+        setWalletSummary({
+          ...EMPTY_WALLET_SUMMARY,
+          ...data,
+          totalAvailableCredits: data?.totalAvailableCredits ?? data?.balance ?? 0,
+          regularCreditBalance: data?.regularCreditBalance ?? 0,
+          planCreditBalance: data?.planCreditBalance ?? 0,
+          hasActivePlan: Boolean(data?.hasActivePlan),
+          planCreditExpiresAt: data?.planCreditExpiresAt ?? null,
+        });
+      } catch {
+        if (!cancelled) setWalletSummary(EMPTY_WALLET_SUMMARY);
+      } finally {
+        if (!cancelled) setLoadingWallet(false);
+      }
+    };
+
+    fetchWallet();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <header className={`relative z-[110] w-full h-16 border-b transition-colors duration-300 ${isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"}`}>
@@ -91,7 +144,7 @@ function WorkspaceHeader({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <WebSocketStatus isConnected={wsConnected} isDarkMode={isDarkMode} compact />
     
           {/* <Button className={`rounded-full text-white h-9 px-4 flex items-center gap-2 ${
@@ -111,6 +164,30 @@ function WorkspaceHeader({
             <span className={fontClass}>{t("upgradePlan.upgradeBtn")}</span>
           </Button> */}
           
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/wallet", { state: { from: location.pathname } })}
+            className={`flex h-9 items-center gap-2 rounded-full px-3.5 ${
+              isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
+            }`}
+            aria-label={t("common.wallet")}
+          >
+            <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
+              isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
+            }`}>
+              <CreditIconImage alt="Quizmate Credit" className="h-6 w-6 rounded-full" />
+            </span>
+            <span className="flex flex-col leading-none">
+              <span className="text-sm font-semibold">
+                {loadingWallet ? "—" : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
+              </span>
+              <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                {t("wallet.creditsUnit", "Credit")}
+              </span>
+            </span>
+          </Button>
+
           {settingsMenu ? (
             settingsMenu
           ) : (

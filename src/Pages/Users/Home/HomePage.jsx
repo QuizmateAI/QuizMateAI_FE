@@ -17,6 +17,24 @@ import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { preloadGroupWorkspacePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 import { useToast } from '@/context/ToastContext';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
+import { getMyWallet } from '@/api/ManagementSystemAPI';
+import CreditIconImage from "@/Components/ui/CreditIconImage";
+
+function formatNumber(value, locale) {
+  try {
+    return new Intl.NumberFormat(locale).format(Number(value) || 0);
+  } catch {
+    return String(value ?? 0);
+  }
+}
+
+const EMPTY_WALLET_SUMMARY = {
+  totalAvailableCredits: 0,
+  regularCreditBalance: 0,
+  planCreditBalance: 0,
+  hasActivePlan: false,
+  planCreditExpiresAt: null,
+};
 
 function normalizeHomeTab(value) {
   if (value === 'group') return 'group';
@@ -100,6 +118,8 @@ function HomePage() {
   const { showError, showSuccess } = useToast();
   const activeTab = normalizeHomeTab(searchParams.get('tab'));
   const { summary: currentPlanSummary } = useCurrentSubscription();
+  const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
+  const [loadingWallet, setLoadingWallet] = useState(true);
 
   // Prefetch cả workspace VÀ groups ngay khi load trang → chuyển tab instant (<1s)
   const {
@@ -125,6 +145,7 @@ function HomePage() {
 
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const walletLocale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
     i18n.changeLanguage(newLang);
@@ -230,6 +251,41 @@ function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isSettingsOpen]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchWallet = async () => {
+      setLoadingWallet(true);
+      try {
+        const res = await getMyWallet();
+        const data = res?.data ?? res;
+        if (cancelled) return;
+        setWalletSummary({
+          ...EMPTY_WALLET_SUMMARY,
+          ...data,
+          totalAvailableCredits: data?.totalAvailableCredits ?? data?.balance ?? 0,
+          regularCreditBalance: data?.regularCreditBalance ?? 0,
+          planCreditBalance: data?.planCreditBalance ?? 0,
+          hasActivePlan: Boolean(data?.hasActivePlan),
+          planCreditExpiresAt: data?.planCreditExpiresAt ?? null,
+        });
+      } catch (err) {
+        if (!cancelled) {
+          setWalletSummary(EMPTY_WALLET_SUMMARY);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingWallet(false);
+        }
+      }
+    };
+
+    fetchWallet();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Logic nghiệp vụ: hiển thị nội dung theo tab đang chọn
   const renderTabContent = () => {
     if (activeTab === 'workspace') {
@@ -317,6 +373,29 @@ function HomePage() {
                 </span>
               </>
             ) : null}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/wallet', { state: { from: '/home' } })}
+            className={`flex h-10 items-center gap-2 rounded-full px-3.5 ${
+              isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            aria-label={t('common.wallet')}
+          >
+            <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
+              isDarkMode ? 'bg-blue-500/10 ring-blue-400/25' : 'bg-blue-600/10 ring-blue-600/20'
+            }`}>
+              <CreditIconImage alt="Quizmate Credit" className="h-6 w-6 rounded-full" />
+            </span>
+            <span className="flex flex-col leading-none">
+              <span className="text-sm font-semibold">
+                {loadingWallet ? '—' : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
+              </span>
+              <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                {t('wallet.creditsUnit', 'Credit')}
+              </span>
+            </span>
           </Button>
           <div ref={settingsRef} className="relative">
             <Button

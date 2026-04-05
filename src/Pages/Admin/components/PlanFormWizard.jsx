@@ -103,7 +103,6 @@ function PlanFormWizard({
   functionAssignmentMap,
   setFunctionAssignmentMap,
   availableAiModels,
-  plans,
   onSubmit,
   onValidationError,
 }) {
@@ -168,25 +167,10 @@ function PlanFormWizard({
     [availableAiModels, functionAssignmentMap, t]
   );
 
-  const availableUserPlanLevels = useMemo(() => {
-    const currentPlanId = editingPlan?.planCatalogId;
-    const editingPlanLevel = editingPlan?.planLevel != null ? String(editingPlan.planLevel) : '';
-    const takenLevels = new Set(
-      (plans ?? [])
-        .filter((plan) => plan?.planScope === 'USER' && plan?.planLevel != null)
-        .filter((plan) => currentPlanId == null || String(plan.planCatalogId) !== String(currentPlanId))
-        .map((plan) => String(plan.planLevel))
-    );
-
-    return USER_PLAN_LEVEL_OPTIONS.filter(
-      (level) => !takenLevels.has(level) || (Boolean(editingPlan) && level === editingPlanLevel)
-    );
-  }, [plans, editingPlan?.planCatalogId, editingPlan?.planLevel, editingPlan]);
-
   const resolvedPlanLevel = showPlanLevel
-    ? (availableUserPlanLevels.includes(String(formData.planLevel ?? ''))
+    ? (USER_PLAN_LEVEL_OPTIONS.includes(String(formData.planLevel ?? ''))
       ? String(formData.planLevel ?? '')
-      : (availableUserPlanLevels[0] ?? ''))
+      : (USER_PLAN_LEVEL_OPTIONS[0] ?? ''))
     : '';
 
   useEffect(() => {
@@ -227,7 +211,6 @@ function PlanFormWizard({
     if (currentStep !== 0) return null;
     if (!formData.code?.trim()) return 'Vui lòng nhập code gói.';
     if (!formData.displayName?.trim()) return 'Vui lòng nhập tên gói.';
-    if (showPlanLevel && !resolvedPlanLevel) return 'Level 0, 1, 2 đã có plan rồi. Hãy sửa plan hiện có hoặc đổi sang workspace plan.';
     return null;
   };
 
@@ -316,9 +299,9 @@ function PlanFormWizard({
                   planScope: scopeOption.value,
                   planLevel: scopeOption.value === 'WORKSPACE'
                     ? ''
-                    : (availableUserPlanLevels.includes(String(prev.planLevel ?? ''))
+                    : (USER_PLAN_LEVEL_OPTIONS.includes(String(prev.planLevel ?? ''))
                       ? String(prev.planLevel ?? '')
-                      : (availableUserPlanLevels[0] ?? '')),
+                      : (USER_PLAN_LEVEL_OPTIONS[0] ?? '')),
                 }))}
                 className={cn(
                   'rounded-[24px] border p-4 text-left transition-all',
@@ -386,23 +369,19 @@ function PlanFormWizard({
             <div>
               <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>Level</Label>
               <select
-                disabled={Boolean(editingPlan) || availableUserPlanLevels.length === 0}
+                disabled={Boolean(editingPlan)}
                 value={resolvedPlanLevel}
                 onChange={(event) => setFormData((prev) => ({ ...prev, planLevel: event.target.value }))}
                 className={selectCls}
                 style={selectStyle}
               >
-                {availableUserPlanLevels.length > 0 ? availableUserPlanLevels.map((level) => (
+                {USER_PLAN_LEVEL_OPTIONS.map((level) => (
                   <option key={level} value={level}>{level}</option>
-                )) : (
-                  <option value="">Không còn level trống</option>
-                )}
+                ))}
               </select>
               {!editingPlan ? (
                 <p className={cn('mt-2 text-xs leading-5', mutedCls)}>
-                  {availableUserPlanLevels.length > 0
-                    ? 'Chỉ hiện các level chưa có plan.'
-                    : 'Level 0, 1, 2 đã có plan rồi, nên không thể tạo thêm user plan mới ở đây.'}
+                  Một level có thể chứa nhiều gói, bạn có thể chọn lại level phù hợp cho plan này.
                 </p>
               ) : null}
             </div>
