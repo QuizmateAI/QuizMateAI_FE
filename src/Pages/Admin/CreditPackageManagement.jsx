@@ -345,7 +345,7 @@ function CreditPackageManagement() {
                   {t('creditPackage.table.price', 'Giá')}
                 </TableHead>
                 <TableHead className="w-[110px] font-semibold text-xs uppercase tracking-wider text-slate-400">
-                  {t('creditPackage.table.bonus', 'Bonus Credit')}
+                  {t('creditPackage.table.bonus', 'Credits per package')}
                 </TableHead>
                 <TableHead className="w-[110px] text-center font-semibold text-xs uppercase tracking-wider text-slate-400">
                   {t('creditPackage.table.status', 'Trạng thái')}

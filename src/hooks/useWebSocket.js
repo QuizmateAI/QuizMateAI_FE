@@ -92,6 +92,63 @@ function buildProcessingObjectFromProgressPayload(payload) {
   return Object.keys(processingObject).length > 0 ? processingObject : undefined;
 }
 
+export function resolveMaterialEventFromProgressPayload(payload) {
+  if (!payload || typeof payload !== "object") return null;
+
+  const normalizedResponseStatus = normalizeStatus(payload?.status ?? payload?.final_status);
+  const data = payload?.data && typeof payload.data === "object"
+    ? normalizeMaterialPayload(payload.data)
+    : null;
+  const processingObject = payload?.processingObject && typeof payload.processingObject === "object"
+    ? payload.processingObject
+    : (buildProcessingObjectFromProgressPayload(payload) || {});
+
+  const materialId = toNumberOrNull(
+    data?.materialId
+      ?? data?.material_id
+      ?? processingObject?.materialId
+      ?? processingObject?.material_id
+      ?? payload?.materialId
+      ?? payload?.material_id
+  );
+  const materialStatus = normalizeStatus(
+    data?.status
+      ?? data?.final_status
+      ?? (normalizedResponseStatus === "APPROVED" ? "ACTIVE" : normalizedResponseStatus)
+  );
+
+  if (!materialStatus) return null;
+  if (!materialId && !data && !["PROCESSING", "ERROR", "WARN", "REJECT"].includes(materialStatus)) {
+    return null;
+  }
+
+  const material = {
+    ...(data || {}),
+    ...(materialId ? { materialId } : {}),
+    status: materialStatus,
+  };
+
+  if (
+    !material.message
+    && typeof payload?.message === "string"
+    && payload.message.trim()
+  ) {
+    material.message = payload.message;
+  }
+
+  if (materialStatus === "ACTIVE") {
+    return materialId
+      ? { eventType: "material:uploaded", material }
+      : null;
+  }
+
+  if (["PROCESSING", "ERROR", "WARN", "REJECT"].includes(materialStatus)) {
+    return { eventType: "material:updated", material };
+  }
+
+  return null;
+}
+
 function enrichProgressWithActiveTaskShape(payload) {
   if (!payload || typeof payload !== "object") return payload;
 
@@ -271,53 +328,25 @@ export function useWebSocket({
             (message) => {
               try {
                 const response = enrichProgressWithActiveTaskShape(JSON.parse(message.body));
+                const materialEvent = resolveMaterialEventFromProgressPayload(response);
                 console.log("📊 Progress update received:", response);
                 console.log("   Progress status:", response.status);
 
-                // Nếu progress COMPLETED, xử lý như material update
-                if (response.status === 'COMPLETED' && response.data) {
-                  const materialData = normalizeMaterialPayload(response.data);
-                  console.log("✅ Progress COMPLETED - Material data:", materialData);
-                  console.log("   Material ID:", materialData.materialId);
-                  console.log("   Material status:", materialData.status);
+                setLastMessage({ type: "progress", data: response, timestamp: Date.now() });
+                callbackRefs.current.onProgress?.(response);
 
-                  // Route dựa trên material status
-                  if (materialData.status === 'ACTIVE') {
-                    console.log("🎉 Material upload completed successfully");
-                    setLastMessage({ type: "material:uploaded", data: materialData, timestamp: Date.now() });
-                    callbackRefs.current.onMaterialUploaded?.(materialData);
-                  } else if (materialData.status === 'ERROR') {
-                    console.log("❌ Material upload failed");
-                    setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
-                    callbackRefs.current.onMaterialUpdated?.(materialData);
-                  } else if (materialData.status === 'WARN' || materialData.status === 'WARNED') {
-                    console.log("⚠️ Material content not appropriate for current level");
-                    setLastMessage({ type: "material:updated", data: { ...materialData, status: 'WARN' }, timestamp: Date.now() });
-                    callbackRefs.current.onMaterialUpdated?.({ ...materialData, status: 'WARN' });
-                  } else if (materialData.status === 'REJECT' || materialData.status === 'REJECTED') {
-                    console.log("🚫 Material content not related to learning - rejected");
-                    setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
-                    callbackRefs.current.onMaterialUpdated?.(materialData);
-                  } else if (materialData.status === 'PROCESSING') {
-                    console.log("⏳ Material still processing");
-                    setLastMessage({ type: "material:updated", data: materialData, timestamp: Date.now() });
-                    callbackRefs.current.onMaterialUpdated?.(materialData);
-                  }
-                } else {
-                  // Progress update khác (không phải COMPLETED)
-                  setLastMessage({ type: "progress", data: response, timestamp: Date.now() });
-                  callbackRefs.current.onProgress?.(response);
+                if (materialEvent) {
+                  console.log("🔄 Routed material event from progress channel:", materialEvent);
+                  setLastMessage({
+                    type: materialEvent.eventType,
+                    data: materialEvent.material,
+                    timestamp: Date.now(),
+                  });
 
-                  // Nhiều luồng BE gửi tiến trình qua /user/queue/progress thay vì /topic/*.
-                  // Nếu screen không truyền onProgress, vẫn kích hoạt onMaterialUpdated để reload list realtime.
-                  const normalizedResponseStatus = normalizeStatus(response.status || response.final_status);
-                  if (['ERROR', 'REJECT', 'PROCESSING', 'WARN'].includes(normalizedResponseStatus)) {
-                    const fallbackMaterial =
-                      typeof response.data === 'object' && response.data !== null
-                        ? normalizeMaterialPayload({ ...response.data, status: normalizedResponseStatus })
-                        : { status: normalizedResponseStatus, message: response.data };
-                    console.log("🔄 Triggering fallback onMaterialUpdated from progress channel", fallbackMaterial);
-                    callbackRefs.current.onMaterialUpdated?.(fallbackMaterial);
+                  if (materialEvent.eventType === "material:uploaded") {
+                    callbackRefs.current.onMaterialUploaded?.(materialEvent.material);
+                  } else {
+                    callbackRefs.current.onMaterialUpdated?.(materialEvent.material);
                   }
                 }
               } catch (err) {

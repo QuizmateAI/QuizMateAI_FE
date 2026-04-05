@@ -11,12 +11,12 @@ import QuickCreateDialog from "@/Pages/Users/Individual/Workspace/Components/Qui
 import AIQuizTab from "./AIQuizTab";
 import ManualQuizTab from "./ManualQuizTab";
 import { buildAiQuizPayload, validateAiDistributions } from "./aiConfigUtils";
+import { isAdvancedQuizQuestionType, normalizeQuizQuestionType } from "@/lib/quizQuestionTypes";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
 const QUIZ_INTENTS = ["PRE_LEARNING", "POST_LEARNING", "REVIEW"];
-const HIDDEN_AI_QUESTION_TYPES = ["IMAGED_BASED"];
 const AI_MINIMUM_SECONDS_PER_QUESTION = 30;
 const AI_MINIMUM_QUESTION_COUNT = 10;
 const AI_MAXIMUM_QUESTION_COUNT = 100;
@@ -306,6 +306,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const [difficultyDefs, setDifficultyDefs] = useState([]);
   const [selectedDifficultyId, setSelectedDifficultyId] = useState(""); // ID or "CUSTOM"
   const [customDifficulty, setCustomDifficulty] = useState({ easy: 30, medium: 40, hard: 30 });
+  const [allQTypes, setAllQTypes] = useState([]);
   const [qTypes, setQTypes] = useState([]);
   const [selectedQTypes, setSelectedQTypes] = useState([]); // { questionTypeId, ratio }
   const [bloomSkills, setBloomSkills] = useState([]);
@@ -329,6 +330,23 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   const prevAiTimerModeRef = useRef(aiTimerMode);
 
   const getTargetTotal = (unitByCount) => (unitByCount ? Math.max(0, Number(aiTotalQuestions || 0)) : 100);
+  const hasAdvanceQuizConfig = planEntitlements?.hasAdvanceQuizConfig ?? false;
+  const hasImageMaterials = useMemo(() => {
+    const selectedIds = new Set(
+      (Array.isArray(selectedMaterialIds) ? selectedMaterialIds : []).map((id) => Number(id))
+    );
+
+    return (Array.isArray(materials) ? materials : []).some((material) => {
+      const materialId = Number(material?.id ?? material?.materialId);
+      return selectedIds.has(materialId) && material?.hasImage === true;
+    });
+  }, [materials, selectedMaterialIds]);
+  const filterQuestionTypesByImageAvailability = useCallback((items) => (
+    (Array.isArray(items) ? items : []).filter((item) => {
+      const normalizedType = normalizeQuizQuestionType(item?.questionType);
+      return normalizedType !== "IMAGED_BASED" || hasImageMaterials;
+    })
+  ), [hasImageMaterials]);
   const minimumAiDurationMinutes = Math.ceil((Math.max(0, Number(aiTotalQuestions) || 0) * AI_MINIMUM_SECONDS_PER_QUESTION) / 60);
 
   const shuffle = (arr) => {
@@ -471,14 +489,11 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             getDifficultyDefinitions(),
             getBloomSkills()
           ]);
-          const qTypeData = resolveList(qTypeRes).filter((item) => {
-            const normalizedType = String(item?.questionType || "").toUpperCase();
-            return !HIDDEN_AI_QUESTION_TYPES.includes(normalizedType);
-          });
+          const qTypeData = resolveList(qTypeRes);
           const diffData = resolveList(diffRes);
           const bloomData = resolveList(bloomRes);
 
-          setQTypes(qTypeData);
+          setAllQTypes(qTypeData);
           setDifficultyDefs(diffData);
           setBloomSkills(bloomData);
           
@@ -488,16 +503,6 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
              setSelectedDifficultyId(defaultDiff.id);
           }
           
-          if (qTypeData.length > 0) {
-             // Select all by default or first few? Let's select Single Choice by default
-             const singleChoice = qTypeData.find(q => q.questionType === "SINGLE_CHOICE");
-             if (singleChoice) {
-              setSelectedQTypes([{ questionTypeId: singleChoice.questionTypeId, ratio: 100 }]);
-             } else {
-              setSelectedQTypes([{ questionTypeId: qTypeData[0].questionTypeId, ratio: 100 }]);
-             }
-          }
-
           if (bloomData.length > 0) {
              // Default bloom
              const remember = bloomData.find(b => b.bloomName === "REMEMBER");
@@ -514,6 +519,10 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       fetchData();
     }
   }, [tab, defaultContextType, defaultContextId]);
+
+  useEffect(() => {
+    setQTypes(filterQuestionTypesByImageAvailability(allQTypes));
+  }, [allQTypes, filterQuestionTypesByImageAvailability]);
 
   const handleDifficultyChange = (e) => {
     const val = e.target.value;
@@ -544,6 +553,11 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
   };
 
   const handleToggleQType = (id) => {
+    const targetQuestionType = qTypes.find((item) => Number(item?.questionTypeId) === Number(id));
+    if (!hasAdvanceQuizConfig && isAdvancedQuizQuestionType(targetQuestionType?.questionType)) {
+      return;
+    }
+
     setSelectedQTypes(prev => {
       const exists = prev.find(x => x.questionTypeId === id);
       if (exists) {
@@ -922,13 +936,37 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
       return;
     }
 
-    const availableTypeIds = new Set(qTypes.map((item) => Number(item?.questionTypeId)).filter((id) => Number.isInteger(id) && id > 0));
+    const selectableQuestionTypes = qTypes.filter((item) => (
+      hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(item?.questionType)
+    ));
+    const availableTypeIds = new Set(
+      selectableQuestionTypes
+        .map((item) => Number(item?.questionTypeId))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    );
+
     setSelectedQTypes((prev) => {
       const filtered = prev.filter((item) => availableTypeIds.has(Number(item?.questionTypeId)));
+
+      if (filtered.length === 0) {
+        const singleChoice = selectableQuestionTypes.find(
+          (item) => normalizeQuizQuestionType(item?.questionType) === "SINGLE_CHOICE"
+        );
+        const fallbackType = singleChoice || selectableQuestionTypes[0];
+        if (!fallbackType?.questionTypeId) {
+          return [];
+        }
+
+        return [{
+          questionTypeId: fallbackType.questionTypeId,
+          ratio: getTargetTotal(questionTypeUnit),
+        }];
+      }
+
       if (filtered.length === prev.length) return prev;
       return redistributeConfigValues(filtered, questionTypeUnit);
     });
-  }, [qTypes, questionTypeUnit]);
+  }, [getTargetTotal, hasAdvanceQuizConfig, qTypes, questionTypeUnit]);
 
   useEffect(() => {
     if (prevBloomUnitRef.current !== bloomUnit) {
@@ -1401,7 +1439,7 @@ function CreateQuizForm({ isDarkMode = false, onCreateQuiz, onBack, contextType:
             structurePreviewLoading={structurePreviewLoading}
             structurePreviewError={structurePreviewError}
             onPreviewStructure={handlePreviewStructure}
-            hasAdvanceQuizConfig={planEntitlements?.hasAdvanceQuizConfig ?? false}
+            hasAdvanceQuizConfig={hasAdvanceQuizConfig}
           />
         )}
 

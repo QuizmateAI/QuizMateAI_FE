@@ -13,6 +13,7 @@ import {
   Clock,
   History,
   BarChart3,
+  Pencil,
 } from "lucide-react";
 
 function normalizeStudioLocale(lang) {
@@ -88,6 +89,7 @@ function formatAccessTime(dateStr, t, lang) {
 function StudioPanel({
   isDarkMode = false,
   onAction,
+  onEditRoadmapConfig,
   accessHistory = [],
   isCollapsed = false,
   onToggleCollapse,
@@ -97,6 +99,7 @@ function StudioPanel({
   shouldDisableRoadmap = false,
   hideAccessHistory = false,
   customActions = null,
+  canEditRoadmapConfig = false,
   // Array of action keys that are locked behind a plan upgrade (e.g. ["questionStats"])
   planLockedActions = [],
 }) {
@@ -152,6 +155,14 @@ function StudioPanel({
     return item?.name || item?.type || "";
   };
 
+  const canRenderRoadmapEditAction = (actionKey, isDisabled, isPlanLocked) => (
+    actionKey === "roadmap"
+    && canEditRoadmapConfig
+    && typeof onEditRoadmapConfig === "function"
+    && !isDisabled
+    && !isPlanLocked
+  );
+
   if (isCollapsed) {
     return (
       <aside className={`rounded-2xl border h-full flex flex-col items-center transition-colors duration-300 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
@@ -175,6 +186,7 @@ function StudioPanel({
             const Icon = action.icon;
             const isDisabled = getIsActionDisabled(action.key);
             const isPlanLocked = planLockedActions.includes(action.key);
+            const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key, isDisabled, isPlanLocked);
             return (
               <div key={action.key} className="relative">
                 <button
@@ -208,6 +220,24 @@ function StudioPanel({
                   <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center pointer-events-none z-10">
                     <Crown className="w-2.5 h-2.5 text-white" />
                   </div>
+                )}
+                {canRenderRoadmapEdit && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setHoverTooltip(null);
+                      onEditRoadmapConfig();
+                    }}
+                    className={`absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm transition-colors ${
+                      isDarkMode
+                        ? "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                        : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    }`}
+                    aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
+                  >
+                    <Pencil className="h-2.5 w-2.5" />
+                  </button>
                 )}
               </div>
             );
@@ -269,12 +299,13 @@ function StudioPanel({
           const Icon = action.icon;
           const isDisabled = getIsActionDisabled(action.key);
           const isPlanLocked = planLockedActions.includes(action.key);
+          const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key, isDisabled, isPlanLocked);
           return (
             <div key={action.key} className="relative">
               <button
                 disabled={isDisabled && !isPlanLocked}
                 onClick={() => onAction?.(action.key)}
-                className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${
+                className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${canRenderRoadmapEdit ? "pr-12" : ""} ${
                   isPlanLocked
                     ? isDarkMode
                       ? "bg-slate-800/40 border border-slate-800 opacity-60 cursor-pointer"
@@ -307,6 +338,23 @@ function StudioPanel({
                   <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
                 )}
               </button>
+              {canRenderRoadmapEdit && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEditRoadmapConfig();
+                  }}
+                  className={`absolute right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors ${
+                    isDarkMode
+                      ? "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      : "bg-white text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                  }`}
+                  aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
           );
         })}

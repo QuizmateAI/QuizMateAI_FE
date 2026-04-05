@@ -53,6 +53,101 @@ function extractApiPayload(response) {
   return response;
 }
 
+function toPositiveInteger(value) {
+  const normalized = Number(value);
+  return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
+}
+
+function trimToNull(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function persistCanvasPreference(roadmapId, canvasView) {
+  const normalizedRoadmapId = toPositiveInteger(roadmapId);
+  if (!normalizedRoadmapId) return;
+  if (canvasView !== 'view1' && canvasView !== 'view2') return;
+  localStorage.setItem(`roadmap_${normalizedRoadmapId}_canvasView`, canvasView);
+}
+
+function extractRoadmapIdFromWorkspacePayload(payload) {
+  return toPositiveInteger(
+    payload?.roadmapId
+    ?? payload?.roadmap_id
+    ?? payload?.data?.roadmapId
+    ?? payload?.data?.roadmap_id
+  );
+}
+
+function normalizeRoadmapSpeedMode(value) {
+  if (value === 'SLOW') return 'SLOW';
+  if (value === 'FAST') return 'FAST';
+  if (value === 'MEDIUM' || value === 'STANDARD') return 'MEDIUM';
+  return 'MEDIUM';
+}
+
+function buildRoadmapCreatePayload(data = {}) {
+  const workspaceId = toPositiveInteger(data.workspaceId);
+  if (!workspaceId) {
+    throw new Error('workspaceId is required to create roadmap');
+  }
+
+  const title = trimToNull(data.title) || trimToNull(data.name) || 'Roadmap';
+  const prompt = trimToNull(data.prompt) || trimToNull(data.goal) || trimToNull(data.description);
+  const materialIds = toArray(data.materialIds)
+    .map((materialId) => toPositiveInteger(materialId))
+    .filter(Boolean);
+  const studyDurationInDay = toPositiveInteger(data.studyDurationInDay ?? data.estimatedTotalDays);
+
+  const payload = {
+    workspaceId,
+    title,
+  };
+
+  if (prompt) payload.prompt = prompt;
+  if (materialIds.length > 0) payload.materialIds = materialIds;
+  if (studyDurationInDay) payload.studyDurationInDay = studyDurationInDay;
+  if (data.learningMode || data.workspacePurpose) {
+    payload.learningMode = data.learningMode || data.workspacePurpose;
+  }
+  if (data.knowledgeLoad) {
+    payload.knowledgeLoad = data.knowledgeLoad;
+  }
+
+  return payload;
+}
+
+function buildPendingRoadmapGraph(payload = {}, { workspaceId = null, roadmapId = null, status = 'PROCESSING' } = {}) {
+  const title = payload?.name?.trim() || payload?.title?.trim() || 'Roadmap';
+  const description = payload?.goal?.trim() || payload?.description?.trim() || '';
+  const estimatedTotalDays = Number(payload?.estimatedTotalDays) || 0;
+  const estimatedMinutesPerDay = Number(payload?.recommendedMinutesPerDay || payload?.estimatedMinutesPerDay) || 0;
+
+  return {
+    roadmapId: roadmapId ?? nextMockId('workspace-roadmap'),
+    workspaceId,
+    title,
+    description,
+    aiSuggest: '',
+    status,
+    estimatedTotalDays,
+    estimatedMinutesPerDay,
+    speedMode: normalizeRoadmapSpeedMode(payload?.roadmapSpeedMode || payload?.speedMode),
+    adaptationMode: payload?.adaptationMode || null,
+    knowledgeLoad: payload?.knowledgeLoad || null,
+    estimatedDuration: formatEstimatedDuration(estimatedTotalDays, estimatedMinutesPerDay),
+    canvasView: payload?.canvasView === 'view2' ? 'view2' : 'view1',
+    generatedAt: new Date().toISOString(),
+    createVia: 'AI',
+    phases: [],
+    stats: {
+      phaseCount: 0,
+      knowledgeCount: 0,
+      quizCount: 0,
+      flashcardCount: 0,
+    },
+  };
+}
+
 function mergeRoadmapQuizzes(mappedRoadmap, roadmapQuizzes = []) {
   if (!mappedRoadmap) return mappedRoadmap;
 
@@ -181,6 +276,8 @@ function mapRoadmapStructureToCanvas(structure) {
     estimatedTotalDays: Number(structure?.estimatedTotalDays) || 0,
     estimatedMinutesPerDay: Number(structure?.estimatedMinutesPerDay) || 0,
     speedMode: structure?.speedMode || 'MEDIUM',
+    adaptationMode: structure?.adaptationMode || null,
+    knowledgeLoad: structure?.knowledgeLoad || null,
     estimatedDuration: formatEstimatedDuration(structure?.estimatedTotalDays, structure?.estimatedMinutesPerDay),
     canvasView: getCanvasPreference(structure?.roadmapId),
     phases,
@@ -189,37 +286,32 @@ function mapRoadmapStructureToCanvas(structure) {
 }
 
 export const getRoadmapGraph = async ({ workspaceId = null } = {}) => {
-  if (!workspaceId) {
+  const normalizedWorkspaceId = toPositiveInteger(workspaceId);
+  if (!normalizedWorkspaceId) {
     return buildMockResponse(null);
   }
 
-  // Canvas currently used in individual workspace. Resolve roadmapId via workspace profile.
-  if (workspaceId) {
-    try {
-      const profileResponse = await api.get(`/workspace-profile/individual/${workspaceId}`);
-      const profileData = profileResponse?.data || profileResponse;
-      const roadmapId = profileData?.roadmap_id ?? profileData?.roadmapId ?? null;
+  try {
+    const workspaceResponse = await api.get(`/workspace/${normalizedWorkspaceId}`);
+    const workspacePayload = extractApiPayload(workspaceResponse);
+    const roadmapId = extractRoadmapIdFromWorkspacePayload(workspacePayload);
 
-      if (!roadmapId) {
-        return buildMockResponse(null);
-      }
-
-      const structureResponse = await api.get(`/roadmaps/${roadmapId}/structure`);
-
-      const structurePayload = extractApiPayload(structureResponse);
-      const mappedRoadmap = mapRoadmapStructureToCanvas(structurePayload);
-
-      // Chỉ dùng structure để tránh gọi lặp endpoint quiz theo roadmap.
-      const enrichedRoadmap = mergeRoadmapQuizzes(mappedRoadmap, []);
-
-      return buildMockResponse(enrichedRoadmap);
-    } catch (error) {
-      console.error('Failed to fetch roadmap structure:', error);
-      return buildMockResponse(null);
+    if (!roadmapId) {
+      return buildMockResponse(getStoredRoadmap({ workspaceId: normalizedWorkspaceId }));
     }
-  }
 
-  return buildMockResponse(getStoredRoadmap({ workspaceId }));
+    const structureResponse = await api.get(`/roadmaps/${roadmapId}/structure`);
+    const structurePayload = extractApiPayload(structureResponse);
+    const mappedRoadmap = mapRoadmapStructureToCanvas(structurePayload);
+
+    // Chỉ dùng structure để tránh gọi lặp endpoint quiz theo roadmap.
+    const enrichedRoadmap = mergeRoadmapQuizzes(mappedRoadmap, []);
+
+    return buildMockResponse(enrichedRoadmap);
+  } catch (error) {
+    console.error('Failed to fetch roadmap structure:', error);
+    return buildMockResponse(getStoredRoadmap({ workspaceId: normalizedWorkspaceId }));
+  }
 };
 
 // Lấy cấu trúc roadmap theo roadmapId từ backend thật.
@@ -237,20 +329,29 @@ export const getRoadmapStructureById = async (roadmapId) => {
 
 // Tạo roadmap cho workspace
 export const createRoadmap = async (data) => {
-  // Real API reference:
-  // return api.post(`/roadmap/create/workspace/${data.workspaceId}`, data);
-  const workspaceId = Number(data.workspaceId);
-  const graph = buildSeedRoadmapGraph(data, { workspaceId });
-  return buildMockResponse(setStoredRoadmap({ workspaceId }, graph));
+  const payload = buildRoadmapCreatePayload(data);
+  const response = await api.post('/ai/roadmap:generated', payload);
+  const responsePayload = extractApiPayload(response);
+  const roadmapId = toPositiveInteger(responsePayload?.roadmapId);
+
+  if (roadmapId) {
+    persistCanvasPreference(roadmapId, data?.canvasView);
+    setStoredRoadmap(
+      { workspaceId: payload.workspaceId },
+      buildPendingRoadmapGraph(data, {
+        workspaceId: payload.workspaceId,
+        roadmapId,
+        status: responsePayload?.status || 'PROCESSING',
+      })
+    );
+  }
+
+  return response;
 };
 
 // Tạo roadmap general cho workspace cá nhân — POST /roadmap/create/workspace/{workspaceId}
 export const createRoadmapForWorkspace = async (data) => {
-  // Real API reference:
-  // return api.post(`/roadmap/create/workspace/${data.workspaceId}`, data);
-  const workspaceId = Number(data.workspaceId);
-  const graph = buildSeedRoadmapGraph(data, { workspaceId });
-  return buildMockResponse(setStoredRoadmap({ workspaceId }, graph));
+  return createRoadmap(data);
 };
 
 // Lấy danh sách roadmap của workspace cá nhân (có phân trang)
@@ -434,6 +535,46 @@ export const deleteRoadmapKnowledgeById = async (knowledgeId, phaseId) => {
   return api.delete(`/roadmap-knowledges/${knowledgeId}`, {
     params: { phaseId },
   });
+};
+
+function buildRoadmapConfigPayload(data = {}) {
+  const adaptationMode = (() => {
+    const v = data.adaptationMode;
+    if (v === 'FLEXIBLE') return 'FLEXIBLE';
+    if (v === 'STRICT' || v === 'BALANCED') return 'STRICT';
+    return null;
+  })();
+
+  const speedMode = (() => {
+    const v = data.roadmapSpeedMode || data.speedMode;
+    if (v === 'SLOW') return 'SLOW';
+    if (v === 'FAST') return 'FAST';
+    if (v === 'MEDIUM' || v === 'STANDARD') return 'MEDIUM';
+    return null;
+  })();
+
+  const payload = {
+    knowledgeLoad: data.knowledgeLoad || null,
+    adaptationMode,
+    speedMode,
+    estimatedTotalDays: Number(data.estimatedTotalDays) || null,
+    estimatedMinutesPerDay: Number(data.recommendedMinutesPerDay || data.estimatedMinutesPerDay) || null,
+  };
+
+  return payload;
+}
+
+export const setupGroupRoadmapConfig = async (workspaceId, data) => {
+  return api.put(`/workspace-profile/group/${workspaceId}/steps/roadmap-config`, buildRoadmapConfigPayload(data));
+};
+
+// Cập nhật cấu hình roadmap (knowledgeLoad, adaptationMode, speedMode, estimatedTotalDays, estimatedMinutesPerDay)
+export const updateRoadmapConfig = async (roadmapId, data) => {
+  return api.put(`/roadmaps/${roadmapId}/config`, buildRoadmapConfigPayload(data));
+};
+
+export const updateGroupRoadmapConfig = async (roadmapId, data) => {
+  return updateRoadmapConfig(roadmapId, data);
 };
 
 // ==================== MOCK ROADMAP DATA ====================
@@ -734,10 +875,10 @@ function mapGraphToRoadmapListItem(graph) {
     roadmapId: graph.roadmapId,
     title: graph.title,
     description: graph.description,
-    status: 'ACTIVE',
+    status: graph.status || 'ACTIVE',
     createdAt: graph.generatedAt,
     roadmapType: 'GENERAL',
-    createVia: 'MOCK',
+    createVia: graph.createVia || 'MOCK',
   };
 }
 

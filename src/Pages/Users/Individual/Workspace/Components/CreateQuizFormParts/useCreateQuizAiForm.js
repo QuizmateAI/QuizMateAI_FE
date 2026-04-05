@@ -15,9 +15,9 @@ import {
   AI_MINIMUM_QUESTION_COUNT,
   AI_MINIMUM_SECONDS_PER_QUESTION,
   AI_VALIDATION_ERROR_KEYS,
-  HIDDEN_AI_QUESTION_TYPES,
   IMAGE_BASED_QUESTION_TYPE,
 } from "./createQuizForm.constants";
+import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 import {
   buildAiValidationState,
   clampNumber,
@@ -125,6 +125,7 @@ const normalizeStructurePreviewResponse = (response) => {
 
 export const useCreateQuizAiForm = ({
   defaultContextId,
+  hasAdvanceQuizConfig,
   hasImageMaterials,
   i18nLanguage,
   onCreateQuiz,
@@ -215,10 +216,6 @@ export const useCreateQuizAiForm = ({
   const filterQuestionTypesByImageAvailability = useCallback((items) => (
     (Array.isArray(items) ? items : []).filter((item) => {
       const normalizedType = String(item?.questionType || "").toUpperCase();
-      if (HIDDEN_AI_QUESTION_TYPES.includes(normalizedType)) {
-        return false;
-      }
-
       if (normalizedType === IMAGE_BASED_QUESTION_TYPE && !hasImageMaterials) {
         return false;
       }
@@ -306,8 +303,12 @@ export const useCreateQuizAiForm = ({
       return;
     }
 
+    const selectableQuestionTypes = qTypes.filter((item) => (
+      hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(item?.questionType)
+    ));
+
     const availableTypeIds = new Set(
-      qTypes
+      selectableQuestionTypes
         .map((item) => Number(item?.questionTypeId))
         .filter((questionTypeId) => Number.isInteger(questionTypeId) && questionTypeId > 0)
     );
@@ -318,10 +319,10 @@ export const useCreateQuizAiForm = ({
       ));
 
       if (filteredItems.length === 0) {
-        const singleChoice = qTypes.find(
+        const singleChoice = selectableQuestionTypes.find(
           (item) => String(item?.questionType || "").toUpperCase() === "SINGLE_CHOICE"
         );
-        const fallbackType = singleChoice || qTypes[0];
+        const fallbackType = singleChoice || selectableQuestionTypes[0];
         if (!fallbackType?.questionTypeId) {
           return [];
         }
@@ -343,7 +344,7 @@ export const useCreateQuizAiForm = ({
         questionTypeUnit
       );
     });
-  }, [getTargetTotal, qTypes, questionTypeUnit]);
+  }, [getTargetTotal, hasAdvanceQuizConfig, qTypes, questionTypeUnit]);
 
   useEffect(() => {
     if (!Array.isArray(bloomSkills) || bloomSkills.length === 0) {
@@ -768,6 +769,12 @@ export const useCreateQuizAiForm = ({
   const handleToggleQuestionTypeSelection = useCallback((questionTypeId) => {
     setSelectedQTypes((previousItems) => {
       const normalizedId = Number(questionTypeId);
+      const targetQuestionType = qTypes.find(
+        (item) => Number(item?.questionTypeId) === normalizedId
+      );
+      if (!hasAdvanceQuizConfig && isAdvancedQuizQuestionType(targetQuestionType?.questionType)) {
+        return previousItems;
+      }
       const alreadySelected = previousItems.some(
         (item) => Number(item.questionTypeId) === normalizedId
       );
@@ -777,7 +784,7 @@ export const useCreateQuizAiForm = ({
 
       return distributeConfigValues(nextItems, getTargetTotal(questionTypeUnit), questionTypeUnit);
     });
-  }, [getTargetTotal, questionTypeUnit]);
+  }, [getTargetTotal, hasAdvanceQuizConfig, qTypes, questionTypeUnit]);
 
   const handleQTypeRatioChange = useCallback((questionTypeId, ratio) => {
     const rawRatio = Math.max(0, Number(ratio) || 0);

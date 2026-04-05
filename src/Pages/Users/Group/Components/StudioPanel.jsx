@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map, Clock, History } from "lucide-react";
+import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map, Clock, History, Pencil } from "lucide-react";
 
 // Lấy icon và màu theo loại output đã tạo
 function getOutputIcon(type) {
@@ -43,12 +43,27 @@ function formatAccessTime(dateStr, t) {
 }
 
 // Panel chứa các nút chức năng chính của workspace — đồng bộ thiết kế với Individual
-function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isCollapsed = false, onToggleCollapse, activeView = null }) {
+function StudioPanel({
+  isDarkMode = false,
+  onAction,
+  onEditRoadmapConfig,
+  accessHistory = [],
+  isCollapsed = false,
+  onToggleCollapse,
+  activeView = null,
+  canEditRoadmapConfig = false,
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
   const highlightKey = getActiveKey(activeView);
+
+  const canRenderRoadmapEditAction = (actionKey) => (
+    actionKey === "roadmap"
+    && canEditRoadmapConfig
+    && typeof onEditRoadmapConfig === "function"
+  );
 
   useEffect(() => {
     if (!isCollapsed) {
@@ -82,18 +97,39 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
         <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
           {STUDIO_ACTIONS.map((action) => {
             const Icon = action.icon;
+            const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key);
             return (
-              <button key={action.key} type="button"
-                onClick={() => { setHoverTooltip(null); onAction?.(action.key); }}
-                onMouseEnter={(event) => showTooltip(event, t(`workspace.studio.actions.${action.key}`))}
-                onMouseLeave={() => setHoverTooltip(null)}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                  highlightKey === action.key
-                    ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
-                    : isDarkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                }`}>
-                <Icon className={`w-4.5 h-4.5 ${action.color}`} />
-              </button>
+              <div key={action.key} className="relative">
+                <button type="button"
+                  onClick={() => { setHoverTooltip(null); onAction?.(action.key); }}
+                  onMouseEnter={(event) => showTooltip(event, t(`workspace.studio.actions.${action.key}`))}
+                  onMouseLeave={() => setHoverTooltip(null)}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
+                    highlightKey === action.key
+                      ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
+                      : isDarkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }`}>
+                  <Icon className={`w-4.5 h-4.5 ${action.color}`} />
+                </button>
+                {canRenderRoadmapEdit && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setHoverTooltip(null);
+                      onEditRoadmapConfig();
+                    }}
+                    className={`absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm transition-colors ${
+                      isDarkMode
+                        ? "border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                        : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    }`}
+                    aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
+                  >
+                    <Pencil className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </div>
             );
           })}
           {accessHistory.length > 0 && (
@@ -139,21 +175,41 @@ function StudioPanel({ isDarkMode = false, onAction, accessHistory = [], isColla
       <div className="p-3 space-y-2">
         {STUDIO_ACTIONS.map((action) => {
           const Icon = action.icon;
+          const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key);
           return (
-            <button key={action.key} onClick={() => onAction?.(action.key)}
-              className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${
-                highlightKey === action.key
-                  ? isDarkMode ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20" : "bg-blue-50 border border-blue-200"
-                  : isDarkMode ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700" : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
-              }`}>
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.bg}`}>
-                <Icon className={`w-4.5 h-4.5 ${action.color}`} />
-              </div>
-              <span className={`text-sm font-medium flex-1 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                {t(`workspace.studio.actions.${action.key}`)}
-              </span>
-              <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-            </button>
+            <div key={action.key} className="relative">
+              <button onClick={() => onAction?.(action.key)}
+                className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${canRenderRoadmapEdit ? "pr-12" : ""} ${
+                  highlightKey === action.key
+                    ? isDarkMode ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20" : "bg-blue-50 border border-blue-200"
+                    : isDarkMode ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700" : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
+                }`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.bg}`}>
+                  <Icon className={`w-4.5 h-4.5 ${action.color}`} />
+                </div>
+                <span className={`text-sm font-medium flex-1 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                  {t(`workspace.studio.actions.${action.key}`)}
+                </span>
+                <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+              </button>
+              {canRenderRoadmapEdit && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEditRoadmapConfig();
+                  }}
+                  className={`absolute right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors ${
+                    isDarkMode
+                      ? "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      : "bg-white text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                  }`}
+                  aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           );
         })}
       </div>
