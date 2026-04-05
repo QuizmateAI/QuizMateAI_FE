@@ -1,12 +1,42 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/Components/ui/button";
 import { ArrowLeft, BadgeCheck, Loader2, Rocket } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import { QUESTION_TYPE_LABEL_FALLBACKS } from "./createQuizForm.constants";
 import CreateQuizAiFormContent from "./CreateQuizAiFormContent";
 import CreateQuizAiRecommendationsPanel from "./CreateQuizAiRecommendationsPanel";
 import { useCreateQuizAiForm } from "./useCreateQuizAiForm";
 import { useInlineQuizRecommendations } from "./useInlineQuizRecommendations";
+
+function resolvePersonalizationFocusTopic(preset) {
+  const reviewTopic = String(preset?.reviewTopic || "").trim();
+  if (reviewTopic) {
+    return reviewTopic;
+  }
+
+  const focusTopics = Array.isArray(preset?.focusTopics)
+    ? preset.focusTopics.map((topic) => String(topic || "").trim()).filter(Boolean)
+    : [];
+
+  return focusTopics[0] || "";
+}
+
+function buildPersonalizationPrompt(preset, task) {
+  const focusTopic = resolvePersonalizationFocusTopic(preset);
+  const quizIntent = String(preset?.quizIntent || "").trim().toUpperCase();
+  const taskReason = String(task?.reason || "").trim();
+
+  if (focusTopic && quizIntent === "REVIEW") {
+    return `Create a concise review quiz focused on ${focusTopic}.`;
+  }
+
+  if (focusTopic) {
+    return `Create a quiz focused on ${focusTopic}.`;
+  }
+
+  return taskReason;
+}
 
 function CreateQuizForm({
   isDarkMode = false,
@@ -18,6 +48,9 @@ function CreateQuizForm({
   planEntitlements = null,
 }) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const personalizationAppliedRef = useRef(false);
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const selectedMaterialIds = useMemo(
@@ -62,12 +95,57 @@ function CreateQuizForm({
     submitting,
   } = useCreateQuizAiForm({
     defaultContextId,
+    hasAdvanceQuizConfig: planEntitlements?.hasAdvanceQuizConfig ?? false,
     hasImageMaterials,
     i18nLanguage: i18n.language,
     onCreateQuiz,
     selectedMaterialIds,
     t,
   });
+
+  const {
+    handleAiNameChange,
+    handleAiPromptChange,
+    handleAiTotalQuestionsChange,
+  } = handlers;
+
+  useEffect(() => {
+    const preset = location.state?.personalizationPreset;
+    if (!preset || personalizationAppliedRef.current) {
+      return;
+    }
+
+    personalizationAppliedRef.current = true;
+
+    const task = location.state?.personalizationTask;
+    const nextTitle = String(task?.title || "").trim();
+    const nextPrompt = buildPersonalizationPrompt(preset, task);
+    const nextQuestionCount = Number(preset?.questionCount);
+
+    if (nextTitle) {
+      handleAiNameChange(nextTitle);
+    }
+
+    if (nextPrompt) {
+      handleAiPromptChange(nextPrompt);
+    }
+
+    if (Number.isFinite(nextQuestionCount) && nextQuestionCount > 0) {
+      handleAiTotalQuestionsChange(String(nextQuestionCount));
+    }
+
+    navigate(location.pathname, {
+      replace: true,
+      state: null,
+    });
+  }, [
+    handleAiNameChange,
+    handleAiPromptChange,
+    handleAiTotalQuestionsChange,
+    location.pathname,
+    location.state,
+    navigate,
+  ]);
 
   const getQuestionTypeLabel = useCallback((questionType) => {
     const normalizedType = String(questionType || "").toUpperCase();

@@ -40,7 +40,19 @@ export const AI_MODEL_STATUS_OPTIONS = ['ACTIVE', 'INACTIVE', 'ARCHIVED'];
 
 export const AI_COST_STATUS_OPTIONS = ['SUCCESS', 'ERROR', 'FAILED', 'UNMATCHED'];
 
-export const AI_PROVIDER_OPTIONS = ['OPENAI', 'GEMINI', 'ANTHROPIC'];
+export const AI_PROVIDER_OPTIONS = ['OPENAI', 'GEMINI'];
+
+export function normalizeAiProvider(provider) {
+  return String(provider || '').trim().toUpperCase();
+}
+
+export function isSupportedAiProvider(provider) {
+  return AI_PROVIDER_OPTIONS.includes(normalizeAiProvider(provider));
+}
+
+export function filterSupportedAiModels(models = []) {
+  return models.filter((model) => isSupportedAiProvider(model?.provider));
+}
 
 export const AI_ACTION_LABEL_KEYS = {
   GENERATE_QUIZ: 'aiActionPolicy.actions.generateQuiz.title',

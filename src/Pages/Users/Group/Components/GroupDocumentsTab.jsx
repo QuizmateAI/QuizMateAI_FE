@@ -349,13 +349,13 @@ export default function GroupDocumentsTab({
 
   return (
     <div className="space-y-5">
-      <section className={`relative overflow-hidden rounded-[32px] border p-6 lg:p-7 ${isDarkMode ? 'border-white/10 bg-white/[0.05]' : 'border-white/80 bg-white/90'}`}>
+      <section className={`relative overflow-hidden rounded-[32px] border px-6 py-4 lg:px-7 lg:py-5 ${isDarkMode ? 'border-white/10 bg-white/[0.05]' : 'border-white/80 bg-white/90'}`}>
         <div className={`pointer-events-none absolute inset-0 ${
           isDarkMode
             ? 'bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.10),transparent_24%),radial-gradient(circle_at_85%_10%,rgba(249,115,22,0.12),transparent_22%)]'
             : 'bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.08),transparent_24%),radial-gradient(circle_at_85%_10%,rgba(249,115,22,0.08),transparent_22%)]'
         }`} />
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="relative flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}`}>
@@ -367,10 +367,10 @@ export default function GroupDocumentsTab({
                   : (currentLang === 'en' ? 'Member requests' : 'Member gửi yêu cầu')}
               </span>
             </div>
-            <h2 className={`mt-4 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            <h2 className={`mt-3 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {currentLang === 'en' ? 'Manage group learning materials in one place' : 'Quản lý tài liệu học tập của group trong một nơi'}
             </h2>
-            <p className={`mt-3 max-w-3xl text-sm leading-7 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p className={`mt-2 max-w-3xl text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
               {currentLang === 'en'
                 ? 'Upload shared documents, review member requests, and separate warning materials that still need a leader decision.'
                 : 'Tải tài liệu dùng chung, theo dõi yêu cầu member gửi lên, và tách riêng các tài liệu warning vẫn đang chờ leader quyết định.'}
@@ -574,7 +574,7 @@ export default function GroupDocumentsTab({
       ) : null}
 
       {!viewingMaterial ? (
-        <div className={activeTab === 'documents' ? 'grid gap-5' : 'grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]'}>
+        <div className="grid gap-5">
         {activeTab === 'documents' ? (
         <section className={`rounded-[28px] border p-5 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

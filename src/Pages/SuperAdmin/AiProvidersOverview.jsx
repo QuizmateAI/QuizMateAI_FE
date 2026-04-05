@@ -16,7 +16,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useToast } from '@/context/ToastContext';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { getAiCostSummary, getAiModels, getAiProviderHealth } from '@/api/ManagementSystemAPI';
-import { AI_PROVIDER_OPTIONS, getAiModelGroupLabel } from '@/lib/aiModelCatalog';
+import { AI_PROVIDER_OPTIONS, filterSupportedAiModels, getAiModelGroupLabel } from '@/lib/aiModelCatalog';
 
 function extractData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
@@ -92,14 +92,11 @@ function AiProvidersOverview() {
     setLoading(true);
     try {
       const modelsResponse = await getAiModels();
-      const nextModels = Array.isArray(extractData(modelsResponse)) ? extractData(modelsResponse) : [];
+      const rawModels = Array.isArray(extractData(modelsResponse)) ? extractData(modelsResponse) : [];
+      const nextModels = filterSupportedAiModels(rawModels);
       setModels(nextModels);
 
-      const providerSet = new Set([
-        ...AI_PROVIDER_OPTIONS,
-        ...nextModels.map((model) => String(model.provider || '').toUpperCase()).filter(Boolean),
-      ]);
-      const providerList = Array.from(providerSet);
+      const providerList = [...AI_PROVIDER_OPTIONS];
 
       const [healthResponse, ...summaryResponses] = await Promise.all([
         getAiProviderHealth().catch(() => null),
@@ -136,13 +133,7 @@ function AiProvidersOverview() {
   }, []);
 
   const providerCards = useMemo(() => {
-    const providerSet = new Set([
-      ...AI_PROVIDER_OPTIONS,
-      ...models.map((model) => String(model.provider || '').toUpperCase()).filter(Boolean),
-      ...Object.keys(healthMap),
-    ]);
-
-    return Array.from(providerSet).map((provider) => {
+    return AI_PROVIDER_OPTIONS.map((provider) => {
       const providerModels = models.filter((model) => String(model.provider || '').toUpperCase() === provider);
       const activeCount = providerModels.filter((model) => String(model.status || '').toUpperCase() === 'ACTIVE').length;
       const archivedCount = providerModels.filter((model) => String(model.status || '').toUpperCase() === 'ARCHIVED').length;

@@ -134,6 +134,7 @@ export function usePlanEntitlements({ enabled = true } = {}) {
     hasAiCompanionMode:         e?.hasAiCompanionMode          ?? false,
     hasWorkspaceAnalytics:      e?.hasWorkspaceAnalytics       ?? false,
     hasAiSummaryAndTextReading: e?.hasAiSummaryAndTextReading  ?? false,
+    hasAiQuizAssessmentAndRecommendation: e?.hasAiQuizAssessmentAndRecommendation ?? false,
 
     // --- Structural limits ---
     maxWorkspaces:            e?.maxIndividualWorkspace   ?? 0,

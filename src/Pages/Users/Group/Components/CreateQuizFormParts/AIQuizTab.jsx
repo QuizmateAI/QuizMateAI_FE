@@ -2,15 +2,7 @@ import React from "react";
 import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2 } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
 import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
-
-const QUESTION_TYPE_LABEL_FALLBACKS = {
-  SINGLE_CHOICE: "Single choice",
-  MULTIPLE_CHOICE: "Multiple choice",
-  SHORT_ANSWER: "Short answer",
-  TRUE_FALSE: "True/False",
-  FILL_IN_BLANK: "Fill in the blank",
-  IMAGED_BASED: "Image based",
-};
+import { QUESTION_TYPE_LABEL_FALLBACKS, isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 
 function AIQuizTab({
   t,
@@ -466,12 +458,6 @@ function AIQuizTab({
         )}
       </div>
 
-      <PlanGatedFeature
-        allowed={hasAdvanceQuizConfig}
-        featureName={t("workspace.quiz.aiConfig.advancedConfig", "Cấu hình quiz nâng cao")}
-        isDarkMode={isDarkMode}
-        className="block w-full"
-      >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div ref={sectionRefs?.questionTypes} className={getSectionClassName(["selectedQTypes"])}>
           <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
@@ -495,8 +481,7 @@ function AIQuizTab({
             {qTypes.map((qt) => {
               const isSelected = selectedQTypes.some((x) => x.questionTypeId === qt.questionTypeId);
               const currentRatio = selectedQTypes.find((x) => x.questionTypeId === qt.questionTypeId)?.ratio || 0;
-
-              return (
+              const questionTypeRow = (
                 <div key={qt.questionTypeId} className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
                   <input
                     type="checkbox"
@@ -504,7 +489,7 @@ function AIQuizTab({
                     onChange={() => onToggleQType(qt.questionTypeId)}
                     className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                   />
-                  <span className="flex-1 truncate" title={qt.description}>{qt.questionType}</span>
+                  <span className="flex-1 truncate" title={qt.description}>{getQuestionTypeLabel(qt.questionType)}</span>
                   {isSelected && (
                     <div className="flex items-center gap-1">
                       <input
@@ -518,6 +503,22 @@ function AIQuizTab({
                     </div>
                   )}
                 </div>
+              );
+
+              if (!isAdvancedQuizQuestionType(qt.questionType) || hasAdvanceQuizConfig) {
+                return questionTypeRow;
+              }
+
+              return (
+                <PlanGatedFeature
+                  key={qt.questionTypeId}
+                  allowed={false}
+                  featureName={t("workspace.quiz.aiConfig.advancedConfig", "Loại quiz nâng cao")}
+                  isDarkMode={isDarkMode}
+                  className="block w-full"
+                >
+                  {questionTypeRow}
+                </PlanGatedFeature>
               );
             })}
           </div>
@@ -579,7 +580,6 @@ function AIQuizTab({
           )}
         </div>
       </div>
-      </PlanGatedFeature>
 
       <div className={`overflow-hidden rounded-2xl border transition-all ${isDarkMode ? "border-cyan-900/40 bg-slate-900/60 shadow-2xl shadow-blue-950/20" : "border-cyan-100 bg-white shadow-2xl shadow-slate-900/5"}`}>
         <div className={`border-b px-4 py-3 ${isDarkMode ? "border-cyan-900/30 bg-gradient-to-r from-cyan-950/20 to-transparent" : "border-cyan-100 bg-gradient-to-r from-cyan-50/80 to-transparent"}`}>
