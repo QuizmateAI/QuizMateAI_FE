@@ -102,6 +102,7 @@ function StudioPanel({
   canEditRoadmapConfig = false,
   // Array of action keys that are locked behind a plan upgrade (e.g. ["questionStats"])
   planLockedActions = [],
+  completedQuizCount = 0,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -109,6 +110,10 @@ function StudioPanel({
   const [canShowTooltip, setCanShowTooltip] = useState(false);
   const highlightKey = getActiveKey(activeView);
   const visibleActions = customActions || STUDIO_ACTIONS;
+  const renderableActions = visibleActions.filter((action) => {
+    if (action.key === "questionStats" && completedQuizCount < 3) return false;
+    return true;
+  });
   const visibleAccessHistory = Array.isArray(accessHistory) ? accessHistory : [];
 
   const actionLabelMap = useMemo(() => visibleActions.reduce((acc, action) => {
@@ -182,7 +187,7 @@ function StudioPanel({
         </div>
 
         <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
-          {visibleActions.map((action) => {
+          {renderableActions.map((action) => {
             const Icon = action.icon;
             const isDisabled = getIsActionDisabled(action.key);
             const isPlanLocked = planLockedActions.includes(action.key);
@@ -295,7 +300,7 @@ function StudioPanel({
       </div>
 
       <div className="p-3 space-y-2">
-        {visibleActions.map((action) => {
+        {renderableActions.map((action) => {
           const Icon = action.icon;
           const isDisabled = getIsActionDisabled(action.key);
           const isPlanLocked = planLockedActions.includes(action.key);
@@ -359,6 +364,16 @@ function StudioPanel({
           );
         })}
       </div>
+
+      {completedQuizCount >= 3 && completedQuizCount < 10 && (
+        <div className={`mx-3 mb-1 rounded-xl border px-3 py-2 text-xs leading-relaxed ${
+          isDarkMode
+            ? "border-purple-900/50 bg-purple-950/30 text-purple-300"
+            : "border-purple-200 bg-purple-50 text-purple-700"
+        } ${fontClass}`}>
+          {t("workspace.studio.questionStatsHint")}
+        </div>
+      )}
 
       {!hideAccessHistory && (
         <div className={`flex-1 px-4 pb-4 overflow-y-auto border-t mt-1 pt-3 ${isDarkMode ? "border-slate-800" : "border-gray-100"}`}>

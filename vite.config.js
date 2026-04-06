@@ -71,6 +71,7 @@ export default defineConfig(({ mode }) => {
         'react/jsx-dev-runtime',
         'react-router',
         'react-router-dom',
+        'recharts',
       ],
     },
     build: {
@@ -89,6 +90,7 @@ export default defineConfig(({ mode }) => {
             'vendor-i18n': ['i18next', 'react-i18next'],
             'vendor-auth': ['@react-oauth/google'],
             'vendor-flashcard': ['react-quizlet-flashcard'],
+            'vendor-charts': ['recharts'],
             'vendor-ui': [
               '@radix-ui/react-dialog',
               '@radix-ui/react-dropdown-menu',

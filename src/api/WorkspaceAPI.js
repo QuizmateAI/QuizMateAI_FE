@@ -477,3 +477,8 @@ export const getIndividualWorkspaceQuestionStats = async (workspaceId, attemptMo
   const response = await api.get(`/workspace/${workspaceId}/question-stats?attemptMode=${attemptMode}`);
   return response;
 };
+
+export const getIndividualWorkspaceQuizStats = async (workspaceId, attemptMode = 'OFFICIAL') => {
+  const response = await api.get(`/workspace/${workspaceId}/quiz-stats?attemptMode=${attemptMode}`);
+  return response;
+};

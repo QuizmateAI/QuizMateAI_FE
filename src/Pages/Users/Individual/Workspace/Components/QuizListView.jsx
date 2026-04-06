@@ -1094,13 +1094,8 @@ function QuizListView({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("workspace.quiz.exam", "KIểm tra")}</DialogTitle>
-            <DialogDescription className="space-y-2">
-              <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
-                {examStartQuiz?.title}
-              </span>
-              <span className="block">
-                {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ kiểm tra?")}
-              </span>
+            <DialogDescription>
+              {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ kiểm tra?")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -330,6 +330,8 @@ function WorkspacePage() {
 
 	const [hasExistingWorkspaceQuiz, setHasExistingWorkspaceQuiz] = useState(false);
 
+	const [completedQuizCount, setCompletedQuizCount] = useState(0);
+
 	const [hasExistingWorkspaceFlashcard, setHasExistingWorkspaceFlashcard] = useState(false);
 
 
@@ -454,6 +456,8 @@ function WorkspacePage() {
 
 			setHasExistingWorkspaceQuiz(false);
 
+			setCompletedQuizCount(0);
+
 			setHasExistingWorkspaceFlashcard(false);
 
 			return;
@@ -510,7 +514,15 @@ function WorkspacePage() {
 
 
 
+				const completedCount = workspaceQuizzes.filter((quiz) => {
+					if (quiz?.myAttempted === true) return true;
+					const n = Number(quiz?.attemptCount ?? quiz?.attemptsCount ?? quiz?.myAttemptCount);
+					return Number.isFinite(n) && n > 0;
+				}).length;
+
 				setHasExistingWorkspaceQuiz(workspaceQuizzes.length > 0);
+
+				setCompletedQuizCount(completedCount);
 
 				setHasExistingWorkspaceFlashcard(workspaceFlashcards.length > 0);
 
@@ -1716,6 +1728,8 @@ function WorkspacePage() {
 
 			setHasExistingWorkspaceQuiz(false);
 
+			setCompletedQuizCount(0);
+
 			setHasExistingWorkspaceFlashcard(false);
 
 			setRoadmapHasPhases(false);
@@ -2914,6 +2928,8 @@ function WorkspacePage() {
 			showRoadmapAction={shouldShowRoadmapAction}
 
 			planLockedActions={studioPlanLockedActions}
+
+			completedQuizCount={completedQuizCount}
 
 		/>
 
