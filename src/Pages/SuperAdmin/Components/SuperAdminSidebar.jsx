@@ -4,7 +4,7 @@ import {
   LayoutDashboard,
   Users, UsersRound,
   PanelLeftClose, LogOut, Shield, CreditCard, Coins, Banknote, Bot, ChevronDown, ChevronRight,
-  Settings2, Cpu, ReceiptText,
+  Settings2, Cpu, ReceiptText, MessageSquareText,
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
@@ -125,6 +125,12 @@ const MENU_SECTIONS = [
         icon: Settings2,
         labelKey: 'sidebar.systemSettings',
         path: '/super-admin/system-settings',
+        matchPrefix: true,
+      },
+      {
+        icon: MessageSquareText,
+        labelKey: 'sidebar.feedback',
+        path: '/super-admin/feedback',
         matchPrefix: true,
       },
     ],
@@ -259,25 +265,25 @@ function SuperAdminSidebar({ collapsed, onToggle }) {
                 {isSectionOpen && (
                   <div className="space-y-1">
                     {section.items.map((item) => (
-                      <button
-                        key={item.path}
-                        onClick={() => navigate(item.path)}
-                        title={collapsed ? t(item.labelKey) : undefined}
-                        className={cn(
-                          "w-full flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                          collapsed ? "px-0 justify-center" : "px-4",
-                          isActive(item, location.pathname) 
-                            ? isDarkMode 
-                              ? "bg-slate-700 text-white font-semibold" 
-                              : "bg-[#c0d3fc] text-black font-semibold"
-                            : isDarkMode
-                              ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                              : "text-[#f1ebeb] hover:bg-[#e5ecf4] hover:text-black"
-                        )}
-                      >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        {!collapsed && <span>{t(item.labelKey)}</span>}
-                      </button>
+                        <button
+                          key={item.path}
+                          onClick={() => navigate(item.path)}
+                          title={collapsed ? t(item.labelKey) : undefined}
+                          className={cn(
+                            "w-full flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-colors",
+                            collapsed ? "px-0 justify-center" : "px-4",
+                            isActive(item, location.pathname) 
+                              ? isDarkMode 
+                                ? "bg-slate-700 text-white font-semibold" 
+                                : "bg-[#c0d3fc] text-black font-semibold"
+                              : isDarkMode
+                                ? "text-slate-300 hover:bg-slate-800 hover:text-white"
+                                : "text-[#f1ebeb] hover:bg-[#e5ecf4] hover:text-black"
+                          )}
+                        >
+                          <item.icon className="w-5 h-5 flex-shrink-0" />
+                          {!collapsed && <span>{t(item.labelKey)}</span>}
+                        </button>
                     ))}
                   </div>
                 )}

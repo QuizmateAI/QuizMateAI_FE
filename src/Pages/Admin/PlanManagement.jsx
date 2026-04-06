@@ -368,8 +368,6 @@ function PlanManagement() {
           <Table className="table-auto min-w-full text-left">
             <TableHeader>
               <TableRow className={dk ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50 border-b border-slate-200'}>
-                <TableHead className="w-[50px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">ID</TableHead>
-                <TableHead className="w-[140px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Code</TableHead>
                 <TableHead className="w-[220px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.name')}</TableHead>
                 <TableHead className="w-[90px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Scope</TableHead>
                 <TableHead className="w-[80px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Level</TableHead>
@@ -380,13 +378,11 @@ function PlanManagement() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-4">
+                <TableRow><TableCell colSpan={6} className="text-center py-4">
                   <ListSpinner variant="table" />
                 </TableCell></TableRow>
               ) : filteredPlans.length > 0 ? filteredPlans.map((plan) => (
                 <TableRow key={plan.planCatalogId} className={`border-b transition-colors cursor-pointer ${dk ? 'border-white/[0.04] hover:bg-white/[0.03]' : 'border-slate-100 hover:bg-slate-50/90'}`}>
-                  <TableCell className="font-mono text-sm font-semibold text-blue-500">{plan.planCatalogId}</TableCell>
-                  <TableCell className={`font-mono text-xs font-semibold ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{plan.code}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
@@ -450,7 +446,7 @@ function PlanManagement() {
                   </TableCell>
                 </TableRow>
               )) : (
-                <TableRow><TableCell colSpan={8} className={`text-center py-20 text-sm italic font-medium ${dk ? 'text-slate-500' : 'text-slate-500'}`}>{t('subscription.noPlans')}</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className={`text-center py-20 text-sm italic font-medium ${dk ? 'text-slate-500' : 'text-slate-500'}`}>{t('subscription.noPlans')}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

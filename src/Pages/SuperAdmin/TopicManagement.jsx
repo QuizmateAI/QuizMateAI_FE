@@ -474,7 +474,6 @@ function TopicManagement() {
               <Table className="table-fixed">
                 <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                   <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                    <TableHead className="w-24 font-bold text-slate-500 text-left">{t('topicManagement.table.id')}</TableHead>
                     <TableHead className="font-bold text-slate-500 text-left">{t('topicManagement.table.topic')}</TableHead>
                     <TableHead className="w-40 font-bold text-slate-500 text-right">{t('topicManagement.table.fieldsCount')}</TableHead>
                   </TableRow>
@@ -482,13 +481,13 @@ function TopicManagement() {
                 <TableBody>
                   {topicsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4">
+                      <TableCell colSpan={2} className="text-center py-4">
                         <ListSpinner variant="table" />
                       </TableCell>
                     </TableRow>
                   ) : filteredTopics.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-12 text-slate-400">
+                      <TableCell colSpan={2} className="text-center py-12 text-slate-400">
                         {t('topicManagement.noTopics')}
                       </TableCell>
                     </TableRow>
@@ -508,7 +507,6 @@ function TopicManagement() {
                             }`
                           }
                         >
-                          <TableCell className="text-left font-mono text-blue-600 dark:text-blue-400">{topic.topicId}</TableCell>
                           <TableCell className={`text-left font-medium ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                             {topic.title}
                           </TableCell>
@@ -606,7 +604,6 @@ function TopicManagement() {
               <Table className="table-fixed">
                 <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                   <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                    <TableHead className="w-24 font-bold text-slate-500 text-left">{t('topicManagement.table.id')}</TableHead>
                     <TableHead className="font-bold text-slate-500 text-left">{t('topicManagement.table.field')}</TableHead>
                     <TableHead className="font-bold text-slate-500 text-left">{t('topicManagement.table.topic')}</TableHead>
                   </TableRow>
@@ -614,13 +611,13 @@ function TopicManagement() {
                 <TableBody>
                   {topicsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-4">
+                      <TableCell colSpan={2} className="text-center py-4">
                         <ListSpinner variant="table" />
                       </TableCell>
                     </TableRow>
                   ) : visibleFields.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-12 text-slate-400">
+                      <TableCell colSpan={2} className="text-center py-12 text-slate-400">
                         {t('topicManagement.noFields')}
                       </TableCell>
                     </TableRow>
@@ -632,7 +629,6 @@ function TopicManagement() {
                           isDarkMode ? 'border-slate-800 hover:bg-slate-800/60' : 'border-slate-100 hover:bg-slate-50'
                         }`}
                       >
-                        <TableCell className="text-left font-mono text-emerald-600 dark:text-emerald-400">{field.fieldId}</TableCell>
                         <TableCell className={`text-left font-medium ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
                           {field.title}
                         </TableCell>

@@ -431,16 +431,16 @@ function UserDetailPage() {
           </div>
           <div className="flex flex-wrap gap-1.5 mt-3">
             {TABS.map((tab) => (
-              <Button
-                key={tab.id}
-                variant={activeTab === tab.id ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveTab(tab.id)}
-                className={`rounded-lg h-8 text-xs ${activeTab === tab.id ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-              >
-                <tab.icon className="w-3.5 h-3.5 mr-1.5" />
-                {t(tab.labelKey)}
-              </Button>
+                <Button
+                  key={tab.id}
+                  variant={activeTab === tab.id ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`rounded-lg h-8 text-xs ${activeTab === tab.id ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                >
+                  <tab.icon className="w-3.5 h-3.5 mr-1.5" />
+                  {t(tab.labelKey)}
+                </Button>
             ))}
           </div>
         </div>

@@ -4,6 +4,7 @@ import { BookOpen, BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, Compass,
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
+import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
 import RoadmapCanvasView2 from "./RoadmapCanvasView2";
 
@@ -932,6 +933,16 @@ function RoadmapCanvasView({
         </div>
 
         <div className="flex items-center gap-2">
+          {roadmap?.roadmapId ? (
+            <DirectFeedbackButton
+              targetType="ROADMAP"
+              targetId={roadmap.roadmapId}
+              label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
+              isDarkMode={isDarkMode}
+              className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+              title={i18n.language === "en" ? "Roadmap feedback" : "Phản hồi lộ trình"}
+            />
+          ) : null}
           {renderRoadmapConfigActionButtons()}
           {onShareRoadmap && roadmap?.roadmapId ? (
             <Button
@@ -1131,6 +1142,14 @@ function RoadmapCanvasView({
                     <h3 data-no-pan="true" className={`mt-1 text-lg font-semibold select-text cursor-text ${fontClass}`}>{phase.title}</h3>
                   </div>
                   <div className="flex items-center gap-2">
+                    <DirectFeedbackButton
+                      targetType="PHASE"
+                      targetId={phase.phaseId}
+                      label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
+                      isDarkMode={isDarkMode}
+                      className={`rounded-full px-3 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700" : "border-slate-200 bg-slate-50 text-gray-700 hover:bg-slate-100"}`}
+                      title={i18n.language === "en" ? "Phase feedback" : "Phản hồi phase"}
+                    />
                     <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] select-text cursor-text ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
                       {phase.durationLabel}
                     </span>
