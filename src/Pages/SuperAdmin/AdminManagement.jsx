@@ -301,7 +301,6 @@ function AdminManagement() {
             <Table className="table-auto min-w-full text-left">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                  <TableHead className="w-[80px] text-left font-bold text-slate-500">{t('adminManagement.table.id')}</TableHead>
                   <TableHead className="w-[180px] text-left font-bold text-slate-500">{t('adminManagement.table.username')}</TableHead>
                   <TableHead className="w-[220px] min-w-[200px] text-left font-bold text-slate-500">{t('adminManagement.table.email')}</TableHead>
                   <TableHead className="w-[120px] text-left font-bold text-slate-500">{t('adminManagement.table.status')}</TableHead>
@@ -317,7 +316,6 @@ function AdminManagement() {
                       key={admin.id}
                       className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                      <TableCell className="text-left font-bold text-blue-600 dark:text-blue-400">{admin.id}</TableCell>
                       <TableCell className={`text-left font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         {admin.username}
                       </TableCell>
@@ -357,7 +355,7 @@ function AdminManagement() {
                 ) : (
                   !isLoading && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
+                      <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-medium italic">
                         {t('adminManagement.noData')}
                       </TableCell>
                     </TableRow>
@@ -365,7 +363,7 @@ function AdminManagement() {
                 )}
                 {isLoading && (
                    <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">
+                    <TableCell colSpan={6} className="text-center py-4">
                       <ListSpinner variant="table" />
                     </TableCell>
                   </TableRow>

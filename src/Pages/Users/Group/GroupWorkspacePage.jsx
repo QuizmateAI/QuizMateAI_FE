@@ -2649,6 +2649,7 @@ function GroupWorkspacePage() {
     <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${pageShellClass}`}>
       {/* Header */}
       <WorkspaceHeader
+          workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? Number(workspaceId) : null)}
           workspaceTitle={currentGroupName}
           workspaceName={currentGroupName}
           settingsMenu={settingsMenu}

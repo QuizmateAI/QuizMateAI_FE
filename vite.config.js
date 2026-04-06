@@ -71,24 +71,38 @@ export default defineConfig(({ mode }) => {
         'react/jsx-dev-runtime',
         'react-router',
         'react-router-dom',
+        'recharts',
       ],
     },
     build: {
-      // Enable minification with terser for better compression
+      target: 'es2020',
       minify: 'terser',
       terserOptions: {
         compress: {
           drop_console: true,
           drop_debugger: true,
+          passes: 2,
+          pure_getters: true,
+          unsafe_math: true,
+        },
+        mangle: {
+          safari10: true,
+        },
+        format: {
+          comments: false,
         },
       },
       rollupOptions: {
         output: {
           manualChunks: {
             'vendor-router': ['react-router-dom'],
+            'vendor-query': ['@tanstack/react-query'],
             'vendor-i18n': ['i18next', 'react-i18next'],
             'vendor-auth': ['@react-oauth/google'],
             'vendor-flashcard': ['react-quizlet-flashcard'],
+            'vendor-charts': ['recharts'],
+            'vendor-http': ['axios'],
+            'vendor-ws': ['@stomp/stompjs', 'sockjs-client'],
             'vendor-ui': [
               '@radix-ui/react-dialog',
               '@radix-ui/react-dropdown-menu',
@@ -105,6 +119,7 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
       sourcemap: false,
       cssCodeSplit: true,
+      assetsInlineLimit: 4096,
     },
     server: {
       allowedHosts: [

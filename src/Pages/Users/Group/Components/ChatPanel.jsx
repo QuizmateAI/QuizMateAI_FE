@@ -100,22 +100,22 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], a
               { key: "companion", icon: Mic, color: "text-purple-500" },
               { key: "practice", icon: Play, color: "text-emerald-500" },
             ].map((mode) => (
-              <div
-                key={mode.key}
-                className={`rounded-xl p-4 text-center border cursor-pointer transition-all ${
-                  isDarkMode
-                    ? "bg-slate-800/50 border-slate-700 hover:border-slate-600"
-                    : "bg-gray-50 border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <mode.icon className={`w-5 h-5 mx-auto mb-2 ${mode.color}`} />
-                <p className={`text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
-                  {t(`workspace.chat.quizMode.${mode.key}`)}
-                </p>
-                <p className={`text-[10px] mt-0.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-                  {t(`workspace.chat.quizMode.${mode.key}Desc`)}
-                </p>
-              </div>
+                <div
+                  key={mode.key}
+                  className={`rounded-xl p-4 text-center border cursor-pointer transition-all ${
+                    isDarkMode
+                      ? "bg-slate-800/50 border-slate-700 hover:border-slate-600"
+                      : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <mode.icon className={`w-5 h-5 mx-auto mb-2 ${mode.color}`} />
+                  <p className={`text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                    {t(`workspace.chat.quizMode.${mode.key}`)}
+                  </p>
+                  <p className={`text-[10px] mt-0.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
+                    {t(`workspace.chat.quizMode.${mode.key}Desc`)}
+                  </p>
+                </div>
             ))}
           </div>
         </div>

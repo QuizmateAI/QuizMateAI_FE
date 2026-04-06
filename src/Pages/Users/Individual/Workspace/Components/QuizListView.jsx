@@ -5,7 +5,9 @@ import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Load
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
+import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getQuizzesByScope, deleteQuiz, getQuizById } from "@/api/QuizAPI";
+import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
 import { useToast } from "@/context/ToastContext";
 
 function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
@@ -123,6 +125,26 @@ function hasQuizListChanged(prevList, nextList) {
       || prev.myAttempted !== next.myAttempted
       || prev.myPassed !== next.myPassed
     ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasFeedbackStatusMapChanged(currentMap, nextMap) {
+  const currentKeys = Object.keys(currentMap || {});
+  const nextKeys = Object.keys(nextMap || {});
+  if (currentKeys.length !== nextKeys.length) return true;
+
+  for (const key of nextKeys) {
+    if (!Object.prototype.hasOwnProperty.call(currentMap, key)) {
+      return true;
+    }
+    if (Boolean(currentMap[key]?.pending) !== Boolean(nextMap[key]?.pending)) {
+      return true;
+    }
+    if (Boolean(currentMap[key]?.submitted) !== Boolean(nextMap[key]?.submitted)) {
       return true;
     }
   }
@@ -264,6 +286,7 @@ function QuizListView({
   const [deleteTargetQuiz, setDeleteTargetQuiz] = useState(null);
   const [sharingQuizId, setSharingQuizId] = useState(null);
   const [examStartQuiz, setExamStartQuiz] = useState(null);
+  const [feedbackStatusByQuizId, setFeedbackStatusByQuizId] = useState({});
   const fetchGuardRef = useRef({
     inFlight: false,
     lastKey: "",
@@ -455,6 +478,82 @@ function QuizListView({
     return () => clearInterval(timer);
   }, [quizzes]);
 
+  const syncQuizFeedbackStatuses = useCallback(async (quizList = quizzes) => {
+    const attemptedQuizIds = (Array.isArray(quizList) ? quizList : [])
+      .filter((quiz) => quiz?.myAttempted === true)
+      .map((quiz) => Number(resolveQuizNavigationId(quiz)))
+      .filter((quizId) => Number.isInteger(quizId) && quizId > 0);
+
+    if (attemptedQuizIds.length === 0) {
+      setFeedbackStatusByQuizId((currentStatuses) => (
+        Object.keys(currentStatuses).length > 0 ? {} : currentStatuses
+      ));
+      return;
+    }
+
+    try {
+      const response = await getFeedbackTargetStatuses("QUIZ", attemptedQuizIds);
+      const rows = response?.data?.data ?? response?.data ?? response ?? [];
+      const nextStatuses = attemptedQuizIds.reduce((accumulator, quizId) => {
+        accumulator[quizId] = { pending: false, submitted: false };
+        return accumulator;
+      }, {});
+
+      rows.forEach((item) => {
+        const quizId = Number(item?.targetId);
+        if (!Number.isInteger(quizId) || quizId <= 0) {
+          return;
+        }
+        nextStatuses[quizId] = {
+          pending: item?.pending === true,
+          submitted: item?.submitted === true,
+        };
+      });
+
+      setFeedbackStatusByQuizId((currentStatuses) => (
+        hasFeedbackStatusMapChanged(currentStatuses, nextStatuses) ? nextStatuses : currentStatuses
+      ));
+    } catch (error) {
+      console.error("Lỗi khi lấy trạng thái feedback quiz:", error);
+    }
+  }, [quizzes]);
+
+  useEffect(() => {
+    void syncQuizFeedbackStatuses(quizzes);
+  }, [quizzes, syncQuizFeedbackStatuses]);
+
+  useEffect(() => {
+    const handleFeedbackUpdated = () => {
+      void syncQuizFeedbackStatuses(quizzes);
+    };
+
+    window.addEventListener("feedbackUpdated", handleFeedbackUpdated);
+    return () => {
+      window.removeEventListener("feedbackUpdated", handleFeedbackUpdated);
+    };
+  }, [quizzes, syncQuizFeedbackStatuses]);
+
+  const handleQuizFeedbackSubmitted = useCallback((quizId) => {
+    const normalizedQuizId = Number(quizId);
+    if (!Number.isInteger(normalizedQuizId) || normalizedQuizId <= 0) {
+      return;
+    }
+
+    setFeedbackStatusByQuizId((currentStatuses) => {
+      const currentStatus = currentStatuses[normalizedQuizId];
+      if (currentStatus?.submitted === true && currentStatus?.pending === false) {
+        return currentStatuses;
+      }
+      return {
+        ...currentStatuses,
+        [normalizedQuizId]: {
+          pending: false,
+          submitted: true,
+        },
+      };
+    });
+  }, []);
+
   // Xử lý xóa quiz
   const handleRequestDeleteQuiz = useCallback((e, quiz) => {
     e.stopPropagation();
@@ -495,8 +594,23 @@ function QuizListView({
   }, [quizzes, searchQuery, filterStatus]);
   const useLegacyRoadmapCards = legacyRoadmapUI;
 
+  const renderQuizFeedbackAction = (quizId, className = "") => (
+    <div onClick={(e) => e.stopPropagation()}>
+      <DirectFeedbackButton
+        targetType="QUIZ"
+        targetId={quizId}
+        label={t("feedback", "Feedback")}
+        title={t("feedback", "Feedback")}
+        isDarkMode={isDarkMode}
+        className={className}
+        onSubmitted={() => handleQuizFeedbackSubmitted(quizId)}
+      />
+    </div>
+  );
+
   const renderLegacyRoadmapCard = (quiz) => {
     const resolvedQuizId = resolveQuizNavigationId(quiz);
+    const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
     const isCommunityShared = quiz?.communityShared === true;
     const normalizedStatus = String(quiz?.status || "").toUpperCase();
     const isProcessing = normalizedStatus === "PROCESSING";
@@ -618,7 +732,7 @@ function QuizListView({
                   </span>
                 ) : null}
                 {quiz.overallDifficulty ? (
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
+                  <span className={`inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
                     <BarChart3 className="h-3.5 w-3.5" />
                     {difficultyKey === "CUSTOM"
                       ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
@@ -699,6 +813,14 @@ function QuizListView({
             </div>
 
             <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {myAttempted && !hasSubmittedFeedback ? renderQuizFeedbackAction(
+                resolvedQuizId,
+                `inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${
+                  isDarkMode
+                    ? "border-slate-700 bg-slate-900/70 text-slate-200 hover:bg-slate-800"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`,
+              ) : null}
               {isProcessing ? (
                 <div className={`min-w-[170px] rounded-2xl border px-4 py-3 ${isDarkMode ? "border-sky-900/60 bg-sky-950/20" : "border-sky-200 bg-sky-50/70"}`}>
                   <div className="flex items-center justify-between gap-3">
@@ -861,6 +983,8 @@ function QuizListView({
               const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
               const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
               const theme = resolveQuizCardTheme(difficultyKey);
+              const myAttempted = quiz?.myAttempted === true;
+              const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
               const intentLabel = quiz?.quizIntent && !isRoadmapContextQuiz
                 ? t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)
                 : null;
@@ -876,6 +1000,16 @@ function QuizListView({
                 : null;
               const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz;
               const showExamAction = normalizedStatus === "ACTIVE";
+              const showFeedbackAction = myAttempted
+                && !hasSubmittedFeedback
+                && resolvedQuizId != null
+                && resolvedQuizId !== "";
+              const hasPrimaryActions = showPracticeAction || showExamAction;
+              const actionGridClassName = showFeedbackAction && hasPrimaryActions
+                ? "grid-cols-2"
+                : showPracticeAction && showExamAction
+                  ? "grid-cols-2"
+                  : "grid-cols-1";
               const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
               const updatedLabel = formatCardDate(quiz.updatedAt || quiz.createdAt);
 
@@ -1031,14 +1165,14 @@ function QuizListView({
                           <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400/80" : "text-slate-500"}`}>
                             {t("workspace.quiz.overallDifficulty", "Độ khó")}
                           </p>
-                          <p className={`mt-2 flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light} w-fit rounded-full px-2.5 py-1`}>
+                          <span className={`mt-2 inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
                             <BarChart3 className="h-3.5 w-3.5" />
                             <span>
                               {difficultyKey === "CUSTOM"
                                 ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
                                 : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`)}
                             </span>
-                          </p>
+                          </span>
                         </div>
                       </div>
                     )}
@@ -1058,8 +1192,8 @@ function QuizListView({
                       </div>
                     </div>
 
-                    {showPracticeAction || showExamAction ? (
-                      <div className={`grid gap-2 ${showPracticeAction && showExamAction ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {showPracticeAction || showExamAction || showFeedbackAction ? (
+                      <div className={`grid gap-2 ${actionGridClassName}`}>
                         {showPracticeAction ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleStartQuiz('practice', quiz.quizId); }}
@@ -1080,6 +1214,18 @@ function QuizListView({
                             <span>{t("workspace.quiz.exam", "Kiểm tra")}</span>
                           </button>
                         ) : null}
+                        {showFeedbackAction ? (
+                          <div className={hasPrimaryActions ? "col-span-2" : ""}>
+                            {renderQuizFeedbackAction(
+                              resolvedQuizId,
+                              `inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${
+                                isDarkMode
+                                  ? "border-slate-700 bg-slate-900/70 text-slate-200 hover:bg-slate-800"
+                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                              }`,
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                     </div>
@@ -1094,13 +1240,8 @@ function QuizListView({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("workspace.quiz.exam", "KIểm tra")}</DialogTitle>
-            <DialogDescription className="space-y-2">
-              <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
-                {examStartQuiz?.title}
-              </span>
-              <span className="block">
-                {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ kiểm tra?")}
-              </span>
+            <DialogDescription>
+              {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ kiểm tra?")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

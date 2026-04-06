@@ -4,17 +4,20 @@ import { useTranslation } from "react-i18next";
 import { logout } from "@/api/Authentication";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 import { useUserProfile } from "@/context/UserProfileContext";
+import { getUserDisplayName } from "@/Utils/userProfile";
 
 function UserProfilePopover({ isDarkMode = false }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigateWithLoading();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState("");
   const { profile } = useUserProfile();
   const profileRef = useRef(null);
-  const displayName = profile?.fullName || "User";
+  const displayName = getUserDisplayName(profile);
   const displayEmail = profile?.email || "";
-  const displayAvatar = profile?.avatarUrl || "";
+  const avatarUrl = (profile?.avatarUrl || "").trim();
+  const displayAvatar = failedAvatarUrl === avatarUrl ? "" : avatarUrl;
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
   const handleGoToProfile = () => {
@@ -47,12 +50,17 @@ function UserProfilePopover({ isDarkMode = false }) {
       <button
         type="button"
         onClick={() => setIsProfileOpen((prev) => !prev)}
-        className="w-9 h-9 rounded-full overflow-hidden border border-transparent hover:border-blue-400 transition-colors"
+        className="relative w-9 h-9 rounded-full overflow-hidden border border-transparent hover:border-blue-400 transition-colors"
         aria-expanded={isProfileOpen}
         aria-haspopup="menu"
       >
         {displayAvatar ? (
-          <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+          <img
+            src={displayAvatar}
+            alt={displayName}
+            className="w-full h-full object-cover"
+            onError={() => setFailedAvatarUrl(avatarUrl)}
+          />
         ) : (
           <div className="w-full h-full bg-blue-600 text-white text-sm font-semibold flex items-center justify-center">
             {avatarLetter || "U"}
@@ -85,7 +93,12 @@ function UserProfilePopover({ isDarkMode = false }) {
             <div className="flex flex-col items-center justify-center text-center gap-2">
               <div className="w-16 h-16 rounded-full overflow-hidden border border-gray-300/50">
                 {displayAvatar ? (
-                  <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+                  <img
+                    src={displayAvatar}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                    onError={() => setFailedAvatarUrl(avatarUrl)}
+                  />
                 ) : (
                   <div className="w-full h-full bg-blue-600 text-white text-xl font-semibold flex items-center justify-center">
                     {avatarLetter || "U"}

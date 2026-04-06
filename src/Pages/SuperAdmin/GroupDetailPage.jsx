@@ -9,7 +9,6 @@ import {
   Clock3,
   CreditCard,
   FolderKanban,
-  Hash,
   LayoutDashboard,
   ListChecks,
   Mail,
@@ -366,12 +365,6 @@ function MemberCard({ member, isDarkMode, t, leaderName }) {
               <Mail className="mr-1.5 h-3 w-3" />
               {email}
             </Badge>
-            {member?.userId ? (
-              <Badge variant="outline" className={cn('rounded-full border px-2.5 py-0.5 text-[11px]', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-600')}>
-                <Hash className="mr-1.5 h-3 w-3" />
-                {member.userId}
-              </Badge>
-            ) : null}
           </div>
         </div>
       </div>
@@ -413,12 +406,6 @@ function RoadmapCard({ roadmap, index, isDarkMode, locale }) {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {roadmap?.roadmapId ? (
-          <Badge variant="outline" className={cn('rounded-full border px-2.5 py-0.5 text-[11px]', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-600')}>
-            <Hash className="mr-1.5 h-3 w-3" />
-            {roadmap.roadmapId}
-          </Badge>
-        ) : null}
         {(roadmap?.updatedAt || roadmap?.createdAt) ? (
           <Badge variant="outline" className={cn('rounded-full border px-2.5 py-0.5 text-[11px]', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-600')}>
             <Clock3 className="mr-1.5 h-3 w-3" />
@@ -751,10 +738,6 @@ function GroupDetailPage() {
 
                   <div className="mt-4 flex flex-wrap gap-2.5">
                     <Badge variant="outline" className={cn('rounded-full border px-3 py-1 text-xs font-semibold', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
-                      <Hash className="mr-1.5 h-3.5 w-3.5" />
-                      {t('groupDetail.workspaceId')} #{group?.workspaceId ?? group?.id ?? workspaceId}
-                    </Badge>
-                    <Badge variant="outline" className={cn('rounded-full border px-3 py-1 text-xs font-semibold', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-700')}>
                       <Users className="mr-1.5 h-3.5 w-3.5" />
                       {resolvedMemberCount} {t('groupDetail.members')}
                     </Badge>
@@ -772,28 +755,28 @@ function GroupDetailPage() {
 
               <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                 {heroHighlights.map((item) => (
-                  <div
-                    key={item.label}
-                    className={cn(
-                      'rounded-[24px] border px-4 py-4',
-                      isDarkMode ? 'border-slate-800 bg-slate-950/55' : 'border-white/80 bg-white/88'
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
-                        {item.label}
-                      </p>
-                      <div className={cn('rounded-full p-2', item.tone)}>
-                        <item.icon className="h-4 w-4" />
+                    <div
+                      key={item.label}
+                      className={cn(
+                        'rounded-[24px] border px-4 py-4',
+                        isDarkMode ? 'border-slate-800 bg-slate-950/55' : 'border-white/80 bg-white/88'
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
+                          {item.label}
+                        </p>
+                        <div className={cn('rounded-full p-2', item.tone)}>
+                          <item.icon className="h-4 w-4" />
+                        </div>
                       </div>
+                      <p className={cn('mt-3 text-base font-semibold leading-6', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {item.value}
+                      </p>
+                      <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
+                        {item.helper}
+                      </p>
                     </div>
-                    <p className={cn('mt-3 text-base font-semibold leading-6', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {item.value}
-                    </p>
-                    <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
-                      {item.helper}
-                    </p>
-                  </div>
                 ))}
               </div>
             </div>
@@ -824,25 +807,25 @@ function GroupDetailPage() {
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {pulseMetrics.map((item) => (
-              <div
-                key={item.label}
-                className={cn(
-                  'rounded-[22px] border p-4',
-                  isDarkMode ? 'border-slate-800 bg-slate-950/55' : 'border-slate-200 bg-white'
-                )}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
-                    {item.label}
-                  </p>
-                  <div className={cn('rounded-full p-2', item.tone)}>
-                    <item.icon className="h-4 w-4" />
+                <div
+                  key={item.label}
+                  className={cn(
+                    'rounded-[22px] border p-4',
+                    isDarkMode ? 'border-slate-800 bg-slate-950/55' : 'border-slate-200 bg-white'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className={cn('text-[11px] font-semibold uppercase tracking-[0.18em]', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
+                      {item.label}
+                    </p>
+                    <div className={cn('rounded-full p-2', item.tone)}>
+                      <item.icon className="h-4 w-4" />
+                    </div>
                   </div>
+                  <p className={cn('mt-3 text-sm font-semibold leading-6', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                    {item.value}
+                  </p>
                 </div>
-                <p className={cn('mt-3 text-sm font-semibold leading-6', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                  {item.value}
-                </p>
-              </div>
             ))}
           </div>
 
@@ -1047,10 +1030,6 @@ function GroupDetailPage() {
                       <div className="flex items-center justify-between gap-3">
                         <span className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>{t('groupDetail.leader')}</span>
                         <span className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{leaderName}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>{t('groupDetail.workspaceId')}</span>
-                        <span className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>#{group?.workspaceId ?? group?.id ?? workspaceId}</span>
                       </div>
                       <div className="flex items-center justify-between gap-3">
                         <span className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>{t('groupDetail.price')}</span>
@@ -1284,7 +1263,6 @@ function GroupDetailPage() {
                 { label: t('groupDetail.membersCount'), value: resolvedMemberCount },
                 { label: t('groupDetail.roadmapsCount'), value: roadmaps.length },
                 { label: t('groupDetail.lastEvent'), value: latestLog ? formatDateTime(latestLog?.logTime || latestLog?.timestamp || latestLog?.createdAt, locale) : '-' },
-                { label: t('groupDetail.workspaceId'), value: `#${group?.workspaceId ?? group?.id ?? workspaceId}` },
               ].map((item) => (
                 <div
                   key={item.label}

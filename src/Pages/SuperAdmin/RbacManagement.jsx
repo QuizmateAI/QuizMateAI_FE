@@ -317,18 +317,18 @@ function RbacManagement() {
       )}
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
         {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px ${
-              activeTab === tab.id
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.labelKey.startsWith('rbac.') ? t(tab.labelKey) : tab.labelKey}
-          </button>
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 -mb-px ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.labelKey.startsWith('rbac.') ? t(tab.labelKey) : tab.labelKey}
+            </button>
         ))}
       </div>
 
@@ -369,7 +369,6 @@ function RbacManagement() {
               <Table>
                 <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                   <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                    <TableHead className="font-bold text-slate-500">ID</TableHead>
                     <TableHead className="font-bold text-slate-500">Role</TableHead>
                     <TableHead className="font-bold text-slate-500">Loại</TableHead>
                     <TableHead className="font-bold text-slate-500">Permissions</TableHead>
@@ -379,13 +378,13 @@ function RbacManagement() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4">
+                      <TableCell colSpan={4} className="text-center py-4">
                         <ListSpinner variant="table" />
                       </TableCell>
                     </TableRow>
                   ) : roles.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-12 text-slate-400 italic">
+                      <TableCell colSpan={4} className="text-center py-12 text-slate-400 italic">
                         Chưa có role nào
                       </TableCell>
                     </TableRow>
@@ -395,9 +394,6 @@ function RbacManagement() {
                         key={role.roleId}
                         className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
                       >
-                        <TableCell className="font-mono text-blue-600 dark:text-blue-400">
-                          {role.roleId}
-                        </TableCell>
                         <TableCell className="font-semibold">{role.roleName}</TableCell>
                         <TableCell>
                           <Badge
@@ -488,7 +484,6 @@ function RbacManagement() {
                 <Table>
                   <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                     <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                      <TableHead className="font-bold text-slate-500">ID</TableHead>
                       <TableHead className="font-bold text-slate-500">Code</TableHead>
                       <TableHead className="font-bold text-slate-500">Mô tả</TableHead>
                     </TableRow>
@@ -496,7 +491,7 @@ function RbacManagement() {
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-4">
+                        <TableCell colSpan={2} className="text-center py-4">
                           <ListSpinner variant="table" />
                         </TableCell>
                       </TableRow>
@@ -506,9 +501,6 @@ function RbacManagement() {
                           key={p.permissionId ?? p.code}
                           className="border-b border-slate-100 dark:border-slate-800"
                         >
-                          <TableCell className="font-mono text-sm text-blue-600 dark:text-blue-400">
-                            {p.permissionId}
-                          </TableCell>
                           <TableCell className="font-mono font-medium">{p.code}</TableCell>
                           <TableCell className="text-slate-600 dark:text-slate-400">{p.description || '-'}</TableCell>
                         </TableRow>
@@ -538,7 +530,6 @@ function RbacManagement() {
                 <Table>
                   <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                     <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                      <TableHead className="font-bold text-slate-500">ID</TableHead>
                       <TableHead className="font-bold text-slate-500">Username</TableHead>
                       <TableHead className="font-bold text-slate-500">Email</TableHead>
                       <TableHead className="font-bold text-slate-500">Role</TableHead>
@@ -554,7 +545,6 @@ function RbacManagement() {
                           key={user.id}
                           className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
                         >
-                          <TableCell className="font-mono text-blue-600 dark:text-blue-400">{user.id}</TableCell>
                           <TableCell className="font-semibold">{user.username}</TableCell>
                           <TableCell className="text-slate-600 dark:text-slate-400">{user.email}</TableCell>
                           <TableCell>
@@ -620,7 +610,6 @@ function RbacManagement() {
               <Table>
                 <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                   <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                    <TableHead className="font-bold text-slate-500">ID</TableHead>
                     <TableHead className="font-bold text-slate-500">Actor</TableHead>
                     <TableHead className="font-bold text-slate-500">Action</TableHead>
                     <TableHead className="font-bold text-slate-500">Target</TableHead>
@@ -631,13 +620,13 @@ function RbacManagement() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={5} className="text-center py-4">
                         <ListSpinner variant="table" />
                       </TableCell>
                     </TableRow>
                   ) : auditLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-slate-400 italic">
+                      <TableCell colSpan={5} className="text-center py-12 text-slate-400 italic">
                         Chưa có nhật ký
                       </TableCell>
                     </TableRow>
@@ -647,15 +636,14 @@ function RbacManagement() {
                         key={log.auditId}
                         className="border-b border-slate-100 dark:border-slate-800"
                       >
-                        <TableCell className="font-mono text-sm">{log.auditId}</TableCell>
-                        <TableCell>{log.actorEmail || `#${log.actorId}`}</TableCell>
+                        <TableCell>{log.actorEmail || '-'}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-mono text-xs">
                             {log.action}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {log.targetType} #{log.targetId}
+                          {log.targetType || '-'}
                         </TableCell>
                         <TableCell className="text-xs max-w-[200px] truncate">
                           {log.beforeState} → {log.afterState}

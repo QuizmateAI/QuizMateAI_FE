@@ -677,22 +677,22 @@ function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {badges.map((badge) => (
-                    <div
-                      key={badge.id}
-                      className={`flex items-center gap-4 rounded-lg border p-3 ${
-                        isDarkMode ? "border-slate-800 bg-slate-950" : "border-slate-100 bg-white"
-                      }`}
-                    >
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-full ${badge.bg} ${badge.color}`}>
-                        <badge.icon className="h-5 w-5" />
+                      <div
+                        key={badge.id}
+                        className={`flex items-center gap-4 rounded-lg border p-3 ${
+                          isDarkMode ? "border-slate-800 bg-slate-950" : "border-slate-100 bg-white"
+                        }`}
+                      >
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${badge.bg} ${badge.color}`}>
+                          <badge.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">{badge.name}</p>
+                          <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                            {t("profile.unlockedDaysAgo", { days: 2 })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm">{badge.name}</p>
-                        <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                          {t("profile.unlockedDaysAgo", { days: 2 })}
-                        </p>
-                      </div>
-                    </div>
                   ))}
                 </CardContent>
               </Card>

@@ -553,8 +553,8 @@ function AiAuditManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {auditLogs.map((entry) => {
-                  const actorName = entry.actorFullName || entry.actorUsername || `User #${entry.actorUserId ?? '-'}`;
+                  {auditLogs.map((entry) => {
+                    const actorName = entry.actorFullName || entry.actorUsername || entry.actorEmail || 'Người dùng hệ thống';
                   return (
                     <TableRow
                       key={entry.auditId}
@@ -569,7 +569,7 @@ function AiAuditManagement() {
                             {actorName}
                           </p>
                           <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {entry.actorEmail || 'Không có email'} {entry.actorUserId ? `• ID ${entry.actorUserId}` : ''}
+                            {entry.actorEmail || 'Không có email'}
                           </p>
                         </div>
                       </TableCell>
@@ -661,9 +661,6 @@ function AiAuditManagement() {
                   <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {selectedAudit.actorEmail || 'Không có email'}
                   </p>
-                  <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                    User ID: {selectedAudit.actorUserId ?? '-'}
-                  </p>
                 </div>
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                   <div className="flex items-center gap-2 text-sm font-semibold">
@@ -750,16 +747,7 @@ function AiAuditManagement() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
-                  <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Request metadata</p>
-                  <div className={`mt-3 space-y-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                    <p>Request ID: <span className="font-medium">{selectedAudit.requestId || '-'}</span></p>
-                    <p>Task ID: <span className="font-medium">{selectedAudit.taskId || '-'}</span></p>
-                    <p>Workspace ID: <span className="font-medium">{selectedAudit.workspaceId ?? '-'}</span></p>
-                    <p>Material ID: <span className="font-medium">{selectedAudit.materialId ?? '-'}</span></p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 gap-3 text-sm">
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                   <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Operation</p>
                   <div className={`mt-3 space-y-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>

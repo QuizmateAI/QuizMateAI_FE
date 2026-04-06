@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
+import DirectFeedbackButton from '@/Components/feedback/DirectFeedbackButton';
 import QuestionCard from './components/QuestionCard';
 import QuizHeader from './components/QuizHeader';
 import { getAttemptResult, getQuizFullForAttempt, getAttemptAssessment, generateQuizFromWorkspaceAssessment } from '@/api/QuizAPI';
@@ -1318,10 +1319,18 @@ handleBack,
 
             {/* Action buttons */}
             <SectionDivider />
-            <div className="flex items-center justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[180px] gap-2" disabled={reviewQuestions.length === 0}>
                 <Eye className="w-4 h-4" /> {t('workspace.quiz.result.reviewAnswers', 'Review Answers')}
               </Button>
+              {hasQuizIdForBack ? (
+                <DirectFeedbackButton
+                  targetType="QUIZ"
+                  targetId={normalizedQuizIdForBack}
+                  label={t('workspace.quiz.result.feedbackAction', 'Feedback')}
+                  className="min-w-[180px] gap-2"
+                />
+              ) : null}
             </div>
           </div>
         )}

@@ -7,6 +7,7 @@ import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { FlashcardArray } from "react-quizlet-flashcard";
 import "react-quizlet-flashcard/dist/index.css";
+import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import {
   getFlashcardDetail, updateFlashcardSetName, updateFlashcardSetStatus,
   addFlashcardItem, updateFlashcardItem, deleteFlashcardItem
@@ -241,6 +242,13 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack, hideEditButton, co
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <DirectFeedbackButton
+            targetType="FLASHCARD"
+            targetId={detail.flashcardSetId}
+            label={i18n.language === "en" ? "Feedback" : "Feedback"}
+            isDarkMode={isDarkMode}
+            className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
+          />
           {!hideEditButton && (
             <>
               {/* Đổi trạng thái */}
