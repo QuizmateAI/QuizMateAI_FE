@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
+import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import QuizListView from "./QuizListView";
 import { useToast } from "@/context/ToastContext";
 import {
@@ -50,7 +51,7 @@ function RoadmapCanvasView2({
   onViewRoadmapConfig,
   onEditRoadmapConfig,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showError, showSuccess } = useToast();
   const [openPhaseId, setOpenPhaseId] = useState(null);
   const [submittingRemedialDecision, setSubmittingRemedialDecision] = useState(false);
@@ -750,8 +751,18 @@ function RoadmapCanvasView2({
               ) : null}
             </div>
           </div>
-          {onViewRoadmapConfig || onEditRoadmapConfig || (onShareRoadmap && roadmap?.roadmapId) ? (
+          {roadmap?.roadmapId || onViewRoadmapConfig || onEditRoadmapConfig || (onShareRoadmap && roadmap?.roadmapId) ? (
             <div className="mt-3 flex flex-wrap justify-end gap-2">
+              {roadmap?.roadmapId ? (
+                <DirectFeedbackButton
+                  targetType="ROADMAP"
+                  targetId={roadmap.roadmapId}
+                  label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
+                  isDarkMode={isDarkMode}
+                  className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+                  title={i18n.language === "en" ? "Roadmap feedback" : "Phản hồi lộ trình"}
+                />
+              ) : null}
               {onViewRoadmapConfig ? (
                 <Button
                   type="button"
@@ -1036,6 +1047,16 @@ function RoadmapCanvasView2({
                       </div>
                     </div>
                   )}
+                  <div className="px-4 pt-1">
+                    <DirectFeedbackButton
+                      targetType="PHASE"
+                      targetId={phase.phaseId}
+                      label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
+                      isDarkMode={isDarkMode}
+                      className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-slate-50 text-gray-700 hover:bg-slate-100"}`}
+                      title={i18n.language === "en" ? "Phase feedback" : "Phản hồi phase"}
+                    />
+                  </div>
                   <div className={`px-4 py-3 space-y-4 ${isLockedPhase ? "opacity-30 pointer-events-none select-none blur-sm" : ""}`}>
                     {phase?.description ? (
                       <details className="group">

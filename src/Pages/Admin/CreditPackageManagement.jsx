@@ -334,7 +334,6 @@ function CreditPackageManagement() {
                   dk ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50/80 border-b border-slate-100'
                 }
               >
-                <TableHead className="w-[60px] font-semibold text-xs uppercase tracking-wider text-slate-400">ID</TableHead>
                 <TableHead className="w-[220px] font-semibold text-xs uppercase tracking-wider text-slate-400">
                   {t('creditPackage.table.name', 'Tên gói')}
                 </TableHead>
@@ -358,7 +357,7 @@ function CreditPackageManagement() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
+                  <TableCell colSpan={6} className="text-center py-4">
                     <ListSpinner variant="table" />
                   </TableCell>
                 </TableRow>
@@ -372,7 +371,6 @@ function CreditPackageManagement() {
                         dk ? 'border-white/[0.04] hover:bg-white/[0.03]' : 'border-slate-50 hover:bg-blue-50/30'
                       }`}
                     >
-                      <TableCell className="font-mono text-sm font-semibold text-blue-500">{pkg.id}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span className={`font-semibold text-sm ${dk ? 'text-white' : 'text-slate-800'}`}>
@@ -473,7 +471,7 @@ function CreditPackageManagement() {
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={6}
                     className="text-center py-16 text-slate-400 text-sm italic"
                   >
                     {t('creditPackage.empty', 'Chưa có gói Credit nào.')}

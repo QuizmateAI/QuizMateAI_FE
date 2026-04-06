@@ -230,14 +230,32 @@ function AdminPaymentManagement() {
   );
 
   const renderTargetSummary = (payment) => {
-    const parts = [formatTargetType(payment.paymentTargetType)];
-    if (payment.workspaceId != null) {
-      parts.push(t('adminPayments.targetSummary.workspace', { id: payment.workspaceId }));
-    }
-    if (payment.chargedUserId != null) {
-      parts.push(t('adminPayments.targetSummary.chargedUser', { id: payment.chargedUserId }));
-    }
-    return parts.join(' • ');
+    const targetSubject = payment.workspaceId != null
+      ? `${t('adminPayments.detail.fields.workspace')} #${payment.workspaceId}`
+      : payment.chargedUserId != null
+        ? `${t('adminPayments.detail.fields.chargedUser')} #${payment.chargedUserId}`
+        : payment.groupSubscriptionId != null
+          ? `${t('adminPayments.detail.fields.groupSubscription')} #${payment.groupSubscriptionId}`
+          : payment.userSubscriptionId != null
+            ? `${t('adminPayments.detail.fields.userSubscription')} #${payment.userSubscriptionId}`
+            : null;
+
+    return (
+      <div className="min-w-[220px] space-y-1">
+        <div className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+          {formatTargetType(payment.paymentTargetType)}
+        </div>
+        {targetSubject && (
+          <div
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+              isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            {targetSubject}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (!permLoading && !canRead) {
@@ -379,7 +397,7 @@ function AdminPaymentManagement() {
                         {payment.orderId}
                       </TableCell>
                       <TableCell>#{payment.userId ?? '-'}</TableCell>
-                      <TableCell className="min-w-[220px]">{renderTargetSummary(payment)}</TableCell>
+                      <TableCell>{renderTargetSummary(payment)}</TableCell>
                       <TableCell>{formatMoney(payment.amount)}</TableCell>
                       <TableCell>{payment.paymentMethod || '-'}</TableCell>
                       <TableCell>{renderStatusBadge(payment.paymentStatus)}</TableCell>

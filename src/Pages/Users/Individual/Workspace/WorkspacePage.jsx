@@ -2943,6 +2943,8 @@ function WorkspacePage() {
 
 			<WorkspaceHeader
 
+				workspaceId={currentWorkspace?.workspaceId || (workspaceId && workspaceId !== "new" ? Number(workspaceId) : null)}
+
 				settingsMenu={settingsMenu}
 
 				isDarkMode={isDarkMode}

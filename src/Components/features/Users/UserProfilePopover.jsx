@@ -50,7 +50,7 @@ function UserProfilePopover({ isDarkMode = false }) {
       <button
         type="button"
         onClick={() => setIsProfileOpen((prev) => !prev)}
-        className="w-9 h-9 rounded-full overflow-hidden border border-transparent hover:border-blue-400 transition-colors"
+        className="relative w-9 h-9 rounded-full overflow-hidden border border-transparent hover:border-blue-400 transition-colors"
         aria-expanded={isProfileOpen}
         aria-haspopup="menu"
       >

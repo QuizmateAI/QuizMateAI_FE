@@ -8,7 +8,9 @@ import LoadingSpinner from '@/Components/ui/LoadingSpinner';
 import RouteMetaManager from '@/Components/seo/RouteMetaManager';
 import { launchConfig } from '@/lib/launchConfig';
 import { loadGroupWorkspacePage, loadWorkspacePage } from '@/lib/routeLoaders';
-import PlanUpgradeModal from '@/Components/plan/PlanUpgradeModal';
+
+const FeedbackAutoPrompt = lazy(() => import('@/Components/feedback/FeedbackAutoPrompt'));
+const PlanUpgradeModal = lazy(() => import('@/Components/plan/PlanUpgradeModal'));
 import './i18n';
 import './App.css';
 
@@ -23,6 +25,7 @@ const HomePage = lazy(() => import('./Pages/Users/Home/HomePage'));
 const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
 const PlanPage = lazy(() => import('./Pages/Users/Plan/PlanPage'));
 const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
+const FeedbackCenterPage = lazy(() => import('./Pages/Users/Feedback/FeedbackCenterPage'));
 const WorkspacePage = lazy(loadWorkspacePage);
 const GroupWorkspacePage = lazy(loadGroupWorkspacePage);
 const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/GroupManagementPage'));
@@ -61,6 +64,7 @@ const AiModelsManagement = lazy(() => import('./Pages/SuperAdmin/AiModelsManagem
 const AiCostManagement = lazy(() => import('./Pages/SuperAdmin/AiCostManagement'));
 const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
+const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagement'));
 
 function MainRoutes() {
   return (
@@ -88,6 +92,7 @@ function MainRoutes() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/plan" element={<PlanPage />} />
         <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/feedback" element={<FeedbackCenterPage />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
         <Route path="/workspace/:workspaceId/*" element={<WorkspacePage />} />
@@ -118,6 +123,7 @@ function MainRoutes() {
           <Route path="payments" element={<AdminPaymentManagement />} />
             <Route path="system-settings" element={<SystemSettingManagement />} />
             <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
+            <Route path="feedback" element={<FeedbackManagement />} />
         </Route>
       </Route>
 
@@ -157,7 +163,11 @@ function PlanGuardListener() {
     return () => window.removeEventListener('planUpgradeRequired', handler);
   }, []);
 
-  return <PlanUpgradeModal open={open} onOpenChange={setOpen} />;
+  return (
+    <Suspense fallback={null}>
+      <PlanUpgradeModal open={open} onOpenChange={setOpen} />
+    </Suspense>
+  );
 }
 
 function AppContent() {
@@ -174,6 +184,9 @@ function AppContent() {
       <UserProfileProvider>
         <Suspense fallback={<LoadingSpinner />}>
           <MainRoutes />
+        </Suspense>
+        <Suspense fallback={null}>
+          <FeedbackAutoPrompt />
         </Suspense>
       </UserProfileProvider>
     </NavigationLoadingProvider>

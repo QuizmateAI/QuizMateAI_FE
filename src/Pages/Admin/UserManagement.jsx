@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, RefreshCw, User, MoreHorizontal, Shield, Ban, CheckCircle2, Eye } from 'lucide-react';
+import { Search, RefreshCw, MoreHorizontal, Shield, Ban, CheckCircle2, Eye } from 'lucide-react';
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/Components/ui/card";
@@ -214,12 +214,9 @@ function UserManagement() {
             <Table className = "table-auto min-w-full text-left">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  <TableHead className="w-[60px] text-left font-bold text-slate-500">{t('userPage.table.id')}</TableHead>
-                  <TableHead className="w-[70px] text-left font-bold text-slate-500">{t('userPage.table.avatar')}</TableHead>
-                  <TableHead className="w-[100px] text-left font-bold text-slate-500">{t('userPage.table.username')}</TableHead>
-                  <TableHead className="w-[180px] text-left font-bold text-slate-500">{t('userPage.table.email')}</TableHead>
-                  <TableHead className="w-[160px] text-left font-bold text-slate-500">{t('userPage.table.fullName')}</TableHead>
-                  <TableHead className="w-[90px] text-center font-bold text-slate-500">{t('userPage.table.role')}</TableHead>
+                  <TableHead className="w-[180px] text-left font-bold text-slate-500">{t('userPage.table.username')}</TableHead>
+                  <TableHead className="w-[240px] text-left font-bold text-slate-500">{t('userPage.table.email')}</TableHead>
+                  <TableHead className="w-[180px] text-left font-bold text-slate-500">{t('userPage.table.fullName')}</TableHead>
                   <TableHead className="w-[100px] text-center font-bold text-slate-500">{t('userPage.table.status')}</TableHead>
                   <TableHead className="w-[140px] text-left font-bold text-slate-500">{t('userPage.table.createdAt')}</TableHead>
                   <TableHead className="w-[80px] text-right font-bold text-slate-500">{t('userPage.table.actions')}</TableHead>
@@ -228,7 +225,7 @@ function UserManagement() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-4">
+                    <TableCell colSpan={6} className="text-center py-4">
                       <ListSpinner variant="table" />
                     </TableCell>
                   </TableRow>
@@ -243,35 +240,14 @@ function UserManagement() {
                           : 'border-slate-100 hover:bg-slate-50/50'
                       }`}
                     >
-                      <TableCell className="w-[60px] text-left font-bold text-blue-600 dark:text-blue-400">{user.id}</TableCell>
-                      <TableCell className="w-[70px] text-left">
-                        {user.avatar ? (
-                          <img 
-                            src={user.avatar} 
-                            alt={user.username} 
-                            className="w-10 h-10 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700"
-                          />
-                        ) : (
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            isDarkMode ? 'bg-slate-700' : 'bg-slate-200'
-                          }`}>
-                            <User className="w-5 h-5 text-slate-400" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className={`w-[100px] text-left font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                      <TableCell className={`w-[180px] text-left font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         {user.username}
                       </TableCell>
-                      <TableCell className={`w-[180px] text-left ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                      <TableCell className={`w-[240px] text-left ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                         {user.email}
                       </TableCell>
-                      <TableCell className={`w-[160px] text-left ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <TableCell className={`w-[180px] text-left ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                         {user.fullName || '-'}
-                      </TableCell>
-                      <TableCell className="w-[90px] text-center">
-                        <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg px-2.5 py-0.5 border-none">
-                          {user.role}
-                        </Badge>
                       </TableCell>
                       <TableCell className="w-[100px] text-center">
                         <Badge className={`rounded-lg px-2.5 py-0.5 border-none ${getStatusBadge(user.status)}`}>
@@ -329,7 +305,7 @@ function UserManagement() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-20 text-slate-400 font-medium italic">
+                    <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-medium italic">
                       {t('userPage.noData')}
                     </TableCell>
                   </TableRow>

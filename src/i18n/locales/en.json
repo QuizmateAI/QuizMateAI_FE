@@ -18,7 +18,8 @@
     "creditPackages": "Credit Packs",
     "payments": "Payments",
     "systemSettings": "System Settings",
-    "aiActionPolicies": "AI Policies"
+    "aiActionPolicies": "AI Policies",
+    "feedback": "Feedback"
   },
   "sidebarSections": {
     "overview": "Overview",
@@ -893,6 +894,7 @@
     "table": {
       "name": "Plan Name",
       "price": "Price",
+      "createdAt": "Created At",
       "duration": "Duration",
       "aiTokens": "AI Tokens",
       "status": "Status",
