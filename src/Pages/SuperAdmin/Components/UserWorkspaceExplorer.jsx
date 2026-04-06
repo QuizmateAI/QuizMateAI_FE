@@ -513,7 +513,6 @@ function UserWorkspaceExplorer({
                             </p>
 
                             <div className="mt-4 flex flex-wrap gap-2">
-                              <SummaryPill icon={Info} label={t('userDetail.workspaceId')} value={`#${workspaceKey}`} isDarkMode={isDarkMode} />
                               <SummaryPill
                                 icon={Clock3}
                                 label={t('userDetail.updatedAt')}

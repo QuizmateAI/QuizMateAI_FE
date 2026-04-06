@@ -213,7 +213,6 @@ function GroupManagement() {
             <Table className="table-fixed min-w-[1080px]">
               <TableHeader className={`${isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}`}>
                 <TableRow className={`border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  <TableHead className="w-[60px] font-bold text-slate-500 text-left">{t('groupPage.table.id')}</TableHead>
                   <TableHead className="w-[300px] font-bold text-slate-500 text-left">{t('groupPage.table.name')}</TableHead>
                   <TableHead className="w-[36%] font-bold text-slate-500 text-left">{t('groupPage.table.description')}</TableHead>
                   <TableHead className="w-[136px] font-bold text-slate-500 text-left">{t('groupPage.table.members')}</TableHead>
@@ -225,7 +224,7 @@ function GroupManagement() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">
+                    <TableCell colSpan={6} className="text-center py-4">
                       <ListSpinner variant="table" />
                     </TableCell>
                   </TableRow>
@@ -240,9 +239,6 @@ function GroupManagement() {
                           : 'border-slate-100 hover:bg-sky-50/60'
                       }`}
                     >
-                      <TableCell className="whitespace-nowrap font-bold text-blue-600 dark:text-blue-400 text-left">
-                        {group.workspaceId ?? group.id}
-                      </TableCell>
                       <TableCell className={`text-left ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         <div className="flex items-start gap-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -323,7 +319,7 @@ function GroupManagement() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-20 text-slate-400 font-medium italic">
+                    <TableCell colSpan={6} className="text-center py-20 text-slate-400 font-medium italic">
                       {t('groupPage.noData')}
                     </TableCell>
                   </TableRow>

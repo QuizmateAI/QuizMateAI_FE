@@ -93,8 +93,6 @@ export const i18nReady = (async () => {
   });
 })();
 
-await i18nReady;
-
 export async function preloadLanguage(language) {
   return loadLanguageResources(language);
 }

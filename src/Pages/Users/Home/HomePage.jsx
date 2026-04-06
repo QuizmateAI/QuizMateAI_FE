@@ -362,16 +362,13 @@ function HomePage() {
             }`}
           >
             <CreditCard className="w-4 h-4" />
-            <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
             {currentPlanSummary ? (
-              <>
-                <span className={`hidden h-1 w-1 rounded-full md:inline-block ${
-                  isDarkMode ? 'bg-slate-500' : 'bg-slate-300'
-                }`} />
-                <span className="hidden max-w-[140px] truncate text-sm font-semibold md:inline">
-                  {currentPlanSummary.planName}
-                </span>
-              </>
+              <span className="hidden max-w-[180px] truncate text-sm font-semibold sm:inline">
+                {currentPlanSummary.planName}
+              </span>
+            ) : null}
+            {!currentPlanSummary ? (
+              <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
             ) : null}
           </Button>
           <Button
