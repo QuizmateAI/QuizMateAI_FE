@@ -1,5 +1,7 @@
 import api from "./api";
 import { getCachedProfile, setCachedProfile, clearUserCache } from "@/Utils/userCache";
+import { getCurrentUser } from "@/api/Authentication";
+import { normalizeUserProfile } from "@/Utils/userProfile";
 
 function getStoredToken() {
   return localStorage.getItem("accessToken") || localStorage.getItem("jwt_token") || "";
@@ -31,14 +33,7 @@ async function getUserProfile() {
       });
 
   const userProfile = response?.data || response || {};
-
-  const profile = {
-    email: userProfile.email || "",
-    username: userProfile.username || "",
-    fullName: userProfile.fullName || userProfile.username || "",
-    avatarUrl: userProfile.avatar || userProfile.avatarUrl || "",
-    birthday: userProfile.birthday || null,
-  };
+  const profile = normalizeUserProfile(userProfile, getCurrentUser() || {});
 
   setCachedProfile(profile);
   return profile;

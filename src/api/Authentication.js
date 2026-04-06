@@ -1,5 +1,6 @@
 import api from './api';
 import { setCachedProfile, setCachedSubscription, clearUserCache } from '@/Utils/userCache';
+import { normalizeUserProfile } from '@/Utils/userProfile';
 import { queryClient } from '@/queryClient';
 
 // ======================= AUTH API SERVICES =======================
@@ -24,13 +25,7 @@ export const register = async (userData) => {
  */
 function saveLoginDataToCache(data) {
   if (data?.user) {
-    const profile = {
-      email: data.user.email || data.email || '',
-      username: data.user.username || data.username || '',
-      fullName: data.user.fullName || data.user.username || '',
-      avatarUrl: data.user.avatar || data.user.avatarUrl || '',
-      birthday: data.user.birthday || null,
-    };
+    const profile = normalizeUserProfile(data.user, data);
     setCachedProfile(profile);
   }
   if (data?.subscription != null) {
