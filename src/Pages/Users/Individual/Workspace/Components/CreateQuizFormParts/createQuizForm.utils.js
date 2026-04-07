@@ -325,9 +325,9 @@ export const buildAiValidationState = ({
         "settings",
         "aiDuration",
         t("workspace.quiz.validation.minimumTimePerQuestion", {
-          defaultValue: `Each question needs at least ${AI_MINIMUM_SECONDS_PER_QUESTION} seconds. With ${aiTotalQuestions} questions, duration must be at least ${minimumAiDurationMinutes} minutes.`,
           count: Math.max(0, Number(aiTotalQuestions) || 0),
           minutes: minimumAiDurationMinutes,
+          seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
         })
       );
     }

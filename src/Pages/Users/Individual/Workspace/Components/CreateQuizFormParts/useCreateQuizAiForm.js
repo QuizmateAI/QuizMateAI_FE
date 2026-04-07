@@ -30,6 +30,30 @@ import {
   normalizeListResponse,
 } from "./createQuizForm.utils";
 
+/** Trùng với Constants/errorCodes.js — thiếu credit workspace (QMC). */
+const INSUFFICIENT_CREDIT_BUSINESS_CODE = 1129;
+
+function detectInsufficientCreditError(submitError) {
+  if (!submitError || typeof submitError !== "object") {
+    return false;
+  }
+  if (Number(submitError.code) === INSUFFICIENT_CREDIT_BUSINESS_CODE) {
+    return true;
+  }
+  const raw = String(submitError.message || "").trim();
+  if (!raw) {
+    return false;
+  }
+  const m = raw.toLowerCase();
+  if (m.includes("qmc") && (m.includes("không đủ") || m.includes("khong du") || m.includes("insufficient") || m.includes("0 qmc"))) {
+    return true;
+  }
+  if ((m.includes("credit") && m.includes("workspace")) || m.includes("số dư credit") || m.includes("so du credit")) {
+    return true;
+  }
+  return false;
+}
+
 const formatPreviewValue = (value) => {
   const rounded = Math.round((Number(value) || 0) * 100) / 100;
   return Number(rounded.toFixed(2)).toString();
@@ -45,6 +69,27 @@ const normalizeStructureItems = (items) => (
     quantity: Math.max(1, Math.round(Number(item?.quantity) || 1)),
   }))
 );
+
+/**
+ * BE đôi khi chỉ trả `items` mà không có `structureJson`. Nếu chỉ nhìn `structureJson`
+ * rồi gọi lại preview khi Generate, user sẽ thấy luôn chạy "structure preview" thay vì generate.
+ */
+function buildStructureJsonPayload(preview, isStructureEditing, editableStructureItems) {
+  if (isStructureEditing && Array.isArray(editableStructureItems) && editableStructureItems.length > 0) {
+    return JSON.stringify({ items: normalizeStructureItems(editableStructureItems) });
+  }
+  if (!preview || typeof preview !== "object") {
+    return "";
+  }
+  const raw = String(preview.structureJson ?? "").trim();
+  if (raw) {
+    return raw;
+  }
+  if (Array.isArray(preview.items) && preview.items.length > 0) {
+    return JSON.stringify({ items: normalizeStructureItems(preview.items) });
+  }
+  return "";
+}
 
 const parseStructureJsonItems = (structureJson) => {
   if (!structureJson) {
@@ -116,9 +161,13 @@ const serializeStructureConfigPayload = (payload) => {
 const normalizeStructurePreviewResponse = (response) => {
   const payload = response?.data ?? response ?? {};
   const items = Array.isArray(payload?.items) ? payload.items : [];
+  let structureJson = String(payload?.structureJson ?? "").trim();
+  if (!structureJson && items.length > 0) {
+    structureJson = JSON.stringify({ items: normalizeStructureItems(items) });
+  }
   return {
     totalQuestion: Number(payload?.totalQuestion) || 0,
-    structureJson: String(payload?.structureJson || ""),
+    structureJson,
     items,
   };
 };
@@ -134,6 +183,7 @@ export const useCreateQuizAiForm = ({
 }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [insufficientCreditError, setInsufficientCreditError] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [difficultyDefs, setDifficultyDefs] = useState([]);
   const [selectedDifficultyId, setSelectedDifficultyId] = useState("");
@@ -594,6 +644,7 @@ export const useCreateQuizAiForm = ({
     }
 
     setError("");
+    setInsufficientCreditError(false);
   }, [
     aiDuration,
     aiEasyDuration,
@@ -675,6 +726,7 @@ export const useCreateQuizAiForm = ({
     }
 
     setFieldErrors(aiValidationState.fieldErrors);
+    setInsufficientCreditError(false);
     setError(aiValidationState.firstErrorMessage);
 
     if (aiValidationState.firstInvalidSection) {
@@ -1263,10 +1315,12 @@ export const useCreateQuizAiForm = ({
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     setError("");
+    setInsufficientCreditError(false);
 
     try {
       if (!aiValidationState.isValid) {
         setFieldErrors(aiValidationState.fieldErrors);
+        setInsufficientCreditError(false);
         setError(aiValidationState.firstErrorMessage);
         if (aiValidationState.firstInvalidSection) {
           scrollToAiSection(aiValidationState.firstInvalidSection);
@@ -1274,11 +1328,12 @@ export const useCreateQuizAiForm = ({
         return;
       }
 
-      let structureJson = String(structurePreview?.structureJson || "");
-      if (!structureJson) {
-        const previewResult = await handlePreviewStructure();
-        structureJson = String(previewResult?.structureJson || "");
-      }
+      // Chỉ gửi cấu trúc khi user đã xem/chỉnh "Detailed configuration" — không gọi preview API khi Generate.
+      const structureJson = buildStructureJsonPayload(
+        structurePreview,
+        isStructureEditing,
+        editableStructureItems,
+      ) || "";
 
       console.log("[AI Quiz][Generate] structureJson:", structureJson);
 
@@ -1325,6 +1380,8 @@ export const useCreateQuizAiForm = ({
       await onCreateQuiz?.(result?.data || result);
     } catch (submitError) {
       console.error("Failed to create AI quiz:", submitError);
+      const creditShortfall = detectInsufficientCreditError(submitError);
+      setInsufficientCreditError(creditShortfall);
       setError(submitError?.message || t("workspace.quiz.validation.createFailed"));
     } finally {
       setSubmitting(false);
@@ -1341,7 +1398,6 @@ export const useCreateQuizAiForm = ({
     aiTotalQuestions,
     aiValidationState,
     bloomUnit,
-    handlePreviewStructure,
     defaultContextId,
     difficultyRatios.easy,
     difficultyRatios.hard,
@@ -1356,13 +1412,16 @@ export const useCreateQuizAiForm = ({
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
-    structurePreview?.structureJson,
+    structurePreview,
+    isStructureEditing,
+    editableStructureItems,
     t,
   ]);
 
   return {
     aiValidationState,
     error,
+    insufficientCreditError,
     fieldErrors,
     handleBlockedAiSubmit,
     handleSubmit,

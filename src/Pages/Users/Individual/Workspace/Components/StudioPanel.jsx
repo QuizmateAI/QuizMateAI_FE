@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   GitBranch,
   BadgeCheck,
   CreditCard,
   ChevronRight,
+  ChevronDown,
   ChevronsRight,
   Crown,
   LayoutGrid,
@@ -86,6 +87,69 @@ function formatAccessTime(dateStr, t, lang) {
   }).format(date);
 }
 
+function renderActionButton(action, ctx) {
+  const { highlightKey, isDarkMode, fontClass, getIsActionDisabled, planLockedActions, canRenderRoadmapEditAction, onAction, onEditRoadmapConfig, t } = ctx;
+  const Icon = action.icon;
+  const isDisabled = getIsActionDisabled(action.key);
+  const isPlanLocked = planLockedActions.includes(action.key);
+  const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key, isDisabled, isPlanLocked);
+  return (
+    <div key={action.key} className="relative">
+      <button
+        disabled={isDisabled && !isPlanLocked}
+        onClick={() => onAction?.(action.key)}
+        className={`w-full rounded-xl px-3 py-2.5 flex items-center gap-3 text-left transition-all group ${canRenderRoadmapEdit ? "pr-12" : ""} ${
+          isPlanLocked
+            ? isDarkMode
+              ? "bg-slate-800/40 border border-slate-800 opacity-60 cursor-pointer"
+              : "bg-gray-50 border border-gray-100 opacity-60 cursor-pointer"
+            : isDisabled
+              ? isDarkMode
+                ? "bg-slate-800/40 border border-slate-800 opacity-50 cursor-not-allowed"
+                : "bg-gray-50 border border-gray-100 opacity-50 cursor-not-allowed"
+              : highlightKey === action.key
+                ? isDarkMode
+                  ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20"
+                  : "bg-blue-50 border border-blue-200"
+                : isDarkMode
+                  ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700"
+                  : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
+        }`}
+      >
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isDisabled && !isPlanLocked ? "bg-gray-200 dark:bg-slate-700" : action.bg}`}>
+          <Icon className={`w-4 h-4 ${isDisabled && !isPlanLocked ? "text-gray-400" : action.color}`} />
+        </div>
+        <span className={`text-sm font-medium flex-1 truncate ${isDisabled && !isPlanLocked ? "text-gray-400" : isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+          {action.label || t(`workspace.studio.actions.${action.key}`)}
+        </span>
+        {isPlanLocked && (
+          <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        )}
+        {!isDisabled && !isPlanLocked && (
+          <ChevronRight className={`w-3.5 h-3.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+        )}
+      </button>
+      {canRenderRoadmapEdit && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEditRoadmapConfig();
+          }}
+          className={`absolute right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors ${
+            isDarkMode
+              ? "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+              : "bg-white text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+          }`}
+          aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function StudioPanel({
   isDarkMode = false,
   onAction,
@@ -100,9 +164,10 @@ function StudioPanel({
   hideAccessHistory = false,
   customActions = null,
   canEditRoadmapConfig = false,
-  // Array of action keys that are locked behind a plan upgrade (e.g. ["questionStats"])
   planLockedActions = [],
   completedQuizCount = 0,
+  // Array of { label, keys[] } to group actions into collapsible sections
+  actionGroups = null,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -115,6 +180,52 @@ function StudioPanel({
     return true;
   });
   const visibleAccessHistory = Array.isArray(accessHistory) ? accessHistory : [];
+
+  const groupedKeysSet = useMemo(() => {
+    if (!actionGroups) return new Set();
+    return new Set(actionGroups.flatMap((g) => g.keys));
+  }, [actionGroups]);
+
+  const ungroupedActions = useMemo(
+    () => renderableActions.filter((a) => !groupedKeysSet.has(a.key)),
+    [renderableActions, groupedKeysSet],
+  );
+
+  const initialExpandedGroups = useMemo(() => {
+    if (!actionGroups) return {};
+    const expanded = {};
+    actionGroups.forEach((group, idx) => {
+      expanded[idx] = highlightKey ? group.keys.includes(highlightKey) : idx === 0;
+    });
+    return expanded;
+  }, [actionGroups, highlightKey]);
+
+  const [expandedGroups, setExpandedGroups] = useState(initialExpandedGroups);
+  const [highlightSyncProps, setHighlightSyncProps] = useState({ highlightKey, actionGroups });
+
+  if (
+    highlightKey !== highlightSyncProps.highlightKey
+    || actionGroups !== highlightSyncProps.actionGroups
+  ) {
+    setHighlightSyncProps({ highlightKey, actionGroups });
+    if (actionGroups && highlightKey) {
+      setExpandedGroups((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        actionGroups.forEach((group, idx) => {
+          if (group.keys.includes(highlightKey) && next[idx] !== true) {
+            next[idx] = true;
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }
+  }
+
+  const toggleGroup = useCallback((idx) => {
+    setExpandedGroups((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  }, []);
 
   const actionLabelMap = useMemo(() => visibleActions.reduce((acc, action) => {
     acc[action.key] = action.label || t(`workspace.studio.actions.${action.key}`, action.key);
@@ -186,8 +297,8 @@ function StudioPanel({
           </button>
         </div>
 
-        <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
-          {renderableActions.map((action) => {
+        <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-1.5">
+          {(actionGroups ? ungroupedActions : renderableActions).map((action) => {
             const Icon = action.icon;
             const isDisabled = getIsActionDisabled(action.key);
             const isPlanLocked = planLockedActions.includes(action.key);
@@ -247,6 +358,49 @@ function StudioPanel({
               </div>
             );
           })}
+          {actionGroups && actionGroups.map((group, groupIdx) => {
+            const groupActions = group.keys
+              .map((k) => renderableActions.find((a) => a.key === k))
+              .filter(Boolean);
+            if (groupActions.length === 0) return null;
+            return (
+              <React.Fragment key={group.label}>
+                <div className={`w-8 border-t my-0.5 ${isDarkMode ? "border-slate-700" : "border-gray-200"}`} />
+                {groupActions.map((action) => {
+                  const Icon = action.icon;
+                  const isDisabled = getIsActionDisabled(action.key);
+                  const isPlanLocked = planLockedActions.includes(action.key);
+                  return (
+                    <div key={action.key} className="relative">
+                      <button
+                        type="button"
+                        disabled={isDisabled && !isPlanLocked}
+                        onClick={() => { setHoverTooltip(null); onAction?.(action.key); }}
+                        onMouseEnter={(event) => showTooltip(event, action.label || t(`workspace.studio.actions.${action.key}`))}
+                        onMouseLeave={() => setHoverTooltip(null)}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
+                          isPlanLocked
+                            ? isDarkMode ? "bg-slate-800 opacity-60 cursor-pointer" : "bg-gray-50 opacity-60 cursor-pointer"
+                            : isDisabled
+                              ? isDarkMode ? "bg-slate-800 opacity-50 cursor-not-allowed" : "bg-gray-50 opacity-50 cursor-not-allowed"
+                              : highlightKey === action.key
+                                ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
+                                : isDarkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <Icon className={`w-4.5 h-4.5 ${isDisabled && !isPlanLocked ? "text-gray-400" : action.color}`} />
+                      </button>
+                      {isPlanLocked && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center pointer-events-none z-10">
+                          <Crown className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
 
           {visibleAccessHistory.length > 0 && (
             <>
@@ -299,70 +453,50 @@ function StudioPanel({
         </button>
       </div>
 
-      <div className="p-3 space-y-2">
-        {renderableActions.map((action) => {
-          const Icon = action.icon;
-          const isDisabled = getIsActionDisabled(action.key);
-          const isPlanLocked = planLockedActions.includes(action.key);
-          const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key, isDisabled, isPlanLocked);
-          return (
-            <div key={action.key} className="relative">
-              <button
-                disabled={isDisabled && !isPlanLocked}
-                onClick={() => onAction?.(action.key)}
-                className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${canRenderRoadmapEdit ? "pr-12" : ""} ${
-                  isPlanLocked
-                    ? isDarkMode
-                      ? "bg-slate-800/40 border border-slate-800 opacity-60 cursor-pointer"
-                      : "bg-gray-50 border border-gray-100 opacity-60 cursor-pointer"
-                    : isDisabled
-                      ? isDarkMode
-                        ? "bg-slate-800/40 border border-slate-800 opacity-50 cursor-not-allowed"
-                        : "bg-gray-50 border border-gray-100 opacity-50 cursor-not-allowed"
-                      : highlightKey === action.key
-                        ? isDarkMode
-                          ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20"
-                          : "bg-blue-50 border border-blue-200"
-                        : isDarkMode
-                          ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700"
-                          : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
-                }`}
-              >
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDisabled && !isPlanLocked ? "bg-gray-200 dark:bg-slate-700" : action.bg}`}>
-                  <Icon className={`w-4.5 h-4.5 ${isDisabled && !isPlanLocked ? "text-gray-400" : action.color}`} />
+      <div className="p-3 space-y-1.5 overflow-y-auto flex-1 scrollbar-hide">
+        {actionGroups ? (
+          <>
+            {ungroupedActions.map((action) => renderActionButton(action, { highlightKey, isDarkMode, fontClass, getIsActionDisabled, planLockedActions, canRenderRoadmapEditAction, onAction, onEditRoadmapConfig, t }))}
+            {actionGroups.map((group, groupIdx) => {
+              const groupActions = group.keys
+                .map((k) => renderableActions.find((a) => a.key === k))
+                .filter(Boolean);
+              if (groupActions.length === 0) return null;
+              const isExpanded = !!expandedGroups[groupIdx];
+              const hasActiveChild = groupActions.some((a) => highlightKey === a.key);
+              return (
+                <div key={group.label} className="mt-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(groupIdx)}
+                    className={`w-full rounded-lg px-3 py-2 flex items-center gap-2 text-left transition-colors ${
+                      hasActiveChild
+                        ? isDarkMode ? "bg-slate-800/40" : "bg-blue-50/50"
+                        : isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    {isExpanded
+                      ? <ChevronDown className={`w-3.5 h-3.5 shrink-0 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+                      : <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />}
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${isDarkMode ? "text-slate-400" : "text-gray-400"} ${fontClass}`}>
+                      {group.label}
+                    </span>
+                    <span className={`ml-auto text-[10px] tabular-nums ${isDarkMode ? "text-slate-500" : "text-gray-300"}`}>
+                      {groupActions.length}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div className="mt-1 space-y-1 pl-1">
+                      {groupActions.map((action) => renderActionButton(action, { highlightKey, isDarkMode, fontClass, getIsActionDisabled, planLockedActions, canRenderRoadmapEditAction, onAction, onEditRoadmapConfig, t }))}
+                    </div>
+                  )}
                 </div>
-                <span className={`text-sm font-medium flex-1 ${isDisabled && !isPlanLocked ? "text-gray-400" : isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                  {action.label || t(`workspace.studio.actions.${action.key}`)}
-                </span>
-                {isPlanLocked && (
-                  <div className="flex items-center gap-1">
-                    <Crown className="w-3.5 h-3.5 text-amber-400" />
-                  </div>
-                )}
-                {!isDisabled && !isPlanLocked && (
-                  <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-                )}
-              </button>
-              {canRenderRoadmapEdit && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onEditRoadmapConfig();
-                  }}
-                  className={`absolute right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors ${
-                    isDarkMode
-                      ? "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                      : "bg-white text-gray-400 hover:bg-gray-50 hover:text-gray-700"
-                  }`}
-                  aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </>
+        ) : (
+          renderableActions.map((action) => renderActionButton(action, { highlightKey, isDarkMode, fontClass, getIsActionDisabled, planLockedActions, canRenderRoadmapEditAction, onAction, onEditRoadmapConfig, t }))
+        )}
       </div>
 
       {completedQuizCount >= 3 && completedQuizCount < 10 && (

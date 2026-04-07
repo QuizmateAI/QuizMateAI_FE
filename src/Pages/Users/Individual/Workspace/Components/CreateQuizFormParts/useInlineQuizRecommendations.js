@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { generateQuizFromWorkspaceAssessment, getPendingRecommendations } from "@/api/QuizAPI";
 
-export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t }) => {
+export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t, enabled = true }) => {
   const [inlineRecommendations, setInlineRecommendations] = useState([]);
   const [inlineRecLoading, setInlineRecLoading] = useState(false);
   const [inlineRecError, setInlineRecError] = useState("");
@@ -9,6 +9,14 @@ export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t }) => 
   const [inlineRecGeneratingId, setInlineRecGeneratingId] = useState(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setInlineRecommendations([]);
+      setInlineRecError("");
+      setExpandedRecId(null);
+      setInlineRecLoading(false);
+      return;
+    }
+
     if (!contextId) {
       setInlineRecommendations([]);
       setExpandedRecId(null);
@@ -52,10 +60,10 @@ export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t }) => 
     return () => {
       cancelled = true;
     };
-  }, [contextId, t]);
+  }, [contextId, enabled, t]);
 
   const handleGenerateFromInlineRecommendation = useCallback(async (assessmentId) => {
-    if (!assessmentId) {
+    if (!enabled || !assessmentId) {
       return;
     }
 
@@ -72,7 +80,7 @@ export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t }) => 
     } finally {
       setInlineRecGeneratingId(null);
     }
-  }, [onCreateQuiz, t]);
+  }, [enabled, onCreateQuiz, t]);
 
   const activeRecommendation = useMemo(
     () => inlineRecommendations.find((item) => item.assessmentId === expandedRecId) || null,

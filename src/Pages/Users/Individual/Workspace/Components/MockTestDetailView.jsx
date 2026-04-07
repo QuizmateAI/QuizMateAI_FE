@@ -9,6 +9,7 @@ import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion,
   toggleStarQuestion, QUESTION_TYPE_ID_MAP
 } from "@/api/QuizAPI";
+import MixedMathText from "@/Components/math/MixedMathText";
 
 // Cấu hình màu badge trạng thái (giống quiz)
 const STATUS_STYLES = {
@@ -246,7 +247,9 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                               </span>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <p className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{question.content}</p>
+                                  <p className={`text-sm font-medium whitespace-pre-wrap ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                                    <MixedMathText>{question.content}</MixedMathText>
+                                  </p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
                                       onClick={() => handleToggleStar(question.questionId, section.sectionId)}
@@ -308,11 +311,15 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                                             isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
                                           }`}>{pIdx + 1}</span>
-                                          <span className={`font-semibold ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>{pair.leftKey}</span>
+                                          <span className={`font-semibold ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
+                                            <MixedMathText>{pair.leftKey}</MixedMathText>
+                                          </span>
                                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${isDarkMode ? "text-emerald-600" : "text-emerald-400"}`}>
                                             <path d="M5 12h14M13 6l6 6-6 6" />
                                           </svg>
-                                          <span className={isDarkMode ? "text-emerald-300" : "text-emerald-700"}>{pair.rightKey}</span>
+                                          <span className={isDarkMode ? "text-emerald-300" : "text-emerald-700"}>
+                                            <MixedMathText>{pair.rightKey}</MixedMathText>
+                                          </span>
                                         </div>
                                       ));
                                     })() : answers.map((ans, aIdx) => (
@@ -332,7 +339,9 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                                           ans.isCorrect
                                             ? isDarkMode ? "text-emerald-300" : "text-emerald-700"
                                             : isDarkMode ? "text-slate-300" : "text-gray-700"
-                                        }`}>{ans.content}</span>
+                                        }`}>
+                                          <MixedMathText>{ans.content}</MixedMathText>
+                                        </span>
                                         {ans.isCorrect && <CheckCircle2 className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />}
                                       </div>
                                     ))}
@@ -340,7 +349,8 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                                     {/* Giải thích */}
                                     {question.explanation && (
                                       <div className={`mt-2 px-3 py-2 rounded-lg text-xs italic ${isDarkMode ? "bg-amber-950/20 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                                        <span className="font-semibold not-italic">{t("workspace.quiz.explanation")}:</span> {question.explanation}
+                                        <span className="font-semibold not-italic">{t("workspace.quiz.explanation")}:</span>{" "}
+                                        <MixedMathText className="not-italic">{question.explanation}</MixedMathText>
                                       </div>
                                     )}
                                   </div>
