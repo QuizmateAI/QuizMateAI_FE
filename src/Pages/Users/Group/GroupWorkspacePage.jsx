@@ -32,6 +32,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react';
+import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
 import WorkspaceHeader from '@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader';
 import StudioPanel from '@/Pages/Users/Individual/Workspace/Components/StudioPanel';
 import { useTranslation } from 'react-i18next';
@@ -119,6 +120,43 @@ function resolveNeedReviewFlag(...candidates) {
   }
   return true;
 }
+
+/** Payload từ CreateQuizForm (manual / AI) — có thể lồng ApiResponse { data }. */
+function extractGroupCreatedQuizPayload(payload) {
+  if (payload == null || typeof payload !== 'object') return null;
+  let cur = payload;
+  for (let depth = 0; depth < 4; depth += 1) {
+    const quizId = Number(cur.quizId ?? cur.id);
+    if (Number.isInteger(quizId) && quizId > 0) {
+      return {
+        ...cur,
+        quizId,
+        title: cur.title ?? '',
+      };
+    }
+    if (cur.data != null && typeof cur.data === 'object') {
+      cur = cur.data;
+    } else {
+      break;
+    }
+  }
+  return null;
+}
+
+/** Các tab studio / section hợp lệ trong URL `?section=` — không dùng cho sub-view (createQuiz, ...). */
+const GROUP_WORKSPACE_VALID_SECTIONS = [
+  'dashboard',
+  'personalDashboard',
+  'documents',
+  'members',
+  'notifications',
+  'flashcard',
+  'quiz',
+  'roadmap',
+  'mockTest',
+  'challenge',
+  'settings',
+];
 
 function shouldTrackInLeaderReviewQueue(status, needReview) {
   return isProcessingMaterialStatus(status) || Boolean(needReview);
@@ -313,6 +351,10 @@ function getLogLabel(action, lang = 'vi') {
     MEMBER_JOINED: lang === 'en' ? 'Member joined' : 'Thành viên vào nhóm',
     MEMBER_REMOVED: lang === 'en' ? 'Member removed' : 'Xóa thành viên',
     MEMBER_ROLE_UPDATED: lang === 'en' ? 'Role updated' : 'Cập nhật vai trò',
+    QUIZ_CREATED_IN_GROUP: lang === 'en' ? 'Quiz created' : 'Tạo quiz',
+    QUIZ_PUBLISHED_IN_GROUP: lang === 'en' ? 'Quiz published' : 'Xuất bản quiz',
+    QUIZ_AUDIENCE_UPDATED_IN_GROUP: lang === 'en' ? 'Quiz assignment' : 'Giao quiz',
+    QUIZ_SUBMITTED_IN_GROUP: lang === 'en' ? 'Quiz submitted' : 'Nộp quiz',
   };
 
   return labels[action] || (lang === 'en' ? 'Group activity' : 'Hoạt động nhóm');
@@ -340,11 +382,10 @@ function GroupWorkspacePage() {
   const [mobilePanel, setMobilePanel] = useState(null);
 
   // Section navigation via URL
-  const validSections = ['dashboard', 'personalDashboard', 'documents', 'members', 'notifications', 'flashcard', 'quiz', 'roadmap', 'mockTest', 'challenge', 'settings'];
   const legacySectionMap = { flashcardQuiz: 'quiz' };
   const sectionFromUrl = searchParams.get('section');
   const resolvedSection = legacySectionMap[sectionFromUrl] || sectionFromUrl;
-  const activeSection = validSections.includes(resolvedSection) ? resolvedSection : 'dashboard';
+  const activeSection = GROUP_WORKSPACE_VALID_SECTIONS.includes(resolvedSection) ? resolvedSection : 'dashboard';
 
   const setActiveSection = (section) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -359,6 +400,11 @@ function GroupWorkspacePage() {
 
   const bumpRoadmapReloadToken = useCallback(() => {
     setRoadmapReloadToken((current) => current + 1);
+  }, []);
+
+  const [quizListRefreshToken, setQuizListRefreshToken] = useState(0);
+  const bumpQuizListRefreshToken = useCallback(() => {
+    setQuizListRefreshToken((n) => n + 1);
   }, []);
 
   // Create mode
@@ -1386,7 +1432,7 @@ function GroupWorkspacePage() {
 
   const handleSelectOneSource = useCallback((sourceId, isSelected) => {
     if (isSelected) {
-      setSelectedSourceIds((prev) => [...prev, sourceId]);
+      setSelectedSourceIds((prev) => (prev.includes(sourceId) ? prev : [...prev, sourceId]));
     } else {
       setSelectedSourceIds((prev) => prev.filter((id) => id !== sourceId));
     }
@@ -1511,7 +1557,12 @@ function GroupWorkspacePage() {
       return;
     }
 
-    setActiveSection(actionKey);
+    // Chỉ các key trong GROUP_WORKSPACE_VALID_SECTIONS mới đổi ?section=... (tab chính).
+    // Sub-view (createQuiz, quizDetail, ...) chỉ đổi activeView — nếu set section=createQuiz
+    // URL không hợp lệ → activeSection fallback về dashboard và giống như bị redirect.
+    if (GROUP_WORKSPACE_VALID_SECTIONS.includes(actionKey)) {
+      setActiveSection(actionKey);
+    }
     setActiveView(actionKey);
     setMobilePanel(null);
   }, [setActiveSection, currentRoleKey, showInfo, currentLang, shouldForceProfileSetup, planEntitlements.hasWorkspaceAnalytics]);
@@ -1660,16 +1711,37 @@ function GroupWorkspacePage() {
     currentLang,
   ]);
 
-  const handleCreateQuiz = useCallback(async () => {
+  const handleCreateQuiz = useCallback(async (createdPayload) => {
+    const createdQuiz = extractGroupCreatedQuizPayload(createdPayload);
+    if (createdQuiz) {
+      showSuccess(
+        currentLang === 'en'
+          ? 'Quiz created successfully.'
+          : 'Đã tạo quiz thành công.'
+      );
+      bumpQuizListRefreshToken();
+      setSelectedQuiz(createdQuiz);
+      setActiveView('quizDetail');
+      return;
+    }
+
     if (!canCreateContent) {
       showInfo(currentLang === 'en' ? 'Member cannot create quizzes.' : 'Member không có quyền tạo quiz.');
       return;
     }
     setActiveView('quiz');
-  }, [canCreateContent, currentLang, showInfo]);
+  }, [bumpQuizListRefreshToken, canCreateContent, currentLang, showInfo, showSuccess]);
   const handleViewQuiz = useCallback((quiz) => { setSelectedQuiz(quiz); setActiveView('quizDetail'); }, []);
   const handleEditQuiz = useCallback((quiz) => { setSelectedQuiz(quiz); setActiveView('editQuiz'); }, []);
   const handleSaveQuiz = useCallback((updatedQuiz) => { setSelectedQuiz((p) => ({ ...p, ...updatedQuiz })); setActiveView('quizDetail'); }, []);
+
+  const handleGroupQuizUpdated = useCallback((payload) => {
+    const qid = Number(payload?.quizId);
+    if (payload && typeof payload === 'object' && Number.isInteger(qid) && qid > 0) {
+      setSelectedQuiz((prev) => (prev ? { ...prev, ...payload } : prev));
+    }
+    bumpQuizListRefreshToken();
+  }, [bumpQuizListRefreshToken]);
 
   const handleCreateFlashcard = useCallback(async () => {
     if (!canCreateContent) {
@@ -1989,6 +2061,12 @@ function GroupWorkspacePage() {
     { key: 'settings', icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20', label: sectionLabels.settings, disabled: !isLeader || !canManageGroup }
   ];
 
+  const groupStudioActionGroups = [
+    { label: t('groupWorkspace.studio.groupStudy', 'Học tập'), keys: ['documents', 'roadmap', 'quiz', 'flashcard', 'mockTest'] },
+    { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'notifications'] },
+    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'settings'] },
+  ];
+
   const renderActivityFeed = (compact = false) => (
     <section className={`rounded-[28px] border p-5 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
       <div className="flex items-center gap-2">
@@ -2024,7 +2102,7 @@ function GroupWorkspacePage() {
                     {getLogLabel(log.action, currentLang)}
                   </p>
                   <p className={`mt-3 text-sm font-semibold leading-6 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {log.description || (currentLang === 'en' ? 'Group activity updated' : 'Nhóm vừa có cập nhật mới')}
+                    {formatGroupLogDescription(log, currentUser?.userID, currentLang)}
                   </p>
                   <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                     {(log.actorEmail || (currentLang === 'en' ? 'System' : 'Hệ thống'))} • {formatDateTime(log.logTime, currentLang)}
@@ -2299,9 +2377,12 @@ function GroupWorkspacePage() {
         isDarkMode={isDarkMode}
         sources={sources}
         selectedSourceIds={selectedSourceIds}
+        onToggleMaterialSelection={handleSelectOneSource}
         activeView={activeView || defaultView}
         readOnly={!canCreateContent}
         role={currentRoleKey}
+        isGroupLeader={isLeader}
+        onGroupQuizUpdated={handleGroupQuizUpdated}
         createdItems={createdItems}
         onUploadClick={() => handleStudioAction('documents')}
         onChangeView={handleStudioAction}
@@ -2312,6 +2393,7 @@ function GroupWorkspacePage() {
         onBack={handleBackFromForm}
         workspaceId={workspaceId}
         roadmapReloadToken={roadmapReloadToken}
+        quizListRefreshToken={quizListRefreshToken}
         selectedQuiz={selectedQuiz}
         onViewQuiz={handleViewQuiz}
         onEditQuiz={handleEditQuiz}
@@ -2408,6 +2490,7 @@ function GroupWorkspacePage() {
               membersLoading={membersLoading}
               isLeader={isLeader}
               compactMode
+              currentUserId={currentUser?.userID}
             />
           </div>
         );
@@ -2677,6 +2760,7 @@ function GroupWorkspacePage() {
         <div className={`${studioCollapsed ? 'w-[84px]' : 'w-[260px]'} hidden xl:flex flex-shrink-0 flex-col h-full transition-all duration-300`}>
             <StudioPanel
                 customActions={groupStudioActions}
+                actionGroups={groupStudioActionGroups}
                 activeView={activeSection}
                 onAction={handleStudioAction}
                 shouldDisableQuiz={isCreating}
@@ -2697,6 +2781,7 @@ function GroupWorkspacePage() {
           <div className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] p-2" onClick={(event) => event.stopPropagation()}>
             <StudioPanel
               customActions={groupStudioActions}
+              actionGroups={groupStudioActionGroups}
               activeView={activeSection}
               onAction={handleStudioAction}
               shouldDisableQuiz={isCreating}

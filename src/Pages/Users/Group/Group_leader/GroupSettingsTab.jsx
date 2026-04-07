@@ -4,8 +4,10 @@ import {
   AlertTriangle,
   Check,
   Fingerprint,
+  Globe,
   Info,
   Loader2,
+  Lock,
   Pencil,
   Radar,
   Settings,
@@ -14,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { updateWorkspace } from '@/api/WorkspaceAPI';
+import { toggleVisibility as apiToggleVisibility } from '@/api/GroupAPI';
 import GroupProfileOverviewPanel from '../Components/GroupProfileOverviewPanel';
 
 function GroupSettingsTab({
@@ -38,9 +41,15 @@ function GroupSettingsTab({
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
 
+  // Visibility state
+  const [isPublic, setIsPublic] = useState(Boolean(group?.isPublic));
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
+  const [visibilityMsg, setVisibilityMsg] = useState('');
+
   useEffect(() => {
     if (!group) return;
     setGroupName(group.groupName || '');
+    setIsPublic(Boolean(group.isPublic));
   }, [group]);
 
   const shellClass = isDarkMode
@@ -82,6 +91,28 @@ function GroupSettingsTab({
       isText: true,
     },
   ];
+
+  const handleToggleVisibility = useCallback(async () => {
+    if (visibilityLoading || !group?.workspaceId) return;
+    setVisibilityLoading(true);
+    setVisibilityMsg('');
+    try {
+      const res = await apiToggleVisibility(group.workspaceId);
+      const newValue = res?.data?.data?.isPublic ?? !isPublic;
+      setIsPublic(newValue);
+      setVisibilityMsg(
+        newValue
+          ? (currentLang === 'en' ? 'Group is now Public' : 'Nhóm đã chuyển sang Công khai')
+          : (currentLang === 'en' ? 'Group is now Private' : 'Nhóm đã chuyển sang Riêng tư'),
+      );
+      setTimeout(() => setVisibilityMsg(''), 3000);
+    } catch {
+      setVisibilityMsg(currentLang === 'en' ? 'Failed to update visibility' : 'Cập nhật thất bại');
+      setTimeout(() => setVisibilityMsg(''), 3000);
+    } finally {
+      setVisibilityLoading(false);
+    }
+  }, [group, isPublic, visibilityLoading, currentLang]);
 
   const handleSave = useCallback(async () => {
     if (!groupName.trim()) {
@@ -196,6 +227,48 @@ function GroupSettingsTab({
             ) : null}
           </div>
         </section>
+
+        {/* Visibility – compact */}
+        {isLeader && (
+          <section className={`rounded-2xl border p-5 ${shellClass}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                {isPublic
+                  ? <Globe className="h-4 w-4 text-emerald-500" />
+                  : <Lock className={`h-4 w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />}
+                <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {currentLang === 'en' ? 'Group Visibility' : 'Chế độ hiển thị nhóm'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleVisibility}
+                disabled={visibilityLoading}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                  isPublic ? 'bg-emerald-500' : (isDarkMode ? 'bg-slate-600' : 'bg-slate-300')
+                }`}
+                role="switch"
+                aria-checked={isPublic}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    isPublic ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              {isPublic
+                ? (currentLang === 'en' ? 'Anyone can discover this group.' : 'Mọi người có thể tìm thấy nhóm này.')
+                : (currentLang === 'en' ? 'Only invited members can join.' : 'Chỉ thành viên được mời mới có thể tham gia.')}
+            </p>
+            {visibilityMsg && (
+              <p className={`mt-2 text-xs font-medium ${isPublic ? 'text-emerald-500' : (isDarkMode ? 'text-slate-400' : 'text-slate-500')}`}>
+                {visibilityMsg}
+              </p>
+            )}
+          </section>
+        )}
 
         <GroupProfileOverviewPanel
           group={group}
@@ -317,6 +390,72 @@ function GroupSettingsTab({
         onOpenProfileConfig={onOpenProfileConfig}
         profileEditLocked={profileEditLocked}
       />
+
+      {/* Group Visibility Card – full mode */}
+      {isLeader && (
+        <section className={`rounded-[30px] border p-6 ${shellClass}`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <span className={`mt-0.5 flex h-11 w-11 items-center justify-center rounded-2xl ${
+                isPublic
+                  ? (isDarkMode ? 'bg-emerald-400/10 text-emerald-300' : 'bg-emerald-100 text-emerald-700')
+                  : (isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500')
+              }`}>
+                {isPublic ? <Globe className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+              </span>
+              <div>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {currentLang === 'en' ? 'Group Visibility' : 'Chế độ hiển thị nhóm'}
+                </p>
+                <h3 className={`mt-1.5 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {isPublic
+                    ? (currentLang === 'en' ? 'Public — open to discovery' : 'Công khai — mọi người có thể tìm thấy')
+                    : (currentLang === 'en' ? 'Private — invite only' : 'Riêng tư — chỉ được mời')}
+                </h3>
+                <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  {isPublic
+                    ? (currentLang === 'en'
+                      ? 'Anyone can discover this group and request to join.'
+                      : 'Mọi người có thể tìm thấy và yêu cầu tham gia nhóm này.')
+                    : (currentLang === 'en'
+                      ? 'Only members with a direct invitation can access this group.'
+                      : 'Chỉ thành viên có lời mời trực tiếp mới có thể truy cập nhóm này.')}
+                </p>
+                {visibilityMsg && (
+                  <p className={`mt-2 text-sm font-medium ${isPublic ? 'text-emerald-500' : (isDarkMode ? 'text-slate-400' : 'text-slate-500')}`}>
+                    {visibilityMsg}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold border ${
+                isPublic
+                  ? (isDarkMode ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700')
+                  : (isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-300' : 'border-gray-200 bg-gray-50 text-gray-600')
+              }`}>
+                {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                {isPublic ? (currentLang === 'en' ? 'Public' : 'Công khai') : (currentLang === 'en' ? 'Private' : 'Riêng tư')}
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleVisibility}
+                disabled={visibilityLoading}
+                className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                  isPublic ? 'bg-emerald-500' : (isDarkMode ? 'bg-slate-600' : 'bg-slate-300')
+                }`}
+                role="switch"
+                aria-checked={isPublic}
+              >
+                {visibilityLoading
+                  ? <span className="absolute inset-0 flex items-center justify-center"><Loader2 className="h-3 w-3 text-white animate-spin" /></span>
+                  : <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isPublic ? 'translate-x-5' : 'translate-x-0'}`} />}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className={`rounded-[30px] border p-6 ${shellClass}`}>
