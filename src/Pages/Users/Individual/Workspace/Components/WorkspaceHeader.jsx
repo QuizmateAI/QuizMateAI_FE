@@ -46,6 +46,7 @@ function WorkspaceHeader({
   workspaceDescription = "",
   onEditWorkspace,
   wsConnected = false,
+  showWalletSummary = true,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -81,6 +82,12 @@ function WorkspaceHeader({
   };
 
   useEffect(() => {
+    if (!showWalletSummary) {
+      setWalletSummary(EMPTY_WALLET_SUMMARY);
+      setLoadingWallet(false);
+      return undefined;
+    }
+
     let cancelled = false;
 
     const fetchWallet = async () => {
@@ -109,7 +116,7 @@ function WorkspaceHeader({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [showWalletSummary]);
 
   return (
     <header className={`relative z-[110] w-full h-16 border-b transition-colors duration-300 ${isDarkMode ? "bg-slate-950 border-slate-800" : "bg-white border-gray-200"}`}>
@@ -165,31 +172,33 @@ function WorkspaceHeader({
             <span className={fontClass}>{t("upgradePlan.upgradeBtn")}</span>
           </Button> */}
           
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/wallet", { state: { from: location.pathname } })}
-              className={`flex h-9 items-center gap-2 rounded-full px-3.5 ${
-                isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
-              }`}
-              aria-label={t("common.wallet")}
-            >
-              <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
-                isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
-              }`}>
-                <CreditIconImage alt="Quizmate Credit" className="h-6 w-6 rounded-full" />
-              </span>
-              <span className="flex flex-col leading-none">
-                <span className="text-sm font-semibold">
-                  {loadingWallet ? "—" : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
+          {showWalletSummary ? (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/wallet", { state: { from: location.pathname } })}
+                className={`flex h-9 items-center gap-2 rounded-full px-3.5 ${
+                  isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
+                }`}
+                aria-label={t("common.wallet")}
+              >
+                <span className={`inline-flex items-center justify-center rounded-full ring-1 ring-inset ${
+                  isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-600/10 ring-blue-600/20"
+                }`}>
+                  <CreditIconImage alt="Quizmate Credit" className="h-6 w-6 rounded-full" />
                 </span>
-                <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                  {t("wallet.creditsUnit", "Credit")}
+                <span className="flex flex-col leading-none">
+                  <span className="text-sm font-semibold">
+                    {loadingWallet ? "—" : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
+                  </span>
+                  <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                    {t("wallet.creditsUnit", "Credit")}
+                  </span>
                 </span>
-              </span>
-            </Button>
-          </div>
+              </Button>
+            </div>
+          ) : null}
 
           {settingsMenu ? (
             settingsMenu
