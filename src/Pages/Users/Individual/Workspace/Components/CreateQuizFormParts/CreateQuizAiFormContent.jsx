@@ -55,6 +55,8 @@ function CreateQuizAiFormContent({
   } = refsMap;
   const {
     formatDifficultyPreviewPercent,
+    getBloomLabel,
+    getDifficultyLabel,
     getQuestionTypeLabel,
     t,
     fontClass,
@@ -951,7 +953,7 @@ function CreateQuizAiFormContent({
                             onChange={(event) => handleStructureItemChange(index, "difficulty", event.target.value)}
                           >
                             {structureDifficultyOptions.map((option) => (
-                              <option key={option} value={option}>{option}</option>
+                              <option key={option} value={option}>{getDifficultyLabel(option)}</option>
                             ))}
                           </select>
                         </label>
@@ -979,7 +981,7 @@ function CreateQuizAiFormContent({
                             onChange={(event) => handleStructureItemChange(index, "bloomSkill", event.target.value)}
                           >
                             {bloomSkills.map((skill) => (
-                              <option key={skill.bloomId} value={skill.bloomName}>{skill.bloomName}</option>
+                              <option key={skill.bloomId} value={skill.bloomName}>{getBloomLabel(skill.bloomName)}</option>
                             ))}
                           </select>
                         </label>
@@ -1014,13 +1016,13 @@ function CreateQuizAiFormContent({
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                           <span className={`h-2 w-2 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
-                          {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{item.difficulty || "-"}</strong>
+                          {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{getDifficultyLabel(item.difficulty)}</strong>
                         </span>
                         <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                           {t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
                         </span>
                         <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                          {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{item.bloomSkill || "-"}</strong>
+                          {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{getBloomLabel(item.bloomSkill)}</strong>
                         </span>
                       </div>
                     )}

@@ -149,4 +149,21 @@ describe('CreateQuizForm personalization preset', () => {
     expect(screen.queryByDisplayValue('Review Cohesion')).not.toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
+
+  it('hides the AI recommendations panel when there are no recommendations', async () => {
+    render(
+      <CreateQuizForm
+        isDarkMode={false}
+        onCreateQuiz={vi.fn()}
+        onBack={vi.fn()}
+        contextId={42}
+      />
+    );
+
+    await waitFor(() => {
+      expect(getPendingRecommendations).toHaveBeenCalledWith(42);
+      expect(screen.queryByText('workspace.quiz.aiRecommendations.inlineTitle')).not.toBeInTheDocument();
+      expect(screen.queryByText('workspace.quiz.aiRecommendations.empty')).not.toBeInTheDocument();
+    });
+  });
 });

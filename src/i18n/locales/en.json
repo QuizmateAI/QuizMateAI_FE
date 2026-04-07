@@ -2620,7 +2620,18 @@
         "loadFailed": "Failed to load suggestions. Please try again.",
         "generateFailed": "Failed to generate quiz. Please try again.",
         "generating": "Generating quiz...",
-        "createQuiz": "Create Quiz"
+        "createQuiz": "Create Quiz",
+        "dismiss": "Skip",
+        "dismissing": "Skipping...",
+        "dismissFailed": "Failed to skip suggestion. Please try again.",
+        "showDetail": "View details",
+        "hideStructure": "Hide details",
+        "structureTitle": "Quiz structure",
+        "goal": "Goal",
+        "difficulty": "Difficulty",
+        "type": "Type",
+        "bloom": "Skill",
+        "quantity": "Count"
       },
       "header": {
         "english": "English",
