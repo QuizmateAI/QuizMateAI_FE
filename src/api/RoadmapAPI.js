@@ -325,6 +325,20 @@ export const getRoadmapStructureById = async (roadmapId) => {
   return api.get(`/roadmaps/${normalizedRoadmapId}/structure`);
 };
 
+// Lấy knowledge hiện tại của user theo roadmap.
+export const getCurrentRoadmapKnowledgeProgress = async (roadmapId) => {
+  const normalizedRoadmapId = Number(roadmapId);
+  if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+    return null;
+  }
+
+  return api.get('/roadmap-knowledges/current', {
+    params: {
+      roadmapId: normalizedRoadmapId,
+    },
+  });
+};
+
 // ==================== ROADMAP ====================
 
 // Tạo roadmap cho workspace

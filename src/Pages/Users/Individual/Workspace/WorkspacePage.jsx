@@ -3139,7 +3139,7 @@ function WorkspacePage() {
 
 					) : (
 
-						<div className="flex h-full gap-4">
+						<div className="flex h-full gap-1">
 
 							{/* Source panel (left) */}
 

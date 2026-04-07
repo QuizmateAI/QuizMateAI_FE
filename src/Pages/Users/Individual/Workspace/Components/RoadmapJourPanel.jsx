@@ -29,6 +29,18 @@ function RoadmapJourPanel({
   const [isPhaseOpen, setIsPhaseOpen] = useState(true);
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
   const selectedPhaseRef = useRef(null);
+  const selectPhaseDebounceRef = useRef(null);
+
+  const queueSelectPhase = useCallback((phaseId, options = { preserveActiveView: false }) => {
+    if (selectPhaseDebounceRef.current) {
+      window.clearTimeout(selectPhaseDebounceRef.current);
+    }
+
+    selectPhaseDebounceRef.current = window.setTimeout(() => {
+      onSelectPhase?.(phaseId, options);
+      selectPhaseDebounceRef.current = null;
+    }, 180);
+  }, [onSelectPhase]);
 
   useEffect(() => {
     selectedPhaseRef.current = selectedPhaseIdProp ?? selectedPhaseId;
@@ -60,14 +72,22 @@ function RoadmapJourPanel({
       const firstPhaseId = nextRoadmap?.phases?.[0]?.phaseId ?? null;
       if (!selectedPhaseRef.current) {
         setSelectedPhaseId(firstPhaseId);
-        onSelectPhase?.(firstPhaseId, { preserveActiveView: true });
+        queueSelectPhase(firstPhaseId, { preserveActiveView: true });
       }
     } catch {
       setRoadmap(null);
     } finally {
       setLoading(false);
     }
-  }, [onSelectPhase, workspaceId]);
+  }, [queueSelectPhase, workspaceId]);
+
+  useEffect(() => {
+    return () => {
+      if (selectPhaseDebounceRef.current) {
+        window.clearTimeout(selectPhaseDebounceRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     loadRoadmap();
@@ -106,6 +126,38 @@ function RoadmapJourPanel({
   }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
   const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+
+  const isPhaseVisuallyCompleted = useCallback((phase, phaseIndex) => {
+    if (!phase) return false;
+    if (isPhaseFinishedStatus(phase?.status)) return true;
+
+    const normalizedPhaseIndex = Number(phaseIndex);
+    if (Number.isInteger(normalizedPhaseIndex) && normalizedPhaseIndex >= 0 && normalizedPhaseIndex < maxUnlockedPhaseIndex) {
+      return true;
+    }
+
+    const normalizedPhaseId = Number(phase?.phaseId);
+    const completedByCurrentPayload = isCurrentPayloadFinished
+      && Number.isInteger(currentPayloadPhaseId)
+      && currentPayloadPhaseId > 0
+      && Number.isInteger(normalizedPhaseId)
+      && normalizedPhaseId > 0
+      && (
+        currentPayloadPhaseId === normalizedPhaseId
+        || (
+          Number.isInteger(currentPayloadPhaseIndex)
+          && currentPayloadPhaseIndex > normalizedPhaseIndex
+        )
+      );
+
+    return completedByCurrentPayload;
+  }, [
+    currentPayloadPhaseId,
+    currentPayloadPhaseIndex,
+    isCurrentPayloadFinished,
+    isPhaseFinishedStatus,
+    maxUnlockedPhaseIndex,
+  ]);
 
   const effectiveSelectedPhaseId = selectedPhaseIdProp ?? selectedPhaseId;
 
@@ -237,7 +289,7 @@ function RoadmapJourPanel({
                         && index === (maxUnlockedPhaseIndex + 1)
                         && previousPhaseCompleted;
                       const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
-                      const isCompletedPhase = normalizedPhaseStatus === "COMPLETED";
+                      const isCompletedPhase = isPhaseVisuallyCompleted(phase, index);
                       const phaseKnowledgePercent = progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0;
                       const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
                       const phasePostLearningPercent = progressTracking?.getPostLearningProgress(normalizedPhaseId) ?? 0;
@@ -260,7 +312,7 @@ function RoadmapJourPanel({
                           type="button"
                           onClick={() => {
                             setSelectedPhaseId(phase.phaseId);
-                            onSelectPhase?.(phase.phaseId, { preserveActiveView: false });
+                            queueSelectPhase(phase.phaseId, { preserveActiveView: false });
                           }}
                           className={`w-full rounded-lg px-3 py-2.5 text-left flex items-center gap-2 border-l-4 transition-all ${active
                             ? isDarkMode

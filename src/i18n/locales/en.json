@@ -126,7 +126,6 @@
       "generateQuiz": {
         "title": "Generate Quiz",
         "description": "Credit charged when generating a quiz with AI, based on total question count.",
-        "baseCost": "Quiz setup fee",
         "unitCost": "Cost per question",
         "unitSize": "Questions per unit",
         "metric": "Total generated question count"
@@ -2007,8 +2006,8 @@
         "practice": "Practice Mode",
         "practiceDesc": "See answers & explanations after each question"
       },
-      "requireUpload": "Require Upload",
-      "uploadBtn": "Upload Btn"
+      "requireUpload": "Upload materials first to unlock these actions.",
+      "uploadBtn": "Upload documents"
     },
     "studio": {
       "title": "Studio",
@@ -2313,6 +2312,7 @@
       },
       "statusLabels": {
         "ACTIVE": "Active",
+        "LOCKED": "Locked",
         "DRAFT": "Draft",
         "COMPLETED": "Completed",
         "INACTIVE": "Inactive",
@@ -2965,6 +2965,7 @@
       "quizDesc": "Practice quiz questions for this knowledge topic.",
       "flashcardDesc": "Study flashcards for this knowledge topic.",
       "preLearningPrompt": "How would you like to start this phase?",
+      "knowledgeLockedHint": "Please complete the previous knowledge first.",
       "studyNew": {
         "hasFoundation": "I already have foundation in this phase",
         "noBackground": "I am new to this phase",
@@ -3079,7 +3080,8 @@
       "phaseReviewSummaryDropdown": "Phase Review Summary Dropdown",
       "phaseReviewTitle": "Đánh giá AI cho phase hiện tại",
       "postLearningHelper": "Post Learning Helper",
-      "postLearningLocked": "Post Learning Locked",
+      "postLearningLocked": "Please complete all knowledge items in this phase to unlock post-learning.",
+      "postLearningUnlockProgress": "Knowledge progress to unlock: {{completed}}/{{total}}",
       "postLearningProgress": "Post Learning Progress",
       "preLearningHelper": "Pre Learning Helper",
       "title": "Title"
