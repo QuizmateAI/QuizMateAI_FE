@@ -2,7 +2,13 @@ import React from "react";
 import { Loader2, FileText, CheckSquare, Sliders, Sparkles, BrainCircuit, Info, CheckCircle2, ListTree, Wand2 } from "lucide-react";
 import { AI_OUTPUT_LANGUAGES } from "./aiConfigUtils";
 import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
-import { QUESTION_TYPE_LABEL_FALLBACKS, isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
+import {
+  QUESTION_TYPE_LABEL_FALLBACKS,
+  getBloomSkillLabel,
+  getQuizDifficultyLabel,
+  getQuizQuestionTypeLabel,
+  isAdvancedQuizQuestionType,
+} from "@/lib/quizQuestionTypes";
 
 function AIQuizTab({
   t,
@@ -72,8 +78,10 @@ function AIQuizTab({
   const getQuestionTypeLabel = React.useCallback((questionType) => {
     const normalizedType = String(questionType || "").toUpperCase();
     const fallbackLabel = QUESTION_TYPE_LABEL_FALLBACKS[normalizedType] || questionType || "-";
-    return t(`workspace.quiz.aiConfig.questionTypeLabels.${normalizedType}`, fallbackLabel);
+    return getQuizQuestionTypeLabel(normalizedType, t) || fallbackLabel;
   }, [t]);
+  const getDifficultyLabel = React.useCallback((difficulty) => getQuizDifficultyLabel(difficulty, t), [t]);
+  const getBloomLabel = React.useCallback((bloomSkill) => getBloomSkillLabel(bloomSkill, t), [t]);
 
   const normalizeIntegerInput = (value) => {
     if (value === "") return "";
@@ -680,13 +688,13 @@ function AIQuizTab({
                     <div className="flex flex-wrap items-center gap-2 text-xs md:justify-end">
                       <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                         <span className={`h-2 w-2 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
-                        {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{item.difficulty || "-"}</strong>
+                        {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{getDifficultyLabel(item.difficulty)}</strong>
                       </span>
                       <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                         {t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
                       </span>
                       <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                        {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{item.bloomSkill || "-"}</strong>
+                        {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{getBloomLabel(item.bloomSkill)}</strong>
                       </span>
                     </div>
                   </div>

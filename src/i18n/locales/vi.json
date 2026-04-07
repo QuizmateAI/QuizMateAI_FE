@@ -2590,7 +2590,18 @@
         "loadFailed": "Không thể tải danh sách gợi ý. Vui lòng thử lại.",
         "generateFailed": "Tạo quiz thất bại. Vui lòng thử lại.",
         "generating": "Đang tạo quiz...",
-        "createQuiz": "Tạo Quiz"
+        "createQuiz": "Tạo Quiz",
+        "dismiss": "Bỏ qua",
+        "dismissing": "Đang bỏ qua...",
+        "dismissFailed": "Không thể bỏ qua gợi ý. Vui lòng thử lại.",
+        "showDetail": "Xem chi tiết",
+        "hideStructure": "Ẩn chi tiết",
+        "structureTitle": "Cấu trúc bài quiz",
+        "goal": "Mục tiêu",
+        "difficulty": "Độ khó",
+        "type": "Loại câu",
+        "bloom": "Kỹ năng",
+        "quantity": "Số câu"
       },
       "header": {
         "english": "English",
