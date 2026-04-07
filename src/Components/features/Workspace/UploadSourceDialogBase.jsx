@@ -16,7 +16,7 @@ import {
   X,
   Sparkles,
   Link2,
-  Youtube,
+  CirclePlay,
   CheckSquare,
   Square,
   ExternalLink,
@@ -511,7 +511,7 @@ function UploadSourceDialogBase({
                     >
                       <span className="inline-flex items-center mr-2">
                         <Link2 className="w-4 h-4" />
-                        <Youtube className="w-4 h-4 -ml-1 text-red-500" />
+                        <CirclePlay className="w-4 h-4 -ml-1 text-red-500" />
                       </span>
                       {t("workspace.upload.webYoutubeButton", "Liên kết YouTube")}
                     </Button>

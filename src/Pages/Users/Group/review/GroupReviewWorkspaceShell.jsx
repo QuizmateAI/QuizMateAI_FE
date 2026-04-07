@@ -536,6 +536,13 @@ export default function GroupReviewWorkspaceShell() {
     }
   }, [isCreating, shouldForceProfileSetup]);
 
+  const dismissProfileConfig = useCallback(() => {
+    setProfileConfigOpen(false);
+    if (location.state?.openProfileConfig) {
+      navigate(`${location.pathname}${location.search}`, { replace: true });
+    }
+  }, [location.pathname, location.search, location.state, navigate]);
+
   useEffect(() => {
     if (!resolvedWorkspaceId || isCreating) return;
     const nextWorkspace = syncGroupReviewWorkspace({
@@ -2011,6 +2018,7 @@ export default function GroupReviewWorkspaceShell() {
         isDarkMode={isDarkMode}
         workspaceId={resolvedWorkspaceId}
         canClose={!shouldForceProfileSetup}
+        onTemporaryClose={shouldForceProfileSetup ? dismissProfileConfig : undefined}
         onComplete={async () => {
           setProfileConfigOpen(false);
           await Promise.all([fetchWorkspaceDetail(resolvedWorkspaceId).catch(() => null), fetchGroups().catch(() => null), loadGroupProfile()]);
