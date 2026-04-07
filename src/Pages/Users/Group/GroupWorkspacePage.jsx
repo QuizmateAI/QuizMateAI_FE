@@ -2513,17 +2513,23 @@ function GroupWorkspacePage() {
   };
 
   // ——— TOP BAR ———
-  
+  const dismissProfileConfig = useCallback(() => {
+    setProfileConfigOpen(false);
+    if (location.state?.openProfileConfig) {
+      navigate(`${location.pathname}${location.search}`, { replace: true });
+    }
+  }, [location.pathname, location.search, location.state, navigate]);
 
   const handleProfileConfigChange = useCallback((open) => {
     if (!open && shouldForceProfileSetup) {
       return;
     }
-    setProfileConfigOpen(open);
-    if (!open && location.state?.openProfileConfig) {
-      navigate(`${location.pathname}${location.search}`, { replace: true });
+    if (!open) {
+      dismissProfileConfig();
+      return;
     }
-  }, [location.pathname, location.search, location.state, navigate, shouldForceProfileSetup]);
+    setProfileConfigOpen(true);
+  }, [dismissProfileConfig, shouldForceProfileSetup]);
 
   const headerActionClass = `rounded-full h-9 px-4 flex items-center gap-2 ${
     isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-900' : 'border-gray-200'
@@ -2743,6 +2749,7 @@ function GroupWorkspacePage() {
         isDarkMode={isDarkMode}
         workspaceId={createdGroupWorkspaceId || (!isCreating ? workspaceId : null)}
         canClose={!shouldForceProfileSetup}
+        onTemporaryClose={shouldForceProfileSetup ? dismissProfileConfig : undefined}
         onComplete={async () => {
           try {
             await handleGroupUpdated();

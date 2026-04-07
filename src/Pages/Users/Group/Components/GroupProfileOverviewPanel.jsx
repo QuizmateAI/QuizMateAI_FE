@@ -11,7 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatGroupLearningMode, formatGroupRole } from '../utils/groupDisplay';
+import { formatGroupLearningMode } from '../utils/groupDisplay';
 
 function formatToggleState(value, lang, enabledLabel, disabledLabel) {
   if (value == null) return lang === 'en' ? 'Not configured' : 'Chưa cấu hình';
@@ -120,7 +120,6 @@ function GroupProfileOverviewPanel({
   const emptyLabel = currentLang === 'en' ? 'Not configured yet' : 'Chưa cập nhật';
 
   const learningModeLabel = formatGroupLearningMode(group?.learningMode, currentLang) || emptyLabel;
-  const defaultRoleLabel = formatGroupRole(group?.defaultRoleOnJoin || 'MEMBER', currentLang) || emptyLabel;
   const completionLabel = formatCompletionState(group?.onboardingCompleted, currentLang);
   const roadmapLabel = formatToggleState(
     group?.roadmapEnabled,
@@ -163,13 +162,6 @@ function GroupProfileOverviewPanel({
       toneClass: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
     },
     {
-      label: currentLang === 'en' ? 'Default role' : 'Vai trò mặc định',
-      value: defaultRoleLabel,
-      description: currentLang === 'en' ? 'Applied when a new member joins the room' : 'Áp dụng cho thành viên mới vào nhóm',
-      icon: ShieldCheck,
-      toneClass: isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700',
-    },
-    {
       label: currentLang === 'en' ? 'Learning mode' : 'Chế độ học',
       value: learningModeLabel,
       description: currentLang === 'en' ? 'Defines the default rhythm for roadmap and content' : 'Định nghĩa nhịp học mặc định của roadmap và nội dung',
@@ -183,7 +175,7 @@ function GroupProfileOverviewPanel({
       icon: Users,
       toneClass: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
     },
-  ]), [completionLabel, currentLang, defaultRoleLabel, group?.maxMemberOverride, isDarkMode, learningModeLabel]);
+  ]), [completionLabel, currentLang, group?.maxMemberOverride, isDarkMode, learningModeLabel]);
 
   const primaryFields = [
     { label: currentLang === 'en' ? 'Group name' : 'Tên nhóm', value: group?.groupName || emptyLabel },
@@ -269,7 +261,7 @@ function GroupProfileOverviewPanel({
       </div>
 
       <div className="px-5 py-5 sm:px-6 sm:py-6">
-        <div className={cn('grid gap-4', compact ? 'md:grid-cols-2' : 'md:grid-cols-2 xl:grid-cols-4')}>
+        <div className={cn('grid gap-4', compact ? 'md:grid-cols-2' : 'md:grid-cols-2 xl:grid-cols-3')}>
           {metricCards.map((item) => (
             <MetricCard
               key={item.label}
@@ -300,8 +292,8 @@ function GroupProfileOverviewPanel({
               </div>
               <p className={cn('mt-3 text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
                 {currentLang === 'en'
-                  ? 'These values define how the room identifies itself and what onboarding defaults new members inherit.'
-                  : 'Đây là những giá trị định nghĩa nhóm này là ai và thành viên mới sẽ nhận baseline nào khi tham gia.'}
+                  ? 'These values define how the room identifies itself and the shared baseline the team is following.'
+                  : 'Đây là những giá trị định nghĩa nhóm này là ai và baseline học tập chung mà cả nhóm đang theo.'}
               </p>
 
               <div className="mt-4 grid gap-3 md:grid-cols-2">

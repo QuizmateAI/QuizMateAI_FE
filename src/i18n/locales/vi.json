@@ -3330,15 +3330,16 @@
       "stepCount": "Bước {{current}} trên {{total}}",
       "back": "Quay lại",
       "continue": "Tiếp tục",
-      "saving": "Đang lưu...",
-      "retry": "Thử lại",
-      "select": "Chọn",
-      "selected": "Đã chọn",
-      "finish": "Lưu và hoàn tất",
-      "finishIncomplete": "Kiểm tra lại để hoàn tất",
-      "enabled": "Đang bật",
-      "disabled": "Đang tắt"
-    },
+        "saving": "Đang lưu...",
+        "retry": "Thử lại",
+        "select": "Chọn",
+        "selected": "Đã chọn",
+        "close": "Đóng",
+        "finish": "Lưu và hoàn tất",
+        "finishIncomplete": "Kiểm tra lại để hoàn tất",
+        "enabled": "Đang bật",
+        "disabled": "Đang tắt"
+      },
     "messages": {
       "basicsSaveError": "Không thể lưu thông tin nhóm.",
       "confirmSaveError": "Không thể hoàn tất cấu hình nhóm.",
@@ -3357,8 +3358,8 @@
     },
     "tabs": {
       "basic": {
-        "title": "Cơ bản & quyền",
-        "description": "Tên nhóm, vai trò mặc định và nguyên tắc chung"
+        "title": "Cơ bản & nguyên tắc",
+        "description": "Tên nhóm và các nguyên tắc vận hành chung"
       },
       "learning": {
         "title": "Hồ sơ học tập chung",
@@ -3367,12 +3368,16 @@
     },
     "stepOne": {
       "title": "Thiết lập thông tin cơ bản cho nhóm",
-      "description": "Đặt tên nhóm, chọn vai trò mặc định khi thành viên tham gia và thêm nội quy nếu cần.",
+      "description": "Đặt tên nhóm và thêm các ghi chú vận hành chung để cả nhóm theo cùng một nhịp học.",
       "groupName": "Tên nhóm",
+      "groupNameHint": "Dùng tên ngắn gọn, rõ mục tiêu để thành viên nhận ra nhóm ngay.",
+      "groupNamePlaceholder": "Ví dụ: Ôn thi TOEIC 750+",
       "defaultRole": "Vai trò mặc định khi tham gia",
       "memberDescription": "Phù hợp cho thành viên học tập thông thường trong nhóm.",
       "contributorDescription": "Phù hợp cho thành viên có thể đóng góp nội dung và hoạt động học.",
-      "rules": "Nội quy hoặc ghi chú chung"
+      "rulesEyebrow": "Nguyên tắc chung",
+      "rulesHint": "Ghi cách học, nhịp sinh hoạt hoặc quy ước chia sẻ tài liệu để các thành viên theo cùng một chuẩn.",
+      "rulesPlaceholder": "Ví dụ: Mỗi tuần check-in 2 buổi, đặt câu hỏi theo chủ đề và ghi rõ nguồn khi chia sẻ tài liệu."
     },
     "stepTwo": {
       "title": "Thiết lập hồ sơ học tập chung",
@@ -3390,7 +3395,6 @@
       },
       "knowledgeLabel": "Knowledge chung của nhóm",
       "knowledgePlaceholder": "Ví dụ: Cả nhóm đang học JLPT N3 để củng cố ngữ pháp, từ vựng và luyện đọc theo từng chủ điểm.",
-      "knowledgeHint": "Mô tả càng cụ thể, Quizmate AI càng gợi ý domain sát với mục tiêu học của nhóm.",
       "domainSuggestions": "Domain được Quizmate AI gợi ý",
       "selectedDomain": "Domain đang dùng cho nhóm",
       "selectedDomainHint": "Domain này sẽ làm baseline chung để AI gợi ý roadmap, quiz và hoạt động học.",
@@ -3426,28 +3430,15 @@
       },
       "ready": {
         "title": "Trạng thái sẵn sàng",
-        "knowledge": "Knowledge",
-        "domain": "Domain",
-        "mode": "Chế độ học",
+        "knowledge": "Kiến thức",
+        "domain": "Lĩnh vực",
+        "mode": "Nhịp học",
         "pending": "Chưa hoàn tất"
       },
       "sidebar": {
         "eyebrow": "Bảng điều khiển",
         "title": "Nhìn nhanh trước khi hoàn tất",
-        "readyBadge": "Sẵn sàng",
-        "loading": "Quizmate AI đang suy ra domain phù hợp từ knowledge bạn vừa nhập.",
-        "error": "Cần phân tích lại knowledge để có domain đáng tin cậy hơn.",
-        "ready": "AI đã đủ dữ liệu để dùng domain này làm baseline chung cho workspace.",
-        "default": "Khi chọn domain xong, AI sẽ dùng domain này để gợi ý roadmap và hoạt động học chung.",
-        "domainPlaceholder": "Chưa chọn domain",
-        "role": "Vai trò mặc định",
-        "mode": "Chế độ học",
-        "domain": "Domain",
-        "roadmap": "Roadmap chung",
-        "afterSaveTitle": "Sau khi lưu, nhóm sẽ có gì?",
-        "afterSaveItemOne": "Workspace dùng domain này làm baseline cho roadmap, quiz và flashcard.",
-        "afterSaveItemTwo": "Leader vẫn có thể cập nhật lại profile khi workspace chưa có tài liệu.",
-        "afterSaveItemThree": "Nếu workspace đã có tài liệu, hãy xóa tài liệu trước rồi mới cập nhật lại profile."
+        "readyBadge": "Sẵn sàng"
       }
     }
   },

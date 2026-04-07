@@ -5,13 +5,20 @@ import { queryClient } from './queryClient'
 import './index.css'
 import App from './App.jsx'
 import { DarkModeProvider } from './hooks/useDarkMode'
+import { i18nReady } from './i18n'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <DarkModeProvider>
-        <App />
-      </DarkModeProvider>
-    </QueryClientProvider>
-  </StrictMode>,
-)
+async function bootstrap() {
+  await i18nReady
+
+  createRoot(document.getElementById('root')).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <DarkModeProvider>
+          <App />
+        </DarkModeProvider>
+      </QueryClientProvider>
+    </StrictMode>,
+  )
+}
+
+bootstrap()
