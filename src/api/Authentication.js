@@ -37,6 +37,27 @@ function saveLoginDataToCache(data) {
   }
 }
 
+function notifyAuthChanged(type) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent('auth:changed', {
+    detail: {
+      type,
+      at: Date.now(),
+    },
+  }));
+}
+
+function clearAuthState() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  clearUserCache();
+  queryClient.clear();
+}
+
 /**
  * Đăng nhập tài khoản
  * @param {Object} credentials - Thông tin đăng nhập
@@ -55,6 +76,7 @@ export const login = async (credentials) => {
     localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
     // Cache profile + subscription từ BE (lần load sau chỉ verify token)
     saveLoginDataToCache(response.data);
+    notifyAuthChanged('login');
   }
 
   return response;
@@ -95,6 +117,7 @@ export const googleLogin = async (idToken) => {
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify({ userID, username, role, email, authProvider }));
     saveLoginDataToCache(response.data);
+    notifyAuthChanged('login');
   }
 
   return response;
@@ -191,10 +214,23 @@ export const resetPassword = async (email, newPassword) => {
  * Đăng xuất - Xóa token, thông tin user và cache khỏi localStorage
  */
 export const logout = () => {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user');
-  clearUserCache();
+  const token = localStorage.getItem('accessToken');
+
+  // Dọn local state ngay để UI chuyển trạng thái tức thì.
+  clearAuthState();
+  notifyAuthChanged('logout');
+
+  // Gọi BE logout song song để revoke token phía server.
+  if (token) {
+    void api.post('/auth/logout', null, {
+      skipAuthRedirect: true,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).catch(() => {
+      // Không block UX khi request logout thất bại.
+    });
+  }
 };
 
 /**
