@@ -69,9 +69,542 @@ const LazyUploadSourceDialog = React.lazy(
 );
 const LazyRoadmapPhaseGenerateDialog = React.lazy(
   () =>
+    import(
+      "@/Pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog"
+    ),
+);
+const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(
+  () =>
+    import(
+      "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"
+    ),
+);
+const LazyIndividualWorkspaceProfileOverviewDialog = React.lazy(
+  () =>
+    import(
+      "@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileOverviewDialog"
+    ),
+);
+const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(
+  () => import("@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog"),
+);
+const LazyRoadmapConfigEditDialog = React.lazy(
+  () => import("@/Components/workspace/RoadmapConfigEditDialog"),
+);
 
+function isProfileOnboardingDone(profileData) {
+  return (
+    profileData?.onboardingCompleted === true ||
+    profileData?.workspaceSetupStatus === "DONE"
+  );
+}
+
+function extractProfileData(response) {
+  return normalizeIndividualWorkspaceProfile(
+    response?.data?.data || response?.data || response || null,
+  );
+}
+
+function extractRoadmapIdFromProfile(profileData) {
+  const rawRoadmapId =
+    profileData?.roadmap_id ?? profileData?.roadmapId ?? null;
+  const roadmapId = Number(rawRoadmapId);
+  return Number.isInteger(roadmapId) && roadmapId > 0 ? roadmapId : null;
+}
+
+function getProfilePurpose(profileData) {
+  return profileData?.workspacePurpose || profileData?.learningMode || "";
+}
+
+function normalizeRoadmapEnabledValue(value) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1") return true;
+    if (normalized === "false" || normalized === "0") return false;
+  }
+  return null;
+}
+
+function translateOrFallback(t, key, fallback) {
+  const translated = t(key);
+  return translated === key ? fallback : translated;
+}
+
+function DeferredWorkspacePanel({ children }) {
+  return (
+    <React.Suspense
+      fallback={<ListSpinner variant="section" className="h-full" />}
+    >
+      {children}
+    </React.Suspense>
+  );
+}
+
+function DeferredWorkspaceDialog({ children }) {
+  return <React.Suspense fallback={null}>{children}</React.Suspense>;
+}
+
+function WorkspacePage() {
+  const { workspaceId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const { showError, showSuccess } = useToast();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const planEntitlements = usePlanEntitlements();
+  const [planUpgradeModalOpen, setPlanUpgradeModalOpen] = useState(false);
+  const [planUpgradeFeatureName, setPlanUpgradeFeatureName] =
+    useState(undefined);
+  const openProfileConfig = location.state?.openProfileConfig || false;
+  const [profileConfigOpen, setProfileConfigOpen] = useState(false);
+  const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
+  const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
+  const [isProfileUpdateMode, setIsProfileUpdateMode] = useState(false);
+  const [
+    isResettingWorkspaceForProfileUpdate,
+    setIsResettingWorkspaceForProfileUpdate,
+  ] = useState(false);
+  const [isProfileConfigured, setIsProfileConfigured] = useState(false);
+  const [workspaceProfile, setWorkspaceProfile] = useState(null);
+  const [workspacePersonalization, setWorkspacePersonalization] =
+    useState(null);
+  const { currentWorkspace, fetchWorkspaceDetail, editWorkspace } =
+    useWorkspace({ enabled: false });
+  const progressTracking = useProgressTracking({
+    scopeKey: workspaceId ? `workspace:${workspaceId}` : null,
+  });
+
+  const reconcileMaterialProgress = progressTracking.reconcileMaterialProgress;
+
+  // Source state. Still mock-data-friendly, but wired to API fetches.
+
+  const [sources, setSources] = useState([]);
+  const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
+  const [accessHistory, setAccessHistory] = useState([]);
+
+  // Upload dialog state. Auto-open only when the first fetch returns no materials.
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
+  const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
+  const [hasStudioManualPreference, setHasStudioManualPreference] =
+    useState(false);
+  const [isMaterialDetailOpen, setIsMaterialDetailOpen] = useState(false);
+  const workspaceLayoutRef = useRef(null);
+  const [workspaceLayoutWidth, setWorkspaceLayoutWidth] = useState(0);
+
+  // Main content state. Prefer the current route instead of sessionStorage.
+  const [activeView, setActiveView] = useState(() => {
+    if (!workspaceId) return null;
+
+    const prefix = `/workspace/${workspaceId}`;
+
+    if (location.pathname.startsWith(prefix)) {
+      const subPath = location.pathname
+        .slice(prefix.length)
+        .replace(/^\/+/, "");
+      const { view: routeView } = resolveWorkspaceViewFromSubPath(subPath);
+      if (routeView) {
+        return routeView;
+      }
     }
 
+    return null;
+  });
+
+  // Selected quiz state for detail and edit flows
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [quizBackTarget, setQuizBackTarget] = useState(null);
+  // Selected flashcard state for detail flow
+  const [selectedFlashcard, setSelectedFlashcard] = useState(null);
+  // Selected mock-test state for detail and edit flows
+  const [selectedMockTest, setSelectedMockTest] = useState(null);
+  const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
+  const [roadmapAiRoadmapId, setRoadmapAiRoadmapId] = useState(null);
+  const [roadmapHasPhases, setRoadmapHasPhases] = useState(false);
+  const [isRoadmapStructureMissing, setIsRoadmapStructureMissing] =
+    useState(false);
+  const [hasExistingWorkspaceQuiz, setHasExistingWorkspaceQuiz] =
+    useState(false);
+  const [completedQuizCount, setCompletedQuizCount] = useState(0);
+  const [hasExistingWorkspaceFlashcard, setHasExistingWorkspaceFlashcard] =
+    useState(false);
+
+  // Side-panel sizing constants
+  const COLLAPSED_WIDTH = 56;
+  const PANEL_GAP = 16;
+  const SOURCES_PANEL_MIN_WIDTH = 320;
+  const SOURCES_PANEL_DETAIL_WIDTH = 380;
+  const STUDIO_PANEL_MIN_WIDTH = 288;
+  const CHAT_PANEL_MIN_WIDTH = 760;
+  const CHAT_PANEL_COMFORT_WIDTH = 840;
+
+  const isRoadmapJourActive =
+    activeView === "roadmap" ||
+    (quizBackTarget?.view === "roadmap" &&
+      (activeView === "quizDetail" || activeView === "editQuiz"));
+  const shouldProtectSourcesSpace = isMaterialDetailOpen || isRoadmapJourActive;
+  const sourcesPanelTargetWidth = useMemo(
+    () =>
+      shouldProtectSourcesSpace
+        ? SOURCES_PANEL_DETAIL_WIDTH
+        : SOURCES_PANEL_MIN_WIDTH,
+    [shouldProtectSourcesSpace],
+  );
+  const bothExpandedHardMinLayoutWidth =
+    sourcesPanelTargetWidth +
+    STUDIO_PANEL_MIN_WIDTH +
+    CHAT_PANEL_MIN_WIDTH +
+    PANEL_GAP * 2;
+  const bothExpandedPreferredLayoutWidth =
+    sourcesPanelTargetWidth +
+    STUDIO_PANEL_MIN_WIDTH +
+    CHAT_PANEL_COMFORT_WIDTH +
+    PANEL_GAP * 2;
+  const sourcesPriorityMinLayoutWidth =
+    sourcesPanelTargetWidth +
+    COLLAPSED_WIDTH +
+    CHAT_PANEL_MIN_WIDTH +
+    PANEL_GAP * 2;
+  const railsOnlyMinLayoutWidth =
+    COLLAPSED_WIDTH * 2 + CHAT_PANEL_MIN_WIDTH + PANEL_GAP * 2;
+  const shouldStackSidePanels =
+    workspaceLayoutWidth > 0 &&
+    (workspaceLayoutWidth < railsOnlyMinLayoutWidth ||
+      (shouldProtectSourcesSpace &&
+        workspaceLayoutWidth < sourcesPriorityMinLayoutWidth));
+
+  const shouldPreferStudioCollapse =
+    !shouldStackSidePanels &&
+    workspaceLayoutWidth > 0 &&
+    workspaceLayoutWidth < bothExpandedPreferredLayoutWidth;
+  const shouldForceStudioCollapse =
+    !shouldStackSidePanels &&
+    workspaceLayoutWidth > 0 &&
+    workspaceLayoutWidth < bothExpandedHardMinLayoutWidth;
+  const shouldForceSourcesCollapse =
+    !shouldStackSidePanels &&
+    workspaceLayoutWidth > 0 &&
+    workspaceLayoutWidth < sourcesPriorityMinLayoutWidth;
+
+  const effectiveSourcesCollapsed =
+    !shouldStackSidePanels &&
+    (isSourcesCollapsed || shouldForceSourcesCollapse);
+  const effectiveStudioCollapsed =
+    !shouldStackSidePanels &&
+    (shouldForceStudioCollapse ||
+      (hasStudioManualPreference
+        ? isStudioCollapsed
+        : shouldPreferStudioCollapse));
+
+  const effectiveLeftWidth = effectiveSourcesCollapsed
+    ? COLLAPSED_WIDTH
+    : sourcesPanelTargetWidth;
+  const effectiveRightWidth = effectiveStudioCollapsed
+    ? COLLAPSED_WIDTH
+    : STUDIO_PANEL_MIN_WIDTH;
+  const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] =
+    useState(false);
+  const isOnWorkspaceQuizRoute = useMemo(() => {
+    if (!workspaceId || !location.pathname) return false;
+    return new RegExp(
+      `^/workspace/${workspaceId}/(?:quiz(?:/|$)|roadmap/(?:\\d+/phase/\\d+/)?quiz(?:/|$))`,
+    ).test(location.pathname);
+  }, [location.pathname, workspaceId]);
+
+  const focusRoadmapViewSafely = useCallback(() => {
+    if (isOnWorkspaceQuizRoute) return;
+    setActiveView("roadmap");
+  }, [isOnWorkspaceQuizRoute]);
+
+  const shouldRenderRoadmapJourPanel =
+    hasActivatedRoadmapPanel || isRoadmapJourActive;
+
+  useEffect(() => {
+    if (isRoadmapJourActive) {
+      setHasActivatedRoadmapPanel(true);
+    }
+  }, [isRoadmapJourActive]);
+
+  useEffect(() => {
+    if (!workspaceId) {
+      setHasExistingWorkspaceQuiz(false);
+      setCompletedQuizCount(0);
+      setHasExistingWorkspaceFlashcard(false);
+      return;
+    }
+
+    let cancelled = false;
+    let idleHandle = null;
+    let timeoutHandle = null;
+
+    const syncExistingWorkspaceContent = async () => {
+      try {
+        const [quizResponse, flashcardResponse] = await Promise.all([
+          getQuizzesByScope("WORKSPACE", Number(workspaceId)),
+          getFlashcardsByScope("WORKSPACE", Number(workspaceId)),
+        ]);
+
+        if (cancelled) return;
+
+        const workspaceQuizzes = (quizResponse?.data || []).filter((quiz) => {
+          const qContext = String(quiz?.contextType || "").toUpperCase();
+          if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(qContext))
+            return false;
+          if (
+            Number(quiz?.roadmapId) > 0 ||
+            Number(quiz?.phaseId) > 0 ||
+            Number(quiz?.knowledgeId) > 0
+          )
+            return false;
+          return true;
+        });
+
+        const workspaceFlashcards = Array.isArray(flashcardResponse?.data)
+          ? flashcardResponse.data
+          : [];
+
+        const completedCount = workspaceQuizzes.filter((quiz) => {
+          if (quiz?.myAttempted === true) return true;
+          const n = Number(
+            quiz?.attemptCount ?? quiz?.attemptsCount ?? quiz?.myAttemptCount,
+          );
+          return Number.isFinite(n) && n > 0;
+        }).length;
+
+        setHasExistingWorkspaceQuiz(workspaceQuizzes.length > 0);
+        setCompletedQuizCount(completedCount);
+        setHasExistingWorkspaceFlashcard(workspaceFlashcards.length > 0);
+      } catch (error) {
+        if (!cancelled) {
+          console.error(
+            "Không thể đồng bộ trạng thái quiz/flashcard workspace:",
+            error,
+          );
+          setHasExistingWorkspaceQuiz(false);
+          setHasExistingWorkspaceFlashcard(false);
+        }
+      }
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleHandle = window.requestIdleCallback(
+        () => {
+          void syncExistingWorkspaceContent();
+        },
+        { timeout: 1200 },
+      );
+    } else {
+      timeoutHandle = window.setTimeout(() => {
+        void syncExistingWorkspaceContent();
+      }, 350);
+    }
+
+    return () => {
+      cancelled = true;
+      if (
+        idleHandle !== null &&
+        typeof window !== "undefined" &&
+        "cancelIdleCallback" in window
+      ) {
+        window.cancelIdleCallback(idleHandle);
+      }
+
+      if (timeoutHandle !== null && typeof window !== "undefined") {
+        window.clearTimeout(timeoutHandle);
+      }
+    };
+  }, [workspaceId, activeView]);
+
+  // Xác định các chức năng nên disabled
+  const hasAtLeastOneActiveSource = sources.some(
+    (source) => String(source?.status || "").toUpperCase() === "ACTIVE",
+  );
+
+  const shouldDisableQuiz =
+    !hasAtLeastOneActiveSource && !hasExistingWorkspaceQuiz;
+  const shouldDisableFlashcard =
+    !hasAtLeastOneActiveSource && !hasExistingWorkspaceFlashcard;
+  const shouldDisableCreateQuiz = !hasAtLeastOneActiveSource;
+  const shouldDisableCreateFlashcard = !hasAtLeastOneActiveSource;
+  const materialCountForProfile = sources.length;
+  const profileEditLocked = materialCountForProfile > 0;
+  const roadmapEnabledFromProfile = normalizeRoadmapEnabledValue(
+    workspaceProfile?.roadmapEnabled ?? workspaceProfile?.data?.roadmapEnabled,
+  );
+
+  const resolvedRoadmapEnabled = roadmapEnabledFromProfile === true;
+  const hasRoadmapPhases = roadmapHasPhases;
+  // Điều kiện roadmap theo thứ tự 1 -> 3:
+  // 1) roadmapEnabled từ profile phải là true
+  // 2) workspace phải có tài liệu ACTIVE
+  // 3) roadmap structure không bị missing
+  const passRoadmapCondition1 = resolvedRoadmapEnabled;
+  const passRoadmapCondition2 = hasAtLeastOneActiveSource;
+  const passRoadmapCondition3 = !isRoadmapStructureMissing;
+  const shouldShowRoadmapAction =
+    hasRoadmapPhases ||
+    (passRoadmapCondition1 && passRoadmapCondition2 && passRoadmapCondition3);
+  const shouldDisableRoadmap = !shouldShowRoadmapAction;
+  // Riêng nút roadmap ở Studio: kiểm tra theo thứ tự
+
+  // 0) Nếu đã có phase thì luôn hiện bình thường (không disable)
+
+  // 1) Phải có tài liệu ACTIVE
+
+  // 2) roadmapEnabled từ profile phải là true
+
+  // 3) roadmap structure không bị missing
+
+  const shouldDisableRoadmapForStudio = hasRoadmapPhases
+    ? false
+    : !hasAtLeastOneActiveSource ||
+      !passRoadmapCondition1 ||
+      !passRoadmapCondition3;
+
+  // Compute which Studio Panel actions are plan-locked (show crown icon)
+
+  const studioPlanLockedActions = [
+    ...(!planEntitlements.hasWorkspaceAnalytics ? ["questionStats"] : []),
+  ];
+
+  const isStudyNewRoadmap = getProfilePurpose(workspaceProfile) === "STUDY_NEW";
+
+  const hasWorkspaceLearningDataAtRisk =
+    hasExistingWorkspaceQuiz ||
+    hasExistingWorkspaceFlashcard ||
+    hasRoadmapPhases ||
+    Boolean(extractRoadmapIdFromProfile(workspaceProfile));
+
+  const workspaceAdaptationMode = String(
+    workspaceProfile?.adaptationMode ||
+      workspaceProfile?.data?.adaptationMode ||
+      "",
+  ).toUpperCase();
+
+  const [roadmapConfigEditOpen, setRoadmapConfigEditOpen] = useState(false);
+
+  const roadmapConfigInitialValues = useMemo(
+    () => ({
+      knowledgeLoad: workspaceProfile?.knowledgeLoad || "",
+      adaptationMode: workspaceAdaptationMode || "",
+      roadmapSpeedMode:
+        workspaceProfile?.roadmapSpeedMode ||
+        (workspaceProfile?.speedMode === "MEDIUM"
+          ? "STANDARD"
+          : workspaceProfile?.speedMode || ""),
+      estimatedTotalDays: workspaceProfile?.estimatedTotalDays || "",
+      recommendedMinutesPerDay:
+        workspaceProfile?.recommendedMinutesPerDay ||
+        workspaceProfile?.estimatedMinutesPerDay ||
+        "",
+    }),
+    [workspaceProfile, workspaceAdaptationMode],
+  );
+
+  const handleToggleSourcesCollapse = useCallback(() => {
+    setIsSourcesCollapsed(effectiveSourcesCollapsed ? false : true);
+  }, [effectiveSourcesCollapsed]);
+
+  const handleToggleStudioCollapse = useCallback(() => {
+    setHasStudioManualPreference(true);
+
+    setIsStudioCollapsed(effectiveStudioCollapsed ? false : true);
+  }, [effectiveStudioCollapsed]);
+
+  useEffect(() => {
+    if (!isRoadmapJourActive) return;
+
+    setIsMaterialDetailOpen(false);
+  }, [isRoadmapJourActive]);
+
+  useEffect(() => {
+    const container = workspaceLayoutRef.current;
+
+    if (!container || typeof ResizeObserver === "undefined") return undefined;
+
+    const observer = new ResizeObserver((entries) => {
+      const width = entries?.[0]?.contentRect?.width || 0;
+
+      setWorkspaceLayoutWidth(width);
+    });
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const getWorkspaceSubPath = useCallback(() => {
+    if (!workspaceId) return "";
+
+    const prefix = `/workspace/${workspaceId}`;
+
+    if (!location.pathname.startsWith(prefix)) return "";
+
+    const suffix = location.pathname.slice(prefix.length).replace(/^\/+/, "");
+
+    return suffix;
+  }, [location.pathname, workspaceId]);
+
+  useEffect(() => {
+    const subPath = getWorkspaceSubPath();
+
+    if (!subPath) return;
+
+    if (subPath === "roadmap") {
+      const phaseParam = new URLSearchParams(location.search).get("phaseId");
+
+      const parsedPhaseId = Number(phaseParam);
+
+      if (Number.isInteger(parsedPhaseId) && parsedPhaseId > 0) {
+        setSelectedRoadmapPhaseId(parsedPhaseId);
+      }
+    }
+
+    const {
+      view: mappedView,
+      quizId,
+      backTarget,
+      phaseId: mappedPhaseId,
+      roadmapId: mappedRoadmapId,
+    } = resolveWorkspaceViewFromSubPath(subPath);
+
+    if (!mappedView) return;
+
+    if (backTarget?.view === "roadmap") {
+      const urlPhaseParam = new URLSearchParams(location.search).get("phaseId");
+
+      const parsedPhaseId = Number(urlPhaseParam);
+
+      const normalizedPhaseId =
+        Number.isInteger(backTarget?.phaseId) && backTarget.phaseId > 0
+          ? Number(backTarget.phaseId)
+          : Number.isInteger(parsedPhaseId) && parsedPhaseId > 0
+            ? parsedPhaseId
+            : null;
+
+      const normalizedRoadmapId =
+        Number.isInteger(backTarget?.roadmapId) && backTarget.roadmapId > 0
+          ? Number(backTarget.roadmapId)
+          : null;
+
+      setQuizBackTarget({
+        view: "roadmap",
+
+        phaseId: normalizedPhaseId,
+
+        roadmapId: normalizedRoadmapId,
+      });
+
+      if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+        setSelectedRoadmapPhaseId(normalizedPhaseId);
+      }
+    } else if (mappedView === "quizDetail" || mappedView === "editQuiz") {
+      setQuizBackTarget(null);
+    }
+
+    if (mappedView === "roadmap") {
       if (Number.isInteger(mappedPhaseId) && mappedPhaseId > 0) {
         setSelectedRoadmapPhaseId(mappedPhaseId);
       }
@@ -1870,21 +2403,14 @@ const LazyRoadmapPhaseGenerateDialog = React.lazy(
                   {renderSourceWorkspacePanel(false)}
                 </div>
 
-								<div className="min-w-0 min-h-0">
-
-									{renderStudioWorkspacePanel(false)}
-
-								</div>
-
-							</div>
-
-						</div>
-
-					) : (
-
-						<div className="flex h-full gap-4">
-
-							{/* Source panel (left) */}
+                <div className="min-w-0 min-h-0">
+                  {renderStudioWorkspacePanel(false)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-full gap-4">
+              {/* Source panel (left) */}
 
               <div
                 style={{
