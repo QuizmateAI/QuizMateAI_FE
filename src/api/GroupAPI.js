@@ -73,3 +73,9 @@ export const removeMember = async (workspaceId, memberId) => {
   const response = await api.delete(`/group/${workspaceId}/members/${memberId}`);
   return response;
 };
+
+// Leader bật/tắt chế độ public của nhóm
+export const toggleVisibility = async (workspaceId) => {
+  const response = await api.put(`/group/${workspaceId}/visibility`);
+  return response;
+};

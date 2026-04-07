@@ -5,7 +5,8 @@ import api from './api';
 // Lấy danh sách quiz theo contextType và scopeId
 export const getQuizzesByScope = async (contextType, scopeId) => {
   let url = '';
-  if (contextType === 'WORKSPACE') url = `/quiz/getByWorkspace/${scopeId}`;
+  // Group workspace dùng cùng endpoint danh sách theo workspaceId
+  if (contextType === 'WORKSPACE' || contextType === 'GROUP') url = `/quiz/getByWorkspace/${scopeId}`;
   else if (contextType === 'ROADMAP') url = `/quiz/getByRoadmap/${scopeId}`;
   else if (contextType === 'PHASE') url = `/quiz/getByPhase/${scopeId}`;
   else if (contextType === 'KNOWLEDGE') url = `/quiz/getByKnowledge/${scopeId}`;
@@ -61,6 +62,18 @@ export const cloneCommunityQuizToWorkspace = async (quizId, workspaceId, metadat
 // Xóa quiz theo quizId
 export const deleteQuiz = async (quizId) => {
   const response = await api.delete(`/quiz/${quizId}`);
+  return response;
+};
+
+/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE. */
+export const publishGroupQuiz = async (quizId) => {
+  const response = await api.post(`/quiz/${quizId}/group/publish`);
+  return response;
+};
+
+/** Leader: cấu hình quiz chung cho nhóm hoặc gán thành viên cụ thể. */
+export const setGroupQuizAudience = async (quizId, body) => {
+  const response = await api.put(`/quiz/${quizId}/group/audience`, body);
   return response;
 };
 

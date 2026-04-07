@@ -2183,6 +2183,12 @@
     "quiz": {
       "createTitle": "Create Quiz",
       "createDesc": "Create a quiz for your workspace.",
+      "insufficientCredit": {
+        "title": "Not enough QMC credits",
+        "hint": "Buy a credit pack to top up your workspace balance, then try generating the quiz again.",
+        "ctaBuy": "Buy QMC credits",
+        "ctaWallet": "View wallet"
+      },
       "tabManual": "Manual",
       "tabAI": "AI Generate",
       "name": "Quiz Name",
@@ -2326,6 +2332,22 @@
         "DRAFT": "Draft",
         "COMPLETED": "Done"
       },
+      "filterBar": {
+        "statusSection": "Status",
+        "groupSection": "Group"
+      },
+      "groupAudience": {
+        "filterLabel": "Group visibility",
+        "filterLabelShort": "Group",
+        "all": "All",
+        "wholeGroup": "Whole group",
+        "assignedMembers": "Assigned only",
+        "pickMember": "Member",
+        "pickMemberPlaceholder": "All assigned quizzes",
+        "pickMemberHint": "Pick someone to see only quizzes assigned to them",
+        "badgeWholeGroup": "Whole group",
+        "badgeAssigned": "Assigned"
+      },
       "communityRecommendations": {
         "title": "Matching quizzes for this workspace",
         "description": "Quizmate AI found a few community quizzes that fit the current learning behavior here. If one looks right, you can clone it straight into this workspace.",
@@ -2431,9 +2453,11 @@
         "mediumDurationMustBeGreaterThanEasy": "Medium difficulty duration must be greater than easy difficulty duration.",
         "hardDurationMustBeGreaterThanMedium": "Hard difficulty duration must be greater than medium difficulty duration.",
         "timeDurationRequired": "Please enter total duration for the quiz.",
-        "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
-        "minimumTimePerQuestion": "Minimum Time Per Question",
-        "minimumTimePerQuestionHint": "Minimum Time Per Question Hint"
+        "materialRequired": "Please select at least one material.",
+        "totalQuestionsRange": "Total questions must be between {{min}} and {{max}}.",
+        "totalQuestionsRangeHint": "Allowed range: {{min}}–{{max}} questions.",
+        "minimumTimePerQuestion": "Each question needs at least {{seconds}} seconds. With {{count}} questions, total duration must be at least {{minutes}} minutes.",
+        "minimumTimePerQuestionHint": "Minimum {{minutes}} minutes total ({{seconds}} seconds per question)."
       },
       "contextSelector": {
         "title": "Quiz Location",
@@ -2505,11 +2529,14 @@
         "promptPlaceholder": "Enter additional instructions for AI...",
         "byCount": "By count",
         "byPercent": "By percentage",
-        "generalInfo": "General Info",
+        "generalInfo": "Quiz basics",
         "promptOptional": "Prompt (Optional)",
-        "selectedMaterials": "Selected Materials",
+        "selectedMaterials": "Source materials",
         "selectedMaterialsCount": "Using {{count}} selected material(s) from Sources panel.",
         "noSelectedMaterials": "No material selected in Sources panel. You can still generate by using Prompt only.",
+        "workspaceMaterialsEmpty": "No documents in this workspace yet. Add materials from the Sources panel.",
+        "materialSelectedBadge": "Selected",
+        "materialsSelectedSummary": "{{selected}} of {{total}} selected",
         "difficultyLevel": "Difficulty Level",
         "difficultyPreviewTitle": "Difficulty distribution",
         "customSelfConfig": "Custom (Self-config)",
@@ -2537,7 +2564,7 @@
         "remove": "Remove",
         "lock": "Lock",
         "unlock": "Unlock",
-        "settings": "Settings",
+        "settings": "Timing & exam mode",
         "timeMinutes": "Time (Minutes)",
         "enableTimerMode": "Enable Timer Mode",
         "examType": "Exam type",
@@ -4050,7 +4077,10 @@
       "documents": "Document management",
       "activity": "Group activity",
       "memberManagement": "Member management",
-      "memberStatus": "Member status"
+      "memberStatus": "Member status",
+      "groupStudy": "Study",
+      "groupActivity": "Activity",
+      "groupManage": "Management"
     },
     "challenge": {
       "title": "Challenge",
