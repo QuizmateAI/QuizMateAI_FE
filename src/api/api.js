@@ -92,6 +92,17 @@ api.interceptors.response.use(
       }
     }
     
+    const isTimeoutError = error?.code === 'ECONNABORTED' || /timeout/i.test(String(error?.message || ''));
+
+    if (isTimeoutError) {
+      return Promise.reject({
+        statusCode: 408,
+        code: 'REQUEST_TIMEOUT',
+        message: 'Yêu cầu đang xử lý lâu hơn dự kiến. Vui lòng đợi thêm một chút rồi kiểm tra lại.',
+        data: error?.response?.data,
+      });
+    }
+
     // Trả về lỗi - ưu tiên chi tiết validation (data.errors) nếu có
     const data = error.response?.data;
     const validationErrors = data?.data;

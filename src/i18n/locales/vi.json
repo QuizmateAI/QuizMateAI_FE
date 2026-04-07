@@ -1994,7 +1994,9 @@
         "companionDesc": "AI đọc câu hỏi, bạn trả lời bằng giọng nói",
         "practice": "Luyện tập",
         "practiceDesc": "Xem đáp án & giải thích ngay sau mỗi câu"
-      }
+      },
+      "requireUpload": "Hãy tải tài liệu trước để mở khóa các tính năng này.",
+      "uploadBtn": "Tải tài liệu"
     },
     "studio": {
       "title": "Bảng công cụ",
@@ -2290,6 +2292,7 @@
       },
       "statusLabels": {
         "ACTIVE": "Đang hoạt động",
+        "LOCKED": "Đang khóa",
         "DRAFT": "Bản nháp",
         "COMPLETED": "Đã hoàn thành",
         "INACTIVE": "Không hoạt động",
@@ -2851,6 +2854,9 @@
       "quizDesc": "Làm bài quiz cho chủ đề kiến thức này.",
       "flashcardDesc": "Ôn tập flashcard cho chủ đề kiến thức này.",
       "preLearningPrompt": "Bạn muốn bắt đầu giai đoạn này như thế nào?",
+      "postLearningLocked": "Vui lòng hoàn thành tất cả kiến thức trong giai đoạn này để mở post-learning.",
+      "postLearningUnlockProgress": "Tiến độ kiến thức để mở khóa: {{completed}}/{{total}}",
+      "knowledgeLockedHint": "Vui lòng hoàn thành kiến thức trước đó.",
       "studyNew": {
         "hasFoundation": "Tôi đã có nền tảng cơ bản ở giai đoạn này",
         "noBackground": "Tôi mới làm quen với giai đoạn này",
