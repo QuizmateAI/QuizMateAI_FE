@@ -344,7 +344,7 @@ function ChatPanel({
           </p>
         </div>
 
-        {areAllQuickActionsDisabled && (
+        {areAllQuickActionsDisabled && !hasSources && (
           <div className={`flex flex-col items-center gap-3 p-4 rounded-xl border w-full max-w-lg ${isDarkMode ? "bg-amber-950/20 border-amber-900/30" : "bg-amber-50 border-amber-200"}`}>
             <p className={`text-sm text-center ${isDarkMode ? "text-amber-400" : "text-amber-700"} ${fontClass}`}>
               {t("workspace.chat.requireUpload", "Upload materials first to unlock these actions.")}
@@ -354,7 +354,7 @@ function ChatPanel({
               className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-9 flex items-center gap-2 transition-all active:scale-95"
             >
               <UploadCloud className="w-4 h-4" />
-              <span className={fontClass}>{t("workspace.chat.upload", "Upload materials")}</span>
+              <span className={fontClass}>{t("workspace.chat.uploadBtn", "Upload documents")}</span>
             </Button>
           </div>
         )}
