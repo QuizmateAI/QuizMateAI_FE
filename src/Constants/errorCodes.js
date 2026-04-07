@@ -86,7 +86,6 @@ const ERROR_CODES = {
   1052: 'error.roleInUse',
   1053: 'error.lastSuperAdminProtected',
   1054: 'error.systemRoleProtected',
-  1055: 'error.conflict',
   1056: 'error.planLimitReached',
   1057: 'error.paymentNotPending',
 
