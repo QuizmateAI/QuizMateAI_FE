@@ -42,6 +42,12 @@ export const generateRoadmapPhases = async (data) => {
   return response;
 };
 
+// Tao roadmap day du bang AI (async)
+export const generateRoadmap = async (data) => {
+  const response = await api.post('/ai/roadmap:generated', data);
+  return response;
+};
+
 // Tao noi dung hoc cho 1 phase bang AI (knowledge + quiz)
 export const generateRoadmapPhaseContent = async (data) => {
   const response = await api.post('/ai/roadmap-phase-content:generated', data);
@@ -51,6 +57,12 @@ export const generateRoadmapPhaseContent = async (data) => {
 // Tao pre-learning quiz cho 1 phase bang AI
 export const generateRoadmapPreLearning = async (data) => {
   const response = await api.post('/ai/roadmap-prelearning:generated', data);
+  return response;
+};
+
+// Tao pre-learning quiz tong cho group roadmap
+export const generateRoadmapGroupPreLearning = async (data) => {
+  const response = await api.post('/ai/roadmap-group-prelearning:generated', data);
   return response;
 };
 
