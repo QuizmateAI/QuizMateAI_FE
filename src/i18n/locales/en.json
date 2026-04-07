@@ -3544,15 +3544,17 @@
       "stepCount": "Step {{current}} of {{total}}",
       "back": "Back",
       "continue": "Continue",
-      "saving": "Saving...",
-      "retry": "Retry",
-      "select": "Select",
-      "selected": "Selected",
-      "finish": "Save and finish",
-      "finishIncomplete": "Review to finish",
-      "enabled": "Enabled",
-      "disabled": "Disabled"
-    },
+        "saving": "Saving...",
+        "retry": "Retry",
+        "select": "Select",
+        "selected": "Selected",
+        "close": "Close",
+        "later": "Later",
+        "finish": "Save and finish",
+        "finishIncomplete": "Review to finish",
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
     "messages": {
       "basicsSaved": "Group basics saved.",
       "basicsSaveError": "Unable to save the group basics.",
@@ -3572,8 +3574,8 @@
     },
     "tabs": {
       "basic": {
-        "title": "Basics & Access",
-        "description": "Group name, default role, and shared ground rules"
+        "title": "Basics & Ground Rules",
+        "description": "Group name and the shared operating rules"
       },
       "learning": {
         "title": "Shared Learning Profile",
@@ -3582,12 +3584,18 @@
     },
     "stepOne": {
       "title": "Set up the group basics",
-      "description": "Name the group, choose the default join role, and add any shared rules if needed.",
+      "description": "Name the group and add shared operating notes so everyone follows the same study rhythm.",
       "groupName": "Group name",
+      "groupNameEyebrow": "Group identity",
+      "groupNameHint": "Use a short, recognizable name so members can spot this group immediately.",
+      "groupNamePlaceholder": "Example: TOEIC 750+ Sprint",
       "defaultRole": "Default role on join",
       "memberDescription": "Best for regular learners joining the group.",
       "contributorDescription": "Best for members who can contribute learning content and activities.",
-      "rules": "Rules or shared notes"
+      "rules": "Rules or shared notes",
+      "rulesEyebrow": "Shared ground rules",
+      "rulesHint": "Capture the study rhythm, collaboration rules, or material-sharing norms the whole group should follow.",
+      "rulesPlaceholder": "Example: Run two check-ins per week, ask questions by topic, and cite the source when sharing materials."
     },
     "stepTwo": {
       "title": "Set up the shared learning profile",
@@ -3643,26 +3651,13 @@
         "title": "Readiness check",
         "knowledge": "Knowledge",
         "domain": "Domain",
-        "mode": "Learning mode",
+        "mode": "Learning rhythm",
         "pending": "Still needed"
       },
       "sidebar": {
         "eyebrow": "Control panel",
         "title": "Quick view before you finish",
-        "readyBadge": "Ready",
-        "loading": "Quizmate AI is inferring the most suitable domain from your knowledge scope.",
-        "error": "Rerun the knowledge analysis to get a more reliable domain baseline.",
-        "ready": "The AI has enough context to use this domain as the shared workspace baseline.",
-        "default": "Once you choose a domain, the AI will use it to suggest the shared roadmap and learning activities.",
-        "domainPlaceholder": "No domain selected yet",
-        "role": "Default role",
-        "mode": "Learning mode",
-        "domain": "Domain",
-        "roadmap": "Shared roadmap",
-        "afterSaveTitle": "What happens after saving?",
-        "afterSaveItemOne": "The workspace uses this domain as the baseline for roadmap, quiz, and flashcard generation.",
-        "afterSaveItemTwo": "The leader can still update the profile while the workspace has no materials.",
-        "afterSaveItemThree": "If materials already exist, remove them from the workspace before updating the profile again."
+        "readyBadge": "Ready"
       }
     }
   },

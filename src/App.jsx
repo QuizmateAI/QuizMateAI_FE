@@ -11,7 +11,6 @@ import { loadGroupWorkspacePage, loadWorkspacePage } from '@/lib/routeLoaders';
 
 const FeedbackAutoPrompt = lazy(() => import('@/Components/feedback/FeedbackAutoPrompt'));
 const PlanUpgradeModal = lazy(() => import('@/Components/plan/PlanUpgradeModal'));
-import './i18n';
 import './App.css';
 
 // ── Lazy-loaded route components (code splitting) ──
