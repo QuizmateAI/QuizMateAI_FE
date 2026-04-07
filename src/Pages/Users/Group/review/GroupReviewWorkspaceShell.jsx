@@ -1979,7 +1979,7 @@ export default function GroupReviewWorkspaceShell() {
 
   return (
     <div className={`${pageShellClass} ${fontClass}`}>
-      <WorkspaceHeader isDarkMode={isDarkMode} workspaceTitle={resolvedGroupData.groupName} workspaceSubtitle={`${formatRoleLabel(actualRoleKey)} • ${LEARNING_MODE_LABELS[resolvedGroupData.learningMode] || 'Ôn tập theo nhóm'}`} workspaceDescription={resolvedGroupData.description} settingsMenu={headerSettingsMenu} />
+      <WorkspaceHeader isDarkMode={isDarkMode} workspaceTitle={resolvedGroupData.groupName} workspaceSubtitle={`${formatRoleLabel(actualRoleKey)} • ${LEARNING_MODE_LABELS[resolvedGroupData.learningMode] || 'Ôn tập theo nhóm'}`} workspaceDescription={resolvedGroupData.description} settingsMenu={headerSettingsMenu} showWalletSummary={false} />
       <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-6 xl:px-8">
         <div className="mb-4 flex flex-wrap gap-2 md:hidden">
           <Button variant="outline" size="sm" onClick={() => void refreshAllData()}><RefreshCw className="h-4 w-4" />Làm mới</Button>
