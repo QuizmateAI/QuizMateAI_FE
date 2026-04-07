@@ -9,6 +9,7 @@ import GroupDashboardTab from './Group_leader/GroupDashboardTab';
 import GroupMembersTab from './Group_leader/GroupMembersTab';
 import GroupSettingsTab from './Group_leader/GroupSettingsTab';
 import ChatPanel from './Components/ChatPanel';
+import ChallengeTab from './Components/ChallengeTab';
 import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
 import {
   Activity,
@@ -1922,6 +1923,7 @@ function GroupWorkspacePage() {
     quiz: t('workspace.studio.actions.quiz'),
     flashcard: t('workspace.studio.actions.flashcard'),
     mockTest: t('workspace.studio.actions.mockTest'),
+    challenge: 'Challenge',
     notifications: t('groupWorkspace.studio.activity'),
     members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
     settings: t('workspaceSettings'),
@@ -1981,6 +1983,7 @@ function GroupWorkspacePage() {
     { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionLabels.quiz },
     { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard },
     { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest },
+    { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge },
     { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionLabels.notifications, disabled: false },
     { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: sectionLabels.members, disabled: isMember },
     { key: 'settings', icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20', label: sectionLabels.settings, disabled: !isLeader || !canManageGroup }
@@ -2468,29 +2471,12 @@ function GroupWorkspacePage() {
 
       case 'challenge':
         return (
-          <div className={`relative overflow-hidden rounded-[32px] border p-10 text-center ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-white/80 bg-white/82'}`}>
-            <div className={`pointer-events-none absolute inset-0 ${
-              isDarkMode
-                ? 'bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.12),transparent_50%)]'
-                : 'bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.08),transparent_50%)]'
-            }`} />
-            <div className="relative">
-              <div className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl ${isDarkMode ? 'bg-orange-400/10' : 'bg-orange-50'}`}>
-                <Swords className={`h-10 w-10 ${isDarkMode ? 'text-orange-300' : 'text-orange-500'}`} />
-              </div>
-              <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {t('groupWorkspace.challenge.title')}
-              </h3>
-              <p className={`mx-auto mt-3 max-w-md text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                {t('groupWorkspace.challenge.description')}
-              </p>
-              <div className={`mx-auto mt-6 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold ${
-                isDarkMode ? 'border-orange-400/20 bg-orange-400/10 text-orange-200' : 'border-orange-200 bg-orange-50 text-orange-700'
-              }`}>
-                <Sparkles className="h-4 w-4" />
-                {t('groupWorkspace.challenge.badge')}
-              </div>
-            </div>
+          <div className="h-full p-2 md:p-3">
+            <ChallengeTab
+              workspaceId={workspaceId}
+              isDarkMode={isDarkMode}
+              isLeader={isLeader}
+            />
           </div>
         );
 
@@ -2661,6 +2647,7 @@ function GroupWorkspacePage() {
           settingsMenu={settingsMenu}
           wsConnected={wsConnected}
           isDarkMode={isDarkMode}
+          showWalletSummary={false}
       />
 
       {/* Main Workspace Area */}

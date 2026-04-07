@@ -3688,9 +3688,9 @@
       "memberStatus": "Tình trạng thành viên"
     },
     "challenge": {
-      "title": "Đấu trường thử thách",
-      "description": "Thi đấu cùng các thành viên trong nhóm qua các bài quiz và thử thách theo thời gian thực. Tính năng này sẽ sớm ra mắt.",
-      "badge": "Sắp ra mắt"
+      "title": "Challenge",
+      "description": "Thi đấu cùng các thành viên trong nhóm qua các bài quiz theo thời gian thực.",
+      "badge": "Challenge"
     },
     "members": {
       "loading": "Đang tải danh sách thành viên...",

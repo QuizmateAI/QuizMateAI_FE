@@ -194,6 +194,7 @@ export function useWebSocket({
   onMaterialUpdated,
   onProgress,
   onQuizAttemptGrading,
+  onChallengeUpdate,
   enabled = true,
 } = {}) {
   const stompClientRef = useRef(null);
@@ -207,6 +208,7 @@ export function useWebSocket({
     onMaterialUpdated,
     onProgress,
     onQuizAttemptGrading,
+    onChallengeUpdate,
   });
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
@@ -214,14 +216,16 @@ export function useWebSocket({
     onProgress || onMaterialUploaded || onMaterialDeleted || onMaterialUpdated,
   );
   const needsQuizAttemptGradingQueue = Boolean(onQuizAttemptGrading);
+  const hasChallengeSubscription = Boolean(workspaceId && onChallengeUpdate);
   const hasWorkspaceSubscription = Boolean(
-    workspaceId && (onMaterialUploaded || onMaterialDeleted || onMaterialUpdated),
+    workspaceId && (onMaterialUploaded || onMaterialDeleted || onMaterialUpdated || onChallengeUpdate),
   );
   const shouldConnect = Boolean(enabled) && (needsProgressQueue || needsQuizAttemptGradingQueue || hasWorkspaceSubscription);
   const connectionKey = [
     hasWorkspaceSubscription ? `workspace:${workspaceId}` : null,
     needsProgressQueue ? "progress" : null,
     needsQuizAttemptGradingQueue ? "quiz-attempt-grading" : null,
+    hasChallengeSubscription ? "challenge" : null,
   ].filter(Boolean).join("|") || null;
 
   useEffect(() => {
@@ -231,8 +235,9 @@ export function useWebSocket({
       onMaterialUpdated,
       onProgress,
       onQuizAttemptGrading,
+      onChallengeUpdate,
     };
-  }, [onMaterialUploaded, onMaterialDeleted, onMaterialUpdated, onProgress, onQuizAttemptGrading]);
+  }, [onMaterialUploaded, onMaterialDeleted, onMaterialUpdated, onProgress, onQuizAttemptGrading, onChallengeUpdate]);
 
   // Lấy token từ localStorage
   const getAuthToken = useCallback(() => {
@@ -410,6 +415,24 @@ export function useWebSocket({
             }
           );
           subscriptionsRef.current.push(workspaceSubscription);
+        }
+
+        // Subscribe to workspace challenge updates
+        if (hasChallengeSubscription && workspaceId) {
+          const challengeSubscription = stompClient.subscribe(
+            `/topic/workspace/${workspaceId}/challenge`,
+            (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                console.log("⚔️ Challenge update:", data);
+                setLastMessage({ type: "challenge:update", data, timestamp: Date.now() });
+                callbackRefs.current.onChallengeUpdate?.(data);
+              } catch (err) {
+                console.error("Failed to parse challenge message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(challengeSubscription);
         }
       },
 

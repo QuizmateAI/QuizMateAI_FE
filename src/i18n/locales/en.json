@@ -4053,9 +4053,9 @@
       "memberStatus": "Member status"
     },
     "challenge": {
-      "title": "Challenge arena",
-      "description": "Compete with your group members in real-time quizzes and challenges. This feature is coming soon.",
-      "badge": "Coming soon"
+      "title": "Challenge",
+      "description": "Compete with your group members in real-time quiz challenges.",
+      "badge": "Challenge"
     },
     "members": {
       "loading": "Loading members...",
