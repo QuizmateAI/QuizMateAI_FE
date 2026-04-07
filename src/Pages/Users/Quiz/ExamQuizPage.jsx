@@ -234,23 +234,30 @@ export default function ExamQuizPage() {
 
     setIsStarting(true);
     try {
-      let res;
-      try {
-        res = await startQuizAttempt(quizId, { isPracticeMode: false });
-      } catch (startErr) {
-        const message = String(startErr?.message || '').toLowerCase();
-        const notActiveStatus = startErr?.data?.statusCode;
-        const shouldActivateAndRetry = message.includes('chưa được kích hoạt') || notActiveStatus === 1083;
+      let attempt;
+      const challengeAttempt = location.state?.challengeAttempt;
 
-        if (!shouldActivateAndRetry) {
-          throw startErr;
+      if (challengeAttempt?.attemptId) {
+        // Challenge flow: attempt already created by startChallengeAttempt
+        attempt = challengeAttempt;
+      } else {
+        let res;
+        try {
+          res = await startQuizAttempt(quizId, { isPracticeMode: false });
+        } catch (startErr) {
+          const message = String(startErr?.message || '').toLowerCase();
+          const notActiveStatus = startErr?.data?.statusCode;
+          const shouldActivateAndRetry = message.includes('chưa được kích hoạt') || notActiveStatus === 1083;
+
+          if (!shouldActivateAndRetry) {
+            throw startErr;
+          }
+
+          await updateQuiz(Number(quizId), { status: 'ACTIVE' });
+          res = await startQuizAttempt(quizId, { isPracticeMode: false });
         }
-
-        await updateQuiz(Number(quizId), { status: 'ACTIVE' });
-        res = await startQuizAttempt(quizId, { isPracticeMode: false });
+        attempt = res.data;
       }
-
-      const attempt = res.data;
       const hydratedAnswers = mapSavedAnswersToState(attempt.savedAnswers);
       const effectiveTimeoutAt = resolveEffectiveTimeoutAt(attempt, quiz);
 
@@ -304,6 +311,7 @@ export default function ExamQuizPage() {
             sourceWorkspaceId: location.state?.sourceWorkspaceId,
             sourcePhaseId: location.state?.sourcePhaseId,
             sourceRoadmapId: location.state?.sourceRoadmapId,
+            challengeContext: location.state?.challengeContext,
           },
           replace: true,
         });

@@ -216,6 +216,7 @@ export default function QuizResultPage() {
   const attemptMode = String(location.state?.attemptMode || storedResultContext?.attemptMode || '').toLowerCase();
   const returnToQuizPath = location.state?.returnToQuizPath || storedResultContext?.returnToQuizPath || null;
   const sourceView = String(location.state?.sourceView || storedResultContext?.sourceView || '').toLowerCase();
+  const challengeContext = location.state?.challengeContext || storedResultContext?.challengeContext || null;
   const sourceWorkspaceId = normalizePositiveInteger(location.state?.sourceWorkspaceId)
     ?? normalizePositiveInteger(storedResultContext?.sourceWorkspaceId);
   const sourcePhaseId = normalizePositiveInteger(location.state?.sourcePhaseId)
@@ -265,10 +266,12 @@ export default function QuizResultPage() {
       sourceWorkspaceId,
       sourcePhaseId,
       sourceRoadmapId,
+      challengeContext: challengeContext || null,
     });
   }, [
     attemptId,
     attemptMode,
+    challengeContext,
     hasQuizIdForBack,
     normalizedQuizIdForBack,
     reviewMode,
@@ -731,6 +734,12 @@ export default function QuizResultPage() {
   });
 
   const handleBack = useCallback(() => {
+    // Challenge context: navigate back to group workspace challenge tab
+    if (challengeContext?.workspaceId) {
+      navigate(`/group-workspace/${challengeContext.workspaceId}?section=challenge`, { replace: true });
+      return;
+    }
+
     if (directQuizDetailBackPath) {
       navigate(directQuizDetailBackPath, { replace: true });
       return;
@@ -747,6 +756,7 @@ export default function QuizResultPage() {
     }
     navigate('/');
   }, [
+    challengeContext,
     directQuizDetailBackPath,
     navigate,
     canUseReturnPathAsQuizDetail,
