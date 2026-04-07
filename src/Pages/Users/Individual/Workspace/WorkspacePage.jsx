@@ -2079,12 +2079,23 @@ function WorkspacePage() {
     );
   }, []);
 
+  const handleToggleMaterialSelection = useCallback((sourceId, isSelected) => {
+    setSelectedSourceIds((prev) => {
+      if (isSelected) {
+        return prev.includes(sourceId) ? prev : [...prev, sourceId];
+      }
+      return prev.filter((id) => id !== sourceId);
+    });
+  }, []);
+
   const chatPanelProps = {
     isDarkMode,
 
     sources,
 
     selectedSourceIds,
+
+    onToggleMaterialSelection: handleToggleMaterialSelection,
 
     selectedRoadmapPhaseId,
 

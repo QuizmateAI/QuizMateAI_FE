@@ -1,8 +1,9 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Activity, AlertCircle, CheckCircle2, Clock3, Mail, Shield, Upload, UserPlus, Users } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, Clock3, Mail, PenLine, Shield, Upload, UserPlus, Users } from 'lucide-react';
 import { useGroup } from '@/hooks/useGroup';
+import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RECENT_MEMBER_DAYS = 7;
@@ -74,6 +75,7 @@ function logMeta(action, isDarkMode) {
   if (action === 'GROUP_CREATED') return { icon: Users, tone: isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700' };
   if (String(action).startsWith('INVITATION_')) return { icon: Mail, tone: isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700' };
   if (action === 'MEMBER_JOINED') return { icon: UserPlus, tone: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700' };
+  if (String(action).startsWith('QUIZ_')) return { icon: PenLine, tone: isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700' };
   return { icon: Activity, tone: isDarkMode ? 'bg-white/[0.08] text-slate-200' : 'bg-slate-100 text-slate-700' };
 }
 
@@ -85,11 +87,15 @@ function logLabel(action, lang) {
     INVITATION_ACCEPTED: lang === 'en' ? 'Invitation accepted' : 'Loi moi da nhan',
     INVITATION_EXPIRED: lang === 'en' ? 'Invitation expired' : 'Loi moi het han',
     MEMBER_JOINED: lang === 'en' ? 'Member joined' : 'Thanh vien vao nhom',
+    QUIZ_CREATED_IN_GROUP: lang === 'en' ? 'Quiz created' : 'Tao quiz',
+    QUIZ_PUBLISHED_IN_GROUP: lang === 'en' ? 'Quiz published' : 'Xuat ban quiz',
+    QUIZ_AUDIENCE_UPDATED_IN_GROUP: lang === 'en' ? 'Quiz assignment' : 'Giao quiz',
+    QUIZ_SUBMITTED_IN_GROUP: lang === 'en' ? 'Quiz submitted' : 'Nop quiz',
   };
   return labels[action] || (lang === 'en' ? 'Activity' : 'Hoat dong');
 }
 
-function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, isLeader = false, compactMode = false }) {
+function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, isLeader = false, compactMode = false, currentUserId }) {
   const { t, i18n } = useTranslation();
   const { fetchPendingInvitations, fetchGroupLogs } = useGroup({ enabled: false });
   const lang = i18n.language;
@@ -512,7 +518,7 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700'}`}>{logLabel(log.action, lang)}</span>
                         <span className={`text-xs ${eyebrowClass}`}>{relTime(log.logTime, lang)}</span>
                       </div>
-                      <p className={`mt-2 text-sm font-semibold leading-6 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{log.description || (lang === 'en' ? 'Group activity updated' : 'Hoat dong nhom duoc cap nhat')}</p>
+                      <p className={`mt-2 text-sm font-semibold leading-6 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatGroupLogDescription(log, currentUserId, lang)}</p>
                       <p className={`mt-1 text-xs leading-5 ${subtleTextClass}`}>{log.actorEmail || (lang === 'en' ? 'System' : 'He thong')} · {formatDateTime(log.logTime, lang, true)}</p>
                     </div>
                   </div>

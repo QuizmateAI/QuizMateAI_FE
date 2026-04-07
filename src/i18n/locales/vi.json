@@ -2171,6 +2171,12 @@
     "quiz": {
       "createTitle": "Tạo Quiz",
       "createDesc": "Tạo bài kiểm tra cho Không gian.",
+      "insufficientCredit": {
+        "title": "Không đủ QMC trong workspace",
+        "hint": "Mua thêm gói credit để nạp QMC, sau đó thử tạo quiz bằng AI lại.",
+        "ctaBuy": "Mua QMC",
+        "ctaWallet": "Xem ví QMC"
+      },
       "tabManual": "Tạo thủ công",
       "tabAI": "Tạo bằng AI",
       "name": "Tên Quiz",
@@ -2306,6 +2312,22 @@
         "DRAFT": "Bản nháp",
         "COMPLETED": "Đã làm"
       },
+      "filterBar": {
+        "statusSection": "Trạng thái",
+        "groupSection": "Nhóm"
+      },
+      "groupAudience": {
+        "filterLabel": "Phạm vi nhóm",
+        "filterLabelShort": "Nhóm",
+        "all": "Tất cả",
+        "wholeGroup": "Chung cả nhóm",
+        "assignedMembers": "Giao riêng",
+        "pickMember": "Thành viên",
+        "pickMemberPlaceholder": "Tất cả quiz giao riêng",
+        "pickMemberHint": "Chọn tên để chỉ xem quiz được giao cho người đó",
+        "badgeWholeGroup": "Chung nhóm",
+        "badgeAssigned": "Giao riêng"
+      },
       "communityRecommendations": {
         "title": "Quiz phù hợp cho workspace này",
         "description": "Quizmate AI đã tìm thấy vài quiz cộng đồng khá khớp với hành vi học hiện tại. Nếu thấy hợp, bạn có thể clone thẳng về workspace này.",
@@ -2389,6 +2411,8 @@
       },
       "validation": {
         "nameRequired": "Vui lòng nhập tên quiz.",
+        "nameMaxLength": "Tên quiz tối đa {{max}} ký tự.",
+        "nameMaxLengthHint": "Tối đa {{max}} ký tự.",
         "requiredFieldsHint": "Các trường có dấu * là bắt buộc.",
         "contextRequired": "Vui lòng chọn vị trí tạo quiz.",
         "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
@@ -2409,7 +2433,11 @@
         "allDurationsRequired": "Vui lòng nhập thời gian cho tất cả các mức độ khó.",
         "mediumDurationMustBeGreaterThanEasy": "Thời gian câu trung bình phải cao hơn thời gian câu dễ.",
         "hardDurationMustBeGreaterThanMedium": "Thời gian câu khó phải cao hơn thời gian câu trung bình.",
-        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho quiz."
+        "timeDurationRequired": "Vui lòng nhập thời gian tổng cho quiz.",
+        "totalQuestionsRange": "Tổng số câu phải từ {{min}} đến {{max}}.",
+        "totalQuestionsRangeHint": "Khoảng hợp lệ: {{min}}–{{max}} câu.",
+        "minimumTimePerQuestion": "Mỗi câu cần tối thiểu {{seconds}} giây. Với {{count}} câu, tổng thời gian phải ít nhất {{minutes}} phút.",
+        "minimumTimePerQuestionHint": "Tối thiểu {{minutes}} phút tổng ({{seconds}} giây mỗi câu)."
       },
       "contextSelector": {
         "title": "Vị trí tạo Quiz",
@@ -2481,11 +2509,14 @@
         "promptPlaceholder": "Nhập yêu cầu bổ sung cho AI...",
         "byCount": "Theo số lượng",
         "byPercent": "Theo phần trăm",
-        "generalInfo": "Thông tin chung",
+        "generalInfo": "Tên quiz & nội dung",
         "promptOptional": "Prompt (Tùy chọn)",
-        "selectedMaterials": "Tài liệu đã chọn",
+        "selectedMaterials": "Tài liệu nguồn",
         "selectedMaterialsCount": "Đang sử dụng {{count}} tài liệu được chọn từ Sources panel.",
         "noSelectedMaterials": "Chưa chọn tài liệu trong Sources panel. Bạn vẫn có thể tạo bằng Prompt.",
+        "workspaceMaterialsEmpty": "Chưa có tài liệu trong không gian này. Hãy thêm từ panel Sources.",
+        "materialSelectedBadge": "Đã chọn",
+        "materialsSelectedSummary": "Đã chọn {{selected}}/{{total}}",
         "difficultyLevel": "Mức độ khó",
         "difficultyPreviewTitle": "Phân bổ độ khó",
         "customSelfConfig": "Tùy chỉnh (Tự cấu hình)",
@@ -2513,7 +2544,7 @@
         "remove": "Xóa",
         "lock": "Khóa",
         "unlock": "Mở khóa",
-        "settings": "Thiết lập",
+        "settings": "Thời gian & hình thức thi",
         "timeMinutes": "Thời gian (phút)",
         "enableTimerMode": "Bật chế độ hẹn giờ",
         "examType": "Loại exam",
@@ -3685,7 +3716,10 @@
       "documents": "Quản lý tài liệu",
       "activity": "Hoạt động nhóm",
       "memberManagement": "Quản lý thành viên",
-      "memberStatus": "Tình trạng thành viên"
+      "memberStatus": "Tình trạng thành viên",
+      "groupStudy": "Học tập",
+      "groupActivity": "Hoạt động",
+      "groupManage": "Quản lý"
     },
     "challenge": {
       "title": "Challenge",

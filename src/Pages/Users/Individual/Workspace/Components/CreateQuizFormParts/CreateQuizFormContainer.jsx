@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/Components/ui/button";
-import { ArrowLeft, BadgeCheck, Loader2, Rocket } from "lucide-react";
+import { AlertCircle, ArrowLeft, BadgeCheck, Loader2, Rocket } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { QUESTION_TYPE_LABEL_FALLBACKS } from "./createQuizForm.constants";
 import CreateQuizAiFormContent from "./CreateQuizAiFormContent";
 import CreateQuizAiRecommendationsPanel from "./CreateQuizAiRecommendationsPanel";
@@ -46,11 +46,18 @@ function CreateQuizForm({
   selectedSourceIds = [],
   sources = [],
   planEntitlements = null,
+  /** Gợi ý từ pending assessment — chỉ hỗ trợ workspace cá nhân; group nên tắt. */
+  showInlineRecommendations = true,
+  /** Bật/tắt chọn tài liệu trong card Source materials (đồng bộ với Sources panel). */
+  onToggleMaterialSelection,
+  readOnly = false,
 }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const personalizationAppliedRef = useRef(false);
+  const insufficientCreditBannerRef = useRef(null);
+  const prevSubmittingRef = useRef(false);
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
   const selectedMaterialIds = useMemo(
@@ -79,6 +86,7 @@ function CreateQuizForm({
     handleGenerateFromInlineRecommendation,
   } = useInlineQuizRecommendations({
     contextId: defaultContextId,
+    enabled: showInlineRecommendations,
     onCreateQuiz,
     t,
   });
@@ -86,6 +94,7 @@ function CreateQuizForm({
   const {
     aiValidationState,
     error,
+    insufficientCreditError,
     fieldErrors,
     handleBlockedAiSubmit,
     handleSubmit,
@@ -108,6 +117,22 @@ function CreateQuizForm({
     handleAiPromptChange,
     handleAiTotalQuestionsChange,
   } = handlers;
+
+  useEffect(() => {
+    const finishedAttempt = prevSubmittingRef.current && !submitting;
+    prevSubmittingRef.current = submitting;
+    if (!finishedAttempt || !insufficientCreditError || !error) {
+      return;
+    }
+    const scrollTimer = window.setTimeout(() => {
+      insufficientCreditBannerRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "nearest",
+      });
+    }, 0);
+    return () => window.clearTimeout(scrollTimer);
+  }, [submitting, insufficientCreditError, error]);
 
   useEffect(() => {
     const preset = location.state?.personalizationPreset;
@@ -161,7 +186,7 @@ function CreateQuizForm({
   const inputCls = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
     isDarkMode
       ? "border-slate-700 bg-slate-800 text-white placeholder:text-slate-500 focus:border-blue-500"
-      : "border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 focus:border-blue-500"
+      : "border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-blue-500"
   }`;
 
   const selectCls = `${inputCls} appearance-none cursor-pointer`;
@@ -171,14 +196,14 @@ function CreateQuizForm({
   const getAiSectionCardClass = useCallback((errorKeys = []) => {
     const hasError = errorKeys.some((key) => fieldErrors[key]);
     const defaultClasses = isDarkMode
-      ? "bg-slate-900/50 border-slate-800"
-      : "bg-white border-gray-100 shadow-sm";
+      ? "bg-slate-900/50 border-slate-700/90"
+      : "bg-white border-gray-200 shadow-sm";
 
     if (!hasError) {
-      return `rounded-xl border p-4 transition-colors ${defaultClasses}`;
+      return `rounded-xl border p-3 transition-colors ${defaultClasses}`;
     }
 
-    return `rounded-xl border p-4 transition-colors ${
+    return `rounded-xl border p-3 transition-colors ${
       isDarkMode
         ? "border-red-500/60 bg-red-950/10"
         : "border-red-300 bg-red-50/70 shadow-sm"
@@ -195,7 +220,7 @@ function CreateQuizForm({
 
   return (
     <div id="create-quiz-header" className="flex h-full flex-col scroll-mt-20">
-      <div className={`flex h-12 shrink-0 items-center gap-3 border-b px-4 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      <div className={`flex h-12 shrink-0 items-center gap-3 border-b px-3 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button
           type="button"
           onClick={onBack}
@@ -211,7 +236,7 @@ function CreateQuizForm({
         </div>
       </div>
 
-      <div id="create-quiz-scroll-root" className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div id="create-quiz-scroll-root" className="flex-1 space-y-3 overflow-y-auto p-3">
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
           {t("workspace.quiz.createDesc")}
         </p>
@@ -220,24 +245,61 @@ function CreateQuizForm({
           {t("workspace.quiz.validation.requiredFieldsHint")}
         </div>
 
-        <CreateQuizAiRecommendationsPanel
-          activeRecommendation={activeRecommendation}
-          expandedRecId={expandedRecId}
-          fontClass={fontClass}
-          inlineRecommendations={inlineRecommendations}
-          inlineRecError={inlineRecError}
-          inlineRecGeneratingId={inlineRecGeneratingId}
-          inlineRecLoading={inlineRecLoading}
-          isDarkMode={isDarkMode}
-          onGenerateRecommendation={handleGenerateFromInlineRecommendation}
-          onToggleRecommendation={setExpandedRecId}
-          t={t}
-        />
+        {showInlineRecommendations ? (
+          <CreateQuizAiRecommendationsPanel
+            activeRecommendation={activeRecommendation}
+            expandedRecId={expandedRecId}
+            fontClass={fontClass}
+            inlineRecommendations={inlineRecommendations}
+            inlineRecError={inlineRecError}
+            inlineRecGeneratingId={inlineRecGeneratingId}
+            inlineRecLoading={inlineRecLoading}
+            isDarkMode={isDarkMode}
+            onGenerateRecommendation={handleGenerateFromInlineRecommendation}
+            onToggleRecommendation={setExpandedRecId}
+            t={t}
+          />
+        ) : null}
 
         {error && (
-          <div className={`rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-            {error}
-          </div>
+          insufficientCreditError ? (
+            <div
+              ref={insufficientCreditBannerRef}
+              id="create-quiz-insufficient-credit"
+              className={`scroll-mt-3 rounded-xl border px-3 py-3 text-sm ${
+                isDarkMode
+                  ? "border-amber-800/60 bg-amber-950/25 text-amber-100"
+                  : "border-amber-200 bg-amber-50 text-amber-950"
+              }`}
+            >
+              <div className="flex gap-2.5">
+                <AlertCircle className={`mt-0.5 h-4 w-4 shrink-0 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className={`text-sm font-semibold leading-snug ${fontClass}`}>
+                    {t("workspace.quiz.insufficientCredit.title")}
+                  </p>
+                  <p className={`text-xs leading-relaxed ${isDarkMode ? "text-amber-200/90" : "text-amber-900/85"}`}>
+                    {error}
+                  </p>
+                  <p className={`text-xs leading-relaxed ${isDarkMode ? "text-amber-200/75" : "text-amber-900/70"}`}>
+                    {t("workspace.quiz.insufficientCredit.hint")}
+                  </p>
+                  <div className={`flex flex-wrap gap-2 pt-1 ${fontClass}`}>
+                    <Button asChild size="sm" className="h-8 bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600">
+                      <Link to="/payment/credit">{t("workspace.quiz.insufficientCredit.ctaBuy")}</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className={`h-8 ${isDarkMode ? "border-amber-700/80 text-amber-100 hover:bg-amber-950/40" : "border-amber-300 text-amber-900 hover:bg-amber-100/80"}`}>
+                      <Link to="/wallet">{t("workspace.quiz.insufficientCredit.ctaWallet")}</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={`rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
+              {error}
+            </div>
+          )
         )}
 
         <CreateQuizAiFormContent
@@ -257,7 +319,7 @@ function CreateQuizForm({
             selectedMaterialIds,
             selectedQTypes: state.selectedQTypes,
             selectedBloomSkills: state.selectedBloomSkills,
-            selectedSourceItems,
+            workspaceSources: Array.isArray(sources) ? sources : [],
           }}
           ui={{
             fontClass,
@@ -266,11 +328,13 @@ function CreateQuizForm({
             isDarkMode,
             t,
             hasAdvanceQuizConfig: planEntitlements?.hasAdvanceQuizConfig ?? false,
+            onToggleMaterialSelection,
+            readOnly,
           }}
         />
       </div>
 
-      <div className={`flex shrink-0 justify-end gap-2 border-t px-4 py-3 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      <div className={`flex shrink-0 justify-end gap-2 border-t px-3 py-2.5 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <Button
           variant="outline"
           onClick={onBack}

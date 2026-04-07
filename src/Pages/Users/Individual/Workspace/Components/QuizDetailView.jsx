@@ -3,13 +3,21 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
-  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users
+  ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
+  Share2, UserPlus,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import {
-  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory
+  getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory,
+  publishGroupQuiz, setGroupQuizAudience,
 } from "@/api/QuizAPI";
+import { getGroupMembers } from "@/api/GroupAPI";
+import { unwrapApiData } from "@/Utils/apiResponse";
+import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
+import MixedMathText from "@/Components/math/MixedMathText";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
@@ -75,7 +83,17 @@ function getDurationInMinutes(quiz) {
 }
 
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
-function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contextType = "WORKSPACE", contextId: _contextId, hideEditButton = false }) {
+function QuizDetailView({
+  isDarkMode,
+  quiz,
+  onBack,
+  onEdit,
+  contextType: _contextType = "WORKSPACE",
+  contextId: _contextId,
+  hideEditButton = false,
+  isGroupLeader = false,
+  onGroupQuizUpdated,
+}) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -92,10 +110,17 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
   const [quizMeta, setQuizMeta] = useState(null);
   
   // Tab states
-  const [activeTab, setActiveTab] = useState("overview"); // overview, questions, history
+  const [activeTab, setActiveTab] = useState("overview"); // overview, review (group), questions, history
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [examStartOpen, setExamStartOpen] = useState(false);
+  const [audienceOpen, setAudienceOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [audienceSaving, setAudienceSaving] = useState(false);
+  const [audienceMode, setAudienceMode] = useState("ALL_MEMBERS");
+  const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
   const detailRequestRunRef = React.useRef(0);
 
   const canViewAnswers = hasQuizCompleted(quiz?.quizId) || currentStatus === "DRAFT";
@@ -348,10 +373,107 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
     });
     setExamStartOpen(false);
   }, [location.pathname, location.search, navigate, quiz?.quizId, resultSourceState]);
+
+  const openAudienceDialog = useCallback(() => {
+    const eq = quizMeta || quiz;
+    setAudienceMode(eq?.groupAudienceMode === "SELECTED_MEMBERS" ? "SELECTED_MEMBERS" : "ALL_MEMBERS");
+    setSelectedAudienceUserIds(
+      Array.isArray(eq?.assignedUserIds)
+        ? eq.assignedUserIds.map((id) => Number(id)).filter((n) => Number.isInteger(n) && n > 0)
+        : [],
+    );
+    setAudienceOpen(true);
+  }, [quiz, quizMeta]);
+
+  useEffect(() => {
+    if (!audienceOpen || !_contextId) return undefined;
+    let cancelled = false;
+    (async () => {
+      setMembersLoading(true);
+      try {
+        const res = await getGroupMembers(_contextId, 0, 200);
+        const raw = unwrapApiData(res);
+        const list = raw?.content || raw?.data || (Array.isArray(raw) ? raw : []);
+        if (!cancelled) setGroupMembers(Array.isArray(list) ? list : []);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setGroupMembers([]);
+      } finally {
+        if (!cancelled) setMembersLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [audienceOpen, _contextId]);
+
+  const handlePublishGroupQuiz = useCallback(async () => {
+    if (!quiz?.quizId) return;
+    setPublishing(true);
+    try {
+      const res = await publishGroupQuiz(quiz.quizId);
+      const next = unwrapApiData(res);
+      if (next?.status) setCurrentStatus(next.status);
+      setQuizMeta((m) => ({ ...(m || {}), ...next }));
+      onGroupQuizUpdated?.(next);
+      quizDetailCache.clear();
+      await fetchFullDetail();
+    } catch (err) {
+      console.error(err);
+      window.alert(err?.message || (i18n.language === "en" ? "Could not publish quiz." : "Không thể xuất bản quiz."));
+    } finally {
+      setPublishing(false);
+    }
+  }, [quiz?.quizId, fetchFullDetail, onGroupQuizUpdated, i18n.language]);
+
+  const handleSaveAudience = useCallback(async () => {
+    if (!quiz?.quizId) return;
+    if (audienceMode === "SELECTED_MEMBERS" && selectedAudienceUserIds.length === 0) {
+      window.alert(i18n.language === "en" ? "Select at least one member." : "Chọn ít nhất một thành viên.");
+      return;
+    }
+    setAudienceSaving(true);
+    try {
+      const body = audienceMode === "ALL_MEMBERS"
+        ? { mode: "ALL_MEMBERS" }
+        : { mode: "SELECTED_MEMBERS", assigneeUserIds: selectedAudienceUserIds };
+      const res = await setGroupQuizAudience(quiz.quizId, body);
+      const next = unwrapApiData(res);
+      setQuizMeta((m) => ({ ...(m || {}), ...next }));
+      onGroupQuizUpdated?.(next);
+      quizDetailCache.clear();
+      await fetchFullDetail();
+      setAudienceOpen(false);
+    } catch (err) {
+      console.error(err);
+      window.alert(err?.message || (i18n.language === "en" ? "Could not save distribution." : "Không thể lưu phân phối."));
+    } finally {
+      setAudienceSaving(false);
+    }
+  }, [quiz?.quizId, audienceMode, selectedAudienceUserIds, fetchFullDetail, onGroupQuizUpdated, i18n.language]);
+
+  const toggleAudienceMember = useCallback((userId) => {
+    setSelectedAudienceUserIds((prev) => (
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    ));
+  }, []);
+
   const isActiveQuiz = currentStatus === "ACTIVE";
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
+  /** Nhóm: tab Kiểm tra (xem câu + đáp án). Cá nhân/workspace khác: tab Câu hỏi. Hai tab loại trừ nhau. */
+  const showGroupReviewTab = _contextType === "GROUP";
+  const showQuestionsTab = !showGroupReviewTab;
+
+  useEffect(() => {
+    if (showGroupReviewTab && activeTab === "questions") {
+      setActiveTab("overview");
+    }
+    if (!showGroupReviewTab && activeTab === "review") {
+      setActiveTab("overview");
+    }
+  }, [showGroupReviewTab, activeTab]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -366,20 +488,104 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
             <p className={`text-base font-medium truncate max-w-[300px] ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{effectiveQuiz?.title}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {!hideEditButton && _contextType === "GROUP" && (
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "DRAFT" && (
             <Button
-              className="bg-violet-600 hover:bg-violet-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"
-              onClick={() => {
-                alert(t("workspace.quiz.detail.assign", "Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!"));
-              }}
+              disabled={publishing || String(currentStatus || "").toUpperCase() === "PROCESSING"}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full h-9 px-4 flex items-center gap-2"
+              onClick={handlePublishGroupQuiz}
+            >
+              {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4" />}
+              <span className="text-sm">{i18n.language === "en" ? "Active" : "Xuất bản"}</span>
+            </Button>
+          )}
+          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
+            <Button
+              variant="outline"
+              className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-600 text-slate-100" : ""}`}
+              onClick={openAudienceDialog}
             >
               <Users className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.quiz.detail.assign", "Assign")}</span>
+              <span className="text-sm">{i18n.language === "en" ? "Distribution" : "Phân phối"}</span>
             </Button>
           )}
         </div>
       </div>
+
+      {_contextType === "GROUP" && String(currentStatus || "").toUpperCase() === "DRAFT" && (
+        <div className="px-4 pb-3 pt-1">
+          <div
+            className={`relative overflow-hidden rounded-2xl border shadow-sm ${
+              isDarkMode
+                ? "border-slate-700/80 bg-gradient-to-br from-slate-900/95 via-slate-900 to-blue-950/35"
+                : "border-slate-200/90 bg-gradient-to-br from-white via-slate-50/90 to-blue-50/70"
+            }`}
+          >
+            <div
+              className={`pointer-events-none absolute inset-y-0 left-0 w-1 ${
+                isDarkMode ? "bg-gradient-to-b from-blue-400/90 to-indigo-500/80" : "bg-gradient-to-b from-blue-500 to-indigo-500"
+              }`}
+              aria-hidden
+            />
+            <div className="flex gap-3.5 pl-5 pr-4 py-4">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                  isDarkMode ? "bg-blue-500/12 text-blue-300 ring-1 ring-blue-400/20" : "bg-blue-100 text-blue-600 ring-1 ring-blue-200/80"
+                }`}
+              >
+                <Sparkles className="h-5 w-5" strokeWidth={2} />
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className={`text-[13px] font-semibold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+                  {i18n.language === "en" ? "Ready to publish?" : "Trước khi xuất bản"}
+                </p>
+                <p className={`text-[13px] leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                  {i18n.language === "en" ? (
+                    <>
+                      Open the{" "}
+                      <span className={`font-medium ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>Check</span>{" "}
+                      tab to verify questions, settings, and answers. Then publish and set who can access the quiz.
+                    </>
+                  ) : (
+                    <>
+                      Vào tab{" "}
+                      <span className={`font-medium ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>Kiểm tra</span>{" "}
+                      để xem lại câu hỏi, cấu hình và đáp án. Sau đó bấm{" "}
+                      <span className={`font-medium ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>Xuất bản</span>{" "}
+                      và thiết lập phân phối cho nhóm.
+                    </>
+                  )}
+                </p>
+                <div className={`flex flex-wrap gap-2 pt-0.5 ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                      isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
+                    }`}
+                  >
+                    {i18n.language === "en" ? "1 · Check" : "1 · Kiểm tra"}
+                  </span>
+                  <span className={`text-[11px] ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>→</span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                      isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
+                    }`}
+                  >
+                    {i18n.language === "en" ? "2 · Publish" : "2 · Xuất bản"}
+                  </span>
+                  <span className={`text-[11px] ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>→</span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                      isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
+                    }`}
+                  >
+                    {i18n.language === "en" ? "3 · Distribute" : "3 · Phân phối"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className={`px-4 pt-3 flex items-center gap-4 border-b ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
@@ -393,16 +599,33 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
         >
           <Info className="w-4 h-4" /> {t("workspace.quiz.tabs.overview", "Tổng quan")}
         </button>
-        <button
-          onClick={() => setActiveTab("questions")}
-          className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === "questions"
-              ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
-          }`}
-        >
-          <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Câu hỏi")}
-        </button>
+        {showGroupReviewTab && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("review")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "review"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <ClipboardCheck className="w-4 h-4" />
+            {i18n.language === "en" ? "Check" : "Kiểm tra"}
+          </button>
+        )}
+        {showQuestionsTab && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("questions")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "questions"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Câu hỏi")}
+          </button>
+        )}
         <button
           onClick={() => setActiveTab("history")}
           className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -417,6 +640,17 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
 
       {/* Nội dung chi tiết */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Group — tab Kiểm tra: câu hỏi + đáp án + config */}
+        {activeTab === "review" && showGroupReviewTab && (
+          <GroupQuizReviewPanel
+            isDarkMode={isDarkMode}
+            sections={sections}
+            questionsMap={questionsMap}
+            answersMap={answersMap}
+            loading={loading}
+          />
+        )}
+
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <>
@@ -574,7 +808,9 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                               </span>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <p className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{question.content}</p>
+                                  <p className={`text-sm font-medium whitespace-pre-wrap ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                                    <MixedMathText>{question.content}</MixedMathText>
+                                  </p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
                                       onClick={() => handleToggleStar(question.questionId, section.sectionId)}
@@ -636,7 +872,11 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                                               {t("workspace.quiz.correctAnswerLabel", "Đáp án đúng")}
                                             </span>
                                             <span className={`flex-1 ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
-                                              {textAnswersToDisplay.length ? textAnswersToDisplay.join(" / ") : "-"}
+                                              {textAnswersToDisplay.length ? (
+                                                <MixedMathText>{textAnswersToDisplay.join(" / ")}</MixedMathText>
+                                              ) : (
+                                                "-"
+                                              )}
                                             </span>
                                             <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
                                           </div>
@@ -659,11 +899,15 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                                                     <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                                                       isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
                                                     }`}>{pIdx + 1}</span>
-                                                    <span className={`font-semibold ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>{pair.leftKey}</span>
+                                                    <span className={`font-semibold ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
+                                                      <MixedMathText>{pair.leftKey}</MixedMathText>
+                                                    </span>
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${isDarkMode ? "text-emerald-600" : "text-emerald-400"}`}>
                                                       <path d="M5 12h14M13 6l6 6-6 6" />
                                                     </svg>
-                                                    <span className={isDarkMode ? "text-emerald-300" : "text-emerald-700"}>{pair.rightKey}</span>
+                                                    <span className={isDarkMode ? "text-emerald-300" : "text-emerald-700"}>
+                                                      <MixedMathText>{pair.rightKey}</MixedMathText>
+                                                    </span>
                                                   </div>
                                                 ))}
                                               </div>
@@ -687,7 +931,9 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                                                 ans.isCorrect
                                                   ? isDarkMode ? "text-emerald-300" : "text-emerald-700"
                                                   : isDarkMode ? "text-slate-300" : "text-gray-700"
-                                              }`}>{ans.content}</span>
+                                              }`}>
+                                                <MixedMathText>{ans.content}</MixedMathText>
+                                              </span>
                                               {ans.isCorrect && <CheckCircle2 className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />}
                                             </div>
                                           ))
@@ -696,7 +942,8 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
                                         {/* Giải thích */}
                                         {question.explanation && (
                                           <div className={`mt-2 px-3 py-2 rounded-lg text-xs italic ${isDarkMode ? "bg-amber-950/20 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                                            <span className="font-semibold not-italic">{t("workspace.quiz.explanation")}:</span> {question.explanation}
+                                            <span className="font-semibold not-italic">{t("workspace.quiz.explanation")}:</span>{" "}
+                                            <MixedMathText className="not-italic">{question.explanation}</MixedMathText>
                                           </div>
                                         )}
                                       </>
@@ -771,6 +1018,227 @@ function QuizDetailView({ isDarkMode, quiz, onBack, onEdit, contextType: _contex
           </div>
         )}
       </div>
+
+      <Dialog open={audienceOpen} onOpenChange={setAudienceOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col gap-0 rounded-2xl border-0 p-0 shadow-2xl shadow-slate-900/15">
+          <div
+            className={cn(
+              "relative overflow-hidden px-6 pb-5 pt-6 pr-14",
+              isDarkMode
+                ? "bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/80"
+                : "bg-gradient-to-br from-blue-50 via-white to-indigo-50/90",
+            )}
+          >
+            <div
+              className={cn(
+                "pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl",
+                isDarkMode ? "bg-blue-500/20" : "bg-blue-400/25",
+              )}
+              aria-hidden
+            />
+            <DialogHeader className="relative space-y-0 text-left">
+              <div className="flex items-start gap-3.5">
+                <div
+                  className={cn(
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-lg",
+                    isDarkMode
+                      ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-900/40"
+                      : "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-blue-600/30",
+                  )}
+                >
+                  <Share2 className="h-6 w-6" strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <DialogTitle className={cn("text-lg font-semibold tracking-tight", isDarkMode ? "text-slate-50" : "text-slate-900")}>
+                    {i18n.language === "en" ? "Quiz distribution" : "Phân phối quiz"}
+                  </DialogTitle>
+                  <DialogDescription className={cn("mt-2 text-sm leading-relaxed", isDarkMode ? "text-slate-400" : "text-slate-600")}>
+                    {i18n.language === "en"
+                      ? "Choose whether all members see this quiz or only selected members."
+                      : "Chọn hiển thị quiz cho toàn nhóm hoặc chỉ các thành viên được chọn."}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+            <p className={cn("text-xs font-semibold uppercase tracking-wide", isDarkMode ? "text-slate-500" : "text-slate-500")}>
+              {i18n.language === "en" ? "Visibility" : "Phạm vi hiển thị"}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-1">
+              <button
+                type="button"
+                onClick={() => setAudienceMode("ALL_MEMBERS")}
+                className={cn(
+                  "group relative flex w-full items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all duration-200",
+                  audienceMode === "ALL_MEMBERS"
+                    ? isDarkMode
+                      ? "border-blue-500/80 bg-blue-950/40 ring-2 ring-blue-500/30"
+                      : "border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 shadow-md shadow-blue-500/10"
+                    : isDarkMode
+                      ? "border-slate-700/80 bg-slate-900/40 hover:border-slate-600 hover:bg-slate-800/50"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    audienceMode === "ALL_MEMBERS"
+                      ? isDarkMode
+                        ? "bg-blue-500/25 text-blue-300"
+                        : "bg-blue-100 text-blue-700"
+                      : isDarkMode
+                        ? "bg-slate-800 text-slate-400 group-hover:text-slate-300"
+                        : "bg-slate-100 text-slate-500 group-hover:bg-slate-200",
+                  )}
+                >
+                  <Users className="h-5 w-5" strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={cn("font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
+                    {i18n.language === "en" ? "All members" : "Chung cho toàn nhóm"}
+                  </p>
+                  <p className={cn("mt-0.5 text-xs", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+                    {i18n.language === "en" ? "Everyone in the group can open this quiz." : "Mọi thành viên trong nhóm đều thấy và mở được quiz."}
+                  </p>
+                </div>
+                {audienceMode === "ALL_MEMBERS" && (
+                  <CheckCircle2 className={cn("h-5 w-5 shrink-0", isDarkMode ? "text-blue-400" : "text-blue-600")} />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAudienceMode("SELECTED_MEMBERS")}
+                className={cn(
+                  "group relative flex w-full items-start gap-3 rounded-2xl border-2 p-4 text-left transition-all duration-200",
+                  audienceMode === "SELECTED_MEMBERS"
+                    ? isDarkMode
+                      ? "border-violet-500/80 bg-violet-950/35 ring-2 ring-violet-500/30"
+                      : "border-violet-500 bg-violet-50/90 ring-2 ring-violet-500/20 shadow-md shadow-violet-500/10"
+                    : isDarkMode
+                      ? "border-slate-700/80 bg-slate-900/40 hover:border-slate-600 hover:bg-slate-800/50"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors",
+                    audienceMode === "SELECTED_MEMBERS"
+                      ? isDarkMode
+                        ? "bg-violet-500/25 text-violet-300"
+                        : "bg-violet-100 text-violet-700"
+                      : isDarkMode
+                        ? "bg-slate-800 text-slate-400 group-hover:text-slate-300"
+                        : "bg-slate-100 text-slate-500 group-hover:bg-slate-200",
+                  )}
+                >
+                  <UserPlus className="h-5 w-5" strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={cn("font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
+                    {i18n.language === "en" ? "Specific members only" : "Chỉ các thành viên được chọn"}
+                  </p>
+                  <p className={cn("mt-0.5 text-xs", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+                    {i18n.language === "en" ? "Pick who should see the quiz below." : "Chọn người được xem quiz trong danh sách bên dưới."}
+                  </p>
+                </div>
+                {audienceMode === "SELECTED_MEMBERS" && (
+                  <CheckCircle2 className={cn("h-5 w-5 shrink-0", isDarkMode ? "text-violet-400" : "text-violet-600")} />
+                )}
+              </button>
+            </div>
+
+            {audienceMode === "SELECTED_MEMBERS" && (
+              <div className="space-y-2 pt-1">
+                <p className={cn("text-xs font-semibold uppercase tracking-wide", isDarkMode ? "text-slate-500" : "text-slate-500")}>
+                  {i18n.language === "en" ? "Members" : "Thành viên"}
+                </p>
+                <div
+                  className={cn(
+                    "max-h-56 overflow-y-auto rounded-2xl border p-2 space-y-1",
+                    isDarkMode ? "border-slate-700/90 bg-slate-950/40" : "border-slate-200/90 bg-slate-50/80",
+                  )}
+                >
+                  {membersLoading ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-10">
+                      <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
+                      <span className={cn("text-xs", isDarkMode ? "text-slate-500" : "text-slate-500")}>
+                        {i18n.language === "en" ? "Loading members…" : "Đang tải danh sách…"}
+                      </span>
+                    </div>
+                  ) : groupMembers.length === 0 ? (
+                    <p className={cn("py-6 text-center text-sm", isDarkMode ? "text-slate-500" : "text-slate-500")}>
+                      {i18n.language === "en" ? "No members found." : "Không có thành viên."}
+                    </p>
+                  ) : (
+                    groupMembers.map((m) => {
+                      const uid = Number(m.userId ?? m.id);
+                      if (!Number.isInteger(uid) || uid <= 0) return null;
+                      const label = m.fullName || m.username || `User ${uid}`;
+                      const initial = String(label).trim().charAt(0).toUpperCase() || "?";
+                      const checked = selectedAudienceUserIds.includes(uid);
+                      return (
+                        <label
+                          key={uid}
+                          className={cn(
+                            "flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2.5 transition-colors",
+                            checked
+                              ? isDarkMode
+                                ? "bg-blue-950/50 ring-1 ring-blue-800/60"
+                                : "bg-white ring-1 ring-blue-200 shadow-sm"
+                              : isDarkMode
+                                ? "hover:bg-slate-800/60"
+                                : "hover:bg-white",
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                              isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700",
+                            )}
+                          >
+                            {initial}
+                          </div>
+                          <span className={cn("min-w-0 flex-1 text-sm font-medium", isDarkMode ? "text-slate-100" : "text-slate-800")}>
+                            {label}
+                          </span>
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={() => toggleAudienceMember(uid)}
+                            className="shrink-0"
+                          />
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter
+            className={cn(
+              "gap-2 border-t px-6 py-4 sm:justify-end",
+              isDarkMode ? "border-slate-800 bg-slate-950/50" : "border-slate-100 bg-slate-50/50",
+            )}
+          >
+            <Button type="button" variant="outline" className="rounded-xl" onClick={() => setAudienceOpen(false)}>
+              {i18n.language === "en" ? "Cancel" : "Hủy"}
+            </Button>
+            <Button
+              type="button"
+              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 text-white shadow-md shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700"
+              onClick={handleSaveAudience}
+              disabled={audienceSaving}
+            >
+              {audienceSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {i18n.language === "en" ? "Save" : "Lưu"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={examStartOpen} onOpenChange={setExamStartOpen}>
         <DialogContent className="sm:max-w-md">

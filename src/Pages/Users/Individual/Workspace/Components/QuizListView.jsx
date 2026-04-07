@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock, MoreVertical } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock, MoreVertical, Users, UserPlus } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getQuizzesByScope, deleteQuiz, getQuizById } from "@/api/QuizAPI";
+import { getGroupMembers } from "@/api/GroupAPI";
+import { unwrapApiData } from "@/Utils/apiResponse";
 import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
 import { useToast } from "@/context/ToastContext";
 
@@ -124,6 +126,8 @@ function hasQuizListChanged(prevList, nextList) {
       || prev.visibility !== next.visibility
       || prev.myAttempted !== next.myAttempted
       || prev.myPassed !== next.myPassed
+      || String(prev.groupAudienceMode ?? "") !== String(next.groupAudienceMode ?? "")
+      || JSON.stringify(prev.assignedUserIds ?? []) !== JSON.stringify(next.assignedUserIds ?? [])
     ) {
       return true;
     }
@@ -213,6 +217,39 @@ function resolveQuizNavigationId(quiz) {
   return quiz?.quizId ?? quiz?.id ?? null;
 }
 
+/** Quiz nhóm: ALL_MEMBERS vs SELECTED_MEMBERS (mặc định chung nhóm nếu BE chưa gửi). */
+function normalizeGroupAudienceMode(quiz) {
+  const m = String(quiz?.groupAudienceMode ?? "").toUpperCase();
+  if (m === "SELECTED_MEMBERS") return "SELECTED_MEMBERS";
+  return "ALL_MEMBERS";
+}
+
+function getQuizAssignedUserIds(quiz) {
+  const raw = quiz?.assignedUserIds;
+  if (!Array.isArray(raw)) return [];
+  return raw.map((id) => Number(id)).filter((n) => Number.isInteger(n) && n > 0);
+}
+
+function resolveMemberDisplayName(userId, groupMembers) {
+  const uid = Number(userId);
+  const m = (groupMembers || []).find((x) => Number(x.userId ?? x.id) === uid);
+  return m?.fullName || m?.username || `User ${uid}`;
+}
+
+function resolveGroupMember(userId, groupMembers) {
+  const uid = Number(userId);
+  if (!Number.isInteger(uid) || uid <= 0) return null;
+  return (groupMembers || []).find((x) => Number(x.userId ?? x.id) === uid) || null;
+}
+
+function formatAssignedNames(quiz, groupMembers, maxNames = 3) {
+  const ids = getQuizAssignedUserIds(quiz);
+  if (ids.length === 0) return "";
+  const names = ids.map((id) => resolveMemberDisplayName(id, groupMembers));
+  if (names.length <= maxNames) return names.join(", ");
+  return `${names.slice(0, maxNames).join(", ")} +${names.length - maxNames}`;
+}
+
 function resolveQuizCardTheme(difficultyKey) {
   return QUIZ_CARD_THEMES[difficultyKey] || QUIZ_CARD_THEMES.CUSTOM;
 }
@@ -287,6 +324,11 @@ function QuizListView({
   const [sharingQuizId, setSharingQuizId] = useState(null);
   const [examStartQuiz, setExamStartQuiz] = useState(null);
   const [feedbackStatusByQuizId, setFeedbackStatusByQuizId] = useState({});
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [groupMembersLoading, setGroupMembersLoading] = useState(false);
+  /** all | ALL_MEMBERS | SELECTED_MEMBERS */
+  const [groupAudienceFilter, setGroupAudienceFilter] = useState("all");
+  const [groupMemberUserId, setGroupMemberUserId] = useState(null);
   const fetchGuardRef = useRef({
     inFlight: false,
     lastKey: "",
@@ -300,6 +342,39 @@ function QuizListView({
     }
     return `${location.pathname}${location.search || ""}`;
   }, [contextId, contextType, location.pathname, location.search, returnToPath]);
+
+  const isGroupQuizList = String(contextType || "").toUpperCase() === "GROUP";
+
+  useEffect(() => {
+    if (!isGroupQuizList || !contextId) {
+      setGroupMembers([]);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      setGroupMembersLoading(true);
+      try {
+        const res = await getGroupMembers(contextId, 0, 400);
+        const raw = unwrapApiData(res);
+        const list = raw?.content || raw?.data || (Array.isArray(raw) ? raw : []);
+        if (!cancelled) setGroupMembers(Array.isArray(list) ? list : []);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setGroupMembers([]);
+      } finally {
+        if (!cancelled) setGroupMembersLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isGroupQuizList, contextId]);
+
+  useEffect(() => {
+    if (groupAudienceFilter !== "SELECTED_MEMBERS") {
+      setGroupMemberUserId(null);
+    }
+  }, [groupAudienceFilter]);
 
   const quizNavigationSourceState = useMemo(() => {
     const normalizedContextType = String(contextType || "").toUpperCase();
@@ -590,8 +665,19 @@ function QuizListView({
       const query = searchQuery.toLowerCase();
       items = items.filter((q) => q.title?.toLowerCase().includes(query));
     }
+    if (isGroupQuizList) {
+      if (groupAudienceFilter === "ALL_MEMBERS") {
+        items = items.filter((q) => normalizeGroupAudienceMode(q) === "ALL_MEMBERS");
+      } else if (groupAudienceFilter === "SELECTED_MEMBERS") {
+        items = items.filter((q) => normalizeGroupAudienceMode(q) === "SELECTED_MEMBERS");
+        if (groupMemberUserId != null && Number.isInteger(Number(groupMemberUserId))) {
+          const uid = Number(groupMemberUserId);
+          items = items.filter((q) => getQuizAssignedUserIds(q).includes(uid));
+        }
+      }
+    }
     return items;
-  }, [quizzes, searchQuery, filterStatus]);
+  }, [quizzes, searchQuery, filterStatus, isGroupQuizList, groupAudienceFilter, groupMemberUserId]);
   const useLegacyRoadmapCards = legacyRoadmapUI;
 
   const renderQuizFeedbackAction = (quizId, className = "") => (
@@ -899,25 +985,134 @@ function QuizListView({
       </div>
       ) : null}
 
-      {/* Tìm kiếm + Lọc theo trạng thái */}
+      {/* Tìm kiếm + bộ lọc */}
       {!embedded ? (
-      <div className="px-4 py-3 flex flex-col gap-3">
-        <div className="relative max-w-sm">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("workspace.listView.searchPlaceholder")}
-            className={`w-full pl-9 pr-9 py-2 rounded-xl text-sm border outline-none transition-colors ${isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500" : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500"}`} />
-          {searchQuery && <button onClick={() => setSearchQuery("")} className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}><X className="w-4 h-4" /></button>}
-        </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {STATUS_FILTER_OPTIONS.map((opt) => (
-            <button key={opt} onClick={() => setFilterStatus(opt)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterStatus === opt
-                ? isDarkMode ? "bg-blue-950/50 text-blue-400" : "bg-blue-100 text-blue-700"
-                : isDarkMode ? "text-slate-400 hover:bg-slate-800" : "text-gray-500 hover:bg-gray-100"
-              }`}>
-              {t(`workspace.quiz.statusFilter.${opt}`)}
-            </button>
-          ))}
+      <div className="px-4 py-3">
+        <div
+          className={`rounded-2xl border p-3 shadow-sm ${
+            isDarkMode ? "border-slate-700/90 bg-slate-900/45" : "border-slate-200/90 bg-slate-50/90"
+          }`}
+        >
+          <div className="relative">
+            <Search className={`pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t("workspace.listView.searchPlaceholder")}
+              className={`w-full rounded-xl border py-2.5 pl-10 pr-9 text-sm outline-none transition-colors ${
+                isDarkMode
+                  ? "border-slate-700 bg-slate-950/50 text-white placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30"
+                  : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+              }`}
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 ${isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"}`}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+
+          <div
+            className={`mt-3 flex flex-col gap-3 sm:mt-3.5 sm:flex-row sm:items-stretch sm:gap-0 ${
+              isGroupQuizList ? (isDarkMode ? "sm:border-t sm:border-slate-700/80 sm:pt-3" : "sm:border-t sm:border-slate-200/90 sm:pt-3") : ""
+            }`}
+          >
+            <div className="min-w-0 flex-1 sm:pr-4">
+              <p className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
+                {t("workspace.quiz.filterBar.statusSection", "Trạng thái")}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setFilterStatus(opt)}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                      filterStatus === opt
+                        ? isDarkMode
+                          ? "bg-blue-600/25 text-blue-300 ring-1 ring-blue-500/35"
+                          : "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
+                        : isDarkMode
+                          ? "text-slate-400 hover:bg-slate-800/80"
+                          : "text-slate-600 hover:bg-white"
+                    }`}
+                  >
+                    {t(`workspace.quiz.statusFilter.${opt}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {isGroupQuizList ? (
+              <>
+                <div className={`h-px w-full sm:hidden ${isDarkMode ? "bg-slate-700/80" : "bg-slate-200"}`} aria-hidden />
+                <div
+                  className={`hidden w-px shrink-0 self-stretch sm:block ${isDarkMode ? "bg-slate-700/90" : "bg-slate-200/95"}`}
+                  aria-hidden
+                />
+                <div className="min-w-0 flex-1 sm:pl-2">
+                  <p className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
+                    {t("workspace.quiz.filterBar.groupSection", "Nhóm")}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { key: "all", label: t("workspace.quiz.groupAudience.all", "Tất cả") },
+                      { key: "ALL_MEMBERS", label: t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm") },
+                      { key: "SELECTED_MEMBERS", label: t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng") },
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setGroupAudienceFilter(key)}
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                          groupAudienceFilter === key
+                            ? isDarkMode
+                              ? "bg-violet-600/25 text-violet-200 ring-1 ring-violet-500/35"
+                              : "bg-violet-600 text-white shadow-sm shadow-violet-600/15"
+                            : isDarkMode
+                              ? "text-slate-400 hover:bg-slate-800/80"
+                              : "text-slate-600 hover:bg-white"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                    {groupAudienceFilter === "SELECTED_MEMBERS" ? (
+                      <select
+                        value={groupMemberUserId ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setGroupMemberUserId(v === "" ? null : Number(v));
+                        }}
+                        disabled={groupMembersLoading}
+                        title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
+                        className={`max-w-[min(200px,100%)] shrink rounded-lg border px-2 py-1 text-[11px] outline-none transition-colors ${
+                          isDarkMode
+                            ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
+                            : "border-slate-200 bg-white text-slate-900 disabled:opacity-50"
+                        }`}
+                      >
+                        <option value="">{t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}</option>
+                        {groupMembers.map((m) => {
+                          const uid = Number(m.userId ?? m.id);
+                          if (!Number.isInteger(uid) || uid <= 0) return null;
+                          const optLabel = m.fullName || m.username || `User ${uid}`;
+                          return (
+                            <option key={uid} value={uid}>{optLabel}</option>
+                          );
+                        })}
+                      </select>
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
       ) : null}
@@ -1012,6 +1207,21 @@ function QuizListView({
                   : "grid-cols-1";
               const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
               const updatedLabel = formatCardDate(quiz.updatedAt || quiz.createdAt);
+              const groupAudienceForCard = isGroupQuizList ? normalizeGroupAudienceMode(quiz) : null;
+              const assignedIdsForCard = isGroupQuizList ? getQuizAssignedUserIds(quiz) : [];
+              const singleAssigneeIdForCard = groupAudienceForCard === "SELECTED_MEMBERS" && assignedIdsForCard.length === 1
+                ? assignedIdsForCard[0]
+                : null;
+              const memberRowForAvatar = singleAssigneeIdForCard != null
+                ? resolveGroupMember(singleAssigneeIdForCard, groupMembers)
+                : null;
+              const avatarInitial = String(
+                memberRowForAvatar?.fullName || memberRowForAvatar?.username || singleAssigneeIdForCard || "?",
+              )
+                .trim()
+                .charAt(0)
+                .toUpperCase() || "?";
+              const avatarSrc = memberRowForAvatar?.avatar || memberRowForAvatar?.avatarUrl || "";
 
               return (
                 <article
@@ -1023,18 +1233,61 @@ function QuizListView({
                       : (isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white")
                   }`}
                 >
-                  <div className={`border-b px-4 py-4 ${isDarkMode ? "bg-slate-800/40 border-slate-700/50" : `${theme.banner} border-slate-100`}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${visibilityIconWrap}`}>
-                          <VisibilityIcon className={`h-5 w-5 ${visibilityIconColor}`} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`truncate text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? "text-slate-300" : "text-slate-500"}`}>
-                            {quiz?.createVia === "AI"
-                              ? t("workspace.quiz.cardAiLabel", "QUIZMATE AI")
-                              : t("workspace.quiz.cardManualLabel", "Quiz thủ công")}
-                          </p>
+                  <div className={`border-b px-4 py-3 ${isDarkMode ? "bg-slate-800/40 border-slate-700/50" : `${theme.banner} border-slate-100`}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        {isGroupQuizList ? (
+                          groupAudienceForCard === "ALL_MEMBERS" ? (
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
+                                isDarkMode ? "border-cyan-800/60 bg-cyan-950/40" : "border-cyan-200 bg-cyan-50"
+                              }`}
+                              title={t("workspace.quiz.groupAudience.badgeWholeGroup", "Chung nhóm")}
+                            >
+                              <Users className={`h-5 w-5 ${isDarkMode ? "text-cyan-300" : "text-cyan-700"}`} />
+                            </div>
+                          ) : singleAssigneeIdForCard != null ? (
+                            <div
+                              className={`flex h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 ${
+                                isDarkMode ? "border-fuchsia-800/70 bg-fuchsia-950/30" : "border-fuchsia-200 bg-fuchsia-50"
+                              }`}
+                              title={resolveMemberDisplayName(singleAssigneeIdForCard, groupMembers)}
+                            >
+                              {avatarSrc ? (
+                                <img src={avatarSrc} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <span
+                                  className={`flex h-full w-full items-center justify-center text-sm font-bold ${
+                                    isDarkMode ? "text-fuchsia-200" : "text-fuchsia-800"
+                                  }`}
+                                >
+                                  {avatarInitial}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
+                                isDarkMode ? "border-fuchsia-900/50 bg-fuchsia-950/35" : "border-fuchsia-200 bg-fuchsia-50"
+                              }`}
+                              title={t("workspace.quiz.groupAudience.badgeAssigned", "Giao riêng")}
+                            >
+                              <UserPlus className={`h-5 w-5 ${isDarkMode ? "text-fuchsia-300" : "text-fuchsia-700"}`} />
+                            </div>
+                          )
+                        ) : (
+                          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${visibilityIconWrap}`}>
+                            <VisibilityIcon className={`h-5 w-5 ${visibilityIconColor}`} />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className={`line-clamp-2 break-words text-left text-[15px] font-semibold leading-snug ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
+                            {quiz.title || "—"}
+                          </h3>
+                          <div className={`mt-1 flex items-center gap-1.5 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                            <Clock className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                            <span>{formatShortDate(quiz.createdAt)}</span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1114,16 +1367,6 @@ function QuizListView({
                   </div>
 
                   <div className="space-y-4 p-4">
-                    <div>
-                      <h3 className={`line-clamp-2 min-h-12 break-words text-[18px] font-semibold leading-6 ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                        {quiz.title}
-                      </h3>
-                      <div className={`mt-2 flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
-                        <Clock className="h-3.5 w-3.5" />
-                        <span>{formatShortDate(quiz.createdAt)}</span>
-                      </div>
-                    </div>
-
                     {isProcessing ? (
                       <div className={`rounded-[22px] border px-4 py-4 ${
                         isDarkMode
@@ -1188,6 +1431,25 @@ function QuizListView({
                           <span className={`inline-flex max-w-full items-center rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-slate-700/60 text-slate-300" : "bg-slate-200/70 text-slate-700"}`}>
                             {timerLabel}
                           </span>
+                        ) : null}
+                        {isGroupQuizList ? (
+                          normalizeGroupAudienceMode(quiz) === "ALL_MEMBERS" ? (
+                            <span className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-cyan-950/40 text-cyan-300" : "bg-cyan-100 text-cyan-800"}`}>
+                              <Users className="h-3 w-3 shrink-0" />
+                              {t("workspace.quiz.groupAudience.badgeWholeGroup", "Chung nhóm")}
+                            </span>
+                          ) : (
+                            <span
+                              className={`inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-fuchsia-950/40 text-fuchsia-300" : "bg-fuchsia-100 text-fuchsia-900"}`}
+                              title={formatAssignedNames(quiz, groupMembers, 12)}
+                            >
+                              <UserPlus className="h-3 w-3 shrink-0" />
+                              <span className="truncate">
+                                {t("workspace.quiz.groupAudience.badgeAssigned", "Giao riêng")}
+                                {formatAssignedNames(quiz, groupMembers) ? `: ${formatAssignedNames(quiz, groupMembers)}` : ""}
+                              </span>
+                            </span>
+                          )
                         ) : null}
                       </div>
                     </div>
