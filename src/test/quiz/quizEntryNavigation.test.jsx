@@ -58,7 +58,7 @@ vi.mock('react-router-dom', async () => {
     ...actual,
     useNavigate: () => mockNavigate,
     useLocation: () => ({
-      pathname: '/workspace/42',
+      pathname: '/workspaces/42',
       search: '?phaseId=7',
     }),
   };
@@ -112,10 +112,10 @@ describe('Quiz entry navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/quiz/exam/123',
+      '/quizzes/exams/123',
       expect.objectContaining({
         state: expect.objectContaining({
-          returnToQuizPath: '/workspace/42?phaseId=7',
+          returnToQuizPath: '/workspaces/42?phaseId=7',
           autoStart: true,
         }),
       })
@@ -155,10 +155,10 @@ describe('Quiz entry navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/quiz/exam/321',
+      '/quizzes/exams/321',
       expect.objectContaining({
         state: expect.objectContaining({
-          returnToQuizPath: '/workspace/42?phaseId=7',
+          returnToQuizPath: '/workspaces/42?phaseId=7',
           autoStart: true,
         }),
       })
@@ -180,10 +180,10 @@ describe('Quiz entry navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: practiceButtonName }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/quiz/practice/123',
+      '/quizzes/practice/123',
       expect.objectContaining({
         state: expect.objectContaining({
-          returnToQuizPath: '/workspace/42?phaseId=7',
+          returnToQuizPath: '/workspaces/42?phaseId=7',
           autoStart: true,
         }),
       })
@@ -262,10 +262,10 @@ describe('Quiz entry navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/quiz/exam/456',
+      '/quizzes/exams/456',
       expect.objectContaining({
         state: expect.objectContaining({
-          returnToQuizPath: '/workspace/42?phaseId=7',
+          returnToQuizPath: '/workspaces/42?phaseId=7',
           autoStart: true,
         }),
       })
@@ -289,10 +289,10 @@ describe('Quiz entry navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Practice mode' }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/quiz/practice/456',
+      '/quizzes/practice/456',
       expect.objectContaining({
         state: expect.objectContaining({
-          returnToQuizPath: '/workspace/42?phaseId=7',
+          returnToQuizPath: '/workspaces/42?phaseId=7',
           autoStart: true,
         }),
       })

@@ -19,6 +19,11 @@ import { unwrapApiData } from "@/Utils/apiResponse";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
 import MixedMathText from "@/Components/math/MixedMathText";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
+import {
+  buildQuizAttemptPath,
+  buildQuizResultPath,
+  isWorkspaceRoadmapsPath,
+} from "@/lib/routePaths";
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
 const quizDetailCache = new Map();
@@ -346,7 +351,7 @@ function QuizDetailView({
 
   const effectiveQuiz = quizMeta || quiz;
   const effectiveContextType = String(effectiveQuiz?.contextType || "").toUpperCase();
-  const isRoadmapRouteSource = /\/workspace\/\d+\/roadmap(?:\/|$)/.test(location.pathname);
+  const isRoadmapRouteSource = isWorkspaceRoadmapsPath(location.pathname);
   const isRoadmapQuizByData = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(effectiveContextType)
     || Number(effectiveQuiz?.roadmapId) > 0
     || Number(effectiveQuiz?.phaseId) > 0
@@ -365,7 +370,7 @@ function QuizDetailView({
   const handleStartQuiz = useCallback((mode) => {
     if (!mode || !quiz?.quizId) return;
 
-    navigate(`/quiz/${mode}/${quiz.quizId}`, {
+    navigate(buildQuizAttemptPath(mode, quiz.quizId), {
       state: {
         returnToQuizPath: `${location.pathname}${location.search || ""}`,
         ...(mode === 'practice' ? { autoStart: true } : {}),
@@ -376,7 +381,7 @@ function QuizDetailView({
   const handleConfirmExamStart = useCallback(() => {
     if (!quiz?.quizId) return;
 
-    navigate(`/quiz/exam/${quiz.quizId}`, {
+    navigate(buildQuizAttemptPath("exam", quiz.quizId), {
       state: {
         returnToQuizPath: `${location.pathname}${location.search || ""}`,
         autoStart: true,
@@ -1031,7 +1036,7 @@ function QuizDetailView({
                 {history.map((attempt) => (
                   <div key={attempt.attemptId} className={`rounded-xl p-4 border transition-colors cursor-pointer ${
                     isDarkMode ? "bg-slate-800/50 border-slate-800 hover:bg-slate-800/80" : "bg-white border-slate-200 hover:bg-slate-50"
-                  }`} onClick={() => navigate(`/quiz/result/${attempt.attemptId}`, { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
+                  }`} onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
