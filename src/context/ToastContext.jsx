@@ -10,8 +10,11 @@ export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const lastToastRef = useRef({ signature: '', timestamp: 0 });
 
-  const pushToast = useCallback((type, message) => {
-    const signature = `${type}:${String(message || '').trim()}`;
+  const pushToast = useCallback((type, message, options = {}) => {
+    const normalizedMessage = typeof message === 'string'
+      ? message.trim()
+      : JSON.stringify(message || {});
+    const signature = `${type}:${normalizedMessage}`;
     const now = Date.now();
     if (
       signature &&
@@ -24,7 +27,12 @@ export function ToastProvider({ children }) {
     lastToastRef.current = { signature, timestamp: now };
 
     const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, type, message, duration: TOAST_DURATION }]);
+    setToasts((prev) => [...prev, {
+      id,
+      type,
+      message,
+      duration: Number(options?.duration) > 0 ? Number(options.duration) : TOAST_DURATION,
+    }]);
     return id;
   }, []);
 
@@ -32,20 +40,20 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const showSuccess = useCallback((message) => {
-    return pushToast('success', message);
+  const showSuccess = useCallback((message, options) => {
+    return pushToast('success', message, options);
   }, [pushToast]);
 
-  const showError = useCallback((message) => {
-    return pushToast('error', message);
+  const showError = useCallback((message, options) => {
+    return pushToast('error', message, options);
   }, [pushToast]);
 
-  const showWarning = useCallback((message) => {
-    return pushToast('warning', message);
+  const showWarning = useCallback((message, options) => {
+    return pushToast('warning', message, options);
   }, [pushToast]);
 
-  const showInfo = useCallback((message) => {
-    return pushToast('info', message);
+  const showInfo = useCallback((message, options) => {
+    return pushToast('info', message, options);
   }, [pushToast]);
 
   return (

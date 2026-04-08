@@ -315,6 +315,12 @@ export const getWorkspaceById = async (workspaceId) => {
   return response;
 };
 
+/** CurrentPlanResponse — gói hiện tại của group workspace (member/leader có quyền truy cập) */
+export const getWorkspaceCurrentPlan = async (workspaceId) => {
+  const response = await api.get(`/workspace/${workspaceId}/current-plan`);
+  return response;
+};
+
 export const getWorkspaceQuizRecommendations = async (workspaceId) => {
   const response = await api.get(`/workspace/${workspaceId}/quiz-recommendations`);
   return response;

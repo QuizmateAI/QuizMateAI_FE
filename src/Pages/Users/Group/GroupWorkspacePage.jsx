@@ -9,6 +9,7 @@ import GroupWorkspaceProfileConfigDialog from './Components/GroupWorkspaceProfil
 import GroupDashboardTab from './Group_leader/GroupDashboardTab';
 import GroupMembersTab from './Group_leader/GroupMembersTab';
 import GroupSettingsTab from './Group_leader/GroupSettingsTab';
+import GroupWalletTab from './Group_leader/GroupWalletTab';
 import ChatPanel from './Components/ChatPanel';
 import ChallengeTab from './Components/ChallengeTab';
 import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
@@ -19,6 +20,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  CreditCard,
   FileText,
   FolderOpen,
   Globe,
@@ -30,7 +32,6 @@ import {
   Sparkles,
   Sun,
   Swords,
-  UserPlus,
   Users,
 } from 'lucide-react';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
@@ -41,6 +42,7 @@ import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { usePlanEntitlements } from '@/hooks/usePlanEntitlements';
 import PlanUpgradeModal from '@/Components/plan/PlanUpgradeModal';
+import GroupWorkspaceCreditGateModal from './Components/GroupWorkspaceCreditGateModal';
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
@@ -64,7 +66,7 @@ import {
   reviewGroupMaterial as reviewGroupMaterialAPI,
   uploadGroupPendingMaterial,
 } from '@/api/MaterialAPI';
-import { getGroupWorkspaceProfile, normalizeGroupWorkspaceProfile } from '@/api/WorkspaceAPI';
+import { getGroupWorkspaceProfile, getWorkspaceCurrentPlan, normalizeGroupWorkspaceProfile } from '@/api/WorkspaceAPI';
 import { getQuizzesByScope, deleteQuiz } from '@/api/QuizAPI';
 import { unwrapApiData } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
@@ -124,6 +126,85 @@ function resolveNeedReviewFlag(...candidates) {
   return true;
 }
 
+function compactToastFilename(name, maxLength = 44) {
+  const safeName = String(name || '').trim();
+  if (!safeName || safeName.length <= maxLength) return safeName;
+
+  const extensionIndex = safeName.lastIndexOf('.');
+  const hasExtension = extensionIndex > 0 && extensionIndex >= safeName.length - 8;
+  const extension = hasExtension ? safeName.slice(extensionIndex) : '';
+  const availableLength = Math.max(12, maxLength - extension.length - 3);
+  return `${safeName.slice(0, availableLength)}...${extension}`;
+}
+
+function normalizeUploadFailureReason(message, lang = 'vi') {
+  const rawMessage = String(message || '').replace(/\s+/g, ' ').trim();
+  if (!rawMessage) {
+    return lang === 'en' ? 'Upload failed.' : 'Tải lên thất bại.';
+  }
+
+  const qmcMatch = rawMessage.match(/(?:can|cần|need)\s*(\d+)\s*QMC.*?(?:hien co|hiện có|available|currently)\s*(\d+)\s*QMC/i);
+  const workspaceCreditIssue = /credit workspace|workspace credit|QMC/i.test(rawMessage);
+  if (qmcMatch && workspaceCreditIssue) {
+    const needed = qmcMatch[1];
+    const available = qmcMatch[2];
+    return lang === 'en'
+      ? `Not enough workspace credits: need ${needed} QMC, available ${available} QMC.`
+      : `Không đủ credit workspace: cần ${needed} QMC, hiện có ${available} QMC.`;
+  }
+
+  return rawMessage.replace(/\.+$/, '');
+}
+
+function parseUploadFailureEntry(rawEntry, lang = 'vi') {
+  const text = String(rawEntry || '').trim();
+  if (!text) {
+    return {
+      label: lang === 'en' ? 'Unknown file' : 'Tệp không xác định',
+      detail: lang === 'en' ? 'Upload failed.' : 'Tải lên thất bại.',
+    };
+  }
+
+  const separatorIndex = text.indexOf(':');
+  const hasSeparator = separatorIndex > 0 && separatorIndex < text.length - 1;
+  const fileName = hasSeparator ? text.slice(0, separatorIndex).trim() : '';
+  const reason = hasSeparator ? text.slice(separatorIndex + 1).trim() : text;
+
+  return {
+    label: compactToastFilename(fileName || (lang === 'en' ? 'Unknown file' : 'Tệp không xác định')),
+    detail: normalizeUploadFailureReason(reason, lang),
+  };
+}
+
+function buildUploadFailureToastMessage(failedUploads, lang = 'vi') {
+  const safeEntries = Array.isArray(failedUploads) ? failedUploads.filter(Boolean) : [];
+  const visibleItems = safeEntries.slice(0, 3).map((entry) => parseUploadFailureEntry(entry, lang));
+  const remainingCount = Math.max(0, safeEntries.length - visibleItems.length);
+
+  return {
+    title: lang === 'en'
+      ? `${safeEntries.length} file${safeEntries.length > 1 ? 's' : ''} could not be uploaded`
+      : `${safeEntries.length} tệp chưa tải lên được`,
+    description: lang === 'en'
+      ? 'Please review the failed files below and try again.'
+      : 'Xem nhanh các tệp lỗi bên dưới rồi thử lại.',
+    items: visibleItems,
+    meta: remainingCount > 0
+      ? (lang === 'en'
+        ? `+${remainingCount} more file${remainingCount > 1 ? 's' : ''}`
+        : `+${remainingCount} tệp khác`)
+      : '',
+  };
+}
+
+function uploadFailuresIndicateWorkspaceCreditShortage(failedUploads) {
+  const safeEntries = Array.isArray(failedUploads) ? failedUploads.filter(Boolean) : [];
+  return safeEntries.some((entry) => {
+    const text = String(entry || '');
+    return /QMC|workspace credit|credit workspace|không đủ credit|insufficient.*credit|Số dư credit không đủ|Not enough workspace credits/i.test(text);
+  });
+}
+
 /** Payload từ CreateQuizForm (manual / AI) — có thể lồng ApiResponse { data }. */
 function extractGroupCreatedQuizPayload(payload) {
   if (payload == null || typeof payload !== 'object') return null;
@@ -158,6 +239,7 @@ const GROUP_WORKSPACE_VALID_SECTIONS = [
   'roadmap',
   'mockTest',
   'challenge',
+  'wallet',
   'settings',
 ];
 
@@ -382,7 +464,6 @@ function GroupWorkspacePage() {
   const [roadmapPhaseGenerationTaskId, setRoadmapPhaseGenerationTaskId] = useState(null);
   const { showError, showInfo, showSuccess, showWarning } = useToast();
   const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [studioCollapsed, setStudioCollapsed] = useState(false);
   const [mobilePanel, setMobilePanel] = useState(null);
@@ -446,6 +527,8 @@ function GroupWorkspacePage() {
   const [selectedRoadmapSourceIds, setSelectedRoadmapSourceIds] = useState([]);
   const [createdItems, setCreatedItems] = useState([]);
   const [groupProfile, setGroupProfile] = useState(null);
+  const [groupSubscription, setGroupSubscription] = useState(null);
+  const [groupBuyCreditModalOpen, setGroupBuyCreditModalOpen] = useState(false);
   const [groupRoadmapConfig, setGroupRoadmapConfig] = useState(null);
   const [groupProfileLoading, setGroupProfileLoading] = useState(false);
   const [hasLoadedGroupProfile, setHasLoadedGroupProfile] = useState(isCreating);
@@ -456,7 +539,6 @@ function GroupWorkspacePage() {
   const [pendingReviewLoading, setPendingReviewLoading] = useState(false);
   const [reviewingPendingMaterialId, setReviewingPendingMaterialId] = useState(null);
   const [sessionUploadQueue, setSessionUploadQueue] = useState([]);
-  const settingsRef = useRef(null);
   const refreshPendingMaterialTimersRef = useRef({});
   const uploadNotificationsRef = useRef(new Set());
 
@@ -569,6 +651,13 @@ function GroupWorkspacePage() {
 
   const resolvedWorkspaceId = currentGroupWorkspace?.workspaceId
     ?? (isCreating ? null : workspaceId);
+  const groupPlanUpgradePath = resolvedWorkspaceId
+    ? `/plans?planType=GROUP&workspaceId=${resolvedWorkspaceId}`
+    : '/plans';
+  const groupPlanUpgradeState = useMemo(
+    () => ({ from: `${location.pathname}${location.search}` }),
+    [location.pathname, location.search],
+  );
   const canManageGroup = Boolean(resolvedWorkspaceId && workspaceId !== 'new');
   const groupDescription = groupProfile?.groupLearningGoal
     || currentGroupWorkspace?.description
@@ -599,6 +688,11 @@ function GroupWorkspacePage() {
     || (isLeader && canManageGroup && !isCreating && hasLoadedGroupProfile && !groupProfile && !hasCompletedGroupProfile)
     || (hasLoadedGroupProfile && openProfileConfig && !hasCompletedGroupProfile)
   );
+  const currentGroupPlanName = String(groupSubscription?.plan?.displayName || groupSubscription?.plan?.code || '').trim();
+  /** Subtitle tránh trùng với nút header đang hiển thị tên gói */
+  const groupHeaderSubtitle = currentGroupPlanName
+    ? ''
+    : (currentLang === 'en' ? 'Group workspace' : 'Không gian nhóm');
   const profileEditLocked = hasUploadedMaterials && hasCompletedGroupProfile;
   // Tính toán xem workspace có dữ liệu học tập chưa hoàn thành không (quiz/roadmap)
   // Sẽ được cập nhật khi fetch quiz và roadmap từ API trong quá trình xóa
@@ -607,6 +701,13 @@ function GroupWorkspacePage() {
     ? 'bg-[#06131a] text-white'
     : 'bg-[linear-gradient(180deg,#fffaf0_0%,#f4fbf7_46%,#eef6ff_100%)] text-slate-900';
   const resolveUiErrorMessage = useCallback((error) => getErrorMessage(t, error), [t]);
+
+  const handleGroupBuyCreditPrimary = useCallback(() => {
+    setGroupBuyCreditModalOpen(false);
+    const next = new URLSearchParams(searchParams);
+    next.set('section', 'wallet');
+    navigate(`${location.pathname}?${next.toString()}`);
+  }, [location.pathname, navigate, searchParams]);
 
   const patchSessionUpload = useCallback((matcher, patch) => {
     setSessionUploadQueue((current) => current.map((item) => {
@@ -855,6 +956,34 @@ function GroupWorkspacePage() {
       setHasLoadedGroupProfile(true);
       setGroupProfileLoading(false);
     }
+  }, [resolvedWorkspaceId, isCreating]);
+
+  useEffect(() => {
+    if (!resolvedWorkspaceId || isCreating) {
+      setGroupSubscription(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const loadGroupSubscription = async () => {
+      try {
+        const response = await getWorkspaceCurrentPlan(resolvedWorkspaceId);
+        if (!cancelled) {
+          setGroupSubscription(unwrapApiData(response));
+        }
+      } catch {
+        if (!cancelled) {
+          setGroupSubscription(null);
+        }
+      }
+    };
+
+    void loadGroupSubscription();
+
+    return () => {
+      cancelled = true;
+    };
   }, [resolvedWorkspaceId, isCreating]);
 
   const loadGroupRoadmapConfig = useCallback(async () => {
@@ -1548,17 +1677,49 @@ function GroupWorkspacePage() {
     }
 
     if (failedUploads.length > 0) {
-      showError(
-        currentLang === 'en'
-          ? `Some files failed: ${failedUploads.slice(0, 3).join(' | ')}${failedUploads.length > 3 ? ' ...' : ''}`
-          : `Một số tệp tải lên thất bại: ${failedUploads.slice(0, 3).join(' | ')}${failedUploads.length > 3 ? ' ...' : ''}`,
-      );
+      const entryIsCreditShortage = (entry) => uploadFailuresIndicateWorkspaceCreditShortage([entry]);
+      const allFailedAreCredit = failedUploads.every(entryIsCreditShortage);
+      const hasCreditShortage = uploadFailuresIndicateWorkspaceCreditShortage(failedUploads);
+
+      if (allFailedAreCredit && hasCreditShortage) {
+        if (!groupSubscription) {
+          setUploadDialogOpen(false);
+          showInfo(
+            t(
+              'groupWorkspace.upload.insufficientQmcNeedPlan',
+              'Nhóm không đủ QMC. Vui lòng mua gói để tiếp tục — sau đó bạn có thể mua credit trong ví nhóm.',
+            ),
+            { duration: 5500 },
+          );
+          navigate(groupPlanUpgradePath, {
+            state: { ...groupPlanUpgradeState, fromInsufficientQmc: true },
+          });
+          return;
+        }
+        showInfo(
+          t(
+            'groupWorkspace.upload.insufficientQmcNeedCredits',
+            'Nhóm không đủ QMC. Mở ví nhóm để mua thêm credit.',
+          ),
+          { duration: 5000 },
+        );
+        setGroupBuyCreditModalOpen(true);
+        return;
+      } else {
+        showError(buildUploadFailureToastMessage(failedUploads, currentLang), { duration: 7000 });
+        if (hasCreditShortage && groupSubscription) {
+          setGroupBuyCreditModalOpen(true);
+        }
+      }
     }
 
     if (successfulUploads.length === 0) {
-      throw new Error(currentLang === 'en' ? 'All uploads failed.' : 'Toàn bộ upload đều thất bại.');
+      const handledError = new Error(currentLang === 'en' ? 'All uploads failed.' : 'Toàn bộ upload đều thất bại.');
+      handledError.toastHandled = true;
+      throw handledError;
     }
   }, [
+    t,
     canUploadSource,
     currentLang,
     isCreating,
@@ -1572,6 +1733,11 @@ function GroupWorkspacePage() {
     showInfo,
     showWarning,
     workspaceId,
+    groupSubscription,
+    navigate,
+    groupPlanUpgradePath,
+    groupPlanUpgradeState,
+    setUploadDialogOpen,
   ]);
 
   // Remove source
@@ -1726,8 +1892,8 @@ function GroupWorkspacePage() {
     }
 
     const disabledActionsByRole = {
-      MEMBER: new Set(['dashboard', 'members', 'settings']),
-      CONTRIBUTOR: new Set(['dashboard', 'settings']),
+      MEMBER: new Set(['dashboard', 'members', 'wallet', 'settings']),
+      CONTRIBUTOR: new Set(['dashboard', 'wallet', 'settings']),
       LEADER: new Set([]),
     };
     if (disabledActionsByRole[currentRoleKey]?.has(actionKey)) {
@@ -1776,7 +1942,6 @@ function GroupWorkspacePage() {
 
   // Xử lý yêu cầu cập nhật onboarding — kiểm tra guard
   const handleRequestGroupProfileUpdate = useCallback(() => {
-    setIsSettingsOpen(false);
     if (profileEditLocked) {
       setProfileUpdateGuardOpen(true);
       return;
@@ -2191,19 +2356,6 @@ function GroupWorkspacePage() {
     i18n.changeLanguage(newLang);
   };
 
-  // Close settings dropdown
-  useEffect(() => {
-    if (!isSettingsOpen) return;
-    const handleClickOutside = (event) => {
-      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
-        setIsSettingsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isSettingsOpen]);
-
-  const primaryDashboardSectionKey = isLeader ? 'dashboard' : 'personalDashboard';
   const sectionLabels = {
     dashboard: t('groupWorkspace.studio.systemDashboard'),
     personalDashboard: t('groupWorkspace.studio.personalDashboard'),
@@ -2215,6 +2367,7 @@ function GroupWorkspacePage() {
     challenge: 'Challenge',
     notifications: t('groupWorkspace.studio.activity'),
     members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
+    wallet: t('groupWorkspace.studio.wallet', 'Group wallet'),
     settings: t('workspaceSettings'),
   };
 
@@ -2275,13 +2428,14 @@ function GroupWorkspacePage() {
     { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge },
     { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionLabels.notifications, disabled: false },
     { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: sectionLabels.members, disabled: isMember },
+    { key: 'wallet', icon: CreditCard, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.wallet, disabled: !isLeader || !canManageGroup },
     { key: 'settings', icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20', label: sectionLabels.settings, disabled: !isLeader || !canManageGroup }
   ];
 
   const groupStudioActionGroups = [
     { label: t('groupWorkspace.studio.groupStudy', 'Học tập'), keys: ['documents', 'roadmap', 'quiz', 'flashcard', 'mockTest'] },
     { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'notifications'] },
-    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'settings'] },
+    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'wallet', 'settings'] },
   ];
 
   const renderActivityFeed = (compact = false) => (
@@ -2793,6 +2947,16 @@ function GroupWorkspacePage() {
           />
         );
 
+      case 'wallet':
+        return (
+          <GroupWalletTab
+            isDarkMode={isDarkMode}
+            group={resolvedGroupData}
+            groupSubscription={groupSubscription}
+            canManage={isLeader && canManageGroup}
+          />
+        );
+
       case 'notifications':
         return renderActivityFeed(true);
 
@@ -2857,8 +3021,17 @@ function GroupWorkspacePage() {
     setProfileConfigOpen(true);
   }, [dismissProfileConfig, shouldForceProfileSetup]);
 
+  const openGroupPlanUpgrade = () => {
+    navigate(groupPlanUpgradePath, { state: groupPlanUpgradeState });
+  };
+
   const headerActionClass = `rounded-full h-9 px-4 flex items-center gap-2 ${
     isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-900' : 'border-gray-200'
+  }`;
+  const headerPlanActionClass = `rounded-full h-9 px-4 flex items-center gap-2 transition-colors ${
+    isDarkMode
+      ? 'bg-cyan-400 text-slate-950 hover:bg-cyan-300'
+      : 'bg-cyan-600 text-white hover:bg-cyan-700'
   }`;
 
   const settingsMenu = (
@@ -2889,68 +3062,24 @@ function GroupWorkspacePage() {
         </span>
       </Button>
 
-      <div ref={settingsRef} className="relative z-[140]">
+      {isLeader && canManageGroup ? (
         <Button
-            variant="outline"
-            type="button"
-            onClick={() => setIsSettingsOpen((prev) => !prev)}
-            className={headerActionClass}
+          type="button"
+          onClick={openGroupPlanUpgrade}
+          className={headerPlanActionClass}
+          title={
+            currentGroupPlanName
+              ? (currentLang === 'en' ? 'View or change group plan' : 'Xem / đổi gói nhóm')
+              : (currentLang === 'en' ? 'Choose a group plan' : 'Chọn gói nhóm')
+          }
         >
-            <Settings className="w-4 h-4" />
-            <span className={fontClass}>{t("workspace.header.settings")}</span>
+          <Sparkles className="h-4 w-4 shrink-0" />
+          <span className={`${fontClass} max-w-[10rem] truncate sm:max-w-[14rem] md:max-w-[18rem]`}>
+            {currentGroupPlanName
+              || (currentLang === 'en' ? 'Upgrade group plan' : 'Nâng cấp gói group')}
+          </span>
         </Button>
-
-        {isSettingsOpen && (
-            <div className={`absolute right-0 mt-2 w-56 rounded-xl border shadow-xl ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"} py-2`}>
-                <button
-                    type="button"
-                    onClick={() => { setActiveSection(primaryDashboardSectionKey); setIsSettingsOpen(false); }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-200" : "hover:bg-gray-50 text-gray-700"}`}
-                >
-                    <span className={`flex items-center gap-2 ${fontClass}`}>
-                        <Globe className="w-4 h-4" />
-                        {sectionLabels[primaryDashboardSectionKey]}
-                    </span>
-                </button>
-                {isLeader && (
-                <button
-                    type="button"
-                    onClick={() => { setActiveSection("members"); setIsSettingsOpen(false); }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-200" : "hover:bg-gray-50 text-gray-700"}`}
-                >
-                    <span className={`flex items-center gap-2 ${fontClass}`}>
-                        <Users className="w-4 h-4" />
-                        {sectionLabels.members}
-                    </span>
-                </button>
-                )}
-                {canManageMembers && (
-                    <button
-                        type="button"
-                        onClick={() => { setInviteDialogOpen(true); setIsSettingsOpen(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-200" : "hover:bg-gray-50 text-gray-700"}`}
-                    >
-                        <span className={`flex items-center gap-2 ${fontClass}`}>
-                            <UserPlus className="w-4 h-4" />
-                            {t("workspace.header.invite", "Invite Member")}
-                        </span>
-                    </button>
-                )}
-                <div className={`my-1 border-t ${isDarkMode ? 'border-slate-800' : 'border-gray-100'}`}></div>
-                <button
-                    type="button"
-                    onClick={() => { setActiveSection("settings"); setIsSettingsOpen(false); }}
-                  disabled={!isLeader}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-200" : "hover:bg-gray-50 text-gray-700"}`}
-                >
-                    <span className={`flex items-center gap-2 ${fontClass}`}>
-                        <Settings className="w-4 h-4" />
-                        {t("workspaceSettings")}
-                    </span>
-                </button>
-            </div>
-        )}
-      </div>
+      ) : null}
     </div>
   );
 
@@ -2984,6 +3113,7 @@ function GroupWorkspacePage() {
           workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? Number(workspaceId) : null)}
           workspaceTitle={currentGroupName}
           workspaceName={currentGroupName}
+          workspaceSubtitle={groupHeaderSubtitle}
           settingsMenu={settingsMenu}
           wsConnected={wsConnected}
           isDarkMode={isDarkMode}
@@ -3123,11 +3253,21 @@ function GroupWorkspacePage() {
         deleting={isResettingWorkspaceForProfileUpdate}
       />
 
+      <GroupWorkspaceCreditGateModal
+        open={groupBuyCreditModalOpen}
+        onOpenChange={setGroupBuyCreditModalOpen}
+        isDarkMode={isDarkMode}
+        lang={currentLang}
+        onPrimary={handleGroupBuyCreditPrimary}
+      />
+
       <PlanUpgradeModal
         open={planUpgradeModalOpen}
         onOpenChange={setPlanUpgradeModalOpen}
         featureName={planUpgradeFeatureName}
         isDarkMode={isDarkMode}
+        upgradePath={groupPlanUpgradePath}
+        upgradeState={groupPlanUpgradeState}
       />
 
       <React.Suspense fallback={null}>
