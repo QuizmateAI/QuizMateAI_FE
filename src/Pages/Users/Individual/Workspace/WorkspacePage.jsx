@@ -2245,6 +2245,7 @@ function WorkspacePage() {
             <LazyRoadmapJourPanel
               isDarkMode={isDarkMode}
               workspaceId={workspaceId}
+              isStudyNewRoadmap={isStudyNewRoadmap}
               selectedPhaseId={selectedRoadmapPhaseId}
               onSelectPhase={handleSelectRoadmapPhase}
               reloadToken={roadmapReloadToken}

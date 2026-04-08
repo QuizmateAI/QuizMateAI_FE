@@ -186,15 +186,41 @@ function RoadmapCanvasView2({
       return Math.max(maxIndex, phaseIndex);
     }, -1);
 
+    if (isStudyNewRoadmap) {
+      const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
+        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
+        const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
+        const isFinished = isPhaseFinishedStatus(phase?.status);
+
+        if (hasPreLearning || hasKnowledge || hasPostLearning || isFinished) {
+          return Math.max(maxIndex, index);
+        }
+
+        return maxIndex;
+      }, 0);
+
+      return Math.max(0, unlockedByManualProgressIndex, unlockedByOptimisticIndex);
+    }
+
     return Math.max(0, globalCurrentIndex, unlockedByStatusIndex, unlockedByOptimisticIndex);
-  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, optimisticUnlockedPhaseIds, phases]);
+  }, [
+    globalCurrentPhasePayload?.phaseId,
+    isPhaseFinishedStatus,
+    isStudyNewRoadmap,
+    optimisticUnlockedPhaseIds,
+    phases,
+  ]);
 
   const isCurrentPayloadFinished = useMemo(() => {
     return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
   }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
 
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
-  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+    ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+    : -1;
   const currentKnowledgePhaseId = Number(currentKnowledgePayload?.phaseId);
   const currentKnowledgeId = Number(currentKnowledgePayload?.knowledgeId);
   const currentKnowledgeStatus = String(currentKnowledgePayload?.status || "").toUpperCase();
@@ -714,6 +740,7 @@ function RoadmapCanvasView2({
     const canCreateKnowledgeQuiz = Number.isInteger(knowledgeId) && knowledgeId > 0;
     const quizzes = knowledge?.quizzes || [];
     const hasQuizzes = quizzes.length > 0;
+    const shouldShowCreateKnowledgeQuizButton = canCreateKnowledgeQuiz && !hasQuizzes;
     const shouldRenderKnowledgeQuizList = hasQuizzes || targetedKnowledgeRefreshToken > 0;
     const flashcards = knowledge?.flashcards || [];
     const hasFlashcards = flashcards.length > 0;
@@ -727,7 +754,7 @@ function RoadmapCanvasView2({
               <h5 className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 {t("workspace.roadmap.canvas.quiz", "Quiz")}
               </h5>
-              {canCreateKnowledgeQuiz ? (
+              {shouldShowCreateKnowledgeQuizButton ? (
                 <Button
                   type="button"
                   size="sm"
