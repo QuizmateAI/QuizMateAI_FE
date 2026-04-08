@@ -60,7 +60,7 @@ vi.mock('react-router-dom', async () => {
     ...actual,
     useNavigate: () => mockNavigate,
     useLocation: () => ({
-      pathname: '/workspace/42/quiz/create',
+      pathname: '/workspaces/42/quizzes/create',
       search: '',
       state: mockLocationState,
     }),
@@ -125,7 +125,7 @@ describe('CreateQuizForm personalization preset', () => {
     expect(await screen.findByDisplayValue('12')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/workspace/42/quiz/create', {
+      expect(mockNavigate).toHaveBeenCalledWith('/workspaces/42/quizzes/create', {
         replace: true,
         state: null,
       });

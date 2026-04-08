@@ -7,13 +7,13 @@ import {
 
 describe('workspace viewRouting', () => {
   it('maps direct post-learning routes to the expected workspace views', () => {
-    expect(resolveWorkspaceViewFromSubPath('post-learning')).toEqual({
+    expect(resolveWorkspaceViewFromSubPath('post-learnings')).toEqual({
       view: 'postLearning',
       quizId: null,
       backTarget: null,
     });
 
-    expect(resolveWorkspaceViewFromSubPath('post-learning/create')).toEqual({
+    expect(resolveWorkspaceViewFromSubPath('post-learnings/create')).toEqual({
       view: 'createPostLearning',
       quizId: null,
       backTarget: null,
@@ -21,7 +21,7 @@ describe('workspace viewRouting', () => {
   });
 
   it('resolves roadmap quiz detail deep links with roadmap and phase back targets', () => {
-    expect(resolveWorkspaceViewFromSubPath('roadmap/77/phase/11/quiz/5')).toEqual({
+    expect(resolveWorkspaceViewFromSubPath('roadmaps/77/phases/11/quizzes/5')).toEqual({
       view: 'quizDetail',
       quizId: 5,
       backTarget: {
@@ -33,7 +33,7 @@ describe('workspace viewRouting', () => {
   });
 
   it('resolves roadmap quiz edit deep links with roadmap and phase back targets', () => {
-    expect(resolveWorkspaceViewFromSubPath('roadmap/77/phase/11/quiz/5/edit')).toEqual({
+    expect(resolveWorkspaceViewFromSubPath('roadmaps/77/phases/11/quizzes/5/edit')).toEqual({
       view: 'editQuiz',
       quizId: 5,
       backTarget: {
@@ -48,14 +48,14 @@ describe('workspace viewRouting', () => {
     const selectedQuiz = { quizId: 5 };
     const quizBackTarget = { view: 'roadmap', roadmapId: 77, phaseId: 11 };
 
-    expect(buildWorkspacePathForView('quizDetail', selectedQuiz, quizBackTarget)).toBe('roadmap/77/phase/11/quiz/5');
-    expect(buildWorkspacePathForView('editQuiz', selectedQuiz, quizBackTarget)).toBe('roadmap/77/phase/11/quiz/5/edit');
+    expect(buildWorkspacePathForView('quizDetail', selectedQuiz, quizBackTarget)).toBe('roadmaps/77/phases/11/quizzes/5');
+    expect(buildWorkspacePathForView('editQuiz', selectedQuiz, quizBackTarget)).toBe('roadmaps/77/phases/11/quizzes/5/edit');
   });
 
   it('keeps direct path mappings for post-learning workspace routes', () => {
-    expect(VIEW_TO_PATH.postLearning).toBe('post-learning');
-    expect(VIEW_TO_PATH.createPostLearning).toBe('post-learning/create');
-    expect(buildWorkspacePathForView('postLearning')).toBe('post-learning');
-    expect(buildWorkspacePathForView('createPostLearning')).toBe('post-learning/create');
+    expect(VIEW_TO_PATH.postLearning).toBe('post-learnings');
+    expect(VIEW_TO_PATH.createPostLearning).toBe('post-learnings/create');
+    expect(buildWorkspacePathForView('postLearning')).toBe('post-learnings');
+    expect(buildWorkspacePathForView('createPostLearning')).toBe('post-learnings/create');
   });
 });

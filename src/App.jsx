@@ -116,14 +116,6 @@ function MainRoutes() {
         <Route path="/wallet" element={<Navigate to="/wallets" replace />} />
         <Route path="/feedback" element={<Navigate to="/feedbacks" replace />} />
         <Route
-          path="/workspace/:workspaceId"
-          element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/workspaces/${workspaceId}`} />}
-        />
-        <Route
-          path="/workspace/:workspaceId/*"
-          element={<LegacyPathRedirect toBuilder={({ workspaceId, '*': splat }) => `/workspaces/${workspaceId}${splat ? `/${splat}` : ''}`} />}
-        />
-        <Route
           path="/group-workspace/:workspaceId"
           element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/group-workspaces/${workspaceId}`} />}
         />
@@ -134,18 +126,6 @@ function MainRoutes() {
         <Route
           path="/group-manage/:workspaceId"
           element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/groups/${workspaceId}/manage`} />}
-        />
-        <Route
-          path="/quiz/practice/:quizId"
-          element={<LegacyPathRedirect toBuilder={({ quizId }) => `/quizzes/practice/${quizId}`} />}
-        />
-        <Route
-          path="/quiz/exam/:quizId"
-          element={<LegacyPathRedirect toBuilder={({ quizId }) => `/quizzes/exams/${quizId}`} />}
-        />
-        <Route
-          path="/quiz/result/:attemptId"
-          element={<LegacyPathRedirect toBuilder={({ attemptId }) => `/quizzes/results/${attemptId}`} />}
         />
       </Route>
 
