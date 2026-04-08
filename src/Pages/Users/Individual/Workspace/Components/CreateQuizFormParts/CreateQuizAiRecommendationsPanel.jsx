@@ -1,5 +1,7 @@
 import { Button } from "@/Components/ui/button";
-import { Loader2, Rocket, Sparkles } from "lucide-react";
+import { Loader2, Rocket, Sparkles, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
+import { getBloomSkillLabel, getQuizDifficultyLabel, getQuizQuestionTypeLabel } from "@/lib/quizQuestionTypes";
 
 function CreateQuizAiRecommendationsPanel({
   activeRecommendation,
@@ -8,12 +10,24 @@ function CreateQuizAiRecommendationsPanel({
   inlineRecommendations,
   inlineRecError,
   inlineRecGeneratingId,
+  inlineRecDismissingId,
   inlineRecLoading,
   isDarkMode,
   onGenerateRecommendation,
+  onDismissRecommendation,
   onToggleRecommendation,
   t,
 }) {
+  const [showStructure, setShowStructure] = useState(false);
+  const getDifficultyLabel = (difficulty) => getQuizDifficultyLabel(difficulty, t);
+  const getQuestionTypeLabel = (questionType) => getQuizQuestionTypeLabel(questionType, t);
+  const getBloomLabel = (bloomSkill) => getBloomSkillLabel(bloomSkill, t);
+  const hasRecommendations = Array.isArray(inlineRecommendations) && inlineRecommendations.length > 0;
+
+  if (!inlineRecError && !hasRecommendations) {
+    return null;
+  }
+
   return (
     <div className={`rounded-2xl border p-4 md:p-5 ${isDarkMode ? "border-violet-700/50 bg-gradient-to-br from-violet-950/35 to-slate-900" : "border-violet-200 bg-gradient-to-br from-violet-50 to-white"}`}>
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -43,7 +57,7 @@ function CreateQuizAiRecommendationsPanel({
         </div>
       )}
 
-      {!inlineRecLoading && !inlineRecError && inlineRecommendations.length > 0 && (
+      {!inlineRecLoading && !inlineRecError && hasRecommendations && (
         <>
           <div className="flex flex-wrap gap-2">
             {inlineRecommendations.map((recommendation) => {
@@ -78,7 +92,7 @@ function CreateQuizAiRecommendationsPanel({
                 </p>
                 <button
                   type="button"
-                  onClick={() => onToggleRecommendation(null)}
+                  onClick={() => { onToggleRecommendation(null); setShowStructure(false); }}
                   className={`rounded-md border px-2 py-1 text-[11px] transition-colors ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-gray-200 text-gray-600 hover:bg-gray-100"} ${fontClass}`}
                 >
                   {t("workspace.quiz.aiRecommendations.hideDetail")}
@@ -88,6 +102,12 @@ function CreateQuizAiRecommendationsPanel({
               {activeRecommendation.displayReason && (
                 <p className={`mt-2 text-sm leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
                   {activeRecommendation.displayReason}
+                </p>
+              )}
+
+              {activeRecommendation.goal && (
+                <p className={`mt-1.5 text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
+                  {t("workspace.quiz.aiRecommendations.goal")}: {activeRecommendation.goal}
                 </p>
               )}
 
@@ -110,12 +130,56 @@ function CreateQuizAiRecommendationsPanel({
                 </div>
               )}
 
-              <div className="mt-3">
+              {/* Structure detail toggle */}
+              {Array.isArray(activeRecommendation.structure) && activeRecommendation.structure.length > 0 && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowStructure((prev) => !prev)}
+                    className={`flex items-center gap-1 text-[11px] font-medium transition-colors ${isDarkMode
+                      ? "text-slate-400 hover:text-slate-200"
+                      : "text-gray-500 hover:text-gray-700"
+                      } ${fontClass}`}
+                  >
+                    {showStructure ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    {showStructure
+                      ? t("workspace.quiz.aiRecommendations.hideStructure")
+                      : t("workspace.quiz.aiRecommendations.showDetail")}
+                  </button>
+                  {showStructure && (
+                    <div className={`mt-2 rounded-lg border overflow-hidden ${isDarkMode ? "border-slate-700" : "border-gray-200"}`}>
+                      <table className="w-full text-[11px]">
+                        <thead>
+                          <tr className={isDarkMode ? "bg-slate-800/80" : "bg-gray-50"}>
+                            <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.difficulty")}</th>
+                            <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.type")}</th>
+                            <th className={`px-2.5 py-1.5 text-left font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.bloom")}</th>
+                            <th className={`px-2.5 py-1.5 text-right font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.aiRecommendations.quantity")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {activeRecommendation.structure.map((item, sIdx) => (
+                            <tr key={sIdx} className={`border-t ${isDarkMode ? "border-slate-700/50" : "border-gray-100"}`}>
+                              <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getDifficultyLabel(item.difficulty)}</td>
+                              <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getQuestionTypeLabel(item.questionType)}</td>
+                              <td className={`px-2.5 py-1.5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>{getBloomLabel(item.bloomSkill)}</td>
+                              <td className={`px-2.5 py-1.5 text-right font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{item.quantity}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="mt-3 flex gap-2">
                 <Button
                   type="button"
                   onClick={() => onGenerateRecommendation(activeRecommendation.assessmentId)}
-                  disabled={inlineRecGeneratingId !== null}
-                  className="w-full bg-blue-600 text-white hover:bg-blue-700 sm:w-auto"
+                  disabled={inlineRecGeneratingId !== null || inlineRecDismissingId !== null}
+                  className="flex-1 bg-blue-600 text-white hover:bg-blue-700 sm:flex-initial"
                 >
                   {inlineRecGeneratingId === activeRecommendation.assessmentId ? (
                     <>
@@ -129,17 +193,31 @@ function CreateQuizAiRecommendationsPanel({
                     </>
                   )}
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onDismissRecommendation(activeRecommendation.assessmentId)}
+                  disabled={inlineRecGeneratingId !== null || inlineRecDismissingId !== null}
+                  className={`text-xs ${isDarkMode
+                    ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                    : "border-gray-200 text-gray-500 hover:bg-gray-100"
+                    }`}
+                >
+                  {inlineRecDismissingId === activeRecommendation.assessmentId ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <X className="mr-1 h-4 w-4" />
+                      {t("workspace.quiz.aiRecommendations.dismiss")}
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           )}
         </>
       )}
 
-      {!inlineRecLoading && !inlineRecError && inlineRecommendations.length === 0 && (
-        <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-          {t("workspace.quiz.aiRecommendations.empty")}
-        </p>
-      )}
     </div>
   );
 }

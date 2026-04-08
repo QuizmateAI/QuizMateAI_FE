@@ -391,7 +391,6 @@ function GroupWorkspacePage() {
   const sectionFromUrl = searchParams.get('section');
   const resolvedSection = legacySectionMap[sectionFromUrl] || sectionFromUrl;
   const activeSection = GROUP_WORKSPACE_VALID_SECTIONS.includes(resolvedSection) ? resolvedSection : 'dashboard';
-  const activeSection = validSections.includes(resolvedSection) ? resolvedSection : 'dashboard';
   const isRoadmapJourActive = activeSection === 'roadmap';
 
   const setActiveSection = (section) => {

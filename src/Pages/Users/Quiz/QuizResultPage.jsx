@@ -1077,20 +1077,15 @@ handleBack,
         ? t('workspace.quiz.result.congratulations', 'Congratulations!')
         : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
   const aiSummary = assessmentData?.summary;
+  const strengths = Array.isArray(assessmentData?.strengths) ? assessmentData.strengths.filter(Boolean) : [];
+  const weaknesses = Array.isArray(assessmentData?.weaknesses) ? assessmentData.weaknesses.filter(Boolean) : [];
   const nextQuizPlan = assessmentData?.nextQuizPlan;
   const profileReadiness = assessmentData?.profileReadiness || null;
-  const learnerExplanation = assessmentData?.learnerExplanation || null;
-  const shortTermGoals = Array.isArray(assessmentData?.shortTermGoals) ? assessmentData.shortTermGoals : [];
   const communityQuizSuggestions = Array.isArray(assessmentData?.communityQuizSuggestions)
     ? assessmentData.communityQuizSuggestions.slice(0, 2)
     : [];
-  const recommendedQuizTitle = nextQuizPlan?.displayTitle
-    || shortTermGoals[0]?.title
-    || null;
-  const recommendedQuizGoal = nextQuizPlan?.goal
-    || learnerExplanation?.whatToStudyNext
-    || shortTermGoals[0]?.detail
-    || null;
+  const recommendedQuizTitle = nextQuizPlan?.displayTitle || null;
+  const recommendedQuizGoal = nextQuizPlan?.goal || null;
   const communitySuggestionText = communityQuizSuggestions
     .map((quiz) => quiz?.title)
     .filter(Boolean)
@@ -1210,6 +1205,41 @@ handleBack,
                     <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
                       {aiSummary || t('workspace.quiz.result.assessmentNoSummary', 'Chưa có tóm tắt đánh giá AI.')}
                     </p>
+
+                    {(strengths.length > 0 || weaknesses.length > 0) && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {strengths.length > 0 && (
+                          <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 dark:border-emerald-800/70 dark:bg-emerald-950/20">
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300 mb-2">
+                              {t('workspace.quiz.result.strengths', 'Điểm mạnh')}
+                            </p>
+                            <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                              {strengths.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-1.5">
+                                  <span className="mt-1 text-emerald-500 text-xs">&#10003;</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {weaknesses.length > 0 && (
+                          <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 dark:border-amber-800/70 dark:bg-amber-950/20">
+                            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300 mb-2">
+                              {t('workspace.quiz.result.weaknesses', 'Cần củng cố')}
+                            </p>
+                            <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                              {weaknesses.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-1.5">
+                                  <span className="mt-1 text-amber-500 text-xs">&#9679;</span>
+                                  <span>{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {(recommendedQuizTitle || recommendedQuizGoal || communitySuggestionText || recommendationFootnote) && (
                       <div className="rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 dark:border-violet-800/70 dark:bg-violet-950/20">
