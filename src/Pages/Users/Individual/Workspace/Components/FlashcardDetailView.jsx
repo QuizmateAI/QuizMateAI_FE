@@ -245,7 +245,7 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack, hideEditButton, co
           <DirectFeedbackButton
             targetType="FLASHCARD"
             targetId={detail.flashcardSetId}
-            label={i18n.language === "en" ? "Feedback" : "Feedback"}
+            label={t("sidebar.feedback")}
             isDarkMode={isDarkMode}
             className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
           />
@@ -269,9 +269,9 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack, hideEditButton, co
           {!hideEditButton && contextType === "GROUP" && (
             <Button
               className="bg-violet-600 hover:bg-violet-700 text-white text-xs h-8 px-3 ml-2"
-              onClick={() => alert("Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!")}
+              onClick={() => alert(t("workspace.flashcard.assignComingSoon"))}
             >
-              <Users className="w-3.5 h-3.5 mr-1" /> Assign
+              <Users className="w-3.5 h-3.5 mr-1" /> {t("workspace.flashcard.assign")}
             </Button>
           )}
         </div>

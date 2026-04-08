@@ -266,7 +266,7 @@ function QuizListView({
   returnToPath = null,
   refreshToken = 0,
   disableCreate = false,
-  title = "Quiz",
+  title = null,
   onShareQuiz,
   onOpenCommunityQuiz,
   progressTracking = null,
@@ -920,7 +920,7 @@ function QuizListView({
       <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className="flex items-center gap-2">
           <BadgeCheck className="w-5 h-5 text-blue-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{title}</p>
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{title || t("workspace.studio.actions.quiz")}</p>
           <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
             {quizzes.length}
           </span>

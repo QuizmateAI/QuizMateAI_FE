@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/Components/ui/input';
@@ -128,6 +129,7 @@ const QuestionCard = memo(function QuestionCard({
   showResult = false, showExplanation = false, disabled = false, reviewState = null, showHeaderMeta = true,
   isFlagged = false, onToggleFlag = null,
 }) {
+  const { t } = useTranslation();
   const isMultiple = question.type === 'MULTIPLE_CHOICE';
   const isTextQuestion = question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK';
   const isMatchingQuestion = question.type === 'MATCHING';
@@ -138,9 +140,9 @@ const QuestionCard = memo(function QuestionCard({
     ? answerValue
     : Array.isArray(answerValue?.selectedAnswerIds)
       ? answerValue.selectedAnswerIds
-    : Array.isArray(selectedAnswers)
-      ? selectedAnswers
-      : [];
+      : Array.isArray(selectedAnswers)
+        ? selectedAnswers
+        : [];
   const textAnswer = typeof answerValue === 'string'
     ? answerValue
     : typeof answerValue?.textAnswer === 'string'
@@ -316,10 +318,14 @@ const QuestionCard = memo(function QuestionCard({
                   'inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors',
                   isFlagged
                     ? 'border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/60'
-                    : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-amber-200 hover:text-amber-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500 dark:hover:border-amber-700 dark:hover:text-amber-300'
+                    : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-amber-200 hover:text-amber-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500 dark:hover:border-amber-700 dark:hover:text-amber-300',
                 )}
-                aria-label={isFlagged ? 'Unmark question for review' : 'Mark question for review'}
-                title={isFlagged ? 'Unmark question for review' : 'Mark question for review'}
+                aria-label={isFlagged
+                  ? t('workspace.quiz.reviewCard.unmarkForReview', 'Unmark question for review')
+                  : t('workspace.quiz.reviewCard.markForReview', 'Mark question for review')}
+                title={isFlagged
+                  ? t('workspace.quiz.reviewCard.unmarkForReview', 'Unmark question for review')
+                  : t('workspace.quiz.reviewCard.markForReview', 'Mark question for review')}
               >
                 <Star className={cn('h-4 w-4', isFlagged ? 'fill-current' : '')} />
               </button>
@@ -332,14 +338,20 @@ const QuestionCard = memo(function QuestionCard({
         )}
       </div>
 
-      {isMultiple && <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 italic">Select all that apply</p>}
+      {isMultiple && (
+        <p className="mb-3 text-xs italic text-slate-500 dark:text-slate-400">
+          {t('workspace.quiz.reviewCard.multipleSelectHint', 'Select all that apply')}
+        </p>
+      )}
 
       {isMatchingQuestion ? (
         isReviewRevealed ? (
-          /* Review mode — show pairs with correct/incorrect styling */
           <div className="space-y-3">
             <p className="text-xs italic text-slate-500 dark:text-slate-400">
-              Ghép mỗi mục bên trái với đáp án đúng.
+              {t(
+                'workspace.quiz.reviewCard.matchingReviewInstruction',
+                'Match each left item with the correct answer.',
+              )}
             </p>
 
             {matchingLeftItems.map((leftKey, index) => {
@@ -358,27 +370,29 @@ const QuestionCard = memo(function QuestionCard({
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                       {index + 1}
                     </span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex-1">
+                    <span className="flex-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                       <MixedMathText>{leftKey}</MixedMathText>
                     </span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600 shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-slate-300 dark:text-slate-600">
                       <path d="M5 12h14M13 6l6 6-6 6" />
                     </svg>
                     <span className={cn(
-                      'text-sm font-medium flex-1',
+                      'flex-1 text-sm font-medium',
                       isPairCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400',
                     )}>
                       {selectedRightKey ? (
                         <MixedMathText>{selectedRightKey}</MixedMathText>
                       ) : (
-                        <span className="italic text-slate-400">Chưa chọn</span>
+                        <span className="italic text-slate-400">
+                          {t('workspace.quiz.reviewCard.unanswered', 'Not answered')}
+                        </span>
                       )}
                     </span>
                   </div>
 
                   {!isPairCorrect && correctRightKey && (
-                    <div className="mt-2 ml-9 text-xs text-green-700 dark:text-green-400 font-medium">
-                      Đáp án đúng: <MixedMathText>{correctRightKey}</MixedMathText>
+                    <div className="mt-2 ml-9 text-xs font-medium text-green-700 dark:text-green-400">
+                      {t('workspace.quiz.correctAnswerLabel', 'Correct answer')}: <MixedMathText>{correctRightKey}</MixedMathText>
                     </div>
                   )}
                 </div>
@@ -386,7 +400,6 @@ const QuestionCard = memo(function QuestionCard({
             })}
           </div>
         ) : (
-          /* Quiz taking mode — drag and drop */
           <MatchingDragDrop
             leftItems={matchingLeftItems}
             rightOptions={matchingRightOptions}
@@ -401,7 +414,9 @@ const QuestionCard = memo(function QuestionCard({
             value={textAnswer}
             disabled={isLocked}
             onChange={(event) => onTextAnswerChange?.(event.target.value)}
-            placeholder={question.type === 'FILL_IN_BLANK' ? 'Điền câu trả lời của bạn' : 'Nhập câu trả lời ngắn'}
+            placeholder={question.type === 'FILL_IN_BLANK'
+              ? t('workspace.quiz.reviewCard.fillBlankPlaceholder', 'Enter your answer')
+              : t('workspace.quiz.reviewCard.shortAnswerPlaceholder', 'Enter a short answer')}
             className="h-11 border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus-visible:ring-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
 
@@ -415,22 +430,34 @@ const QuestionCard = memo(function QuestionCard({
                   : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400'),
             )}>
               <p>
-                <span className="font-semibold">Câu trả lời của bạn:</span>{" "}
-                {textAnswer.trim() ? <MixedMathText>{textAnswer.trim()}</MixedMathText> : "Chưa trả lời"}
+                <span className="font-semibold">
+                  {t('workspace.quiz.reviewCard.yourAnswerLabel', 'Your answer')}:
+                </span>{' '}
+                {textAnswer.trim()
+                  ? <MixedMathText>{textAnswer.trim()}</MixedMathText>
+                  : t('workspace.quiz.reviewCard.unanswered', 'Not answered')}
               </p>
               {isPendingGrading
-                ? <p><span className="font-semibold">Trạng thái:</span> Đang chấm bởi AI...</p>
-                : (
+                ? (
                   <p>
-                    <span className="font-semibold">Đáp án đúng:</span>{" "}
-                    {correctTextAnswers.length ? (
-                      <MixedMathText>{correctTextAnswers.join(" / ")}</MixedMathText>
-                    ) : (
-                      "Không có dữ liệu"
-                    )}
+                    <span className="font-semibold">
+                      {t('workspace.quiz.reviewCard.statusLabel', 'Status')}:
+                    </span>{' '}
+                    {t('workspace.quiz.reviewCard.gradingByAI', 'Grading by AI...')}
                   </p>
                 )
-              }
+                : (
+                  <p>
+                    <span className="font-semibold">
+                      {t('workspace.quiz.correctAnswerLabel', 'Correct answer')}:
+                    </span>{' '}
+                    {correctTextAnswers.length ? (
+                      <MixedMathText>{correctTextAnswers.join(' / ')}</MixedMathText>
+                    ) : (
+                      t('workspace.quiz.reviewCard.noData', 'No data available')
+                    )}
+                  </p>
+                )}
             </div>
           )}
         </div>
@@ -462,32 +489,31 @@ const QuestionCard = memo(function QuestionCard({
       {isReviewRevealed && (
         <div className="mt-3">
           {isPendingGrading
-            ? <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">… Đang chấm bởi AI</span>
+            ? <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">{t('workspace.quiz.reviewCard.gradingByAI', 'Grading by AI...')}</span>
             : isMatchingQuestion
-            ? (normalizedMatchingPairs.length === 0
-                ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer provided</span>
-                : isFullyCorrect
-                  ? <span className="text-green-600 dark:text-green-400 font-semibold text-sm">✓ Correct!</span>
-                  : <span className="text-red-600 dark:text-red-400 font-semibold text-sm">✗ Incorrect</span>)
-            : isTextQuestion
-            ? (!textAnswer.trim()
-                ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer provided</span>
-                : isFullyCorrect
-                  ? <span className="text-green-600 dark:text-green-400 font-semibold text-sm">✓ Correct!</span>
-                  : <span className="text-red-600 dark:text-red-400 font-semibold text-sm">✗ Incorrect</span>)
-            : normalizedSelectedAnswers.length === 0
-              ? <span className="text-slate-500 dark:text-slate-400 font-semibold text-sm">No answer selected</span>
-              : isFullyCorrect
-                ? <span className="text-green-600 dark:text-green-400 font-semibold text-sm">✓ Correct!</span>
-                : <span className="text-red-600 dark:text-red-400 font-semibold text-sm">✗ Incorrect</span>
-          }
+              ? (normalizedMatchingPairs.length === 0
+                  ? <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('workspace.quiz.reviewCard.noAnswerProvided', 'No answer provided')}</span>
+                  : isFullyCorrect
+                    ? <span className="text-sm font-semibold text-green-600 dark:text-green-400">✓ {t('workspace.quiz.reviewCard.correct', 'Correct!')}</span>
+                    : <span className="text-sm font-semibold text-red-600 dark:text-red-400">✗ {t('workspace.quiz.reviewCard.incorrect', 'Incorrect')}</span>)
+              : isTextQuestion
+                ? (!textAnswer.trim()
+                    ? <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('workspace.quiz.reviewCard.noAnswerProvided', 'No answer provided')}</span>
+                    : isFullyCorrect
+                      ? <span className="text-sm font-semibold text-green-600 dark:text-green-400">✓ {t('workspace.quiz.reviewCard.correct', 'Correct!')}</span>
+                      : <span className="text-sm font-semibold text-red-600 dark:text-red-400">✗ {t('workspace.quiz.reviewCard.incorrect', 'Incorrect')}</span>)
+                : normalizedSelectedAnswers.length === 0
+                  ? <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('workspace.quiz.reviewCard.noAnswerSelected', 'No answer selected')}</span>
+                  : isFullyCorrect
+                    ? <span className="text-sm font-semibold text-green-600 dark:text-green-400">✓ {t('workspace.quiz.reviewCard.correct', 'Correct!')}</span>
+                    : <span className="text-sm font-semibold text-red-600 dark:text-red-400">✗ {t('workspace.quiz.reviewCard.incorrect', 'Incorrect')}</span>}
         </div>
       )}
 
       {isExplanationRevealed && (reviewState?.explanation || question.explanation) && (
-        <div className="mt-3 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+        <div className="mt-3 rounded-lg bg-slate-100 p-3 dark:bg-slate-700/50">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            <span className="font-semibold">Explanation: </span>
+            <span className="font-semibold">{t('workspace.quiz.explanation', 'Explanation')}: </span>
             <MixedMathText>{reviewState?.explanation || question.explanation}</MixedMathText>
           </p>
         </div>

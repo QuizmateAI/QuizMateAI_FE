@@ -37,3 +37,4 @@ Skill card nen ngan, de doc trong 1 den 2 phut.
 - `api-flow-alignment.md`
 - `regression-check.md`
 - `progressive-loading.md`
+- `i18n-locale-audit.md`

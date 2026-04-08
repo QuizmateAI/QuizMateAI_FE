@@ -145,7 +145,7 @@ function AdminSidebar({ collapsed, onToggle }) {
             collapsed && "cursor-pointer group"
           )}
           onClick={collapsed ? onToggle : undefined}
-          title={collapsed ? "Mở rộng sidebar" : undefined}
+          title={collapsed ? t('common.expandSidebar', 'Expand sidebar') : undefined}
         >
           <img 
             src={LogoDark} 
@@ -164,7 +164,7 @@ function AdminSidebar({ collapsed, onToggle }) {
           <button
             onClick={onToggle}
             className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-            title="Thu gọn sidebar"
+            title={t('common.collapseSidebar', 'Collapse sidebar')}
           >
             <PanelLeftClose className="w-5 h-5" />
           </button>

@@ -49,7 +49,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
               item.roadmapName
               || item.roadmap?.title
               || item.roadmap?.name
-              || "Workspace",
+              || t("workspace.mockTest.workspaceLabel"),
           }))
         );
         setRoadmapIds([]);
@@ -70,7 +70,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
           quizzes.forEach((quiz) => {
             allMockTests.push({
               ...quiz,
-              roadmapName: roadmap.title || roadmap.name || `Roadmap #${roadmapId}`,
+              roadmapName: roadmap.title || roadmap.name || t("workspace.roadmap.fallbackName", { id: roadmapId }),
               roadmapId,
             });
           });
@@ -109,7 +109,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
       setDeleteTargetQuiz(null);
     } catch (error) {
       console.error("Failed to delete mock test:", error);
-      showError(error?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
+      showError(error?.message || t("workspace.quiz.deleteFail"));
     } finally {
       setDeletingId(null);
     }
@@ -137,7 +137,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
       <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className="flex items-center gap-2">
           <ClipboardList className="w-5 h-5 text-purple-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>Mock Test</p>
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{t("workspace.studio.actions.mockTest")}</p>
           <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
             {mockTests.length}
           </span>
@@ -262,13 +262,13 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.deleteQuiz", "Xóa quiz")}</DialogTitle>
+            <DialogTitle>{t("workspace.quiz.deleteQuiz")}</DialogTitle>
             <DialogDescription className="space-y-2">
               <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
                 {deleteTargetQuiz?.title}
               </span>
               <span className="block">
-                {t("workspace.quiz.deleteConfirm", "Bạn có chắc chắn không?")}
+                {t("workspace.quiz.deleteConfirm")}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -278,7 +278,7 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
               onClick={() => setDeleteTargetQuiz(null)}
               disabled={Boolean(deletingId)}
             >
-              {t("workspace.quiz.close", "Đóng")}
+              {t("workspace.quiz.close")}
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -286,8 +286,8 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
               disabled={Boolean(deletingId)}
             >
               {deletingId
-                ? t("workspace.quiz.actionButtons.deleting", "Deleting...")
-                : t("workspace.quiz.actionButtons.delete", "Delete")}
+                ? t("workspace.quiz.actionButtons.deleting")
+                : t("workspace.quiz.actionButtons.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

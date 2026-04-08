@@ -59,7 +59,7 @@ function SuperAdminLayoutContent() {
                   ? 'border-slate-700 hover:bg-slate-800 text-yellow-400' 
                   : 'border-gray-200 hover:bg-gray-50 text-gray-600'
               }`}
-              title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              title={isDarkMode ? t('common.lightMode', 'Light mode') : t('common.darkMode', 'Dark mode')}
             >
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -78,7 +78,7 @@ function SuperAdminLayoutContent() {
             <div className="text-right hidden sm:block">
                 <p className={`text-sm font-bold font-poppins leading-none ${
                   isDarkMode ? 'text-white' : 'text-[#313131]'
-                }`}>Super Admin</p>
+                }`}>{t('superAdminLayout.brand', 'Super Admin')}</p>
               </div>
             <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold font-poppins ${
               isDarkMode ? 'bg-indigo-900 border-indigo-700 text-indigo-300' : 'bg-indigo-100 border-indigo-200 text-indigo-700'

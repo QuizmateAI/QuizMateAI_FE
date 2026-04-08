@@ -13,6 +13,7 @@ Tong hop cac rule thuc dung de agent sua FE theo dung style cua repo.
 - Khi mot component bat dau qua to hoac qua nhieu trach nhiem, tach thanh sub-component hoac custom hook.
 - Refactor nho, co muc tieu, va co the verify duoc luon tot hon refactor rong nhieu mat tran.
 - Dung theo `file-structure-rules.md`, `refactor-rules.md`, va `performance-levels.md` khi task dong vao khu vuc lon.
+- URL/route naming uu tien danh tu so nhieu cho resource route (vi du: `/plans`, `/wallets`, `/payments`, `/workspaces`, `/quizzes`); chi giu dang khac neu la endpoint dac thu nhu callback hoac auth flow.
 
 ## UI va styling
 
@@ -20,6 +21,7 @@ Tong hop cac rule thuc dung de agent sua FE theo dung style cua repo.
 - Co the ton tai CSS cu trong repo, nhung khong mo rong them file CSS moi neu Tailwind da giai quyet duoc.
 - Neu sua component UI co san trong `src/Components/ui/`, can giu tinh tai su dung.
 - Khong dua style business-specific vao primitive UI neu no chi phuc vu 1 page.
+- Toan he thong su dung mot bo font chu thong nhat theo quy uoc i18n cua du an; khong dat font override rieng cho tung block UI (vi du `font-mono`) neu khong co ly do nghiep vu ro rang.
 
 ## Data va side effects
 
