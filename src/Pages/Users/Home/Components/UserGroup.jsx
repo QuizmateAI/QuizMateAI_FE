@@ -16,6 +16,7 @@ import {
 import { useTranslation } from "react-i18next";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
+import { buildGroupWorkspacePath } from "@/lib/routePaths";
 
 const ROLE_THEMES = {
   LEADER: {
@@ -135,7 +136,7 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
     : groups;
 
   const handleNavigateGroup = (group) => {
-    navigate(`/group-workspace/${group.workspaceId}`);
+    navigate(buildGroupWorkspacePath(group.workspaceId));
   };
 
   const canShareGroup = (group) => getNormalizedRole(group?.memberRole) === "LEADER";

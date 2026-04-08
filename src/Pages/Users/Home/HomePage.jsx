@@ -19,7 +19,7 @@ import { useToast } from '@/context/ToastContext';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { getMyWallet } from '@/api/ManagementSystemAPI';
 import CreditIconImage from "@/Components/ui/CreditIconImage";
-import { buildWorkspacePath } from '@/lib/routePaths';
+import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 
 function formatNumber(value, locale) {
   try {
@@ -176,7 +176,7 @@ function HomePage() {
       if (!newGroupWorkspace?.workspaceId) {
         throw new Error(t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
       }
-      navigate(`/group-workspace/${newGroupWorkspace.workspaceId}`, { state: { openProfileConfig: true } });
+      navigate(buildGroupWorkspacePath(newGroupWorkspace.workspaceId), { state: { openProfileConfig: true } });
     } catch (err) {
       showError(err?.message || t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
     }

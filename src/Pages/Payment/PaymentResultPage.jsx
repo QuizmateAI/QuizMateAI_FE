@@ -17,6 +17,7 @@ import {
   markPendingPlanPurchaseSucceeded,
 } from '@/Utils/planPurchaseState';
 import { setCachedSubscription } from '@/Utils/userCache';
+import { buildPlansPath } from '@/lib/routePaths';
 
 export default function PaymentResultPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -27,6 +28,7 @@ export default function PaymentResultPage() {
   const settingsRef = useRef(null);
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const plansPath = buildPlansPath();
 
   const toggleLanguage = () => {
     i18n.changeLanguage(currentLang === 'vi' ? 'en' : 'vi');
@@ -134,7 +136,7 @@ export default function PaymentResultPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/plan')}
+            onClick={() => navigate(plansPath)}
             className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <CreditCard className="w-4 h-4" />
@@ -291,7 +293,7 @@ export default function PaymentResultPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
-              onClick={() => navigate('/plan')}
+              onClick={() => navigate(plansPath)}
               className={`flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-colors cursor-pointer ${
                 isDarkMode
                   ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'

@@ -22,6 +22,7 @@ import LogoLight from '@/assets/LightMode_Logo.webp';
 import LogoDark from '@/assets/DarkMode_Logo.webp';
 import { getPurchaseableCreditPackages } from '@/api/ManagementSystemAPI';
 import PaymentSidebar from './components/PaymentSidebar';
+import { buildWalletsPath } from '@/lib/routePaths';
 
 function formatNumber(value, locale) {
   return new Intl.NumberFormat(locale).format(Number(value) || 0);
@@ -52,7 +53,8 @@ export default function CreditPaymentPage() {
   const [error, setError] = useState(null);
   const settingsRef = useRef(null);
 
-  const backTo = location.state?.from || '/wallet';
+  const walletsPath = buildWalletsPath();
+  const backTo = location.state?.from || walletsPath;
   const bonusCredit = Number(creditPackage?.bonusCredit ?? 0);
   const baseCredit = Number(creditPackage?.baseCredit ?? 0);
   const totalCredit = baseCredit + bonusCredit;
@@ -143,7 +145,7 @@ export default function CreditPaymentPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/wallet')}
+              onClick={() => navigate(walletsPath)}
               className={`flex h-10 items-center gap-2 rounded-full px-4 ${
                 isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
               }`}

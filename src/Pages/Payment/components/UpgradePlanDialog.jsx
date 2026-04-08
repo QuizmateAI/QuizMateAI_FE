@@ -7,6 +7,7 @@ import { AlertCircle, Crown, Users, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import PlanCard from "@/Pages/Users/Profile/Components/PlanCard";
+import { buildPaymentsPath, withQueryParams } from "@/lib/routePaths";
 
 /**
  * Dialog nâng cấp gói đăng ký, dùng chung cho cả Individual và Group.
@@ -78,9 +79,10 @@ export default function UpgradePlanDialog({
   const handleUpgrade = useCallback(
     (plan) => {
       const groupParam = isGroup ? selectedWorkspaceId : null;
-      const url = groupParam
-        ? `/payment?planId=${plan.planId}&workspaceId=${groupParam}`
-        : `/payment?planId=${plan.planId}`;
+      const url = withQueryParams(buildPaymentsPath(), {
+        planId: plan.planId,
+        workspaceId: groupParam,
+      });
       onOpenChange(false);
       navigate(url);
     },
