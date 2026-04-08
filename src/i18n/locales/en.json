@@ -670,6 +670,7 @@
     "light": "Light",
     "dark": "Dark",
     "refresh": "Refresh",
+    "refreshLog": "Refresh log",
     "back": "Back",
     "next": "Next",
     "subscription": "Subscription Plans",
@@ -962,6 +963,11 @@
       "status": "Status",
       "allStatuses": "All statuses"
     },
+    "exchangeRate": {
+      "title": "Current USD/VND rate",
+      "refresh": "Refresh exchange rate",
+      "unknown": "Unknown source"
+    },
     "table": {
       "model": "Model",
       "group": "Capability",
@@ -1052,6 +1058,11 @@
     "refresh": "Refresh",
     "clear": "Clear filters",
     "apply": "Apply",
+    "exchangeRate": {
+      "title": "Current USD/VND rate",
+      "refresh": "Refresh exchange rate",
+      "unknown": "Unknown source"
+    },
     "empty": "No requests match the current filters.",
     "metrics": {
       "requests": "Requests",
@@ -1082,11 +1093,11 @@
     "table": {
       "request": "Request",
       "plan": "Plan",
+      "model": "Model",
       "tokens": "Tokens",
       "charged": "User paid",
       "actual": "Actual cost",
       "profit": "Profit",
-      "legend": "User paid shows the charged credits and VND amount. Actual cost uses real model tokens to derive provider spend. Profit is user-paid amount minus actual cost; a negative value means a loss.",
       "profitHint": "Kept by QuizMate",
       "profitGainHint": "QuizMate is profitable",
       "profitLossHint": "QuizMate is taking a loss",
@@ -2183,6 +2194,7 @@
     "quiz": {
       "createTitle": "Create Quiz",
       "createDesc": "Create a quiz for your workspace.",
+      "challengeDraftDesc": "Draft the challenge quiz: set the name, difficulty, timing, questions, and answers.",
       "insufficientCredit": {
         "title": "Not enough QMC credits",
         "hint": "Buy a credit pack to top up your workspace balance, then try generating the quiz again.",
@@ -2434,6 +2446,8 @@
         "nameMaxLength": "Quiz title must be at most {{max}} characters.",
         "nameMaxLengthHint": "Maximum {{max}} characters.",
         "requiredFieldsHint": "Fields marked with * are required.",
+        "totalQuestionsRange": "Total questions must be between {{min}} and {{max}}.",
+        "totalQuestionsRangeHint": "Enter from {{min}} to {{max}} questions.",
         "contextRequired": "Please choose where to create the quiz.",
         "correctAnswerRequired": "Question {{index}} has no correct answer selected.",
         "correctAnswerRequiredInline": "No correct answer selected for this question.",
@@ -2453,11 +2467,9 @@
         "mediumDurationMustBeGreaterThanEasy": "Medium difficulty duration must be greater than easy difficulty duration.",
         "hardDurationMustBeGreaterThanMedium": "Hard difficulty duration must be greater than medium difficulty duration.",
         "timeDurationRequired": "Please enter total duration for the quiz.",
-        "materialRequired": "Please select at least one material.",
-        "totalQuestionsRange": "Total questions must be between {{min}} and {{max}}.",
-        "totalQuestionsRangeHint": "Allowed range: {{min}}–{{max}} questions.",
-        "minimumTimePerQuestion": "Each question needs at least {{seconds}} seconds. With {{count}} questions, total duration must be at least {{minutes}} minutes.",
-        "minimumTimePerQuestionHint": "Minimum {{minutes}} minutes total ({{seconds}} seconds per question)."
+        "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
+        "minimumTimePerQuestion": "Minimum Time Per Question",
+        "minimumTimePerQuestionHint": "Minimum Time Per Question Hint"
       },
       "contextSelector": {
         "title": "Quiz Location",
@@ -4096,7 +4108,46 @@
     "challenge": {
       "title": "Challenge",
       "description": "Compete with your group members in real-time quiz challenges.",
-      "badge": "Challenge"
+      "badge": "Challenge",
+      "cancelDialogTitle": "Cancel this challenge?",
+      "cancelDialogDescription": "Are you sure you want to cancel this challenge? Members will no longer be able to join and the schedule will be removed.",
+      "cancelDialogBack": "Close",
+      "cancelDialogConfirm": "Cancel challenge",
+      "snapshotQuizDefaultTitle": "Challenge quiz",
+      "viewSnapshotQuiz": "View quiz",
+      "snapshotQuizHint": "Preview content and status; edit via Compose before the challenge starts.",
+      "quizSnapshotReviewDraftTitle": "Challenge exam (review & edit only)",
+      "quizSnapshotReviewDraftBody": "This exam belongs to a challenge, not the shared group quiz list. Members only take it when the challenge starts. Use the Check tab to review content, edit via Compose, then Publish when ready — there is no group-wide distribution like normal group quizzes.",
+      "quizSnapshotReviewNoTakeHint": "This exam only opens when the challenge starts (on schedule or when the leader runs it). Rankings are per challenge — you cannot start the exam from this screen.",
+      "leaderboardTitle": "Leaderboard",
+      "editSchedule": "Edit schedule & details",
+      "editDialogTitle": "Update challenge",
+      "editDialogDescription": "You can only edit when more than 1 hour remains before the scheduled start. Double-check timezone and duration.",
+      "editTitleLabel": "Challenge title",
+      "editDescriptionLabel": "Description",
+      "editStartLabel": "Start",
+      "editEndLabel": "End",
+      "editSave": "Save changes",
+      "phase": {
+        "SCHEDULED": "Not started",
+        "LIVE": "Live",
+        "FINISHED": "Finished",
+        "CANCELLED": "Cancelled"
+      },
+      "leaderFairPlayQuizHint": "You're competing: after the quiz is published you can't preview questions. While it's still a draft you can compose and review.",
+      "quizStatus": {
+        "DRAFT": "Draft",
+        "PROCESSING": "Generating",
+        "ACTIVE": "Ready",
+        "ERROR": "Generation error"
+      },
+      "reviewContributorsTitle": "Quiz reviewers",
+      "reviewContributorsHint": "Assigned members cannot register for this challenge. You cannot assign someone who is already a participant.",
+      "reviewContributorPickLabel": "Group member",
+      "reviewContributorPickPlaceholder": "Select a member…",
+      "reviewContributorAdd": "Add",
+      "reviewContributorRemove": "Remove",
+      "reviewContributorCannotRegister": "You are assigned as a quiz reviewer, so you cannot register for this challenge."
     },
     "members": {
       "loading": "Loading members...",

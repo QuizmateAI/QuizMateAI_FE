@@ -350,13 +350,14 @@ function RbacManagement() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={fetchRoles}
                 disabled={isLoading}
                 className="rounded-xl"
+                aria-label={t('common.refresh')}
+                title={t('common.refresh')}
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                {t('common.refresh')}
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
               <Button size="sm" onClick={() => setIsCreateRoleOpen(true)} className="rounded-xl">
                 <Plus className="w-4 h-4 mr-2" />
@@ -470,13 +471,14 @@ function RbacManagement() {
               </CardTitle>
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={fetchPermissions}
                 disabled={isLoading}
                 className="rounded-xl"
+                aria-label={t('common.refresh')}
+                title={t('common.refresh')}
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                {t('common.refresh')}
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
             </CardHeader>
             <CardContent className="p-0">
@@ -600,9 +602,16 @@ function RbacManagement() {
             <CardTitle className={`text-xl ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
               {t('rbac.auditLogs')}
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={fetchAuditLogs} disabled={isLoading} className="rounded-xl">
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              {t('common.refresh')}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchAuditLogs}
+              disabled={isLoading}
+              className="rounded-xl"
+              aria-label={t('common.refresh')}
+              title={t('common.refresh')}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </CardHeader>
           <CardContent className="p-0">

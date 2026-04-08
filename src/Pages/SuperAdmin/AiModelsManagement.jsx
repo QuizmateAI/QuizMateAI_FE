@@ -85,11 +85,27 @@ function extractData(response) {
   return response?.data?.data ?? response?.data ?? response ?? null;
 }
 
+/** BE LocalDateTime không offset = wall-clock VN — parse +07:00 khi thiếu zone (khớp Jackson). */
+function parseApiDateTime(value) {
+  if (value === null || value === undefined || value === '') return new Date(NaN);
+  if (typeof value === 'number') return new Date(value);
+  const s = String(value).trim();
+  if (
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s)
+    && !/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)
+  ) {
+    return new Date(`${s}+07:00`);
+  }
+  return new Date(s);
+}
+
+/** Hiển thị theo giờ Việt Nam (ICT). */
 function formatDateTime(value, locale = 'vi-VN') {
   if (!value) return '-';
-  const parsed = new Date(value);
+  const parsed = parseApiDateTime(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString(locale, {
+    timeZone: 'Asia/Ho_Chi_Minh',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -115,9 +131,10 @@ function formatExchangeRate(value, maximumFractionDigits = 2) {
 
 function formatCompactDateTime(value, locale = 'vi-VN') {
   if (!value) return '-';
-  const parsed = new Date(value);
+  const parsed = parseApiDateTime(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString(locale, {
+    timeZone: 'Asia/Ho_Chi_Minh',
     month: '2-digit',
     day: '2-digit',
     year: 'numeric',
@@ -128,14 +145,17 @@ function formatCompactDateTime(value, locale = 'vi-VN') {
 
 function formatDateTimeParts(value, locale = 'vi-VN') {
   if (!value) return { time: '-', date: null };
-  const parsed = new Date(value);
+  const parsed = parseApiDateTime(value);
   if (Number.isNaN(parsed.getTime())) return { time: value, date: null };
+  const tz = { timeZone: 'Asia/Ho_Chi_Minh' };
   return {
     time: parsed.toLocaleTimeString(locale, {
+      ...tz,
       hour: '2-digit',
       minute: '2-digit',
     }),
     date: parsed.toLocaleDateString(locale, {
+      ...tz,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -448,9 +468,17 @@ function AiModelsManagement() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={fetchModels} disabled={loading} className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            {t('aiModels.refresh')}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={fetchModels}
+            disabled={loading}
+            className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+            aria-label={t('aiModels.refresh')}
+            title={t('aiModels.refresh')}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           {canWrite ? (
             <Button onClick={openCreateForm} className="bg-gradient-to-r from-sky-600 to-blue-600 text-white hover:from-sky-700 hover:to-blue-700">
@@ -474,17 +502,25 @@ function AiModelsManagement() {
             <DollarSign className={`h-5 w-5 ${isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}`} />
           </div>
           <div>
-            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.exchangeRate.title', 'Ty gia USD/VND')}</p>
+            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.exchangeRate.title')}</p>
             <p className={`mt-1 text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatExchangeRate(exchangeRate?.rate)}</p>
             <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {(exchangeRate?.source || t('aiModels.exchangeRate.unknown', 'Khong ro nguon'))}
+              {(exchangeRate?.source || t('aiModels.exchangeRate.unknown'))}
               {exchangeRate?.fetchedAt ? ` • ${formatDateTime(exchangeRate.fetchedAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}` : ''}
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => fetchExchangeRate()} disabled={exchangeRateLoading} className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
-          {t('aiModels.exchangeRate.refresh', 'Lam moi ty gia')}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => fetchExchangeRate()}
+          disabled={exchangeRateLoading}
+          className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+          aria-label={t('aiModels.exchangeRate.refresh')}
+          title={t('aiModels.exchangeRate.refresh')}
+        >
+          <RefreshCw className={`h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 
@@ -605,7 +641,7 @@ function AiModelsManagement() {
                     <TableCell className="py-5 align-middle text-left">
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(model.assignedPlanCodes) && model.assignedPlanCodes.length > 0 ? (
-                          model.assignedPlanCodes.map((planCode) => <span key={planCode} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>{planCode}</span>)
+                          model.assignedPlanCodes.map((planLabel) => <span key={planLabel} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>{planLabel}</span>)
                         ) : <span className={`text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.unassigned')}</span>}
                       </div>
                     </TableCell>
@@ -754,13 +790,21 @@ function AiModelsManagement() {
                           <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.exchangeRate.title', 'Tỷ giá USD/VND')}</p>
                           <p className={`mt-2 font-mono text-[32px] font-black leading-none tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatExchangeRate(exchangeRate?.rate)}</p>
                           <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {(exchangeRate?.source || t('aiModels.exchangeRate.unknown', 'Không rõ nguồn'))}
+                            {(exchangeRate?.source || t('aiModels.exchangeRate.unknown'))}
                             {exchangeRate?.fetchedAt ? ` • ${formatDateTime(exchangeRate.fetchedAt, locale)}` : ''}
                           </p>
                         </div>
-                        <Button type="button" variant="outline" onClick={() => fetchExchangeRate()} disabled={exchangeRateLoading} className={`shrink-0 ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}`}>
-                          <RefreshCw className={`mr-2 h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
-                          {t('aiModels.exchangeRate.refresh', 'Làm mới')}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => fetchExchangeRate()}
+                          disabled={exchangeRateLoading}
+                          className={`shrink-0 ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}`}
+                          aria-label={t('aiModels.exchangeRate.refresh')}
+                          title={t('aiModels.exchangeRate.refresh')}
+                        >
+                          <RefreshCw className={`h-4 w-4 ${exchangeRateLoading ? 'animate-spin' : ''}`} />
                         </Button>
                       </div>
                     </div>

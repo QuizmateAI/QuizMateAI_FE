@@ -170,7 +170,7 @@ function MetricCard({ icon: Icon, label, value, tone, isDarkMode, subtext }) {
 }
 
 function AiAuditManagement() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const [searchParams] = useSearchParams();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
@@ -390,33 +390,13 @@ function AiAuditManagement() {
 
   return (
     <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-        <div>
-          <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            AI Audit
-          </h1>
-          <p className={`mt-1 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-            Theo dõi AI request, token tiêu hao, model, trạng thái và mở chi tiết khi cần.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={handleResetFilters} className="rounded-xl">
-            Xoá lọc
-          </Button>
-          <Button onClick={handleApplyFilters} className="rounded-xl bg-blue-600 hover:bg-blue-700">
-            <Search className="mr-2 h-4 w-4" />
-            Áp dụng lọc
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => fetchAuditLogs(page, pageSize, filters)}
-            disabled={isLoading}
-            className="rounded-xl"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Làm mới
-          </Button>
-        </div>
+      <div>
+        <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          AI Audit
+        </h1>
+        <p className={`mt-1 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+          Theo dõi AI request, token tiêu hao, model, trạng thái và mở chi tiết khi cần.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -460,69 +440,95 @@ function AiAuditManagement() {
             Bộ lọc AI audit
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <select
-            value={filters.provider}
-            onChange={(event) => handleFilterChange('provider', event.target.value)}
-            className={`h-11 rounded-xl border px-3 text-sm ${
-              isDarkMode
-                ? 'bg-slate-800 border-slate-700 text-slate-200'
-                : 'bg-white border-slate-200 text-slate-900'
-            }`}
-          >
-            <option value="">Tất cả provider</option>
-            {PROVIDER_OPTIONS.filter(Boolean).map((provider) => (
-              <option key={provider} value={provider}>
-                {provider}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.status}
-            onChange={(event) => handleFilterChange('status', event.target.value)}
-            className={`h-11 rounded-xl border px-3 text-sm ${
-              isDarkMode
-                ? 'bg-slate-800 border-slate-700 text-slate-200'
-                : 'bg-white border-slate-200 text-slate-900'
-            }`}
-          >
-            <option value="">Tất cả trạng thái</option>
-            {STATUS_OPTIONS.filter(Boolean).map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-          <Input
-            value={filters.featureKey}
-            onChange={(event) => handleFilterChange('featureKey', event.target.value)}
-            placeholder="Feature key"
-            className={`h-11 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-          />
-          <Input
-            value={filters.actorUserId}
-            onChange={(event) => handleFilterChange('actorUserId', event.target.value)}
-            placeholder="User ID"
-            className={`h-11 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-          />
-          <Input
-            value={filters.taskId}
-            onChange={(event) => handleFilterChange('taskId', event.target.value)}
-            placeholder="Task ID"
-            className={`h-11 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-          />
-          <Input
-            type="datetime-local"
-            value={filters.from}
-            onChange={(event) => handleFilterChange('from', event.target.value)}
-            className={`h-11 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-          />
-          <Input
-            type="datetime-local"
-            value={filters.to}
-            onChange={(event) => handleFilterChange('to', event.target.value)}
-            className={`h-11 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
-          />
+        <CardContent className="space-y-3">
+          <div className="audit-filter-grid grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <select
+              value={filters.provider}
+              onChange={(event) => handleFilterChange('provider', event.target.value)}
+              className={`h-11 w-full min-w-0 rounded-xl border px-3 text-sm ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-700 text-slate-200'
+                  : 'bg-white border-slate-200 text-slate-900'
+              }`}
+            >
+              <option value="">Tất cả provider</option>
+              {PROVIDER_OPTIONS.filter(Boolean).map((provider) => (
+                <option key={provider} value={provider}>
+                  {provider}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filters.status}
+              onChange={(event) => handleFilterChange('status', event.target.value)}
+              className={`h-11 w-full min-w-0 rounded-xl border px-3 text-sm ${
+                isDarkMode
+                  ? 'bg-slate-800 border-slate-700 text-slate-200'
+                  : 'bg-white border-slate-200 text-slate-900'
+              }`}
+            >
+              <option value="">Tất cả trạng thái</option>
+              {STATUS_OPTIONS.filter(Boolean).map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+            <Input
+              value={filters.featureKey}
+              onChange={(event) => handleFilterChange('featureKey', event.target.value)}
+              placeholder="Feature key"
+              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
+            />
+            <Input
+              value={filters.actorUserId}
+              onChange={(event) => handleFilterChange('actorUserId', event.target.value)}
+              placeholder="User ID"
+              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
+            />
+          </div>
+
+          <div className="audit-filter-grid grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Input
+              value={filters.taskId}
+              onChange={(event) => handleFilterChange('taskId', event.target.value)}
+              placeholder="Task ID"
+              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
+            />
+            <Input
+              type="datetime-local"
+              value={filters.from}
+              onChange={(event) => handleFilterChange('from', event.target.value)}
+              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
+            />
+            <Input
+              type="datetime-local"
+              value={filters.to}
+              onChange={(event) => handleFilterChange('to', event.target.value)}
+              className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
+            />
+            <div className="flex min-h-11 min-w-0 flex-wrap items-center justify-end gap-2 sm:justify-start xl:justify-end">
+              <Button variant="outline" onClick={handleResetFilters} className="rounded-xl">
+                Xoá lọc
+              </Button>
+              <Button onClick={handleApplyFilters} className="rounded-xl bg-blue-600 hover:bg-blue-700">
+                <Search className="mr-2 h-4 w-4" />
+                Áp dụng lọc
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => fetchAuditLogs(page, pageSize, filters)}
+                disabled={isLoading}
+                className="rounded-xl"
+                aria-label={t('common.refresh')}
+                title={t('common.refresh')}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

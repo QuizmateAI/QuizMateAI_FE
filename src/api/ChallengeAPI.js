@@ -40,3 +40,16 @@ export const startChallengeAttempt = async (workspaceId, eventId) => {
 export const getChallengeLeaderboard = async (workspaceId, eventId) => {
   return await api.get(`/group/${workspaceId}/challenges/${eventId}/leaderboard`);
 };
+
+/** Leader: người review đề snapshot — không được đăng ký challenge */
+export const listQuizReviewContributors = async (workspaceId, quizId) => {
+  return await api.get(`/group/${workspaceId}/quiz-review-contributors/${quizId}`);
+};
+
+export const addQuizReviewContributor = async (workspaceId, quizId, body) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}`, body);
+};
+
+export const removeQuizReviewContributor = async (workspaceId, quizId, userId) => {
+  return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/${userId}`);
+};

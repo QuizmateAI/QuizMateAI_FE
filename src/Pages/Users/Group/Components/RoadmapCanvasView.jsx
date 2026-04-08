@@ -262,6 +262,36 @@ function RoadmapCanvasView({
   const shouldDisableEmptyStateAction = disableCreate
     || (hasEmptyStateMaterialPicker && normalizedEmptyStateMaterialIds.length === 0);
 
+  const canShowRoadmapLevelFeedback = useMemo(() => {
+    const phases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
+    if (phases.length === 0) return false;
+
+    const isPhaseFinishedStatus = (phaseStatus) => {
+      const normalizedStatus = String(phaseStatus || "").toUpperCase();
+      return normalizedStatus === "COMPLETED" || normalizedStatus === "SKIPPED";
+    };
+
+    const hasCompletedPostLearning = (phase) => {
+      const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+      return postLearningQuizzes.some((quiz) => {
+        const attempted = quiz?.myAttempted === true;
+        const passed = quiz?.myPassed === true;
+        const status = String(quiz?.status || "").toUpperCase();
+        return attempted || passed || status === "COMPLETED";
+      });
+    };
+
+    const allPhasesFinished = phases.every((phase) => isPhaseFinishedStatus(phase?.status));
+
+    const postLearningSatisfied = phases.every((phase) => {
+      const pl = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+      if (pl.length === 0) return true;
+      return hasCompletedPostLearning(phase);
+    });
+
+    return allPhasesFinished && postLearningSatisfied;
+  }, [roadmap?.phases]);
+
   useEffect(() => {
     roadmapRef.current = roadmap;
   }, [roadmap]);
@@ -933,7 +963,7 @@ function RoadmapCanvasView({
         </div>
 
         <div className="flex items-center gap-2">
-          {roadmap?.roadmapId ? (
+          {roadmap?.roadmapId && canShowRoadmapLevelFeedback ? (
             <DirectFeedbackButton
               targetType="ROADMAP"
               targetId={roadmap.roadmapId}

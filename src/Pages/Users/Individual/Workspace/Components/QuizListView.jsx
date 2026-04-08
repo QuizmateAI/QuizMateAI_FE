@@ -11,6 +11,7 @@ import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
 import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
 import { useToast } from "@/context/ToastContext";
+import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
 
 function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
   const match = pathname.match(/^\/workspace\/(\d+)/);
@@ -154,43 +155,6 @@ function hasFeedbackStatusMapChanged(currentMap, nextMap) {
   }
 
   return false;
-}
-
-function getDurationInMinutes(quiz) {
-  const rawDuration = Number(quiz?.duration) || 0;
-  if (!rawDuration) return 0;
-
-  const createVia = String(quiz?.createVia || '').toUpperCase();
-  const isAiQuiz = createVia === 'AI';
-
-  const rawTimerMode = quiz?.timerMode;
-  const isTotalTimerMode = rawTimerMode === true
-    || rawTimerMode === "true"
-    || rawTimerMode === 1
-    || rawTimerMode === "1"
-    || rawTimerMode === "TOTAL";
-
-  if (isAiQuiz) {
-    // AI quizzes store quiz.duration in seconds.
-    // Legacy FE bug may have multiplied once more before BE conversion.
-    const normalizedSeconds = rawDuration >= 36000
-      ? Math.floor(rawDuration / 60)
-      : rawDuration;
-    return Math.max(1, Math.round(normalizedSeconds / 60));
-  }
-
-  // Legacy FE bug sent minutes as seconds into durationInMinute, and BE converted again.
-  // Example: 15 -> FE sends 900 -> BE stores 54000 seconds.
-  const normalizedDurationInSeconds = isTotalTimerMode && rawDuration >= 36000
-    ? Math.floor(rawDuration / 60)
-    : rawDuration;
-
-  // Total-mode duration is stored as seconds by BE (e.g. 900 = 15 minutes).
-  if (isTotalTimerMode) {
-    return Math.max(1, Math.round(normalizedDurationInSeconds / 60));
-  }
-
-  return rawDuration;
 }
 
 function resolveVisibilityMeta(isCommunityShared, isDarkMode, t) {

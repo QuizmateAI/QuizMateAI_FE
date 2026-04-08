@@ -611,15 +611,17 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
           <Button
             type="button"
             variant="outline"
+            size="icon"
             onClick={loadResponses}
             disabled={loading}
             className={cn(
-              'h-11 rounded-2xl px-4 shadow-sm',
+              'h-11 w-11 rounded-2xl shadow-sm',
               isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : 'border-slate-200 bg-white',
             )}
+            aria-label={t('common.refreshLog')}
+            title={t('common.refreshLog')}
           >
             <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
-            <span>{isEnglish ? 'Refresh log' : 'Làm mới log'}</span>
           </Button>
         </div>
 

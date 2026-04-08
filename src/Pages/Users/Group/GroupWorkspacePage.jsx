@@ -72,7 +72,7 @@ import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
-import { generateRoadmapPhases } from '@/api/AIAPI';
+import { generateRoadmap } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
@@ -400,6 +400,7 @@ function GroupWorkspacePage() {
     // Reset sub-views when changing sections
     setActiveView(null);
     setSelectedQuiz(null);
+    setQuizDetailFromChallengeReview(false);
     setSelectedFlashcard(null);
     setSelectedMockTest(null);
   };
@@ -431,6 +432,8 @@ function GroupWorkspacePage() {
   const [hasCheckedInitialSources, setHasCheckedInitialSources] = useState(false);
   // Sub-views for content sections
   const [activeView, setActiveView] = useState(null);
+  /** Mở từ challenge (viewQuizId): quiz snapshot chỉ để xem/sửa, không phân phối / không làm bài từ đây */
+  const [quizDetailFromChallengeReview, setQuizDetailFromChallengeReview] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [selectedFlashcard, setSelectedFlashcard] = useState(null);
   const [selectedMockTest, setSelectedMockTest] = useState(null);
@@ -540,6 +543,12 @@ function GroupWorkspacePage() {
     [effectiveGroupRoadmapConfig]
   );
 
+  useEffect(() => {
+    if (Number.isInteger(Number(currentRoadmapId)) && Number(currentRoadmapId) > 0) {
+      setHasTriggeredGroupRoadmap(true);
+    }
+  }, [currentRoadmapId]);
+
   const currentGroupFromGroups = groups.find((g) => String(g.workspaceId) === String(workspaceId));
 
   const currentGroupName = groupProfile?.groupName
@@ -627,6 +636,96 @@ function GroupWorkspacePage() {
       console.error('Failed to fetch group workspace detail:', err);
     });
   }, [currentWorkspace?.workspaceId, currentWorkspaceFromList?.workspaceId, fetchWorkspaceDetail, isCreating, workspaceId]);
+
+  const challengeDraftQuizIdParam = searchParams.get('challengeDraftQuizId');
+  const challengeDraftUiActive = searchParams.get('challengeDraft') === '1';
+  useEffect(() => {
+    if (!challengeDraftQuizIdParam || isCreating || !resolvedWorkspaceId) return;
+    const qid = Number(challengeDraftQuizIdParam);
+    if (!Number.isInteger(qid) || qid <= 0) return;
+
+    // Tránh giữ sub-view cũ (vd. quizDetail không có selectedQuiz) → ChatPanel rơi vào placeholder "AI đang xử lý".
+    setActiveView('createQuiz');
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getQuizById } = await import('@/api/QuizAPI');
+        const res = await getQuizById(qid);
+        const quiz = unwrapApiData(res);
+        if (cancelled || !quiz?.quizId) return;
+        setSelectedQuiz(quiz);
+        const next = new URLSearchParams(searchParams);
+        next.delete('challengeDraftQuizId');
+        setSearchParams(next, { replace: true });
+      } catch (e) {
+        console.error('challengeDraftQuizId', e);
+        if (!cancelled) {
+          showError(
+            currentLang === 'en'
+              ? 'Could not open challenge draft quiz. Check permissions or try again.'
+              : 'Không mở được bản nháp quiz challenge. Kiểm tra quyền hoặc thử lại.'
+          );
+          setActiveView('quiz');
+          const next = new URLSearchParams(searchParams);
+          next.delete('challengeDraftQuizId');
+          next.delete('challengeDraft');
+          setSearchParams(next, { replace: true });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    challengeDraftQuizIdParam,
+    resolvedWorkspaceId,
+    isCreating,
+    searchParams,
+    setSearchParams,
+    showError,
+    currentLang,
+  ]);
+
+  const viewQuizIdParam = searchParams.get('viewQuizId');
+  useEffect(() => {
+    if (!viewQuizIdParam || isCreating || !resolvedWorkspaceId) return;
+    const qid = Number(viewQuizIdParam);
+    if (!Number.isInteger(qid) || qid <= 0) return;
+
+    setActiveView('quizDetail');
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getQuizById } = await import('@/api/QuizAPI');
+        const res = await getQuizById(qid);
+        const quiz = unwrapApiData(res);
+        if (cancelled || !quiz?.quizId) return;
+        setSelectedQuiz(quiz);
+        setQuizDetailFromChallengeReview(true);
+        const next = new URLSearchParams(searchParams);
+        next.delete('viewQuizId');
+        setSearchParams(next, { replace: true });
+      } catch (e) {
+        console.error('viewQuizId', e);
+        if (!cancelled) {
+          showError(
+            currentLang === 'en'
+              ? 'Could not open this quiz. Check permissions or try again.'
+              : 'Không mở được quiz. Kiểm tra quyền hoặc thử lại.'
+          );
+          setActiveView('quiz');
+          const next = new URLSearchParams(searchParams);
+          next.delete('viewQuizId');
+          setSearchParams(next, { replace: true });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewQuizIdParam, resolvedWorkspaceId, isCreating, searchParams, setSearchParams, showError, currentLang]);
 
   // Fetch materials
   const fetchSources = useCallback(async () => {
@@ -1816,7 +1915,11 @@ function GroupWorkspacePage() {
     }
     setActiveView('quiz');
   }, [bumpQuizListRefreshToken, canCreateContent, currentLang, showInfo, showSuccess]);
-  const handleViewQuiz = useCallback((quiz) => { setSelectedQuiz(quiz); setActiveView('quizDetail'); }, []);
+  const handleViewQuiz = useCallback((quiz) => {
+    setQuizDetailFromChallengeReview(false);
+    setSelectedQuiz(quiz);
+    setActiveView('quizDetail');
+  }, []);
   const handleEditQuiz = useCallback((quiz) => { setSelectedQuiz(quiz); setActiveView('editQuiz'); }, []);
   const handleSaveQuiz = useCallback((updatedQuiz) => { setSelectedQuiz((p) => ({ ...p, ...updatedQuiz })); setActiveView('quizDetail'); }, []);
 
@@ -1986,13 +2089,13 @@ function GroupWorkspacePage() {
       setHasTriggeredGroupRoadmap(true);
       setRoadmapPhaseGenerationProgress(0);
       setRoadmapPhaseGenerationTaskId(null);
-      const roadmapPhaseResponse = await generateRoadmapPhases({ roadmapId, materialIds });
-      const roadmapPhasePayload = roadmapPhaseResponse?.data?.data || roadmapPhaseResponse?.data || roadmapPhaseResponse || null;
-      const responseTaskId = String(roadmapPhasePayload?.websocketTaskId ?? roadmapPhasePayload?.taskId ?? '').trim();
+      const roadmapGenerationResponse = await generateRoadmap({ roadmapId, materialIds });
+      const roadmapGenerationPayload = roadmapGenerationResponse?.data?.data || roadmapGenerationResponse?.data || roadmapGenerationResponse || null;
+      const responseTaskId = String(roadmapGenerationPayload?.websocketTaskId ?? roadmapGenerationPayload?.taskId ?? '').trim();
       if (responseTaskId) {
         setRoadmapPhaseGenerationTaskId(responseTaskId);
       }
-      setRoadmapPhaseGenerationProgress(clampPercent(roadmapPhasePayload?.percent ?? roadmapPhasePayload?.progressPercent ?? 0));
+      setRoadmapPhaseGenerationProgress(clampPercent(roadmapGenerationPayload?.percent ?? roadmapGenerationPayload?.progressPercent ?? 0));
       setActiveView('roadmap');
       bumpRoadmapReloadToken();
       showSuccess(
@@ -2068,11 +2171,19 @@ function GroupWorkspacePage() {
   const handleBackFromForm = useCallback(() => {
     const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
     const nextView = formToList[activeView] || null;
-    if (nextView !== 'quizDetail' && nextView !== 'editQuiz') setSelectedQuiz(null);
+    if ((activeView === 'editQuiz' || activeView === 'createQuiz') && searchParams.get('challengeDraft') === '1') {
+      const next = new URLSearchParams(searchParams);
+      next.delete('challengeDraft');
+      setSearchParams(next, { replace: true });
+    }
+    if (nextView !== 'quizDetail' && nextView !== 'editQuiz') {
+      setSelectedQuiz(null);
+      setQuizDetailFromChallengeReview(false);
+    }
     if (nextView !== 'flashcardDetail') setSelectedFlashcard(null);
     if (nextView !== 'mockTestDetail' && nextView !== 'editMockTest') setSelectedMockTest(null);
     setActiveView(nextView);
-  }, [activeView]);
+  }, [activeView, searchParams, setSearchParams]);
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
@@ -2487,6 +2598,7 @@ function GroupWorkspacePage() {
         readOnly={!canCreateContent}
         role={currentRoleKey}
         isGroupLeader={isLeader}
+        groupWorkspaceCurrentUserId={currentUser?.userID}
         onGroupQuizUpdated={handleGroupQuizUpdated}
         createdItems={createdItems}
         onUploadClick={() => handleStudioAction('documents')}
@@ -2534,7 +2646,14 @@ function GroupWorkspacePage() {
           : ''}
         roadmapEmptyStateActionLabel={!hasGroupRoadmapConfig
           ? t('workspace.roadmap.setupButton', currentLang === 'en' ? 'Set up roadmap' : 'Thiết lập lộ trình')
-          : t('workspace.roadmap.createRoadmapButton', currentLang === 'en' ? 'Create roadmap' : 'Tạo lộ trình')}
+          : ''}
+        challengeDraftQuizEditor={challengeDraftUiActive && activeView === 'createQuiz'}
+        challengeDraftTargetQuizId={
+          challengeDraftQuizIdParam && Number.isInteger(Number(challengeDraftQuizIdParam)) && Number(challengeDraftQuizIdParam) > 0
+            ? Number(challengeDraftQuizIdParam)
+            : null
+        }
+        challengeSnapshotReviewMode={quizDetailFromChallengeReview}
       />
     </div>
   );
@@ -2614,6 +2733,7 @@ function GroupWorkspacePage() {
         return (
           <div className="space-y-5">
             <GroupDashboardTab
+              key={workspaceId ?? 'group-dashboard'}
               isDarkMode={isDarkMode}
               group={resolvedGroupData}
               members={members}
@@ -2621,6 +2741,11 @@ function GroupWorkspacePage() {
               isLeader={isLeader}
               compactMode
               currentUserId={currentUser?.userID}
+              hasWorkspaceAnalytics={planEntitlements.hasWorkspaceAnalytics}
+              onRequestAnalyticsUpgrade={() => {
+                setPlanUpgradeFeatureName(currentLang === 'en' ? 'Workspace analytics' : 'Thống kê workspace');
+                setPlanUpgradeModalOpen(true);
+              }}
             />
           </div>
         );
@@ -2689,6 +2814,7 @@ function GroupWorkspacePage() {
               workspaceId={workspaceId}
               isDarkMode={isDarkMode}
               isLeader={isLeader}
+              currentUserId={currentUser?.userID}
             />
           </div>
         );

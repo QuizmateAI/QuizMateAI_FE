@@ -29,17 +29,12 @@ function RoadmapJourPanel({
   const [isPhaseOpen, setIsPhaseOpen] = useState(true);
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
   const selectedPhaseRef = useRef(null);
-  const selectPhaseDebounceRef = useRef(null);
 
   const queueSelectPhase = useCallback((phaseId, options = { preserveActiveView: false }) => {
-    if (selectPhaseDebounceRef.current) {
-      window.clearTimeout(selectPhaseDebounceRef.current);
-    }
-
-    selectPhaseDebounceRef.current = window.setTimeout(() => {
-      onSelectPhase?.(phaseId, options);
-      selectPhaseDebounceRef.current = null;
-    }, 180);
+    const normalizedPhaseId = Number(phaseId);
+    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+    if (Number(selectedPhaseRef.current) === normalizedPhaseId) return;
+    onSelectPhase?.(normalizedPhaseId, options);
   }, [onSelectPhase]);
 
   useEffect(() => {
@@ -80,14 +75,6 @@ function RoadmapJourPanel({
       setLoading(false);
     }
   }, [queueSelectPhase, workspaceId]);
-
-  useEffect(() => {
-    return () => {
-      if (selectPhaseDebounceRef.current) {
-        window.clearTimeout(selectPhaseDebounceRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     loadRoadmap();
@@ -311,6 +298,9 @@ function RoadmapJourPanel({
                           key={phase.phaseId}
                           type="button"
                           onClick={() => {
+                            if (Number(effectiveSelectedPhaseId) === Number(phase.phaseId)) {
+                              return;
+                            }
                             setSelectedPhaseId(phase.phaseId);
                             queueSelectPhase(phase.phaseId, { preserveActiveView: false });
                           }}

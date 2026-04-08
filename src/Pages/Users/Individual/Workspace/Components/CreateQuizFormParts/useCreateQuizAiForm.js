@@ -180,6 +180,8 @@ export const useCreateQuizAiForm = ({
   onCreateQuiz,
   selectedMaterialIds,
   t,
+  existingQuizId = null,
+  seedQuizTitle = '',
 }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -236,6 +238,14 @@ export const useCreateQuizAiForm = ({
   const aiQuestionTypesSectionRef = useRef(null);
   const aiBloomSectionRef = useRef(null);
   const aiPromptSectionRef = useRef(null);
+
+  useEffect(() => {
+    const qid = Number(existingQuizId);
+    if (!Number.isInteger(qid) || qid <= 0) return;
+    const s = String(seedQuizTitle || "").trim();
+    if (!s) return;
+    setAiName((prev) => (String(prev || "").trim() ? prev : normalizeQuizTitleInput(s)));
+  }, [existingQuizId, seedQuizTitle]);
 
   const getTargetTotal = useCallback(
     (unitByCount) => (unitByCount ? Number(aiTotalQuestions || 0) : 100),
@@ -1374,6 +1384,9 @@ export const useCreateQuizAiForm = ({
           mediumDurationInSeconds: Math.max(1, Number(aiMediumDuration) || 1),
           hardDurationInSeconds: Math.max(1, Number(aiHardDuration) || 1),
         }),
+        ...(Number.isInteger(Number(existingQuizId)) && Number(existingQuizId) > 0
+          ? { existingQuizId: Number(existingQuizId) }
+          : {}),
       };
 
       const result = await generateAIQuiz(payload);
@@ -1415,6 +1428,7 @@ export const useCreateQuizAiForm = ({
     structurePreview,
     isStructureEditing,
     editableStructureItems,
+    existingQuizId,
     t,
   ]);
 

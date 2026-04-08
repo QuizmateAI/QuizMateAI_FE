@@ -1,9 +1,48 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Activity, AlertCircle, CheckCircle2, Clock3, Mail, PenLine, Shield, Upload, UserPlus, Users } from 'lucide-react';
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  Brain,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Mail,
+  PenLine,
+  Shield,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Upload,
+  UserPlus,
+  Users,
+} from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useGroup } from '@/hooks/useGroup';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
+import { Button } from '@/Components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/Components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RECENT_MEMBER_DAYS = 7;
@@ -95,9 +134,45 @@ function logLabel(action, lang) {
   return labels[action] || (lang === 'en' ? 'Activity' : 'Hoat dong');
 }
 
-function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, isLeader = false, compactMode = false, currentUserId }) {
+function classificationLabel(code, lang) {
+  const c = String(code || '').toUpperCase();
+  const map = {
+    STRONG: lang === 'en' ? 'Strong' : 'Tốt',
+    AVERAGE: lang === 'en' ? 'Average' : 'Trung bình',
+    WEAK: lang === 'en' ? 'Needs support' : 'Cần hỗ trợ',
+    AT_RISK: lang === 'en' ? 'At risk' : 'Rủi ro',
+  };
+  return map[c] || c || '—';
+}
+
+function formatPctRatio(n) {
+  if (n == null || Number.isNaN(Number(n))) return '—';
+  return `${Math.round(Number(n) * 1000) / 10}%`;
+}
+
+const PIE_CLASSIFICATION_COLORS = ['#22d3ee', '#a78bfa', '#fbbf24', '#fb7185'];
+
+const MEMBER_CARD_PAGE_SIZE = 8;
+
+function GroupDashboardTab({
+  isDarkMode,
+  group,
+  members = [],
+  membersLoading,
+  isLeader = false,
+  compactMode = false,
+  currentUserId,
+  hasWorkspaceAnalytics = false,
+  onRequestAnalyticsUpgrade,
+}) {
   const { t, i18n } = useTranslation();
-  const { fetchPendingInvitations, fetchGroupLogs } = useGroup({ enabled: false });
+  const {
+    fetchPendingInvitations,
+    fetchGroupLogs,
+    fetchGroupDashboardSummary,
+    fetchMemberDashboardCards,
+    fetchMemberDashboardDetail,
+  } = useGroup({ enabled: false });
   const lang = i18n.language;
   const fontClass = lang === 'en' ? 'font-poppins' : 'font-sans';
   const workspaceId = group?.workspaceId;
@@ -114,6 +189,61 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
     queryFn: () => fetchGroupLogs(workspaceId),
     enabled: Boolean(workspaceId),
   });
+
+  const [detailUserId, setDetailUserId] = useState(null);
+  const [detailAttemptMode, setDetailAttemptMode] = useState('ALL');
+  const [memberCardPage, setMemberCardPage] = useState(0);
+
+  const analyticsEnabled = Boolean(isLeader && workspaceId && hasWorkspaceAnalytics);
+
+  const { data: learningSummary, isLoading: summaryLoading, isError: summaryError } = useQuery({
+    queryKey: ['group-dashboard-summary', workspaceId],
+    queryFn: () => fetchGroupDashboardSummary(workspaceId),
+    enabled: analyticsEnabled,
+  });
+
+  const { data: memberCardsPage, isLoading: cardsLoading } = useQuery({
+    queryKey: ['group-dashboard-member-cards', workspaceId, memberCardPage, MEMBER_CARD_PAGE_SIZE],
+    queryFn: () => fetchMemberDashboardCards(workspaceId, memberCardPage, MEMBER_CARD_PAGE_SIZE),
+    enabled: analyticsEnabled,
+  });
+
+  const { data: memberDetail, isLoading: detailLoading } = useQuery({
+    queryKey: ['group-member-dashboard-detail', workspaceId, detailUserId, detailAttemptMode],
+    queryFn: () => fetchMemberDashboardDetail(workspaceId, detailUserId, detailAttemptMode),
+    enabled: Boolean(analyticsEnabled && detailUserId != null),
+  });
+
+  const memberLearningCards = useMemo(() => {
+    const raw = memberCardsPage?.content;
+    return Array.isArray(raw) ? raw : [];
+  }, [memberCardsPage]);
+
+  const scoreLeaderboard = useMemo(() => {
+    return [...memberLearningCards]
+      .filter((m) => (m.quizCompletedCount || 0) > 0 && m.averageScore != null)
+      .sort((a, b) => (Number(b.averageScore) || 0) - (Number(a.averageScore) || 0))
+      .slice(0, 10)
+      .map((m) => {
+        const raw = String(m.fullName || m.username || '?');
+        const label = raw.length > 12 ? `${raw.slice(0, 12)}…` : raw;
+        return {
+          userId: m.userId,
+          label,
+          score: Math.round(Number(m.averageScore) * 10) / 10,
+        };
+      });
+  }, [memberLearningCards]);
+
+  const classificationPieData = useMemo(() => {
+    const src = learningSummary?.aiClassificationCounts;
+    if (!src || typeof src !== 'object') return [];
+    return Object.entries(src).map(([key, value]) => ({
+      name: classificationLabel(key, lang),
+      value: Number(value) || 0,
+      key,
+    })).filter((d) => d.value > 0);
+  }, [learningSummary, lang]);
 
   const roster = members.map((member) => ({ ...member, joinedDate: toSafeDate(member.joinedAt) }))
     .sort((a, b) => (b.joinedDate?.getTime() ?? 0) - (a.joinedDate?.getTime() ?? 0));
@@ -232,7 +362,53 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
 
   const maxActivityCount = Math.max(1, ...activityChartData.map((item) => item.count));
 
+  const chartTooltipBox = {
+    contentStyle: {
+      borderRadius: 12,
+      border: 'none',
+      background: isDarkMode ? '#0f172a' : '#ffffff',
+      color: isDarkMode ? '#e2e8f0' : '#0f172a',
+      boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+    },
+  };
+  const axisMuted = isDarkMode ? '#64748b' : '#94a3b8';
+
   if (compactMode) {
+    const learningKpis = [
+      {
+        label: lang === 'en' ? 'Quiz attempts' : 'Lượt làm quiz',
+        value: summaryLoading ? '…' : String(learningSummary?.totalQuizAttempts ?? 0),
+        note: lang === 'en' ? 'all members' : 'toàn nhóm',
+        icon: BarChart3,
+        tone: isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-50 text-cyan-700',
+      },
+      {
+        label: lang === 'en' ? 'Completed' : 'Đã hoàn thành',
+        value: summaryLoading ? '…' : String(learningSummary?.totalQuizCompleted ?? 0),
+        note: lang === 'en' ? 'submitted sets' : 'bài đã nộp',
+        icon: CheckCircle2,
+        tone: isDarkMode ? 'bg-emerald-400/15 text-emerald-200' : 'bg-emerald-50 text-emerald-700',
+      },
+      {
+        label: lang === 'en' ? 'Avg score' : 'Điểm TB',
+        value: summaryLoading ? '…' : `${Math.round((Number(learningSummary?.groupAverageScore) || 0) * 10) / 10}`,
+        note: lang === 'en' ? 'per member w/ completions' : 'theo TV có quiz xong',
+        icon: TrendingUp,
+        tone: isDarkMode ? 'bg-violet-400/15 text-violet-200' : 'bg-violet-50 text-violet-700',
+      },
+      {
+        label: lang === 'en' ? 'Avg accuracy' : 'Độ chính xác TB',
+        value: summaryLoading ? '…' : formatPctRatio(learningSummary?.groupAverageAccuracy),
+        note: lang === 'en' ? 'graded answers' : 'câu đã chấm',
+        icon: Target,
+        tone: isDarkMode ? 'bg-amber-400/15 text-amber-200' : 'bg-amber-50 text-amber-700',
+      },
+    ];
+
+    const memberCardTotalPages = Number(memberCardsPage?.totalPages) || 0;
+    const memberCardTotalElements = Number(memberCardsPage?.totalElements) || 0;
+    const showMemberCardPagination = memberCardTotalPages > 1;
+
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
         <section className={`${cardClass} p-5`}>
@@ -240,6 +416,288 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
           <h2 className={`mt-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardTitle}</h2>
           <p className={`mt-2 text-sm ${subtleTextClass}`}>{lang === 'en' ? 'High-level health and activity signals for the group.' : 'Tổng quan sức khỏe và tín hiệu hoạt động của nhóm.'}</p>
         </section>
+
+        {isLeader && workspaceId && hasWorkspaceAnalytics ? (
+          <section
+            className={cn(
+              cardClass,
+              'overflow-hidden p-0 ring-1',
+              isDarkMode ? 'ring-cyan-400/25' : 'ring-cyan-500/20',
+            )}
+          >
+            <div
+              className={cn(
+                'relative overflow-hidden px-5 py-4',
+                isDarkMode
+                  ? 'bg-gradient-to-r from-cyan-950/90 via-slate-950/50 to-slate-950/30'
+                  : 'bg-gradient-to-r from-cyan-50 via-white to-slate-50/80',
+              )}
+            >
+              <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-cyan-400/25 blur-3xl" aria-hidden="true" />
+              <div className="relative flex flex-wrap items-center gap-3">
+                <span
+                  className={cn(
+                    'flex h-11 w-11 items-center justify-center rounded-2xl',
+                    isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700',
+                  )}
+                >
+                  <Sparkles className="h-5 w-5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>
+                    {lang === 'en' ? 'Learning intelligence' : 'Trí tuệ học tập'}
+                  </p>
+                  <p className={`mt-1 text-sm leading-relaxed ${subtleTextClass}`}>
+                    {lang === 'en'
+                      ? 'Live aggregates from quiz attempts, scores, and AI classification — tap any card to inspect a member.'
+                      : 'Số liệu real-time từ quiz, điểm và phân loại AI — chạm thẻ để xem chi tiết thành viên.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-5 p-5">
+              {summaryError ? (
+                <p className={`rounded-2xl border px-4 py-3 text-sm ${isDarkMode ? 'border-rose-400/30 bg-rose-400/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
+                  {lang === 'en' ? 'Could not load learning summary. Try again later.' : 'Không tải được thống kê học tập. Thử lại sau.'}
+                </p>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {learningKpis.map((k) => {
+                  const Icon = k.icon;
+                  return (
+                    <div key={k.label} className={cn('rounded-[22px] border p-4', innerCardClass)}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', k.tone)}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${eyebrowClass}`}>
+                          {lang === 'en' ? 'live' : 'thời gian thực'}
+                        </span>
+                      </div>
+                      <p className={cn('mt-3 text-2xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>{k.value}</p>
+                      <p className={cn('mt-1 text-sm font-medium', isDarkMode ? 'text-slate-200' : 'text-slate-800')}>{k.label}</p>
+                      <p className={cn('mt-2 text-xs leading-relaxed', subtleTextClass)}>{k.note}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className={cn('rounded-[22px] border p-4', innerCardClass)}>
+                  <div className="mb-1 flex items-center gap-2">
+                    <TrendingUp className={cn('h-4 w-4', isDarkMode ? 'text-cyan-300' : 'text-cyan-600')} />
+                    <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      {lang === 'en' ? 'Score spotlight' : 'Điểm nổi bật'}
+                    </h3>
+                  </div>
+                  <p className={`text-xs ${subtleTextClass}`}>
+                    {lang === 'en'
+                      ? `On this page (${MEMBER_CARD_PAGE_SIZE} members / page) — ranked by score.`
+                      : `Trên trang hiện tại (${MEMBER_CARD_PAGE_SIZE} TV/trang) — xếp theo điểm.`}
+                  </p>
+                  <div className="mt-4 h-52 w-full min-h-[13rem]">
+                    {cardsLoading ? (
+                      <div className={`flex h-full items-center justify-center text-sm ${subtleTextClass}`}>…</div>
+                    ) : scoreLeaderboard.length === 0 ? (
+                      <div className={`flex h-full items-center justify-center rounded-xl border border-dashed px-4 text-center text-sm ${subtleTextClass}`}>
+                        {lang === 'en' ? 'No completed quiz data yet.' : 'Chưa có dữ liệu quiz hoàn thành.'}
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={scoreLeaderboard} margin={{ top: 4, right: 8, left: -18, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#1e293b' : '#e2e8f0'} vertical={false} />
+                          <XAxis dataKey="label" tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} interval={0} angle={-18} textAnchor="end" height={48} />
+                          <YAxis tick={{ fill: axisMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={32} />
+                          <Tooltip cursor={{ fill: isDarkMode ? 'rgba(34,211,238,0.08)' : 'rgba(6,182,212,0.12)' }} contentStyle={chartTooltipBox.contentStyle} />
+                          <Bar dataKey="score" radius={[6, 6, 0, 0]} maxBarSize={28}>
+                            {scoreLeaderboard.map((_, i) => (
+                              <Cell key={`cell-bar-${i}`} fill={isDarkMode ? '#22d3ee' : '#0891b2'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                <div className={cn('rounded-[22px] border p-4', innerCardClass)}>
+                  <div className="mb-1 flex items-center gap-2">
+                    <Brain className={cn('h-4 w-4', isDarkMode ? 'text-violet-300' : 'text-violet-600')} />
+                    <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                      {lang === 'en' ? 'AI classification mix' : 'Phân loại AI'}
+                    </h3>
+                  </div>
+                  <p className={`text-xs ${subtleTextClass}`}>
+                    {lang === 'en' ? 'From member learning profiles when available.' : 'Theo hồ sơ học tập khi đã có dữ liệu.'}
+                  </p>
+                  <div className="mt-4 flex h-52 items-center justify-center">
+                    {summaryLoading ? (
+                      <span className={`text-sm ${subtleTextClass}`}>…</span>
+                    ) : classificationPieData.length === 0 ? (
+                      <div className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm ${subtleTextClass}`}>
+                        {lang === 'en' ? 'No AI labels yet.' : 'Chưa có nhãn AI.'}
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={classificationPieData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={44}
+                            outerRadius={72}
+                            paddingAngle={3}
+                          >
+                            {classificationPieData.map((entry, index) => (
+                              <Cell key={entry.key} fill={PIE_CLASSIFICATION_COLORS[index % PIE_CLASSIFICATION_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={chartTooltipBox.contentStyle} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className={`mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
+                  {lang === 'en' ? 'Member intelligence cards' : 'Thẻ thông minh thành viên'}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {cardsLoading ? (
+                    <div className={`col-span-full rounded-[22px] border px-4 py-8 text-center text-sm ${innerCardClass} ${subtleTextClass}`}>…</div>
+                  ) : memberLearningCards.length === 0 ? (
+                    <div className={`col-span-full rounded-[22px] border px-4 py-8 text-center text-sm ${innerCardClass} ${subtleTextClass}`}>
+                      {lang === 'en' ? 'No active members to analyze.' : 'Không có thành viên hoạt động.'}
+                    </div>
+                  ) : (
+                    memberLearningCards.map((m) => (
+                      <button
+                        key={m.userId ?? m.workspaceMemberId}
+                        type="button"
+                        onClick={() => {
+                          setDetailAttemptMode('ALL');
+                          setDetailUserId(m.userId);
+                        }}
+                        className={cn(
+                          'rounded-[22px] border p-4 text-left transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60',
+                          innerCardClass,
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={cn(
+                              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold',
+                              isDarkMode ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-800',
+                            )}
+                          >
+                            {(m.fullName || m.username || '?').trim().slice(0, 1).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={cn('truncate font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{m.fullName || m.username}</p>
+                            <p className={`mt-0.5 text-xs ${eyebrowClass}`}>@{m.username}</p>
+                            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                              <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
+                                <p className={cn('text-sm font-bold', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')}>{m.quizCompletedCount ?? 0}</p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'done' : 'xong'}</p>
+                              </div>
+                              <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
+                                <p className={cn('text-sm font-bold', isDarkMode ? 'text-violet-200' : 'text-violet-700')}>
+                                  {m.averageScore != null ? Math.round(Number(m.averageScore) * 10) / 10 : '—'}
+                                </p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'avg' : 'TB'}</p>
+                              </div>
+                              <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
+                                <p className={cn('text-sm font-bold', isDarkMode ? 'text-amber-200' : 'text-amber-700')}>{formatPctRatio(m.accuracy)}</p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'acc' : 'đúng'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                {showMemberCardPagination ? (
+                  <div
+                    className={cn(
+                      'mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4',
+                      isDarkMode ? 'border-white/10' : 'border-slate-200',
+                    )}
+                  >
+                    <p className={`text-xs ${subtleTextClass}`}>
+                      {lang === 'en'
+                        ? `Page ${memberCardPage + 1} of ${memberCardTotalPages} · ${memberCardTotalElements} members`
+                        : `Trang ${memberCardPage + 1} / ${memberCardTotalPages} · ${memberCardTotalElements} thành viên`}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-full px-3"
+                        disabled={cardsLoading || memberCardPage <= 0 || memberCardsPage?.first === true}
+                        onClick={() => setMemberCardPage((p) => Math.max(0, p - 1))}
+                        aria-label={lang === 'en' ? 'Previous page' : 'Trang trước'}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-full px-3"
+                        disabled={cardsLoading || memberCardsPage?.last === true}
+                        onClick={() => setMemberCardPage((p) => p + 1)}
+                        aria-label={lang === 'en' ? 'Next page' : 'Trang sau'}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : isLeader && workspaceId ? (
+          <section className={`${cardClass} p-6`}>
+            <div className="flex flex-wrap items-start gap-4">
+              <span
+                className={cn(
+                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl',
+                  isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-100 text-cyan-700',
+                )}
+              >
+                <BarChart3 className="h-6 w-6" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className={cn('text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                  {lang === 'en' ? 'Workspace analytics' : 'Thống kê workspace'}
+                </h3>
+                <p className={`mt-2 text-sm leading-relaxed ${subtleTextClass}`}>
+                  {lang === 'en'
+                    ? 'Group learning dashboards use the same Workspace analytics entitlement as individual stats. Upgrade your plan to unlock member cards, charts, and drill-down views.'
+                    : 'Dashboard học tập nhóm dùng cùng quyền Thống kê workspace như workspace cá nhân. Nâng gói để mở thẻ thành viên, biểu đồ và xem chi tiết.'}
+                </p>
+                {typeof onRequestAnalyticsUpgrade === 'function' ? (
+                  <Button
+                    type="button"
+                    className={cn('mt-4 rounded-full font-semibold', isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : '')}
+                    onClick={onRequestAnalyticsUpgrade}
+                  >
+                    {lang === 'en' ? 'View plans' : 'Xem gói'}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => {
@@ -304,6 +762,138 @@ function GroupDashboardTab({ isDarkMode, group, members = [], membersLoading, is
             )}
           </section>
         </div>
+
+        <Dialog
+          open={Boolean(analyticsEnabled && detailUserId != null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDetailUserId(null);
+              setDetailAttemptMode('ALL');
+            }
+          }}
+        >
+          <DialogContent
+            className={cn(
+              'max-h-[min(640px,92vh)] w-[min(100vw-1.5rem,560px)] max-w-none overflow-y-auto rounded-[26px] border p-0 shadow-2xl sm:max-w-2xl',
+              isDarkMode ? 'border-white/10 bg-[#070f14]' : 'border-slate-200/80 bg-white',
+            )}
+          >
+            <DialogHeader className={cn('space-y-1 border-b px-6 pb-4 pt-6 text-left sm:px-7', isDarkMode ? 'border-white/10' : 'border-slate-200')}>
+              <DialogTitle className={cn('text-xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                {detailLoading && !memberDetail
+                  ? (lang === 'en' ? 'Loading member…' : 'Đang tải thành viên…')
+                  : (memberDetail?.fullName || memberDetail?.username || (lang === 'en' ? 'Member' : 'Thành viên'))}
+              </DialogTitle>
+              <DialogDescription className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
+                {memberDetail?.username ? `@${memberDetail.username}` : null}
+                {memberDetail?.role
+                  ? ` · ${memberDetail.role === 'LEADER' ? t('home.group.leader') : memberDetail.role === 'CONTRIBUTOR' ? t('home.group.contributor') : t('home.group.member')}`
+                  : null}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-5 px-6 py-5 sm:px-7">
+              <div className="flex flex-wrap gap-2">
+                {['ALL', 'OFFICIAL', 'PRACTICE'].map((mode) => (
+                  <Button
+                    key={mode}
+                    type="button"
+                    variant={detailAttemptMode === mode ? 'default' : 'outline'}
+                    size="sm"
+                    className={cn(
+                      'rounded-full text-xs font-semibold',
+                      detailAttemptMode === mode && (isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : ''),
+                    )}
+                    onClick={() => setDetailAttemptMode(mode)}
+                  >
+                    {mode === 'ALL'
+                      ? (lang === 'en' ? 'All attempts' : 'Tất cả')
+                      : mode === 'OFFICIAL'
+                        ? (lang === 'en' ? 'Official' : 'Chính thức')
+                        : (lang === 'en' ? 'Practice' : 'Luyện tập')}
+                  </Button>
+                ))}
+              </div>
+
+              {detailLoading && !memberDetail ? (
+                <p className={`text-sm ${subtleTextClass}`}>{lang === 'en' ? 'Fetching learning signals…' : 'Đang lấy dữ liệu học…'}</p>
+              ) : memberDetail ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {[
+                      { k: 'materialUploadCount', label: lang === 'en' ? 'Uploads' : 'Tài liệu' },
+                      { k: 'quizAttemptCount', label: lang === 'en' ? 'Attempts' : 'Lượt làm' },
+                      { k: 'quizCompletedCount', label: lang === 'en' ? 'Completed' : 'Hoàn thành' },
+                    ].map(({ k, label }) => (
+                      <div key={k} className={cn('rounded-2xl border px-3 py-3', innerCardClass)}>
+                        <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{label}</p>
+                        <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{memberDetail[k] ?? 0}</p>
+                      </div>
+                    ))}
+                    <div className={cn('rounded-2xl border px-3 py-3', innerCardClass)}>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Avg score' : 'Điểm TB'}</p>
+                      <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                        {memberDetail.averageScore != null ? Math.round(Number(memberDetail.averageScore) * 10) / 10 : '—'}
+                      </p>
+                    </div>
+                    <div className={cn('rounded-2xl border px-3 py-3', innerCardClass)}>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Accuracy' : 'Chính xác'}</p>
+                      <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatPctRatio(memberDetail.accuracy)}</p>
+                    </div>
+                  </div>
+
+                  {memberDetail.aiSummary ? (
+                    <div className={cn('rounded-2xl border px-4 py-3 text-sm leading-relaxed', innerCardClass, subtleTextClass)}>
+                      {memberDetail.aiSummary}
+                    </div>
+                  ) : null}
+
+                  {(memberDetail.weakAreas?.length > 0 || memberDetail.strongAreas?.length > 0) ? (
+                    <div className="space-y-3">
+                      {memberDetail.strongAreas?.length > 0 ? (
+                        <div>
+                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Strong' : 'Điểm mạnh'}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {memberDetail.strongAreas.map((a) => (
+                              <span key={a} className={cn('rounded-full px-3 py-1 text-xs font-medium', isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-50 text-emerald-800')}>{a}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                      {memberDetail.weakAreas?.length > 0 ? (
+                        <div>
+                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Growth areas' : 'Cần cải thiện'}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {memberDetail.weakAreas.map((a) => (
+                              <span key={a} className={cn('rounded-full px-3 py-1 text-xs font-medium', isDarkMode ? 'bg-amber-400/15 text-amber-100' : 'bg-amber-50 text-amber-900')}>{a}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {memberDetail.recentActivities?.length > 0 ? (
+                    <div>
+                      <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Recent moves' : 'Hoạt động gần đây'}</p>
+                      <ul className="space-y-2">
+                        {memberDetail.recentActivities.slice(0, 5).map((log) => (
+                          <li key={`${log.logId}-${log.logTime}`} className={cn('rounded-xl border px-3 py-2 text-sm', innerCardClass)}>
+                            <span className={cn('font-medium', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>{logLabel(log.action, lang)}</span>
+                            <p className={`mt-1 text-xs ${subtleTextClass}`}>{formatGroupLogDescription(log, currentUserId, lang)}</p>
+                            <p className={`mt-1 text-[10px] ${eyebrowClass}`}>{formatDateTime(log.logTime, lang, true)}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <p className={`text-sm ${subtleTextClass}`}>{lang === 'en' ? 'No data.' : 'Không có dữ liệu.'}</p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
