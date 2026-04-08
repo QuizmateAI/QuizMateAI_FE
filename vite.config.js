@@ -8,6 +8,27 @@ import { defineConfig } from "vitest/config"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+const manualChunkPackages = {
+  'vendor-router': ['react-router-dom'],
+  'vendor-query': ['@tanstack/react-query'],
+  'vendor-i18n': ['i18next', 'react-i18next'],
+  'vendor-auth': ['@react-oauth/google'],
+  'vendor-flashcard': ['react-quizlet-flashcard'],
+  'vendor-charts': ['recharts'],
+  'vendor-http': ['axios'],
+  'vendor-ws': ['@stomp/stompjs', 'sockjs-client'],
+  'vendor-ui': [
+    '@radix-ui/react-dialog',
+    '@radix-ui/react-dropdown-menu',
+    '@radix-ui/react-checkbox',
+    '@radix-ui/react-label',
+    '@radix-ui/react-slot',
+    'class-variance-authority',
+    'clsx',
+    'tailwind-merge',
+  ],
+}
+
 function resolveProxyTarget(env) {
   const explicitTarget = env.VITE_DEV_PROXY_TARGET?.trim()
   if (explicitTarget) {
@@ -103,25 +124,21 @@ export default defineConfig(({ mode }) => {
       },
       rollupOptions: {
         output: {
-          manualChunks: {
-            'vendor-router': ['react-router-dom'],
-            'vendor-query': ['@tanstack/react-query'],
-            'vendor-i18n': ['i18next', 'react-i18next'],
-            'vendor-auth': ['@react-oauth/google'],
-            'vendor-flashcard': ['react-quizlet-flashcard'],
-            'vendor-charts': ['recharts'],
-            'vendor-http': ['axios'],
-            'vendor-ws': ['@stomp/stompjs', 'sockjs-client'],
-            'vendor-ui': [
-              '@radix-ui/react-dialog',
-              '@radix-ui/react-dropdown-menu',
-              '@radix-ui/react-checkbox',
-              '@radix-ui/react-label',
-              '@radix-ui/react-slot',
-              'class-variance-authority',
-              'clsx',
-              'tailwind-merge',
-            ],
+          manualChunks(id) {
+            const normalizedId = id.replace(/\\/g, '/')
+            const localeMatch = normalizedId.match(/\/src\/i18n\/locales\/(en|vi)\/([^/]+)\.json$/)
+
+            if (localeMatch) {
+              return `i18n-${localeMatch[1]}-${localeMatch[2]}`
+            }
+
+            for (const [chunkName, packages] of Object.entries(manualChunkPackages)) {
+              if (packages.some((pkg) => normalizedId.includes(`/node_modules/${pkg}/`))) {
+                return chunkName
+              }
+            }
+
+            return undefined
           },
         },
       },
