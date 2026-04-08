@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/Components/ui/input';
 import { getCorrectMatchingPairs, getCorrectTextAnswers, normalizeMatchingPairs } from '../utils/quizTransform';
 import MatchingDragDrop from './MatchingDragDrop';
+import MixedMathText from '@/Components/math/MixedMathText';
 import './QuestionCard.css';
 
 const DIFFICULTY_STYLES = {
@@ -301,7 +302,9 @@ const QuestionCard = memo(function QuestionCard({
               {questionNumber}
             </span>
           )}
-          <h3 className="min-w-0 text-base font-bold leading-snug text-slate-800 dark:text-slate-100">{question.content}</h3>
+          <h3 className="min-w-0 text-base font-bold leading-snug whitespace-pre-wrap text-slate-800 dark:text-slate-100">
+            <MixedMathText>{question.content}</MixedMathText>
+          </h3>
         </div>
         {(showHeaderMeta || showFlagToggle) && (
           <div className="flex shrink-0 items-center gap-2">
@@ -355,7 +358,9 @@ const QuestionCard = memo(function QuestionCard({
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                       {index + 1}
                     </span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex-1">{leftKey}</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex-1">
+                      <MixedMathText>{leftKey}</MixedMathText>
+                    </span>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 dark:text-slate-600 shrink-0">
                       <path d="M5 12h14M13 6l6 6-6 6" />
                     </svg>
@@ -363,13 +368,17 @@ const QuestionCard = memo(function QuestionCard({
                       'text-sm font-medium flex-1',
                       isPairCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400',
                     )}>
-                      {selectedRightKey || <span className="italic text-slate-400">Chưa chọn</span>}
+                      {selectedRightKey ? (
+                        <MixedMathText>{selectedRightKey}</MixedMathText>
+                      ) : (
+                        <span className="italic text-slate-400">Chưa chọn</span>
+                      )}
                     </span>
                   </div>
 
                   {!isPairCorrect && correctRightKey && (
                     <div className="mt-2 ml-9 text-xs text-green-700 dark:text-green-400 font-medium">
-                      Đáp án đúng: {correctRightKey}
+                      Đáp án đúng: <MixedMathText>{correctRightKey}</MixedMathText>
                     </div>
                   )}
                 </div>
@@ -405,10 +414,22 @@ const QuestionCard = memo(function QuestionCard({
                   ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-400'
                   : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-400'),
             )}>
-              <p><span className="font-semibold">Câu trả lời của bạn:</span> {textAnswer.trim() || 'Chưa trả lời'}</p>
+              <p>
+                <span className="font-semibold">Câu trả lời của bạn:</span>{" "}
+                {textAnswer.trim() ? <MixedMathText>{textAnswer.trim()}</MixedMathText> : "Chưa trả lời"}
+              </p>
               {isPendingGrading
                 ? <p><span className="font-semibold">Trạng thái:</span> Đang chấm bởi AI...</p>
-                : <p><span className="font-semibold">Đáp án đúng:</span> {correctTextAnswers.length ? correctTextAnswers.join(' / ') : 'Không có dữ liệu'}</p>
+                : (
+                  <p>
+                    <span className="font-semibold">Đáp án đúng:</span>{" "}
+                    {correctTextAnswers.length ? (
+                      <MixedMathText>{correctTextAnswers.join(" / ")}</MixedMathText>
+                    ) : (
+                      "Không có dữ liệu"
+                    )}
+                  </p>
+                )
               }
             </div>
           )}
@@ -430,7 +451,9 @@ const QuestionCard = memo(function QuestionCard({
               )}
             >
               {isMultiple ? <CheckboxIndicator id={answer.id} /> : <RadioIndicator />}
-              <span>{answer.content}</span>
+              <span>
+                <MixedMathText>{answer.content}</MixedMathText>
+              </span>
             </button>
           ))}
         </div>
@@ -464,7 +487,8 @@ const QuestionCard = memo(function QuestionCard({
       {isExplanationRevealed && (reviewState?.explanation || question.explanation) && (
         <div className="mt-3 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            <span className="font-semibold">Explanation: </span>{reviewState?.explanation || question.explanation}
+            <span className="font-semibold">Explanation: </span>
+            <MixedMathText>{reviewState?.explanation || question.explanation}</MixedMathText>
           </p>
         </div>
       )}

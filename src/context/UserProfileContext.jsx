@@ -32,6 +32,29 @@ export function UserProfileProvider({ children }) {
     loadProfile();
   }, []);
 
+  useEffect(() => {
+    const handleAuthChanged = (event) => {
+      const eventType = event?.detail?.type;
+
+      if (eventType === 'logout') {
+        setProfile(null);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      if (eventType === 'login') {
+        void loadProfile();
+      }
+    };
+
+    window.addEventListener('auth:changed', handleAuthChanged);
+
+    return () => {
+      window.removeEventListener('auth:changed', handleAuthChanged);
+    };
+  }, []);
+
   const value = {
     profile,
     loading,

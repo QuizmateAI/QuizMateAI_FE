@@ -3,6 +3,8 @@ import {
   Crown,
   ExternalLink,
   FolderOpen,
+  Globe,
+  Lock,
   Plus,
   Search,
   Share2,
@@ -217,13 +219,14 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
         </div>
       ) : isList ? (
         <div className={`rounded-3xl border transition-colors duration-300 overflow-hidden ${isDarkMode ? "border-slate-800 bg-slate-900" : "border-gray-200 bg-white"}`}>
-          <div className={`grid grid-cols-[minmax(260px,2fr)_minmax(140px,0.9fr)_minmax(120px,0.7fr)_minmax(100px,0.7fr)_40px] gap-4 px-5 py-3 text-xs font-semibold ${
+          <div className={`grid grid-cols-[minmax(260px,2fr)_minmax(140px,0.9fr)_minmax(120px,0.7fr)_minmax(100px,0.7fr)_minmax(90px,auto)_40px] gap-4 px-5 py-3 text-xs font-semibold ${
             isDarkMode ? "text-slate-500" : "text-gray-500"
           }`}>
             <span>{t("home.table.title")}</span>
             <span>{t("home.table.role")}</span>
             <span>{t("home.group.members")}</span>
             <span>{t("home.table.created")}</span>
+            <span>{currentLang === "en" ? "Visibility" : "Hiển thị"}</span>
             <span />
           </div>
           <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-gray-200"}`}>
@@ -245,7 +248,7 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
                 <div
                   key={group.workspaceId}
                   onClick={() => handleNavigateGroup(group)}
-                  className={`relative grid grid-cols-[minmax(260px,2fr)_minmax(140px,0.9fr)_minmax(120px,0.7fr)_minmax(100px,0.7fr)_40px] gap-4 px-5 py-4 text-sm cursor-pointer transition-colors ${
+                  className={`relative grid grid-cols-[minmax(260px,2fr)_minmax(140px,0.9fr)_minmax(120px,0.7fr)_minmax(100px,0.7fr)_minmax(90px,auto)_40px] gap-4 px-5 py-4 text-sm cursor-pointer transition-colors ${
                     isDarkMode ? `text-slate-300 ${theme.rowDark}` : `text-gray-700 ${theme.rowLight}`
                   }`}
                 >
@@ -278,6 +281,27 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
 
                   <span className={`flex items-center text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
                     {createdAtLabel}
+                  </span>
+
+                  <span className="flex items-center">
+                    {group.isPublic !== undefined && (
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium border ${
+                          group.isPublic
+                            ? (isDarkMode
+                                ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-300"
+                                : "bg-emerald-50 border-emerald-200 text-emerald-700")
+                            : (isDarkMode
+                                ? "bg-slate-800 border-slate-700 text-slate-400"
+                                : "bg-gray-50 border-gray-200 text-gray-500")
+                        }`}
+                      >
+                        {group.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        {group.isPublic
+                          ? (currentLang === "en" ? "Public" : "Công khai")
+                          : (currentLang === "en" ? "Private" : "Riêng tư")}
+                      </span>
+                    )}
                   </span>
 
                   <span className="flex items-center justify-end gap-2">
@@ -398,6 +422,25 @@ function UserGroup({ viewMode, isDarkMode, groups = [], loading, onOpenCreate, o
                       theme,
                       <span>{currentLang === "en" ? `Joined ${joinedDate}` : `Tham gia ${joinedDate}`}</span>
                     )}
+
+                  {group.isPublic !== undefined && (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium border ${
+                        group.isPublic
+                          ? (isDarkMode
+                              ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-300"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-700")
+                          : (isDarkMode
+                              ? "bg-slate-800 border-slate-700 text-slate-400"
+                              : "bg-gray-50 border-gray-200 text-gray-500")
+                      }`}
+                    >
+                      {group.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                      {group.isPublic
+                        ? (currentLang === "en" ? "Public" : "Công khai")
+                        : (currentLang === "en" ? "Private" : "Riêng tư")}
+                    </span>
+                  )}
                 </div>
               </div>
             );

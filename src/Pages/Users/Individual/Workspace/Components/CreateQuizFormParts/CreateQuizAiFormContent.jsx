@@ -24,8 +24,10 @@ import {
   DialogTitle,
 } from "@/Components/ui/dialog";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
 import bloomTaxonomyImage from "@/assets/blooms-taxonomy-1536x926.jpg";
 import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
+import { AI_MINIMUM_SECONDS_PER_QUESTION } from "./createQuizForm.constants";
 import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
 import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
 
@@ -62,6 +64,8 @@ function CreateQuizAiFormContent({
     fontClass,
     isDarkMode,
     hasAdvanceQuizConfig = false,
+    onToggleMaterialSelection,
+    readOnly = false,
   } = ui;
   const {
     aiDuration,
@@ -96,7 +100,7 @@ function CreateQuizAiFormContent({
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
-    selectedSourceItems,
+    workspaceSources = [],
     structurePreview,
     structurePreviewError,
     structurePreviewLoading,
@@ -224,7 +228,7 @@ function CreateQuizAiFormContent({
   };
 
   return (
-    <div className="space-y-5 pb-4">
+    <div className="space-y-3 pb-2">
       {metadataLoading && (
         <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-gray-100 text-gray-700"}`}>
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -239,7 +243,7 @@ function CreateQuizAiFormContent({
       )}
 
       <div ref={aiGeneralSectionRef} className={getAiSectionCardClass(["aiName"])}>
-        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+        <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <FileText className="h-4 w-4 text-blue-500" /> {t("workspace.quiz.aiConfig.generalInfo")}
         </h3>
         <div>
@@ -257,42 +261,71 @@ function CreateQuizAiFormContent({
           <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
             {t("workspace.quiz.validation.nameMaxLengthHint", {
               max: QUIZ_TITLE_MAX_LENGTH,
-              defaultValue: `Toi da ${QUIZ_TITLE_MAX_LENGTH} ky tu.`,
             })}
           </p>
         </div>
       </div>
 
-      <div className={`rounded-xl border p-4 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-100 bg-white shadow-sm"}`}>
-        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-          <CheckSquare className="h-4 w-4 text-green-500" /> {t("workspace.quiz.aiConfig.selectedMaterials")}
-        </h3>
-        {selectedMaterialIds.length > 0 ? (
-          <div className="space-y-2">
-            <div className={`rounded-lg px-3 py-2.5 text-xs ${isDarkMode ? "border border-emerald-900/30 bg-emerald-950/20 text-emerald-400" : "border border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
-              {t("workspace.quiz.aiConfig.selectedMaterialsCount", { count: selectedMaterialIds.length })}
-            </div>
-            <div className="max-h-28 space-y-1.5 overflow-y-auto pr-1">
-              {selectedSourceItems.map((item) => (
-                <div key={item.id} className={`rounded-md border px-2.5 py-1.5 text-xs ${isDarkMode ? "border-slate-700 bg-slate-800/60 text-slate-300" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
-                  {item.name || `Material #${item.id}`}
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className={getAiSectionCardClass([])}>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+            <CheckSquare className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} /> {t("workspace.quiz.aiConfig.selectedMaterials")}
+          </h3>
+          {workspaceSources.length > 0 ? (
+            <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+              {t("workspace.quiz.aiConfig.materialsSelectedSummary", {
+                selected: selectedMaterialIds.length,
+                total: workspaceSources.length,
+              })}
+            </p>
+          ) : null}
+        </div>
+        {workspaceSources.length === 0 ? (
+          <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+            {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
+          </p>
         ) : (
-          <div className={`rounded-lg px-3 py-2.5 text-xs ${isDarkMode ? "border border-amber-900/30 bg-amber-950/20 text-amber-400" : "border border-amber-200 bg-amber-50 text-amber-700"}`}>
-            {t("workspace.quiz.aiConfig.noSelectedMaterials")}
+          <div
+            className={`max-h-48 overflow-y-auto rounded-lg border ${
+              isDarkMode ? "divide-slate-800 border-slate-700/80 divide-y" : "divide-gray-100 border-gray-200/90 divide-y"
+            }`}
+          >
+            {workspaceSources.map((item, index) => {
+              const id = item?.id;
+              const isSelected = id != null && selectedMaterialIds.includes(id);
+              const canToggle = typeof onToggleMaterialSelection === "function" && id != null && !readOnly;
+              return (
+                <label
+                  key={id != null ? String(id) : `ws-src-${index}`}
+                  className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 text-xs transition-colors ${
+                    isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50/90"
+                  } ${!canToggle ? "cursor-default opacity-80" : ""}`}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    disabled={!canToggle}
+                    onCheckedChange={(checked) => {
+                      if (!canToggle || id == null) return;
+                      onToggleMaterialSelection(id, checked === true);
+                    }}
+                    className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}`}
+                  />
+                  <span className={`min-w-0 flex-1 break-words leading-snug ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                    {item.name || `Material #${id ?? ""}`}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         )}
       </div>
 
       <div ref={aiSettingsSectionRef} className={getAiSectionCardClass(["aiTotalQuestions", "aiDuration", "aiDurations"])}>
-        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+        <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <Sliders className="h-4 w-4 text-gray-500" /> {t("workspace.quiz.aiConfig.settings")}
         </h3>
 
-        <div className={`grid gap-3 ${aiTimerMode ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
+        <div className={`grid gap-2 ${aiTimerMode ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
           <div>
             <label className={labelCls}>{t("workspace.quiz.aiConfig.totalQuestions")}{requiredMark}</label>
             <input
@@ -334,9 +367,9 @@ function CreateQuizAiFormContent({
               {!fieldErrors.aiDuration && hasAiDurationMinimumMismatch && (
                 <p className="mt-1 text-xs text-red-500">
                   {t("workspace.quiz.validation.minimumTimePerQuestion", {
-                    defaultValue: `Moi cau can toi thieu 30 giay. Voi ${aiTotalQuestions} cau, thoi gian phai tu ${minimumAiDurationMinutes} phut.`,
                     count: Number(aiTotalQuestions) || 0,
                     minutes: minimumAiDurationMinutes,
+                    seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
                   })}
                 </p>
               )}
@@ -351,8 +384,8 @@ function CreateQuizAiFormContent({
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span className="break-words">
                     {t("workspace.quiz.validation.minimumTimePerQuestionHint", {
-                      defaultValue: `Toi thieu ${minimumAiDurationMinutes} phut (30 giay/cau).`,
                       minutes: minimumAiDurationMinutes,
+                      seconds: AI_MINIMUM_SECONDS_PER_QUESTION,
                     })}
                   </span>
                 </div>
@@ -361,7 +394,7 @@ function CreateQuizAiFormContent({
           )}
         </div>
 
-        <div className="mt-3">
+        <div className="mt-2">
           <label className={labelCls}>{t("workspace.quiz.aiConfig.examType")}</label>
           <div className="grid grid-cols-1 gap-2">
             <button
@@ -391,7 +424,7 @@ function CreateQuizAiFormContent({
           </div>
 
           {!aiTimerMode && (
-            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-3">
               <div>
                 <label className={labelCls}>{t("workspace.quiz.aiConfig.easyDuration")} (s)</label>
                 <input
@@ -435,7 +468,7 @@ function CreateQuizAiFormContent({
       </div>
 
       <div ref={aiDifficultySectionRef} className={getAiSectionCardClass(["aiDifficulty"])}>
-        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+        <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <Sliders className="h-4 w-4 text-amber-500" /> {t("workspace.quiz.aiConfig.difficultyLevel")}
         </h3>
 
@@ -555,9 +588,9 @@ function CreateQuizAiFormContent({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <div ref={aiQuestionTypesSectionRef} className={getAiSectionCardClass(["selectedQTypes"])}>
-          <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+          <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
             <Sparkles className="h-4 w-4 text-purple-500" /> {t("workspace.quiz.aiConfig.questionTypes")}
           </h3>
 
@@ -643,7 +676,7 @@ function CreateQuizAiFormContent({
         </div>
 
         <div ref={aiBloomSectionRef} className={getAiSectionCardClass(["selectedBloomSkills"])}>
-          <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+          <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
             <BrainCircuit className="h-4 w-4 text-teal-500" /> {t("workspace.quiz.aiConfig.bloomSkills")}
             <div className="group/bloom-info relative">
               <button
@@ -736,7 +769,7 @@ function CreateQuizAiFormContent({
       </div>
 
       <div ref={aiPromptSectionRef} className={getAiSectionCardClass(["aiPrompt"])}>
-        <h3 className={`mb-3 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+        <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
           <FileText className="h-4 w-4 text-violet-500" /> {t("workspace.quiz.aiConfig.customPromptLabel", "Vui long nhap yeu cau cua ban")}
         </h3>
 
@@ -836,7 +869,7 @@ function CreateQuizAiFormContent({
           </div>
         </div>
 
-        <div className="space-y-3 p-4">
+        <div className="space-y-2 p-3">
           {structurePreviewError && (
             <div className={`rounded-xl border px-3 py-2 text-xs ${isDarkMode ? "border-red-900/40 bg-red-950/25 text-red-300" : "border-red-200 bg-red-50 text-red-700"}`}>
               {structurePreviewError}

@@ -1,5 +1,7 @@
 import api from './api';
 
+const MATERIAL_REVIEW_TIMEOUT_MS = 60000;
+
 function buildMultipartConfig(workspaceId, options = {}) {
   const { onUploadProgress, timeout = 120000 } = options;
 
@@ -57,6 +59,7 @@ export const reviewMaterial = async (materialId, isApproved) => {
     params: {
       isApproved,
     },
+    timeout: MATERIAL_REVIEW_TIMEOUT_MS,
   });
   return response;
 };
@@ -73,6 +76,7 @@ export const reviewGroupMaterial = async (materialId, isApproved) => {
     params: {
       isApproved,
     },
+    timeout: MATERIAL_REVIEW_TIMEOUT_MS,
   });
   return response;
 };
