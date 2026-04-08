@@ -54,14 +54,14 @@ const MENU_SECTIONS = [
       {
         icon: CreditCard,
         labelKey: 'sidebar.subscriptions',
-        path: '/admin/plan',
+        path: '/admin/plans',
         requiredPerm: 'plan:write',
         matchPrefix: true,
       },
       {
         icon: Coins,
         labelKey: 'sidebar.creditPackages',
-        path: '/admin/credit',
+        path: '/admin/credits',
         requiredPerm: 'credit-package:read',
         matchPrefix: true,
       },

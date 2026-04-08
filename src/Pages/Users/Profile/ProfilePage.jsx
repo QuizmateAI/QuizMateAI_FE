@@ -229,7 +229,7 @@ function ProfilePage() {
   // Xử lý chuyển tab từ trang khác (ví dụ: từ HomePage settings)
   useEffect(() => {
     if (location.state?.tab) {
-      // Subscription đã tách ra trang /plan
+      // Subscription đã tách ra trang /plans
       if (location.state.tab === "subscription") {
         navigate("/plans", { replace: true });
         return;

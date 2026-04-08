@@ -17,12 +17,14 @@ import {
 import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import {
+  buildGroupWorkspaceSectionPath,
   buildQuizAttemptPath,
   buildWorkspacePath,
   buildWorkspaceQuizPath,
   buildWorkspaceRoadmapQuizPath,
   buildWorkspaceRoadmapsPath,
   extractWorkspaceIdFromPath,
+  isGroupWorkspacePath,
   isWorkspaceQuizDetailPath,
 } from '@/lib/routePaths';
 
@@ -300,7 +302,7 @@ export default function QuizResultPage() {
 
   const canUseReturnPathAsQuizDetail = useMemo(() => {
     if (!returnToQuizPath) return false;
-    return isWorkspaceQuizDetailPath(returnToQuizPath);
+    return isWorkspaceQuizDetailPath(returnToQuizPath) || isGroupWorkspacePath(returnToQuizPath);
   }, [returnToQuizPath]);
 
   const resumeAttemptPath = useMemo(() => {
@@ -744,7 +746,7 @@ export default function QuizResultPage() {
   const handleBack = useCallback(() => {
     // Challenge context: navigate back to group workspace challenge tab
     if (challengeContext?.workspaceId) {
-      navigate(`/group-workspace/${challengeContext.workspaceId}?section=challenge`, { replace: true });
+      navigate(buildGroupWorkspaceSectionPath(challengeContext.workspaceId, 'challenge'), { replace: true });
       return;
     }
 

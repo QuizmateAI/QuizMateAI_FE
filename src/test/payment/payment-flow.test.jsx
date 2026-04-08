@@ -109,7 +109,7 @@ describe("Payment test cases execution", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Group Pro - 499000" }));
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(mockNavigate).toHaveBeenCalledWith("/payment?planId=7&workspaceId=123");
+    expect(mockNavigate).toHaveBeenCalledWith("/payments?planId=7&workspaceId=123");
   });
 
   it("TC_PAY_03: shows success result details from payment callback params", async () => {
