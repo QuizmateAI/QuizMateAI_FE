@@ -1,0 +1,466 @@
+{
+  "home": {
+    "tabs": {
+      "all": "Tất cả",
+      "workspace": "Không gian học tập của tôi",
+      "group": "Nhóm của tôi",
+      "community": "Cộng đồng"
+    },
+    "view": {
+      "grid": "Chế độ lưới",
+      "list": "Chế độ danh sách"
+    },
+    "actions": {
+      "create": "Tạo mới",
+      "createWorkspace": "Tạo không gian học tập mới",
+      "createGroup": "Tạo nhóm",
+      "share": "Chia sẻ"
+    },
+    "search": {
+      "workspacePlaceholder": "Tìm kiếm không gian...",
+      "groupPlaceholder": "Tìm kiếm nhóm...",
+      "noResults": "Không tìm thấy kết quả"
+    },
+    "create": {
+      "personalTab": "Không gian học tập cá nhân",
+      "groupTab": "Không gian học tập nhóm"
+    },
+    "sections": {
+      "featured": "Sổ ghi chú nổi bật",
+      "recent": "Không gian học tập gần đây",
+      "myWorkspaces": "Không gian học tập của tôi",
+      "myGroups": "Nhóm của tôi"
+    },
+    "table": {
+      "title": "Tiêu đề",
+      "sources": "Nguồn",
+      "created": "Đã tạo",
+      "role": "Vai trò",
+      "members": "Thành viên",
+      "updates": "Cập nhật"
+    },
+    "labels": {
+      "owner": "Owner",
+      "sourcesUnit": "nguồn",
+      "membersUnit": "thành viên"
+    },
+    "group": {
+      "noUpdates": "Không có cập nhật",
+      "createTitle": "Tạo Nhóm Mới",
+      "createDesc": "Nhập thông tin nhóm và chọn chủ đề.",
+      "groupName": "Tên nhóm",
+      "groupNamePlaceholder": "Nhập tên nhóm...",
+      "description": "Mô tả",
+      "descriptionPlaceholder": "Nhập mô tả nhóm (không bắt buộc)...",
+      "topicLabel": "Chủ đề",
+      "topicPlaceholder": "Chọn chủ đề...",
+      "subjectLabel": "Môn học",
+      "subjectPlaceholder": "Chọn môn học...",
+      "selectTopicFirst": "Vui lòng chọn chủ đề trước",
+      "create": "Tạo",
+      "cancel": "Hủy",
+      "creating": "Đang tạo...",
+      "createSuccess": "Tạo nhóm thành công!",
+      "createError": "Tạo nhóm thất bại.",
+      "nameRequired": "Vui lòng nhập tên nhóm.",
+      "topicRequired": "Vui lòng chọn chủ đề.",
+      "subjectRequired": "Vui lòng chọn môn học.",
+      "noGroups": "Chưa có nhóm",
+      "noGroupsDesc": "Tạo hoặc tham gia nhóm để bắt đầu!",
+      "viewWorkspace": "Xem Không gian học tập",
+      "members": "Thành viên",
+      "membersPanel": "Thành viên",
+      "invite": "Mời",
+      "inviteTitle": "Mời Thành Viên",
+      "inviteDesc": "Nhập email của người bạn muốn mời.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "Nhập email...",
+      "emailRequired": "Vui lòng nhập địa chỉ email.",
+      "sendInvite": "Gửi Lời Mời",
+      "sending": "Đang gửi...",
+      "inviteSuccess": "Gửi lời mời thành công!",
+      "inviteError": "Gửi lời mời thất bại.",
+      "removeMember": "Xóa thành viên",
+      "removeConfirm": "Bạn có chắc muốn xóa thành viên này?",
+      "removeSuccess": "Xóa thành viên thành công!",
+      "removeError": "Xóa thành viên thất bại.",
+      "grantUpload": "Cấp quyền upload",
+      "revokeUpload": "Thu hồi quyền upload",
+      "uploadGranted": "Đã cấp quyền upload!",
+      "uploadRevoked": "Đã thu hồi quyền upload!",
+      "uploadError": "Cập nhật quyền upload thất bại.",
+      "changeRole": "Đổi vai trò",
+      "roleUpdated": "Đã cập nhật vai trò thành viên!",
+      "roleError": "Cập nhật vai trò thất bại.",
+      "leader": "Trưởng nhóm",
+      "member": "Thành viên",
+      "contributor": "Cộng tác viên",
+      "canUpload": "Được upload",
+      "noMembers": "Không tìm thấy thành viên",
+      "you": "Bạn"
+    },
+    "workspace": {
+      "createTitle": "Tạo Không gian Học tập Mới",
+      "createDesc": "Nhập tên và mô tả (có thể để trống).",
+      "editTitle": "Chỉnh sửa Không gian Học tập",
+      "editDesc": "Cập nhật thông tin Không gian Học tập.",
+      "deleteTitle": "Xóa Không gian Học tập",
+      "deleteDesc": "Bạn có chắc muốn xóa Không gian Học tập này? Hành động này không thể hoàn tác.",
+      "titleLabel": "Tên Không gian",
+      "titlePlaceholder": "Nhập tên Không gian Học tập ...",
+      "descriptionLabel": "Mô tả",
+      "descriptionPlaceholder": "Nhập mô tả ...",
+      "topicLabel": "Chủ đề",
+      "topicPlaceholder": "Chọn chủ đề...",
+      "subjectLabel": "Môn học",
+      "subjectPlaceholder": "Chọn môn học...",
+      "selectTopicFirst": "Vui lòng chọn chủ đề trước",
+      "create": "Tạo",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "delete": "Xóa",
+      "creating": "Đang tạo...",
+      "saving": "Đang lưu...",
+      "deleting": "Đang xóa...",
+      "createSuccess": "Tạo Không gian Học tập thành công!",
+      "editSuccess": "Cập nhật Không gian Học tập thành công!",
+      "deleteSuccess": "Xóa Không gian Học tập thành công!",
+      "createError": "Tạo Không gian Học tập thất bại.",
+      "editError": "Cập nhật Không gian Học tập thất bại.",
+      "deleteError": "Xóa Không gian Học tập thất bại.",
+      "titleRequired": "Vui lòng nhập tên Không gian Học tập.",
+      "topicRequired": "Vui lòng chọn chủ đề.",
+      "subjectRequired": "Vui lòng chọn môn học.",
+      "untitledTitle": "Không gian Học tập không có tiêu đề",
+      "noDescription": "Không có mô tả",
+      "noWorkspaces": "Chưa có Không gian Học tập",
+      "noWorkspacesDesc": "Tạo Không gian Học tập đầu tiên để bắt đầu!",
+      "status": "Trạng thái",
+      "topic": "Chủ đề",
+      "subject": "Môn học",
+      "edit": "Chỉnh sửa",
+      "confirmDeleteName": "Bạn sắp xóa"
+    },
+    "community": {
+      "title": "Không gian học tập được chia sẻ",
+      "subtitle": "Khám phá các workspace cá nhân hoặc nhóm đang được clone nhiều nhất, rồi biến chúng thành workspace riêng của bạn.",
+      "recommendationsTitle": "Gợi ý dành cho bạn",
+      "trendingTitle": "Đang thịnh hành",
+      "clone": "Clone về máy học",
+      "cloned": "Đã clone",
+      "shareSuccess": "Đã chia sẻ lên cộng đồng.",
+      "shareError": "Hiện chưa thể chia sẻ mục này.",
+      "cloneSuccess": "Đã tạo workspace cá nhân từ community share.",
+      "cloneError": "Hiện chưa thể clone community share này.",
+      "owner": "Chia sẻ bởi {{owner}}",
+      "starCount": "{{count}} sao",
+      "quizCount": "{{count}} quiz",
+      "materialCount": "{{count}} tài liệu",
+      "emptyDescription": "Mục chia sẻ này chưa có mô tả thêm.",
+      "empty": "Chưa có community share nào. Hãy chia sẻ một workspace để bắt đầu.",
+      "types": {
+        "WORKSPACE": "Workspace",
+        "QUIZ": "Quiz",
+        "MATERIAL": "Tài liệu",
+        "ROADMAP": "Roadmap"
+      },
+      "kinds": {
+        "INDIVIDUAL": "Cá nhân",
+        "GROUP": "Nhóm"
+      }
+    },
+    "pagination": {
+      "showing": "Hiển thị {{start}} - {{end}} trong tổng số {{total}}",
+      "page": "trang"
+    },
+    "profile": {
+      "greeting": "Chào {{name}},",
+      "manageAccount": "Quản lý Tài khoản của bạn",
+      "logout": "Đăng xuất",
+      "privacyPolicy": "Chính sách quyền riêng tư",
+      "termsOfService": "Điều khoản dịch vụ"
+    }
+  },
+  "profile": {
+    "title": "Hồ sơ của tôi",
+    "description": "Quản lý hành trình học tập và cài đặt cá nhân của bạn.",
+    "personalInfo": "Thông tin cá nhân",
+    "personalInfoDesc": "Cập nhật thông tin cơ bản của bạn",
+    "email": "Email",
+    "fullName": "Họ và tên",
+    "fullNamePlaceholder": "Nhập họ và tên",
+    "birthday": "Ngày sinh",
+    "security": "Bảo mật",
+    "securityDesc": "Quản lý mật khẩu và bảo mật tài khoản của bạn",
+    "changePassword": "Đổi mật khẩu",
+    "changePasswordDesc": "Nhập mật khẩu cũ và mật khẩu mới để cập nhật",
+    "oldPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmNewPassword": "Xác nhận mật khẩu mới",
+    "edit": "Chỉnh sửa",
+    "save": "Lưu thay đổi",
+    "saving": "Đang lưu...",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "signOut": "Đăng xuất",
+    "loadError": "Không thể tải thông tin tài khoản",
+    "updateSuccess": "Cập nhật thông tin thành công",
+    "updateError": "Cập nhật thông tin thất bại",
+    "avatarSuccess": "Cập nhật ảnh đại diện thành công",
+    "avatarError": "Cập nhật ảnh đại diện thất bại",
+    "invalidFileType": "Vui lòng chọn file hình ảnh",
+    "fileTooLarge": "Kích thước của tệp không được vượt quá 5MB",
+    "fullNameRequired": "Vui lòng nhập họ và tên",
+    "passwordFieldsRequired": "Vui lòng điền đầy đủ các trường mật khẩu",
+    "passwordMismatch": "Mật khẩu xác nhận không khớp",
+    "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự",
+    "passwordSuccess": "Đổi mật khẩu thành công",
+    "passwordError": "Đổi mật khẩu thất bại",
+    "xpProgress": "Tiến độ XP",
+    "achievements": "Thành tựu",
+    "unlockedDaysAgo": "Mở khóa {{days}} ngày trước",
+    "tabs": {
+      "overview": "Tổng quan",
+      "settings": "Cài đặt",
+      "subscription": "Gói đăng ký"
+    },
+    "badges": {
+      "quizMaster": "Bậc thầy Quiz",
+      "streakKeeper": "Giữ Streak",
+      "speedster": "Tốc độ cao"
+    },
+    "skillMatrix": {
+      "title": "Ma trận kỹ năng",
+      "desc": "Điểm mạnh và những điểm cần cải thiện"
+    },
+    "stats": {
+      "topicsMastered": "Chủ đề đã thành thạo",
+      "learningTime": "Thời gian học",
+      "dayStreak": "Ngày liên tiếp",
+      "avgScore": "Điểm trung bình"
+    },
+    "recentActivity": "Hoạt động gần đây",
+    "subscription": {
+      "currentPlan": "Gói hiện tại",
+      "currentPlanDesc": "Gói đăng ký đang sử dụng",
+      "freeDesc": "Các tính năng cơ bản để bắt đầu",
+      "activeStatus": "Đang hoạt động",
+      "currentLabel": "Gói hiện tại",
+      "mostPopular": "PHỔ BIẾN NHẤT",
+      "perMonth": "tháng",
+      "upgrade": "Nâng cấp ngay",
+      "individual": "Cá nhân",
+      "group": "Nhóm",
+      "noPlans": "Không có gói nào cho danh mục này.",
+      "loadError": "Không thể tải danh sách gói. Vui lòng thử lại.",
+      "durationDays": "{{count}} ngày",
+      "durationForever": "Vĩnh viễn",
+      "guaranteeTitle": "Đảm bảo hoàn tiền trong 30 ngày",
+      "guaranteeDesc": "Dùng thử không rủi ro. Nếu không hài lòng, hoàn tiền toàn bộ trong 30 ngày.",
+      "plans": {
+        "free": {
+          "name": "Miễn phí"
+        },
+        "pro": {
+          "name": "Chuyên nghiệp"
+        },
+        "elite": {
+          "name": "Cao cấp"
+        }
+      },
+      "features": {
+        "fiveRoadmaps": "5 AI Lộ trình Học tập / tháng",
+        "basicQuizzes": "AI Tạo bộ câu hỏi cơ bản",
+        "voiceTutor": "Gia sư AI giọng nói",
+        "unlimitedRoadmaps": "AI Lộ trình không giới hạn",
+        "advancedVoice": "AI Companion giọng nói nâng cao",
+        "urlVideo": "Xử lý URL & Video",
+        "prioritySupport": "Hỗ trợ ưu tiên",
+        "everythingPro": "Tất cả tính năng Pro",
+        "studyGroup": "Nhóm học tập (5 người)",
+        "apiAccess": "Truy cập API cho lập trình viên",
+        "customBranding": "Tùy chỉnh thương hiệu"
+      }
+    }
+  },
+  "plan": {
+    "title": "Chọn gói học phù hợp",
+    "subtitle": "Mở khóa đúng mức hỗ trợ AI bạn cần để học nhanh hơn, mà không phải đọc quá nhiều thông số kỹ thuật.",
+    "heroBadge": "Gói AI cho học tập",
+    "backToHome": "Về trang chủ",
+    "back": "Quay lại",
+    "types": {
+      "individual": "Cá nhân",
+      "group": "Nhóm"
+    },
+    "badges": {
+      "permanent": "Mua vĩnh viễn",
+      "credits": "Tính theo Credit",
+      "transparent": "Minh bạch & rõ ràng"
+    },
+    "creditModel": {
+      "title": "Mô hình Credit cho AI",
+      "desc": "Bạn mua plan một lần, sau đó chỉ cần nạp thêm Credit khi dùng các tính năng AI nhiều hơn.",
+      "cta": "Mở ví Credit",
+      "guide": "Xem cách tính Credit"
+    },
+    "noPlans": "Chưa có plan nào cho danh mục này.",
+    "loadError": "Không thể tải danh sách plan. Vui lòng thử lại.",
+    "mostPopular": "PHỔ BIẾN NHẤT",
+    "durationDays": "{{count}} ngày",
+    "durationForever": "Vĩnh viễn",
+    "durationForeverShort": "Vĩnh viễn",
+    "upgrade": "Chọn plan",
+    "currentCta": "Đang sử dụng",
+    "teamCta": "Bắt đầu cho nhóm",
+    "thanhToan": "Thanh toán",
+    "defaultPlan": "Gói mặc định",
+    "descriptions": {
+      "free": "Bắt đầu với các tính năng cốt lõi để tạo quiz và học thử.",
+      "freeWithLimits": "Phù hợp để bắt đầu với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",
+      "standard": "Nâng cấp trải nghiệm học với nhiều công cụ AI hữu ích hơn mỗi ngày.",
+      "recommended": "Mở khóa quy trình học đầy đủ với AI hỗ trợ rõ ràng và thực tế hơn.",
+      "premium": "Phù hợp cho nhu cầu học chuyên sâu với nhiều hỗ trợ AI và góc nhìn phân tích hơn.",
+      "group": "Thiết kế cho nhóm học hoặc lớp nhỏ cần dùng AI chung trên cùng một không gian.",
+      "groupWithLimits": "Không gian học chung cho nhóm với {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace.",
+      "includesPrevious": "Bao gồm toàn bộ {{previousPlan}}, thêm {{extras}}.",
+      "includesPreviousSimple": "Bao gồm toàn bộ {{previousPlan}} với trải nghiệm học đầy đủ hơn.",
+      "extraFormats": "hỗ trợ {{formats}}",
+      "higherLimits": "giới hạn học tập cao hơn"
+    },
+    "formats": {
+      "pdf": "PDF",
+      "word": "Word",
+      "slide": "Slide",
+      "excel": "Excel",
+      "text": "Text",
+      "image": "Hình ảnh",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "bullets": {
+      "groupCollab": "Dùng chung cho học nhóm và cộng tác trên cùng tài liệu",
+      "includesPrevious": "Bao gồm mọi tính năng của {{planName}}",
+      "singleFormat": "Hỗ trợ nhập tài liệu từ {{format}}",
+      "multiFormat": "Hỗ trợ nhập {{formats}}",
+      "multiFormatMore": "Hỗ trợ nhập {{formats}} và thêm {{count}} định dạng khác",
+      "addedFormats": "Thêm hỗ trợ {{formats}}",
+      "coreAi": "Đủ cho các nhu cầu tạo quiz AI cơ bản",
+      "limitWithMaterials": "{{workspaces}} workspace và {{materials}} tài liệu mỗi workspace",
+      "limitWorkspacesOnly": "{{workspaces}} workspace để quản lý tài liệu học tập",
+      "limitMaterialsOnly": "{{materials}} tài liệu cho mỗi workspace",
+      "upgradedLimits": "Nâng lên {{workspaces}} workspace và {{materials}} tài liệu mỗi workspace",
+      "roadmaps": "Tạo lộ trình học AI theo tài liệu và mục tiêu",
+      "companion": "Có AI đồng hành để hỏi đáp và luyện tập nhanh",
+      "summaries": "Tóm tắt và đọc hiểu tài liệu nhanh hơn với AI",
+      "analytics": "Theo dõi tiến độ và điểm yếu để học có trọng tâm hơn",
+      "advancedQuiz": "Mở khóa kiểu quiz nâng cao cho luyện tập sâu hơn",
+      "bonusCredits": "Tặng kèm {{count}} Credit khi mua"
+    },
+    "featureNames": {
+      "roadmaps": "lộ trình học AI",
+      "companion": "AI đồng hành",
+      "summaries": "tóm tắt tài liệu",
+      "analytics": "phân tích học tập",
+      "advancedQuiz": "quiz nâng cao",
+      "multiformatImport": "hỗ trợ tài liệu đa định dạng",
+      "bonusCredits": "Credit tặng kèm"
+    },
+    "studyFeatures": {
+      "title": "Công cụ học tập nổi bật",
+      "subtitle": "Các gói trả phí mở rộng thêm nhiều cách dùng AI hữu ích trong quá trình học.",
+      "roadmap": {
+        "title": "Lộ trình học AI",
+        "desc": "Chuyển tài liệu thành các bước học rõ ràng để bám theo dễ hơn."
+      },
+      "companion": {
+        "title": "AI đồng hành",
+        "desc": "Hỏi nhanh, ôn nhanh và tiếp tục mạch học mà không bị ngắt quãng."
+      },
+      "summary": {
+        "title": "Tóm tắt thông minh",
+        "desc": "Biến nội dung dài thành ý chính ngắn gọn để ôn lại nhanh hơn."
+      },
+      "analytics": {
+        "title": "Phân tích học tập",
+        "desc": "Nhìn rõ điểm mạnh, điểm yếu và tiến độ để điều chỉnh cách học."
+      },
+      "advancedQuiz": {
+        "title": "Quiz nâng cao",
+        "desc": "Mở thêm kiểu câu hỏi và cấu hình linh hoạt cho luyện tập chuyên sâu."
+      }
+    },
+    "notes": {
+      "permanentTitle": "Mua một lần, dùng lâu dài",
+      "permanentDesc": "Plan không bắt buộc theo tháng. Tùy cấu hình hệ thống, bạn có thể sở hữu plan dạng vĩnh viễn.",
+      "creditsTitle": "AI dùng theo Credit",
+      "creditsDesc": "Các tính năng AI chỉ trừ Credit khi bạn thực sự dùng, nên dễ kiểm soát chi phí hơn.",
+      "refundTitle": "Thanh toán rõ ràng",
+      "refundDesc": "Thanh toán được bảo mật và lịch sử mua Credit luôn có thể xem lại trong ví."
+    }
+  },
+  "payment": {
+    "invoiceTitle": "Hóa đơn thanh toán",
+    "invoiceDesc": "Xem lại gói đăng ký và chọn phương thức thanh toán",
+    "backToPlans": "Quay lại gói đăng ký",
+    "planInfo": "Thông tin gói",
+    "orderSummary": "Tóm tắt đơn hàng",
+    "duration": "Thời hạn",
+    "days": "ngày",
+    "total": "Tổng thanh toán",
+    "limits": "Giới hạn",
+    "features": "Tính năng",
+    "chooseMethod": "Phương thức thanh toán",
+    "payNow": "Thanh toán ngay",
+    "processing": "Đang xử lý...",
+    "secureNote": "Giao dịch được bảo mật & mã hóa",
+    "momoError": "Không thể tạo thanh toán MoMo. Vui lòng thử lại.",
+    "noPlanId": "Chưa chọn gói. Vui lòng quay lại và chọn gói đăng ký.",
+    "fetchError": "Không thể tải thông tin gói. Vui lòng thử lại.",
+    "selectGroup": "Chọn nhóm áp dụng",
+    "selectGroupDesc": "Chọn nhóm mà bạn là trưởng nhóm để áp dụng gói đăng ký này.",
+    "selectGroupFirst": "Vui lòng chọn nhóm bên trái trước khi thanh toán.",
+    "limitKeys": {
+      "maxWorkspace": "Không gian học tập tối đa",
+      "maxMaterialPerWorkspace": "Tài liệu / Không gian học tập",
+      "maxMaterialInGroup": "Tài liệu / Nhóm",
+      "maxAiCreateQuizPerDay": "AI tạo bộ câu hỏi / ngày",
+      "maxAiCreateFlashcardPerDay": "AI tạo thẻ ghi nhớ / ngày",
+      "maxAiCreateMockTestPerDay": "AI tạo bài kiểm tra mẫu / ngày",
+      "maxAiCompanionModePerDay": "Phiên AI Companion / ngày",
+      "maxAiCreateItemPerFlashcard": "Mục / Thẻ ghi nhớ",
+      "maxAiCreateQuestionPerQuiz": "Câu hỏi / Bộ câu hỏi",
+      "maxMemberSlot": "Thành viên tối đa"
+    },
+    "featureKeys": {
+      "processPdf": "Xử lý PDF",
+      "processWord": "Xử lý Word",
+      "processSlide": "Xử lý Slide",
+      "processExcel": "Xử lý Excel",
+      "processText": "Xử lý văn bản",
+      "processImage": "Xử lý Hình ảnh",
+      "processVideo": "Xử lý Video",
+      "processAudio": "Xử lý Âm thanh",
+      "hasAiCompanionMode": "AI Companion Mode",
+      "hasAiContentStructuring": "AI Content Structuring",
+      "hasPersonalizedLearningAnalytic": "Phân tích học tập cá nhân",
+      "hasAiTextReadingAndSummarization": "AI đọc & tóm tắt văn bản",
+      "hasAdvancedAiConfiguration": "Loại quiz nâng cao"
+    }
+  },
+  "paymentResult": {
+    "successTitle": "Thanh toán thành công!",
+    "failTitle": "Thanh toán thất bại",
+    "successDesc": "Gói đăng ký của bạn đã được kích hoạt.",
+    "failDesc": "Đã có lỗi xảy ra. Vui lòng thử lại hoặc liên hệ hỗ trợ.",
+    "details": "Chi tiết giao dịch",
+    "orderId": "Mã đơn hàng",
+    "transId": "Mã giao dịch",
+    "amount": "Số tiền",
+    "orderInfo": "Nội dung",
+    "payType": "Hình thức",
+    "time": "Thời gian",
+    "backToPlans": "Quay lại gói đăng ký",
+    "goHome": "Về trang chủ"
+  }
+}

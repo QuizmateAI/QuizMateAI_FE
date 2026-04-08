@@ -7,14 +7,18 @@ export const getPlanById = (planId) => {
 
 export const createMomoPayment = (planId, workspaceId = null) => {
   if (workspaceId) {
-    return api.post(`/momo/create-workspace/${workspaceId}`);
+    return api.post(`/momo/create-workspace/${workspaceId}`, null, {
+      params: { planId },
+    });
   }
   return api.post(`/momo/create/${planId}`);
 };
 
 export const createVnPayPayment = (planId, workspaceId = null) => {
   if (workspaceId) {
-    return api.post(`/vnpay/create-workspace/${workspaceId}`);
+    return api.post(`/vnpay/create-workspace/${workspaceId}`, null, {
+      params: { planId },
+    });
   }
   return api.post(`/vnpay/create/${planId}`);
 };

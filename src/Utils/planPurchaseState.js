@@ -54,6 +54,7 @@ function normalizePurchase(payload) {
     planName,
     planType: String(payload.planType || "INDIVIDUAL").toUpperCase(),
     workspaceId: payload.workspaceId != null ? String(payload.workspaceId) : "",
+    orderId: payload.orderId != null ? String(payload.orderId) : "",
     timestamp: Number(payload.timestamp) || Date.now(),
   };
 }
