@@ -10,13 +10,22 @@ import { Dialog, DialogContent } from "@/Components/ui/dialog";
  *  - open / onOpenChange: dialog visibility control
  *  - featureName: optional display name of the locked feature
  *  - isDarkMode: boolean for theme
+ *  - upgradePath: optional route used for the upgrade CTA
+ *  - upgradeState: optional router state for the upgrade CTA
  */
-export default function PlanUpgradeModal({ open, onOpenChange, featureName, isDarkMode = false }) {
+export default function PlanUpgradeModal({
+  open,
+  onOpenChange,
+  featureName,
+  isDarkMode = false,
+  upgradePath = "/plans",
+  upgradeState,
+}) {
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
     onOpenChange(false);
-    navigate("/plans");
+    navigate(upgradePath, upgradeState ? { state: upgradeState } : undefined);
   };
 
   return (

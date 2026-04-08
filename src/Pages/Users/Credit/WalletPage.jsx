@@ -34,7 +34,7 @@ function formatNumber(n, locale) {
 }
 
 function formatVnd(amount, locale) {
-  return new Intl.NumberFormat(locale, { style: "currency", currency: "VND" }).format(amount);
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(amount)} VND`;
 }
 
 function formatTime(iso, locale = "vi") {
@@ -77,6 +77,330 @@ function normalizeTransactions(page) {
     note: tx.note ?? "",
     balanceAfter: tx.balanceAfter ?? null,
   }));
+}
+
+function formatFallbackLabel(value, lang) {
+  if (!value) return lang === "vi" ? "Khác" : "Other";
+
+  return String(value)
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getTransactionTypeLabel(type, lang) {
+  const normalized = String(type || "").toUpperCase();
+  const labels = {
+    WELCOME: lang === "vi" ? "Credit chào mừng" : "Welcome credits",
+    TOPUP: lang === "vi" ? "Nạp credit" : "Credit top-up",
+    CONSUME: lang === "vi" ? "Dùng credit AI" : "AI credit usage",
+    RESERVE: lang === "vi" ? "Tạm giữ credit" : "Credit reserved",
+    RESERVE_CANCELLED: lang === "vi" ? "Hoàn tạm giữ" : "Reserve released",
+    REFUND: lang === "vi" ? "Hoàn credit" : "Credit refund",
+    ADJUST: lang === "vi" ? "Điều chỉnh credit" : "Credit adjustment",
+    PLAN_BONUS: lang === "vi" ? "Credit từ gói" : "Plan credits",
+    PLAN_EXPIRE_RESET: lang === "vi" ? "Reset credit gói" : "Plan reset",
+  };
+
+  return labels[normalized] || formatFallbackLabel(type, lang);
+}
+
+function getTransactionSourceLabel(source, lang) {
+  const normalized = String(source || "").toUpperCase();
+  const labels = {
+    SYSTEM: lang === "vi" ? "Hệ thống" : "System",
+    PAYMENT: lang === "vi" ? "Thanh toán" : "Payment",
+    AI_USAGE: lang === "vi" ? "AI sử dụng" : "AI usage",
+    USER_PLAN: lang === "vi" ? "Gói của bạn" : "Your plan",
+    WORKSPACE_PLAN: lang === "vi" ? "Gói nhóm" : "Group plan",
+    ADMIN: lang === "vi" ? "Quản trị viên" : "Admin",
+  };
+
+  return labels[normalized] || (source ? formatFallbackLabel(source, lang) : "—");
+}
+
+function getTransactionSourceBadgeClass(source, isDarkMode) {
+  const normalized = String(source || "").toUpperCase();
+
+  if (normalized === "AI_USAGE") {
+    return isDarkMode
+      ? "bg-amber-400/10 text-amber-200 ring-1 ring-amber-400/20"
+      : "bg-amber-50 text-amber-700 ring-1 ring-amber-200";
+  }
+
+  if (normalized === "USER_PLAN" || normalized === "WORKSPACE_PLAN") {
+    return isDarkMode
+      ? "bg-blue-400/10 text-blue-200 ring-1 ring-blue-400/20"
+      : "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
+  }
+
+  if (normalized === "PAYMENT") {
+    return isDarkMode
+      ? "bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-400/20"
+      : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200";
+  }
+
+  return isDarkMode
+    ? "bg-slate-700/40 text-slate-300 ring-1 ring-slate-600/50"
+    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
+}
+
+function parseAiUsageNote(note) {
+  const normalizedNote = String(note || "").trim();
+  if (!normalizedNote) return null;
+
+  const match = normalizedNote.match(/AI\s+[A-Z_]+:\s*([A-Z_]+)(?:\s+x(\d+))?/i);
+  if (!match) return null;
+
+  return {
+    actionKey: String(match[1] || "").toUpperCase(),
+  };
+}
+
+function sanitizeActivityNote(note) {
+  return String(note || "")
+    .replace(/\s+\[(?:PARTIAL_REFUND|RELEASED)[^\]]*\]/gi, "")
+    .trim();
+}
+
+function decodeUiActivityValue(value) {
+  const normalizedValue = String(value || "").trim();
+  if (!normalizedValue) return "";
+
+  try {
+    return decodeURIComponent(normalizedValue.replace(/\+/g, "%20"));
+  } catch {
+    return normalizedValue;
+  }
+}
+
+function parseUiActivityNote(note) {
+  const normalizedNote = sanitizeActivityNote(note);
+  if (normalizedNote.startsWith("UI_ACTIVITY_V2|")) {
+    const [, actionKey, encodedTarget = "", encodedWorkspace = ""] = normalizedNote.split("|");
+    return {
+      actionKey: String(actionKey || "").toUpperCase(),
+      target: decodeUiActivityValue(encodedTarget),
+      workspaceName: decodeUiActivityValue(encodedWorkspace),
+    };
+  }
+
+  if (!normalizedNote.startsWith("UI_ACTIVITY|")) return null;
+
+  const [, actionKey, ...targetParts] = normalizedNote.split("|");
+  return {
+    actionKey: String(actionKey || "").toUpperCase(),
+    target: targetParts.join("|").trim(),
+    workspaceName: "",
+  };
+}
+
+function getAiActionActivity(actionKey, lang) {
+
+  const activityMap = {
+    PROCESS_PDF: {
+      title: lang === "vi" ? "Bạn đã tải lên tài liệu PDF" : "You uploaded a PDF",
+    },
+    PROCESS_IMAGE: {
+      title: lang === "vi" ? "Bạn đã tải lên hình ảnh" : "You uploaded an image",
+    },
+    PROCESS_TEXT: {
+      title: lang === "vi" ? "Bạn đã gửi văn bản để AI xử lý" : "You sent text for AI processing",
+    },
+    PROCESS_DOCX: {
+      title: lang === "vi" ? "Bạn đã tải lên tài liệu Word" : "You uploaded a Word document",
+    },
+    PROCESS_XLSX: {
+      title: lang === "vi" ? "Bạn đã tải lên file Excel" : "You uploaded an Excel file",
+    },
+    PROCESS_PPTX: {
+      title: lang === "vi" ? "Bạn đã tải lên slide PowerPoint" : "You uploaded a PowerPoint deck",
+    },
+    PROCESS_AUDIO: {
+      title: lang === "vi" ? "Bạn đã tải lên tệp âm thanh" : "You uploaded an audio file",
+    },
+    PROCESS_VIDEO: {
+      title: lang === "vi" ? "Bạn đã tải lên video" : "You uploaded a video",
+    },
+    GENERATE_QUIZ: {
+      title: lang === "vi" ? "Bạn đã tạo bài quiz" : "You generated a quiz",
+    },
+    PREVIEW_QUIZ_STRUCTURE: {
+      title: lang === "vi" ? "Bạn đã xem trước cấu trúc quiz" : "You previewed a quiz structure",
+    },
+    GENERATE_FLASHCARDS: {
+      title: lang === "vi" ? "Bạn đã tạo flashcard" : "You generated flashcards",
+    },
+    GENERATE_MOCK_TEST: {
+      title: lang === "vi" ? "Bạn đã tạo đề luyện tập" : "You generated a mock test",
+    },
+    GENERATE_ROADMAP: {
+      title: lang === "vi" ? "Bạn đã tạo lộ trình học" : "You generated a study roadmap",
+    },
+    GENERATE_ROADMAP_PHASES: {
+      title: lang === "vi" ? "Bạn đã tạo các giai đoạn học" : "You generated roadmap phases",
+    },
+    GENERATE_ROADMAP_PHASE_CONTENT: {
+      title: lang === "vi" ? "Bạn đã tạo nội dung học tập" : "You generated study content",
+    },
+    GENERATE_ROADMAP_KNOWLEDGE_QUIZ: {
+      title: lang === "vi" ? "Bạn đã tạo quiz kiến thức" : "You generated a knowledge quiz",
+    },
+    SUGGEST_LEARNING_RESOURCES: {
+      title: lang === "vi" ? "Bạn đã gợi ý tài liệu học" : "You requested learning resources",
+    },
+    ANALYZE_STUDY_PROFILE_KNOWLEDGE: {
+      title: lang === "vi" ? "Bạn đã phân tích hồ sơ học tập" : "You analyzed a study profile",
+    },
+    SUGGEST_STUDY_PROFILE_FIELDS: {
+      title: lang === "vi" ? "Bạn đã gợi ý thông tin hồ sơ học tập" : "You requested study profile suggestions",
+    },
+    SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES: {
+      title: lang === "vi" ? "Bạn đã gợi ý mẫu đề phù hợp" : "You requested exam template suggestions",
+    },
+    VALIDATE_STUDY_PROFILE_CONSISTENCY: {
+      title: lang === "vi" ? "Bạn đã kiểm tra hồ sơ học tập" : "You validated a study profile",
+    },
+  };
+
+  return activityMap[actionKey] || {
+    title: lang === "vi" ? "Bạn đã dùng một tính năng AI" : "You used an AI feature",
+  };
+}
+
+function formatUiActivityTitle(actionKey, target, lang) {
+  const safeTarget = String(target || "").trim();
+  const withTarget = (viPrefix, enPrefix) =>
+    safeTarget ? `${lang === "vi" ? viPrefix : enPrefix}${safeTarget}` : getAiActionActivity(actionKey, lang).title;
+
+  const titleMap = {
+    PROCESS_PDF: withTarget("Đã tải lên PDF: ", "Uploaded PDF: "),
+    PROCESS_DOCX: withTarget("Đã tải lên file Word: ", "Uploaded Word file: "),
+    PROCESS_PPTX: withTarget("Đã tải lên slide: ", "Uploaded slides: "),
+    PROCESS_XLSX: withTarget("Đã tải lên file Excel: ", "Uploaded Excel file: "),
+    PROCESS_IMAGE: withTarget("Đã tải lên ảnh: ", "Uploaded image: "),
+    PROCESS_AUDIO: withTarget("Đã tải lên audio: ", "Uploaded audio: "),
+    PROCESS_VIDEO: withTarget("Đã tải lên video: ", "Uploaded video: "),
+    PROCESS_TEXT: withTarget("Đã gửi văn bản: ", "Processed text: "),
+    GENERATE_QUIZ: withTarget("Đã tạo quiz: ", "Generated quiz: "),
+    GENERATE_FLASHCARDS: withTarget("Đã tạo flashcard từ: ", "Generated flashcards from: "),
+    GENERATE_MOCK_TEST: withTarget("Đã tạo mock test: ", "Generated mock test: "),
+    GENERATE_ROADMAP: withTarget("Đã tạo roadmap: ", "Generated roadmap: "),
+    GENERATE_ROADMAP_PHASES: withTarget("Đã tạo phase cho: ", "Generated phases for: "),
+    GENERATE_ROADMAP_PHASE_CONTENT: withTarget("Đã tạo nội dung cho: ", "Generated content for: "),
+    GENERATE_ROADMAP_KNOWLEDGE_QUIZ: withTarget("Đã tạo quiz kiến thức: ", "Generated knowledge quiz: "),
+  };
+
+  return titleMap[actionKey] || withTarget("Đã dùng AI cho: ", "Used AI for: ");
+}
+
+function getReadableNote(note) {
+  const normalizedNote = sanitizeActivityNote(note);
+  if (!normalizedNote) return "";
+  if (normalizedNote.startsWith("UI_ACTIVITY|") || normalizedNote.startsWith("UI_ACTIVITY_V2|")) return "";
+  if (/^AI\s+[A-Z_]+:/i.test(normalizedNote)) return "";
+  return normalizedNote;
+}
+
+function getAiUsageActivity(tx, lang) {
+  const uiActivity = parseUiActivityNote(tx?.note);
+  if (uiActivity) {
+    return {
+      title: formatUiActivityTitle(uiActivity.actionKey, uiActivity.target, lang),
+      subtitle: "",
+      workspaceName: String(uiActivity.workspaceName || "").trim(),
+    };
+  }
+
+  const readableNote = getReadableNote(tx?.note);
+  if (readableNote) {
+    return {
+      title: readableNote,
+      subtitle: "",
+      workspaceName: "",
+    };
+  }
+
+  const aiUsageMeta = parseAiUsageNote(tx?.note);
+  if (aiUsageMeta) {
+    return {
+      title: getAiActionActivity(aiUsageMeta.actionKey, lang).title,
+      subtitle: "",
+      workspaceName: "",
+    };
+  }
+
+  return {
+    title: lang === "vi" ? "Bạn đã dùng một tính năng AI" : "You used an AI feature",
+    subtitle: "",
+    workspaceName: "",
+  };
+}
+
+function getTransactionActivity(tx, lang) {
+  const normalizedType = String(tx?.type || "").toUpperCase();
+  const normalizedSource = String(tx?.source || "").toUpperCase();
+  if (normalizedSource === "AI_USAGE") {
+    return getAiUsageActivity(tx, lang);
+  }
+
+  if (normalizedType === "WELCOME") {
+    return {
+      title: lang === "vi" ? "Bạn đã nhận credit chào mừng" : "You received welcome credits",
+      subtitle: lang === "vi" ? "Quà tặng dành cho tài khoản mới" : "A welcome bonus for your new account",
+      workspaceName: "",
+    };
+  }
+
+  if (normalizedType === "PLAN_BONUS") {
+    return {
+      title: lang === "vi" ? "Bạn đã nhận credit từ gói" : "You received plan credits",
+      subtitle: lang === "vi" ? "Credit đi kèm gói đã được cộng vào ví" : "Included plan credits were added to your wallet",
+      workspaceName: "",
+    };
+  }
+
+  if (normalizedType === "TOPUP") {
+    return {
+      title: lang === "vi" ? "Bạn đã nạp thêm credit" : "You topped up credits",
+      subtitle: lang === "vi" ? "Credit đã được cộng vào ví của bạn" : "Credits were added to your wallet",
+      workspaceName: "",
+    };
+  }
+
+  if (normalizedType === "REFUND") {
+    return {
+      title: lang === "vi" ? "Bạn đã được hoàn lại credit" : "You received a credit refund",
+      subtitle: lang === "vi" ? "Số credit chưa dùng đã được hoàn về ví" : "Unused credits were returned to your wallet",
+      workspaceName: "",
+    };
+  }
+
+  if (normalizedType === "RESERVE_CANCELLED") {
+    return {
+      title: lang === "vi" ? "Một khoản tạm giữ đã được hoàn" : "A reserved amount was released",
+      subtitle: lang === "vi" ? "Credit tạm giữ đã được trả lại vào ví" : "Reserved credits were returned to your wallet",
+      workspaceName: "",
+    };
+  }
+
+  if (normalizedType === "PLAN_EXPIRE_RESET") {
+    return {
+      title: lang === "vi" ? "Credit gói đã được làm mới" : "Plan credits were reset",
+      subtitle: lang === "vi" ? "Hệ thống đã reset credit theo chu kỳ gói" : "The system reset your plan credits for the next cycle",
+      workspaceName: "",
+    };
+  }
+
+  return {
+    title: getTransactionTypeLabel(tx?.type, lang),
+    subtitle: tx?.note && !/task:|order\s+/i.test(String(tx.note))
+      ? String(tx.note)
+      : "",
+    workspaceName: "",
+  };
 }
 
 export default function WalletPage() {
@@ -195,7 +519,7 @@ export default function WalletPage() {
     <div className={`min-h-screen ${fontClass} transition-colors ${
       isDarkMode
         ? "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-50"
-        : "bg-gradient-to-br from-indigo-50 via-white to-blue-50 text-slate-900"
+        : "bg-white text-slate-900"
     }`}>
       {/* Header */}
       <header className={`sticky top-0 z-30 backdrop-blur-xl border-b ${
@@ -292,7 +616,7 @@ export default function WalletPage() {
         {/* Top summary */}
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
           <Card className={`flex-1 overflow-hidden backdrop-blur-xl ${
-            isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white/70 border-white/60 shadow-slate-900/10"
+            isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white border-slate-200 shadow-sm"
           }`}>
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
@@ -301,7 +625,7 @@ export default function WalletPage() {
                     <span className={`inline-flex items-center justify-center rounded-2xl ring-1 ring-inset ${
                       isDarkMode
                         ? "bg-blue-500/10 ring-blue-400/25 shadow-[0_0_0_6px_rgba(99,102,241,0.10)]"
-                        : "bg-blue-600/10 ring-blue-600/20 shadow-[0_0_0_6px_rgba(99,102,241,0.12)]"
+                        : "bg-slate-100 ring-slate-200"
                     }`}>
                       <CreditIconImage alt="Quizmate Credit" className="w-9 h-9 rounded-2xl animate-floaty" />
                     </span>
@@ -311,14 +635,16 @@ export default function WalletPage() {
                     {t("wallet.subtitle")}
                   </CardDescription>
                 </div>
-                <Badge className="rounded-full px-3 py-1 bg-blue-600 text-white">
+                <Badge className={`rounded-full px-3 py-1 ${
+                  isDarkMode ? "bg-slate-800 text-slate-100" : "bg-slate-100 text-slate-700"
+                }`}>
                   {t("wallet.badge")}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <div className={`rounded-2xl p-5 ring-1 ring-inset ${
-                isDarkMode ? "bg-slate-950/40 ring-slate-700/60" : "bg-slate-50 ring-slate-200"
+                isDarkMode ? "bg-slate-950/40 ring-slate-700/60" : "bg-white ring-slate-200"
               }`}>
                 <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{t("wallet.totalAvailable")}</p>
                 <div className="mt-2 flex items-baseline gap-2">
@@ -330,7 +656,7 @@ export default function WalletPage() {
                   </span>
                 </div>
                 <div className={`mt-3 inline-flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                  <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <Sparkles className={`w-4 h-4 ${isDarkMode ? "text-slate-300" : "text-slate-500"}`} />
                   {t("wallet.hint")}
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -346,16 +672,16 @@ export default function WalletPage() {
                   </div>
                   {walletSummary.hasActivePlan && (
                     <div className={`rounded-2xl px-4 py-3 ring-1 ring-inset ${
-                      isDarkMode ? "bg-blue-500/10 ring-blue-400/25" : "bg-blue-50 ring-blue-200"
+                      isDarkMode ? "bg-slate-900/60 ring-slate-700/60" : "bg-white ring-slate-200"
                     }`}>
-                      <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDarkMode ? "text-blue-200" : "text-blue-700"}`}>
+                      <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDarkMode ? "text-slate-300" : "text-slate-500"}`}>
                         {t("wallet.planCredits")}
                       </p>
                       <p className={`mt-2 text-2xl font-bold tabular-nums ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
                         {formatNumber(walletSummary.planCreditBalance, currentLang === "vi" ? "vi-VN" : "en-US")}
                       </p>
                       {walletSummary.planCreditExpiresAt && (
-                        <p className={`mt-2 text-xs ${isDarkMode ? "text-blue-100/80" : "text-blue-800"}`}>
+                        <p className={`mt-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                           {t("wallet.expiresAt")}: {formatTime(walletSummary.planCreditExpiresAt, currentLang)}
                         </p>
                       )}
@@ -378,7 +704,7 @@ export default function WalletPage() {
           </Card>
 
           <Card className={`w-full lg:w-[420px] backdrop-blur-xl ${
-            isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white/70 border-white/60 shadow-slate-900/10"
+            isDarkMode ? "bg-slate-900/50 border-slate-700/50" : "bg-white border-slate-200 shadow-sm"
           }`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -404,10 +730,17 @@ export default function WalletPage() {
               {canBuyCredit && packages.map((pkg) => {
                 const base = pkg.baseCredit ?? 0;
                 const bonus = pkg.bonusCredit ?? 0;
-                const totalCredits = base + bonus;
+                const packageName = String(pkg.displayName || pkg.code || "").trim()
+                  || `${currentLang === "vi" ? "Gói credit" : "Credit package"} ${pkg.creditPackageId ?? ""}`.trim();
+                const baseCreditsLabel = currentLang === "vi"
+                  ? `${formatNumber(base, "vi-VN")} credit gốc`
+                  : `${formatNumber(base, "en-US")} base credits`;
+                const bonusCreditsLabel = currentLang === "vi"
+                  ? `+${formatNumber(bonus, "vi-VN")} bonus credit`
+                  : `+${formatNumber(bonus, "en-US")} bonus credits`;
                 return (
                 <button
-                  key={pkg.creditPackageId ?? totalCredits}
+                  key={pkg.creditPackageId ?? `${packageName}-${base}-${bonus}`}
                   type="button"
                   onClick={() => buyCredits(pkg)}
                   className={`w-full text-left rounded-2xl p-4 ring-1 ring-inset transition-all active:scale-[0.99] cursor-pointer ${
@@ -416,31 +749,30 @@ export default function WalletPage() {
                       : "bg-white ring-slate-200 hover:bg-slate-50"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold">
-                        {formatNumber(totalCredits, currentLang === "vi" ? "vi-VN" : "en-US")} {t("wallet.creditsUnit")}
-                        {bonus ? (
-                          <span className={`ml-2 text-xs font-semibold ${
-                            isDarkMode ? "text-emerald-400" : "text-emerald-700"
-                          }`}>
-                            +{formatNumber(bonus, currentLang === "vi" ? "vi-VN" : "en-US")} {t("wallet.bonus")}
-                          </span>
-                        ) : null}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`} title={packageName}>
+                        {packageName}
                       </p>
-                      <p className={`text-xs mt-1 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                        {t("wallet.packageHint")}
+                      <p
+                        className={`mt-1 truncate text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}
+                        title={baseCreditsLabel}
+                      >
+                        {baseCreditsLabel}
+                      </p>
+                      <p
+                        className={`mt-1 truncate text-sm ${bonus > 0
+                          ? (isDarkMode ? "text-emerald-400" : "text-emerald-800")
+                          : (isDarkMode ? "text-slate-500" : "text-slate-500")}`}
+                        title={bonusCreditsLabel}
+                      >
+                        {bonusCreditsLabel}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-extrabold ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
+                    <div className="shrink-0 text-right">
+                      <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
                         {formatVnd(pkg.price ?? 0, currentLang === "vi" ? "vi-VN" : "en-US")}
                       </p>
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full ${
-                        isDarkMode ? "bg-blue-600/15 text-blue-300" : "bg-blue-50 text-blue-700"
-                      }`}>
-                        {t("wallet.buyNow")}
-                      </span>
                     </div>
                   </div>
                 </button>
@@ -467,11 +799,17 @@ export default function WalletPage() {
               <Table className={isDarkMode ? "text-slate-100" : "text-slate-900"}>
                 <TableHeader className={isDarkMode ? "bg-slate-950/40" : "bg-slate-50"}>
                   <TableRow className={isDarkMode ? "border-slate-800" : "border-slate-200"}>
-                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.id")}</TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.time")}</TableHead>
-                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.type")}</TableHead>
+                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
+                      {currentLang === "vi" ? "Hoạt động" : "Activity"}
+                    </TableHead>
+                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
+                      {currentLang === "vi" ? "Workspace" : "Workspace"}
+                    </TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.amount")}</TableHead>
-                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.status")}</TableHead>
+                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
+                      {currentLang === "vi" ? "Nguồn" : "Source"}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -489,27 +827,50 @@ export default function WalletPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    transactions.map((tx) => (
-                      <TableRow key={tx.id} className={isDarkMode ? "border-slate-800" : "border-slate-200"}>
-                        <TableCell className={`font-semibold text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>#{tx.id}</TableCell>
+                    transactions.map((tx) => {
+                      const activity = getTransactionActivity(tx, currentLang);
+
+                      return (
+                      <TableRow key={tx.id ?? `${tx.time}-${tx.type}-${tx.amount}`} className={isDarkMode ? "border-slate-800" : "border-slate-200"}>
                         <TableCell className={isDarkMode ? "text-slate-300" : "text-slate-700"}>
                           {formatTime(tx.time, currentLang)}
                         </TableCell>
                         <TableCell className={isDarkMode ? "text-slate-300" : "text-slate-700"}>
-                          {t(`wallet.types.${tx.type}`, { defaultValue: tx.type })}
+                          <div className="min-w-[200px]">
+                            <p
+                              className={`max-w-[420px] truncate font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}
+                              title={activity.title}
+                            >
+                              {activity.title}
+                            </p>
+                            {activity.subtitle ? (
+                              <p
+                                className={`mt-1 max-w-[420px] truncate text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}
+                                title={activity.subtitle}
+                              >
+                                {activity.subtitle}
+                              </p>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className={isDarkMode ? "text-slate-300" : "text-slate-700"}>
+                          <p
+                            className={`max-w-[240px] truncate text-sm ${activity.workspaceName ? (isDarkMode ? "text-slate-200" : "text-slate-700") : (isDarkMode ? "text-slate-500" : "text-slate-400")}`}
+                            title={activity.workspaceName || undefined}
+                          >
+                            {activity.workspaceName || "—"}
+                          </p>
                         </TableCell>
                         <TableCell className={`font-bold tabular-nums ${tx.amount >= 0 ? (isDarkMode ? "text-emerald-400" : "text-emerald-700") : (isDarkMode ? "text-amber-400" : "text-amber-700")}`}>
                           {tx.amount >= 0 ? "+" : ""}{formatNumber(tx.amount, currentLang === "vi" ? "vi-VN" : "en-US")}
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                            isDarkMode ? "bg-slate-700/40 text-slate-300 ring-1 ring-slate-600/50" : "bg-slate-100 text-slate-700 ring-1 ring-slate-200"
-                          }`}>
-                            {t(`wallet.source.${tx.source}`, { defaultValue: tx.source || "—" })}
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getTransactionSourceBadgeClass(tx.source, isDarkMode)}`}>
+                            {getTransactionSourceLabel(tx.source, currentLang)}
                           </span>
                         </TableCell>
                       </TableRow>
-                    ))
+                    );})
                   )}
                 </TableBody>
               </Table>

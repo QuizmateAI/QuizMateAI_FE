@@ -46,6 +46,7 @@ export default function CreditPaymentPage() {
   const currentLang = i18n.language;
   const locale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
   const creditPackageId = searchParams.get('creditPackageId');
+  const workspaceId = searchParams.get('workspaceId') || location.state?.workspaceId || null;
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [creditPackage, setCreditPackage] = useState(null);
@@ -346,7 +347,7 @@ export default function CreditPaymentPage() {
 
             <div className="w-full shrink-0 lg:w-[400px]">
               <div className="lg:sticky lg:top-24">
-                <PaymentSidebar creditPackage={creditPackage} />
+                <PaymentSidebar creditPackage={creditPackage} workspaceId={workspaceId} />
               </div>
             </div>
           </div>

@@ -108,22 +108,76 @@ function ToastNotification({ id, type, message, duration = 2000, onClose }) {
 
   const selectedStyle = styleByType[type] || styleByType.info;
   const bgClass = 'bg-white dark:bg-white border-slate-200 dark:border-slate-300 shadow-xl';
+  const isStructuredMessage = message && typeof message === 'object' && !Array.isArray(message);
+  const structuredTitle = isStructuredMessage ? String(message.title || '').trim() : '';
+  const structuredDescription = isStructuredMessage ? String(message.description || '').trim() : '';
+  const structuredMeta = isStructuredMessage ? String(message.meta || '').trim() : '';
+  const structuredItems = isStructuredMessage && Array.isArray(message.items) ? message.items : [];
 
   return (
     <div
-      className={`w-[min(92vw,420px)] min-w-0 rounded-xl border shadow-lg overflow-hidden animate-in slide-in-from-right-5 duration-300 pointer-events-auto ${bgClass}`}
+      className={`w-[min(92vw,520px)] min-w-0 rounded-xl border shadow-lg overflow-hidden animate-in slide-in-from-right-5 duration-300 pointer-events-auto ${bgClass}`}
       role="alert"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className={`px-4 py-3 flex items-start gap-2 ${selectedStyle.textClass}`}>
-        <span className="mt-0.5">{selectedStyle.icon}</span>
-        <p className="text-sm font-medium flex-1 break-words">{message}</p>
+      <div className="px-4 py-3 flex items-start gap-2">
+        <span className={`mt-0.5 ${selectedStyle.textClass}`}>{selectedStyle.icon}</span>
+        <div className="min-w-0 flex-1">
+          {isStructuredMessage ? (
+            <>
+              {structuredTitle ? (
+                <p className={`text-sm font-semibold break-words ${selectedStyle.textClass}`}>
+                  {structuredTitle}
+                </p>
+              ) : null}
+              {structuredDescription ? (
+                <p className="mt-1 text-xs leading-5 text-slate-600 break-words">
+                  {structuredDescription}
+                </p>
+              ) : null}
+              {structuredItems.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  {structuredItems.map((item, index) => {
+                    const label = typeof item === 'string'
+                      ? item
+                      : String(item?.label || '').trim();
+                    const detail = typeof item === 'string'
+                      ? ''
+                      : String(item?.detail || '').trim();
+
+                    return (
+                      <div key={`${label}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        {label ? (
+                          <p className="text-xs font-semibold text-slate-900 break-words">
+                            {label}
+                          </p>
+                        ) : null}
+                        {detail ? (
+                          <p className="mt-1 text-xs leading-5 text-slate-600 break-words">
+                            {detail}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {structuredMeta ? (
+                <p className="mt-2 text-[11px] leading-5 text-slate-500 break-words">
+                  {structuredMeta}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className={`text-sm font-medium break-words ${selectedStyle.textClass}`}>{message}</p>
+          )}
+        </div>
         <button
           type="button"
           aria-label="Close toast"
           onClick={handleClose}
-          className={`transition-colors ${selectedStyle.closeHoverClass}`}
+          className={`transition-colors ${selectedStyle.textClass} ${selectedStyle.closeHoverClass}`}
         >
           <X className="w-4 h-4" aria-hidden="true" />
         </button>
