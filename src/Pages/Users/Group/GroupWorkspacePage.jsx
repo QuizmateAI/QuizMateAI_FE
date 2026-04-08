@@ -55,6 +55,29 @@ import {
   deleteRoadmapPhaseById,
 } from '@/api/RoadmapAPI';
 
+const loadUploadSourceDialog = () => import("./Components/UploadSourceDialog");
+const loadGroupDocumentsTab = () => import("./Components/GroupDocumentsTab");
+const loadInviteMemberDialog = () => import("./Group_leader/InviteMemberDialog");
+const loadGroupWorkspaceProfileConfigDialog = () => import("./Components/GroupWorkspaceProfileConfigDialog");
+const loadGroupDashboardTab = () => import("./Group_leader/GroupDashboardTab");
+const loadGroupMembersTab = () => import("./Group_leader/GroupMembersTab");
+const loadGroupSettingsTab = () => import("./Group_leader/GroupSettingsTab");
+const loadGroupChatPanel = () => import("./Components/ChatPanel");
+const loadChallengeTab = () => import("./Components/ChallengeTab");
+const loadWorkspaceOnboardingUpdateGuardDialog = () => import("@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog");
+const loadPlanUpgradeModal = () => import("@/Components/plan/PlanUpgradeModal");
+
+const LazyUploadSourceDialog = React.lazy(loadUploadSourceDialog);
+const LazyGroupDocumentsTab = React.lazy(loadGroupDocumentsTab);
+const LazyInviteMemberDialog = React.lazy(loadInviteMemberDialog);
+const LazyGroupWorkspaceProfileConfigDialog = React.lazy(loadGroupWorkspaceProfileConfigDialog);
+const LazyGroupDashboardTab = React.lazy(loadGroupDashboardTab);
+const LazyGroupMembersTab = React.lazy(loadGroupMembersTab);
+const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
+const LazyGroupChatPanel = React.lazy(loadGroupChatPanel);
+const LazyChallengeTab = React.lazy(loadChallengeTab);
+const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
+const LazyPlanUpgradeModal = React.lazy(loadPlanUpgradeModal);
 const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
 const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigSummaryDialog"));
 const LazyRoadmapJourPanel = React.lazy(() => import("./Components/RoadmapJourPanel"));
@@ -550,6 +573,17 @@ function GroupWorkspacePage() {
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const currentUser = readCurrentUser();
 
+  const renderSectionFallback = useCallback((minHeight = 320) => (
+    <div
+      className={`flex items-center justify-center rounded-[28px] border ${
+        isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'
+      }`}
+      style={{ minHeight }}
+    >
+      <ListSpinner variant="section" className="h-full" />
+    </div>
+  ), [isDarkMode]);
+
   const {
     workspaces,
     currentWorkspace,
@@ -648,6 +682,61 @@ function GroupWorkspacePage() {
   const canCreateContent = isLeader || isContributor;
   const canUploadSource = isLeader || isContributor;
   const canManageMembers = isLeader;
+
+  useEffect(() => {
+    if (activeSection === 'dashboard' && isLeader) {
+      void loadGroupDashboardTab();
+      return;
+    }
+
+    if (activeSection === 'documents') {
+      void loadGroupDocumentsTab();
+      return;
+    }
+
+    if (activeSection === 'members' && !isMember) {
+      void loadGroupMembersTab();
+      return;
+    }
+
+    if (activeSection === 'challenge') {
+      void loadChallengeTab();
+      return;
+    }
+
+    if (activeSection === 'settings') {
+      void loadGroupSettingsTab();
+      return;
+    }
+
+    if (['flashcard', 'quiz', 'roadmap', 'mockTest'].includes(activeSection)) {
+      void loadGroupChatPanel();
+    }
+  }, [activeSection, isLeader, isMember]);
+
+  useEffect(() => {
+    if (uploadDialogOpen) {
+      void loadUploadSourceDialog();
+    }
+  }, [uploadDialogOpen]);
+
+  useEffect(() => {
+    if (inviteDialogOpen) {
+      void loadInviteMemberDialog();
+    }
+  }, [inviteDialogOpen]);
+
+  useEffect(() => {
+    if (profileUpdateGuardOpen) {
+      void loadWorkspaceOnboardingUpdateGuardDialog();
+    }
+  }, [profileUpdateGuardOpen]);
+
+  useEffect(() => {
+    if (planUpgradeModalOpen) {
+      void loadPlanUpgradeModal();
+    }
+  }, [planUpgradeModalOpen]);
 
   const resolvedWorkspaceId = currentGroupWorkspace?.workspaceId
     ?? (isCreating ? null : workspaceId);
@@ -2744,7 +2833,8 @@ function GroupWorkspacePage() {
 
   const renderStudioPanel = (defaultView) => (
     <div className={`rounded-[28px] border overflow-hidden ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-white/80 bg-white/82'}`} style={{ minHeight: 500 }}>
-      <ChatPanel
+      <React.Suspense fallback={<div className="flex h-full min-h-[500px] items-center justify-center"><ListSpinner variant="section" className="h-full" /></div>}>
+        <LazyGroupChatPanel
         isDarkMode={isDarkMode}
         sources={sources}
         selectedSourceIds={selectedSourceIds}
@@ -2809,7 +2899,8 @@ function GroupWorkspacePage() {
             : null
         }
         challengeSnapshotReviewMode={quizDetailFromChallengeReview}
-      />
+        />
+      </React.Suspense>
     </div>
   );
 
@@ -2887,7 +2978,8 @@ function GroupWorkspacePage() {
         }
         return (
           <div className="space-y-5">
-            <GroupDashboardTab
+            <React.Suspense fallback={renderSectionFallback(360)}>
+              <LazyGroupDashboardTab
               key={workspaceId ?? 'group-dashboard'}
               isDarkMode={isDarkMode}
               group={resolvedGroupData}
@@ -2901,7 +2993,8 @@ function GroupWorkspacePage() {
                 setPlanUpgradeFeatureName(currentLang === 'en' ? 'Workspace analytics' : 'Thống kê workspace');
                 setPlanUpgradeModalOpen(true);
               }}
-            />
+              />
+            </React.Suspense>
           </div>
         );
 
@@ -2910,7 +3003,8 @@ function GroupWorkspacePage() {
 
       case 'documents':
         return (
-          <GroupDocumentsTab
+          <React.Suspense fallback={renderSectionFallback(420)}>
+            <LazyGroupDocumentsTab
             isDarkMode={isDarkMode}
             currentLang={currentLang}
             isLeader={isLeader}
@@ -2924,7 +3018,8 @@ function GroupWorkspacePage() {
             onApprove={(item) => handleReviewPendingMaterial(item, true)}
             onReject={(item) => handleReviewPendingMaterial(item, false)}
             onDeleteSource={handleRemoveSource}
-          />
+            />
+          </React.Suspense>
         );
 
       case 'members':
@@ -2932,7 +3027,8 @@ function GroupWorkspacePage() {
           return renderPersonalDashboard();
         }
         return (
-          <GroupMembersTab
+          <React.Suspense fallback={renderSectionFallback(360)}>
+            <LazyGroupMembersTab
             isDarkMode={isDarkMode}
             workspaceId={workspaceId}
             members={members}
@@ -2944,7 +3040,8 @@ function GroupWorkspacePage() {
             onUpdateRole={updateMemberRole}
             onRemoveMember={removeMember}
             onOpenInvite={() => setInviteDialogOpen(true)}
-          />
+            />
+          </React.Suspense>
         );
 
       case 'wallet':
@@ -2975,18 +3072,21 @@ function GroupWorkspacePage() {
       case 'challenge':
         return (
           <div className="h-full p-2 md:p-3">
-            <ChallengeTab
+            <React.Suspense fallback={renderSectionFallback(320)}>
+              <LazyChallengeTab
               workspaceId={workspaceId}
               isDarkMode={isDarkMode}
               isLeader={isLeader}
               currentUserId={currentUser?.userID}
-            />
+              />
+            </React.Suspense>
           </div>
         );
 
       case 'settings':
         return (
-          <GroupSettingsTab
+          <React.Suspense fallback={renderSectionFallback(360)}>
+            <LazyGroupSettingsTab
             isDarkMode={isDarkMode}
             group={resolvedGroupData}
             isLeader={isLeader}
@@ -2994,7 +3094,8 @@ function GroupWorkspacePage() {
             compactMode
             onOpenProfileConfig={handleRequestGroupProfileUpdate}
             profileEditLocked={profileEditLocked}
-          />
+            />
+          </React.Suspense>
         );
 
       default:
@@ -3204,24 +3305,34 @@ function GroupWorkspacePage() {
       )}
 
       {/* Dialogs */}
-      <UploadSourceDialog
-        open={uploadDialogOpen}
-        onOpenChange={setUploadDialogOpen}
-        isDarkMode={isDarkMode}
-        onUploadFiles={handleUploadFiles}
-        workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
-        onSuggestedImported={() => refreshGroupMaterialViews({ silent: true })}
-        planEntitlements={planEntitlements}
-      />
+      {uploadDialogOpen ? (
+        <React.Suspense fallback={null}>
+          <LazyUploadSourceDialog
+            open={uploadDialogOpen}
+            onOpenChange={setUploadDialogOpen}
+            isDarkMode={isDarkMode}
+            onUploadFiles={handleUploadFiles}
+            workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
+            onSuggestedImported={() => refreshGroupMaterialViews({ silent: true })}
+            planEntitlements={planEntitlements}
+          />
+        </React.Suspense>
+      ) : null}
 
-      <InviteMemberDialog
-        open={inviteDialogOpen}
-        onOpenChange={setInviteDialogOpen}
-        onInvite={handleInvite}
-        isDarkMode={isDarkMode}
-      />
+      {inviteDialogOpen ? (
+        <React.Suspense fallback={null}>
+          <LazyInviteMemberDialog
+            open={inviteDialogOpen}
+            onOpenChange={setInviteDialogOpen}
+            onInvite={handleInvite}
+            isDarkMode={isDarkMode}
+          />
+        </React.Suspense>
+      ) : null}
 
-      <GroupWorkspaceProfileConfigDialog
+      {(profileConfigOpen || shouldForceProfileSetup) ? (
+        <React.Suspense fallback={null}>
+          <LazyGroupWorkspaceProfileConfigDialog
         open={profileConfigOpen}
         onOpenChange={handleProfileConfigChange}
         isDarkMode={isDarkMode}
