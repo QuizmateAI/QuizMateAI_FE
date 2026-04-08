@@ -1,0 +1,277 @@
+{
+  "groupManage": {
+    "title": "Group Management",
+    "subtitle": "Manage your group",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "members": "Members",
+      "settings": "Settings"
+    },
+    "dashboard": {
+      "totalMembers": "Total Members",
+      "contributors": "Contributors",
+      "canUpload": "Can Upload",
+      "progress": "Progress",
+      "noDescription": "No description",
+      "topic": "Topic",
+      "roleDistribution": "Role Distribution",
+      "recentActivity": "Recent Activity",
+      "learningProgress": "Learning Progress",
+      "progressPlaceholder": "Charts & analytics will appear here",
+      "ago": "ago",
+      "activityJoined": "A new member joined the group",
+      "activityUploaded": "New source uploaded to workspace",
+      "activityQuiz": "Quiz completed by a member",
+      "activityRole": "Member role was updated"
+    },
+    "members": {
+      "all": "All",
+      "searchPlaceholder": "Search by name or email...",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "upload": "Upload",
+      "yes": "Yes",
+      "no": "No",
+      "reload": "Reload",
+      "showing": "Showing {{count}} of {{total}} members"
+    },
+    "settings": {
+      "groupInfo": "Group Information",
+      "edit": "Edit",
+      "save": "Save Changes",
+      "saveSuccess": "Group updated successfully!",
+      "saveError": "Failed to update group.",
+      "subject": "Subject",
+      "dangerZone": "Danger Zone",
+      "deleteWarning": "Once you delete a group, there is no going back. All data will be permanently removed.",
+      "deleteGroup": "Delete this group",
+      "deleteConfirm": "Are you absolutely sure?",
+      "confirmDelete": "Yes, delete",
+      "deleteError": "Failed to delete group.",
+      "leaderOnly": "Only the group leader can modify settings."
+    },
+    "notifications": {
+      "title": "Group Notifications",
+      "subtitle": "Leaders approve announcements, contributors can draft, and members read published items.",
+      "createTitle": "Create announcement",
+      "titlePlaceholder": "Announcement title",
+      "contentPlaceholder": "Write announcement details...",
+      "publishNow": "Publish now",
+      "submitForApproval": "Submit for approval",
+      "pendingApprovals": "Pending approvals",
+      "noPending": "No pending announcements.",
+      "by": "By",
+      "publisher": "Publisher",
+      "waitingForApproval": "Waiting for approval",
+      "approve": "Approve",
+      "publishedTitle": "Published notifications",
+      "noPublished": "No published announcements yet.",
+      "publishedBadge": "Published",
+      "awaitingApproval": "Awaiting approval",
+      "pendingBadge": "Pending",
+      "seed": {
+        "roadmapTitle": "Roadmap checkpoint opened",
+        "roadmapContent": "A new checkpoint is open this week. Please complete pre-learning before Friday.",
+        "quizTitle": "Quiz lane update",
+        "quizContent": "Contributor proposed a quiz refresh for the reading practice set."
+      },
+      "toast": {
+        "published": "Notification published.",
+        "submitted": "Notification submitted for leader approval.",
+        "approved": "Notification approved and published."
+      }
+    }
+  },
+  "groupProfileConfig": {
+    "common": {
+      "step": "Step",
+      "stepCount": "Step {{current}} of {{total}}",
+      "back": "Back",
+      "continue": "Continue",
+      "saving": "Saving...",
+      "retry": "Retry",
+      "select": "Select",
+      "selected": "Selected",
+      "close": "Close",
+      "later": "Later",
+      "finish": "Save and finish",
+      "finishIncomplete": "Review to finish",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "messages": {
+      "basicsSaved": "Group basics saved.",
+      "basicsSaveError": "Unable to save the group basics.",
+      "confirmSaveError": "Unable to finish the group setup.",
+      "completed": "Group setup has been updated."
+    },
+    "validation": {
+      "groupName": "Please enter a group name.",
+      "knowledge": "Please describe the shared knowledge scope.",
+      "analysisLoading": "Quizmate AI is still analyzing the domain. Please wait a moment.",
+      "analysisError": "Quizmate AI could not infer the domain yet. Please retry the analysis.",
+      "analysisMissing": "Please enter the knowledge scope so Quizmate AI can infer the domain.",
+      "domain": "Please select one domain from the Quizmate AI suggestions.",
+      "learningMode": "Please select a learning mode.",
+      "groupGoal": "Please enter the group learning goal.",
+      "examName": "Please enter the exam name."
+    },
+    "tabs": {
+      "basic": {
+        "title": "Basics & Ground Rules",
+        "description": "Group name and the shared operating rules"
+      },
+      "learning": {
+        "title": "Shared Learning Profile",
+        "description": "Knowledge, domain, and the team learning rhythm"
+      }
+    },
+    "stepOne": {
+      "title": "Set up the group basics",
+      "description": "Name the group and add shared operating notes so everyone follows the same study rhythm.",
+      "groupName": "Group name",
+      "groupNameEyebrow": "Group identity",
+      "groupNameHint": "Use a short, recognizable name so members can spot this group immediately.",
+      "groupNamePlaceholder": "Example: TOEIC 750+ Sprint",
+      "defaultRole": "Default role on join",
+      "memberDescription": "Best for regular learners joining the group.",
+      "contributorDescription": "Best for members who can contribute learning content and activities.",
+      "rules": "Rules or shared notes",
+      "rulesEyebrow": "Shared ground rules",
+      "rulesHint": "Capture the study rhythm, collaboration rules, or material-sharing norms the whole group should follow.",
+      "rulesPlaceholder": "Example: Run two check-ins per week, ask questions by topic, and cite the source when sharing materials."
+    },
+    "stepTwo": {
+      "title": "Set up the shared learning profile",
+      "description": "This step defines the shared knowledge scope, the AI domain, and the default learning rhythm for the whole group.",
+      "workflow": {
+        "eyebrow": "Quick design",
+        "title": "Finish the setup in three focused choices",
+        "description": "Describe what the group is learning, pick the AI-suggested domain, and turn on the options that match your learning flow.",
+        "describeTitle": "Describe the knowledge",
+        "describeDescription": "Briefly explain what the group is learning or preparing for.",
+        "domainTitle": "Lock the domain",
+        "domainDescription": "Choose the right baseline so the AI understands this workspace correctly.",
+        "modeTitle": "Choose the learning style",
+        "modeDescription": "Decide whether the group is focused on new learning, review, or mock tests."
+      },
+      "knowledgeLabel": "Shared group knowledge",
+      "knowledgePlaceholder": "Example: Our group is studying JLPT N3 to strengthen grammar, vocabulary, and reading practice by topic.",
+      "knowledgeHint": "The more specific the description is, the better Quizmate AI can suggest the right domain for your group.",
+      "domainSuggestions": "Quizmate AI domain suggestions",
+      "selectedDomain": "Selected domain for this group",
+      "selectedDomainHint": "This domain becomes the shared baseline for roadmap suggestions, quizzes, and learning activities.",
+      "learningMode": "Learning mode",
+      "modePrompt": "Choose the main learning rhythm for the group",
+      "studyNewDescription": "Best when the group is learning new material and needs a clear roadmap.",
+      "reviewDescription": "Best when the group has studied before and wants a structured review flow.",
+      "mockTestDescription": "Best when the group wants to practice exams and track progress with tests.",
+      "examName": "Exam name",
+      "examNamePlaceholder": "Example: JLPT N3 December",
+      "groupGoal": "Group learning goal",
+      "groupGoalPlaceholder": "Example: Finish 20 grammar themes and 1500 vocabulary items in 8 weeks.",
+      "learningSwitches": "Learning options",
+      "learningSwitchesHint": "Turn on a roadmap or entry assessment depending on how your group runs.",
+      "analysis": {
+        "loading": "Quizmate AI is analyzing the knowledge scope to suggest the best domain.",
+        "error": "Quizmate AI could not generate a reliable domain suggestion yet. You can retry now.",
+        "interpretingLabel": "Quizmate AI understands this knowledge as",
+        "tooBroad": "The current knowledge scope is still broad. Add a bit more focus if you want more precise suggestions.",
+        "emptyDomainTitle": "No domain is ready yet",
+        "emptyDomainDescription": "Quizmate AI could not build domain suggestions from the current description. Try adding more detail or rerun the analysis."
+      },
+      "roadmap": {
+        "title": "Enable a shared roadmap",
+        "description": "Create a shared study structure so the whole group has a clearer pace.",
+        "studyNewDescription": "This mode turns the roadmap on by default so the group has a clearer path for new learning.",
+        "studyNewBadge": "Roadmap enabled by default",
+        "defaultOn": "Default on"
+      },
+      "entryAssessment": {
+        "title": "Require an entry assessment",
+        "description": "Apply this to new members before they join the shared learning flow."
+      },
+      "ready": {
+        "title": "Readiness check",
+        "knowledge": "Knowledge",
+        "domain": "Domain",
+        "mode": "Learning rhythm",
+        "pending": "Still needed"
+      },
+      "sidebar": {
+        "eyebrow": "Control panel",
+        "title": "Quick view before you finish",
+        "readyBadge": "Ready"
+      }
+    }
+  },
+  "groupWorkspace": {
+    "bootstrap": {
+      "title": "Preparing your group workspace",
+      "description": "The setup wizard will open as soon as the draft workspace is ready."
+    },
+    "studio": {
+      "systemDashboard": "System dashboard",
+      "personalDashboard": "Personal dashboard",
+      "documents": "Document management",
+      "activity": "Group activity",
+      "memberManagement": "Member management",
+      "memberStatus": "Member status",
+      "groupStudy": "Study",
+      "groupActivity": "Activity",
+      "groupManage": "Management"
+    },
+    "challenge": {
+      "title": "Challenge",
+      "description": "Compete with your group members in real-time quiz challenges.",
+      "badge": "Challenge",
+      "cancelDialogTitle": "Cancel this challenge?",
+      "cancelDialogDescription": "Are you sure you want to cancel this challenge? Members will no longer be able to join and the schedule will be removed.",
+      "cancelDialogBack": "Close",
+      "cancelDialogConfirm": "Cancel challenge",
+      "snapshotQuizDefaultTitle": "Challenge quiz",
+      "viewSnapshotQuiz": "View quiz",
+      "snapshotQuizHint": "Preview content and status; edit via Compose before the challenge starts.",
+      "quizSnapshotReviewDraftTitle": "Challenge exam (review & edit only)",
+      "quizSnapshotReviewDraftBody": "This exam belongs to a challenge, not the shared group quiz list. Members only take it when the challenge starts. Use the Check tab to review content, edit via Compose, then Publish when ready — there is no group-wide distribution like normal group quizzes.",
+      "quizSnapshotReviewNoTakeHint": "This exam only opens when the challenge starts (on schedule or when the leader runs it). Rankings are per challenge — you cannot start the exam from this screen.",
+      "leaderboardTitle": "Leaderboard",
+      "editSchedule": "Edit schedule & details",
+      "editDialogTitle": "Update challenge",
+      "editDialogDescription": "You can only edit when more than 1 hour remains before the scheduled start. Double-check timezone and duration.",
+      "editTitleLabel": "Challenge title",
+      "editDescriptionLabel": "Description",
+      "editStartLabel": "Start",
+      "editEndLabel": "End",
+      "editSave": "Save changes",
+      "phase": {
+        "SCHEDULED": "Not started",
+        "LIVE": "Live",
+        "FINISHED": "Finished",
+        "CANCELLED": "Cancelled"
+      },
+      "leaderFairPlayQuizHint": "You're competing: after the quiz is published you can't preview questions. While it's still a draft you can compose and review.",
+      "quizStatus": {
+        "DRAFT": "Draft",
+        "PROCESSING": "Generating",
+        "ACTIVE": "Ready",
+        "ERROR": "Generation error"
+      },
+      "reviewContributorsTitle": "Quiz reviewers",
+      "reviewContributorsHint": "Assigned members cannot register for this challenge. You cannot assign someone who is already a participant.",
+      "reviewContributorPickLabel": "Group member",
+      "reviewContributorPickPlaceholder": "Select a member…",
+      "reviewContributorAdd": "Add",
+      "reviewContributorRemove": "Remove",
+      "reviewContributorCannotRegister": "You are assigned as a quiz reviewer, so you cannot register for this challenge."
+    },
+    "members": {
+      "loading": "Loading members...",
+      "empty": "No member data yet."
+    },
+    "profile": {
+      "noRules": "No additional rules yet."
+    }
+  }
+}

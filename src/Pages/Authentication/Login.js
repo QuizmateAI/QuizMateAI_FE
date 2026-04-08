@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { login, googleLogin } from '@/api/Authentication';
+import { preloadGroupWorkspacePage, preloadHomePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 
 export const useLogin = (navigate, location, t) => {
   const [loginData, setLoginData] = useState({
@@ -19,7 +20,7 @@ export const useLogin = (navigate, location, t) => {
     }
   };
 
-  // Trim tất cả dữ liệu trước khi submit
+  // Trim táº¥t cáº£ dá»¯ liá»‡u trÆ°á»›c khi submit
   const trimLoginData = () => ({
     username: loginData.username.trim(),
     password: loginData.password
@@ -40,11 +41,32 @@ export const useLogin = (navigate, location, t) => {
     return null;
   };
 
-  // Hàm điều hướng theo role
+  const preloadResolvedDestination = (role, returnPath) => {
+    if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+      return;
+    }
+
+    if (!returnPath || returnPath === '/home' || returnPath.startsWith('/home?')) {
+      void preloadHomePage();
+      return;
+    }
+
+    if (returnPath.startsWith('/workspaces/')) {
+      void preloadWorkspacePage();
+      return;
+    }
+
+    if (returnPath.startsWith('/group-workspaces/')) {
+      void preloadGroupWorkspacePage();
+    }
+  };
+
+  // Navigate according to the resolved role and return path.
   const navigateByRole = (role) => {
     if (role === 'SUPER_ADMIN') return navigate('/super-admin');
     if (role === 'ADMIN') return navigate('/admin');
     const returnPath = resolveReturnPath();
+    preloadResolvedDestination(role, returnPath);
     if (returnPath) {
       return navigate(returnPath, { replace: true });
     }
@@ -55,8 +77,8 @@ export const useLogin = (navigate, location, t) => {
     e.preventDefault();
     setError('');
     setFieldErrors({});
-    
-    // Trim dữ liệu trước khi gửi
+
+    // Trim dá»¯ liá»‡u trÆ°á»›c khi gá»­i
     const trimmed = trimLoginData();
     setLoginData(trimmed);
 
@@ -72,9 +94,9 @@ export const useLogin = (navigate, location, t) => {
       setFieldErrors(nextFieldErrors);
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       const response = await login(trimmed);
       console.log("BE Login Response:", response);
@@ -82,7 +104,7 @@ export const useLogin = (navigate, location, t) => {
         navigateByRole(response.data.role);
       }
     } catch (err) {
-      setError(err.message || t('auth.loginFailed') || 'Đăng nhập thất bại, vui lòng thử lại');
+      setError(err.message || t('auth.loginFailed') || 'ÄÄƒng nháº­p tháº¥t báº¡i, vui lÃ²ng thá»­ láº¡i');
     } finally {
       setIsLoading(false);
     }
@@ -93,14 +115,14 @@ export const useLogin = (navigate, location, t) => {
     setError('');
     try {
       console.log("Google Credential Response:", credentialResponse);
-      // credentialResponse.credential CHÍNH LÀ idToken (JWT) mong muốn
+      // credentialResponse.credential CHÃNH LÃ€ idToken (JWT) mong muá»‘n
       const response = await googleLogin(credentialResponse.credential);
       console.log("BE Google Submit Response:", response);
       if (response.statusCode === 200 || response.statusCode === 0) {
-         navigateByRole(response.data.role);
+        navigateByRole(response.data.role);
       }
     } catch (err) {
-      setError(t('auth.loginGoogleFailed') || 'Đăng nhập Google thất bại');
+      setError(t('auth.loginGoogleFailed') || 'ÄÄƒng nháº­p Google tháº¥t báº¡i');
       console.error(err);
     } finally {
       setIsLoading(false);

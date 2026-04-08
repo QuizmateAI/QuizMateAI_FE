@@ -1,3 +1,5 @@
+import { preloadRouteNamespaces } from '@/i18n';
+
 const preloadedRoutes = new Map();
 
 function createRoutePreloader(key, loader) {
@@ -14,8 +16,32 @@ function createRoutePreloader(key, loader) {
 	};
 }
 
-export const loadWorkspacePage = () => import("@/Pages/Users/Individual/Workspace/WorkspacePage");
-export const loadGroupWorkspacePage = () => import("@/Pages/Users/Group/GroupWorkspacePage");
+function createNamespacedRouteLoader(pathname, loader) {
+	return async () => {
+		const [module] = await Promise.all([
+			loader(),
+			preloadRouteNamespaces(pathname),
+		]);
+
+		return module;
+	};
+}
+
+export const loadWorkspacePage = createNamespacedRouteLoader(
+	"/workspaces",
+	() => import("@/Pages/Users/Individual/Workspace/WorkspacePage"),
+);
+
+export const loadGroupWorkspacePage = createNamespacedRouteLoader(
+	"/group-workspaces",
+	() => import("@/Pages/Users/Group/GroupWorkspacePage"),
+);
+
+export const loadHomePage = createNamespacedRouteLoader(
+	"/home",
+	() => import("@/Pages/Users/Home/HomePage"),
+);
 
 export const preloadWorkspacePage = createRoutePreloader("workspace-page", loadWorkspacePage);
 export const preloadGroupWorkspacePage = createRoutePreloader("group-workspace-page", loadGroupWorkspacePage);
+export const preloadHomePage = createRoutePreloader("home-page", loadHomePage);

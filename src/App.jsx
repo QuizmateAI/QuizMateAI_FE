@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
@@ -7,7 +7,9 @@ import { UserProfileProvider } from '@/context/UserProfileContext';
 import LoadingSpinner from '@/Components/ui/LoadingSpinner';
 import RouteMetaManager from '@/Components/seo/RouteMetaManager';
 import { launchConfig } from '@/lib/launchConfig';
-import { loadGroupWorkspacePage, loadWorkspacePage } from '@/lib/routeLoaders';
+import { hasRouteNamespacesLoaded, preloadRouteNamespaces } from '@/i18n';
+import { useTranslation } from 'react-i18next';
+import { loadGroupWorkspacePage, loadHomePage, loadWorkspacePage } from '@/lib/routeLoaders';
 
 const FeedbackAutoPrompt = lazy(() => import('@/Components/feedback/FeedbackAutoPrompt'));
 const PlanUpgradeModal = lazy(() => import('@/Components/plan/PlanUpgradeModal'));
@@ -20,7 +22,7 @@ const PricingGuidePage = lazy(() => import('./Pages/Pricing/PricingGuidePage'));
 const LoginPage = lazy(() => import('./Pages/Authentication/LoginPage'));
 const RegisterPage = lazy(() => import('./Pages/Authentication/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('./Pages/Authentication/ForgotPasswordPage'));
-const HomePage = lazy(() => import('./Pages/Users/Home/HomePage'));
+const HomePage = lazy(loadHomePage);
 const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
 const PlanPage = lazy(() => import('./Pages/Users/Plan/PlanPage'));
 const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
@@ -144,6 +146,50 @@ function MainRoutes() {
   );
 }
 
+function RouteNamespaceGate({ children }) {
+  const location = useLocation();
+  const { i18n } = useTranslation();
+  const language = i18n.language?.startsWith('en') ? 'en' : 'vi';
+  const routeKey = `${language}:${location.pathname}`;
+  const [readyRouteKey, setReadyRouteKey] = useState(() => (
+    hasRouteNamespacesLoaded(location.pathname, language) ? routeKey : null
+  ));
+  const isRouteReady = readyRouteKey === routeKey || hasRouteNamespacesLoaded(location.pathname, language);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (hasRouteNamespacesLoaded(location.pathname, language)) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    preloadRouteNamespaces(location.pathname, language)
+      .then(() => {
+        if (!cancelled) {
+          setReadyRouteKey(routeKey);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to preload route namespaces:', error);
+        if (!cancelled) {
+          setReadyRouteKey(routeKey);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [language, location.pathname, routeKey]);
+
+  if (!isRouteReady) {
+    return <LoadingSpinner />;
+  }
+
+  return children;
+}
+
 function LaunchRoutes() {
   return (
     <Routes>
@@ -182,7 +228,9 @@ function AppContent() {
     <NavigationLoadingProvider>
       <UserProfileProvider>
         <Suspense fallback={<LoadingSpinner />}>
-          <MainRoutes />
+          <RouteNamespaceGate>
+            <MainRoutes />
+          </RouteNamespaceGate>
         </Suspense>
         <Suspense fallback={null}>
           <FeedbackAutoPrompt />

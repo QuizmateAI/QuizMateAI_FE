@@ -74,6 +74,33 @@ function normalizeWorkspaceList(payload) {
 const WORKSPACES_QUERY_KEY = ['workspaces'];
 const GROUPS_QUERY_KEY = ['groups'];
 
+function prependWorkspaceToCurrentPage(oldData, workspace) {
+  if (!oldData || !Array.isArray(oldData.workspaces) || !workspace) {
+    return oldData;
+  }
+
+  const currentWorkspaces = normalizeWorkspaceArray(oldData.workspaces);
+  const filteredWorkspaces = currentWorkspaces.filter((item) => item.workspaceId !== workspace.workspaceId);
+  const pageSize = Number(oldData?.pagination?.size) || currentWorkspaces.length || 10;
+  const nextWorkspaces = [workspace, ...filteredWorkspaces].slice(0, pageSize);
+  const isNewWorkspace = filteredWorkspaces.length === currentWorkspaces.length;
+  const currentTotalElements = Number(oldData?.pagination?.totalElements);
+  const safeTotalElements = Number.isFinite(currentTotalElements)
+    ? currentTotalElements
+    : currentWorkspaces.length;
+
+  return {
+    ...oldData,
+    workspaces: nextWorkspaces,
+    pagination: {
+      ...oldData.pagination,
+      size: oldData?.pagination?.size ?? pageSize,
+      totalElements: safeTotalElements + (isNewWorkspace ? 1 : 0),
+      totalPages: Math.max(Number(oldData?.pagination?.totalPages) || 1, 1),
+    },
+  };
+}
+
 // Hook quản lý toàn bộ logic workspace: CRUD (dùng React Query cho fetch)
 export function useWorkspace(options = {}) {
   const { enabled = true } = options;
@@ -154,19 +181,35 @@ export function useWorkspace(options = {}) {
   // Tạo workspace mới
   const createWorkspace = useCallback(async (data) => {
     const res = await createWorkspaceAPI(data);
-    await queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
-    return normalizeWorkspace(unwrapApiData(res));
-  }, [queryClient]);
+    const createdWorkspace = normalizeWorkspace(unwrapApiData(res));
+
+    if (page === 0) {
+      queryClient.setQueryData(
+        [...WORKSPACES_QUERY_KEY, page, size],
+        (old) => prependWorkspaceToCurrentPage(old, createdWorkspace)
+      );
+    }
+
+    void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
+    return createdWorkspace;
+  }, [page, queryClient, size]);
 
   // Tạo group workspace mới
   const createGroupWorkspace = useCallback(async (data) => {
     const res = await createGroupWorkspaceAPI(data);
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY }),
-      queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY }),
-    ]);
-    return normalizeWorkspace(unwrapApiData(res));
-  }, [queryClient]);
+    const createdWorkspace = normalizeWorkspace(unwrapApiData(res));
+
+    if (page === 0) {
+      queryClient.setQueryData(
+        [...WORKSPACES_QUERY_KEY, page, size],
+        (old) => prependWorkspaceToCurrentPage(old, createdWorkspace)
+      );
+    }
+
+    void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
+    void queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY });
+    return createdWorkspace;
+  }, [page, queryClient, size]);
 
   // Cập nhật workspace
   const editWorkspace = useCallback(async (workspaceId, data) => {
