@@ -3,8 +3,8 @@ import { UploadCloud, Sparkles, Route, BadgeCheck, Layers, Map, Rows3 } from "lu
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import CreateQuizForm from "./CreateQuizForm";
 
-const LazyCreateQuizForm = React.lazy(() => import("./CreateQuizForm"));
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
 const LazyRoadmapCanvasView = React.lazy(() => import("./RoadmapCanvasView"));
 const LazyQuizListView = React.lazy(() => import("./QuizListView"));
@@ -86,6 +86,7 @@ function ChatPanel({
   onShareRoadmap,
   onEditRoadmapConfig,
   planEntitlements = null,
+  onToggleMaterialSelection,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -224,7 +225,7 @@ function ChatPanel({
         return <LazyQuestionStatsView workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "createQuiz":
         return (
-          <LazyCreateQuizForm
+          <CreateQuizForm
             isDarkMode={isDarkMode}
             onCreateQuiz={onCreateQuiz}
             onBack={onBack}
@@ -233,6 +234,7 @@ function ChatPanel({
             selectedSourceIds={selectedSourceIds}
             sources={sources}
             planEntitlements={planEntitlements}
+            onToggleMaterialSelection={onToggleMaterialSelection}
           />
         );
       case "createFlashcard":
@@ -344,7 +346,7 @@ function ChatPanel({
           </p>
         </div>
 
-        {areAllQuickActionsDisabled && (
+        {areAllQuickActionsDisabled && !hasSources && (
           <div className={`flex flex-col items-center gap-3 p-4 rounded-xl border w-full max-w-lg ${isDarkMode ? "bg-amber-950/20 border-amber-900/30" : "bg-amber-50 border-amber-200"}`}>
             <p className={`text-sm text-center ${isDarkMode ? "text-amber-400" : "text-amber-700"} ${fontClass}`}>
               {t("workspace.chat.requireUpload", "Upload materials first to unlock these actions.")}
@@ -354,7 +356,7 @@ function ChatPanel({
               className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-9 flex items-center gap-2 transition-all active:scale-95"
             >
               <UploadCloud className="w-4 h-4" />
-              <span className={fontClass}>{t("workspace.chat.upload", "Upload materials")}</span>
+              <span className={fontClass}>{t("workspace.chat.uploadBtn", "Upload documents")}</span>
             </Button>
           </div>
         )}

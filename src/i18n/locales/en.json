@@ -126,7 +126,6 @@
       "generateQuiz": {
         "title": "Generate Quiz",
         "description": "Credit charged when generating a quiz with AI, based on total question count.",
-        "baseCost": "Quiz setup fee",
         "unitCost": "Cost per question",
         "unitSize": "Questions per unit",
         "metric": "Total generated question count"
@@ -2007,8 +2006,8 @@
         "practice": "Practice Mode",
         "practiceDesc": "See answers & explanations after each question"
       },
-      "requireUpload": "Require Upload",
-      "uploadBtn": "Upload Btn"
+      "requireUpload": "Upload materials first to unlock these actions.",
+      "uploadBtn": "Upload documents"
     },
     "studio": {
       "title": "Studio",
@@ -2184,6 +2183,12 @@
     "quiz": {
       "createTitle": "Create Quiz",
       "createDesc": "Create a quiz for your workspace.",
+      "insufficientCredit": {
+        "title": "Not enough QMC credits",
+        "hint": "Buy a credit pack to top up your workspace balance, then try generating the quiz again.",
+        "ctaBuy": "Buy QMC credits",
+        "ctaWallet": "View wallet"
+      },
       "tabManual": "Manual",
       "tabAI": "AI Generate",
       "name": "Quiz Name",
@@ -2313,6 +2318,7 @@
       },
       "statusLabels": {
         "ACTIVE": "Active",
+        "LOCKED": "Locked",
         "DRAFT": "Draft",
         "COMPLETED": "Completed",
         "INACTIVE": "Inactive",
@@ -2325,6 +2331,22 @@
         "ACTIVE": "Active",
         "DRAFT": "Draft",
         "COMPLETED": "Done"
+      },
+      "filterBar": {
+        "statusSection": "Status",
+        "groupSection": "Group"
+      },
+      "groupAudience": {
+        "filterLabel": "Group visibility",
+        "filterLabelShort": "Group",
+        "all": "All",
+        "wholeGroup": "Whole group",
+        "assignedMembers": "Assigned only",
+        "pickMember": "Member",
+        "pickMemberPlaceholder": "All assigned quizzes",
+        "pickMemberHint": "Pick someone to see only quizzes assigned to them",
+        "badgeWholeGroup": "Whole group",
+        "badgeAssigned": "Assigned"
       },
       "communityRecommendations": {
         "title": "Matching quizzes for this workspace",
@@ -2431,9 +2453,11 @@
         "mediumDurationMustBeGreaterThanEasy": "Medium difficulty duration must be greater than easy difficulty duration.",
         "hardDurationMustBeGreaterThanMedium": "Hard difficulty duration must be greater than medium difficulty duration.",
         "timeDurationRequired": "Please enter total duration for the quiz.",
-        "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
-        "minimumTimePerQuestion": "Minimum Time Per Question",
-        "minimumTimePerQuestionHint": "Minimum Time Per Question Hint"
+        "materialRequired": "Please select at least one material.",
+        "totalQuestionsRange": "Total questions must be between {{min}} and {{max}}.",
+        "totalQuestionsRangeHint": "Allowed range: {{min}}–{{max}} questions.",
+        "minimumTimePerQuestion": "Each question needs at least {{seconds}} seconds. With {{count}} questions, total duration must be at least {{minutes}} minutes.",
+        "minimumTimePerQuestionHint": "Minimum {{minutes}} minutes total ({{seconds}} seconds per question)."
       },
       "contextSelector": {
         "title": "Quiz Location",
@@ -2505,11 +2529,14 @@
         "promptPlaceholder": "Enter additional instructions for AI...",
         "byCount": "By count",
         "byPercent": "By percentage",
-        "generalInfo": "General Info",
+        "generalInfo": "Quiz basics",
         "promptOptional": "Prompt (Optional)",
-        "selectedMaterials": "Selected Materials",
+        "selectedMaterials": "Source materials",
         "selectedMaterialsCount": "Using {{count}} selected material(s) from Sources panel.",
         "noSelectedMaterials": "No material selected in Sources panel. You can still generate by using Prompt only.",
+        "workspaceMaterialsEmpty": "No documents in this workspace yet. Add materials from the Sources panel.",
+        "materialSelectedBadge": "Selected",
+        "materialsSelectedSummary": "{{selected}} of {{total}} selected",
         "difficultyLevel": "Difficulty Level",
         "difficultyPreviewTitle": "Difficulty distribution",
         "customSelfConfig": "Custom (Self-config)",
@@ -2537,7 +2564,7 @@
         "remove": "Remove",
         "lock": "Lock",
         "unlock": "Unlock",
-        "settings": "Settings",
+        "settings": "Timing & exam mode",
         "timeMinutes": "Time (Minutes)",
         "enableTimerMode": "Enable Timer Mode",
         "examType": "Exam type",
@@ -2976,6 +3003,7 @@
       "quizDesc": "Practice quiz questions for this knowledge topic.",
       "flashcardDesc": "Study flashcards for this knowledge topic.",
       "preLearningPrompt": "How would you like to start this phase?",
+      "knowledgeLockedHint": "Please complete the previous knowledge first.",
       "studyNew": {
         "hasFoundation": "I already have foundation in this phase",
         "noBackground": "I am new to this phase",
@@ -3090,7 +3118,8 @@
       "phaseReviewSummaryDropdown": "Phase Review Summary Dropdown",
       "phaseReviewTitle": "Đánh giá AI cho phase hiện tại",
       "postLearningHelper": "Post Learning Helper",
-      "postLearningLocked": "Post Learning Locked",
+      "postLearningLocked": "Please complete all knowledge items in this phase to unlock post-learning.",
+      "postLearningUnlockProgress": "Knowledge progress to unlock: {{completed}}/{{total}}",
       "postLearningProgress": "Post Learning Progress",
       "preLearningHelper": "Pre Learning Helper",
       "title": "Title"
@@ -4059,7 +4088,10 @@
       "documents": "Document management",
       "activity": "Group activity",
       "memberManagement": "Member management",
-      "memberStatus": "Member status"
+      "memberStatus": "Member status",
+      "groupStudy": "Study",
+      "groupActivity": "Activity",
+      "groupManage": "Management"
     },
     "challenge": {
       "title": "Challenge",
