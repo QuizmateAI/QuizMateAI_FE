@@ -72,7 +72,7 @@ import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
-import { generateRoadmapPhases } from '@/api/AIAPI';
+import { generateRoadmap } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
@@ -539,6 +539,12 @@ function GroupWorkspacePage() {
     () => hasMeaningfulRoadmapConfig(effectiveGroupRoadmapConfig),
     [effectiveGroupRoadmapConfig]
   );
+
+  useEffect(() => {
+    if (Number.isInteger(Number(currentRoadmapId)) && Number(currentRoadmapId) > 0) {
+      setHasTriggeredGroupRoadmap(true);
+    }
+  }, [currentRoadmapId]);
 
   const currentGroupFromGroups = groups.find((g) => String(g.workspaceId) === String(workspaceId));
 
@@ -1986,13 +1992,13 @@ function GroupWorkspacePage() {
       setHasTriggeredGroupRoadmap(true);
       setRoadmapPhaseGenerationProgress(0);
       setRoadmapPhaseGenerationTaskId(null);
-      const roadmapPhaseResponse = await generateRoadmapPhases({ roadmapId, materialIds });
-      const roadmapPhasePayload = roadmapPhaseResponse?.data?.data || roadmapPhaseResponse?.data || roadmapPhaseResponse || null;
-      const responseTaskId = String(roadmapPhasePayload?.websocketTaskId ?? roadmapPhasePayload?.taskId ?? '').trim();
+      const roadmapGenerationResponse = await generateRoadmap({ roadmapId, materialIds });
+      const roadmapGenerationPayload = roadmapGenerationResponse?.data?.data || roadmapGenerationResponse?.data || roadmapGenerationResponse || null;
+      const responseTaskId = String(roadmapGenerationPayload?.websocketTaskId ?? roadmapGenerationPayload?.taskId ?? '').trim();
       if (responseTaskId) {
         setRoadmapPhaseGenerationTaskId(responseTaskId);
       }
-      setRoadmapPhaseGenerationProgress(clampPercent(roadmapPhasePayload?.percent ?? roadmapPhasePayload?.progressPercent ?? 0));
+      setRoadmapPhaseGenerationProgress(clampPercent(roadmapGenerationPayload?.percent ?? roadmapGenerationPayload?.progressPercent ?? 0));
       setActiveView('roadmap');
       bumpRoadmapReloadToken();
       showSuccess(

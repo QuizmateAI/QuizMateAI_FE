@@ -74,7 +74,6 @@ function RoadmapCanvasView2({
   const [hasRoadmapLevelPreLearning, setHasRoadmapLevelPreLearning] = useState(false);
   const [roadmapPreLearningCheckDone, setRoadmapPreLearningCheckDone] = useState(false);
   const progressSyncDebounceRef = useRef(null);
-  const phaseFocusDebounceRef = useRef(null);
 
   const normalizeGroupPreLearningQuestionCount = useCallback((value) => {
     const numericValue = Number(value);
@@ -168,7 +167,7 @@ function RoadmapCanvasView2({
         window.clearTimeout(progressSyncDebounceRef.current);
       }
     };
-  }, [loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress, roadmap?.roadmapId, selectedPhaseId, openPhaseId]);
+  }, [loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress, roadmap?.roadmapId, selectedPhaseId]);
 
   useEffect(() => {
     const roadmapScopeId = Number(roadmap?.roadmapId);
@@ -650,14 +649,9 @@ function RoadmapCanvasView2({
     setOpenPhaseId((current) => {
       const next = current === phaseId ? null : phaseId;
       if (next) {
-        if (phaseFocusDebounceRef.current) {
-          window.clearTimeout(phaseFocusDebounceRef.current);
-        }
-
-        phaseFocusDebounceRef.current = window.setTimeout(() => {
+        if (Number(selectedPhaseId) !== Number(next)) {
           onPhaseFocus?.(next, { preserveActiveView: true });
-          phaseFocusDebounceRef.current = null;
-        }, 180);
+        }
       }
       return next;
     });
@@ -665,9 +659,6 @@ function RoadmapCanvasView2({
 
   useEffect(() => {
     return () => {
-      if (phaseFocusDebounceRef.current) {
-        window.clearTimeout(phaseFocusDebounceRef.current);
-      }
       if (progressSyncDebounceRef.current) {
         window.clearTimeout(progressSyncDebounceRef.current);
       }
