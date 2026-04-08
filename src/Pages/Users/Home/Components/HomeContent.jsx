@@ -4,6 +4,7 @@ import { MoreVertical, Pencil, Trash2, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
+import { buildWorkspacePath } from "@/lib/routePaths";
 
 // Hiển thị ngày tạo workspace theo locale
 function formatDate(dateAt, locale = "vi-VN") {
@@ -120,7 +121,7 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
               {recentWorkspaces.map((ws) => (
                 <div
                   key={ws.workspaceId}
-                  onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+                  onClick={() => navigate(buildWorkspacePath(ws.workspaceId))}
                   className={`grid grid-cols-[minmax(260px,2fr)_minmax(220px,1.4fr)_minmax(140px,0.8fr)_40px] gap-4 px-4 py-3 text-sm cursor-pointer group transition-colors ${
                     isDarkMode ? "text-slate-300 hover:bg-slate-800/50" : "text-gray-700 hover:bg-gray-50"
                   }`}
@@ -143,7 +144,7 @@ function HomeContent({ viewMode, isDarkMode, workspaces, loading, onOpenEdit, on
               return (
                 <div
                   key={ws.workspaceId}
-                  onClick={() => navigate(`/workspace/${ws.workspaceId}`)}
+                  onClick={() => navigate(buildWorkspacePath(ws.workspaceId))}
                   className={`${cardBg} rounded-xl h-56 p-5 cursor-pointer hover:shadow-md transition-all flex flex-col justify-between relative group border ${
                     isDarkMode ? "border-slate-800" : "border-gray-200"
                   } overflow-hidden`}

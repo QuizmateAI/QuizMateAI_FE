@@ -52,6 +52,13 @@ import { deleteFlashcardSet, getFlashcardsByScope } from "@/api/FlashcardAPI";
 import { useToast } from "@/context/ToastContext";
 import { getErrorMessage } from "@/Utils/getErrorMessage";
 import {
+  WORKSPACE_ROUTE_SEGMENTS,
+  buildWorkspacePath,
+  buildWorkspaceRoadmapsPath,
+  buildWorkspaceRoadmapPhasePath,
+  extractWorkspaceSubPath,
+} from "@/lib/routePaths";
+import {
   buildWorkspacePathForView,
   resolveWorkspaceViewFromSubPath,
 } from "@/Pages/Users/Individual/Workspace/utils/viewRouting";
@@ -91,6 +98,13 @@ const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(
 const LazyRoadmapConfigEditDialog = React.lazy(
   () => import("@/Components/workspace/RoadmapConfigEditDialog"),
 );
+
+const {
+  roadmaps: workspaceRoadmapsPath,
+  phases: workspacePhasesPath,
+  quizzes: workspaceQuizzesPath,
+  postLearnings: workspacePostLearningsPath,
+} = WORKSPACE_ROUTE_SEGMENTS;
 
 function isProfileOnboardingDone(profileData) {
   return (
@@ -198,7 +212,7 @@ function WorkspacePage() {
   const [activeView, setActiveView] = useState(() => {
     if (!workspaceId) return null;
 
-    const prefix = `/workspace/${workspaceId}`;
+    const prefix = buildWorkspacePath(workspaceId);
 
     if (location.pathname.startsWith(prefix)) {
       const subPath = location.pathname
@@ -309,7 +323,7 @@ function WorkspacePage() {
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
     return new RegExp(
-      `^/workspace/${workspaceId}/(?:quiz(?:/|$)|roadmap/(?:\\d+/phase/\\d+/)?quiz(?:/|$))`,
+      `^/workspaces/${workspaceId}/(?:${workspaceQuizzesPath}(?:/|$)|${workspaceRoadmapsPath}/(?:\\d+/${workspacePhasesPath}/\\d+/)?${workspaceQuizzesPath}(?:/|$))`,
     ).test(location.pathname);
   }, [location.pathname, workspaceId]);
 
@@ -536,15 +550,7 @@ function WorkspacePage() {
   }, []);
 
   const getWorkspaceSubPath = useCallback(() => {
-    if (!workspaceId) return "";
-
-    const prefix = `/workspace/${workspaceId}`;
-
-    if (!location.pathname.startsWith(prefix)) return "";
-
-    const suffix = location.pathname.slice(prefix.length).replace(/^\/+/, "");
-
-    return suffix;
+    return extractWorkspaceSubPath(location.pathname, workspaceId);
   }, [location.pathname, workspaceId]);
 
   useEffect(() => {
@@ -552,7 +558,7 @@ function WorkspacePage() {
 
     if (!subPath) return;
 
-    if (subPath === "roadmap") {
+    if (subPath === workspaceRoadmapsPath) {
       const phaseParam = new URLSearchParams(location.search).get("phaseId");
 
       const parsedPhaseId = Number(phaseParam);
@@ -640,13 +646,13 @@ function WorkspacePage() {
       const normalizedRoadmapId = Number(roadmapAiRoadmapId);
 
       if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
-        mappedPath = `roadmap/${normalizedRoadmapId}`;
+        mappedPath = `${workspaceRoadmapsPath}/${normalizedRoadmapId}`;
 
         if (
           Number.isInteger(selectedRoadmapPhaseId) &&
           selectedRoadmapPhaseId > 0
         ) {
-          mappedPath += `/phase/${selectedRoadmapPhaseId}`;
+          mappedPath += `/${workspacePhasesPath}/${selectedRoadmapPhaseId}`;
         }
       }
     }
@@ -656,9 +662,9 @@ function WorkspacePage() {
     const currentSubPath = getWorkspaceSubPath();
 
     const isQuizDeepLink =
-      /^quiz\/\d+(?:\/edit)?$/.test(currentSubPath) ||
-      /^roadmap\/quiz\/\d+(?:\/edit)?$/.test(currentSubPath) ||
-      /^roadmap\/\d+\/phase\/\d+\/quiz\/\d+(?:\/edit)?$/.test(currentSubPath);
+      new RegExp(`^${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath) ||
+      new RegExp(`^${workspaceRoadmapsPath}/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath) ||
+      new RegExp(`^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath);
 
     const isQuizDetailView =
       activeView === "quizDetail" || activeView === "editQuiz";
@@ -684,7 +690,7 @@ function WorkspacePage() {
 
     if (currentSubPath === mappedPath) return;
 
-    navigate(`/workspace/${workspaceId}/${mappedPath}`, { replace: true });
+    navigate(buildWorkspacePath(workspaceId, mappedPath), { replace: true });
   }, [
     activeView,
     getWorkspaceSubPath,
@@ -750,7 +756,7 @@ function WorkspacePage() {
   const navigateToWorkspaceRoot = useCallback(() => {
     if (!workspaceId) return;
 
-    navigate(`/workspace/${workspaceId}`, { replace: true });
+    navigate(buildWorkspacePath(workspaceId), { replace: true });
   }, [navigate, workspaceId]);
 
   const {
@@ -1040,7 +1046,7 @@ function WorkspacePage() {
           setProfileConfigOpen(false);
 
           if (openProfileConfig) {
-            navigate(`/workspace/${workspaceId}`, { replace: true });
+            navigate(buildWorkspacePath(workspaceId), { replace: true });
 
             setProfileOverviewOpen(false);
 
@@ -1342,7 +1348,7 @@ function WorkspacePage() {
 
       setProfileConfigOpen(true);
 
-      navigate(`/workspace/${workspaceId}`, { replace: true });
+      navigate(buildWorkspacePath(workspaceId), { replace: true });
 
       showSuccess(
         "Đã xóa tài liệu hiện tại. Bạn có thể cập nhật onboarding ngay bây giờ.",
@@ -1883,11 +1889,15 @@ function WorkspacePage() {
           normalizedRoadmapId > 0
         ) {
           navigate(
-            `/workspace/${workspaceId}/roadmap/${normalizedRoadmapId}/phase/${phaseId}`,
+            buildWorkspaceRoadmapPhasePath(
+              workspaceId,
+              normalizedRoadmapId,
+              phaseId,
+            ),
             { replace: true },
           );
         } else if (workspaceId) {
-          navigate(`/workspace/${workspaceId}/roadmap`, { replace: true });
+          navigate(buildWorkspaceRoadmapsPath(workspaceId), { replace: true });
         }
       }
 
@@ -1905,7 +1915,10 @@ function WorkspacePage() {
       setActiveView("postLearning");
 
       if (workspaceId) {
-        navigate(`/workspace/${workspaceId}/post-learning`, { replace: true });
+        navigate(
+          buildWorkspacePath(workspaceId, workspacePostLearningsPath),
+          { replace: true },
+        );
       }
 
       return;

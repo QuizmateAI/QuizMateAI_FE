@@ -21,6 +21,10 @@ import {
 } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
+import {
+  buildQuizResultPath,
+  buildWorkspaceQuizPath,
+} from '@/lib/routePaths';
 
 function normalizeTextValue(value) {
   return String(value || '')
@@ -319,7 +323,7 @@ export default function PracticeQuizPage() {
   });
 
   const returnToQuizPath = location.state?.returnToQuizPath
-    || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
+    || (quiz?.workspaceId ? buildWorkspaceQuizPath(quiz.workspaceId, quizId) : null)
     || '/home';
 
   const questions = quiz?.questions || [];
@@ -471,7 +475,7 @@ export default function PracticeQuizPage() {
       await submitAttempt(attemptId);
       markQuizCompleted(quizId);
       await new Promise(resolve => setTimeout(resolve, 500));
-      navigate(`/quiz/result/${attemptId}`, {
+      navigate(buildQuizResultPath(attemptId), {
         state: {
           quizId,
           attemptMode: 'practice',
