@@ -1308,7 +1308,7 @@ function WorkspaceProfileStepTwo({
                       </FieldBlock>
 
                       <FieldBlock
-                        label="Tổng điểm một phần"
+                        label={t('workspace.profileConfig.fields.templateTotalSectionPoints')}
                         error={errors.templateTotalSectionPoints}
                       >
                         <input

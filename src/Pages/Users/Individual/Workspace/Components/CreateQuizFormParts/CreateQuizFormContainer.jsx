@@ -298,10 +298,10 @@ function CreateQuizForm({
                   </p>
                   <div className={`flex flex-wrap gap-2 pt-1 ${fontClass}`}>
                     <Button asChild size="sm" className="h-8 bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600">
-                      <Link to="/payment/credit">{t("workspace.quiz.insufficientCredit.ctaBuy")}</Link>
+                      <Link to="/payments/credits">{t("workspace.quiz.insufficientCredit.ctaBuy")}</Link>
                     </Button>
                     <Button asChild variant="outline" size="sm" className={`h-8 ${isDarkMode ? "border-amber-700/80 text-amber-100 hover:bg-amber-950/40" : "border-amber-300 text-amber-900 hover:bg-amber-100/80"}`}>
-                      <Link to="/wallet">{t("workspace.quiz.insufficientCredit.ctaWallet")}</Link>
+                      <Link to="/wallets">{t("workspace.quiz.insufficientCredit.ctaWallet")}</Link>
                     </Button>
                   </div>
                 </div>

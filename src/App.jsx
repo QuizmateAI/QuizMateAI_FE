@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
@@ -65,6 +65,11 @@ const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
 const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagement'));
 
+function LegacyPathRedirect({ toBuilder }) {
+  const params = useParams();
+  return <Navigate to={toBuilder(params)} replace />;
+}
+
 function MainRoutes() {
   return (
     <Routes>
@@ -85,22 +90,63 @@ function MainRoutes() {
 
       {/* Route cần đăng nhập (User) - Super Admin, Admin không được vào */}
       <Route element={<ProtectedRoute allowedRoles={['USER']} />}>
-        <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/payment/credit" element={<CreditPaymentPage />} />
-        <Route path="/payment/result" element={<PaymentResultPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/plan" element={<PlanPage />} />
-        <Route path="/wallet" element={<WalletPage />} />
-        <Route path="/feedback" element={<FeedbackCenterPage />} />
+        <Route path="/payments" element={<PaymentPage />} />
+        <Route path="/payments/credits" element={<CreditPaymentPage />} />
+        <Route path="/payments/results" element={<PaymentResultPage />} />
+        <Route path="/profiles" element={<ProfilePage />} />
+        <Route path="/plans" element={<PlanPage />} />
+        <Route path="/wallets" element={<WalletPage />} />
+        <Route path="/feedbacks" element={<FeedbackCenterPage />} />
         <Route path="/home" element={<HomePage />} />
-        <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
-        <Route path="/workspace/:workspaceId/*" element={<WorkspacePage />} />
-        <Route path="/group-workspace/:workspaceId" element={<GroupWorkspacePage />} />
-        <Route path="/group-workspace/:workspaceId/*" element={<GroupWorkspacePage />} />
-        <Route path="/group-manage/:workspaceId" element={<GroupManagementPage />} />
-        <Route path="/quiz/practice/:quizId" element={<PracticeQuizPage />} />
-        <Route path="/quiz/exam/:quizId" element={<ExamQuizPage />} />
-        <Route path="/quiz/result/:attemptId" element={<QuizResultPage />} />
+        <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
+        <Route path="/workspaces/:workspaceId/*" element={<WorkspacePage />} />
+        <Route path="/group-workspaces/:workspaceId" element={<GroupWorkspacePage />} />
+        <Route path="/group-workspaces/:workspaceId/*" element={<GroupWorkspacePage />} />
+        <Route path="/groups/:workspaceId/manage" element={<GroupManagementPage />} />
+        <Route path="/quizzes/practice/:quizId" element={<PracticeQuizPage />} />
+        <Route path="/quizzes/exams/:quizId" element={<ExamQuizPage />} />
+        <Route path="/quizzes/results/:attemptId" element={<QuizResultPage />} />
+
+        {/* Legacy singular URLs - redirect to plural URLs */}
+        <Route path="/payment" element={<Navigate to="/payments" replace />} />
+        <Route path="/payment/credit" element={<Navigate to="/payments/credits" replace />} />
+        <Route path="/payment/result" element={<Navigate to="/payments/results" replace />} />
+        <Route path="/profile" element={<Navigate to="/profiles" replace />} />
+        <Route path="/plan" element={<Navigate to="/plans" replace />} />
+        <Route path="/wallet" element={<Navigate to="/wallets" replace />} />
+        <Route path="/feedback" element={<Navigate to="/feedbacks" replace />} />
+        <Route
+          path="/workspace/:workspaceId"
+          element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/workspaces/${workspaceId}`} />}
+        />
+        <Route
+          path="/workspace/:workspaceId/*"
+          element={<LegacyPathRedirect toBuilder={({ workspaceId, '*': splat }) => `/workspaces/${workspaceId}${splat ? `/${splat}` : ''}`} />}
+        />
+        <Route
+          path="/group-workspace/:workspaceId"
+          element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/group-workspaces/${workspaceId}`} />}
+        />
+        <Route
+          path="/group-workspace/:workspaceId/*"
+          element={<LegacyPathRedirect toBuilder={({ workspaceId, '*': splat }) => `/group-workspaces/${workspaceId}${splat ? `/${splat}` : ''}`} />}
+        />
+        <Route
+          path="/group-manage/:workspaceId"
+          element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/groups/${workspaceId}/manage`} />}
+        />
+        <Route
+          path="/quiz/practice/:quizId"
+          element={<LegacyPathRedirect toBuilder={({ quizId }) => `/quizzes/practice/${quizId}`} />}
+        />
+        <Route
+          path="/quiz/exam/:quizId"
+          element={<LegacyPathRedirect toBuilder={({ quizId }) => `/quizzes/exams/${quizId}`} />}
+        />
+        <Route
+          path="/quiz/result/:attemptId"
+          element={<LegacyPathRedirect toBuilder={({ attemptId }) => `/quizzes/results/${attemptId}`} />}
+        />
       </Route>
 
        {/* Route dành riêng cho Super Admin */}
@@ -117,12 +163,15 @@ function MainRoutes() {
           <Route path="users" element={<UserManagement />} />
           <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
           <Route path="groups" element={<GroupManagement />} />
-            <Route path="plan" element={<PlanManagement />} />
-          <Route path="credit" element={<CreditPackageManagement />} />
+            <Route path="plans" element={<PlanManagement />} />
+          <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
             <Route path="system-settings" element={<SystemSettingManagement />} />
             <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
-            <Route path="feedback" element={<FeedbackManagement />} />
+            <Route path="feedbacks" element={<FeedbackManagement />} />
+            <Route path="plan" element={<Navigate to="plans" replace />} />
+            <Route path="credit" element={<Navigate to="credits" replace />} />
+            <Route path="feedback" element={<Navigate to="feedbacks" replace />} />
         </Route>
       </Route>
 
@@ -134,10 +183,12 @@ function MainRoutes() {
           <Route path="users" element={<UserManagement />} />
           <Route path="groups/:workspaceId" element={<GroupDetailPage />} />
           <Route path="groups" element={<GroupManagement />} />
-            <Route path="plan" element={<PlanManagement />} />
-          <Route path="credit" element={<CreditPackageManagement />} />
+            <Route path="plans" element={<PlanManagement />} />
+          <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
           <Route path="system-settings" element={<SystemSettingManagement />} />
+          <Route path="plan" element={<Navigate to="plans" replace />} />
+          <Route path="credit" element={<Navigate to="credits" replace />} />
         </Route>
       </Route>
     </Routes>

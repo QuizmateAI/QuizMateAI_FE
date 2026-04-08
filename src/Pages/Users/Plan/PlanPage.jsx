@@ -688,7 +688,7 @@ export default function PlanPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/wallet", { state: { from: "/plan" } })}
+              onClick={() => navigate("/wallets", { state: { from: "/plans" } })}
               className={`flex h-10 items-center gap-2 rounded-full px-3.5 cursor-pointer ${
                 isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
               }`}
@@ -779,7 +779,7 @@ export default function PlanPage() {
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <Button
-                    onClick={() => navigate("/wallet")}
+                    onClick={() => navigate("/wallets")}
                     className="h-11 rounded-2xl bg-indigo-500 px-5 text-white hover:bg-indigo-400 cursor-pointer"
                   >
                     {t("plan.creditModel.cta")}

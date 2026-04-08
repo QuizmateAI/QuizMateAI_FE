@@ -184,12 +184,12 @@ export default function WalletPage() {
 
   const buyCredits = (pkg) => {
     if (!pkg?.creditPackageId) return;
-    navigate(`/payment/credit?creditPackageId=${pkg.creditPackageId}`, {
-      state: { from: "/wallet" },
+    navigate(`/payments/credits?creditPackageId=${pkg.creditPackageId}`, {
+      state: { from: "/wallets" },
     });
   };
 
-  const backTo = location.state?.from || "/plan";
+  const backTo = location.state?.from || "/plans";
 
   return (
     <div className={`min-h-screen ${fontClass} transition-colors ${

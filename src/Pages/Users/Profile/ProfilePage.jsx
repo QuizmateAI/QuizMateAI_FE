@@ -231,7 +231,7 @@ function ProfilePage() {
     if (location.state?.tab) {
       // Subscription đã tách ra trang /plan
       if (location.state.tab === "subscription") {
-        navigate("/plan", { replace: true });
+        navigate("/plans", { replace: true });
         return;
       }
       setActiveTab(location.state.tab);
@@ -467,7 +467,7 @@ function ProfilePage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/plan", { state: { from: "/profile" } })}
+              onClick={() => navigate("/plans", { state: { from: "/profiles" } })}
               className={`h-10 px-4 rounded-full flex items-center gap-2 transition-colors ${
                 isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
               }`}
@@ -478,7 +478,7 @@ function ProfilePage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/wallet", { state: { from: "/profile" } })}
+              onClick={() => navigate("/wallets", { state: { from: "/profiles" } })}
               className={`h-10 px-4 rounded-full flex items-center gap-2 transition-colors ${
                 isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
               }`}
@@ -562,17 +562,6 @@ function ProfilePage() {
                   <p className={`text-sm font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>@{profile.username}</p>
                   <p className={`text-xs mb-4 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{profile.email}</p>
 
-                  {/* XP Progress (mock) */}
-                  <div className="w-full space-y-2 px-4 mb-4">
-                    <div className="flex justify-between text-xs font-medium">
-                      <span>{t("profile.xpProgress")}</span>
-                      <span>2450 / 3000</span>
-                    </div>
-                    <div className={`h-2 w-full overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
-                      <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: "82%" }} />
-                    </div>
-                  </div>
-
                   {/* Credit Wallet summary */}
                   <div className="w-full px-4 mb-4">
                     <div
@@ -644,7 +633,7 @@ function ProfilePage() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate("/wallet", { state: { from: "/profile" } })
+                            navigate("/wallets", { state: { from: "/profiles" } })
                           }
                           className={`mt-1 inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full cursor-pointer ${
                             isDarkMode

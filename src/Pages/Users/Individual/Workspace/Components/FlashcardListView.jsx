@@ -59,7 +59,7 @@ function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onD
       <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-amber-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>Flashcard</p>
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{t("workspace.studio.actions.flashcard")}</p>
         </div>
         <Button disabled={disableCreate} onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
           <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>

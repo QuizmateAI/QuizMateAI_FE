@@ -549,7 +549,7 @@ function SourcesPanel({
                       className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
                         isDarkMode ? "text-slate-400 hover:bg-slate-700 hover:text-slate-200" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                       } ${isMenuOpen ? (isDarkMode ? "bg-slate-700 text-slate-200" : "bg-gray-100 text-gray-700") : ""}`}
-                      aria-label="Tùy chọn"
+                      aria-label={t("common.options")}
                     >
                       <MoreHorizontal className="w-4 h-4" />
                     </button>

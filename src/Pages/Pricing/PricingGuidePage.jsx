@@ -95,12 +95,12 @@ export default function PricingGuidePage() {
     ? [
         {
           label: copy.ctaPrimaryUser,
-          onClick: () => navigate("/wallet", { state: { from: "/pricing" } }),
+          onClick: () => navigate("/wallets", { state: { from: "/pricing" } }),
           primary: true,
         },
         {
           label: copy.ctaSecondaryUser,
-          onClick: () => navigate("/plan", { state: { from: "/pricing" } }),
+          onClick: () => navigate("/plans", { state: { from: "/pricing" } }),
           primary: false,
         },
       ]

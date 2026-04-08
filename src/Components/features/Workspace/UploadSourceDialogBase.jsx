@@ -203,7 +203,7 @@ function UploadSourceDialogBase({
       .filter(Boolean);
 
     if (urls.length === 0) {
-      showError(t("workspace.upload.urlRequired", "Vui lòng nhập đường dẫn trang YouTube."));
+      showError(t("workspace.upload.urlRequired"));
       return;
     }
     if (!normalizedWorkspaceId) {
@@ -222,10 +222,10 @@ function UploadSourceDialogBase({
       setWebUrl("");
       setShowWebInput(false);
       await onSuggestedImported?.();
-      showSuccess(t("workspace.upload.webYoutubeSuccess", "Đã gửi link để hệ thống xử lý."));
+      showSuccess(t("workspace.upload.webYoutubeSuccess"));
       onOpenChange(false);
     } catch (error) {
-      showError(error?.message || t("workspace.upload.webYoutubeError", "Không thể xử lý link trang YouTube."));
+      showError(error?.message || t("workspace.upload.webYoutubeError"));
     } finally {
       setProcessingWebLink(false);
     }
@@ -295,7 +295,7 @@ function UploadSourceDialogBase({
       }
       onOpenChange(false);
     } catch (error) {
-      showError(error?.message || t("workspace.upload.uploadError", "Không thể tải tài liệu lên."));
+      showError(error?.message || t("workspace.upload.uploadError"));
     } finally {
       setUploading(false);
     }
@@ -312,7 +312,7 @@ function UploadSourceDialogBase({
       showSuccess(t("workspace.upload.uploadAllSuccess"));
       onOpenChange(false);
     } catch (error) {
-      showError(error?.message || t("workspace.upload.uploadError", "Không thể tải tài liệu lên."));
+      showError(error?.message || t("workspace.upload.uploadError"));
     } finally {
       setUploading(false);
     }
@@ -383,16 +383,16 @@ function UploadSourceDialogBase({
         <DialogHeader>
           <DialogTitle className={fontClass}>
             {showWebInput
-              ? t("workspace.upload.webYoutubeTitle", "URL trang YouTube")
+              ? t("workspace.upload.webYoutubeTitle")
               : isGroupReviewUpload
-                ? t("workspace.upload.groupReviewTitle", "Tải tài liệu chờ leader duyệt")
+                ? t("workspace.upload.groupReviewTitle")
                 : t("workspace.upload.title")}
           </DialogTitle>
           <DialogDescription className={isDarkMode ? "text-slate-400" : "text-gray-500"}>
             {showWebInput
-              ? t("workspace.upload.webYoutubeDescription", "Dán URL trang YouTube vào bên dưới để tải lên dưới dạng một nguồn trong Workspace.")
+              ? t("workspace.upload.webYoutubeDescription")
               : isGroupReviewUpload
-                ? t("workspace.upload.groupReviewDescription", "Tài liệu sẽ được AI kiểm tra theo profile nhóm, sau đó đi vào hàng chờ leader duyệt trước khi xuất hiện trong nguồn học chung.")
+                ? t("workspace.upload.groupReviewDescription")
                 : `${t("workspace.upload.dragDrop")} / ${t("workspace.upload.orBrowse")}`}
           </DialogDescription>
         </DialogHeader>
@@ -419,7 +419,7 @@ function UploadSourceDialogBase({
             <textarea
               value={webUrl}
               onChange={(event) => setWebUrl(event.target.value)}
-              placeholder={t("workspace.upload.urlPlaceholderLong", "Dán liên kết bất kỳ")}
+              placeholder={t("workspace.upload.urlPlaceholderLong")}
               className={`w-full min-h-[180px] rounded-xl border px-3 py-2.5 text-sm resize-y outline-none transition-all ${
                 isDarkMode
                   ? "border-blue-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-blue-500"
@@ -428,11 +428,11 @@ function UploadSourceDialogBase({
             />
 
             <ul className={`list-disc pl-5 space-y-1 text-sm ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
-              <li>{t("workspace.upload.webYoutubeNote1", "Để thêm nhiều URL, hãy phân tách bằng dấu cách hoặc dòng mới.")}</li>
-              <li>{t("workspace.upload.webYoutubeNote2", "Hiện chỉ nhập được văn bản hiển thị trên trang YouTube.")}</li>
-              <li>{t("workspace.upload.webYoutubeNote3", "Không hỗ trợ bài viết có tính phí.")}</li>
-              <li>{t("workspace.upload.webYoutubeNote4", "Hiện chỉ nhập được bản chép lời của video trên YouTube.")}</li>
-              <li>{t("workspace.upload.webYoutubeNote5", "Chỉ hỗ trợ video công khai trên YouTube.")}</li>
+              <li>{t("workspace.upload.webYoutubeNote1")}</li>
+              <li>{t("workspace.upload.webYoutubeNote2")}</li>
+              <li>{t("workspace.upload.webYoutubeNote3")}</li>
+              <li>{t("workspace.upload.webYoutubeNote4")}</li>
+              <li>{t("workspace.upload.webYoutubeNote5")}</li>
             </ul>
 
             <div className="flex justify-end gap-2 pt-1">
@@ -451,7 +451,7 @@ function UploadSourceDialogBase({
                 className="min-w-[120px] h-10 rounded-full bg-[#2563EB] hover:bg-blue-700 text-white disabled:bg-slate-300 disabled:text-slate-600"
               >
                 {processingWebLink ? <InlineSpinner className="mr-2" /> : null}
-                {t("workspace.upload.insertUrl", "Chèn")}
+                {t("workspace.upload.insertUrl")}
               </Button>
             </div>
           </div>
@@ -475,9 +475,6 @@ function UploadSourceDialogBase({
                   <UploadCloud className="w-7 h-7" />
                 </div>
                 <p className={`text-base font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>{t("workspace.upload.dragDrop")}</p>
-                <p className={`text-sm mt-1 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                  {t("workspace.upload.dragOnlyHint", "Chỉ kéo và thả tệp vào khung này")}
-                </p>
                 <p className={`text-xs mt-3 leading-5 ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>{t("workspace.upload.supportedFormats")}</p>
 
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-[420px] mx-auto">
@@ -489,7 +486,7 @@ function UploadSourceDialogBase({
                     className={`h-12 rounded-full transition-all active:scale-95 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-900" : "border-slate-300 text-slate-800 hover:bg-slate-50"}`}
                   >
                     <UploadCloud className="w-4 h-4 mr-2" />
-                    {t("workspace.upload.uploadFileButton", "Tải tệp lên")}
+                    {t("workspace.upload.uploadFileButton")}
                   </Button>
 
                   <div className="relative">
@@ -513,7 +510,7 @@ function UploadSourceDialogBase({
                         <Link2 className="w-4 h-4" />
                         <CirclePlay className="w-4 h-4 -ml-1 text-red-500" />
                       </span>
-                      {t("workspace.upload.webYoutubeButton", "Liên kết YouTube")}
+                      {t("workspace.upload.webYoutubeButton")}
                     </Button>
                     {planEntitlements && !planEntitlements.canUploadVideo && (
                       <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center pointer-events-none z-10">
@@ -528,7 +525,7 @@ function UploadSourceDialogBase({
               {selectedFiles.length > 0 && (
             <div className={`rounded-xl border ${isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"}`}>
               <div className={`px-3 py-2 border-b text-xs font-medium ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-500"}`}>
-                {selectedFiles.length} {t("workspace.sources.title", "Tài liệu")}
+                {selectedFiles.length} {t("workspace.sources.title")}
               </div>
               <div className="max-h-40 overflow-x-hidden overflow-y-auto">
               {selectedFiles.map((file, i) => (
@@ -643,10 +640,10 @@ function UploadSourceDialogBase({
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <p className={`text-sm font-semibold leading-5 ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
-                                {item?.title || "Untitled"}
+                                {item?.title || t("workspace.upload.untitled")}
                               </p>
                               <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${isDarkMode ? "border-slate-700 text-slate-300" : "border-slate-300 text-slate-600"}`}>
-                                {`${t("workspace.upload.relevanceRate", "Tỷ lệ phù hợp")} : ${relevanceScore}%`}
+                                {`${t("workspace.upload.relevanceRate")} : ${relevanceScore}%`}
                               </span>
                             </div>
                             <p className={`text-xs mt-1 line-clamp-2 leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>

@@ -207,10 +207,10 @@ function CreateFlashcardForm({
   const normalizedSources = useMemo(
     () => (Array.isArray(sources) ? sources : []).map((src) => ({
       id: Number(src?.id ?? src?.materialId),
-      name: src?.name || src?.title || `Material #${src?.id ?? src?.materialId}`,
+      name: src?.name || src?.title || t("workspace.quiz.aiConfig.materialFallback", { id: src?.id ?? src?.materialId }),
       status: String(src?.status || "").toUpperCase(),
     })).filter((src) => src.id > 0),
-    [sources]
+    [sources, t]
   );
 
   const selectedSourceItems = useMemo(
@@ -384,7 +384,7 @@ function CreateFlashcardForm({
               <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1">
                 {selectedReadySourceItems.map((item) => (
                   <div key={item.id} className={`text-xs px-2.5 py-1.5 rounded-md border ${isDarkMode ? "border-slate-700 text-slate-300 bg-slate-800/60" : "border-gray-200 text-gray-700 bg-gray-50"}`}>
-                    {item.name || `Material #${item.id}`}
+                    {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: item.id })}
                   </div>
                 ))}
               </div>

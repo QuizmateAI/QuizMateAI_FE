@@ -16,7 +16,7 @@ export default function PlanUpgradeModal({ open, onOpenChange, featureName, isDa
 
   const handleUpgrade = () => {
     onOpenChange(false);
-    navigate("/plan");
+    navigate("/plans");
   };
 
   return (

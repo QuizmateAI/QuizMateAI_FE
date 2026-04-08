@@ -466,8 +466,8 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
               {q.type === "trueFalse" && (
                 <select className={selectCls} value={q.correctAnswer || "true"}
                   onChange={(e) => updateQuestionField(qIdx, "correctAnswer", e.target.value)}>
-                  <option value="true">True</option>
-                  <option value="false">False</option>
+                  <option value="true">{t("common.boolean.true")}</option>
+                  <option value="false">{t("common.boolean.false")}</option>
                 </select>
               )}
               {(q.type === "fillBlank" || q.type === "shortAnswer") && (

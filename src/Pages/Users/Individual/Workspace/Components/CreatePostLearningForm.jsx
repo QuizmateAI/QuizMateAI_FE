@@ -240,7 +240,7 @@ function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBa
                   <option value="">{roadmapLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
                   {roadmaps.map((rm) => (
                     <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
-                      {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
+                      {rm.title || rm.name || t("workspace.roadmap.fallbackName", { id: rm.roadmapId || rm.id })}
                     </option>
                   ))}
                 </select>
@@ -259,7 +259,7 @@ function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBa
                     <option value="">{phaseLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
                     {phases.map((ph) => (
                       <option key={ph.phaseId || ph.id} value={ph.phaseId || ph.id}>
-                        {ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`}
+                        {ph.title || ph.name || t("workspace.phase.fallbackName", { id: ph.phaseId || ph.id })}
                       </option>
                     ))}
                   </select>
@@ -394,8 +394,8 @@ function CreatePostLearningForm({ isDarkMode = false, onCreatePostLearning, onBa
                   {q.type === "trueFalse" && (
                     <select className={selectCls} value={q.correctAnswer || "true"}
                       onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)}>
-                      <option value="true">True</option>
-                      <option value="false">False</option>
+                      <option value="true">{t("common.boolean.true")}</option>
+                      <option value="false">{t("common.boolean.false")}</option>
                     </select>
                   )}
                   {(q.type === "fillBlank" || q.type === "shortAnswer") && (

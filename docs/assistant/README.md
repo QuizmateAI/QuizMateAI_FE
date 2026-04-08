@@ -14,6 +14,13 @@ Bo tai lieu nay la diem vao duy nhat de cung cap context cho agent khi lam viec 
 - `sessions/`: Moi session chat co 1 file tong ket rieng.
 - `skills/`: Moi skill la 1 file mo ta cach ap dung, dau hieu nen dung, va checklist verify.
 
+## Bat buoc truoc moi prompt
+
+- Doc file nay truoc de xac dinh luong docs hien tai.
+- Doc `instructions/project-context.md` va `instructions/change-playbook.md`.
+- Doc them instruction, skill, va session gan nhat lien quan truc tiep den task.
+- Khong bat dau sua code hoac tra loi ket luan khi chua doc qua `QuizMateAI_FE/docs/assistant/`.
+
 ## Thu tu doc de xuat
 
 1. `instructions/project-context.md`
