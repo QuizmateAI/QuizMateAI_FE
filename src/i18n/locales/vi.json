@@ -383,7 +383,9 @@
       "email": "Email",
       "status": "Trạng thái",
       "lastLogin": "Đăng nhập lần cuối",
-      "actions": "Hành động"
+      "actions": "Hành động",
+      "role": "Vai trò",
+      "rbac": "RBAC"
     },
     "noData": "Không tìm thấy tài khoản admin nào.",
     "form": {
@@ -398,10 +400,35 @@
       "success": "Tạo tài khoản admin thành công.",
       "error": "Tạo tài khoản admin thất bại.",
       "passwordMismatch": "Mật khẩu xác nhận không khớp.",
-      "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự."
+      "passwordTooShort": "Mật khẩu phải có ít nhất 6 ký tự.",
+      "description": "Tạo tài khoản admin mới. Mở RBAC ở từng dòng để gán quyền.",
+      "usernamePlaceholder": "admin_username",
+      "emailPlaceholder": "admin@example.com",
+      "passwordPlaceholder": "Ít nhất 6 ký tự",
+      "confirmPasswordPlaceholder": "Nhập lại mật khẩu",
+      "fullNameOptional": "Họ và tên (tùy chọn)",
+      "fullNamePlaceholder": "Tên admin",
+      "creating": "Đang tạo...",
+      "grantedPermissions": "quyền đã cấp",
+      "syncPermissions": "Đồng bộ quyền"
     },
     "syncSuccess": "Đã đồng bộ quyền thành công.",
-    "syncError": "Không thể đồng bộ quyền."
+    "syncError": "Không thể đồng bộ quyền.",
+    "categories": {
+      "plans": "Gói",
+      "materials": "Tài liệu",
+      "audit": "Kiểm toán"
+    },
+    "errors": {
+      "loadAdmins": "Không thể tải danh sách admin."
+    },
+    "rbac": {
+      "title": "Phân quyền: {{username}}",
+      "description": "Bật hoặc tắt quyền cho tài khoản ADMIN. SUPER_ADMIN giữ toàn bộ quyền mặc định.",
+      "superAdminReadonly": "Tài khoản SUPER_ADMIN luôn có toàn bộ quyền mặc định.",
+      "clearAll": "Bỏ tất cả",
+      "grantAll": "Cấp tất cả"
+    }
   },
   "adminPayments": {
     "desc": "Tra cứu giao dịch theo mã đơn, user, workspace hoặc trạng thái thanh toán.",
@@ -456,8 +483,7 @@
       "WORKSPACE_CREDIT": "Credit nhóm",
       "WORKSPACE_SLOT": "Slot nhóm"
     },
-    "targetSummary": {
-    },
+    "targetSummary": {},
     "notifications": {
       "title": "Thông báo nhóm",
       "subtitle": "Trưởng nhóm duyệt thông báo, cộng tác viên tạo nháp, thành viên xem bản đã xuất bản.",
@@ -697,13 +723,26 @@
     "dark": "Tối",
     "refresh": "Làm mới",
     "refreshLog": "Làm mới nhật ký",
+    "checking": "Đang kiểm tra...",
+    "boolean": {
+      "true": "Đúng",
+      "false": "Sai"
+    },
+    "options": "Tùy chọn",
     "back": "Quay lại",
     "next": "Tiếp theo",
     "subscription": "Gói đăng ký",
     "plan": "Gói",
     "optional": "tùy chọn",
     "wallet": "Ví Credit",
-    "cancel": "Đóng"
+    "cancel": "Đóng",
+    "lightMode": "Chế độ sáng",
+    "darkMode": "Chế độ tối",
+    "expandSidebar": "Mở rộng sidebar",
+    "collapseSidebar": "Thu gọn sidebar",
+    "paginationSummary": "Hiển thị {{start}} - {{end}} trên {{total}}",
+    "pageSizeOption": "{{count}} / trang",
+    "close": "Đóng"
   },
   "plan": {
     "title": "Chọn gói học phù hợp",
@@ -863,15 +902,70 @@
     "title": "Phân quyền RBAC",
     "desc": "Quản lý vai trò và quyền hạn hệ thống - Role Based Access Control.",
     "tabs": {
-      "permissions": "Danh sách quyền",
-      "auditLogs": "Nhật ký kiểm toán"
+      "permissions": "Quyền",
+      "auditLogs": "Nhật ký kiểm toán",
+      "roles": "Vai trò"
     },
     "permissionsList": "Danh sách Permissions",
     "userRoleManagement": "Quản lý Role & Permissions người dùng",
     "userRoleDesc": "Chỉ hiển thị tài khoản ADMIN và SUPER_ADMIN.",
     "auditLogs": "Nhật ký kiểm toán RBAC",
     "syncSuccess": "Đã đồng bộ quyền thành công.",
-    "syncError": "Không thể đồng bộ quyền."
+    "syncError": "Không thể đồng bộ quyền.",
+    "roleManagementTitle": "Quản lý vai trò",
+    "roleManagementDesc": "Tạo vai trò tùy chỉnh, xem lại quyền và đồng bộ quyền theo vai trò.",
+    "createRole": "Tạo vai trò",
+    "columns": {
+      "role": "Vai trò",
+      "type": "Loại",
+      "permissions": "Quyền",
+      "actions": "Thao tác",
+      "code": "Mã",
+      "description": "Mô tả",
+      "username": "Tên đăng nhập",
+      "email": "Email",
+      "status": "Trạng thái",
+      "actor": "Người thực hiện",
+      "action": "Hành động",
+      "target": "Đối tượng",
+      "change": "Trước -> Sau",
+      "time": "Thời gian"
+    },
+    "emptyRoles": "Chưa có vai trò nào",
+    "noPermission": "Chưa có quyền",
+    "permissionsAction": "Quyền",
+    "deleteAction": "Xóa",
+    "managePermissionsAction": "Quản lý quyền",
+    "noAuditLogs": "Chưa có nhật ký kiểm toán",
+    "userPermissionTitle": "Quản lý quyền: {{username}}",
+    "userPermissionDesc": "Gán role và cấu hình quyền cho tài khoản ADMIN. SUPER_ADMIN giữ toàn bộ quyền mặc định.",
+    "userPermissionsCount": "Quyền ({{count}})",
+    "syncPermissions": "Đồng bộ quyền",
+    "createRoleTitle": "Tạo vai trò mới",
+    "createRoleDesc": "Nhập tên vai trò mới. Backend sẽ chuẩn hóa sang chữ in hoa.",
+    "roleName": "Tên vai trò",
+    "roleNamePlaceholder": "Ví dụ: CONTENT_MANAGER",
+    "rolePermissionTitle": "Đồng bộ quyền cho vai trò: {{role}}",
+    "superAdminReadonlyDesc": "SUPER_ADMIN luôn có toàn bộ quyền mặc định và không thể chỉnh tay.",
+    "syncRoleDesc": "Chọn các quyền áp dụng cho vai trò này. Thao tác này sẽ đồng bộ toàn bộ bộ quyền của vai trò.",
+    "selectedPermissionsCount": "Đã chọn {{count}} quyền",
+    "systemRoleLabel": "HỆ THỐNG",
+    "customRoleLabel": "TÙY CHỈNH",
+    "confirmDeleteRole": "Xóa vai trò {{role}}?",
+    "success": {
+      "roleCreated": "Tạo vai trò thành công.",
+      "rolePermissionsSynced": "Đồng bộ quyền cho vai trò thành công.",
+      "roleDeleted": "Xóa vai trò thành công."
+    },
+    "errors": {
+      "loadPermissions": "Không thể tải danh sách quyền.",
+      "loadAuditLogs": "Không thể tải nhật ký kiểm toán.",
+      "loadRoles": "Không thể tải danh sách vai trò.",
+      "roleNameRequired": "Tên vai trò không được để trống.",
+      "createRole": "Không thể tạo vai trò.",
+      "syncRolePermissions": "Không thể đồng bộ quyền cho vai trò.",
+      "deleteRole": "Không thể xóa vai trò."
+    }
   },
   "subscription": {
     "title": "Quản lý gói",
@@ -928,7 +1022,9 @@
       "user": "Người dùng",
       "plan": "Gói",
       "startDate": "Ngày bắt đầu",
-      "endDate": "Ngày kết thúc"
+      "endDate": "Ngày kết thúc",
+      "scope": "Phạm vi",
+      "level": "Cấp độ"
     },
     "form": {
       "name": "Tên gói",
@@ -947,12 +1043,143 @@
       "activeSubs": "Gói đang hoạt động",
       "individual": "Cá nhân",
       "group": "Nhóm",
-      "totalRevenue": "Tổng doanh thu"
+      "totalRevenue": "Tổng doanh thu",
+      "userScope": "Phạm vi cá nhân",
+      "workspaceScope": "Phạm vi workspace nhóm"
     },
     "aiModels": {
       "title": "Mô hình AI theo capability",
       "groupHint": "Chọn model mặc định cho capability này theo gói.",
       "noAssignment": "Chưa gán model"
+    },
+    "actions": {
+      "toggleStatus": "Đổi trạng thái"
+    },
+    "scope": {
+      "user": "Cá nhân",
+      "workspace": "Workspace nhóm",
+      "userPlan": "Gói cá nhân",
+      "workspacePlan": "Gói workspace nhóm",
+      "userPlanDescription": "Dành cho tài khoản cá nhân, onboarding và trải nghiệm học riêng.",
+      "workspacePlanDescription": "Dành cho workspace nhóm, cộng tác và tài nguyên dùng chung."
+    },
+    "detail": {
+      "planType": "Gói {{scope}}",
+      "entitlement": "Quyền lợi",
+      "maxIndividualWorkspace": "Workspace cá nhân tối đa",
+      "maxMaterialInWorkspace": "Tài liệu tối đa / workspace",
+      "planIncludedCredits": "Credit đi kèm",
+      "features": "Tính năng"
+    },
+    "entitlements": {
+      "canProcessPdf": "PDF",
+      "canProcessWord": "Word",
+      "canProcessSlide": "Slide",
+      "canProcessExcel": "Excel",
+      "canProcessText": "Text",
+      "canProcessImage": "Image",
+      "canProcessVideo": "Video",
+      "canProcessAudio": "Audio",
+      "canBuyCredit": "Mua credit",
+      "hasAdvanceQuizConfig": "Loại quiz nâng cao",
+      "canCreateRoadMap": "Tạo roadmap",
+      "hasAiCompanionMode": "AI companion",
+      "hasWorkspaceAnalytics": "Analytics",
+      "hasAiSummaryAndTextReading": "AI summary",
+      "hasAiQuizAssessmentAndRecommendation": "AI quiz assessment"
+    },
+    "validation": {
+      "codeRequired": "Vui lòng nhập code gói.",
+      "displayNameRequired": "Vui lòng nhập tên gói."
+    },
+    "wizard": {
+      "empty": "Chưa nhập",
+      "untitled": "Gói chưa đặt tên",
+      "dialogEditDescription": "Chỉnh plan theo từng bước để không phải cuộn qua toàn bộ cấu hình trong một màn hình.",
+      "dialogCreateDescription": "Tạo plan mới theo luồng từng bước để dễ rà soát hơn trước khi lưu.",
+      "stepCounter": "Bước {{current}}/{{total}}",
+      "stepTitle": "Bước {{current}}/{{total}}: {{title}}",
+      "nextHint": "Dùng nút \"Tiếp\" để đi lần lượt từng bước và giữ dialog gọn hơn.",
+      "finalHint": "Bạn đang ở bước cuối. Có thể lưu ngay hoặc quay lại bất kỳ bước nào để chỉnh.",
+      "steps": {
+        "basic": {
+          "title": "Cơ bản",
+          "description": "Đặt tên gói, chọn phạm vi và mức giá."
+        },
+        "entitlement": {
+          "title": "Quyền lợi",
+          "description": "Thiết lập giới hạn và các capability bật tắt."
+        },
+        "models": {
+          "title": "Mô hình AI",
+          "description": "Gán model mặc định cho từng nhóm capability."
+        },
+        "review": {
+          "title": "Rà soát",
+          "description": "Kiểm tra cấu hình cuối cùng trước khi lưu."
+        }
+      },
+      "checklist": {
+        "title": "Checklist nhanh",
+        "code": "Code gói",
+        "displayName": "Tên hiển thị",
+        "enabledFeatures": "Tính năng đang bật",
+        "enabledFeaturesValue": "{{count}} quyền lợi",
+        "assignedModels": "Model AI đã gán",
+        "assignedModelsValue": "{{assigned}}/{{total}} nhóm"
+      },
+      "basic": {
+        "title": "Khởi tạo gói",
+        "description": "Bước đầu chỉ cần xác định danh tính và phạm vi của gói.",
+        "editingLocked": "Code và scope được khóa khi chỉnh sửa để tránh lệch catalog đang hoạt động."
+      },
+      "fields": {
+        "code": "Code gói",
+        "displayName": "Tên hiển thị",
+        "displayNamePlaceholder": "Ví dụ: Pro cá nhân, Team Growth...",
+        "levelHint": "Một level có thể chứa nhiều gói, bạn có thể chọn lại level phù hợp cho plan này.",
+        "price": "Giá (VND)",
+        "description": "Mô tả",
+        "descriptionPlaceholder": "Mô tả ngắn gói này dành cho ai và giá trị chính là gì."
+      },
+      "entitlement": {
+        "title": "Quyền lợi và giới hạn",
+        "description": "Giữ phần này thật gọn: trước là giới hạn định lượng, sau là các capability bật hoặc tắt.",
+        "maxIndividualWorkspaceHint": "Số workspace cá nhân tối đa mà plan cho phép.",
+        "maxMaterialInWorkspaceHint": "Giới hạn tài liệu trong mỗi workspace.",
+        "planIncludedCreditsHint": "Số credit được nạp sẵn trong gói.",
+        "featureToggle": "Bật tắt tính năng",
+        "enabledCount": "Đang bật {{count}} quyền lợi.",
+        "noneEnabled": "Chưa bật capability nào cho plan này.",
+        "enableAll": "Bật hết",
+        "disableAll": "Tắt hết",
+        "enabledState": "Đang mở cho plan này.",
+        "disabledState": "Đang tắt."
+      },
+      "models": {
+        "title": "Model mặc định theo capability",
+        "description": "Mỗi nhóm năng lực nên có model mặc định riêng để giảm công chỉnh tay ở bước cuối.",
+        "inactiveHint": "Model có trạng thái khác ACTIVE vẫn hiển thị để xem lại cấu hình cũ, nhưng không thể chọn mới.",
+        "groupCount": "{{count}} model",
+        "noAssignmentHint": "Chưa gán model riêng. Hệ thống sẽ dùng cách resolve mặc định tương ứng."
+      },
+      "review": {
+        "title": "Kiểm tra trước khi lưu",
+        "description": "Bước cuối để tinh chỉnh override theo từng action nếu plan này cần hành vi AI riêng.",
+        "planInfo": "Thông tin plan",
+        "entitlementSnapshot": "Tóm tắt quyền lợi",
+        "noFeatures": "Chưa bật quyền lợi nào.",
+        "aiSnapshot": "Tóm tắt AI",
+        "modelGroupsAssigned": "Nhóm đã gán model",
+        "overrideActions": "Action override",
+        "aiOverrides": "Override hàm AI",
+        "aiOverridesHint": "Để trống để dùng model mặc định theo capability.",
+        "aiOverridesGroupHint": "Chỉ override khi plan này thật sự cần hành vi khác với model mặc định của nhóm.",
+        "providerAvailable": "Provider khả dụng: {{provider}}.",
+        "useDefaultHint": "Để trống nếu muốn dùng mặc định của {{group}}.",
+        "useCompatibleDefault": "Dùng model tương thích mặc định",
+        "useGroupDefault": "Dùng model mặc định của nhóm"
+      }
     }
   },
   "aiModels": {
@@ -1583,6 +1810,7 @@
       "create": "Tạo mới",
       "share": "Chia sẻ",
       "settings": "Cài đặt",
+      "editWorkspace": "Chỉnh sửa không gian",
       "groupSubtitle": "Không gian làm việc nhóm",
       "createWorkspace": "Tạo Không gian Học tập mới",
       "invite": "Mời"
@@ -1836,6 +2064,7 @@
         "templateFormat": "Định dạng mẫu",
         "templateDurationMinutes": "Thời lượng đề (phút)",
         "templateQuestionCount": "Số câu hỏi",
+        "templateTotalSectionPoints": "Tổng điểm một phần",
         "knowledgeLoad": "Lượng kiến thức cần học",
         "adaptationMode": "Loại Lộ trình",
         "roadmapSpeedMode": "Tốc độ Lộ trình",
@@ -2132,22 +2361,22 @@
     "upload": {
       "title": "Tải tài liệu lên",
       "desc": "Chọn loại tài liệu bạn muốn thêm vào Không gian Học tập.",
-      "dragDrop": "Kéo thả file vào đây",
-      "orBrowse": "hoặc nhấn để chọn file",
+      "dragDrop": "Kéo thả tệp vào đây",
+      "orBrowse": "hoặc nhấn để chọn tệp",
       "dragOnlyHint": "Chỉ kéo và thả tệp vào khung này",
       "supportedFormats": "Hỗ trợ: pdf, docx, doc, pptx, ppt, xlsx, xls, txt, png, mp3, mp4",
       "suggestMore": "Gợi ý thêm tài liệu",
-      "suggestedResourcesTitle": "Các tài liệu được gợi ý",
+      "suggestedResourcesTitle": "Tài liệu được gợi ý",
       "relevanceRate": "Tỷ lệ phù hợp",
       "refreshSuggested": "Làm mới",
-      "getSuggestedResources": "Lấy tài liệu",
-      "importSuggested": "Tải file gợi ý",
-      "suggestMissingWorkspace": "Không tìm thấy workspace để lấy gợi ý.",
-      "suggestLoadError": "Không thể tải danh sách tài liệu gợi ý.",
-      "suggestGenerateSuccess": "Đã tạo danh sách tài liệu gợi ý thành công.",
+      "getSuggestedResources": "Lấy gợi ý",
+      "importSuggested": "Tải tài liệu gợi ý",
+      "suggestMissingWorkspace": "Không tìm thấy workspace. Không thể tải gợi ý.",
+      "suggestLoadError": "Không thể tải tài liệu gợi ý.",
+      "suggestGenerateSuccess": "Đã tạo danh sách gợi ý thành công.",
       "suggestGenerateError": "Không thể tạo tài liệu gợi ý.",
-      "suggestImportSuccess": "Đã import tài liệu gợi ý thành công.",
-      "suggestImportError": "Không thể import tài liệu gợi ý.",
+      "suggestImportSuccess": "Đã nhập tài liệu gợi ý thành công.",
+      "suggestImportError": "Không thể nhập tài liệu gợi ý.",
       "urlPlaceholder": "Dán đường dẫn YouTube...",
       "urlRequired": "Vui lòng nhập đường dẫn YouTube.",
       "addUrl": "Thêm đường dẫn",
@@ -2157,18 +2386,18 @@
       "webYoutubeSuccess": "Đã gửi link để hệ thống xử lý.",
       "webYoutubeError": "Không thể xử lý link YouTube.",
       "webYoutubeTitle": "Liên kết YouTube",
-      "webYoutubeDescription": "Dán URL trang YouTube vào bên dưới để tải lên dưới dạng một nguồn trong Workspace.",
+      "webYoutubeDescription": "Dán URL YouTube bên dưới để thêm vào Không gian Học tập như một nguồn.",
       "urlPlaceholderLong": "Dán liên kết bất kỳ",
       "webYoutubeNote1": "Để thêm nhiều URL, hãy phân tách bằng dấu cách hoặc dòng mới.",
-      "webYoutubeNote2": "Hiện chỉ nhập được văn bản hiển thị trên trang Youtube.",
+      "webYoutubeNote2": "Hiện chỉ nhập được văn bản hiển thị trên trang YouTube.",
       "webYoutubeNote3": "Không hỗ trợ bài viết có tính phí.",
       "webYoutubeNote4": "Hiện chỉ nhập được bản chép lời của video trên YouTube.",
       "webYoutubeNote5": "Chỉ hỗ trợ video công khai trên YouTube.",
       "insertUrl": "Chèn",
       "uploading": "Đang tải lên...",
-      "uploadUserFiles": "Tải file người dùng",
-      "uploadAllSources": "Tải cả tài liệu người dùng + gợi ý",
-      "uploadAllSuccess": "Đã tải lên cả tài liệu của bạn và tài liệu gợi ý.",
+      "uploadUserFiles": "Tải tệp của bạn",
+      "uploadAllSources": "Tải cả tệp của bạn + gợi ý",
+      "uploadAllSuccess": "Đã tải lên cả tệp của bạn và tài liệu gợi ý.",
       "uploadSuccess": "Tải lên thành công!",
       "uploadError": "Tải lên thất bại.",
       "maxFiles": "Số tài liệu tối đa",
@@ -2176,8 +2405,12 @@
       "confirmCount": "Xác nhận",
       "cancel": "Hủy",
       "close": "Đóng",
-      "tabFile": "Tải file",
-      "tabUrl": "Đường dẫn"
+      "tabFile": "Tải tệp",
+      "tabUrl": "Đường dẫn",
+      "groupReviewTitle": "Tải tài liệu chờ leader duyệt",
+      "groupReviewDescription": "Tài liệu sẽ được AI kiểm tra theo profile nhóm, sau đó vào hàng chờ leader duyệt trước khi xuất hiện trong nguồn học chung.",
+      "untitled": "Chưa đặt tên",
+      "noData": "Không có dữ liệu"
     },
     "quiz": {
       "createTitle": "Tạo Quiz",
@@ -2204,21 +2437,21 @@
       "timerMode": "Chế độ tổng thời gian",
       "timerModeHintOn": "Tất cả câu hỏi dùng chung thời gian tổng",
       "timerModeHintOff": "Mỗi câu hỏi có thời gian riêng",
-        "examModeLabel": "Loại Exam",
-        "examModeType1": "Exam giới hạn thời gian tổng",
-        "examModeType2": "Exam theo từng câu",
-        "examModeType1Short": "Giới hạn thời gian tổng",
-        "examModeType2Short": "Theo từng câu",
-        "minutes": "phút",
-        "practice": "Luyện tập",
-        "exam": "Thi",
-        "chooseMode": "Chọn chế độ làm quiz",
-        "chooseModeDescription": "Bạn muốn bắt đầu quiz này ở chế độ nào?",
-        "confirmPractice": "Xác nhận bắt đầu ở chế độ luyện tập?",
-        "confirmExam": "Xác nhận bắt đầu ở chế độ thi?",
-        "addQuestion": "Thêm câu hỏi",
-        "totalQuestions": "Tổng số câu hỏi",
-        "maxScore": "Tổng điểm",
+      "examModeLabel": "Loại Exam",
+      "examModeType1": "Exam giới hạn thời gian tổng",
+      "examModeType2": "Exam theo từng câu",
+      "examModeType1Short": "Giới hạn thời gian tổng",
+      "examModeType2Short": "Theo từng câu",
+      "minutes": "phút",
+      "practice": "Luyện tập",
+      "exam": "Thi",
+      "chooseMode": "Chọn chế độ làm quiz",
+      "chooseModeDescription": "Bạn muốn bắt đầu quiz này ở chế độ nào?",
+      "confirmPractice": "Xác nhận bắt đầu ở chế độ luyện tập?",
+      "confirmExam": "Xác nhận bắt đầu ở chế độ thi?",
+      "addQuestion": "Thêm câu hỏi",
+      "totalQuestions": "Tổng số câu hỏi",
+      "maxScore": "Tổng điểm",
       "navigator": {
         "title": "Điều hướng câu hỏi",
         "pts": "điểm",
@@ -2259,29 +2492,29 @@
       "correctAnswer": "Đáp án đúng",
       "correctAnswerLabel": "Đáp án đúng",
       "deleteQuiz": "Xóa quiz",
-        "actionButtons": {
-          "practice": "Luyện tập",
-          "exam": "Thi",
-          "delete": "Xóa",
-          "deleting": "Đang xóa..."
-        },
-        "communityPublic": "Công khai",
-        "communityPublicLong": "Đã Công khai  lên cộng đồng",
-        "privateShort": "Riêng tư",
-        "privateLong": "Đang ở chế độ riêng tư",
-        "makePublic": "Đưa quiz lên cộng đồng",
-        "makePublicShort": "Công khai",
-        "makePrivate": "Chuyển quiz về riêng tư",
-        "makePrivateShort": "Riêng tư",
-        "myAttemptedTrue": "Đã làm",
-        "myAttemptedFalse": "Chưa làm",
-        "myPassedTrue": "Đã đậu",
-        "myPassedFalse": "Chưa đậu",
-        "sharedToCommunitySuccess": "Đã chia sẻ quiz lên cộng đồng.",
-        "unsharedFromCommunitySuccess": "Đã chuyển quiz về riêng tư.",
-        "deleteQuestion": "Xóa",
-        "deleteFail": "Không thể xóa quiz lúc này.",
-        "loading": "Đang tải danh sách quiz...",
+      "actionButtons": {
+        "practice": "Luyện tập",
+        "exam": "Thi",
+        "delete": "Xóa",
+        "deleting": "Đang xóa..."
+      },
+      "communityPublic": "Công khai",
+      "communityPublicLong": "Đã Công khai  lên cộng đồng",
+      "privateShort": "Riêng tư",
+      "privateLong": "Đang ở chế độ riêng tư",
+      "makePublic": "Đưa quiz lên cộng đồng",
+      "makePublicShort": "Công khai",
+      "makePrivate": "Chuyển quiz về riêng tư",
+      "makePrivateShort": "Riêng tư",
+      "myAttemptedTrue": "Đã làm",
+      "myAttemptedFalse": "Chưa làm",
+      "myPassedTrue": "Đã đậu",
+      "myPassedFalse": "Chưa đậu",
+      "sharedToCommunitySuccess": "Đã chia sẻ quiz lên cộng đồng.",
+      "unsharedFromCommunitySuccess": "Đã chuyển quiz về riêng tư.",
+      "deleteQuestion": "Xóa",
+      "deleteFail": "Không thể xóa quiz lúc này.",
+      "loading": "Đang tải danh sách quiz...",
       "types": {
         "multipleChoice": "Trắc nghiệm một đáp án",
         "multipleSelect": "Trắc nghiệm nhiều đáp án",
@@ -2426,8 +2659,8 @@
         "nameMaxLength": "Tên quiz tối đa {{max}} ký tự.",
         "nameMaxLengthHint": "Tối đa {{max}} ký tự.",
         "requiredFieldsHint": "Các trường có dấu * là bắt buộc.",
-        "totalQuestionsRange": "Tổng số câu phải nằm trong khoảng từ {{min}} đến {{max}}.",
-        "totalQuestionsRangeHint": "Nhập số câu trong khoảng từ {{min}} đến {{max}}.",
+        "totalQuestionsRange": "Tổng số câu phải từ {{min}} đến {{max}}.",
+        "totalQuestionsRangeHint": "Khoảng hợp lệ: {{min}}–{{max}} câu.",
         "contextRequired": "Vui lòng chọn vị trí tạo quiz.",
         "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
         "correctAnswerRequiredInline": "Chưa chọn đáp án đúng cho câu này.",
@@ -2448,10 +2681,9 @@
         "mediumDurationMustBeGreaterThanEasy": "Thời gian câu trung bình phải cao hơn thời gian câu dễ.",
         "hardDurationMustBeGreaterThanMedium": "Thời gian câu khó phải cao hơn thời gian câu trung bình.",
         "timeDurationRequired": "Vui lòng nhập thời gian tổng cho quiz.",
-        "totalQuestionsRange": "Tổng số câu phải từ {{min}} đến {{max}}.",
-        "totalQuestionsRangeHint": "Khoảng hợp lệ: {{min}}–{{max}} câu.",
         "minimumTimePerQuestion": "Mỗi câu cần tối thiểu {{seconds}} giây. Với {{count}} câu, tổng thời gian phải ít nhất {{minutes}} phút.",
-        "minimumTimePerQuestionHint": "Tối thiểu {{minutes}} phút tổng ({{seconds}} giây mỗi câu)."
+        "minimumTimePerQuestionHint": "Tối thiểu {{minutes}} phút tổng ({{seconds}} giây mỗi câu).",
+        "durationAutoAdjusted": "Đã tự điều chỉnh thời gian tối thiểu lên {{minutes}} phút cho {{count}} câu hỏi."
       },
       "contextSelector": {
         "title": "Vị trí tạo Quiz",
@@ -2590,7 +2822,10 @@
         "structureDifficulty": "Độ khó",
         "structureQuestionType": "Loại câu",
         "structureBloom": "Bloom",
-        "structureQuantity": "Số câu"
+        "structureQuantity": "Số câu",
+        "materialFallback": "Tài liệu #{{id}}",
+        "questionTypeFallback": "Loại #{{id}}",
+        "bloomFallback": "Bloom #{{id}}"
       },
       "detail": {
         "edit": "Chỉnh sửa",
@@ -2600,7 +2835,20 @@
         "noSections": "Không tìm thấy phần nào.",
         "section": "Phần",
         "questions": "câu hỏi",
-        "noQuestions": "Không có câu hỏi trong phần này."
+        "noQuestions": "Không có câu hỏi trong phần này.",
+        "assign": "Giao bài",
+        "assignComingSoon": "Tính năng giao bài cho nhóm sẽ sớm ra mắt.",
+        "answersAndOptions": "Đáp án & phương án",
+        "config": "Cấu hình",
+        "matchingNoData": "Không có dữ liệu ghép đôi",
+        "noQuestionsToCheck": "Chưa có câu hỏi để kiểm tra.",
+        "publishFailed": "Không thể xuất bản quiz.",
+        "readyToPublish": "Trước khi xuất bản",
+        "readyToPublishBody": "Vào tab Kiểm tra để xem lại câu hỏi, cấu hình và đáp án. Sau đó bấm Xuất bản và thiết lập phân phối cho nhóm.",
+        "reviewHint": "Mỗi thẻ hiển thị loại câu, độ khó, mức Bloom và toàn bộ phương án. Đáp án đúng được đánh dấu màu xanh.",
+        "stepCheck": "1. Kiểm tra",
+        "stepPublish": "2. Xuất bản",
+        "stepDistribute": "3. Phân phối"
       },
       "edit": {
         "title": "Chỉnh sửa Quiz",
@@ -2754,7 +3002,91 @@
         "recommendationsSection": "Gợi ý tiếp theo",
         "actionsSection": "Hành động tiếp theo",
         "questionList": "Danh sách câu",
-        "noReviewData": "Không có dữ liệu chi tiết để review bài làm."
+        "noReviewData": "Không có dữ liệu chi tiết để review bài làm.",
+        "assessmentLoading": "Đang tải đánh giá AI...",
+        "assessmentNoSummary": "Chưa có tóm tắt đánh giá AI.",
+        "assessmentProcessing": "Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.",
+        "assessmentFailed": "Đánh giá AI chưa thể hoàn tất. Hãy làm mới lại sau khi hệ thống chấm xong.",
+        "generateFromAssessmentFail": "Tạo quiz từ đánh giá AI thất bại.",
+        "generateFromAssessmentSuccess": "Đã tạo quiz từ đánh giá AI thành công.",
+        "generateQuizFromAssessment": "Tạo quiz dựa trên đánh giá AI",
+        "incompleteAttempt": "Lượt làm quiz này chưa hoàn thành. Hãy quay lại để tiếp tục làm bài hoặc nộp bài trước khi xem kết quả.",
+        "loading": "Đang tải kết quả...",
+        "nextResultSummary": "Đề xuất tiếp theo",
+        "pending": "Chờ chấm",
+        "pendingOrMissing": "Kết quả bài làm này chưa sẵn sàng hoặc không còn tồn tại.",
+        "profileResultPending": "Hệ thống sẽ gợi ý chính xác hơn sau thêm vài bài quiz nữa.",
+        "questionListHint": "Bấm vào số để chuyển nhanh đến câu hỏi tương ứng.",
+        "recommendedQuizGoal": "Mục tiêu",
+        "recommendedQuizTitle": "Quiz nên làm tiếp",
+        "communitySuggestionTitle": "Quiz cộng đồng phù hợp",
+        "feedbackAction": "Phản hồi",
+        "refreshAssessment": "Làm mới",
+        "resumeAttempt": "Tiếp tục làm bài",
+        "retryLoad": "Thử lại",
+        "strengths": "Điểm mạnh",
+        "total": "Tổng",
+        "unavailable": "Hiện chưa lấy được kết quả bài làm này. Vui lòng thử lại.",
+        "waitingForResult": "Đang chờ hệ thống trả kết quả bài làm...",
+        "weaknesses": "Cần củng cố",
+        "wrong": "Sai"
+      },
+      "answerLocked": "Hoàn thành bài quiz để xem đáp án và lời giải.",
+      "close": "Đóng",
+      "confirm": "Xác nhận",
+      "continue": "Tiếp tục",
+      "distribution": "Phân phối",
+      "publish": "Xuất bản",
+      "save": "Lưu",
+      "startExamPrompt": "Bắt đầu chế độ thi cho quiz này?",
+      "audience": {
+        "title": "Phân phối quiz",
+        "description": "Chọn hiển thị quiz cho toàn nhóm hoặc chỉ các thành viên được chọn.",
+        "visibility": "Phạm vi hiển thị",
+        "allMembersTitle": "Chung cho toàn nhóm",
+        "allMembersDescription": "Mọi thành viên trong nhóm đều thấy và mở được quiz.",
+        "selectedMembersTitle": "Chỉ các thành viên được chọn",
+        "selectedMembersDescription": "Chọn người được xem quiz trong danh sách bên dưới.",
+        "members": "Thành viên",
+        "loadingMembers": "Đang tải danh sách...",
+        "noMembers": "Không có thành viên.",
+        "memberFallback": "Người dùng {{id}}",
+        "saveFailed": "Không thể lưu phân phối.",
+        "selectMemberRequired": "Chọn ít nhất một thành viên."
+      },
+      "matching": {
+        "dragInstruction": "Kéo các đáp án bên dưới vào đúng ô ghép.",
+        "dropHere": "Kéo đáp án vào đây",
+        "answerPool": "Đáp án",
+        "allMatched": "Bạn đã ghép xong tất cả!"
+      },
+      "reviewCard": {
+        "markForReview": "Đánh dấu để xem lại",
+        "unmarkForReview": "Bỏ đánh dấu xem lại",
+        "multipleSelectHint": "Chọn tất cả đáp án đúng",
+        "matchingReviewInstruction": "Xem lại các cặp ghép đúng bên dưới.",
+        "unanswered": "Chưa trả lời",
+        "fillBlankPlaceholder": "Nhập đáp án của bạn",
+        "shortAnswerPlaceholder": "Nhập câu trả lời ngắn",
+        "yourAnswerLabel": "Câu trả lời của bạn",
+        "statusLabel": "Trạng thái",
+        "gradingByAI": "AI đang chấm...",
+        "noData": "Không có dữ liệu",
+        "noAnswerProvided": "Chưa cung cấp câu trả lời",
+        "noAnswerSelected": "Chưa chọn đáp án",
+        "correct": "Chính xác!",
+        "incorrect": "Chưa chính xác"
+      },
+      "history": {
+        "attempt": "Lần làm",
+        "empty": "Chưa có lịch sử làm bài.",
+        "loading": "Đang tải lịch sử..."
+      },
+      "tabs": {
+        "overview": "Tổng quan",
+        "review": "Kiểm tra",
+        "questions": "Câu hỏi",
+        "history": "Lịch sử làm bài"
       }
     },
     "flashcard": {
@@ -2814,6 +3146,8 @@
       "statusACTIVE": "Đang hoạt động",
       "createVia": "Tạo bởi",
       "contextType": "Ngữ cảnh",
+      "assign": "Giao bài",
+      "assignComingSoon": "Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!",
       "addItemSuccess": "Thêm thẻ thành công!",
       "updateItemSuccess": "Cập nhật thẻ thành công!",
       "deleteItemSuccess": "Xóa thẻ thành công!",
@@ -2841,6 +3175,9 @@
       "emptyRoadmap": "Chưa có Lộ trình nào.",
       "emptyPhase": "Chưa có Giai đoạn nào.",
       "emptyKnowledge": "Chưa có Kiến thức nào."
+    },
+    "phase": {
+      "fallbackName": "Giai đoạn #{{id}}"
     },
     "roadmap": {
       "createTitle": "Tạo Lộ trình học tập",
@@ -2875,6 +3212,8 @@
       "aiGenerateHint": "Sau khi tạo, Lộ trình sẽ được mở ngay ở dạng sơ đồ để bạn tiếp tục xem, kéo và chỉnh flow trên canvas.",
       "canvasViewLabel": "Chọn kiểu canvas Lộ trình",
       "canvasViewHint": "Chọn trước giao diện Lộ trình để AI generate xong sẽ mở đúng layout bạn muốn tham khảo.",
+      "refreshPhasesTooltip": "Làm mới các giai đoạn lộ trình",
+      "fallbackName": "Lộ trình #{{id}}",
       "canvasView1Title": "Canvas view 1",
       "canvasView1Description": "Sơ đồ lộ trình dạng nhánh, có thể kéo thả tự do như bản canvas hiện tại.",
       "canvasView2Title": "Canvas view 2",
@@ -3003,6 +3342,7 @@
     },
     "mockTest": {
       "title": "Mock Test",
+      "workspaceLabel": "Không gian",
       "desc": "Tạo bài kiểm tra mô phỏng dựa trên tài liệu.",
       "allRoadmapsCovered": "Tất cả các lộ trình đã có mock test.",
       "createTitle": "Tạo Mock Test",
@@ -3157,13 +3497,43 @@
     "noPlan": "Chưa có gói",
     "createdAt": "Ngày tạo",
     "noMembers": "Chưa có thành viên.",
-    "roadmaps": "Lộ trình Học tập",
+    "roadmaps": "Lộ trình học tập",
     "noRoadmaps": "Chưa có lộ trình.",
     "noLogs": "Chưa có nhật ký.",
     "noSubscription": "Chưa có gói đăng ký.",
     "status": "Trạng thái",
     "endDate": "Ngày hết hạn",
-    "price": "Giá"
+    "price": "Giá",
+    "loading": "Đang tải...",
+    "untitledGroup": "Nhóm chưa đặt tên",
+    "noDescription": "Nhóm này chưa có mô tả chi tiết.",
+    "unknownLeader": "Chưa rõ",
+    "workspaceId": "Mã workspace",
+    "commandCenter": "Trung tâm điều hành nhóm",
+    "commandCenterDesc": "Theo dõi thành viên, roadmap, log và trạng thái vận hành trong một góc nhìn riêng cho nhóm.",
+    "groupPulse": "Nhịp nhóm",
+    "groupPulseDesc": "Các tín hiệu cốt lõi cho thấy nhanh tình trạng hiện tại của nhóm.",
+    "memberRoster": "Danh sách thành viên",
+    "memberRosterDesc": "Xem ai đang dẫn dắt, ai đang cộng tác và quy mô hiện tại của nhóm.",
+    "contentBoard": "Bảng nội dung",
+    "contentBoardDesc": "Roadmap và tài nguyên học tập hiện đang gắn với workspace của nhóm.",
+    "activityStream": "Dòng hoạt động",
+    "activityStreamDesc": "Các thay đổi và sự kiện mới nhất đang diễn ra trong nhóm này.",
+    "governance": "Quản trị & Gói",
+    "governanceDesc": "Trạng thái gói, quyền lãnh đạo và các mốc quan trọng của nhóm.",
+    "memberMix": "Cơ cấu vai trò",
+    "lastEvent": "Sự kiện gần nhất",
+    "noEmail": "Không có email",
+    "noExpiry": "Không có ngày hết hạn",
+    "unknownStatus": "Chưa rõ",
+    "emptyRoadmapsDesc": "Chưa có roadmap nào gắn với nhóm này.",
+    "emptyLogsDesc": "Hoạt động gần đây sẽ xuất hiện tại đây khi nhóm bắt đầu vận hành.",
+    "emptySubscriptionDesc": "Nhóm này hiện chưa có gói đăng ký đang hoạt động.",
+    "memberRoles": {
+      "leader": "Trưởng nhóm",
+      "contributor": "Cộng tác viên",
+      "member": "Thành viên"
+    }
   },
   "groupPage": {
     "title": "Quản lý nhóm",
@@ -3392,16 +3762,16 @@
       "stepCount": "Bước {{current}} trên {{total}}",
       "back": "Quay lại",
       "continue": "Tiếp tục",
-        "saving": "Đang lưu...",
-        "retry": "Thử lại",
-        "select": "Chọn",
-        "selected": "Đã chọn",
-        "close": "Đóng",
-        "finish": "Lưu và hoàn tất",
-        "finishIncomplete": "Kiểm tra lại để hoàn tất",
-        "enabled": "Đang bật",
-        "disabled": "Đang tắt"
-      },
+      "saving": "Đang lưu...",
+      "retry": "Thử lại",
+      "select": "Chọn",
+      "selected": "Đã chọn",
+      "close": "Đóng",
+      "finish": "Lưu và hoàn tất",
+      "finishIncomplete": "Kiểm tra lại để hoàn tất",
+      "enabled": "Đang bật",
+      "disabled": "Đang tắt"
+    },
     "messages": {
       "basicsSaveError": "Không thể lưu thông tin nhóm.",
       "confirmSaveError": "Không thể hoàn tất cấu hình nhóm.",
@@ -3601,25 +3971,81 @@
     ],
     "bundleTitle": "Cách tính theo loại tài liệu được hỗ trợ",
     "bundleDesc": "Hệ thống hiện dùng cách tính đơn giản để user dễ hiểu và dễ ước lượng. Mỗi loại tài liệu chỉ có một mức credit cơ bản theo đơn vị đo chính.",
-    "bundleHeaders": ["Loại tài liệu", "Cách tính", "Credit cơ bản"],
+    "bundleHeaders": [
+      "Loại tài liệu",
+      "Cách tính",
+      "Credit cơ bản"
+    ],
     "bundleTable": [
-      ["PDF", "Theo số trang", "1 credit / trang"],
-      ["SLIDE", "Theo số slide", "1 credit / slide"],
-      ["VIDEO", "Theo số phút", "1 credit / phút"],
-      ["AUDIO", "Theo số phút", "1 credit / phút"],
-      ["TEXT", "Theo số từ", "1 credit / 1000 từ"],
-      ["DOCUMENT", "Theo số từ", "1 credit / 1000 từ"],
-      ["EXCEL", "Theo số sheet", "1 credit / sheet"]
+      [
+        "PDF",
+        "Theo số trang",
+        "1 credit / trang"
+      ],
+      [
+        "SLIDE",
+        "Theo số slide",
+        "1 credit / slide"
+      ],
+      [
+        "VIDEO",
+        "Theo số phút",
+        "1 credit / phút"
+      ],
+      [
+        "AUDIO",
+        "Theo số phút",
+        "1 credit / phút"
+      ],
+      [
+        "TEXT",
+        "Theo số từ",
+        "1 credit / 1000 từ"
+      ],
+      [
+        "DOCUMENT",
+        "Theo số từ",
+        "1 credit / 1000 từ"
+      ],
+      [
+        "EXCEL",
+        "Theo số sheet",
+        "1 credit / sheet"
+      ]
     ],
     "unitTitle": "Bảng credit cho tính năng AI chính",
     "unitDesc": "Bảng này chỉ giữ các tính năng AI cốt lõi để user dễ ước lượng trước khi chạy. Riêng quiz sẽ tính đơn giản theo tổng số câu, không tách riêng từng loại câu hay config câu hỏi.",
-    "unitHeaders": ["Hạng mục", "Credit đề xuất", "Cách tính"],
+    "unitHeaders": [
+      "Hạng mục",
+      "Credit đề xuất",
+      "Cách tính"
+    ],
     "unitTable": [
-      ["Tạo quiz", "0.5 credit / câu", "Theo số câu"],
-      ["AI feedback sau mỗi bài quiz", "1 credit / lần làm bài", "Theo lần làm bài"],
-      ["Flashcard basic", "0.5 credit / card", "Theo card"],
-      ["AI tạo phase trong roadmap", "1 credit / phase", "Theo phase"],
-      ["AI tạo knowledge trong phase", "0.5 credit / knowledge", "Theo knowledge"]
+      [
+        "Tạo quiz",
+        "0.5 credit / câu",
+        "Theo số câu"
+      ],
+      [
+        "AI feedback sau mỗi bài quiz",
+        "1 credit / lần làm bài",
+        "Theo lần làm bài"
+      ],
+      [
+        "Flashcard basic",
+        "0.5 credit / card",
+        "Theo card"
+      ],
+      [
+        "AI tạo phase trong roadmap",
+        "1 credit / phase",
+        "Theo phase"
+      ],
+      [
+        "AI tạo knowledge trong phase",
+        "0.5 credit / knowledge",
+        "Theo knowledge"
+      ]
     ],
     "personalizationTitle": "Gợi ý AI đơn giản",
     "personalizationDesc": "Các gợi ý dưới đây là những gợi ý cơ bản, dễ hiểu và phù hợp với hệ thống hiện tại.",
@@ -3798,5 +4224,138 @@
       "noRules": "Chưa có nội quy bổ sung."
     }
   },
-  "workspaceSettings": "Cài đặt không gian học tập"
+  "workspaceSettings": "Cài đặt không gian học tập",
+  "adminLayout": {
+    "brand": "Admin QuizMate"
+  },
+  "superAdminLayout": {
+    "brand": "Super Admin"
+  },
+  "aiAudit": {
+    "title": "AI Audit",
+    "description": "Theo dõi AI request, token tiêu hao, model, trạng thái và mở chi tiết khi cần.",
+    "errors": {
+      "loadLogs": "Không thể tải AI audit logs."
+    },
+    "metrics": {
+      "totalRequests": "Tổng request",
+      "totalRequestsHint": "Theo bộ lọc hiện tại",
+      "pageTokens": "Token trang hiện tại",
+      "pageTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
+      "averageTokens": "Token trung bình / request",
+      "averageTokensHint": "Tính trên các log đang hiển thị",
+      "errors": "Lỗi",
+      "errorsHint": "Số request lỗi trong trang hiện tại"
+    },
+    "filters": {
+      "title": "Bộ lọc AI audit",
+      "allProviders": "Tất cả provider",
+      "allStatuses": "Tất cả trạng thái",
+      "featureKeyPlaceholder": "Feature key",
+      "userIdPlaceholder": "User ID",
+      "taskIdPlaceholder": "Task ID",
+      "reset": "Xóa lọc",
+      "apply": "Áp dụng lọc"
+    },
+    "table": {
+      "title": "Danh sách AI request",
+      "actor": "Người dùng",
+      "feature": "Chức năng",
+      "tokens": "Tokens",
+      "model": "Model",
+      "provider": "Provider",
+      "status": "Trạng thái request",
+      "createdAt": "Thời gian tạo",
+      "systemUser": "Người dùng hệ thống",
+      "noEmail": "Không có email",
+      "empty": "Chưa có AI audit log nào theo bộ lọc hiện tại."
+    },
+    "detail": {
+      "title": "Chi tiết AI request",
+      "user": "Người dùng",
+      "requestStatus": "Trạng thái request",
+      "featureAndModel": "Chức năng và model",
+      "modelLabel": "Model:",
+      "apiKeyLabel": "Nhãn API key",
+      "apiKeyHint": "Key được mask để không lộ secret thật.",
+      "tokens": "Tokens",
+      "inputTokens": "Input",
+      "thoughtTokens": "Thought",
+      "outputTokens": "Output",
+      "totalTokens": "Total",
+      "operation": "Operation",
+      "operationLabel": "Operation:",
+      "endpointLabel": "Endpoint:",
+      "error": "Error",
+      "requestPreview": "Input",
+      "responsePreview": "Output",
+      "noPreview": "Không có dữ liệu",
+      "missing": "Request này không còn nằm trong danh sách hiện tại. Hãy đóng popup và tải lại danh sách nếu cần."
+    },
+    "status": {
+      "PROCESSING": "Đang xử lý",
+      "SUCCESS": "Thành công",
+      "ERROR": "Lỗi"
+    },
+    "features": {
+      "GENERATE_FLASHCARDS": "Tạo flashcards",
+      "GENERATE_QUIZ": "Tạo quiz",
+      "EVALUATE_SHORT_ANSWER": "Chấm câu trả lời ngắn",
+      "COMPANION_INTERPRET": "Companion trả lời",
+      "COMPANION_TRANSCRIBE": "Companion speech-to-text",
+      "COMPANION_TTS": "Companion text-to-speech",
+      "GENERATE_ROADMAP": "Tạo roadmap",
+      "GENERATE_ROADMAP_PHASES": "Tạo phase roadmap",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Tạo nội dung phase",
+      "CHECK_MATERIAL_COVERAGE": "Kiểm tra độ phủ tài liệu",
+      "WORKSPACE_QUIZ_ASSESSMENT": "Đánh giá quiz workspace",
+      "PHASE_PRE_LEARNING_ASSESSMENT": "Đánh giá trước học",
+      "PHASE_POST_LEARNING_ASSESSMENT": "Đánh giá sau học",
+      "PHASE_PROGRESS_REVIEW": "Đánh giá tiến độ",
+      "RAG_ASK": "RAG hỏi đáp",
+      "CONTENT_MODERATION": "Kiểm duyệt nội dung",
+      "GEMINI_VISION_OCR": "OCR ảnh",
+      "GEMINI_PDF_FILE_OCR": "OCR PDF",
+      "GEMINI_VIDEO_FILE_ANALYSIS": "Phân tích video"
+    }
+  },
+  "aiProviders": {
+    "title": "Nhà cung cấp AI",
+    "subtitle": "Tổng quan danh mục nhà cung cấp, trạng thái sức khỏe và các mô hình theo từng nhà cung cấp.",
+    "providerHint": "{{count}} mô hình trong danh mục, {{active}} đang hoạt động và {{archived}} đã lưu trữ.",
+    "health": {
+      "configured": "Đã cấu hình",
+      "reachable": "Khả dụng",
+      "keyCount": "Số khóa",
+      "yes": "Có",
+      "no": "Không"
+    },
+    "metrics": {
+      "models": "Mô hình",
+      "active": "Đang hoạt động",
+      "archived": "Đã lưu trữ",
+      "requests": "Yêu cầu",
+      "providerCost": "Chi phí nhà cung cấp",
+      "profit": "Lợi nhuận"
+    },
+    "table": {
+      "modelCode": "Mã mô hình",
+      "modelGroup": "Năng lực",
+      "systemDefault": "Mặc định hệ thống",
+      "status": "Trạng thái"
+    },
+    "systemDefault": "Mặc định hệ thống",
+    "notDefault": "Tùy chỉnh",
+    "emptyModels": "Chưa có mô hình nào được đăng ký cho nhà cung cấp này.",
+    "providerStatus": {
+      "HEALTHY": "Ổn định",
+      "UNREACHABLE": "Không thể kết nối",
+      "UNCONFIGURED": "Chưa cấu hình"
+    },
+    "modelStatus": {
+      "ACTIVE": "Đang hoạt động",
+      "ARCHIVED": "Đã lưu trữ",
+      "INACTIVE": "Tạm ngưng"
+    }
+  }
 }

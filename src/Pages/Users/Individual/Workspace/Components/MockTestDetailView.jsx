@@ -134,7 +134,7 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
             <Button
               className="bg-violet-600 hover:bg-violet-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"
               onClick={() => {
-                alert(t("workspace.quiz.detail.assign", "Tính năng giao bài (Assign) cho nhóm sẽ sớm ra mắt!"));
+                alert(t("workspace.quiz.detail.assignComingSoon", "Group assignment will be available soon."));
               }}
             >
               <Users className="w-4 h-4" />
@@ -302,7 +302,11 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                                         try { pairs = JSON.parse(correctAns.content); } catch { pairs = []; }
                                       }
                                       if (!Array.isArray(pairs) || pairs.length === 0) {
-                                        return <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>Không có dữ liệu ghép đôi</span>;
+                                        return (
+                                          <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                                            {t("workspace.quiz.detail.matchingNoData", "No matching data available")}
+                                          </span>
+                                        );
                                       }
                                       return pairs.map((pair, pIdx) => (
                                         <div key={pIdx} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${

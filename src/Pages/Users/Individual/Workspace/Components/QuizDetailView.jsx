@@ -444,16 +444,16 @@ function QuizDetailView({
       await fetchFullDetail();
     } catch (err) {
       console.error(err);
-      window.alert(err?.message || (i18n.language === "en" ? "Could not publish quiz." : "Không thể xuất bản quiz."));
+      window.alert(err?.message || t("workspace.quiz.detail.publishFailed", "Could not publish quiz."));
     } finally {
       setPublishing(false);
     }
-  }, [quiz?.quizId, fetchFullDetail, onGroupQuizUpdated, i18n.language]);
+  }, [quiz?.quizId, fetchFullDetail, onGroupQuizUpdated, t]);
 
   const handleSaveAudience = useCallback(async () => {
     if (!quiz?.quizId) return;
     if (audienceMode === "SELECTED_MEMBERS" && selectedAudienceUserIds.length === 0) {
-      window.alert(i18n.language === "en" ? "Select at least one member." : "Chọn ít nhất một thành viên.");
+      window.alert(t("workspace.quiz.audience.selectMemberRequired", "Select at least one member."));
       return;
     }
     setAudienceSaving(true);
@@ -470,11 +470,11 @@ function QuizDetailView({
       setAudienceOpen(false);
     } catch (err) {
       console.error(err);
-      window.alert(err?.message || (i18n.language === "en" ? "Could not save distribution." : "Không thể lưu phân phối."));
+      window.alert(err?.message || t("workspace.quiz.audience.saveFailed", "Could not save distribution."));
     } finally {
       setAudienceSaving(false);
     }
-  }, [quiz?.quizId, audienceMode, selectedAudienceUserIds, fetchFullDetail, onGroupQuizUpdated, i18n.language]);
+  }, [quiz?.quizId, audienceMode, selectedAudienceUserIds, fetchFullDetail, onGroupQuizUpdated, t]);
 
   const toggleAudienceMember = useCallback((userId) => {
     setSelectedAudienceUserIds((prev) => (
@@ -527,7 +527,7 @@ function QuizDetailView({
               onClick={handlePublishGroupQuiz}
             >
               {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4" />}
-              <span className="text-sm">{i18n.language === "en" ? "Active" : "Xuất bản"}</span>
+              <span className="text-sm">{t("workspace.quiz.publish", "Publish")}</span>
             </Button>
           )}
           {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview && (
@@ -537,7 +537,7 @@ function QuizDetailView({
               onClick={openAudienceDialog}
             >
               <Users className="w-4 h-4" />
-              <span className="text-sm">{i18n.language === "en" ? "Distribution" : "Phân phối"}</span>
+              <span className="text-sm">{t("workspace.quiz.distribution", "Distribution")}</span>
             </Button>
           )}
         </div>
@@ -570,7 +570,7 @@ function QuizDetailView({
                 <p className={`text-[13px] font-semibold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
                   {isChallengeSnapshotReview
                     ? t("groupWorkspace.challenge.quizSnapshotReviewDraftTitle", "Đề challenge (chỉ xem & chỉnh sửa)")
-                    : (i18n.language === "en" ? "Ready to publish?" : "Trước khi xuất bản")}
+                    : t("workspace.quiz.detail.readyToPublish", "Ready to publish?")}
                 </p>
                 <p className={`text-[13px] leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                   {isChallengeSnapshotReview ? (
@@ -578,20 +578,11 @@ function QuizDetailView({
                       "groupWorkspace.challenge.quizSnapshotReviewDraftBody",
                       "Đây là bài thi gắn với challenge, không phải quiz chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như quiz nhóm."
                     )
-                  ) : i18n.language === "en" ? (
-                    <>
-                      Open the{" "}
-                      <span className={`font-medium ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>Check</span>{" "}
-                      tab to verify questions, settings, and answers. Then publish and set who can access the quiz.
-                    </>
                   ) : (
-                    <>
-                      Vào tab{" "}
-                      <span className={`font-medium ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>Kiểm tra</span>{" "}
-                      để xem lại câu hỏi, cấu hình và đáp án. Sau đó bấm{" "}
-                      <span className={`font-medium ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>Xuất bản</span>{" "}
-                      và thiết lập phân phối cho nhóm.
-                    </>
+                    t(
+                      "workspace.quiz.detail.readyToPublishBody",
+                      "Open the Check tab to verify questions, settings, and answers. Then publish and set who can access the quiz.",
+                    )
                   )}
                 </p>
                 <div className={`flex flex-wrap gap-2 pt-0.5 ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
@@ -600,7 +591,7 @@ function QuizDetailView({
                       isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
                     }`}
                   >
-                    {i18n.language === "en" ? "1 · Check" : "1 · Kiểm tra"}
+                    {t("workspace.quiz.detail.stepCheck", "1 · Check")}
                   </span>
                   <span className={`text-[11px] ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>→</span>
                   <span
@@ -608,7 +599,7 @@ function QuizDetailView({
                       isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
                     }`}
                   >
-                    {i18n.language === "en" ? "2 · Publish" : "2 · Xuất bản"}
+                    {t("workspace.quiz.detail.stepPublish", "2 · Publish")}
                   </span>
                   {!isChallengeSnapshotReview && (
                     <>
@@ -618,7 +609,7 @@ function QuizDetailView({
                           isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
                         }`}
                       >
-                        {i18n.language === "en" ? "3 · Distribute" : "3 · Phân phối"}
+                        {t("workspace.quiz.detail.stepDistribute", "3 · Distribute")}
                       </span>
                     </>
                   )}
@@ -652,7 +643,7 @@ function QuizDetailView({
             }`}
           >
             <ClipboardCheck className="w-4 h-4" />
-            {i18n.language === "en" ? "Check" : "Kiểm tra"}
+            {t("workspace.quiz.tabs.review", "Check")}
           </button>
         )}
         {showQuestionsTab && (
@@ -941,7 +932,11 @@ function QuizDetailView({
                                               try { pairs = JSON.parse(correctAns.content); } catch { pairs = []; }
                                             }
                                             if (!Array.isArray(pairs) || pairs.length === 0) {
-                                              return <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>Không có dữ liệu ghép đôi</span>;
+                                              return (
+                                                <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                                                  {t("workspace.quiz.detail.matchingNoData", "No matching data available")}
+                                                </span>
+                                              );
                                             }
                                             return (
                                               <div className="space-y-1.5">
@@ -1103,12 +1098,13 @@ function QuizDetailView({
                 </div>
                 <div className="min-w-0 flex-1 pt-0.5">
                   <DialogTitle className={cn("text-lg font-semibold tracking-tight", isDarkMode ? "text-slate-50" : "text-slate-900")}>
-                    {i18n.language === "en" ? "Quiz distribution" : "Phân phối quiz"}
+                    {t("workspace.quiz.audience.title", "Quiz distribution")}
                   </DialogTitle>
                   <DialogDescription className={cn("mt-2 text-sm leading-relaxed", isDarkMode ? "text-slate-400" : "text-slate-600")}>
-                    {i18n.language === "en"
-                      ? "Choose whether all members see this quiz or only selected members."
-                      : "Chọn hiển thị quiz cho toàn nhóm hoặc chỉ các thành viên được chọn."}
+                    {t(
+                      "workspace.quiz.audience.description",
+                      "Choose whether all members see this quiz or only selected members.",
+                    )}
                   </DialogDescription>
                 </div>
               </div>
@@ -1117,7 +1113,7 @@ function QuizDetailView({
 
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
             <p className={cn("text-xs font-semibold uppercase tracking-wide", isDarkMode ? "text-slate-500" : "text-slate-500")}>
-              {i18n.language === "en" ? "Visibility" : "Phạm vi hiển thị"}
+              {t("workspace.quiz.audience.visibility", "Visibility")}
             </p>
             <div className="grid gap-3 sm:grid-cols-1">
               <button
@@ -1150,10 +1146,10 @@ function QuizDetailView({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className={cn("font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-                    {i18n.language === "en" ? "All members" : "Chung cho toàn nhóm"}
+                    {t("workspace.quiz.audience.allMembersTitle", "All members")}
                   </p>
                   <p className={cn("mt-0.5 text-xs", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-                    {i18n.language === "en" ? "Everyone in the group can open this quiz." : "Mọi thành viên trong nhóm đều thấy và mở được quiz."}
+                    {t("workspace.quiz.audience.allMembersDescription", "Everyone in the group can open this quiz.")}
                   </p>
                 </div>
                 {audienceMode === "ALL_MEMBERS" && (
@@ -1191,10 +1187,10 @@ function QuizDetailView({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className={cn("font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-                    {i18n.language === "en" ? "Specific members only" : "Chỉ các thành viên được chọn"}
+                    {t("workspace.quiz.audience.selectedMembersTitle", "Specific members only")}
                   </p>
                   <p className={cn("mt-0.5 text-xs", isDarkMode ? "text-slate-400" : "text-slate-500")}>
-                    {i18n.language === "en" ? "Pick who should see the quiz below." : "Chọn người được xem quiz trong danh sách bên dưới."}
+                    {t("workspace.quiz.audience.selectedMembersDescription", "Pick who should see the quiz below.")}
                   </p>
                 </div>
                 {audienceMode === "SELECTED_MEMBERS" && (
@@ -1206,7 +1202,7 @@ function QuizDetailView({
             {audienceMode === "SELECTED_MEMBERS" && (
               <div className="space-y-2 pt-1">
                 <p className={cn("text-xs font-semibold uppercase tracking-wide", isDarkMode ? "text-slate-500" : "text-slate-500")}>
-                  {i18n.language === "en" ? "Members" : "Thành viên"}
+                  {t("workspace.quiz.audience.members", "Members")}
                 </p>
                 <div
                   className={cn(
@@ -1218,18 +1214,18 @@ function QuizDetailView({
                     <div className="flex flex-col items-center justify-center gap-2 py-10">
                       <Loader2 className="h-7 w-7 animate-spin text-blue-500" />
                       <span className={cn("text-xs", isDarkMode ? "text-slate-500" : "text-slate-500")}>
-                        {i18n.language === "en" ? "Loading members…" : "Đang tải danh sách…"}
+                        {t("workspace.quiz.audience.loadingMembers", "Loading members...")}
                       </span>
                     </div>
                   ) : groupMembers.length === 0 ? (
                     <p className={cn("py-6 text-center text-sm", isDarkMode ? "text-slate-500" : "text-slate-500")}>
-                      {i18n.language === "en" ? "No members found." : "Không có thành viên."}
+                      {t("workspace.quiz.audience.noMembers", "No members found.")}
                     </p>
                   ) : (
                     groupMembers.map((m) => {
                       const uid = Number(m.userId ?? m.id);
                       if (!Number.isInteger(uid) || uid <= 0) return null;
-                      const label = m.fullName || m.username || `User ${uid}`;
+                      const label = m.fullName || m.username || t("workspace.quiz.audience.memberFallback", { id: uid });
                       const initial = String(label).trim().charAt(0).toUpperCase() || "?";
                       const checked = selectedAudienceUserIds.includes(uid);
                       return (
@@ -1278,7 +1274,7 @@ function QuizDetailView({
             )}
           >
             <Button type="button" variant="outline" className="rounded-xl" onClick={() => setAudienceOpen(false)}>
-              {i18n.language === "en" ? "Cancel" : "Hủy"}
+              {t("workspace.quiz.cancel", "Cancel")}
             </Button>
             <Button
               type="button"
@@ -1287,7 +1283,7 @@ function QuizDetailView({
               disabled={audienceSaving}
             >
               {audienceSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {i18n.language === "en" ? "Save" : "Lưu"}
+              {t("workspace.quiz.save", "Save")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -6,6 +6,8 @@ Checklist ngan de xu ly mot task FE tu luc tiep nhan den luc chot session.
 
 ## 1. Truoc khi sua
 
+- Doc `docs/assistant/README.md` truoc.
+- Doc `instructions/project-context.md` va `instructions/change-playbook.md`.
 - Xac dinh page, component, hook, API wrapper, test lien quan.
 - Doc session gan nhat neu task lien tiep mot thay doi vua lam.
 - Kiem tra xem `skills/` da co pattern phu hop chua.

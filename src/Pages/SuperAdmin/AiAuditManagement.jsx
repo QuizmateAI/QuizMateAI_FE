@@ -42,33 +42,33 @@ import { getWebSocketUrl } from '@/lib/websocketUrl';
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 const STATUS_OPTIONS = ['', 'PROCESSING', 'SUCCESS', 'ERROR'];
 
-const FEATURE_LABELS = {
-  GENERATE_FLASHCARDS: 'Tạo flashcards',
-  GENERATE_QUIZ: 'Tạo quiz',
-  EVALUATE_SHORT_ANSWER: 'Chấm câu trả lời ngắn',
-  COMPANION_INTERPRET: 'Companion trả lời',
-  COMPANION_TRANSCRIBE: 'Companion speech-to-text',
-  COMPANION_TTS: 'Companion text-to-speech',
-  GENERATE_ROADMAP: 'Tạo roadmap',
-  GENERATE_ROADMAP_PHASES: 'Tạo phase roadmap',
-  GENERATE_ROADMAP_PHASE_CONTENT: 'Tạo nội dung phase',
-  CHECK_MATERIAL_COVERAGE: 'Kiểm tra độ phủ tài liệu',
-  WORKSPACE_QUIZ_ASSESSMENT: 'Assessment workspace',
-  PHASE_PRE_LEARNING_ASSESSMENT: 'Pre-learning assessment',
-  PHASE_POST_LEARNING_ASSESSMENT: 'Post-learning assessment',
-  PHASE_PROGRESS_REVIEW: 'Progress review',
-  RAG_ASK: 'RAG hỏi đáp',
-  CONTENT_MODERATION: 'Moderation',
-  GEMINI_VISION_OCR: 'OCR ảnh',
-  GEMINI_PDF_FILE_OCR: 'OCR PDF',
-  GEMINI_VIDEO_FILE_ANALYSIS: 'Phân tích video',
+const FEATURE_LABEL_KEYS = {
+  GENERATE_FLASHCARDS: 'aiAudit.features.GENERATE_FLASHCARDS',
+  GENERATE_QUIZ: 'aiAudit.features.GENERATE_QUIZ',
+  EVALUATE_SHORT_ANSWER: 'aiAudit.features.EVALUATE_SHORT_ANSWER',
+  COMPANION_INTERPRET: 'aiAudit.features.COMPANION_INTERPRET',
+  COMPANION_TRANSCRIBE: 'aiAudit.features.COMPANION_TRANSCRIBE',
+  COMPANION_TTS: 'aiAudit.features.COMPANION_TTS',
+  GENERATE_ROADMAP: 'aiAudit.features.GENERATE_ROADMAP',
+  GENERATE_ROADMAP_PHASES: 'aiAudit.features.GENERATE_ROADMAP_PHASES',
+  GENERATE_ROADMAP_PHASE_CONTENT: 'aiAudit.features.GENERATE_ROADMAP_PHASE_CONTENT',
+  CHECK_MATERIAL_COVERAGE: 'aiAudit.features.CHECK_MATERIAL_COVERAGE',
+  WORKSPACE_QUIZ_ASSESSMENT: 'aiAudit.features.WORKSPACE_QUIZ_ASSESSMENT',
+  PHASE_PRE_LEARNING_ASSESSMENT: 'aiAudit.features.PHASE_PRE_LEARNING_ASSESSMENT',
+  PHASE_POST_LEARNING_ASSESSMENT: 'aiAudit.features.PHASE_POST_LEARNING_ASSESSMENT',
+  PHASE_PROGRESS_REVIEW: 'aiAudit.features.PHASE_PROGRESS_REVIEW',
+  RAG_ASK: 'aiAudit.features.RAG_ASK',
+  CONTENT_MODERATION: 'aiAudit.features.CONTENT_MODERATION',
+  GEMINI_VISION_OCR: 'aiAudit.features.GEMINI_VISION_OCR',
+  GEMINI_PDF_FILE_OCR: 'aiAudit.features.GEMINI_PDF_FILE_OCR',
+  GEMINI_VIDEO_FILE_ANALYSIS: 'aiAudit.features.GEMINI_VIDEO_FILE_ANALYSIS',
 };
 
-function formatDateTime(value) {
+function formatDateTime(value, locale) {
   if (!value) return '-';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString('vi-VN', {
+  return parsed.toLocaleString(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -78,17 +78,17 @@ function formatDateTime(value) {
   });
 }
 
-function formatTokenValue(value) {
-  return Number(value || 0).toLocaleString('vi-VN');
+function formatTokenValue(value, locale) {
+  return Number(value || 0).toLocaleString(locale);
 }
 
-function formatOptionalTokenValue(value) {
+function formatOptionalTokenValue(value, locale) {
   if (value === null || value === undefined || value === '') return '-';
-  return Number(value).toLocaleString('vi-VN');
+  return Number(value).toLocaleString(locale);
 }
 
-function prettifyPreview(value) {
-  if (!value) return 'Không có dữ liệu';
+function prettifyPreview(value, emptyText) {
+  if (!value) return emptyText;
   if (typeof value !== 'string') {
     try {
       return JSON.stringify(value, null, 2);
@@ -101,6 +101,18 @@ function prettifyPreview(value) {
   } catch {
     return value;
   }
+}
+
+function getFeatureLabel(t, featureKey) {
+  const key = FEATURE_LABEL_KEYS[featureKey];
+  if (!key) return featureKey || '-';
+  return t(key, featureKey);
+}
+
+function getStatusLabel(t, status) {
+  const normalized = String(status || '').toUpperCase();
+  if (!normalized) return '-';
+  return t(`aiAudit.status.${normalized}`, normalized);
 }
 
 function getStatusBadgeClass(status) {
@@ -174,6 +186,7 @@ function AiAuditManagement() {
   const { isDarkMode } = useDarkMode();
   const [searchParams] = useSearchParams();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
 
   const [filters, setFilters] = useState({
     provider: '',
@@ -247,7 +260,7 @@ function AiAuditManagement() {
         page: 0,
         size: nextPageSize,
       });
-      setError(err?.message || 'Không thể tải AI audit logs');
+      setError(err?.message || t('aiAudit.errors.loadLogs', 'Unable to load AI audit logs'));
     } finally {
       setIsLoading(false);
     }
@@ -385,59 +398,67 @@ function AiAuditManagement() {
   };
 
   const selectedFeatureLabel = selectedAudit
-    ? FEATURE_LABELS[selectedAudit.featureKey] || selectedAudit.featureKey
+    ? getFeatureLabel(t, selectedAudit.featureKey)
     : '-';
 
   return (
     <div className={`space-y-6 p-6 animate-in fade-in duration-500 ${fontClass}`}>
       <div>
         <h1 className={`text-3xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-          AI Audit
+          {t('aiAudit.title', 'AI Audit')}
         </h1>
         <p className={`mt-1 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-          Theo dõi AI request, token tiêu hao, model, trạng thái và mở chi tiết khi cần.
+          {t(
+            'aiAudit.description',
+            'Track AI requests, token usage, models, statuses, and open detailed traces when needed.'
+          )}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <MetricCard
           icon={Activity}
-          label="Tổng request"
-          value={formatTokenValue(pageInfo.totalElements)}
+          label={t('aiAudit.metrics.totalRequests', 'Total requests')}
+          value={formatTokenValue(pageInfo.totalElements, locale)}
           tone="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
           isDarkMode={isDarkMode}
-          subtext="Theo bộ lọc hiện tại"
+          subtext={t('aiAudit.metrics.totalRequestsHint', 'Based on the current filters')}
         />
         <MetricCard
           icon={Sparkles}
-          label="Token trang hiện tại"
-          value={formatTokenValue(visibleTokenTotal)}
+          label={t('aiAudit.metrics.pageTokens', 'Tokens on this page')}
+          value={formatTokenValue(visibleTokenTotal, locale)}
           tone="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
           isDarkMode={isDarkMode}
-          subtext={`Prompt ${formatTokenValue(visiblePromptTotal)} | Thought ${formatTokenValue(visibleThoughtTotal)} | Output ${formatTokenValue(visibleCompletionTotal)}`}
+          subtext={t('aiAudit.metrics.pageTokensBreakdown', {
+            prompt: formatTokenValue(visiblePromptTotal, locale),
+            thought: formatTokenValue(visibleThoughtTotal, locale),
+            output: formatTokenValue(visibleCompletionTotal, locale),
+            defaultValue: 'Prompt {{prompt}} | Thought {{thought}} | Output {{output}}',
+          })}
         />
         <MetricCard
           icon={Bot}
-          label="Avg token/request"
-          value={formatTokenValue(visibleAverageTokens)}
+          label={t('aiAudit.metrics.averageTokens', 'Avg tokens / request')}
+          value={formatTokenValue(visibleAverageTokens, locale)}
           tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
           isDarkMode={isDarkMode}
-          subtext="Tính trên các log đang hiển thị"
+          subtext={t('aiAudit.metrics.averageTokensHint', 'Calculated from the visible logs')}
         />
         <MetricCard
           icon={ShieldAlert}
-          label="Lỗi"
-          value={formatTokenValue(visibleErrorCount)}
+          label={t('aiAudit.metrics.errors', 'Errors')}
+          value={formatTokenValue(visibleErrorCount, locale)}
           tone="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
           isDarkMode={isDarkMode}
-          subtext="Số request lỗi trong trang hiện tại"
+          subtext={t('aiAudit.metrics.errorsHint', 'Errored requests on the current page')}
         />
       </div>
 
       <Card className={`border ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
         <CardHeader className="pb-4">
           <CardTitle className={`text-lg ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            Bộ lọc AI audit
+            {t('aiAudit.filters.title', 'AI audit filters')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -451,7 +472,7 @@ function AiAuditManagement() {
                   : 'bg-white border-slate-200 text-slate-900'
               }`}
             >
-              <option value="">Tất cả provider</option>
+              <option value="">{t('aiAudit.filters.allProviders', 'All providers')}</option>
               {PROVIDER_OPTIONS.filter(Boolean).map((provider) => (
                 <option key={provider} value={provider}>
                   {provider}
@@ -467,23 +488,23 @@ function AiAuditManagement() {
                   : 'bg-white border-slate-200 text-slate-900'
               }`}
             >
-              <option value="">Tất cả trạng thái</option>
+              <option value="">{t('aiAudit.filters.allStatuses', 'All statuses')}</option>
               {STATUS_OPTIONS.filter(Boolean).map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {getStatusLabel(t, status)}
                 </option>
               ))}
             </select>
             <Input
               value={filters.featureKey}
               onChange={(event) => handleFilterChange('featureKey', event.target.value)}
-              placeholder="Feature key"
+              placeholder={t('aiAudit.filters.featureKeyPlaceholder', 'Feature key')}
               className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
             />
             <Input
               value={filters.actorUserId}
               onChange={(event) => handleFilterChange('actorUserId', event.target.value)}
-              placeholder="User ID"
+              placeholder={t('aiAudit.filters.userIdPlaceholder', 'User ID')}
               className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
             />
           </div>
@@ -492,7 +513,7 @@ function AiAuditManagement() {
             <Input
               value={filters.taskId}
               onChange={(event) => handleFilterChange('taskId', event.target.value)}
-              placeholder="Task ID"
+              placeholder={t('aiAudit.filters.taskIdPlaceholder', 'Task ID')}
               className={`h-11 w-full min-w-0 rounded-xl ${isDarkMode ? 'border-slate-700 bg-slate-800 text-white' : ''}`}
             />
             <Input
@@ -509,11 +530,11 @@ function AiAuditManagement() {
             />
             <div className="flex min-h-11 min-w-0 flex-wrap items-center justify-end gap-2 sm:justify-start xl:justify-end">
               <Button variant="outline" onClick={handleResetFilters} className="rounded-xl">
-                Xoá lọc
+                {t('aiAudit.filters.reset', 'Reset filters')}
               </Button>
               <Button onClick={handleApplyFilters} className="rounded-xl bg-blue-600 hover:bg-blue-700">
                 <Search className="mr-2 h-4 w-4" />
-                Áp dụng lọc
+                {t('aiAudit.filters.apply', 'Apply filters')}
               </Button>
               <Button
                 type="button"
@@ -541,7 +562,7 @@ function AiAuditManagement() {
       <Card className={`border overflow-hidden ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
         <CardHeader className="pb-3">
           <CardTitle className={`text-lg ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            Danh sách AI request
+            {t('aiAudit.table.title', 'AI request list')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -549,18 +570,18 @@ function AiAuditManagement() {
             <Table className="min-w-[980px]">
               <TableHeader className={isDarkMode ? 'bg-slate-950/40' : 'bg-slate-50/60'}>
                 <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                  <TableHead className="w-[220px]">Ai sử dụng</TableHead>
-                  <TableHead className="w-[180px]">Chức năng</TableHead>
-                  <TableHead className="w-[120px]">Tokens</TableHead>
-                  <TableHead className="w-[140px]">Model</TableHead>
-                  <TableHead className="w-[120px]">Provider</TableHead>
-                  <TableHead className="w-[140px]">Request Status</TableHead>
-                  <TableHead className="w-[180px]">Created</TableHead>
+                  <TableHead className="w-[220px]">{t('aiAudit.table.actor', 'Actor')}</TableHead>
+                  <TableHead className="w-[180px]">{t('aiAudit.table.feature', 'Feature')}</TableHead>
+                  <TableHead className="w-[120px]">{t('aiAudit.table.tokens', 'Tokens')}</TableHead>
+                  <TableHead className="w-[140px]">{t('aiAudit.table.model', 'Model')}</TableHead>
+                  <TableHead className="w-[120px]">{t('aiAudit.table.provider', 'Provider')}</TableHead>
+                  <TableHead className="w-[140px]">{t('aiAudit.table.status', 'Request status')}</TableHead>
+                  <TableHead className="w-[180px]">{t('aiAudit.table.createdAt', 'Created')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                   {auditLogs.map((entry) => {
-                    const actorName = entry.actorFullName || entry.actorUsername || entry.actorEmail || 'Người dùng hệ thống';
+                    const actorName = entry.actorFullName || entry.actorUsername || entry.actorEmail || t('aiAudit.table.systemUser', 'System user');
                   return (
                     <TableRow
                       key={entry.auditId}
@@ -575,14 +596,14 @@ function AiAuditManagement() {
                             {actorName}
                           </p>
                           <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {entry.actorEmail || 'Không có email'}
+                            {entry.actorEmail || t('aiAudit.table.noEmail', 'No email')}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <p className={`font-medium ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                            {FEATURE_LABELS[entry.featureKey] || entry.featureKey}
+                            {getFeatureLabel(t, entry.featureKey)}
                           </p>
                           <p className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                             {entry.featureKey}
@@ -590,7 +611,7 @@ function AiAuditManagement() {
                         </div>
                       </TableCell>
                       <TableCell className={`font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                        {formatTokenValue(entry.totalTokens)}
+                        {formatTokenValue(entry.totalTokens, locale)}
                       </TableCell>
                       <TableCell className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                         {entry.modelName || '-'}
@@ -602,11 +623,11 @@ function AiAuditManagement() {
                       </TableCell>
                       <TableCell>
                         <Badge className={`border-none ${getStatusBadgeClass(entry.status)}`}>
-                          {entry.status || '-'}
+                          {getStatusLabel(t, entry.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {formatDateTime(entry.createdAt)}
+                        {formatDateTime(entry.createdAt, locale)}
                       </TableCell>
                     </TableRow>
                   );
@@ -614,7 +635,7 @@ function AiAuditManagement() {
                 {!isLoading && auditLogs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="py-16 text-center text-slate-400">
-                      Chưa có AI audit log nào theo bộ lọc hiện tại.
+                      {t('aiAudit.table.empty', 'No AI audit logs match the current filters.')}
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -649,7 +670,7 @@ function AiAuditManagement() {
         >
           <DialogHeader>
             <DialogTitle className={isDarkMode ? 'text-white' : 'text-slate-900'}>
-              Chi tiết AI request
+              {t('aiAudit.detail.title', 'AI request details')}
             </DialogTitle>
           </DialogHeader>
 
@@ -659,33 +680,33 @@ function AiAuditManagement() {
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <UserRound className="h-4 w-4 text-blue-500" />
-                    Người dùng
+                    {t('aiAudit.detail.user', 'User')}
                   </div>
                   <p className={`mt-3 font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                     {selectedAudit.actorFullName || selectedAudit.actorUsername || '-'}
                   </p>
                   <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {selectedAudit.actorEmail || 'Không có email'}
+                    {selectedAudit.actorEmail || t('aiAudit.table.noEmail', 'No email')}
                   </p>
                 </div>
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <CalendarClock className="h-4 w-4 text-amber-500" />
-                    Trạng thái request
+                    {t('aiAudit.detail.requestStatus', 'Request status')}
                   </div>
                   <p className={`mt-3 font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                    {selectedAudit.status || '-'}
+                    {getStatusLabel(t, selectedAudit.status)}
                   </p>
                   <div className="mt-2 flex gap-2">
                     <Badge className={`border-none ${getStatusBadgeClass(selectedAudit.status)}`}>
-                      {selectedAudit.status}
+                      {getStatusLabel(t, selectedAudit.status)}
                     </Badge>
                     <Badge className={`border-none ${getProviderBadgeClass(selectedAudit.provider)}`}>
                       {selectedAudit.provider}
                     </Badge>
                   </div>
                   <p className={`mt-3 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    {formatDateTime(selectedAudit.createdAt)}
+                    {formatDateTime(selectedAudit.createdAt, locale)}
                   </p>
                 </div>
               </div>
@@ -694,7 +715,7 @@ function AiAuditManagement() {
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <Bot className="h-4 w-4 text-violet-500" />
-                    Chức năng và model
+                    {t('aiAudit.detail.featureAndModel', 'Feature and model')}
                   </div>
                   <p className={`mt-3 font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                     {selectedFeatureLabel}
@@ -703,19 +724,19 @@ function AiAuditManagement() {
                     {selectedAudit.featureKey}
                   </p>
                   <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                    Model: <span className="font-semibold">{selectedAudit.modelName || '-'}</span>
+                    {t('aiAudit.detail.modelLabel', 'Model:')} <span className="font-semibold">{selectedAudit.modelName || '-'}</span>
                   </p>
                 </div>
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <KeyRound className="h-4 w-4 text-emerald-500" />
-                    API key label
+                    {t('aiAudit.detail.apiKeyLabel', 'API key label')}
                   </div>
                   <p className={`mt-3 font-semibold break-all ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                     {selectedAudit.apiKeyLabel || '-'}
                   </p>
                   <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                    Key được mask để không lộ secret thật.
+                    {t('aiAudit.detail.apiKeyHint', 'The key is masked so the real secret is not exposed.')}
                   </p>
                 </div>
               </div>
@@ -723,31 +744,31 @@ function AiAuditManagement() {
               <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <Activity className="h-4 w-4 text-rose-500" />
-                  Tokens
+                  {t('aiAudit.detail.tokens', 'Tokens')}
                 </div>
                 <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                   <div>
-                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>Input</p>
+                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.inputTokens', 'Input')}</p>
                     <p className={`mt-1 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {formatTokenValue(selectedAudit.promptTokens)}
+                      {formatTokenValue(selectedAudit.promptTokens, locale)}
                     </p>
                   </div>
                   <div>
-                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>Thought</p>
+                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.thoughtTokens', 'Thought')}</p>
                     <p className={`mt-1 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {formatOptionalTokenValue(selectedAudit.thoughtTokens)}
+                      {formatOptionalTokenValue(selectedAudit.thoughtTokens, locale)}
                     </p>
                   </div>
                   <div>
-                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>Output</p>
+                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.outputTokens', 'Output')}</p>
                     <p className={`mt-1 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {formatTokenValue(selectedAudit.completionTokens)}
+                      {formatTokenValue(selectedAudit.completionTokens, locale)}
                     </p>
                   </div>
                   <div>
-                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>Total</p>
+                    <p className={isDarkMode ? 'text-slate-500' : 'text-slate-400'}>{t('aiAudit.detail.totalTokens', 'Total')}</p>
                     <p className={`mt-1 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {formatTokenValue(selectedAudit.totalTokens)}
+                      {formatTokenValue(selectedAudit.totalTokens, locale)}
                     </p>
                   </div>
                 </div>
@@ -755,17 +776,17 @@ function AiAuditManagement() {
 
               <div className="grid grid-cols-1 gap-3 text-sm">
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950/50' : 'border-slate-200 bg-slate-50/70'}`}>
-                  <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Operation</p>
+                  <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{t('aiAudit.detail.operation', 'Operation')}</p>
                   <div className={`mt-3 space-y-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                    <p>Operation: <span className="font-medium">{selectedAudit.operationName || '-'}</span></p>
-                    <p>Endpoint: <span className="font-medium break-all">{selectedAudit.endpointPath || '-'}</span></p>
+                    <p>{t('aiAudit.detail.operationLabel', 'Operation:')} <span className="font-medium">{selectedAudit.operationName || '-'}</span></p>
+                    <p>{t('aiAudit.detail.endpointLabel', 'Endpoint:')} <span className="font-medium break-all">{selectedAudit.endpointPath || '-'}</span></p>
                   </div>
                 </div>
               </div>
 
               {selectedAudit.errorMessage ? (
                 <div className="rounded-2xl border border-rose-200 bg-rose-100 p-4 text-sm text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400">
-                  <p className="font-semibold">Error</p>
+                  <p className="font-semibold">{t('aiAudit.detail.error', 'Error')}</p>
                   <p className="mt-2 whitespace-pre-wrap break-words">{selectedAudit.errorMessage}</p>
                 </div>
               ) : null}
@@ -774,27 +795,27 @@ function AiAuditManagement() {
                 <div>
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
                     <Braces className="h-4 w-4 text-blue-500" />
-                    Input
+                    {t('aiAudit.detail.requestPreview', 'Input')}
                   </div>
                   <pre className={`max-h-[320px] overflow-auto rounded-2xl border p-4 text-xs leading-6 whitespace-pre-wrap break-words ${
                     isDarkMode
                       ? 'border-slate-800 bg-slate-950 text-slate-200'
                       : 'border-slate-200 bg-slate-50 text-slate-700'
                   }`}>
-                    {prettifyPreview(selectedAudit.requestPreview)}
+                    {prettifyPreview(selectedAudit.requestPreview, t('aiAudit.detail.noPreview', 'No data available'))}
                   </pre>
                 </div>
                 <div>
                   <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
                     <Braces className="h-4 w-4 text-emerald-500" />
-                    Output
+                    {t('aiAudit.detail.responsePreview', 'Output')}
                   </div>
                   <pre className={`max-h-[320px] overflow-auto rounded-2xl border p-4 text-xs leading-6 whitespace-pre-wrap break-words ${
                     isDarkMode
                       ? 'border-slate-800 bg-slate-950 text-slate-200'
                       : 'border-slate-200 bg-slate-50 text-slate-700'
                   }`}>
-                    {prettifyPreview(selectedAudit.responsePreview)}
+                    {prettifyPreview(selectedAudit.responsePreview, t('aiAudit.detail.noPreview', 'No data available'))}
                   </pre>
                 </div>
               </div>
@@ -803,7 +824,10 @@ function AiAuditManagement() {
             <div className={`rounded-2xl border border-dashed p-10 text-center ${
               isDarkMode ? 'border-slate-700 text-slate-400' : 'border-slate-300 text-slate-500'
             }`}>
-              Request này không còn nằm trong danh sách hiện tại. Hãy đóng popup và tải lại danh sách nếu cần.
+              {t(
+                'aiAudit.detail.missing',
+                'This request is no longer present in the current list. Close the dialog and refresh the list if needed.'
+              )}
             </div>
           )}
         </DialogContent>

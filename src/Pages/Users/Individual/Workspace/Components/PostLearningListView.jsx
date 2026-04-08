@@ -50,8 +50,8 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
           phases.forEach((ph) => {
             allPhases.push({
               phaseId: ph.phaseId || ph.id,
-              phaseName: ph.title || ph.name || `Phase #${ph.phaseId || ph.id}`,
-              roadmapName: rm.title || rm.name || `Roadmap #${rmId}`,
+              phaseName: ph.title || ph.name || t("workspace.phase.fallbackName", { id: ph.phaseId || ph.id }),
+              roadmapName: rm.title || rm.name || t("workspace.roadmap.fallbackName", { id: rmId }),
               roadmapId: rmId,
             });
           });
@@ -114,7 +114,7 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
       setDeleteTargetQuiz(null);
     } catch (err) {
       console.error("Lỗi xóa post-learning:", err);
-      showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
+      showError(err?.message || t("workspace.quiz.deleteFail"));
     } finally {
       setDeletingId(null);
     }
@@ -135,7 +135,7 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
       <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <div className="flex items-center gap-2">
           <GraduationCap className="w-5 h-5 text-orange-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>Post-learning</p>
+          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{t("workspace.studio.actions.postLearning")}</p>
           <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
             {postLearnings.length}
           </span>
@@ -255,13 +255,13 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.deleteQuiz", "Xóa quiz")}</DialogTitle>
+            <DialogTitle>{t("workspace.quiz.deleteQuiz")}</DialogTitle>
             <DialogDescription className="space-y-2">
               <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
                 {deleteTargetQuiz?.title}
               </span>
               <span className="block">
-                {t("workspace.quiz.deleteConfirm", "Bạn có chắc chắn không?")}
+                {t("workspace.quiz.deleteConfirm")}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -271,7 +271,7 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
               onClick={() => setDeleteTargetQuiz(null)}
               disabled={Boolean(deletingId)}
             >
-              {t("workspace.quiz.close", "Đóng")}
+              {t("workspace.quiz.close")}
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -279,8 +279,8 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
               disabled={Boolean(deletingId)}
             >
               {deletingId
-                ? t("workspace.quiz.actionButtons.deleting", "Deleting...")
-                : t("workspace.quiz.actionButtons.delete", "Delete")}
+                ? t("workspace.quiz.actionButtons.deleting")
+                : t("workspace.quiz.actionButtons.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

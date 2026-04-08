@@ -27,7 +27,12 @@ function AdminPagination({
     }`}>
       {/* Thông tin hiển thị */}
       <div className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-        Hiển thị {startItem} - {endItem} trong tổng số {totalElements}
+        {t("common.paginationSummary", {
+          start: startItem,
+          end: endItem,
+          total: totalElements,
+          defaultValue: "Showing {{start}} - {{end}} of {{total}}",
+        })}
       </div>
 
       {/* Controls phân trang */}
@@ -123,10 +128,14 @@ function AdminPagination({
                 : "bg-white border-gray-300 text-gray-700"
             }`}
           >
-            <option value={10}>10 / trang</option>
-            <option value={20}>20 / trang</option>
-            <option value={50}>50 / trang</option>
-            <option value={100}>100 / trang</option>
+            {[10, 20, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {t("common.pageSizeOption", {
+                  count: size,
+                  defaultValue: "{{count}} / page",
+                })}
+              </option>
+            ))}
           </select>
         )}
       </div>

@@ -43,7 +43,7 @@ function AdminLayoutContent() {
                   ? 'border-slate-700 hover:bg-slate-800 text-yellow-400' 
                   : 'border-gray-200 hover:bg-gray-50 text-gray-600'
               }`}
-              title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+              title={isDarkMode ? t('common.lightMode', 'Light mode') : t('common.darkMode', 'Dark mode')}
             >
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -62,7 +62,7 @@ function AdminLayoutContent() {
             <div className="text-right hidden sm:block">
                 <p className={`text-sm font-bold font-poppins leading-none ${
                   isDarkMode ? 'text-white' : 'text-[#313131]'
-                }`}>Admin QuizMate</p>
+                }`}>{t('adminLayout.brand', 'Admin QuizMate')}</p>
               </div>
             <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold font-poppins ${
               isDarkMode ? 'bg-blue-900 border-blue-700 text-blue-300' : 'bg-blue-100 border-blue-200 text-blue-600'

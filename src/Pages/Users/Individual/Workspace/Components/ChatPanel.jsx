@@ -285,13 +285,13 @@ function ChatPanel({
                 type="button"
                 size="sm"
                 onClick={() => onCreateRoadmapPhases?.()}
-                title="Refresh roadmap phases"
+                title={t("workspace.roadmap.refreshPhasesTooltip")}
                 className={`h-8 rounded-full px-3 ${isDarkMode ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700" : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"} border`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span className={`text-xs ml-1 ${fontClass}`}>Refresh</span>
+                <span className={`text-xs ml-1 ${fontClass}`}>{t("common.refresh")}</span>
               </Button>
               <div className="inline-flex items-center gap-1 rounded-full border p-1">
                 <Button
@@ -302,7 +302,7 @@ function ChatPanel({
                   className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
                 >
                   <Rows3 className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>View 1</span>
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
                 </Button>
                 <Button
                   type="button"
@@ -312,7 +312,7 @@ function ChatPanel({
                   className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
                 >
                   <Map className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>View 2</span>
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
                 </Button>
               </div>
             </div>

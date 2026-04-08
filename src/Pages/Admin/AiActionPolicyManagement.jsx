@@ -159,7 +159,7 @@ function FormulaPreview({ policy, isDarkMode, t, compact = false }) {
   if (compact) {
     return (
       <div className="min-w-[320px] space-y-1">
-        <p className={`font-mono text-xs font-semibold ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>
+        <p className={`text-xs font-semibold ${isDarkMode ? 'text-slate-200' : 'text-gray-800'}`}>
           {formulaLine}
         </p>
         <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -174,7 +174,7 @@ function FormulaPreview({ policy, isDarkMode, t, compact = false }) {
       <p className={`mb-2 text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
         {t('aiActionPolicy.formula')}
       </p>
-      <p className={`font-mono text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+      <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
         {formulaLine}
       </p>
       <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>

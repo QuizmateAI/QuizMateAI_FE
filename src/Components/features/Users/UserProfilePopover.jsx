@@ -23,7 +23,7 @@ function UserProfilePopover({ isDarkMode = false }) {
   const handleGoToProfile = () => {
     // Logic nghiệp vụ: điều hướng sang trang profile từ popover user.
     setIsProfileOpen(false);
-    navigate("/profile");
+    navigate("/profiles");
   };
 
   const handleLogout = () => {
