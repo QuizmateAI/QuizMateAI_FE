@@ -706,15 +706,18 @@ function GroupDetailPage() {
               </div>
 
               <Button
+                type="button"
                 variant="outline"
+                size="icon"
                 onClick={handleRefresh}
                 className={cn(
-                  'rounded-2xl px-4',
+                  'rounded-2xl',
                   isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-800' : 'border-slate-200 bg-white/90 text-slate-700 hover:bg-slate-50'
                 )}
+                aria-label={t('groupPage.refresh')}
+                title={t('groupPage.refresh')}
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {t('groupPage.refresh')}
+                <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
 

@@ -52,6 +52,9 @@ function CreateQuizForm({
   /** Bật/tắt chọn tài liệu trong card Source materials (đồng bộ với Sources panel). */
   onToggleMaterialSelection,
   readOnly = false,
+  /** Ghi AI vào quiz snapshot challenge (BE existingQuizId). */
+  existingQuizId = null,
+  seedQuizTitle = '',
 }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -113,6 +116,8 @@ function CreateQuizForm({
     onCreateQuiz,
     selectedMaterialIds,
     t,
+    existingQuizId,
+    seedQuizTitle,
   });
 
   const {

@@ -290,7 +290,15 @@ function AdminManagement() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="icon" onClick={fetchAdmins} disabled={isLoading} className="h-11 rounded-xl">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchAdmins}
+              disabled={isLoading}
+              className="h-11 rounded-xl"
+              aria-label={t('common.refresh')}
+              title={t('common.refresh')}
+            >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>

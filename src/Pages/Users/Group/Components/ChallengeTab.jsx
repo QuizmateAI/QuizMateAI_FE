@@ -12,7 +12,7 @@ const SUB_TABS = [
   { key: 'FINISHED', label: 'Đã kết thúc' },
 ];
 
-export default function ChallengeTab({ workspaceId, isDarkMode, isLeader }) {
+export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, currentUserId }) {
   const queryClient = useQueryClient();
   const [activeSubTab, setActiveSubTab] = useState('SCHEDULED');
   const [selectedEventId, setSelectedEventId] = useState(null);
@@ -49,6 +49,7 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader }) {
         eventId={selectedEventId}
         isDarkMode={isDarkMode}
         isLeader={isLeader}
+        currentUserId={currentUserId}
         onBack={handleBackToList}
       />
     );
@@ -116,6 +117,7 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader }) {
         <CreateChallengeWizard
           workspaceId={workspaceId}
           isDarkMode={isDarkMode}
+          currentUserId={currentUserId}
           onClose={() => setShowCreateWizard(false)}
           onCreated={handleChallengeCreated}
         />

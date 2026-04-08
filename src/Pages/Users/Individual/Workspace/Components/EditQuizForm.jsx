@@ -35,7 +35,16 @@ const convertSecondsToMinutes = (seconds) => {
 };
 
 // Form chỉnh sửa Quiz — tải dữ liệu hiện có và cho phép cập nhật
-function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = "WORKSPACE", contextId }) {
+// presentationMode "createAligned" — cùng lớp layout/header/footer với màn Tạo Quiz (studio).
+function EditQuizForm({
+  isDarkMode = false,
+  quiz,
+  onBack,
+  onSave,
+  contextType = "WORKSPACE",
+  contextId,
+  presentationMode = "default",
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [submitting, setSubmitting] = useState(false);
@@ -340,28 +349,43 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
     return <ListSpinner variant="section" />;
   }
 
+  const aligned = presentationMode === "createAligned";
+  const headerPad = aligned ? "px-3" : "px-4";
+  const scrollPad = aligned ? "p-3 space-y-3" : "p-4 space-y-4";
+  const titleKey = aligned ? "workspace.quiz.createTitle" : "workspace.quiz.edit.title";
+  const descKey = aligned ? "workspace.quiz.challengeDraftDesc" : "workspace.quiz.edit.desc";
+  const amberHintClass = aligned
+    ? `rounded-lg border px-3 py-2 text-xs ${isDarkMode ? "border-amber-900/40 bg-amber-950/30 text-amber-300" : "border-amber-200 bg-amber-50 text-amber-700"}`
+    : `text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`;
+  const footerPad = aligned ? "px-3 py-2.5" : "px-4 py-3";
+  const cancelLabelKey = aligned ? "workspace.quiz.cancel" : "workspace.quiz.edit.cancel";
+
   return (
-    <div id="create-quiz-header" className="flex flex-col h-full scroll-mt-20">
+    <div id="create-quiz-header" className="flex h-full flex-col scroll-mt-20">
       {/* Header */}
-      <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
-          <ArrowLeft className="w-4 h-4" />
+      <div className={`${headerPad} flex h-12 shrink-0 items-center gap-3 border-b transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <button
+          type="button"
+          onClick={onBack}
+          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"}`}
+        >
+          <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex items-center gap-2">
-          <BadgeCheck className="w-5 h-5 text-blue-500" />
+        <div className={`flex items-center gap-2 ${aligned ? "min-w-0 flex-1" : ""}`}>
+          <BadgeCheck className="h-5 w-5 shrink-0 text-blue-500" />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
-            {t("workspace.quiz.edit.title")}
+            {t(titleKey)}
           </p>
         </div>
       </div>
 
       {/* Form chỉnh sửa */}
-      <div id="create-quiz-scroll-root" className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div id="create-quiz-scroll-root" className={`flex-1 overflow-y-auto ${scrollPad}`}>
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-          {t("workspace.quiz.edit.desc")}
+          {t(descKey)}
         </p>
 
-        <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-amber-950/30 text-amber-300 border border-amber-900/40" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+        <div className={`${amberHintClass} ${fontClass}`}>
           {t("workspace.quiz.validation.requiredFieldsHint")}
         </div>
 
@@ -624,9 +648,9 @@ function EditQuizForm({ isDarkMode = false, quiz, onBack, onSave, contextType = 
       </div>
 
       {/* Nút lưu cố định dưới cùng */}
-      <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      <div className={`${footerPad} flex shrink-0 justify-end gap-2 border-t transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-          {t("workspace.quiz.edit.cancel")}
+          {t(cancelLabelKey)}
         </Button>
         <Button onClick={handleSave} disabled={submitting} className="bg-[#2563EB] hover:bg-blue-700 text-white">
           {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
