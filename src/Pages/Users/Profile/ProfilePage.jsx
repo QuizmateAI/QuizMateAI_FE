@@ -17,6 +17,7 @@ import { Label } from "@/Components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
+import { useCurrentSubscription } from "@/hooks/useCurrentSubscription";
 import {
   Dialog,
   DialogContent,
@@ -154,6 +155,7 @@ function ProfilePage() {
   const currentLang = i18n.language;
   const fileInputRef = useRef(null);
   const settingsRef = useRef(null);
+  const { summary: currentPlanSummary } = useCurrentSubscription();
 
   // State cho profile data
   const { profile: contextProfile, setProfile: setContextProfile, loading: profileLoading } = useUserProfile();
@@ -473,7 +475,9 @@ function ProfilePage() {
               }`}
             >
               <CreditCard className="w-4 h-4" />
-              <span className="text-sm hidden sm:inline">{t("common.plan")}</span>
+              <span className="text-sm hidden max-w-[180px] truncate sm:inline">
+                {currentPlanSummary?.planName || t("common.plan")}
+              </span>
             </Button>
             <Button
               variant="ghost"
