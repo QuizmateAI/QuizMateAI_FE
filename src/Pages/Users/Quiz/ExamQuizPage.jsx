@@ -314,6 +314,7 @@ export default function ExamQuizPage() {
             sourceView: location.state?.sourceView,
             sourceWorkspaceId: location.state?.sourceWorkspaceId,
             sourcePhaseId: location.state?.sourcePhaseId,
+            sourceKnowledgeId: location.state?.sourceKnowledgeId,
             sourceRoadmapId: location.state?.sourceRoadmapId,
             challengeContext: location.state?.challengeContext,
           },
@@ -334,7 +335,7 @@ export default function ExamQuizPage() {
     submittingRef.current = false;
     setIsSubmitted(false);
     return false;
-  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, showError, t, isPerQuestionMode, location.state?.sourcePhaseId, location.state?.sourceRoadmapId, location.state?.sourceView, location.state?.sourceWorkspaceId]);
+  }, [answers, attemptId, navigate, quiz?.questions, quizId, returnToQuizPath, showError, t, isPerQuestionMode, location.state?.sourceKnowledgeId, location.state?.sourcePhaseId, location.state?.sourceRoadmapId, location.state?.sourceView, location.state?.sourceWorkspaceId]);
 
   const handleHeaderBack = useCallback(async (confirmed) => {
     if (isStarted && !isSubmitted) {

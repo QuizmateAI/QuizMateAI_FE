@@ -32,8 +32,6 @@ const PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY = 'prelearning_phasecontent_trigger
 const RESULT_CONTEXT_STORAGE_KEY_PREFIX = 'quiz_result_context:';
 const RESULT_BOOTSTRAP_MAX_RETRIES = 8;
 const RESULT_BOOTSTRAP_RETRY_DELAY_MS = 1500;
-const ASSESSMENT_NOT_AVAILABLE_POLL_LIMIT = 10;
-const ASSESSMENT_NOT_AVAILABLE_POLL_INTERVAL_MS = 3000;
 const RETRYABLE_RESULT_STATUS_CODES = new Set([404, 409, 425, 429, 500, 502, 503, 504]);
 
 function isPendingQuestionGrading(question) {
@@ -51,6 +49,15 @@ function hasResolvedQuestionResult(question) {
 function normalizePositiveInteger(value) {
   const normalizedValue = Number(value);
   return Number.isInteger(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+}
+
+function extractKnowledgeIdFromPath(path) {
+  if (!path) return null;
+
+  const match = String(path).match(/\/knowledges\/(\d+)/);
+  if (!match) return null;
+
+  return normalizePositiveInteger(match[1]);
 }
 
 function readStoredResultContext(attemptId) {
@@ -211,8 +218,6 @@ export default function QuizResultPage() {
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
   const pendingResultPollingRef = useRef(null);
-  const assessmentNotAvailablePollingRef = useRef(null);
-  const assessmentNotAvailablePollCountRef = useRef(0);
   const lastAttemptRefreshAtRef = useRef(0);
   const initialPendingJumpDoneRef = useRef(false);
 
@@ -232,6 +237,12 @@ export default function QuizResultPage() {
     ?? normalizePositiveInteger(storedResultContext?.sourceWorkspaceId);
   const sourcePhaseId = normalizePositiveInteger(location.state?.sourcePhaseId)
     ?? normalizePositiveInteger(storedResultContext?.sourcePhaseId);
+  const sourceKnowledgeId = normalizePositiveInteger(location.state?.sourceKnowledgeId)
+    ?? normalizePositiveInteger(storedResultContext?.sourceKnowledgeId)
+    ?? normalizePositiveInteger(quizDetails?.knowledgeId)
+    ?? normalizePositiveInteger(result?.knowledgeId)
+    ?? normalizePositiveInteger(quizRawDetails?.knowledgeId)
+    ?? extractKnowledgeIdFromPath(returnToQuizPath);
   const sourceRoadmapId = normalizePositiveInteger(location.state?.sourceRoadmapId)
     ?? normalizePositiveInteger(storedResultContext?.sourceRoadmapId)
     ?? normalizePositiveInteger(quizDetails?.roadmapId)
@@ -273,6 +284,7 @@ export default function QuizResultPage() {
       sourceView: sourceView || null,
       sourceWorkspaceId,
       sourcePhaseId,
+      sourceKnowledgeId,
       sourceRoadmapId,
       challengeContext: challengeContext || null,
     });
@@ -284,6 +296,7 @@ export default function QuizResultPage() {
     normalizedQuizIdForBack,
     reviewMode,
     returnToQuizPath,
+    sourceKnowledgeId,
     sourcePhaseId,
     sourceRoadmapId,
     sourceView,
@@ -295,6 +308,7 @@ export default function QuizResultPage() {
       ? buildWorkspaceRoadmapQuizPath(resolvedWorkspaceIdForBack, {
         roadmapId: sourceRoadmapId,
         phaseId: sourcePhaseId,
+        knowledgeId: sourceKnowledgeId,
         quizId: normalizedQuizIdForBack,
       })
       : buildWorkspaceQuizPath(resolvedWorkspaceIdForBack, normalizedQuizIdForBack))
@@ -484,14 +498,6 @@ export default function QuizResultPage() {
   }, [attemptId]);
 
   useEffect(() => {
-    assessmentNotAvailablePollCountRef.current = 0;
-    if (assessmentNotAvailablePollingRef.current) {
-      globalThis.clearInterval(assessmentNotAvailablePollingRef.current);
-      assessmentNotAvailablePollingRef.current = null;
-    }
-  }, [attemptId]);
-
-  useEffect(() => {
     fetchAssessment();
   }, [fetchAssessment]);
 
@@ -586,31 +592,6 @@ export default function QuizResultPage() {
       setReviewMode(true);
     }
   }, [isGradingPending]);
-
-  useEffect(() => {
-    if (!attemptId || !result || isGradingPending || assessmentStatus !== 'NOT_AVAILABLE') {
-      return undefined;
-    }
-
-    assessmentNotAvailablePollCountRef.current = 0;
-    assessmentNotAvailablePollingRef.current = globalThis.setInterval(() => {
-      assessmentNotAvailablePollCountRef.current += 1;
-      void fetchAssessment();
-
-      if (assessmentNotAvailablePollCountRef.current >= ASSESSMENT_NOT_AVAILABLE_POLL_LIMIT
-        && assessmentNotAvailablePollingRef.current) {
-        globalThis.clearInterval(assessmentNotAvailablePollingRef.current);
-        assessmentNotAvailablePollingRef.current = null;
-      }
-    }, ASSESSMENT_NOT_AVAILABLE_POLL_INTERVAL_MS);
-
-    return () => {
-      if (assessmentNotAvailablePollingRef.current) {
-        globalThis.clearInterval(assessmentNotAvailablePollingRef.current);
-        assessmentNotAvailablePollingRef.current = null;
-      }
-    };
-  }, [assessmentStatus, attemptId, fetchAssessment, isGradingPending, result]);
 
   const jumpToQuestion = useCallback((questionIndex) => {
     const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
@@ -787,6 +768,8 @@ export default function QuizResultPage() {
         returnToQuizPath,
         sourceView,
         sourceWorkspaceId,
+        sourceRoadmapId,
+        sourceKnowledgeId,
         sourcePhaseId,
       },
     });
@@ -796,6 +779,8 @@ export default function QuizResultPage() {
     normalizedQuizIdForBack,
     resumeAttemptPath,
     returnToQuizPath,
+    sourceRoadmapId,
+    sourceKnowledgeId,
     sourcePhaseId,
     sourceView,
     sourceWorkspaceId,
