@@ -15,6 +15,10 @@ import { getQuizFullForAttempt, startQuizAttempt, submitAttempt, updateQuiz } fr
 import { buildSubmitPayload, getAttemptRemainingSeconds, hasAnswerValue, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
+import {
+  buildQuizResultPath,
+  buildWorkspaceQuizPath,
+} from '@/lib/routePaths';
 
 export default function ExamQuizPage() {
   const { quizId } = useParams();
@@ -92,7 +96,7 @@ export default function ExamQuizPage() {
   }, []);
 
   const returnToQuizPath = location.state?.returnToQuizPath
-    || (quiz?.workspaceId ? `/workspace/${quiz.workspaceId}/quiz/${quizId}` : null)
+    || (quiz?.workspaceId ? buildWorkspaceQuizPath(quiz.workspaceId, quizId) : null)
     || '/home';
 
   const isPerQuestionMode = quiz?.timerMode === 'PER_QUESTION';
@@ -301,7 +305,7 @@ export default function ExamQuizPage() {
         // Tăng từ 500ms lên 1500ms để backend có đủ thời gian xử lý và đánh dấu attempt thành COMPLETED
         // Điều này tránh lỗi 400 "Lượt làm quiz chưa hoàn thành"
         await new Promise(resolve => setTimeout(resolve, 1500));
-        navigate(`/quiz/result/${attemptId}`, {
+        navigate(buildQuizResultPath(attemptId), {
           state: {
             quizId,
             attemptMode: 'exam',

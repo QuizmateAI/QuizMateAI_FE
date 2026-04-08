@@ -15,6 +15,7 @@ import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
 import { generateRoadmapGroupPreLearning } from "@/api/AIAPI";
 import { getQuizzesByScope } from "@/api/QuizAPI";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
+import { buildGroupWorkspaceSectionPath } from "@/lib/routePaths";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -860,7 +861,7 @@ function RoadmapCanvasView2({
                       hideCreateButton
                       title={t("workspace.roadmap.canvas.quiz", "Quiz")}
                       refreshToken={(Number(quizRefreshToken) || 0) + targetedKnowledgeRefreshToken}
-                      returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
+                      returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
                     />
                   ) : !isGeneratingKnowledgeQuiz ? (
                     <p className={`px-1 py-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
@@ -1366,7 +1367,7 @@ function RoadmapCanvasView2({
                           title={t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
                           intentFilter={["PRE_LEARNING"]}
                           refreshToken={quizRefreshToken}
-                          returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
+                          returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
                         />
                       ) : null}
 
@@ -1385,7 +1386,7 @@ function RoadmapCanvasView2({
                             title={t("workspace.roadmap.groupPreLearningTitle", "Pre-learning toàn roadmap")}
                             intentFilter={["PRE_LEARNING"]}
                             refreshToken={(Number(quizRefreshToken) || 0) + groupPreLearningRefreshToken}
-                            returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
+                            returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
                           />
                         </div>
                       ) : null}
@@ -1534,7 +1535,7 @@ function RoadmapCanvasView2({
                               title={t("workspace.roadmap.groupPreLearningTitle", "Pre-learning toàn roadmap")}
                               intentFilter={["PRE_LEARNING"]}
                               refreshToken={(Number(quizRefreshToken) || 0) + groupPreLearningRefreshToken}
-                              returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
+                              returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
                             />
                           </div>
                         ) : null}
@@ -1679,7 +1680,7 @@ function RoadmapCanvasView2({
                             title={t("workspace.roadmap.canvas.postLearning", "Post-learning")}
                             intentFilter={["POST_LEARNING"]}
                             refreshToken={quizRefreshToken}
-                            returnToPath={roadmap?.workspaceId ? `/workspace/${roadmap.workspaceId}/roadmap?phaseId=${phase.phaseId}` : null}
+                            returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
                           />
                         </div>
 

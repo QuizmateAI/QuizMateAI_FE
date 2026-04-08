@@ -51,12 +51,12 @@ vi.mock('react-router-dom', async () => {
     useParams: () => ({ attemptId: '62' }),
     useNavigate: () => mockNavigate,
     useLocation: () => ({
-      pathname: '/quiz/result/62',
+      pathname: '/quizzes/results/62',
       search: '',
       state: {
         quizId: 66,
         attemptMode: 'exam',
-        returnToQuizPath: '/workspace/12/quiz/66',
+        returnToQuizPath: '/workspaces/12/quizzes/66',
       },
     }),
   };

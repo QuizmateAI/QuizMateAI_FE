@@ -9,19 +9,16 @@ import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getQuizzesByScope, deleteQuiz, getQuizById } from "@/api/QuizAPI";
 import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
 import { useToast } from "@/context/ToastContext";
+import {
+  buildGroupWorkspaceSectionPath,
+  buildQuizAttemptPath,
+  extractWorkspaceIdFromPath as extractAppWorkspaceIdFromPath,
+} from "@/lib/routePaths";
 
 function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
-  const match = pathname.match(/^\/workspace\/(\d+)/);
-  if (!match || !phaseId) return null;
-  return `/workspace/${match[1]}/roadmap?phaseId=${phaseId}`;
-}
-
-function extractWorkspaceIdFromPath(path) {
-  if (!path) return null;
-  const match = String(path).match(/^\/workspace\/(\d+)/);
-  if (!match) return null;
-  const parsed = Number(match[1]);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  const workspaceId = extractAppWorkspaceIdFromPath(pathname);
+  if (!workspaceId || !phaseId) return null;
+  return buildGroupWorkspaceSectionPath(workspaceId, "roadmap", { phaseId });
 }
 
 function extractPhaseIdFromPath(path) {
@@ -304,8 +301,8 @@ function QuizListView({
   const quizNavigationSourceState = useMemo(() => {
     const normalizedContextType = String(contextType || "").toUpperCase();
     const normalizedContextId = Number(contextId);
-    const workspaceIdFromReturnPath = extractWorkspaceIdFromPath(resolvedReturnToPath);
-    const workspaceIdFromLocation = extractWorkspaceIdFromPath(location.pathname);
+    const workspaceIdFromReturnPath = extractAppWorkspaceIdFromPath(resolvedReturnToPath);
+    const workspaceIdFromLocation = extractAppWorkspaceIdFromPath(location.pathname);
     const sourceWorkspaceId = workspaceIdFromReturnPath || workspaceIdFromLocation || null;
 
     const phaseIdFromContext = normalizedContextType === "PHASE" && Number.isInteger(normalizedContextId) && normalizedContextId > 0
@@ -315,8 +312,10 @@ function QuizListView({
     const sourcePhaseId = phaseIdFromContext || phaseIdFromReturnPath || null;
 
     const isRoadmapContextType = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContextType);
-    const isRoadmapPath = /\/workspace\/\d+\/roadmap(?:\/|$|\?)/.test(String(resolvedReturnToPath || ""))
-      || /\/workspace\/\d+\/roadmap(?:\/|$)/.test(String(location.pathname || ""));
+    const isRoadmapPath = String(resolvedReturnToPath || "").includes("section=roadmap")
+      || String(location.search || "").includes("section=roadmap")
+      || /\/group-workspaces\/\d+\/roadmap(?:\/|$)/.test(String(resolvedReturnToPath || ""))
+      || /\/group-workspaces\/\d+\/roadmap(?:\/|$)/.test(String(location.pathname || ""));
 
     return {
       sourceView: isRoadmapContextType || isRoadmapPath ? "roadmap" : "quiz-panel",
@@ -335,8 +334,10 @@ function QuizListView({
 
   const handleStartQuiz = useCallback((mode, quizId) => {
     if (!mode || !quizId) return;
+    const attemptPath = buildQuizAttemptPath(mode, quizId);
+    if (!attemptPath) return;
 
-    navigate(`/quiz/${mode}/${quizId}`, {
+    navigate(attemptPath, {
       state: {
         returnToQuizPath: resolvedReturnToPath,
         ...(mode === 'practice' ? { autoStart: true } : {}),
@@ -348,8 +349,10 @@ function QuizListView({
   const handleConfirmExamStart = useCallback(() => {
     const resolvedQuizId = resolveQuizNavigationId(examStartQuiz);
     if (!resolvedQuizId) return;
+    const attemptPath = buildQuizAttemptPath("exam", resolvedQuizId);
+    if (!attemptPath) return;
 
-    navigate(`/quiz/exam/${resolvedQuizId}`, {
+    navigate(attemptPath, {
       state: {
         returnToQuizPath: resolvedReturnToPath,
         autoStart: true,

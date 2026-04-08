@@ -16,6 +16,17 @@ import {
 } from '@/api/RoadmapPhaseAPI';
 import { normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
+import {
+  buildGroupWorkspaceSectionPath,
+  buildQuizAttemptPath,
+  buildWorkspacePath,
+  buildWorkspaceQuizPath,
+  buildWorkspaceRoadmapQuizPath,
+  buildWorkspaceRoadmapsPath,
+  extractWorkspaceIdFromPath,
+  isGroupWorkspacePath,
+  isWorkspaceQuizDetailPath,
+} from '@/lib/routePaths';
 
 const PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY = 'prelearning_phasecontent_triggered_attempts';
 const RESULT_CONTEXT_STORAGE_KEY_PREFIX = 'quiz_result_context:';
@@ -227,10 +238,7 @@ export default function QuizResultPage() {
     ?? normalizePositiveInteger(result?.roadmapId)
     ?? normalizePositiveInteger(quizRawDetails?.roadmapId);
   const returnPathWorkspaceId = useMemo(() => {
-    if (!returnToQuizPath) return null;
-    const matched = returnToQuizPath.match(/\/workspace\/(\d+)/);
-    if (!matched) return null;
-    return normalizePositiveInteger(matched[1]);
+    return extractWorkspaceIdFromPath(returnToQuizPath);
   }, [returnToQuizPath]);
 
   const normalizedWorkspaceId = normalizePositiveInteger(
@@ -284,21 +292,23 @@ export default function QuizResultPage() {
 
   const directQuizDetailBackPath = Number.isInteger(resolvedWorkspaceIdForBack) && resolvedWorkspaceIdForBack > 0 && hasQuizIdForBack
     ? (sourceView === 'roadmap'
-      ? (sourceRoadmapId && sourcePhaseId
-        ? `/workspace/${resolvedWorkspaceIdForBack}/roadmap/${sourceRoadmapId}/phase/${sourcePhaseId}/quiz/${normalizedQuizIdForBack}`
-        : `/workspace/${resolvedWorkspaceIdForBack}/roadmap/quiz/${normalizedQuizIdForBack}`)
-      : `/workspace/${resolvedWorkspaceIdForBack}/quiz/${normalizedQuizIdForBack}`)
+      ? buildWorkspaceRoadmapQuizPath(resolvedWorkspaceIdForBack, {
+        roadmapId: sourceRoadmapId,
+        phaseId: sourcePhaseId,
+        quizId: normalizedQuizIdForBack,
+      })
+      : buildWorkspaceQuizPath(resolvedWorkspaceIdForBack, normalizedQuizIdForBack))
     : null;
 
   const canUseReturnPathAsQuizDetail = useMemo(() => {
     if (!returnToQuizPath) return false;
-    return /\/workspace\/\d+\/(?:quiz(?:\/\d+)?|roadmap\/(?:\d+\/phase\/\d+\/)?quiz\/\d+)(?:\?|$)/.test(returnToQuizPath);
+    return isWorkspaceQuizDetailPath(returnToQuizPath) || isGroupWorkspacePath(returnToQuizPath);
   }, [returnToQuizPath]);
 
   const resumeAttemptPath = useMemo(() => {
     if (!hasQuizIdForBack) return null;
     if (attemptMode !== 'exam' && attemptMode !== 'practice') return null;
-    return `/quiz/${attemptMode}/${normalizedQuizIdForBack}`;
+    return buildQuizAttemptPath(attemptMode, normalizedQuizIdForBack);
   }, [attemptMode, hasQuizIdForBack, normalizedQuizIdForBack]);
 
   const retryLoadResult = useCallback(() => {
@@ -736,7 +746,7 @@ export default function QuizResultPage() {
   const handleBack = useCallback(() => {
     // Challenge context: navigate back to group workspace challenge tab
     if (challengeContext?.workspaceId) {
-      navigate(`/group-workspace/${challengeContext.workspaceId}?section=challenge`, { replace: true });
+      navigate(buildGroupWorkspaceSectionPath(challengeContext.workspaceId, 'challenge'), { replace: true });
       return;
     }
 
@@ -842,7 +852,7 @@ Number.isInteger(normalizedWorkspaceId)
 && Number.isInteger(normalizedPhaseId)
 && normalizedPhaseId > 0
 ) {
-navigate(`/workspace/${normalizedWorkspaceId}/roadmap?phaseId=${normalizedPhaseId}`, { replace: true });
+navigate(buildWorkspaceRoadmapsPath(normalizedWorkspaceId, normalizedPhaseId), { replace: true });
 return;
 }
 
@@ -906,7 +916,7 @@ handleBack,
         const workspaceId = Number(preLearningGenerationContext.workspaceId);
 
         if (Number.isInteger(workspaceId) && workspaceId > 0 && Number.isInteger(nextPhaseId) && nextPhaseId > 0) {
-          navigate(`/workspace/${workspaceId}/roadmap?phaseId=${nextPhaseId}`, { replace: true });
+          navigate(buildWorkspaceRoadmapsPath(workspaceId, nextPhaseId), { replace: true });
           return;
         }
 
@@ -1104,7 +1114,7 @@ handleBack,
     try {
       await generateQuizFromWorkspaceAssessment(assessmentId);
       showSuccess(t('workspace.quiz.result.generateFromAssessmentSuccess', 'Đã tạo quiz từ đánh giá AI thành công'));
-      navigate(`/workspace/${workspaceId}/quiz`, { replace: true });
+      navigate(buildWorkspacePath(workspaceId, 'quizzes'), { replace: true });
     } catch (err) {
       showError(err?.message || t('workspace.quiz.result.generateFromAssessmentFail', 'Tạo quiz từ đánh giá AI thất bại'));
     } finally {

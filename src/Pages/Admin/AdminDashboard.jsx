@@ -95,7 +95,7 @@ function AdminDashboard() {
       title: t('sidebar.subscriptions'),
       desc: t('subscription.desc'),
       icon: CreditCard,
-      path: '/admin/plan',
+      path: '/admin/plans',
       color: 'text-amber-600 dark:text-amber-400',
       bgColor: 'bg-amber-100 dark:bg-amber-900/30',
     },

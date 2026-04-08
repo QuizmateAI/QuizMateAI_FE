@@ -19,6 +19,7 @@ import { useToast } from '@/context/ToastContext';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { getMyWallet } from '@/api/ManagementSystemAPI';
 import CreditIconImage from "@/Components/ui/CreditIconImage";
+import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 
 function formatNumber(value, locale) {
   try {
@@ -159,7 +160,7 @@ function HomePage() {
       const newWorkspace = await createWorkspace({ title: null });
       if (newWorkspace?.workspaceId) {
         showSuccess(t('home.workspace.createSuccess') || 'Tạo workspace thành công!');
-        navigate(`/workspace/${newWorkspace.workspaceId}`, { state: { openProfileConfig: true } });
+        navigate(buildWorkspacePath(newWorkspace.workspaceId), { state: { openProfileConfig: true } });
       }
     } catch (err) {
       showError(err?.message || t('home.workspace.createError') || 'Không thể tạo workspace');
@@ -175,7 +176,7 @@ function HomePage() {
       if (!newGroupWorkspace?.workspaceId) {
         throw new Error(t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
       }
-      navigate(`/group-workspace/${newGroupWorkspace.workspaceId}`, { state: { openProfileConfig: true } });
+      navigate(buildGroupWorkspacePath(newGroupWorkspace.workspaceId), { state: { openProfileConfig: true } });
     } catch (err) {
       showError(err?.message || t('home.group.createError') || 'KhÃ´ng thá»ƒ táº¡o group workspace');
     }
@@ -211,7 +212,7 @@ function HomePage() {
   // Nếu được gọi từ GroupWorkspace với yêu cầu tạo workspace → nhảy sang trang tạo
   useEffect(() => {
     if (location.state?.openCreateDialog) {
-      navigate('/workspace/new', { replace: true });
+      navigate(buildWorkspacePath('new'), { replace: true });
     }
   }, [location.state, navigate]);
 
@@ -356,7 +357,7 @@ function HomePage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/plan', { state: { from: '/home' } })}
+            onClick={() => navigate('/plans', { state: { from: '/home' } })}
             className={`flex h-10 max-w-[320px] items-center gap-2 rounded-full px-4 ${
               isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
             }`}
@@ -374,7 +375,7 @@ function HomePage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/wallet', { state: { from: '/home' } })}
+            onClick={() => navigate('/wallets', { state: { from: '/home' } })}
             className={`flex h-10 items-center gap-2 rounded-full px-3.5 ${
               isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'
             }`}

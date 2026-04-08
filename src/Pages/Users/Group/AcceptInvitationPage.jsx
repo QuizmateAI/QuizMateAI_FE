@@ -14,6 +14,7 @@ import { acceptInvitation, previewInvitation } from '@/api/GroupAPI';
 import { logout } from '@/api/Authentication';
 import { unwrapApiData } from '@/Utils/apiResponse';
 import { useToast } from '@/context/ToastContext';
+import { buildGroupWorkspacePath, withQueryParams } from '@/lib/routePaths';
 import { formatGroupLearningMode } from './utils/groupDisplay';
 
 const WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
@@ -113,7 +114,9 @@ const AcceptInvitationPage = () => {
   const isExpired = invitationStatus === 'EXPIRED';
   const isAccepted = invitationStatus === 'ACCEPTED';
   const workspaceId = preview?.workspaceId;
-  const groupPath = workspaceId ? `/group-workspace/${workspaceId}?welcome=1` : '/home';
+  const groupPath = workspaceId
+    ? withQueryParams(buildGroupWorkspacePath(workspaceId), { welcome: 1 })
+    : '/home';
   const learningModeLabel = formatGroupLearningMode(preview?.learningMode, 'vi');
 
   const infoRows = [
@@ -166,7 +169,7 @@ const AcceptInvitationPage = () => {
       }
 
       showSuccess(response?.message || 'Chào mừng bạn đã vào nhóm!');
-      navigate(`/group-workspace/${payload?.workspaceId || workspaceId}?welcome=1`, {
+      navigate(withQueryParams(buildGroupWorkspacePath(payload?.workspaceId || workspaceId), { welcome: 1 }), {
         replace: true,
       });
     } catch (error) {
