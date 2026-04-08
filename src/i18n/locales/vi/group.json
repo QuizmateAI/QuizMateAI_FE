@@ -1,0 +1,241 @@
+{
+  "groupManage": {
+    "title": "Quản lý nhóm",
+    "subtitle": "Quản lý nhóm của bạn",
+    "tabs": {
+      "dashboard": "Tổng quan",
+      "members": "Thành viên",
+      "settings": "Cài đặt"
+    },
+    "dashboard": {
+      "totalMembers": "Tổng thành viên",
+      "contributors": "Cộng tác viên",
+      "canUpload": "Được upload",
+      "progress": "Tiến độ",
+      "noDescription": "Chưa có mô tả",
+      "topic": "Chủ đề",
+      "roleDistribution": "Phân bổ vai trò",
+      "recentActivity": "Hoạt động gần đây",
+      "learningProgress": "Tiến độ học tập",
+      "progressPlaceholder": "Biểu đồ & phân tích sẽ hiển thị tại đây",
+      "ago": "trước",
+      "activityJoined": "Một thành viên mới tham gia nhóm",
+      "activityUploaded": "Tài liệu mới được tải lên Không gian học tập nhóm",
+      "activityQuiz": "Một thành viên hoàn thành bài quiz",
+      "activityRole": "Vai trò thành viên được cập nhật"
+    },
+    "members": {
+      "all": "Tất cả",
+      "searchPlaceholder": "Tìm theo tên hoặc email...",
+      "name": "Tên",
+      "email": "Email",
+      "role": "Vai trò",
+      "upload": "Upload",
+      "yes": "Có",
+      "no": "Không",
+      "reload": "Tải lại",
+      "showing": "Hiển thị {{count}} / {{total}} thành viên"
+    },
+    "settings": {
+      "groupInfo": "Thông tin nhóm",
+      "edit": "Chỉnh sửa",
+      "save": "Lưu thay đổi",
+      "saveSuccess": "Cập nhật nhóm thành công!",
+      "saveError": "Cập nhật nhóm thất bại.",
+      "subject": "Môn học",
+      "dangerZone": "Vùng nguy hiểm",
+      "deleteWarning": "Khi xóa nhóm, bạn không thể hoàn tác. Toàn bộ dữ liệu sẽ bị xóa vĩnh viễn.",
+      "deleteGroup": "Xóa nhóm này",
+      "deleteConfirm": "Bạn có chắc chắn không?",
+      "confirmDelete": "Có, xóa",
+      "deleteError": "Xóa nhóm thất bại.",
+      "leaderOnly": "Chỉ trưởng nhóm mới có thể thay đổi cài đặt."
+    }
+  },
+  "groupProfileConfig": {
+    "common": {
+      "step": "Bước",
+      "stepCount": "Bước {{current}} trên {{total}}",
+      "back": "Quay lại",
+      "continue": "Tiếp tục",
+      "saving": "Đang lưu...",
+      "retry": "Thử lại",
+      "select": "Chọn",
+      "selected": "Đã chọn",
+      "close": "Đóng",
+      "finish": "Lưu và hoàn tất",
+      "finishIncomplete": "Kiểm tra lại để hoàn tất",
+      "enabled": "Đang bật",
+      "disabled": "Đang tắt"
+    },
+    "messages": {
+      "basicsSaveError": "Không thể lưu thông tin nhóm.",
+      "confirmSaveError": "Không thể hoàn tất cấu hình nhóm.",
+      "completed": "Cấu hình nhóm đã được cập nhật."
+    },
+    "validation": {
+      "groupName": "Vui lòng nhập tên nhóm.",
+      "knowledge": "Vui lòng mô tả phạm vi kiến thức chung.",
+      "analysisLoading": "Quizmate AI đang phân tích lĩnh vực. Vui lòng đợi một chút.",
+      "analysisError": "Quizmate AI chưa suy ra được lĩnh vực. Hãy thử phân tích lại.",
+      "analysisMissing": "Vui lòng nhập knowledge để Quizmate AI suy ra lĩnh vực.",
+      "domain": "Vui lòng chọn một lĩnh vực từ gợi ý của Quizmate AI.",
+      "learningMode": "Vui lòng chọn chế độ học tập.",
+      "groupGoal": "Vui lòng nhập mục tiêu học tập của nhóm.",
+      "examName": "Vui lòng nhập tên kỳ thi."
+    },
+    "tabs": {
+      "basic": {
+        "title": "Cơ bản & nguyên tắc",
+        "description": "Tên nhóm và các nguyên tắc vận hành chung"
+      },
+      "learning": {
+        "title": "Hồ sơ học tập chung",
+        "description": "Knowledge, domain và nhịp học chung của nhóm"
+      }
+    },
+    "stepOne": {
+      "title": "Thiết lập thông tin cơ bản cho nhóm",
+      "description": "Đặt tên nhóm và thêm các ghi chú vận hành chung để cả nhóm theo cùng một nhịp học.",
+      "groupName": "Tên nhóm",
+      "groupNameHint": "Dùng tên ngắn gọn, rõ mục tiêu để thành viên nhận ra nhóm ngay.",
+      "groupNamePlaceholder": "Ví dụ: Ôn thi TOEIC 750+",
+      "defaultRole": "Vai trò mặc định khi tham gia",
+      "memberDescription": "Phù hợp cho thành viên học tập thông thường trong nhóm.",
+      "contributorDescription": "Phù hợp cho thành viên có thể đóng góp nội dung và hoạt động học.",
+      "rulesEyebrow": "Nguyên tắc chung",
+      "rulesHint": "Ghi cách học, nhịp sinh hoạt hoặc quy ước chia sẻ tài liệu để các thành viên theo cùng một chuẩn.",
+      "rulesPlaceholder": "Ví dụ: Mỗi tuần check-in 2 buổi, đặt câu hỏi theo chủ đề và ghi rõ nguồn khi chia sẻ tài liệu."
+    },
+    "stepTwo": {
+      "title": "Thiết lập hồ sơ học tập chung",
+      "description": "Bước này định nghĩa knowledge chung, domain AI hiểu và nhịp học mặc định cho cả nhóm.",
+      "workflow": {
+        "eyebrow": "Thiết kế nhanh",
+        "title": "Hoàn thiện cấu hình chỉ trong 3 lựa chọn",
+        "description": "Mô tả phạm vi học của nhóm, chọn domain AI gợi ý và bật các tùy chọn phù hợp cho lộ trình chung.",
+        "describeTitle": "Mô tả knowledge",
+        "describeDescription": "Nói ngắn gọn nhóm đang học gì hoặc đang hướng tới mục tiêu nào.",
+        "domainTitle": "Chốt domain",
+        "domainDescription": "Chọn baseline phù hợp để AI hiểu đúng workspace của nhóm.",
+        "modeTitle": "Chọn cách học",
+        "modeDescription": "Xác định nhóm ưu tiên học mới, ôn tập hay thi thử."
+      },
+      "knowledgeLabel": "Knowledge chung của nhóm",
+      "knowledgePlaceholder": "Ví dụ: Cả nhóm đang học JLPT N3 để củng cố ngữ pháp, từ vựng và luyện đọc theo từng chủ điểm.",
+      "domainSuggestions": "Domain được Quizmate AI gợi ý",
+      "selectedDomain": "Domain đang dùng cho nhóm",
+      "selectedDomainHint": "Domain này sẽ làm baseline chung để AI gợi ý roadmap, quiz và hoạt động học.",
+      "learningMode": "Chế độ học tập",
+      "modePrompt": "Chọn nhịp học chính của nhóm",
+      "studyNewDescription": "Phù hợp khi nhóm đang bắt đầu kiến thức mới và muốn có roadmap rõ ràng.",
+      "reviewDescription": "Phù hợp khi nhóm đã học qua và muốn ôn tập có hệ thống.",
+      "mockTestDescription": "Phù hợp khi nhóm cần luyện đề và theo dõi tiến độ bằng bài test.",
+      "examName": "Tên kỳ thi",
+      "examNamePlaceholder": "Ví dụ: JLPT N3 tháng 12",
+      "groupGoal": "Mục tiêu học tập của nhóm",
+      "groupGoalPlaceholder": "Ví dụ: Trong 8 tuần hoàn thành 20 chủ điểm ngữ pháp và 1500 từ vựng.",
+      "learningSwitches": "Tùy chọn học tập",
+      "learningSwitchesHint": "Bạn có thể bật thêm roadmap hoặc đánh giá đầu vào tùy theo cách vận hành nhóm.",
+      "analysis": {
+        "loading": "Quizmate AI đang phân tích knowledge để gợi ý domain phù hợp.",
+        "error": "Quizmate AI chưa thể gợi ý domain đáng tin cậy. Bạn có thể thử lại ngay.",
+        "interpretingLabel": "AI đang hiểu knowledge này là",
+        "tooBroad": "Knowledge hiện khá rộng. Nếu muốn gợi ý sát hơn, hãy mô tả rõ đối tượng học và mục tiêu hơn một chút.",
+        "emptyDomainTitle": "Chưa có domain khả dụng",
+        "emptyDomainDescription": "Quizmate AI chưa tạo được danh sách domain từ mô tả hiện tại. Hãy viết chi tiết hơn hoặc thử phân tích lại."
+      },
+      "roadmap": {
+        "title": "Bật roadmap chung",
+        "description": "Tạo khung học tập chung để cả nhóm có nhịp học rõ ràng hơn.",
+        "studyNewDescription": "Chế độ này mặc định bật roadmap để nhóm có lộ trình học kiến thức mới rõ ràng hơn.",
+        "studyNewBadge": "Roadmap mặc định bật",
+        "defaultOn": "Mặc định bật"
+      },
+      "entryAssessment": {
+        "title": "Yêu cầu đánh giá đầu vào",
+        "description": "Áp dụng cho thành viên mới trước khi vào lộ trình chung."
+      },
+      "ready": {
+        "title": "Trạng thái sẵn sàng",
+        "knowledge": "Kiến thức",
+        "domain": "Lĩnh vực",
+        "mode": "Nhịp học",
+        "pending": "Chưa hoàn tất"
+      },
+      "sidebar": {
+        "eyebrow": "Bảng điều khiển",
+        "title": "Nhìn nhanh trước khi hoàn tất",
+        "readyBadge": "Sẵn sàng"
+      }
+    }
+  },
+  "groupWorkspace": {
+    "bootstrap": {
+      "title": "Đang chuẩn bị không gian nhóm",
+      "description": "Trình hướng dẫn thiết lập sẽ mở ngay khi không gian nháp sẵn sàng."
+    },
+    "studio": {
+      "systemDashboard": "Bảng điều khiển hệ thống",
+      "personalDashboard": "Bảng điều khiển cá nhân",
+      "documents": "Quản lý tài liệu",
+      "activity": "Hoạt động nhóm",
+      "memberManagement": "Quản lý thành viên",
+      "memberStatus": "Tình trạng thành viên",
+      "groupStudy": "Học tập",
+      "groupActivity": "Hoạt động",
+      "groupManage": "Quản lý"
+    },
+    "challenge": {
+      "title": "Challenge",
+      "description": "Thi đấu cùng các thành viên trong nhóm qua các bài quiz theo thời gian thực.",
+      "badge": "Challenge",
+      "cancelDialogTitle": "Huỷ challenge?",
+      "cancelDialogDescription": "Bạn có chắc muốn huỷ challenge này? Thành viên sẽ không còn tham gia và lịch challenge sẽ bị gỡ.",
+      "cancelDialogBack": "Đóng",
+      "cancelDialogConfirm": "Huỷ challenge",
+      "snapshotQuizDefaultTitle": "Quiz challenge",
+      "viewSnapshotQuiz": "Xem quiz",
+      "snapshotQuizHint": "Xem trước nội dung và trạng thái; chỉnh sửa qua Soạn đề trước giờ bắt đầu challenge.",
+      "quizSnapshotReviewDraftTitle": "Đề challenge (chỉ xem & chỉnh sửa)",
+      "quizSnapshotReviewDraftBody": "Đây là bài thi gắn với challenge, không phải quiz chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như quiz nhóm.",
+      "quizSnapshotReviewNoTakeHint": "Bài thi này chỉ mở khi challenge bắt đầu (theo lịch hoặc khi leader điều khiển). Xếp hạng theo từng challenge — không làm bài từ màn hình này.",
+      "leaderboardTitle": "Bảng xếp hạng",
+      "editSchedule": "Sửa lịch & thông tin",
+      "editDialogTitle": "Cập nhật challenge",
+      "editDialogDescription": "Chỉ chỉnh được khi còn hơn 1 giờ trước giờ bắt đầu. Kiểm tra lại múi giờ và khoảng thời gian.",
+      "editTitleLabel": "Tên challenge",
+      "editDescriptionLabel": "Mô tả",
+      "editStartLabel": "Bắt đầu",
+      "editEndLabel": "Kết thúc",
+      "editSave": "Lưu thay đổi",
+      "phase": {
+        "SCHEDULED": "Chưa bắt đầu",
+        "LIVE": "Đang diễn ra",
+        "FINISHED": "Đã kết thúc",
+        "CANCELLED": "Đã huỷ"
+      },
+      "leaderFairPlayQuizHint": "Bạn tham gia thi cùng mọi người: sau khi xuất bản đề bạn không xem trước câu hỏi. Trong lúc đề còn nháp bạn vẫn soạn được.",
+      "quizStatus": {
+        "DRAFT": "Bản nháp",
+        "PROCESSING": "Đang tạo",
+        "ACTIVE": "Sẵn sàng",
+        "ERROR": "Lỗi tạo quiz"
+      },
+      "reviewContributorsTitle": "Người review đề",
+      "reviewContributorsHint": "Thành viên được gán ở đây không thể đăng ký tham gia challenge. Không gán người đã tham gia.",
+      "reviewContributorPickLabel": "Thành viên nhóm",
+      "reviewContributorPickPlaceholder": "Chọn thành viên…",
+      "reviewContributorAdd": "Thêm",
+      "reviewContributorRemove": "Gỡ",
+      "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này."
+    },
+    "members": {
+      "loading": "Đang tải danh sách thành viên...",
+      "empty": "Chưa có dữ liệu thành viên."
+    },
+    "profile": {
+      "noRules": "Chưa có nội quy bổ sung."
+    }
+  }
+}
