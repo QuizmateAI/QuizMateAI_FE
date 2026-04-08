@@ -2,10 +2,17 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useLogin } from '@/Pages/Authentication/Login';
 import { login, googleLogin } from '@/api/Authentication';
+import { preloadHomePage } from '@/lib/routeLoaders';
 
 vi.mock('@/api/Authentication', () => ({
   login: vi.fn(),
   googleLogin: vi.fn(),
+}));
+
+vi.mock('@/lib/routeLoaders', () => ({
+  preloadGroupWorkspacePage: vi.fn(),
+  preloadHomePage: vi.fn(),
+  preloadWorkspacePage: vi.fn(),
 }));
 
 describe('Authentication - useLogin (TC_AUTH_01, TC_AUTH_02)', () => {
@@ -23,7 +30,7 @@ describe('Authentication - useLogin (TC_AUTH_01, TC_AUTH_02)', () => {
       data: { role: 'USER' },
     });
 
-    const { result } = renderHook(() => useLogin(navigate, t));
+    const { result } = renderHook(() => useLogin(navigate, { state: {} }, t));
 
     act(() => {
       result.current.handleLoginChange('username')({ target: { value: '  valid_user  ' } });
@@ -38,6 +45,7 @@ describe('Authentication - useLogin (TC_AUTH_01, TC_AUTH_02)', () => {
       username: 'valid_user',
       password: 'Password123',
     });
+    expect(preloadHomePage).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith('/home');
     expect(result.current.error).toBe('');
   });
@@ -45,7 +53,7 @@ describe('Authentication - useLogin (TC_AUTH_01, TC_AUTH_02)', () => {
   it('TC_AUTH_02: shows error when credentials are invalid', async () => {
     login.mockRejectedValue({ message: 'Tai khoan hoac mat khau khong chinh xac' });
 
-    const { result } = renderHook(() => useLogin(navigate, t));
+    const { result } = renderHook(() => useLogin(navigate, { state: {} }, t));
 
     act(() => {
       result.current.handleLoginChange('username')({ target: { value: 'wrong_user' } });
@@ -66,7 +74,7 @@ describe('Authentication - useLogin (TC_AUTH_01, TC_AUTH_02)', () => {
       data: { role: 'ADMIN' },
     });
 
-    const { result } = renderHook(() => useLogin(navigate, t));
+    const { result } = renderHook(() => useLogin(navigate, { state: {} }, t));
 
     await act(async () => {
       await result.current.handleGoogleSubmit({ credential: 'google-token' });
