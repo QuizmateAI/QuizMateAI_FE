@@ -1,0 +1,71 @@
+{
+  "mode": "preview-with-mocked-api-for-auth-and-create-flows",
+  "capturedAt": "2026-04-08T19:07:07.123Z",
+  "previewUrl": "http://127.0.0.1:4347",
+  "landing": {
+    "path": "/",
+    "routeReadyMs": 1054
+  },
+  "login": {
+    "path": "/login",
+    "routeReadyMs": 901
+  },
+  "loginToHome": {
+    "feedbackStartMs": 334,
+    "apiDurationMs": 252,
+    "feTransitionDurationMs": 1359,
+    "totalActionToReadyMs": 1918,
+    "responseStatus": 200
+  },
+  "createWorkspace": {
+    "feedbackStartMs": 34,
+    "apiDurationMs": 273,
+    "feTransitionDurationMs": 1406,
+    "totalActionToReadyMs": 1707,
+    "responseStatus": 200
+  },
+  "createGroupWorkspace": {
+    "feedbackStartMs": 91,
+    "apiDurationMs": 337,
+    "feTransitionDurationMs": 676,
+    "totalActionToReadyMs": 1091,
+    "responseStatus": 200
+  },
+  "requestLog": [
+    "POST /api/auth/login",
+    "GET /api/feedback/requests/pending",
+    "GET /api/management/users/1001/subscription",
+    "GET /api/workspace/getByUser?page=0&size=10",
+    "GET /api/credit-wallet/me",
+    "POST /api/workspace/create/individual",
+    "GET /api/workspace/getByUser?page=0&size=10",
+    "GET /api/credit-wallet/me",
+    "GET /api/user/current-plan",
+    "GET /api/v1/quiz/active-task",
+    "GET /api/workspace/91001",
+    "GET /api/materials/workspace/91001",
+    "GET /api/workspace-profile/individual/91001",
+    "GET /api/materials/workspace/91001",
+    "GET /api/v1/quiz/active-task",
+    "GET /api/quiz/getByWorkspace/91001",
+    "GET /api/flashcards/getByWorkspace/91001",
+    "GET /api/management/users/1001/subscription",
+    "GET /api/workspace/getByUser?page=0&size=10",
+    "GET /api/group/me/joined",
+    "GET /api/feedback/requests/pending",
+    "GET /api/credit-wallet/me",
+    "POST /api/workspace/create/group",
+    "GET /api/workspace/getByUser?page=0&size=10",
+    "GET /api/group/me/joined",
+    "GET /api/user/current-plan",
+    "GET /api/group/92001/members?page=0&size=50",
+    "GET /api/workspace-profile/group/92001",
+    "GET /api/group/92001/logs",
+    "GET /api/v1/quiz/active-task",
+    "GET /api/materials/workspace/92001",
+    "GET /api/v1/quiz/active-task",
+    "GET /api/workspace-profile/group/92001",
+    "GET /api/materials/workspace/92001",
+    "GET /api/v1/quiz/active-task"
+  ]
+}
