@@ -49,13 +49,13 @@ const MENU_SECTIONS = [
       {
         icon: CreditCard,
         labelKey: 'sidebar.subscriptions',
-        path: '/super-admin/plan',
+        path: '/super-admin/plans',
         matchPrefix: true,
       },
       {
         icon: Coins,
         labelKey: 'sidebar.creditPackages',
-        path: '/super-admin/credit',
+        path: '/super-admin/credits',
         matchPrefix: true,
       },
       {
@@ -130,7 +130,7 @@ const MENU_SECTIONS = [
       {
         icon: MessageSquareText,
         labelKey: 'sidebar.feedback',
-        path: '/super-admin/feedback',
+        path: '/super-admin/feedbacks',
         matchPrefix: true,
       },
     ],

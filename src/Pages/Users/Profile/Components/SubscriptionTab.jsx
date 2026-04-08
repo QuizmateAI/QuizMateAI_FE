@@ -8,6 +8,7 @@ import { Badge } from "@/Components/ui/badge";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/Components/ui/card";
 import PlanCard from "./PlanCard";
+import { buildPaymentsPath, withQueryParams } from "@/lib/routePaths";
 
 function mapPlanCatalogToCard(plan) {
   const e = plan.entitlement ?? {};
@@ -81,9 +82,10 @@ export default function SubscriptionTab() {
   const handleUpgrade = useCallback(
     (plan) => {
       // Gói GROUP → PaymentPage sẽ yêu cầu chọn nhóm
-      const url = plan.type === "GROUP"
-        ? `/payment?planId=${plan.planId}&planType=GROUP`
-        : `/payment?planId=${plan.planId}`;
+      const url = withQueryParams(buildPaymentsPath(), {
+        planId: plan.planId,
+        planType: plan.type === "GROUP" ? "GROUP" : null,
+      });
       navigate(url);
     },
     [navigate],

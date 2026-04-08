@@ -111,7 +111,7 @@ describe('AcceptInvitationPage', () => {
     });
 
     expect(window.sessionStorage.getItem('group-invite-welcome:77')).toContain('IELTS Sprint Team');
-    expect(mockNavigate).toHaveBeenCalledWith('/group-workspace/77?welcome=1', { replace: true });
+    expect(mockNavigate).toHaveBeenCalledWith('/group-workspaces/77?welcome=1', { replace: true });
     expect(mockShowSuccess).toHaveBeenCalledWith('Chào mừng bạn đã tham gia nhóm!');
   });
 });

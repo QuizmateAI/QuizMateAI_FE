@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
@@ -65,11 +65,6 @@ const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
 const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagement'));
 
-function LegacyPathRedirect({ toBuilder }) {
-  const params = useParams();
-  return <Navigate to={toBuilder(params)} replace />;
-}
-
 function MainRoutes() {
   return (
     <Routes>
@@ -106,27 +101,6 @@ function MainRoutes() {
         <Route path="/quizzes/practice/:quizId" element={<PracticeQuizPage />} />
         <Route path="/quizzes/exams/:quizId" element={<ExamQuizPage />} />
         <Route path="/quizzes/results/:attemptId" element={<QuizResultPage />} />
-
-        {/* Legacy singular URLs - redirect to plural URLs */}
-        <Route path="/payment" element={<Navigate to="/payments" replace />} />
-        <Route path="/payment/credit" element={<Navigate to="/payments/credits" replace />} />
-        <Route path="/payment/result" element={<Navigate to="/payments/results" replace />} />
-        <Route path="/profile" element={<Navigate to="/profiles" replace />} />
-        <Route path="/plan" element={<Navigate to="/plans" replace />} />
-        <Route path="/wallet" element={<Navigate to="/wallets" replace />} />
-        <Route path="/feedback" element={<Navigate to="/feedbacks" replace />} />
-        <Route
-          path="/group-workspace/:workspaceId"
-          element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/group-workspaces/${workspaceId}`} />}
-        />
-        <Route
-          path="/group-workspace/:workspaceId/*"
-          element={<LegacyPathRedirect toBuilder={({ workspaceId, '*': splat }) => `/group-workspaces/${workspaceId}${splat ? `/${splat}` : ''}`} />}
-        />
-        <Route
-          path="/group-manage/:workspaceId"
-          element={<LegacyPathRedirect toBuilder={({ workspaceId }) => `/groups/${workspaceId}/manage`} />}
-        />
       </Route>
 
        {/* Route dành riêng cho Super Admin */}
@@ -149,9 +123,6 @@ function MainRoutes() {
             <Route path="system-settings" element={<SystemSettingManagement />} />
             <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
             <Route path="feedbacks" element={<FeedbackManagement />} />
-            <Route path="plan" element={<Navigate to="plans" replace />} />
-            <Route path="credit" element={<Navigate to="credits" replace />} />
-            <Route path="feedback" element={<Navigate to="feedbacks" replace />} />
         </Route>
       </Route>
 
@@ -167,8 +138,6 @@ function MainRoutes() {
           <Route path="credits" element={<CreditPackageManagement />} />
           <Route path="payments" element={<AdminPaymentManagement />} />
           <Route path="system-settings" element={<SystemSettingManagement />} />
-          <Route path="plan" element={<Navigate to="plans" replace />} />
-          <Route path="credit" element={<Navigate to="credits" replace />} />
         </Route>
       </Route>
     </Routes>

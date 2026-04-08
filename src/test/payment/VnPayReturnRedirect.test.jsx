@@ -38,7 +38,7 @@ describe('VnPayReturnRedirect', () => {
 
     const fallbackLink = screen.getByRole('link');
     expect(fallbackLink.getAttribute('href')).toBe(
-      '/payment/result?status=success&orderId=ORDER123&amount=150000&message=Thanh+toan+thanh+cong&resultCode=00'
+      '/payments/results?status=success&orderId=ORDER123&amount=150000&message=Thanh+toan+thanh+cong&resultCode=00'
     );
   });
 });

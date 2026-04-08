@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getApiOrigin } from '@/api/api';
+import { buildPaymentResultsPath } from '@/lib/routePaths';
 
 /**
  * When VNPay redirects back to /api/vnpay/return but the SPA handles that route,
@@ -13,8 +14,7 @@ function buildResultUrlFromParams(search) {
   const amount = Math.floor(Number(vnpAmount) / 100);
   const status = responseCode === '00' ? 'success' : 'failed';
   const message = responseCode === '00' ? 'Thanh toan thanh cong' : `Thanh toan that bai (ma: ${responseCode})`;
-  const q = new URLSearchParams({ status, orderId, amount: String(amount), message, resultCode: responseCode });
-  return `/payment/result?${q.toString()}`;
+  return buildPaymentResultsPath({ status, orderId, amount, message, resultCode: responseCode });
 }
 
 export default function VnPayReturnRedirect() {
