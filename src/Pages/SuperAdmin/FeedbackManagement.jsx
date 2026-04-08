@@ -658,9 +658,17 @@ function FeedbackManagement() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" variant="outline" onClick={refreshPage} disabled={loading} className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={refreshPage}
+                disabled={loading}
+                className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}
+                aria-label={isEnglish ? 'Refresh' : 'Làm mới'}
+                title={isEnglish ? 'Refresh' : 'Làm mới'}
+              >
                 <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
-                <span>{isEnglish ? 'Refresh' : 'Làm mới'}</span>
               </Button>
               <Button type="button" onClick={openCreateEditor}>
                 <Plus className="h-4 w-4" />
@@ -783,63 +791,7 @@ function FeedbackManagement() {
             </Table>
           </section>
 
-          <div className="flex flex-col gap-6">
-            <section className={cn('rounded-[28px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.18)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
-              <h2 className="text-lg font-semibold">{isEnglish ? 'Lowest rated forms' : 'Form có điểm thấp nhất'}</h2>
-              <div className="mt-4 flex flex-col gap-3">
-                {(overview?.lowestRatedForms || []).length === 0 ? (
-                  <p className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                    {isEnglish ? 'No submitted feedback yet.' : 'Chưa có phản hồi nào được gửi.'}
-                  </p>
-                ) : (
-                  overview.lowestRatedForms.map((item) => (
-                    <div key={item.formCode} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold">{item.formCode}</p>
-                          <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                            {item.submittedCount} {isEnglish ? 'submitted' : 'đã gửi'}
-                          </p>
-                        </div>
-                        <span className="text-lg font-bold">{formatRating(item.averageRating)}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section className={cn('rounded-[28px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.18)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
-              <h2 className="text-lg font-semibold">{isEnglish ? 'By target type' : 'Theo loại đối tượng'}</h2>
-              <div className="mt-4 grid gap-3">
-                {(overview?.byTargetType || []).length === 0 ? (
-                  <p className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                    {isEnglish ? 'No target breakdown yet.' : 'Chưa có dữ liệu phân nhóm theo đối tượng.'}
-                  </p>
-                ) : (
-                  overview.byTargetType.map((item) => (
-                    <div key={item.targetType} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold">{getFeedbackTargetLabel(item.targetType, currentLang)}</p>
-                          <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                            {item.submittedCount} {isEnglish ? 'responses' : 'phản hồi'}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold">{formatRating(item.averageRating)}</p>
-                          <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                            {formatPercent(item.satisfactionRate)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section className={cn('rounded-[28px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.18)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
+          <section className={cn('rounded-[28px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.18)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold">{isEnglish ? 'Selected form' : 'Form đang chọn'}</h2>
@@ -894,8 +846,7 @@ function FeedbackManagement() {
                   {isEnglish ? 'Select a form from the table to inspect it.' : 'Chọn một form ở bảng bên trái để xem chi tiết.'}
                 </p>
               )}
-            </section>
-          </div>
+          </section>
         </div>
 
         <FeedbackResponseActivityPanel

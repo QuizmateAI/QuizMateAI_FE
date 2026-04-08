@@ -54,6 +54,25 @@ export const getGroupLogs = async (workspaceId) => {
   return response;
 };
 
+/** Thống kê tổng hợp nhóm (leader): quiz, tài liệu, phân loại AI */
+export const getGroupDashboardSummary = async (workspaceId) => {
+  const response = await api.get(`/group/${workspaceId}/dashboard/summary`);
+  return response;
+};
+
+/** Dashboard tóm tắt từng thành viên (leader), phân trang */
+export const getMemberDashboardCards = async (workspaceId, page = 0, size = 20) => {
+  const response = await api.get(`/group/${workspaceId}/dashboard/members?page=${page}&size=${size}`);
+  return response;
+};
+
+/** Chi tiết dashboard một thành viên (leader xem mọi người; member chỉ xem chính mình — policy BE) */
+export const getMemberDashboardDetail = async (workspaceId, memberUserId, attemptMode = 'ALL') => {
+  const mode = encodeURIComponent(String(attemptMode || 'ALL').toUpperCase());
+  const response = await api.get(`/group/${workspaceId}/dashboard/members/${memberUserId}?attemptMode=${mode}`);
+  return response;
+};
+
 // Xem trước thông tin lời mời vào nhóm
 export const previewInvitation = async (token) => {
   const response = await api.get(`/group/invitation/preview?token=${token}`, {

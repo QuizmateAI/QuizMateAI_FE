@@ -1,12 +1,29 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   X, ChevronRight, ChevronLeft, Check, Clock, Users,
   FileText, Loader2, Search, Calendar, Shield,
+  ListChecks,
 } from 'lucide-react';
 import { getQuizzesByScope } from '../../../../api/QuizAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { createChallenge } from '../../../../api/ChallengeAPI';
+import { getDurationInMinutes } from '@/lib/quizDurationDisplay';
+
+function getQuizSummaryLine(q) {
+  const questionCount = Number(q?.totalQuestion ?? q?.totalQuestions ?? q?.questionCount ?? 0) || 0;
+  const durationMinutes = getDurationInMinutes(q) || Number(q?.totalTime ?? 0) || 0;
+  return { questionCount, durationMinutes };
+}
+
+/** Challenge chỉ dùng quiz chung — loại quiz giao riêng (SELECTED_MEMBERS / có assignee). */
+function isQuizEligibleForChallengeSource(quiz) {
+  const mode = String(quiz?.groupAudienceMode ?? '').toUpperCase();
+  if (mode === 'SELECTED_MEMBERS') return false;
+  const assignees = quiz?.assignedUserIds;
+  if (Array.isArray(assignees) && assignees.length > 0) return false;
+  return true;
+}
 
 const STEPS = [
   { key: 'quiz', label: 'Chọn Quiz' },
@@ -52,6 +69,12 @@ function toLocalDatetimeString(date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** Giá trị từ input datetime-local — gửi nguyên wall-clock cho BE (LocalDateTime), không dùng toISOString (lệch múi giờ). */
+function datetimeLocalValueToBackendPayload(value) {
+  if (!value || typeof value !== 'string') return value;
+  return value.length === 16 ? `${value}:00` : value;
+}
+
 function formatDateTime(dt) {
   if (!dt) return '-';
   const d = new Date(dt);
@@ -59,7 +82,21 @@ function formatDateTime(dt) {
     + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 }
 
-export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose, onCreated }) {
+function getScheduleIssues(sourceMode, startTime, endTime) {
+  const issues = [];
+  const startMs = new Date(startTime).getTime();
+  const endMs = new Date(endTime).getTime();
+  const minLeadMin = sourceMode === 'NEW_CHALLENGE_QUIZ' ? 25 : 5;
+  const minDurMin = 5;
+  if (!startTime || !endTime) return issues;
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return issues;
+  if (endMs <= startMs) issues.push('endBeforeStart');
+  else if ((endMs - startMs) / 60000 < minDurMin) issues.push('shortWindow');
+  if (startMs < Date.now() + minLeadMin * 60 * 1000) issues.push('startTooSoon');
+  return issues;
+}
+
+export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose, onCreated, currentUserId }) {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -87,6 +124,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const [registrationMode, setRegistrationMode] = useState('PUBLIC_GROUP');
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [memberSearch, setMemberSearch] = useState('');
+  /** Leader tham gia thi — một suất, sau ACTIVE không xem trước đề */
+  const [leaderParticipates, setLeaderParticipates] = useState(false);
 
   // Fetch quizzes
   const { data: quizzes = [], isLoading: quizzesLoading } = useQuery({
@@ -109,15 +148,41 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   });
   const members = membersData || [];
 
-  const filteredQuizzes = quizzes.filter((q) =>
+  const membersForInvite = useMemo(() => {
+    const uid = Number(currentUserId);
+    if (!Number.isInteger(uid) || uid <= 0) return members;
+    return members.filter((m) => Number(m.userId ?? m.groupMemberId) !== uid);
+  }, [members, currentUserId]);
+
+  /** Không gửi / không đếm leader trong danh sách mời (đồng bộ với UI đã ẩn bản thân). */
+  const sanitizedSelectedUserIds = useMemo(() => {
+    const uid = Number(currentUserId);
+    if (!Number.isInteger(uid) || uid <= 0) return selectedUserIds;
+    return selectedUserIds.filter((id) => Number(id) !== uid);
+  }, [selectedUserIds, currentUserId]);
+
+  const challengeEligibleQuizzes = useMemo(
+    () => quizzes.filter((q) => isQuizEligibleForChallengeSource(q)),
+    [quizzes],
+  );
+
+  /** Quiz đã chọn có thể không còn hợp lệ khi danh sách quiz đổi — dùng giá trị đã kiểm tra, không cần effect. */
+  const validSelectedQuizId = useMemo(() => {
+    if (selectedQuizId == null) return null;
+    return challengeEligibleQuizzes.some((q) => q.quizId === selectedQuizId)
+      ? selectedQuizId
+      : null;
+  }, [challengeEligibleQuizzes, selectedQuizId]);
+
+  const filteredQuizzes = challengeEligibleQuizzes.filter((q) =>
     !quizSearch || q.title?.toLowerCase().includes(quizSearch.toLowerCase())
   );
 
-  const filteredMembers = members.filter((m) =>
+  const filteredMembers = membersForInvite.filter((m) =>
     !memberSearch || (m.fullName || m.username || m.email || '').toLowerCase().includes(memberSearch.toLowerCase())
   );
 
-  const selectedQuiz = quizzes.find((q) => q.quizId === selectedQuizId);
+  const selectedQuiz = challengeEligibleQuizzes.find((q) => q.quizId === validSelectedQuizId);
 
   const toggleMember = useCallback((userId) => {
     setSelectedUserIds((prev) =>
@@ -127,9 +192,12 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
 
   const canNext = () => {
     switch (step) {
-      case 0: return sourceMode === 'NEW_CHALLENGE_QUIZ' || selectedQuizId != null;
-      case 1: return title.trim() && startTime && endTime && new Date(endTime) > new Date(startTime);
-      case 2: return registrationMode === 'PUBLIC_GROUP' || selectedUserIds.length > 0;
+      case 0: return sourceMode === 'NEW_CHALLENGE_QUIZ' || validSelectedQuizId != null;
+      case 1: {
+        if (!title.trim() || !startTime || !endTime) return false;
+        return getScheduleIssues(sourceMode, startTime, endTime).length === 0;
+      }
+      case 2: return registrationMode === 'PUBLIC_GROUP' || sanitizedSelectedUserIds.length > 0;
       case 3: return true;
       default: return false;
     }
@@ -144,10 +212,11 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         description: description.trim() || null,
         registrationMode,
         sourceMode,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
-        sourceQuizId: sourceMode === 'EXISTING_SNAPSHOT' ? selectedQuizId : null,
-        invitedUserIds: registrationMode === 'INVITE_ONLY' ? selectedUserIds : [],
+        startTime: datetimeLocalValueToBackendPayload(startTime),
+        endTime: datetimeLocalValueToBackendPayload(endTime),
+        sourceQuizId: sourceMode === 'EXISTING_SNAPSHOT' ? validSelectedQuizId : null,
+        invitedUserIds: registrationMode === 'INVITE_ONLY' ? sanitizedSelectedUserIds : [],
+        leaderParticipates,
       });
       onCreated();
     } catch (err) {
@@ -172,7 +241,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
             <div className="grid gap-3 md:grid-cols-2">
               {[
                 { key: 'EXISTING_SNAPSHOT', label: 'Quiz có sẵn', desc: 'Tạo bản sao từ quiz đã có' },
-                { key: 'NEW_CHALLENGE_QUIZ', label: 'Quiz mới', desc: 'Tạo quiz mới cho challenge' },
+                { key: 'NEW_CHALLENGE_QUIZ', label: 'Quiz mới', desc: 'Soạn đề sau trong chi tiết challenge' },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -191,49 +260,144 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
 
             {sourceMode === 'EXISTING_SNAPSHOT' && (
               <>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <ListChecks className={`h-4 w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                    <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      Quiz chung trong workspace
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
+                      }`}
+                      title="Chỉ quiz không giao riêng mới dùng được cho challenge"
+                    >
+                      {quizzesLoading ? '…' : challengeEligibleQuizzes.length}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="relative">
-                  <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
+                  <Search className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
                   <input
                     type="text"
-                    placeholder="Tìm quiz..."
+                    placeholder="Tìm theo tên quiz..."
                     value={quizSearch}
                     onChange={(e) => setQuizSearch(e.target.value)}
-                    className={`${inputCls} pl-10`}
+                    className={`${inputCls} pl-10 shadow-sm`}
+                    aria-label="Tìm quiz"
                   />
                 </div>
 
-                <div className="min-h-[18rem] max-h-80 overflow-y-auto rounded-xl border p-1" style={{ borderColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
+                <div
+                  className={`min-h-[16rem] max-h-[22rem] overflow-y-auto rounded-2xl border p-2 sm:p-3 ${
+                    isDarkMode ? 'border-slate-600/80 bg-slate-900/40' : 'border-slate-200/90 bg-slate-50/80'
+                  }`}
+                >
                   {quizzesLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-5 w-5 animate-spin text-orange-500" />
+                    <div className="flex flex-col items-center justify-center gap-2 py-14">
+                      <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                      <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Đang tải danh sách…</span>
                     </div>
                   ) : filteredQuizzes.length === 0 ? (
-                    <div className={`py-8 text-center text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                      Không tìm thấy quiz nào
+                    <div className={`flex flex-col items-center justify-center gap-2 px-4 py-14 text-center ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <FileText className={`h-10 w-10 opacity-40 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                      <p className="text-sm font-medium">
+                        {quizzes.length === 0
+                          ? 'Chưa có quiz nào trong workspace'
+                          : challengeEligibleQuizzes.length === 0
+                            ? 'Không có quiz chung để tạo challenge'
+                            : 'Không khớp từ khóa tìm kiếm'}
+                      </p>
+                      <p className="max-w-xs text-xs opacity-90">
+                        {quizzes.length === 0
+                          ? 'Tạo quiz trong workspace trước, hoặc chọn "Quiz mới" ở trên.'
+                          : challengeEligibleQuizzes.length === 0
+                            ? 'Quiz đã giao riêng thành viên không dùng được. Xuất bản quiz dạng chung cho cả nhóm hoặc bỏ giao riêng trước.'
+                            : 'Thử từ khóa khác hoặc xóa ô tìm kiếm.'}
+                      </p>
                     </div>
                   ) : (
-                    filteredQuizzes.map((q) => (
-                      <button
-                        key={q.quizId}
-                        onClick={() => setSelectedQuizId(q.quizId)}
-                        className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors ${
-                          selectedQuizId === q.quizId
-                            ? (isDarkMode ? 'bg-orange-500/15 text-orange-300' : 'bg-orange-50 text-orange-700')
-                            : (isDarkMode ? 'text-white hover:bg-slate-700/50' : 'text-slate-900 hover:bg-gray-50')
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 flex-shrink-0 opacity-50" />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium">{q.title}</div>
-                            <div className={`text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-                              {q.totalQuestions || 0} câu · {q.totalTime || 0} phút
-                            </div>
-                          </div>
-                          {selectedQuizId === q.quizId && <Check className="h-4 w-4 text-orange-500" />}
-                        </div>
-                      </button>
-                    ))
+                    <ul className="flex flex-col gap-2">
+                      {filteredQuizzes.map((q) => {
+                        const { questionCount, durationMinutes } = getQuizSummaryLine(q);
+                        const isSelected = validSelectedQuizId === q.quizId;
+                        return (
+                          <li key={q.quizId}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedQuizId(q.quizId)}
+                              className={`group flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition-all sm:px-4 sm:py-3.5 ${
+                                isSelected
+                                  ? isDarkMode
+                                    ? 'border-orange-500/60 bg-orange-500/15 ring-2 ring-orange-500/40'
+                                    : 'border-orange-300 bg-white shadow-md shadow-orange-500/10 ring-2 ring-orange-400/30'
+                                  : isDarkMode
+                                    ? 'border-slate-600/60 bg-slate-800/50 hover:border-slate-500 hover:bg-slate-800'
+                                    : 'border-transparent bg-white hover:border-slate-200 hover:shadow-sm'
+                              }`}
+                            >
+                              <div
+                                className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${
+                                  isSelected
+                                    ? 'bg-orange-500 text-white shadow-sm'
+                                    : isDarkMode
+                                      ? 'bg-slate-700 text-slate-300'
+                                      : 'bg-orange-100 text-orange-700'
+                                }`}
+                              >
+                                <FileText className="h-5 w-5 opacity-90" />
+                              </div>
+                              <div className="min-w-0 flex-1 pt-0.5">
+                                <div
+                                  className={`truncate text-sm font-semibold sm:text-base ${
+                                    isSelected
+                                      ? isDarkMode
+                                        ? 'text-orange-100'
+                                        : 'text-orange-800'
+                                      : isDarkMode
+                                        ? 'text-white'
+                                        : 'text-slate-900'
+                                  }`}
+                                >
+                                  {q.title}
+                                </div>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium ${
+                                      isDarkMode ? 'bg-slate-700/80 text-slate-300' : 'bg-slate-100 text-slate-600'
+                                    }`}
+                                  >
+                                    <ListChecks className="h-3 w-3 opacity-70" />
+                                    {questionCount} câu
+                                  </span>
+                                  <span
+                                    className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium ${
+                                      isDarkMode ? 'bg-slate-700/80 text-slate-300' : 'bg-slate-100 text-slate-600'
+                                    }`}
+                                  >
+                                    <Clock className="h-3 w-3 opacity-70" />
+                                    {durationMinutes} phút
+                                  </span>
+                                </div>
+                              </div>
+                              <div
+                                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                                  isSelected
+                                    ? 'border-orange-500 bg-orange-500 text-white'
+                                    : isDarkMode
+                                      ? 'border-slate-500 bg-transparent group-hover:border-slate-400'
+                                      : 'border-slate-200 bg-white group-hover:border-slate-300'
+                                }`}
+                                aria-hidden
+                              >
+                                {isSelected ? <Check className="h-4 w-4" strokeWidth={2.5} /> : null}
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   )}
                 </div>
               </>
@@ -243,10 +407,10 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               <div className={`rounded-xl border p-6 text-center ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                 <FileText className={`mx-auto mb-2 h-8 w-8 ${isDarkMode ? 'text-orange-300/60' : 'text-orange-400'}`} />
                 <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Quiz mới sẽ được tạo tự động khi bạn hoàn tất wizard.
+                  Sau khi tạo challenge, vào chi tiết challenge và bấm <strong className="font-medium">Soạn đề</strong> để mở trình soạn quiz (tab Quiz).
                 </p>
                 <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Bạn có thể chỉnh sửa nội dung quiz sau khi tạo challenge.
+                  Lịch bắt đầu nên cách hiện tại ít nhất 25 phút để kịp hoàn thiện câu hỏi.
                 </p>
               </div>
             )}
@@ -254,6 +418,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         );
 
       case 1: // Schedule
+        { const schedIssues = getScheduleIssues(sourceMode, startTime, endTime);
         return (
           <div className="flex flex-col gap-4">
             <div>
@@ -311,11 +476,42 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               </div>
             </div>
 
-            {startTime && endTime && new Date(endTime) <= new Date(startTime) && (
+            {schedIssues.includes('endBeforeStart') && (
               <p className="text-xs text-red-500">Thời gian kết thúc phải sau thời gian bắt đầu</p>
             )}
+            {schedIssues.includes('shortWindow') && (
+              <p className="text-xs text-red-500">Khoảng từ bắt đầu đến kết thúc phải ít nhất 5 phút</p>
+            )}
+            {schedIssues.includes('startTooSoon') && (
+              <p className="text-xs text-red-500">
+                {sourceMode === 'NEW_CHALLENGE_QUIZ'
+                  ? 'Với quiz mới, thời gian bắt đầu phải cách hiện tại ít nhất 25 phút (để soạn đề).'
+                  : 'Thời gian bắt đầu phải cách hiện tại ít nhất 5 phút.'}
+              </p>
+            )}
+
+            <label
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${
+                isDarkMode ? 'border-slate-600 bg-slate-800/40' : 'border-gray-200 bg-gray-50'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={leaderParticipates}
+                onChange={(e) => setLeaderParticipates(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300"
+              />
+              <span>
+                <span className={`block text-sm font-medium ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
+                  Tôi tham gia thi cùng mọi người
+                </span>
+                <span className={`mt-1 block text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+                  Bạn được giữ một suất trong danh sách thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi (công bằng với thành viên). Trong lúc đề còn nháp (DRAFT) bạn vẫn soạn và kiểm tra được.
+                </span>
+              </span>
+            </label>
           </div>
-        );
+        ); }
 
       case 2: // Registration
         return (
@@ -358,7 +554,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                 </div>
 
                 <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  Đã chọn {selectedUserIds.length} thành viên
+                  Đã chọn {sanitizedSelectedUserIds.length} thành viên
                 </div>
 
                 <div className="min-h-[16rem] max-h-72 overflow-y-auto rounded-xl border p-1" style={{ borderColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
@@ -369,7 +565,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   ) : (
                     filteredMembers.map((m) => {
                       const userId = m.userId || m.groupMemberId;
-                      const isSelected = selectedUserIds.includes(userId);
+                      const isSelected = sanitizedSelectedUserIds.includes(userId);
                       return (
                         <button
                           key={userId}
@@ -449,9 +645,14 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               </h4>
               <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                 {sourceMode === 'EXISTING_SNAPSHOT'
-                  ? (selectedQuiz ? `${selectedQuiz.title} (bản sao)` : 'Chưa chọn')
-                  : 'Quiz mới (sẽ tạo khi hoàn tất)'}
+                  ? (selectedQuiz ? `${selectedQuiz.title} (bản sao quiz chung)` : 'Chưa chọn')
+                  : 'Quiz mới (soạn đề trong chi tiết challenge sau khi tạo)'}
               </p>
+              {sourceMode === 'EXISTING_SNAPSHOT' && selectedQuiz ? (
+                <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  Snapshot không giao riêng thành viên; toàn bộ người đăng ký challenge dùng chung nội dung này.
+                </p>
+              ) : null}
             </div>
 
             <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
@@ -461,7 +662,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                 {registrationMode === 'PUBLIC_GROUP'
                   ? 'Công khai - mọi thành viên đều có thể đăng ký'
-                  : `Mời riêng - ${selectedUserIds.length} thành viên được mời`}
+                  : `Mời riêng - ${sanitizedSelectedUserIds.length} thành viên được mời`}
               </p>
             </div>
           </div>

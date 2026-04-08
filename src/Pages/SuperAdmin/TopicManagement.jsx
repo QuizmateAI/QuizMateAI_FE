@@ -391,13 +391,16 @@ function TopicManagement() {
           </p>
         </div>
         <Button
+          type="button"
           onClick={fetchTopics}
           disabled={topicsLoading}
           variant="outline"
+          size="icon"
           className={`rounded-xl ${isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}`}
+          aria-label={t('common.refresh')}
+          title={t('common.refresh')}
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${topicsLoading ? 'animate-spin' : ''}`} />
-          {t('common.refresh')}
+          <RefreshCw className={`h-4 w-4 ${topicsLoading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 

@@ -696,6 +696,7 @@
     "light": "Sáng",
     "dark": "Tối",
     "refresh": "Làm mới",
+    "refreshLog": "Làm mới nhật ký",
     "back": "Quay lại",
     "next": "Tiếp theo",
     "subscription": "Gói đăng ký",
@@ -988,6 +989,11 @@
       "status": "Trạng thái",
       "allStatuses": "Tất cả trạng thái"
     },
+    "exchangeRate": {
+      "title": "Tỷ giá USD/VND hiện tại",
+      "refresh": "Làm mới tỷ giá",
+      "unknown": "Không rõ nguồn"
+    },
     "table": {
       "model": "Model",
       "group": "Capability",
@@ -1078,9 +1084,14 @@
     "refresh": "Làm mới",
     "clear": "Xóa lọc",
     "apply": "Áp dụng",
+    "exchangeRate": {
+      "title": "Tỷ giá USD/VND hiện tại",
+      "refresh": "Làm mới tỷ giá",
+      "unknown": "Không rõ nguồn"
+    },
     "empty": "Chưa có request nào phù hợp với bộ lọc hiện tại.",
     "metrics": {
-      "requests": "Tổng request",
+      "requests": "Tổng số request",
       "matched": "Request có thể đối soát",
       "revenue": "Người dùng trả",
       "credits": "Credit đã thu",
@@ -1108,11 +1119,11 @@
     "table": {
       "request": "Request",
       "plan": "Gói",
+      "model": "Model",
       "tokens": "Token",
       "charged": "Người dùng trả",
       "actual": "Chi phí thực tế",
       "profit": "Lợi nhuận",
-      "legend": "Cột Người dùng trả hiển thị số credit và số tiền người dùng đã trả. Cột Chi phí thực tế dùng token model thực tế để tính ra chi phí. Lợi nhuận là tiền người dùng trả trừ chi phí thực tế; số âm nghĩa là đang lỗ.",
       "profitHint": "Phần QuizMate giữ lại",
       "profitGainHint": "QuizMate đang có lãi",
       "profitLossHint": "QuizMate đang bị lỗ",
@@ -2171,6 +2182,7 @@
     "quiz": {
       "createTitle": "Tạo Quiz",
       "createDesc": "Tạo bài kiểm tra cho Không gian.",
+      "challengeDraftDesc": "Soạn đề cho challenge: cập nhật tên, độ khó, thời gian, câu hỏi và đáp án.",
       "insufficientCredit": {
         "title": "Không đủ QMC trong workspace",
         "hint": "Mua thêm gói credit để nạp QMC, sau đó thử tạo quiz bằng AI lại.",
@@ -2414,6 +2426,8 @@
         "nameMaxLength": "Tên quiz tối đa {{max}} ký tự.",
         "nameMaxLengthHint": "Tối đa {{max}} ký tự.",
         "requiredFieldsHint": "Các trường có dấu * là bắt buộc.",
+        "totalQuestionsRange": "Tổng số câu phải nằm trong khoảng từ {{min}} đến {{max}}.",
+        "totalQuestionsRangeHint": "Nhập số câu trong khoảng từ {{min}} đến {{max}}.",
         "contextRequired": "Vui lòng chọn vị trí tạo quiz.",
         "correctAnswerRequired": "Câu {{index}} chưa chọn đáp án đúng.",
         "correctAnswerRequiredInline": "Chưa chọn đáp án đúng cho câu này.",
@@ -3735,7 +3749,46 @@
     "challenge": {
       "title": "Challenge",
       "description": "Thi đấu cùng các thành viên trong nhóm qua các bài quiz theo thời gian thực.",
-      "badge": "Challenge"
+      "badge": "Challenge",
+      "cancelDialogTitle": "Huỷ challenge?",
+      "cancelDialogDescription": "Bạn có chắc muốn huỷ challenge này? Thành viên sẽ không còn tham gia và lịch challenge sẽ bị gỡ.",
+      "cancelDialogBack": "Đóng",
+      "cancelDialogConfirm": "Huỷ challenge",
+      "snapshotQuizDefaultTitle": "Quiz challenge",
+      "viewSnapshotQuiz": "Xem quiz",
+      "snapshotQuizHint": "Xem trước nội dung và trạng thái; chỉnh sửa qua Soạn đề trước giờ bắt đầu challenge.",
+      "quizSnapshotReviewDraftTitle": "Đề challenge (chỉ xem & chỉnh sửa)",
+      "quizSnapshotReviewDraftBody": "Đây là bài thi gắn với challenge, không phải quiz chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như quiz nhóm.",
+      "quizSnapshotReviewNoTakeHint": "Bài thi này chỉ mở khi challenge bắt đầu (theo lịch hoặc khi leader điều khiển). Xếp hạng theo từng challenge — không làm bài từ màn hình này.",
+      "leaderboardTitle": "Bảng xếp hạng",
+      "editSchedule": "Sửa lịch & thông tin",
+      "editDialogTitle": "Cập nhật challenge",
+      "editDialogDescription": "Chỉ chỉnh được khi còn hơn 1 giờ trước giờ bắt đầu. Kiểm tra lại múi giờ và khoảng thời gian.",
+      "editTitleLabel": "Tên challenge",
+      "editDescriptionLabel": "Mô tả",
+      "editStartLabel": "Bắt đầu",
+      "editEndLabel": "Kết thúc",
+      "editSave": "Lưu thay đổi",
+      "phase": {
+        "SCHEDULED": "Chưa bắt đầu",
+        "LIVE": "Đang diễn ra",
+        "FINISHED": "Đã kết thúc",
+        "CANCELLED": "Đã huỷ"
+      },
+      "leaderFairPlayQuizHint": "Bạn tham gia thi cùng mọi người: sau khi xuất bản đề bạn không xem trước câu hỏi. Trong lúc đề còn nháp bạn vẫn soạn được.",
+      "quizStatus": {
+        "DRAFT": "Bản nháp",
+        "PROCESSING": "Đang tạo",
+        "ACTIVE": "Sẵn sàng",
+        "ERROR": "Lỗi tạo quiz"
+      },
+      "reviewContributorsTitle": "Người review đề",
+      "reviewContributorsHint": "Thành viên được gán ở đây không thể đăng ký tham gia challenge. Không gán người đã tham gia.",
+      "reviewContributorPickLabel": "Thành viên nhóm",
+      "reviewContributorPickPlaceholder": "Chọn thành viên…",
+      "reviewContributorAdd": "Thêm",
+      "reviewContributorRemove": "Gỡ",
+      "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này."
     },
     "members": {
       "loading": "Đang tải danh sách thành viên...",

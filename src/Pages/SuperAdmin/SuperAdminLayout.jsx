@@ -34,7 +34,7 @@ function SuperAdminLayoutContent() {
 
   return (
     <div className={`flex min-h-screen transition-colors duration-300 ${fontClass} ${
-      isDarkMode ? 'bg-slate-950' : 'bg-[#F8FAFC]'
+      isDarkMode ? 'bg-slate-950' : 'bg-white'
     }`}>
       <SuperAdminSidebar 
         collapsed={sidebarCollapsed} 
