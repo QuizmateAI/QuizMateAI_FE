@@ -1,6 +1,13 @@
 export const APP_ROUTE_SEGMENTS = {
+  home: "home",
+  payments: "payments",
+  profiles: "profiles",
+  plans: "plans",
+  wallets: "wallets",
+  feedbacks: "feedbacks",
   workspaces: "workspaces",
   groupWorkspaces: "group-workspaces",
+  groups: "groups",
   quizzes: "quizzes",
 };
 
@@ -17,22 +24,97 @@ function normalizeSubPath(subPath = "") {
   return String(subPath || "").replace(/^\/+/, "");
 }
 
-export function buildWorkspacePath(workspaceId, subPath = "") {
+function buildAppPath(segment, subPath = "") {
   const normalizedSubPath = normalizeSubPath(subPath);
-  const basePath = `/${APP_ROUTE_SEGMENTS.workspaces}/${workspaceId}`;
+  const basePath = `/${segment}`;
   return normalizedSubPath ? `${basePath}/${normalizedSubPath}` : basePath;
 }
 
+export function withQueryParams(path, queryParams = {}) {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(queryParams || {}).forEach(([key, value]) => {
+    if (value == null || value === "") return;
+    searchParams.set(key, String(value));
+  });
+
+  const queryString = searchParams.toString();
+  return queryString ? `${path}?${queryString}` : path;
+}
+
+export function buildPaymentsPath(subPath = "") {
+  return buildAppPath(APP_ROUTE_SEGMENTS.payments, subPath);
+}
+
+export function buildPaymentCreditsPath() {
+  return buildPaymentsPath("credits");
+}
+
+export function buildPaymentResultsPath(queryParams = null) {
+  const basePath = buildPaymentsPath("results");
+  return queryParams ? withQueryParams(basePath, queryParams) : basePath;
+}
+
+export function buildProfilesPath() {
+  return buildAppPath(APP_ROUTE_SEGMENTS.profiles);
+}
+
+export function buildPlansPath() {
+  return buildAppPath(APP_ROUTE_SEGMENTS.plans);
+}
+
+export function buildWalletsPath() {
+  return buildAppPath(APP_ROUTE_SEGMENTS.wallets);
+}
+
+export function buildFeedbacksPath() {
+  return buildAppPath(APP_ROUTE_SEGMENTS.feedbacks);
+}
+
+export function buildWorkspacePath(workspaceId, subPath = "") {
+  return buildAppPath(`${APP_ROUTE_SEGMENTS.workspaces}/${workspaceId}`, subPath);
+}
+
 export function buildGroupWorkspacePath(workspaceId, subPath = "") {
-  const normalizedSubPath = normalizeSubPath(subPath);
-  const basePath = `/${APP_ROUTE_SEGMENTS.groupWorkspaces}/${workspaceId}`;
-  return normalizedSubPath ? `${basePath}/${normalizedSubPath}` : basePath;
+  return buildAppPath(`${APP_ROUTE_SEGMENTS.groupWorkspaces}/${workspaceId}`, subPath);
+}
+
+export function buildGroupManagementPath(workspaceId) {
+  return buildAppPath(`${APP_ROUTE_SEGMENTS.groups}/${workspaceId}/manage`);
+}
+
+export function buildGroupWorkspaceSectionPath(
+  workspaceId,
+  section = null,
+  queryParams = {},
+) {
+  return withQueryParams(
+    buildGroupWorkspacePath(workspaceId),
+    section ? { section, ...queryParams } : queryParams,
+  );
+}
+
+export function buildGroupWorkspaceDetailPath(
+  workspaceId,
+  subPath = "",
+  queryParams = {},
+) {
+  return withQueryParams(buildGroupWorkspacePath(workspaceId, subPath), queryParams);
 }
 
 export function extractWorkspaceSubPath(pathname, workspaceId) {
   if (!workspaceId || !pathname) return "";
 
   const prefix = buildWorkspacePath(workspaceId);
+  if (!String(pathname).startsWith(prefix)) return "";
+
+  return String(pathname).slice(prefix.length).replace(/^\/+/, "");
+}
+
+export function extractGroupWorkspaceSubPath(pathname, workspaceId) {
+  if (!workspaceId || !pathname) return "";
+
+  const prefix = buildGroupWorkspacePath(workspaceId);
   if (!String(pathname).startsWith(prefix)) return "";
 
   return String(pathname).slice(prefix.length).replace(/^\/+/, "");
@@ -106,7 +188,7 @@ export function buildQuizResultPath(attemptId) {
 export function extractWorkspaceIdFromPath(path) {
   if (!path) return null;
 
-  const match = String(path).match(/^\/workspaces\/(\d+)/);
+  const match = String(path).match(/^\/(?:workspaces|group-workspaces)\/(\d+)/);
   if (!match) return null;
 
   const parsedWorkspaceId = Number(match[1]);
@@ -121,4 +203,8 @@ export function isWorkspaceRoadmapsPath(path) {
 
 export function isWorkspaceQuizDetailPath(path) {
   return /\/workspaces\/\d+\/(?:quizzes(?:\/\d+)?|roadmaps\/(?:\d+\/phases\/\d+\/)?quizzes\/\d+)(?:\?|$)/.test(String(path || ""));
+}
+
+export function isGroupWorkspacePath(path) {
+  return /\/group-workspaces\/\d+(?:\/|$|\?)/.test(String(path || ""));
 }

@@ -69,6 +69,12 @@ import {
   toggleGroupDiscussionResolved,
   updateGroupMaterial,
 } from '@/lib/groupReviewMockState';
+import {
+  buildGroupWorkspaceDetailPath,
+  buildGroupWorkspacePath,
+  buildGroupWorkspaceSectionPath,
+  buildQuizAttemptPath,
+} from '@/lib/routePaths';
 
 const SECTION_META = {
   overview: { label: 'Tổng quan', icon: LayoutDashboard },
@@ -149,7 +155,7 @@ function formatRelativeTime(value, lang = 'vi') {
 }
 
 function parseDetailRoute(pathname, workspaceId) {
-  const prefix = `/group-workspace/${workspaceId}`;
+  const prefix = buildGroupWorkspacePath(workspaceId);
   if (!pathname.startsWith(prefix)) return null;
   const rest = pathname.slice(prefix.length);
   const segments = rest.split('/').filter(Boolean);
@@ -370,8 +376,7 @@ export default function GroupReviewWorkspaceShell() {
   );
   const requestedSection = searchParams.get('section');
   const activeSection = SECTION_META[requestedSection] ? requestedSection : getDetailSection(detailRoute);
-  const baseWorkspacePath = resolvedWorkspaceId ? `/group-workspace/${resolvedWorkspaceId}` : '/group-workspace/new';
-  const returnToQuizPath = `${baseWorkspacePath}?section=quiz`;
+  const returnToQuizPath = buildGroupWorkspaceSectionPath(resolvedWorkspaceId || 'new', 'quiz');
   const pageShellClass = isDarkMode
     ? 'min-h-screen bg-[#06131a] text-white'
     : 'min-h-screen bg-[linear-gradient(180deg,#fffaf0_0%,#f4fbf7_46%,#eef6ff_100%)] text-slate-900';
@@ -509,7 +514,7 @@ export default function GroupReviewWorkspaceShell() {
         if (!createdWorkspaceId) {
           throw new Error('Không thể tạo group workspace.');
         }
-        navigate(`/group-workspace/${createdWorkspaceId}`, {
+        navigate(buildGroupWorkspacePath(createdWorkspaceId), {
           replace: true,
           state: { openProfileConfig: true },
         });
@@ -756,22 +761,28 @@ export default function GroupReviewWorkspaceShell() {
 
   const goToSection = useCallback((sectionKey) => {
     if (!resolvedWorkspaceId) return;
-    navigate(`/group-workspace/${resolvedWorkspaceId}?section=${sectionKey}`);
+    navigate(buildGroupWorkspaceSectionPath(resolvedWorkspaceId, sectionKey));
   }, [navigate, resolvedWorkspaceId]);
 
   const openMaterialDetail = useCallback((materialId) => {
     if (!resolvedWorkspaceId) return;
-    navigate(`/group-workspace/${resolvedWorkspaceId}/materials/${materialId}?section=materials`);
+    navigate(buildGroupWorkspaceDetailPath(resolvedWorkspaceId, `materials/${materialId}`, { section: 'materials' }));
   }, [navigate, resolvedWorkspaceId]);
 
   const openDiscussionDetail = useCallback((quizId, questionId) => {
     if (!resolvedWorkspaceId) return;
-    navigate(`/group-workspace/${resolvedWorkspaceId}/discussion/${quizId}/${questionId}?section=quiz`);
+    navigate(
+      buildGroupWorkspaceDetailPath(
+        resolvedWorkspaceId,
+        `discussion/${quizId}/${questionId}`,
+        { section: 'quiz' },
+      ),
+    );
   }, [navigate, resolvedWorkspaceId]);
 
   const openRoadmapDetail = useCallback((roadmapId) => {
     if (!resolvedWorkspaceId) return;
-    navigate(`/group-workspace/${resolvedWorkspaceId}/roadmap/${roadmapId}?section=roadmap`);
+    navigate(buildGroupWorkspaceDetailPath(resolvedWorkspaceId, `roadmap/${roadmapId}`, { section: 'roadmap' }));
   }, [navigate, resolvedWorkspaceId]);
 
   const handleInvite = useCallback(async (email) => {
@@ -1024,12 +1035,12 @@ export default function GroupReviewWorkspaceShell() {
         await fetchSources();
       }
       showSuccess('Đã xóa tài liệu.');
-      navigate(`${baseWorkspacePath}?section=materials`, { replace: true });
+      navigate(buildGroupWorkspaceSectionPath(resolvedWorkspaceId || 'new', 'materials'), { replace: true });
     } catch (error) {
       console.error('Failed to delete material:', error);
       showError(error?.message || 'Không thể xóa tài liệu.');
     }
-  }, [baseWorkspacePath, fetchSources, groupMaterialDetail, navigate, resolvedWorkspaceId, showError, showSuccess]);
+  }, [fetchSources, groupMaterialDetail, navigate, resolvedWorkspaceId, showError, showSuccess]);
 
   const handleCreateQuiz = useCallback(async () => {
     if (!resolvedWorkspaceId) return;
@@ -1061,7 +1072,9 @@ export default function GroupReviewWorkspaceShell() {
 
   const handleStartQuiz = useCallback((quiz, mode) => {
     if (!quiz?.quizId) return;
-    navigate(`/quiz/${mode}/${quiz.quizId}`, {
+    const attemptPath = buildQuizAttemptPath(mode, quiz.quizId);
+    if (!attemptPath) return;
+    navigate(attemptPath, {
       state: {
         returnToQuizPath,
         sourceWorkspaceId: Number(resolvedWorkspaceId),
@@ -1730,7 +1743,7 @@ export default function GroupReviewWorkspaceShell() {
     return (
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" onClick={() => navigate(`${baseWorkspacePath}?section=materials`)}>
+          <Button variant="outline" onClick={() => navigate(buildGroupWorkspaceSectionPath(resolvedWorkspaceId || 'new', 'materials'))}>
             <ArrowLeft className="h-4 w-4" />
             Quay lại materials
           </Button>
@@ -1889,7 +1902,7 @@ export default function GroupReviewWorkspaceShell() {
     return (
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" onClick={() => navigate(`${baseWorkspacePath}?section=roadmap`)}>
+          <Button variant="outline" onClick={() => navigate(buildGroupWorkspaceSectionPath(resolvedWorkspaceId || 'new', 'roadmap'))}>
             <ArrowLeft className="h-4 w-4" />
             Quay lại roadmap
           </Button>

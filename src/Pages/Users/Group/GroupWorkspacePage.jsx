@@ -70,6 +70,7 @@ import { unwrapApiData } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
+import { buildGroupWorkspacePath } from '@/lib/routePaths';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { generateRoadmap } from '@/api/AIAPI';
@@ -950,7 +951,7 @@ function GroupWorkspacePage() {
 
         setCreatedGroupWorkspaceId(newWorkspaceId);
         setProfileConfigOpen(true);
-        navigate(`/group-workspace/${newWorkspaceId}`, {
+        navigate(buildGroupWorkspacePath(newWorkspaceId), {
           replace: true,
           state: { openProfileConfig: true },
         });
