@@ -169,12 +169,14 @@ function AiProvidersOverview() {
         <Button
           type="button"
           variant="outline"
+          size="icon"
           onClick={loadData}
           disabled={loading}
           className={`rounded-xl cursor-pointer ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800' : ''}`}
+          aria-label={t('common.refresh')}
+          title={t('common.refresh')}
         >
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          {t('aiProviders.refresh', { defaultValue: 'Refresh' })}
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 

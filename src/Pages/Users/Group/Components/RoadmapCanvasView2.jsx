@@ -74,7 +74,6 @@ function RoadmapCanvasView2({
   const [hasRoadmapLevelPreLearning, setHasRoadmapLevelPreLearning] = useState(false);
   const [roadmapPreLearningCheckDone, setRoadmapPreLearningCheckDone] = useState(false);
   const progressSyncDebounceRef = useRef(null);
-  const phaseFocusDebounceRef = useRef(null);
 
   const normalizeGroupPreLearningQuestionCount = useCallback((value) => {
     const numericValue = Number(value);
@@ -168,7 +167,7 @@ function RoadmapCanvasView2({
         window.clearTimeout(progressSyncDebounceRef.current);
       }
     };
-  }, [loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress, roadmap?.roadmapId, selectedPhaseId, openPhaseId]);
+  }, [loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress, roadmap?.roadmapId, selectedPhaseId]);
 
   useEffect(() => {
     const roadmapScopeId = Number(roadmap?.roadmapId);
@@ -432,6 +431,20 @@ function RoadmapCanvasView2({
     return postLearningQuizzes.some((quiz) => quiz?.myPassed === true);
   }, []);
 
+  const canShowRoadmapLevelFeedback = useMemo(() => {
+    if (!Array.isArray(phases) || phases.length === 0) return false;
+
+    const allPhasesFinished = phases.every((phase) => isPhaseFinishedStatus(phase?.status));
+
+    const postLearningSatisfied = phases.every((phase) => {
+      const pl = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+      if (pl.length === 0) return true;
+      return hasCompletedPostLearning(phase);
+    });
+
+    return allPhasesFinished && postLearningSatisfied;
+  }, [phases, isPhaseFinishedStatus, hasCompletedPostLearning]);
+
   const resolvePostLearningReviewEligibility = useCallback((phase) => {
     if (!phase) return false;
     const isFlexible = normalizedAdaptationMode === "FLEXIBLE";
@@ -650,14 +663,9 @@ function RoadmapCanvasView2({
     setOpenPhaseId((current) => {
       const next = current === phaseId ? null : phaseId;
       if (next) {
-        if (phaseFocusDebounceRef.current) {
-          window.clearTimeout(phaseFocusDebounceRef.current);
-        }
-
-        phaseFocusDebounceRef.current = window.setTimeout(() => {
+        if (Number(selectedPhaseId) !== Number(next)) {
           onPhaseFocus?.(next, { preserveActiveView: true });
-          phaseFocusDebounceRef.current = null;
-        }, 180);
+        }
       }
       return next;
     });
@@ -665,9 +673,6 @@ function RoadmapCanvasView2({
 
   useEffect(() => {
     return () => {
-      if (phaseFocusDebounceRef.current) {
-        window.clearTimeout(phaseFocusDebounceRef.current);
-      }
       if (progressSyncDebounceRef.current) {
         window.clearTimeout(progressSyncDebounceRef.current);
       }
@@ -944,7 +949,7 @@ function RoadmapCanvasView2({
           </div>
           {roadmap?.roadmapId || onViewRoadmapConfig || onEditRoadmapConfig || (onShareRoadmap && roadmap?.roadmapId) ? (
             <div className="mt-3 flex flex-wrap justify-end gap-2">
-              {roadmap?.roadmapId ? (
+              {roadmap?.roadmapId && canShowRoadmapLevelFeedback ? (
                 <DirectFeedbackButton
                   targetType="ROADMAP"
                   targetId={roadmap.roadmapId}

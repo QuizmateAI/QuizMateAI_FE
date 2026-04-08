@@ -92,7 +92,11 @@ function QuizDetailView({
   contextId: _contextId,
   hideEditButton = false,
   isGroupLeader = false,
+  /** Leader: ẩn chính mình khỏi danh sách giao quiz riêng */
+  groupAudiencePickerExcludeUserId = null,
   onGroupQuizUpdated,
+  /** Group: mở từ challenge (snapshot) — chỉ xem/sửa đề, không phân phối / không làm bài từ màn này */
+  challengeSnapshotReviewMode = false,
 }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -123,7 +127,15 @@ function QuizDetailView({
   const [membersLoading, setMembersLoading] = useState(false);
   const detailRequestRunRef = React.useRef(0);
 
-  const canViewAnswers = hasQuizCompleted(quiz?.quizId) || currentStatus === "DRAFT";
+  /** Fair play: leader tham gia thi + quiz ACTIVE → không xem trước đáp án/tab Kiểm tra. */
+  const fairPlayRestricts = Boolean(quiz?.challengeFairPlayRestrictsViewer);
+
+  /** Cá nhân: chỉ xem đáp án sau khi làm xong (hoặc quiz nháp). Nhóm: leader / xem từ challenge cần đủ phương án cho tab Kiểm tra. */
+  const canViewAnswers =
+    hasQuizCompleted(quiz?.quizId)
+    || currentStatus === "DRAFT"
+    || (_contextType === "GROUP" && isGroupLeader && !fairPlayRestricts)
+    || (challengeSnapshotReviewMode && !fairPlayRestricts);
 
   useEffect(() => {
     setCurrentStatus(quizMeta?.status || quiz?.status || "DRAFT");
@@ -376,14 +388,18 @@ function QuizDetailView({
 
   const openAudienceDialog = useCallback(() => {
     const eq = quizMeta || quiz;
+    const excludeUid = Number(groupAudiencePickerExcludeUserId);
     setAudienceMode(eq?.groupAudienceMode === "SELECTED_MEMBERS" ? "SELECTED_MEMBERS" : "ALL_MEMBERS");
+    const rawIds = Array.isArray(eq?.assignedUserIds)
+      ? eq.assignedUserIds.map((id) => Number(id)).filter((n) => Number.isInteger(n) && n > 0)
+      : [];
     setSelectedAudienceUserIds(
-      Array.isArray(eq?.assignedUserIds)
-        ? eq.assignedUserIds.map((id) => Number(id)).filter((n) => Number.isInteger(n) && n > 0)
-        : [],
+      Number.isInteger(excludeUid) && excludeUid > 0
+        ? rawIds.filter((id) => id !== excludeUid)
+        : rawIds,
     );
     setAudienceOpen(true);
-  }, [quiz, quizMeta]);
+  }, [quiz, quizMeta, groupAudiencePickerExcludeUserId]);
 
   useEffect(() => {
     if (!audienceOpen || !_contextId) return undefined;
@@ -394,7 +410,15 @@ function QuizDetailView({
         const res = await getGroupMembers(_contextId, 0, 200);
         const raw = unwrapApiData(res);
         const list = raw?.content || raw?.data || (Array.isArray(raw) ? raw : []);
-        if (!cancelled) setGroupMembers(Array.isArray(list) ? list : []);
+        const excludeUid = Number(groupAudiencePickerExcludeUserId);
+        const filtered = Array.isArray(list)
+          ? list.filter((m) => {
+              if (!Number.isInteger(excludeUid) || excludeUid <= 0) return true;
+              const mid = Number(m.userId ?? m.id ?? m.groupMemberId);
+              return !Number.isInteger(mid) || mid !== excludeUid;
+            })
+          : [];
+        if (!cancelled) setGroupMembers(filtered);
       } catch (e) {
         console.error(e);
         if (!cancelled) setGroupMembers([]);
@@ -405,7 +429,7 @@ function QuizDetailView({
     return () => {
       cancelled = true;
     };
-  }, [audienceOpen, _contextId]);
+  }, [audienceOpen, _contextId, groupAudiencePickerExcludeUserId]);
 
   const handlePublishGroupQuiz = useCallback(async () => {
     if (!quiz?.quizId) return;
@@ -462,9 +486,10 @@ function QuizDetailView({
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
-  /** Nhóm: tab Kiểm tra (xem câu + đáp án). Cá nhân/workspace khác: tab Câu hỏi. Hai tab loại trừ nhau. */
-  const showGroupReviewTab = _contextType === "GROUP";
+  /** Nhóm + leader: tab Kiểm tra (duyệt câu + đáp án). Member nhóm: tab Câu hỏi như workspace cá nhân. */
+  const showGroupReviewTab = _contextType === "GROUP" && isGroupLeader && !fairPlayRestricts;
   const showQuestionsTab = !showGroupReviewTab;
+  const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
 
   useEffect(() => {
     if (showGroupReviewTab && activeTab === "questions") {
@@ -474,6 +499,12 @@ function QuizDetailView({
       setActiveTab("overview");
     }
   }, [showGroupReviewTab, activeTab]);
+
+  useEffect(() => {
+    if (isChallengeSnapshotReview && activeTab === "history") {
+      setActiveTab("overview");
+    }
+  }, [isChallengeSnapshotReview, activeTab]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -499,7 +530,7 @@ function QuizDetailView({
               <span className="text-sm">{i18n.language === "en" ? "Active" : "Xuất bản"}</span>
             </Button>
           )}
-          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
+          {_contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview && (
             <Button
               variant="outline"
               className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-600 text-slate-100" : ""}`}
@@ -537,10 +568,17 @@ function QuizDetailView({
               </div>
               <div className="min-w-0 flex-1 space-y-2">
                 <p className={`text-[13px] font-semibold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                  {i18n.language === "en" ? "Ready to publish?" : "Trước khi xuất bản"}
+                  {isChallengeSnapshotReview
+                    ? t("groupWorkspace.challenge.quizSnapshotReviewDraftTitle", "Đề challenge (chỉ xem & chỉnh sửa)")
+                    : (i18n.language === "en" ? "Ready to publish?" : "Trước khi xuất bản")}
                 </p>
                 <p className={`text-[13px] leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                  {i18n.language === "en" ? (
+                  {isChallengeSnapshotReview ? (
+                    t(
+                      "groupWorkspace.challenge.quizSnapshotReviewDraftBody",
+                      "Đây là bài thi gắn với challenge, không phải quiz chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như quiz nhóm."
+                    )
+                  ) : i18n.language === "en" ? (
                     <>
                       Open the{" "}
                       <span className={`font-medium ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>Check</span>{" "}
@@ -572,14 +610,18 @@ function QuizDetailView({
                   >
                     {i18n.language === "en" ? "2 · Publish" : "2 · Xuất bản"}
                   </span>
-                  <span className={`text-[11px] ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>→</span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                      isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
-                    }`}
-                  >
-                    {i18n.language === "en" ? "3 · Distribute" : "3 · Phân phối"}
-                  </span>
+                  {!isChallengeSnapshotReview && (
+                    <>
+                      <span className={`text-[11px] ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}>→</span>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                          isDarkMode ? "bg-slate-800/80 text-slate-300 ring-1 ring-slate-700" : "bg-white text-slate-600 ring-1 ring-slate-200 shadow-sm"
+                        }`}
+                      >
+                        {i18n.language === "en" ? "3 · Distribute" : "3 · Phân phối"}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -626,16 +668,19 @@ function QuizDetailView({
             <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Câu hỏi")}
           </button>
         )}
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === "history"
-              ? "border-blue-500 text-blue-600 dark:text-blue-400"
-              : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
-          }`}
-        >
-          <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
-        </button>
+        {!isChallengeSnapshotReview && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("history")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "history"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
+          </button>
+        )}
       </div>
 
       {/* Nội dung chi tiết */}
@@ -707,8 +752,8 @@ function QuizDetailView({
                 )}
               </div>
 
-              {/* Action Buttons in Overview */}
-              {isActiveQuiz && (
+              {/* Action Buttons in Overview — quiz challenge snapshot: không làm bài từ đây */}
+              {isActiveQuiz && !isChallengeSnapshotReview && (
                 <div className={`mt-4 pt-4 border-t flex flex-row items-center gap-3 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
                   {!isRoadmapQuizSource ? (
                     <Button onClick={() => handleStartQuiz('practice')} variant="outline"
@@ -722,6 +767,14 @@ function QuizDetailView({
                     <span className="font-medium">{t("workspace.quiz.exam", "Exam mode")}</span>
                   </Button>
                 </div>
+              )}
+              {isActiveQuiz && isChallengeSnapshotReview && (
+                <p className={`mt-4 pt-4 border-t text-sm leading-relaxed ${isDarkMode ? "border-slate-800 text-slate-400" : "border-gray-200 text-gray-600"}`}>
+                  {t(
+                    "groupWorkspace.challenge.quizSnapshotReviewNoTakeHint",
+                    "Bài thi này chỉ mở khi challenge bắt đầu (theo lịch hoặc khi leader điều khiển). Xếp hạng theo từng challenge — không làm bài từ màn hình này."
+                  )}
+                </p>
               )}
 
               {/* Ngày tạo */}

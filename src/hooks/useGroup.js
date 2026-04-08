@@ -12,6 +12,9 @@ import {
   getPendingInvitations as getPendingInvitationsAPI,
   getGroupLogs as getGroupLogsAPI,
   removeMember as removeMemberAPI,
+  getGroupDashboardSummary as getGroupDashboardSummaryAPI,
+  getMemberDashboardCards as getMemberDashboardCardsAPI,
+  getMemberDashboardDetail as getMemberDashboardDetailAPI,
 } from '@/api/GroupAPI';
 
 const GROUPS_QUERY_KEY = ['groups'];
@@ -101,6 +104,33 @@ export function useGroup(options = {}) {
     return Array.isArray(payload) ? payload : [];
   }, []);
 
+  const fetchGroupDashboardSummary = useCallback(async (workspaceId) => {
+    const res = await getGroupDashboardSummaryAPI(workspaceId);
+    return unwrapApiData(res);
+  }, []);
+
+  const fetchMemberDashboardCards = useCallback(async (workspaceId, page = 0, size = 8) => {
+    const res = await getMemberDashboardCardsAPI(workspaceId, page, size);
+    const pageData = unwrapApiData(res);
+    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+      return pageData;
+    }
+    return {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      page: 0,
+      size,
+      first: true,
+      last: true,
+    };
+  }, []);
+
+  const fetchMemberDashboardDetail = useCallback(async (workspaceId, memberUserId, attemptMode = 'ALL') => {
+    const res = await getMemberDashboardDetailAPI(workspaceId, memberUserId, attemptMode);
+    return unwrapApiData(res);
+  }, []);
+
   // Xóa thành viên khỏi nhóm
   const removeMember = useCallback(async (workspaceId, memberId) => {
     await removeMemberAPI(workspaceId, memberId);
@@ -119,6 +149,9 @@ export function useGroup(options = {}) {
     inviteMember,
     fetchPendingInvitations,
     fetchGroupLogs,
+    fetchGroupDashboardSummary,
+    fetchMemberDashboardCards,
+    fetchMemberDashboardDetail,
     removeMember,
   };
 }
