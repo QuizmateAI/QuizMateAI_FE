@@ -1390,10 +1390,23 @@ function RoadmapCanvasView2({
                               knowledgeIndex < currentKnowledgeIndexInPhase
                               || (knowledgeIndex === currentKnowledgeIndexInPhase && isCurrentKnowledgeDoneStatus)
                             ));
+                          const shouldUseSequentialFallbackLock = !isPhaseFinishedStatus(phase.status)
+                            && phaseIndex === maxUnlockedPhaseIndex
+                            && currentKnowledgePhaseIndex < 0
+                            && currentKnowledgeIndexInPhase < 0
+                            && knowledgeItems.length > 0;
                           const isKnowledgeLocked = !isPhaseFinishedStatus(phase.status)
-                            && phaseIndex === currentKnowledgePhaseIndex
-                            && currentKnowledgeIndexInPhase >= 0
-                            && knowledgeIndex > currentKnowledgeIndexInPhase + (isCurrentKnowledgeDoneStatus ? 1 : 0);
+                            && (
+                              (
+                                phaseIndex === currentKnowledgePhaseIndex
+                                && currentKnowledgeIndexInPhase >= 0
+                                && knowledgeIndex > currentKnowledgeIndexInPhase + (isCurrentKnowledgeDoneStatus ? 1 : 0)
+                              )
+                              || (
+                                shouldUseSequentialFallbackLock
+                                && knowledgeIndex > 0
+                              )
+                            );
                           const knowledgeTargetDay = Number(knowledge?.targetDayIndex) || 0;
                           const knowledgePlannedMinutes = Number(knowledge?.plannedStudyMinutes) || 0;
                           const knowledgeTimeLabel = knowledgeTargetDay > 0 && knowledgePlannedMinutes > 0

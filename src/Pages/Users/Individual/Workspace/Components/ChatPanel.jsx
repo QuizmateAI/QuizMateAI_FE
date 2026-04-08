@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, Sparkles, Route, BadgeCheck, Layers, Map, Rows3 } from "lucide-react";
+import { UploadCloud, Sparkles, Route, BadgeCheck, Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -56,6 +56,7 @@ function ChatPanel({
   onViewPostLearning,
   selectedSourceIds = [],
   selectedRoadmapPhaseId = null,
+  selectedRoadmapKnowledgeId = null,
   onCreateRoadmapPhases,
   onRoadmapPhaseFocus,
   onCreatePhaseKnowledge,
@@ -104,31 +105,22 @@ function ChatPanel({
     && getIsActionDisabled("quiz")
     && getIsActionDisabled("flashcard");
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
-  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
-    if (!workspaceId) return null;
-    const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    return saved === "view1" || saved === "view2" ? saved : null;
-  });
+  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view1");
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView(null);
+      setRoadmapCanvasView("view1");
       return;
     }
 
-    const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    setRoadmapCanvasView(saved === "view1" || saved === "view2" ? saved : null);
+    setRoadmapCanvasView("view1");
+    localStorage.setItem(`workspace_${workspaceId}_roadmap_canvas_view`, "view1");
   }, [workspaceId]);
 
   React.useEffect(() => {
     if (!roadmapCanvasStorageKey || !roadmapCanvasView) return;
     localStorage.setItem(roadmapCanvasStorageKey, roadmapCanvasView);
   }, [roadmapCanvasStorageKey, roadmapCanvasView]);
-
-  const handleSwitchRoadmapView = React.useCallback((view) => {
-    if (view !== "view1" && view !== "view2") return;
-    setRoadmapCanvasView(view);
-  }, []);
 
   const renderContent = () => {
     switch (activeView) {
@@ -159,6 +151,7 @@ function ChatPanel({
             forcedCanvasView={roadmapCanvasView}
             onCanvasViewChange={setRoadmapCanvasView}
             selectedPhaseId={selectedRoadmapPhaseId}
+            selectedKnowledgeId={selectedRoadmapKnowledgeId}
             progressTracking={progressTracking}
             onShareRoadmap={onShareRoadmap}
             onShareQuiz={onShareQuiz}
@@ -293,28 +286,6 @@ function ChatPanel({
                 </svg>
                 <span className={`text-xs ml-1 ${fontClass}`}>{t("common.refresh")}</span>
               </Button>
-              <div className="inline-flex items-center gap-1 rounded-full border p-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view1")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-                >
-                  <Rows3 className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view2")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-                >
-                  <Map className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
-                </Button>
-              </div>
             </div>
           </div>
         ) : null}
