@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getCurrentUser } from "@/api/Authentication";
-import { getUserSubscription } from "@/api/ManagementSystemAPI";
+import { getCurrentUserPlan } from "@/api/ManagementSystemAPI";
 import { getCachedSubscription, setCachedSubscription } from "@/Utils/userCache";
 import { getRecentPlanPurchase } from "@/Utils/planPurchaseState";
 
@@ -89,8 +89,8 @@ export function useCurrentSubscription({ enabled = true } = {}) {
     setError(null);
 
     try {
-      const response = await getUserSubscription(userId);
-      const nextSubscription = response?.data ?? response ?? null;
+      const response = await getCurrentUserPlan();
+      const nextSubscription = response?.data?.data ?? response?.data ?? response ?? null;
       setSubscription(nextSubscription);
       setCachedSubscription(nextSubscription);
       return nextSubscription;
@@ -124,8 +124,8 @@ export function useCurrentSubscription({ enabled = true } = {}) {
       }
 
       try {
-        const response = await getUserSubscription(userId);
-        const nextSubscription = response?.data ?? response ?? null;
+        const response = await getCurrentUserPlan();
+        const nextSubscription = response?.data?.data ?? response?.data ?? response ?? null;
 
         if (cancelled) return;
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Search, RefreshCw, Plus, Edit2, Trash2, Eye,
@@ -24,6 +24,7 @@ import { getErrorMessage } from '@/Utils/getErrorMessage';
 import PlanFormWizard from '@/Pages/Admin/components/PlanFormWizard';
 import {
   getAllPlans, createPlan, updatePlan, deletePlan, updatePlanStatus, getAiModels, getPlanById,
+  getAllSystemSettings,
 } from '@/api/ManagementSystemAPI';
 import {
   AI_MODEL_GROUP_OPTIONS,
@@ -40,7 +41,7 @@ const EMPTY_FORM = {
   displayName: '',
   planScope: 'USER',
   planLevel: '0',
-  price: '0',
+  price: '',
   description: '',
 };
 
@@ -140,19 +141,26 @@ function PlanManagement() {
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailPlan, setDetailPlan] = useState(null);
+  const [creditUnitPrice, setCreditUnitPrice] = useState(200);
 
   useEffect(() => {
     const fetchCatalogs = async () => {
       setIsLoading(true);
       try {
-        const [plansRes, modelsRes] = await Promise.all([
+        const [plansRes, modelsRes, settingsRes] = await Promise.all([
           getAllPlans(),
           getAiModels(),
+          getAllSystemSettings().catch(() => null),
         ]);
         const planData = extractApiData(plansRes);
         const modelData = extractApiData(modelsRes);
         setPlans(Array.isArray(planData) ? planData : []);
         setAvailableAiModels(filterSupportedAiModels(Array.isArray(modelData) ? modelData : []));
+        const settingsData = extractApiData(settingsRes);
+        if (Array.isArray(settingsData)) {
+          const creditSetting = settingsData.find((s) => s.key === 'credit.unit_price_vnd');
+          if (creditSetting?.value) setCreditUnitPrice(Number(creditSetting.value) || 200);
+        }
       } catch (err) { showError(getFriendlyError(err, 'subscription.fetchError')); }
       finally { setIsLoading(false); }
     };
@@ -186,10 +194,8 @@ function PlanManagement() {
       code: plan.code || '',
       displayName: plan.displayName || '',
       planScope,
-      planLevel: planScope === 'WORKSPACE'
-        ? ''
-        : (plan.planLevel != null ? String(plan.planLevel) : '0'),
-      price: plan.price != null ? String(plan.price) : '0',
+      planLevel: plan.planLevel != null ? String(plan.planLevel) : '0',
+      price: plan.price != null ? String(plan.price) : '',
       description: plan.description || '',
     });
     setEntitlement(plan.entitlement ? { ...EMPTY_ENTITLEMENT, ...plan.entitlement } : { ...EMPTY_ENTITLEMENT });
@@ -210,14 +216,47 @@ function PlanManagement() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     if (!formData.code.trim()) { showError(t('subscription.nameRequired')); return; }
     if (!formData.displayName.trim()) { showError(t('subscription.nameRequired')); return; }
+    if (formData.planScope !== 'WORKSPACE') {
+      const maxIndividualWorkspace = Number(entitlement.maxIndividualWorkspace);
+      if (!Number.isFinite(maxIndividualWorkspace) || maxIndividualWorkspace <= 0) {
+        showError(t(
+          'subscription.wizard.validation.maxIndividualWorkspaceRequired',
+          'Max individual workspace is required and must be greater than 0.'
+        ));
+        return;
+      }
+
+      const maxMaterialInWorkspace = Number(entitlement.maxMaterialInWorkspace);
+      if (!Number.isFinite(maxMaterialInWorkspace) || maxMaterialInWorkspace <= 0) {
+        showError(t(
+          'subscription.wizard.validation.maxMaterialInWorkspaceRequired',
+          'Max material / workspace is required and must be greater than 0.'
+        ));
+        return;
+      }
+
+      const planIncludedCredits = Number(entitlement.planIncludedCredits);
+      if (!Number.isFinite(planIncludedCredits) || planIncludedCredits <= 0) {
+        showError(t(
+          'subscription.wizard.validation.planIncludedCreditsRequired',
+          'Included credits is required and must be greater than 0.'
+        ));
+        return;
+      }
+    }
     setIsSubmitting(true);
     try {
+      const credits = parseInt(entitlement.planIncludedCredits, 10) || 0;
+      const minPrice = credits * creditUnitPrice;
+      const inputPrice = parseInt(formData.price, 10) || 0;
+      const resolvedPrice = Math.max(inputPrice, minPrice);
+
       const payload = {
         displayName: formData.displayName.trim(),
-        price: parseInt(formData.price, 10) || 0,
+        price: resolvedPrice,
         description: formData.description || '',
         entitlement: {
           ...entitlement,
@@ -298,6 +337,14 @@ function PlanManagement() {
     return name.includes(term) || code.includes(term);
   });
   const isActive = (s) => (s || '').toUpperCase() === 'ACTIVE';
+
+  const highestActiveUserPlanEntitlement = useMemo(() => {
+    const activeUserPlans = plans
+      .filter((p) => p.planScope === 'USER' && (p.status || '').toUpperCase() === 'ACTIVE')
+      .sort((a, b) => (a.planLevel || 0) - (b.planLevel || 0));
+    if (activeUserPlans.length === 0) return null;
+    return activeUserPlans[activeUserPlans.length - 1]?.entitlement || null;
+  }, [plans]);
 
   const userScopeCount = plans.filter(p => p.planScope === 'USER').length;
   const workspaceScopeCount = plans.filter(p => p.planScope === 'WORKSPACE').length;
@@ -485,6 +532,8 @@ function PlanManagement() {
           setFunctionAssignmentMap={setFunctionAssignmentMap}
           availableAiModels={availableAiModels}
           plans={plans}
+          creditUnitPrice={creditUnitPrice}
+          highestActiveUserPlanEntitlement={highestActiveUserPlanEntitlement}
           onSubmit={handleSubmit}
           onValidationError={showError}
         />

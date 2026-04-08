@@ -747,9 +747,18 @@
   "plan": {
     "title": "Chọn gói học phù hợp",
     "subtitle": "Mở khóa đúng mức hỗ trợ AI bạn cần để học nhanh hơn, mà không phải đọc quá nhiều thông số kỹ thuật.",
+    "groupScopeTitle": "Chọn gói cho {{groupName}}",
+    "groupFallbackName": "nhóm này",
+    "groupScopeSubtitle": "Gói này chỉ áp dụng cho group hiện tại. Gói group được quản lý riêng, tách khỏi gói cá nhân.",
     "heroBadge": "Gói AI cho học tập",
     "backToHome": "Về trang chủ",
     "back": "Quay lại",
+    "groupScopeNoticeTitle": "Gói dành cho group hiện tại",
+    "groupEntryTitle": "Gói group được quản lý trong từng nhóm",
+    "leaderOnlyBadge": "Leader thanh toán",
+    "groupScopeLeaderDesc": "Gói này chỉ áp dụng cho {{groupName}}. Bạn là leader nên có thể chọn hoặc đổi gói cho group này tại đây.",
+    "groupScopeMemberDesc": "Gói này chỉ áp dụng cho {{groupName}}. Chỉ leader mới có thể chọn hoặc đổi gói cho group này.",
+    "groupEntryDesc": "Mỗi group mua gói riêng trong workspace của chính group đó. Hãy mở group bạn làm leader để xem gói và thanh toán tại đó.",
     "types": {
       "individual": "Cá nhân",
       "group": "Nhóm"
@@ -774,6 +783,7 @@
     "upgrade": "Chọn plan",
     "currentCta": "Đang sử dụng",
     "teamCta": "Bắt đầu cho nhóm",
+    "groupLeaderManagedCta": "Leader quản lý gói",
     "thanhToan": "Thanh toán",
     "defaultPlan": "Gói mặc định",
     "descriptions": {
@@ -3895,6 +3905,8 @@
     "selectGroup": "Chọn nhóm áp dụng",
     "selectGroupDesc": "Chọn nhóm mà bạn là trưởng nhóm để áp dụng gói đăng ký này.",
     "selectGroupFirst": "Vui lòng chọn nhóm bên trái trước khi thanh toán.",
+    "appliedGroup": "Gói sẽ áp dụng cho nhóm",
+    "appliedGroupLoading": "Đang tải tên nhóm…",
     "limitKeys": {
       "maxWorkspace": "Không gian học tập tối đa",
       "maxMaterialPerWorkspace": "Tài liệu / Không gian học tập",
@@ -3936,7 +3948,10 @@
     "payType": "Hình thức",
     "time": "Thời gian",
     "backToPlans": "Quay lại gói đăng ký",
-    "goHome": "Về trang chủ"
+    "backToGroup": "Quay lại nhóm",
+    "goHome": "Về trang chủ",
+    "currentPlan": "Gói hiện tại",
+    "planReadyHint": "Gói đã sẵn sàng để bạn tiếp tục học tập."
   },
   "pricingGuide": {
     "navHome": "Trang chủ",
@@ -4168,9 +4183,14 @@
       "activity": "Hoạt động nhóm",
       "memberManagement": "Quản lý thành viên",
       "memberStatus": "Tình trạng thành viên",
+      "wallet": "Ví group",
       "groupStudy": "Học tập",
       "groupActivity": "Hoạt động",
       "groupManage": "Quản lý"
+    },
+    "upload": {
+      "insufficientQmcNeedPlan": "Nhóm không đủ QMC. Vui lòng mua gói để tiếp tục — sau đó bạn có thể mua credit trong ví nhóm.",
+      "insufficientQmcNeedCredits": "Nhóm không đủ QMC. Mở ví nhóm để mua thêm credit."
     },
     "challenge": {
       "title": "Challenge",

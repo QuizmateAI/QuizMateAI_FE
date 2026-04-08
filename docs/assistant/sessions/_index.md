@@ -9,3 +9,4 @@
 | 2026-04-08 | `2026-04-08__fe-routing-plural-url-migration.md` | Migrate FE navigation URLs to plural naming with legacy redirects | `src/App.jsx`, user/admin/super-admin routes, docs rule update |
 | 2026-04-08 | `2026-04-08__individual-route-plural-follow-up.md` | Finish Individual workspace route migration to plural-only URLs | Home entry, Individual workspace, quiz/result flow, routing tests |
 | 2026-04-08 | `2026-04-08__group-and-global-route-plural-follow-up.md` | Finish Group and shared FE route migration to plural-only URLs | Group workspace/review flow, payment/profile/admin navigation, routing tests |
+| 2026-04-09 | `2026-04-09__first-load-performance-checks.md` | Add first-load performance budgets, perf tests, and execution report | Login/Home/workspace performance flows, manual test cases, docs skill |

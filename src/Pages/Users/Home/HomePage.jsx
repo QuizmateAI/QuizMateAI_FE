@@ -16,10 +16,10 @@ import { useGroup } from '@/hooks/useGroup';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { preloadGroupWorkspacePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 import { useToast } from '@/context/ToastContext';
-import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { getMyWallet } from '@/api/ManagementSystemAPI';
 import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
+import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 
 function formatNumber(value, locale) {
   try {
@@ -118,6 +118,7 @@ function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { showError, showSuccess } = useToast();
   const activeTab = normalizeHomeTab(searchParams.get('tab'));
+  const shouldLoadGroups = activeTab === 'group';
   const { summary: currentPlanSummary } = useCurrentSubscription();
   const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [loadingWallet, setLoadingWallet] = useState(true);
@@ -134,9 +135,9 @@ function HomePage() {
     changePage,
     changePageSize,
   } = useWorkspace({ enabled: true });
-  const { groups, loading: groupsLoading } = useGroup({ enabled: true });
-  const mergedGroups = mergeGroupsWithOwnedWorkspaces(groups, workspaces);
-  const groupTabLoading = (groupsLoading || loading) && mergedGroups.length === 0;
+  const { groups, loading: groupsLoading } = useGroup({ enabled: shouldLoadGroups });
+  const mergedGroups = shouldLoadGroups ? mergeGroupsWithOwnedWorkspaces(groups, workspaces) : [];
+  const groupTabLoading = shouldLoadGroups && (groupsLoading || loading) && mergedGroups.length === 0;
 
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -254,6 +255,8 @@ function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
+    let idleHandle = null;
+    let timeoutHandle = null;
 
     const fetchWallet = async () => {
       setLoadingWallet(true);
@@ -281,9 +284,24 @@ function HomePage() {
       }
     };
 
-    fetchWallet();
+    const scheduleFetchWallet = () => {
+      void fetchWallet();
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleHandle = window.requestIdleCallback(scheduleFetchWallet, { timeout: 1500 });
+    } else {
+      timeoutHandle = window.setTimeout(scheduleFetchWallet, 250);
+    }
+
     return () => {
       cancelled = true;
+      if (idleHandle !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== null) {
+        window.clearTimeout(timeoutHandle);
+      }
     };
   }, []);
 
@@ -363,14 +381,9 @@ function HomePage() {
             }`}
           >
             <CreditCard className="w-4 h-4" />
-            {currentPlanSummary ? (
-              <span className="hidden max-w-[180px] truncate text-sm font-semibold sm:inline">
-                {currentPlanSummary.planName}
-              </span>
-            ) : null}
-            {!currentPlanSummary ? (
-              <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
-            ) : null}
+            <span className="hidden max-w-[180px] truncate text-sm font-semibold sm:inline">
+              {currentPlanSummary?.planName || t('common.plan')}
+            </span>
           </Button>
           <Button
             variant="ghost"

@@ -12,6 +12,7 @@ import PaymentSidebar from './components/PaymentSidebar';
 import UserProfilePopover from '@/Components/features/Users/UserProfilePopover';
 import { getPlanById } from '@/api/PaymentAPI';
 import { useGroup } from '@/hooks/useGroup';
+import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { buildPlansPath } from '@/lib/routePaths';
 
 /** Chuẩn hóa plan-catalog API response sang format PlanInfoCard / PaymentSidebar / PlanDetails */
@@ -66,6 +67,7 @@ export default function PaymentPage() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null);
 
   const { groups } = useGroup({ enabled: true });
+  const { summary: currentPlanSummary } = useCurrentSubscription();
   const leaderGroups = groups.filter((g) => g.memberRole === 'LEADER');
 
   const toggleLanguage = () => {
@@ -88,6 +90,16 @@ export default function PaymentPage() {
   const planId = searchParams.get('planId');
   const workspaceId = searchParams.get('workspaceId') || selectedWorkspaceId;
   const planTypeParam = searchParams.get('planType');
+  const backToPlansQuery = new URLSearchParams();
+
+  if ((plan?.type === 'GROUP' || planTypeParam === 'GROUP') && workspaceId) {
+    backToPlansQuery.set('planType', 'GROUP');
+    backToPlansQuery.set('workspaceId', String(workspaceId));
+  }
+
+  const backToPlansUrl = backToPlansQuery.toString()
+    ? `/plans?${backToPlansQuery.toString()}`
+    : '/plans';
 
   useEffect(() => {
     if (!planId) return;
@@ -132,9 +144,9 @@ export default function PaymentPage() {
               alt="QuizMateAI"
               className="h-[120px] w-[120px] object-contain hidden sm:block"
             />
-             <button
+            <button
               type="button"
-              onClick={() => navigate(plansPath)}
+              onClick={() => navigate('/plan')}
               className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-xl transition-colors cursor-pointer ${
                 isDarkMode
                   ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
@@ -150,11 +162,13 @@ export default function PaymentPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(plansPath)}
+              onClick={() => navigate('/plan')}
               className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               <CreditCard className="w-4 h-4" />
-              <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
+              <span className="text-sm hidden max-w-[180px] truncate sm:inline">
+                {currentPlanSummary?.planName || t('common.plan')}
+              </span>
             </Button>
             <div ref={settingsRef} className="relative">
               <Button
@@ -221,7 +235,7 @@ export default function PaymentPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
             <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('payment.noPlanId')}</p>
-            <Button variant="outline" onClick={() => navigate(plansPath)}
+            <Button variant="outline" onClick={() => navigate('/plan')}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
               <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
             </Button>
@@ -232,7 +246,7 @@ export default function PaymentPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
             <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{error || t('payment.fetchError')}</p>
-            <Button variant="outline" onClick={() => navigate(plansPath)}
+            <Button variant="outline" onClick={() => navigate('/plan')}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
               <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
             </Button>
@@ -292,18 +306,23 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Hiển thị nhóm đã chọn */}
-              {isGroupPlan && workspaceId && selectedGroup && (
+              {/* Nhóm áp dụng gói (từ URL khi mua từ trong group, hoặc sau khi chọn tay) */}
+              {isGroupPlan && workspaceId && (
                 <div className={`mt-6 rounded-2xl p-4 flex items-center gap-3 ${
                   isDarkMode ? 'bg-slate-800/60 ring-1 ring-slate-700' : 'bg-blue-50 ring-1 ring-blue-200'
                 }`}>
-                  <Users className={`w-5 h-5 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+                  <Users className={`w-5 h-5 shrink-0 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`} />
                   <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                      {t('payment.appliedGroup')}
+                    </p>
                     <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
-                      {selectedGroup.groupName}
+                      {selectedGroup?.groupName || `#${workspaceId}`}
                     </p>
                     <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {selectedGroup.memberCount || 0} {t('home.labels.membersUnit')}
+                      {selectedGroup
+                        ? `${selectedGroup.memberCount || 0} ${t('home.labels.membersUnit')}`
+                        : t('payment.appliedGroupLoading')}
                     </p>
                   </div>
                 </div>

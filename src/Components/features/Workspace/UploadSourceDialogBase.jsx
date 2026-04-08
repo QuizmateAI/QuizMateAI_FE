@@ -294,7 +294,9 @@ function UploadSourceDialogBase({
       }
       onOpenChange(false);
     } catch (error) {
-      showError(error?.message || t("workspace.upload.uploadError"));
+      if (!error?.toastHandled) {
+        showError(error?.message || t("workspace.upload.uploadError"));
+      }
     } finally {
       setUploading(false);
     }
@@ -311,7 +313,9 @@ function UploadSourceDialogBase({
       showSuccess(t("workspace.upload.uploadAllSuccess"));
       onOpenChange(false);
     } catch (error) {
-      showError(error?.message || t("workspace.upload.uploadError"));
+      if (!error?.toastHandled) {
+        showError(error?.message || t("workspace.upload.uploadError"));
+      }
     } finally {
       setUploading(false);
     }
