@@ -722,9 +722,18 @@
   "plan": {
     "title": "Choose your learning plan",
     "subtitle": "Pick the level of AI support you need without wading through a long list of technical settings.",
+    "groupScopeTitle": "Choose a plan for {{groupName}}",
+    "groupFallbackName": "this group",
+    "groupScopeSubtitle": "This plan applies only to the current group workspace. Group subscriptions are managed separately from personal plans.",
     "heroBadge": "AI plans for learning",
     "backToHome": "Back to Home",
     "back": "Back",
+    "groupScopeNoticeTitle": "Group plan for this workspace",
+    "groupEntryTitle": "Group plans are managed inside each group",
+    "leaderOnlyBadge": "Leader checkout",
+    "groupScopeLeaderDesc": "This purchase only applies to {{groupName}}. As the group leader, you can choose or change the plan for this workspace here.",
+    "groupScopeMemberDesc": "This purchase only applies to {{groupName}}. Only the group leader can choose or change the plan for this workspace.",
+    "groupEntryDesc": "Group subscriptions are purchased separately inside each group workspace. Open a group you lead to view its plans and complete checkout there.",
     "types": {
       "individual": "Individual",
       "group": "Group"
@@ -749,6 +758,7 @@
     "upgrade": "Choose plan",
     "currentCta": "Currently using",
     "teamCta": "Start team plan",
+    "groupLeaderManagedCta": "Leader manages plan",
     "thanhToan": "Payment",
     "defaultPlan": "Default plan",
     "descriptions": {
@@ -4037,6 +4047,8 @@
     "selectGroup": "Select a group",
     "selectGroupDesc": "Choose a group you lead to apply this subscription plan.",
     "selectGroupFirst": "Please select a group on the left before proceeding to payment.",
+    "appliedGroup": "Plan applies to group",
+    "appliedGroupLoading": "Loading group name…",
     "limitKeys": {
       "maxWorkspace": "Max Workspaces",
       "maxMaterialPerWorkspace": "Materials / Workspace",
@@ -4081,7 +4093,10 @@
     "payType": "Pay Type",
     "time": "Time",
     "backToPlans": "Back to plans",
-    "goHome": "Go to Home"
+    "backToGroup": "Back to group",
+    "goHome": "Go to Home",
+    "currentPlan": "Current plan",
+    "planReadyHint": "Your plan is ready — you can continue learning."
   },
   "pricingGuide": {
     "navHome": "Home",
@@ -4404,9 +4419,14 @@
       "activity": "Group activity",
       "memberManagement": "Member management",
       "memberStatus": "Member status",
+      "wallet": "Group wallet",
       "groupStudy": "Study",
       "groupActivity": "Activity",
       "groupManage": "Management"
+    },
+    "upload": {
+      "insufficientQmcNeedPlan": "Your group doesn't have enough QMC. Please purchase a plan to continue — then you can buy credits in the group wallet.",
+      "insufficientQmcNeedCredits": "Your group doesn't have enough QMC. Open the group wallet to buy more credits."
     },
     "challenge": {
       "title": "Challenge",

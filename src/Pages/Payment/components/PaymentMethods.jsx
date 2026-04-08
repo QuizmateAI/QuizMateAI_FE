@@ -37,18 +37,30 @@ export default function PaymentMethods({
     setError('');
 
     try {
-      const targetWorkspaceId = planType === 'GROUP' ? workspaceId : null;
       const isCreditPayment = paymentType === 'credit';
+      const targetWorkspaceId = workspaceId != null && workspaceId !== '' ? String(workspaceId) : null;
+      const pendingPurchasePayload = isCreditPayment
+        ? {
+          planId: creditPackageId,
+          planName: '',
+          planType: targetWorkspaceId ? 'GROUP' : 'INDIVIDUAL',
+          workspaceId: targetWorkspaceId,
+        }
+        : {
+          planId,
+          planName,
+          planType,
+          workspaceId: targetWorkspaceId,
+        };
 
       if (selected === 'momo') {
         const res = isCreditPayment
           ? await createMomoCreditPayment(creditPackageId, targetWorkspaceId)
           : await createMomoPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
+        const orderId = res?.data?.orderId || res?.orderId || '';
         if (payUrl) {
-          if (!isCreditPayment) {
-            setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
-          }
+          setPendingPlanPurchase({ ...pendingPurchasePayload, orderId });
           window.location.href = payUrl;
           return;
         }
@@ -58,10 +70,9 @@ export default function PaymentMethods({
           ? await createVnPayCreditPayment(creditPackageId, targetWorkspaceId)
           : await createVnPayPayment(planId, targetWorkspaceId);
         const payUrl = res?.data?.payUrl || res?.payUrl;
+        const orderId = res?.data?.orderId || res?.orderId || '';
         if (payUrl) {
-          if (!isCreditPayment) {
-            setPendingPlanPurchase({ planId, planName, planType, workspaceId: targetWorkspaceId });
-          }
+          setPendingPlanPurchase({ ...pendingPurchasePayload, orderId });
           window.location.href = payUrl;
           return;
         }

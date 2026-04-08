@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowLeft,
   BarChart3,
   BookOpenText,
   Check,
-  CreditCard,
   Globe,
   Map as MapIcon,
   MessageCircle,
@@ -17,6 +16,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useDarkMode } from "@/hooks/useDarkMode";
+import { useGroup } from "@/hooks/useGroup";
 import { Button } from "@/Components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -25,8 +25,9 @@ import LogoDark from "@/assets/DarkMode_Logo.webp";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
 import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { getActiveGroupPlan, getActiveUserPlans, getMyWallet } from "@/api/ManagementSystemAPI";
-import { useCurrentSubscription } from "@/hooks/useCurrentSubscription";
-import { buildPaymentsPath, buildWalletsPath, withQueryParams } from "@/lib/routePaths";
+import { getWorkspaceCurrentPlan } from "@/api/WorkspaceAPI";
+import { createPlanSummaryFromSubscription, useCurrentSubscription } from "@/hooks/useCurrentSubscription";
+import { buildWalletsPath } from "@/lib/routePaths";
 
 const MATERIAL_FORMATS = [
   { key: "processPdf", labelKey: "pdf" },
@@ -37,14 +38,6 @@ const MATERIAL_FORMATS = [
   { key: "processImage", labelKey: "image" },
   { key: "processVideo", labelKey: "video" },
   { key: "processAudio", labelKey: "audio" },
-];
-
-const CAPABILITY_FIELDS = [
-  { key: "canCreateRoadMap", labelKey: "roadmaps" },
-  { key: "hasAiCompanionMode", labelKey: "companion" },
-  { key: "hasAiSummaryAndTextReading", labelKey: "summaries" },
-  { key: "hasWorkspaceAnalytics", labelKey: "analytics" },
-  { key: "hasAdvanceQuizConfig", labelKey: "advancedQuiz" },
 ];
 
 const formatVnd = (amount, locale) =>
@@ -83,6 +76,11 @@ const EMPTY_WALLET_SUMMARY = {
   hasActivePlan: false,
   planCreditExpiresAt: null,
 };
+
+function normalizeWorkspaceId(value) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
 
 /** Map PlanCatalogResponse sang format gọn cho trang plan. */
 function mapPlanCatalogToCard(plan) {
@@ -295,7 +293,10 @@ function PlanTierCard({
   locale,
   t,
   isCurrentPlan = false,
+  purchaseLocked = false,
+  purchaseLockedLabel = "",
   onUpgrade,
+  compact = false,
 }) {
   const previousPlan = index > 0 ? plans[index - 1] : null;
   const tierKey = getPlanTierKey({ plan, index, totalPlans });
@@ -317,13 +318,24 @@ function PlanTierCard({
     : isDarkMode
       ? "bg-white/5 text-white ring-1 ring-white/12 hover:bg-white/10"
       : "bg-slate-950 text-white hover:bg-slate-800";
+  const showCtaRow = !isDefaultPlan || isCurrentPlan;
+  const isActionDisabled = isCurrentPlan || purchaseLocked || (isDefaultPlan && !isCurrentPlan);
+
+  const cardPad = compact ? "p-5 sm:p-5" : "p-6 sm:p-7";
+  const cardRadius = compact ? "rounded-[22px]" : "rounded-[28px]";
+  const heroBlur = compact ? "h-24" : "h-32";
+  const priceSize = compact ? "text-3xl" : "text-4xl";
+  const blockGap = compact ? "mt-5" : "mt-8";
+  const listGap = compact ? "space-y-2" : "space-y-3";
+  const featTopPad = compact ? "pt-4" : "pt-6";
+  const ctaGap = compact ? "mt-5 h-11 rounded-xl" : "mt-8 h-12 rounded-2xl";
 
   return (
     <article
-      className={`group relative flex h-full flex-col overflow-hidden rounded-[28px] border p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1 ${surfaceClass}`}
+      className={`group relative flex h-full flex-col overflow-hidden ${cardRadius} border ${cardPad} transition-all duration-300 hover:-translate-y-1 ${surfaceClass}`}
     >
       <div
-        className={`pointer-events-none absolute inset-x-0 top-0 h-32 opacity-70 blur-3xl ${
+        className={`pointer-events-none absolute inset-x-0 top-0 ${heroBlur} opacity-70 blur-3xl ${
           isRecommended
             ? isDarkMode
               ? "bg-indigo-500/35"
@@ -354,8 +366,8 @@ function PlanTierCard({
           </div>
         </div>
 
-        <div className="mt-8 flex items-end gap-2">
-          <span className={`text-4xl font-bold tracking-tight ${isDarkMode ? "text-white" : "text-slate-950"}`}>
+        <div className={`${blockGap} flex items-end gap-2`}>
+          <span className={`${priceSize} font-bold tracking-tight ${isDarkMode ? "text-white" : "text-slate-950"}`}>
             {formatVnd(plan.price, locale)}
           </span>
           <span className={`pb-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
@@ -363,29 +375,8 @@ function PlanTierCard({
           </span>
         </div>
 
-        <Button
-          type="button"
-          onClick={isDefaultPlan || isCurrentPlan ? undefined : () => onUpgrade(plan)}
-          disabled={isDefaultPlan || isCurrentPlan}
-          className={`mt-8 h-12 rounded-2xl font-semibold cursor-pointer disabled:cursor-default disabled:opacity-100 ${ctaClass} ${
-            isDefaultPlan || isCurrentPlan
-              ? isDarkMode
-                ? "bg-white/6 text-slate-400 ring-1 ring-white/8 hover:bg-white/6"
-                : "bg-slate-100 text-slate-500 hover:bg-slate-100"
-              : ""
-          }`}
-        >
-          {isCurrentPlan
-            ? t("plan.currentCta")
-            : isDefaultPlan
-            ? t("plan.defaultPlan")
-            : plan.type === "GROUP"
-              ? t("plan.teamCta")
-              : t("plan.upgrade")}
-        </Button>
-
-        <div className={`mt-8 border-t pt-6 ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
-          <ul className="space-y-3">
+        <div className={`${blockGap} flex-1 border-t ${featTopPad} ${isDarkMode ? "border-white/10" : "border-slate-200"}`}>
+          <ul className={listGap}>
             {highlights.map((item) => (
               <li key={item} className="flex items-start gap-3">
                 <span
@@ -404,6 +395,29 @@ function PlanTierCard({
             ))}
           </ul>
         </div>
+
+        {showCtaRow ? (
+          <Button
+            type="button"
+            onClick={isActionDisabled ? undefined : () => onUpgrade(plan)}
+            disabled={isActionDisabled}
+            className={`${ctaGap} font-semibold cursor-pointer disabled:cursor-default disabled:opacity-100 ${ctaClass} ${
+              isActionDisabled
+                ? isDarkMode
+                  ? "bg-white/6 text-slate-400 ring-1 ring-white/8 hover:bg-white/6"
+                  : "bg-slate-100 text-slate-500 hover:bg-slate-100"
+                : ""
+            }`}
+          >
+            {isCurrentPlan
+              ? t("plan.currentCta")
+              : purchaseLocked
+                ? purchaseLockedLabel
+              : plan.type === "GROUP"
+                ? t("plan.teamCta")
+                : t("plan.upgrade")}
+          </Button>
+        ) : null}
       </div>
     </article>
   );
@@ -495,40 +509,65 @@ export default function PlanPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const currentLang = i18n.language;
   const locale = currentLang === "vi" ? "vi-VN" : "en-US";
+  const scopedWorkspaceId = normalizeWorkspaceId(searchParams.get("workspaceId"));
+  const requestedPlanType = String(searchParams.get("planType") || "").toUpperCase();
+  const isGroupScopedPage = requestedPlanType === "GROUP" && scopedWorkspaceId != null;
+  const planType = isGroupScopedPage ? "GROUP" : "INDIVIDUAL";
 
   const toggleLanguage = () => {
     const newLang = currentLang === "vi" ? "en" : "vi";
     i18n.changeLanguage(newLang);
   };
 
-  const [planType, setPlanType] = useState("INDIVIDUAL");
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [loadingWallet, setLoadingWallet] = useState(true);
-  const { summary: currentPlanSummary } = useCurrentSubscription();
-
-  const switchPlanType = (type) => {
-    setPlanType(type);
-    setLoading(true);
-    setError(null);
-  };
+  const [groupCurrentPlan, setGroupCurrentPlan] = useState(null);
+  const { summary: userPlanSummary } = useCurrentSubscription({ enabled: !isGroupScopedPage });
+  const { groups, loading: loadingGroups } = useGroup({ enabled: isGroupScopedPage });
+  const scopedGroup = useMemo(
+    () => groups.find((group) => String(group.workspaceId) === String(scopedWorkspaceId)) ?? null,
+    [groups, scopedWorkspaceId],
+  );
+  const isScopedGroupLeader = scopedGroup?.memberRole === "LEADER";
+  const currentPlanSummary = useMemo(
+    () => (isGroupScopedPage ? createPlanSummaryFromSubscription(groupCurrentPlan) : userPlanSummary),
+    [groupCurrentPlan, isGroupScopedPage, userPlanSummary],
+  );
+  const pageTitle = isGroupScopedPage
+    ? t("plan.groupScopeTitle", {
+        groupName: scopedGroup?.groupName || t("plan.groupFallbackName"),
+      })
+    : t("plan.title");
+  const pageSubtitle = isGroupScopedPage
+    ? t("plan.groupScopeSubtitle")
+    : t("plan.subtitle");
+  const sectionLoading = loading || (isGroupScopedPage && loadingGroups);
+  const groupPurchaseLocked = isGroupScopedPage && (!scopedGroup || !isScopedGroupLeader);
+  const groupPurchaseLockLabel = groupPurchaseLocked
+    ? t("plan.groupLeaderManagedCta")
+    : "";
 
   useEffect(() => {
     let cancelled = false;
 
-    const fetchPlans = planType === "GROUP"
+    setLoading(true);
+    setError(null);
+
+    const fetchPlans = isGroupScopedPage
       ? getActiveGroupPlan().then((res) => {
-          const data = res?.data;
-          return data ? [data] : [];
+          const raw = res?.data?.data ?? res?.data ?? res;
+          return Array.isArray(raw) ? raw : raw ? [raw] : [];
         })
       : getActiveUserPlans().then((res) => {
-          const data = res?.data ?? res;
-          return Array.isArray(data) ? data : [];
+          const raw = res?.data?.data ?? res?.data ?? res;
+          return Array.isArray(raw) ? raw : [];
         });
 
     fetchPlans
@@ -549,7 +588,32 @@ export default function PlanPage() {
     return () => {
       cancelled = true;
     };
-  }, [planType, t]);
+  }, [isGroupScopedPage, t]);
+
+  useEffect(() => {
+    if (!isGroupScopedPage || !scopedWorkspaceId) {
+      setGroupCurrentPlan(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    getWorkspaceCurrentPlan(scopedWorkspaceId)
+      .then((res) => {
+        if (!cancelled) {
+          setGroupCurrentPlan(res?.data?.data ?? res?.data ?? res ?? null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setGroupCurrentPlan(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isGroupScopedPage, scopedWorkspaceId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -582,17 +646,29 @@ export default function PlanPage() {
     };
   }, []);
 
-  const handleUpgrade = useCallback((plan) => {
-    const url = withQueryParams(buildPaymentsPath(), {
-      planId: plan.planId,
-      planType: plan.type === "GROUP" ? "GROUP" : null,
-    });
-    navigate(url);
-  }, [navigate]);
+  const handleUpgrade = useCallback(
+    (plan) => {
+      if (plan.type === "GROUP") {
+        const params = new URLSearchParams({
+          planId: String(plan.planId),
+          planType: "GROUP",
+        });
+        if (scopedWorkspaceId != null) {
+          params.set("workspaceId", String(scopedWorkspaceId));
+        }
+        navigate(`/payment?${params.toString()}`);
+        return;
+      }
+      navigate(`/payment?planId=${plan.planId}`);
+    },
+    [navigate, scopedWorkspaceId],
+  );
 
   const displayPlans = plans;
 
   const recommendedIndex = useMemo(() => getRecommendedPlanIndex(displayPlans), [displayPlans]);
+
+  const isCompactGroupPlanLayout = isGroupScopedPage && displayPlans.length === 2;
 
   const studyFeatureTiles = useMemo(() => {
     const hasRoadmap = plans.some((plan) => plan.entitlement?.canCreateRoadMap);
@@ -651,24 +727,16 @@ export default function PlanPage() {
     toggleLanguage,
   });
 
-  const backTo = location.state?.from || "/home";
+  const backTo = location.state?.from
+    || (isGroupScopedPage && scopedWorkspaceId != null ? `/group-workspaces/${scopedWorkspaceId}` : "/home");
   const pageSurfaceClass = isDarkMode
-    ? "bg-[radial-gradient(circle_at_top,rgba(79,70,229,0.18),transparent_30%),linear-gradient(180deg,#020617_0%,#0f172a_42%,#020617_100%)] text-slate-50"
-    : "bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.12),transparent_30%),linear-gradient(180deg,#eef2ff_0%,#f8fafc_42%,#eef2ff_100%)] text-slate-900";
+    ? "bg-slate-950 text-slate-50"
+    : "bg-slate-50 text-slate-900";
 
   return (
     <div className={`min-h-screen ${fontClass} transition-colors ${pageSurfaceClass}`}>
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className={`absolute -top-24 left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full blur-3xl ${
-          isDarkMode ? "bg-indigo-500/18" : "bg-indigo-200/65"
-        }`} />
-        <div className={`absolute bottom-0 right-0 h-80 w-80 translate-x-1/4 rounded-full blur-3xl ${
-          isDarkMode ? "bg-cyan-400/10" : "bg-blue-100/60"
-        }`} />
-      </div>
-
-      <header className={`sticky top-0 z-30 border-b backdrop-blur-xl ${
-        isDarkMode ? "border-white/10 bg-slate-950/72" : "border-slate-200 bg-white/78"
+      <header className={`sticky top-0 z-30 border-b ${
+        isDarkMode ? "border-white/10 bg-slate-950" : "border-slate-200 bg-white"
       }`}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
@@ -716,119 +784,77 @@ export default function PlanPage() {
         </div>
       </header>
 
-      <main className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <section className={`relative overflow-hidden rounded-[32px] border px-5 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10 ${
-          isDarkMode ? "border-white/10 bg-slate-950/42" : "border-white/70 bg-white/70"
-        }`}>
-          <div className={`pointer-events-none absolute inset-0 ${
-            isDarkMode
-              ? "bg-[linear-gradient(180deg,rgba(15,23,42,0.15),rgba(2,6,23,0.25))]"
-              : "bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(238,242,255,0.32))]"
-          }`} />
+      <main
+        className={`relative mx-auto max-w-7xl px-4 sm:px-6 ${
+          isCompactGroupPlanLayout ? "py-3 sm:py-4" : "py-8"
+        }`}
+      >
+        <section
+          className={`rounded-[24px] border ${
+            isCompactGroupPlanLayout ? "px-4 py-4 sm:px-5 sm:py-5" : "px-5 py-6 sm:px-8 sm:py-8"
+          } ${isDarkMode ? "border-white/10 bg-slate-950" : "border-slate-200 bg-white"}`}
+        >
+          <div>
+            <div className={`flex flex-col ${isCompactGroupPlanLayout ? "gap-2" : "gap-4"}`}>
+              <button
+                type="button"
+                onClick={() => navigate(backTo, { replace: true })}
+                className={`inline-flex w-fit items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
+                  isDarkMode
+                    ? "text-slate-200 hover:bg-white/5"
+                    : "text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("plan.back")}
+              </button>
 
-          <div className="relative">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                <div className="mb-4 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => navigate(backTo, { replace: true })}
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset transition-colors cursor-pointer ${
-                      isDarkMode
-                        ? "bg-white/5 text-slate-200 ring-white/10 hover:bg-white/10"
-                        : "bg-white/85 text-slate-700 ring-slate-200 hover:bg-white"
-                    }`}
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                    {t("plan.back")}
-                  </button>
-
-                  <Badge className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    isDarkMode
-                      ? "border-0 bg-indigo-400/12 text-indigo-100"
-                      : "border-0 bg-indigo-100 text-indigo-700"
-                  }`}>
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                    {t("plan.heroBadge")}
-                  </Badge>
-                </div>
-
-                <h1 className="max-w-3xl text-3xl font-extrabold tracking-tight sm:text-5xl">
-                  {t("plan.title")}
+              <div>
+                <h1
+                  className={
+                    isCompactGroupPlanLayout
+                      ? "max-w-2xl text-2xl font-bold tracking-tight sm:text-3xl"
+                      : "max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl"
+                  }
+                >
+                  {pageTitle}
                 </h1>
-                <p className={`mt-3 max-w-2xl text-sm leading-7 sm:text-base ${
-                  isDarkMode ? "text-slate-300" : "text-slate-600"
-                }`}>
-                  {t("plan.subtitle")}
+                <p
+                  className={`max-w-2xl text-sm leading-6 sm:text-base ${
+                    isCompactGroupPlanLayout ? "mt-1.5" : "mt-3 leading-7"
+                  } ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}
+                >
+                  {pageSubtitle}
                 </p>
               </div>
 
-              <div className={`max-w-md rounded-[24px] border p-4 sm:p-5 ${
-                isDarkMode ? "border-white/10 bg-white/5" : "border-slate-200 bg-white/80"
-              }`}>
-                <div className="flex items-start gap-4">
-                  <span className={`mt-1 flex h-11 w-11 items-center justify-center rounded-2xl ${
-                    isDarkMode ? "bg-indigo-400/12 text-indigo-100" : "bg-indigo-100 text-indigo-700"
-                  }`}>
-                    <CreditCard className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold">{t("plan.creditModel.title")}</p>
-                    <p className={`mt-1 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                      {t("plan.creditModel.desc")}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <Button
-                    onClick={() => navigate(buildWalletsPath())}
-                    className="h-11 rounded-2xl bg-indigo-500 px-5 text-white hover:bg-indigo-400 cursor-pointer"
-                  >
-                    {t("plan.creditModel.cta")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate("/pricing")}
-                    className={`h-11 rounded-2xl px-5 cursor-pointer ${
-                      isDarkMode
-                        ? "border-white/12 bg-white/5 text-slate-100 hover:bg-white/10"
-                        : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
-                    }`}
-                  >
-                    {t("plan.creditModel.guide")}
-                  </Button>
-                </div>
-              </div>
             </div>
 
-            <div className="mt-8 flex justify-center">
-              <div className={`inline-flex rounded-full p-1 ring-1 ring-inset ${
-                isDarkMode ? "bg-white/6 ring-white/10" : "bg-white/85 ring-slate-200"
-              }`}>
-                {["INDIVIDUAL", "GROUP"].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => switchPlanType(type)}
-                    className={`rounded-full px-5 py-2 text-sm font-semibold transition-all cursor-pointer ${
-                      planType === type
-                        ? isDarkMode
-                          ? "bg-indigo-500 text-white shadow-[0_12px_30px_rgba(99,102,241,0.32)]"
-                          : "bg-slate-950 text-white shadow"
-                        : isDarkMode
-                          ? "text-slate-300 hover:bg-white/6 hover:text-white"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    {t(`plan.types.${type === "INDIVIDUAL" ? "individual" : "group"}`)}
-                  </button>
-                ))}
-              </div>
+            <div
+              className={`border-t ${
+                isCompactGroupPlanLayout ? "mt-3 pt-3" : "mt-6 pt-4"
+              } ${isDarkMode ? "border-white/10" : "border-slate-200"}`}
+            >
+              <p className="text-sm font-semibold">
+                {isGroupScopedPage ? t("plan.groupScopeNoticeTitle") : t("plan.groupEntryTitle")}
+              </p>
+              <p className={`mt-1 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                {isGroupScopedPage
+                  ? t(
+                      isScopedGroupLeader
+                        ? "plan.groupScopeLeaderDesc"
+                        : "plan.groupScopeMemberDesc",
+                      {
+                        groupName: scopedGroup?.groupName || t("plan.groupFallbackName"),
+                      },
+                    )
+                  : t("plan.groupEntryDesc")}
+              </p>
             </div>
 
-            <div className="mt-10">
-              {loading ? (
-                <ListSpinner variant="section" className="py-16" />
+            <div className={isCompactGroupPlanLayout ? "mt-4" : "mt-10"}>
+              {sectionLoading ? (
+                <ListSpinner variant="section" className={isCompactGroupPlanLayout ? "py-8" : "py-16"} />
               ) : error ? (
                 <div className="flex flex-col items-center gap-3 py-16">
                   <AlertCircle className={`h-8 w-8 ${isDarkMode ? "text-red-400" : "text-red-500"}`} />
@@ -840,12 +866,14 @@ export default function PlanPage() {
                 </p>
               ) : (
                 <div
-                  className={`grid gap-5 ${
+                  className={`grid ${
                     displayPlans.length === 1
-                      ? "mx-auto max-w-md"
+                      ? "mx-auto max-w-md gap-5"
                       : displayPlans.length === 2
-                        ? "mx-auto max-w-5xl lg:grid-cols-2"
-                        : "xl:grid-cols-3"
+                        ? isGroupScopedPage
+                          ? "mx-auto w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2"
+                          : "mx-auto max-w-5xl gap-5 lg:grid-cols-2"
+                        : "gap-5 xl:grid-cols-3"
                   }`}
                 >
                   {displayPlans.map((plan, index) => (
@@ -860,7 +888,10 @@ export default function PlanPage() {
                       locale={locale}
                       t={t}
                       isCurrentPlan={isMatchingCurrentPlan(plan, currentPlanSummary, planType)}
+                      purchaseLocked={groupPurchaseLocked}
+                      purchaseLockedLabel={groupPurchaseLockLabel}
                       onUpgrade={handleUpgrade}
+                      compact={isCompactGroupPlanLayout}
                     />
                   ))}
                 </div>
@@ -869,56 +900,66 @@ export default function PlanPage() {
           </div>
         </section>
 
-        {studyFeatureTiles.length > 0 && (
-          <section className="mt-14">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("plan.studyFeatures.title")}</h2>
+        {(studyFeatureTiles.length > 0 || notes.length > 0) && (
+          <section
+            className={`${isCompactGroupPlanLayout ? "mt-6" : "mt-12"} rounded-[20px] border p-5 sm:p-6 ${
+              isDarkMode ? "border-white/10 bg-slate-950" : "border-slate-200 bg-white"
+            }`}
+          >
+            <div className="max-w-2xl">
+              <h2 className="text-2xl font-bold tracking-tight">{t("plan.studyFeatures.title")}</h2>
               <p className={`mt-2 text-sm sm:text-base ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                 {t("plan.studyFeatures.subtitle")}
               </p>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {studyFeatureTiles.map((feature) => {
-                const Icon = feature.icon;
-                return (
-                  <div
-                    key={feature.key}
-                    className={`rounded-[24px] border p-5 ${
-                      isDarkMode ? "border-white/10 bg-slate-950/56" : "border-slate-200 bg-white/82"
-                    }`}
-                  >
-                    <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
-                      isDarkMode ? "bg-indigo-400/12 text-indigo-100" : "bg-indigo-100 text-indigo-700"
-                    }`}>
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <p className={`mt-4 text-base font-semibold ${isDarkMode ? "text-white" : "text-slate-950"}`}>
-                      {feature.title}
-                    </p>
-                    <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                      {feature.desc}
-                    </p>
-                  </div>
-                );
-              })}
+            <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+              <div className="grid gap-4 md:grid-cols-2">
+                {studyFeatureTiles.map((feature) => {
+                  const Icon = feature.icon;
+                  return (
+                    <div
+                      key={feature.key}
+                      className={`flex gap-4 rounded-xl border p-4 ${
+                        isDarkMode ? "border-white/10 bg-slate-900" : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                        isDarkMode ? "bg-white/5 text-slate-200" : "bg-white text-slate-700"
+                      }`}>
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <p className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-slate-950"}`}>
+                          {feature.title}
+                        </p>
+                        <p className={`mt-1 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                          {feature.desc}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className={`rounded-xl border p-4 ${
+                isDarkMode ? "border-white/10 bg-slate-900" : "border-slate-200 bg-slate-50"
+              }`}>
+                <div className="space-y-4">
+                  {notes.map((note, index) => (
+                    <div
+                      key={note.title}
+                      className={index > 0 ? `border-t pt-4 ${isDarkMode ? "border-white/10" : "border-slate-200"}` : ""}
+                    >
+                      <p className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-slate-950"}`}>{note.title}</p>
+                      <p className={`mt-1 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{note.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </section>
         )}
-
-        <section className="mt-12 grid gap-4 lg:grid-cols-3">
-          {notes.map((note) => (
-            <div
-              key={note.title}
-              className={`rounded-[24px] border p-5 ${
-                isDarkMode ? "border-white/10 bg-slate-950/48" : "border-slate-200 bg-white/82"
-              }`}
-            >
-              <p className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-slate-950"}`}>{note.title}</p>
-              <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{note.desc}</p>
-            </div>
-          ))}
-        </section>
       </main>
     </div>
   );

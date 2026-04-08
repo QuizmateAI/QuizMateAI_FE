@@ -16,10 +16,10 @@ import { useGroup } from '@/hooks/useGroup';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { preloadGroupWorkspacePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 import { useToast } from '@/context/ToastContext';
-import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 import { getMyWallet } from '@/api/ManagementSystemAPI';
 import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
+import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
 
 function formatNumber(value, locale) {
   try {
@@ -381,14 +381,9 @@ function HomePage() {
             }`}
           >
             <CreditCard className="w-4 h-4" />
-            {currentPlanSummary ? (
-              <span className="hidden max-w-[180px] truncate text-sm font-semibold sm:inline">
-                {currentPlanSummary.planName}
-              </span>
-            ) : null}
-            {!currentPlanSummary ? (
-              <span className="text-sm hidden sm:inline">{t('common.plan')}</span>
-            ) : null}
+            <span className="hidden max-w-[180px] truncate text-sm font-semibold sm:inline">
+              {currentPlanSummary?.planName || t('common.plan')}
+            </span>
           </Button>
           <Button
             variant="ghost"
