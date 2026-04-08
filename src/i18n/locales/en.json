@@ -382,7 +382,9 @@
       "email": "Email",
       "status": "Status",
       "lastLogin": "Last Login",
-      "actions": "Actions"
+      "actions": "Actions",
+      "role": "Role",
+      "rbac": "RBAC"
     },
     "noData": "No admin accounts found.",
     "form": {
@@ -397,10 +399,35 @@
       "success": "Admin account created successfully.",
       "error": "Failed to create admin account.",
       "passwordMismatch": "Password confirmation does not match.",
-      "passwordTooShort": "Password must be at least 6 characters."
+      "passwordTooShort": "Password must be at least 6 characters.",
+      "description": "Create a new admin account. Open RBAC on each row to assign permissions.",
+      "usernamePlaceholder": "admin_username",
+      "emailPlaceholder": "admin@example.com",
+      "passwordPlaceholder": "At least 6 characters",
+      "confirmPasswordPlaceholder": "Re-enter password",
+      "fullNameOptional": "Full name (optional)",
+      "fullNamePlaceholder": "Admin name",
+      "creating": "Creating...",
+      "grantedPermissions": "granted permissions",
+      "syncPermissions": "Sync permissions"
     },
     "syncSuccess": "Permissions synced successfully.",
-    "syncError": "Failed to sync permissions."
+    "syncError": "Failed to sync permissions.",
+    "categories": {
+      "plans": "Plans",
+      "materials": "Materials",
+      "audit": "Audit"
+    },
+    "errors": {
+      "loadAdmins": "Unable to load the admin list."
+    },
+    "rbac": {
+      "title": "Permissions: {{username}}",
+      "description": "Toggle permissions for ADMIN accounts. SUPER_ADMIN keeps full default access.",
+      "superAdminReadonly": "SUPER_ADMIN accounts always have full default access.",
+      "clearAll": "Clear all",
+      "grantAll": "Grant all"
+    }
   },
   "adminPayments": {
     "desc": "Look up transactions by order ID, user, workspace, or payment status.",
@@ -671,13 +698,26 @@
     "dark": "Dark",
     "refresh": "Refresh",
     "refreshLog": "Refresh log",
+    "checking": "Checking...",
+    "boolean": {
+      "true": "True",
+      "false": "False"
+    },
+    "options": "Options",
     "back": "Back",
     "next": "Next",
     "subscription": "Subscription Plans",
     "plan": "Plan",
     "optional": "optional",
     "wallet": "Credit Wallet",
-    "cancel": "Close"
+    "cancel": "Close",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "paginationSummary": "Showing {{start}} - {{end}} of {{total}}",
+    "pageSizeOption": "{{count}} / page",
+    "close": "Close"
   },
   "plan": {
     "title": "Choose your learning plan",
@@ -838,14 +878,69 @@
     "desc": "Manage system roles and permissions - Role Based Access Control.",
     "tabs": {
       "permissions": "Permissions",
-      "auditLogs": "Audit Logs"
+      "auditLogs": "Audit Logs",
+      "roles": "Roles"
     },
     "permissionsList": "Permissions List",
     "userRoleManagement": "User Role & Permissions Management",
     "userRoleDesc": "Shows only ADMIN and SUPER_ADMIN accounts.",
     "auditLogs": "RBAC Audit Logs",
     "syncSuccess": "Permissions synced successfully.",
-    "syncError": "Failed to sync permissions."
+    "syncError": "Failed to sync permissions.",
+    "roleManagementTitle": "Role management",
+    "roleManagementDesc": "Create custom roles, review permissions, and sync permissions by role.",
+    "createRole": "Create role",
+    "columns": {
+      "role": "Role",
+      "type": "Type",
+      "permissions": "Permissions",
+      "actions": "Actions",
+      "code": "Code",
+      "description": "Description",
+      "username": "Username",
+      "email": "Email",
+      "status": "Status",
+      "actor": "Actor",
+      "action": "Action",
+      "target": "Target",
+      "change": "Before -> After",
+      "time": "Time"
+    },
+    "emptyRoles": "No roles yet",
+    "noPermission": "No permissions",
+    "permissionsAction": "Permissions",
+    "deleteAction": "Delete",
+    "managePermissionsAction": "Manage permissions",
+    "noAuditLogs": "No audit logs yet",
+    "userPermissionTitle": "Manage permissions: {{username}}",
+    "userPermissionDesc": "Assign roles and configure permissions for ADMIN accounts. SUPER_ADMIN keeps full default access.",
+    "userPermissionsCount": "Permissions ({{count}})",
+    "syncPermissions": "Sync permissions",
+    "createRoleTitle": "Create a new role",
+    "createRoleDesc": "Enter the new role name. The backend will normalize it to uppercase.",
+    "roleName": "Role name",
+    "roleNamePlaceholder": "Example: CONTENT_MANAGER",
+    "rolePermissionTitle": "Sync permissions for role: {{role}}",
+    "superAdminReadonlyDesc": "SUPER_ADMIN always has all default permissions and cannot be edited manually.",
+    "syncRoleDesc": "Choose the permissions applied to this role. This action syncs the full permission set for the role.",
+    "selectedPermissionsCount": "{{count}} permissions selected",
+    "systemRoleLabel": "SYSTEM",
+    "customRoleLabel": "CUSTOM",
+    "confirmDeleteRole": "Delete role {{role}}?",
+    "success": {
+      "roleCreated": "Role created successfully.",
+      "rolePermissionsSynced": "Role permissions synced successfully.",
+      "roleDeleted": "Role deleted successfully."
+    },
+    "errors": {
+      "loadPermissions": "Unable to load permissions.",
+      "loadAuditLogs": "Unable to load audit logs.",
+      "loadRoles": "Unable to load roles.",
+      "roleNameRequired": "Role name is required.",
+      "createRole": "Unable to create role.",
+      "syncRolePermissions": "Unable to sync role permissions.",
+      "deleteRole": "Unable to delete role."
+    }
   },
   "subscription": {
     "title": "Subscription Management",
@@ -902,7 +997,9 @@
       "user": "User",
       "plan": "Plan",
       "startDate": "Start Date",
-      "endDate": "End Date"
+      "endDate": "End Date",
+      "scope": "Scope",
+      "level": "Level"
     },
     "form": {
       "name": "Plan Name",
@@ -921,12 +1018,143 @@
       "activeSubs": "Active Plans",
       "individual": "Individual",
       "group": "Group",
-      "totalRevenue": "Total Revenue"
+      "totalRevenue": "Total Revenue",
+      "userScope": "User scope",
+      "workspaceScope": "Group workspace scope"
     },
     "aiModels": {
       "title": "AI Models by capability",
       "groupHint": "Choose the default model for this capability in the selected plan.",
       "noAssignment": "No model assigned"
+    },
+    "actions": {
+      "toggleStatus": "Toggle status"
+    },
+    "scope": {
+      "user": "User",
+      "workspace": "Group workspace",
+      "userPlan": "User plan",
+      "workspacePlan": "Group workspace plan",
+      "userPlanDescription": "For individual accounts, onboarding, and solo learning flows.",
+      "workspacePlanDescription": "For team workspaces, collaboration, and shared resources."
+    },
+    "detail": {
+      "planType": "{{scope}} plan",
+      "entitlement": "Entitlement",
+      "maxIndividualWorkspace": "Max individual workspace",
+      "maxMaterialInWorkspace": "Max material / workspace",
+      "planIncludedCredits": "Included credits",
+      "features": "Features"
+    },
+    "entitlements": {
+      "canProcessPdf": "PDF",
+      "canProcessWord": "Word",
+      "canProcessSlide": "Slide",
+      "canProcessExcel": "Excel",
+      "canProcessText": "Text",
+      "canProcessImage": "Image",
+      "canProcessVideo": "Video",
+      "canProcessAudio": "Audio",
+      "canBuyCredit": "Buy credit",
+      "hasAdvanceQuizConfig": "Advanced quiz types",
+      "canCreateRoadMap": "Create roadmap",
+      "hasAiCompanionMode": "AI companion",
+      "hasWorkspaceAnalytics": "Analytics",
+      "hasAiSummaryAndTextReading": "AI summary",
+      "hasAiQuizAssessmentAndRecommendation": "AI quiz assessment"
+    },
+    "validation": {
+      "codeRequired": "Please enter a plan code.",
+      "displayNameRequired": "Please enter a plan name."
+    },
+    "wizard": {
+      "empty": "Not entered",
+      "untitled": "Untitled plan",
+      "dialogEditDescription": "Edit the plan step by step so you do not need to scroll through the full configuration in one screen.",
+      "dialogCreateDescription": "Create a new plan through a step-by-step flow that is easier to review before saving.",
+      "stepCounter": "Step {{current}}/{{total}}",
+      "stepTitle": "Step {{current}}/{{total}}: {{title}}",
+      "nextHint": "Use the \"Next\" button to move through each step and keep the dialog compact.",
+      "finalHint": "You are on the final step. Save now or jump back to any previous step to adjust.",
+      "steps": {
+        "basic": {
+          "title": "Basics",
+          "description": "Name the plan, choose its scope, and set the price."
+        },
+        "entitlement": {
+          "title": "Entitlements",
+          "description": "Set limits and capability toggles."
+        },
+        "models": {
+          "title": "AI models",
+          "description": "Assign default models for each capability group."
+        },
+        "review": {
+          "title": "Review",
+          "description": "Inspect the final setup before saving."
+        }
+      },
+      "checklist": {
+        "title": "Quick checklist",
+        "code": "Plan code",
+        "displayName": "Display name",
+        "enabledFeatures": "Enabled features",
+        "enabledFeaturesValue": "{{count}} features",
+        "assignedModels": "Assigned AI models",
+        "assignedModelsValue": "{{assigned}}/{{total}} groups"
+      },
+      "basic": {
+        "title": "Set up the plan",
+        "description": "Start by defining the plan identity and scope.",
+        "editingLocked": "Code and scope stay locked while editing to avoid drifting from the active catalog."
+      },
+      "fields": {
+        "code": "Plan code",
+        "displayName": "Display name",
+        "displayNamePlaceholder": "Example: Individual Pro, Team Growth...",
+        "levelHint": "A level can contain multiple plans, so choose the level that best fits this plan.",
+        "price": "Price (VND)",
+        "description": "Description",
+        "descriptionPlaceholder": "Briefly describe who this plan is for and its main value."
+      },
+      "entitlement": {
+        "title": "Entitlements and limits",
+        "description": "Keep this part compact: quantities first, then the capability toggles.",
+        "maxIndividualWorkspaceHint": "Maximum number of individual workspaces allowed by this plan.",
+        "maxMaterialInWorkspaceHint": "Material limit inside each workspace.",
+        "planIncludedCreditsHint": "Credits preloaded in the plan.",
+        "featureToggle": "Feature toggle",
+        "enabledCount": "{{count}} features enabled.",
+        "noneEnabled": "No capabilities enabled for this plan yet.",
+        "enableAll": "Enable all",
+        "disableAll": "Disable all",
+        "enabledState": "Enabled for this plan.",
+        "disabledState": "Disabled."
+      },
+      "models": {
+        "title": "Default models by capability",
+        "description": "Each capability group should have a default model to reduce manual tuning at the end.",
+        "inactiveHint": "Models outside the ACTIVE state still appear for historical review, but cannot be newly selected.",
+        "groupCount": "{{count}} model",
+        "noAssignmentHint": "No dedicated model assigned. The system will use the matching default resolution instead."
+      },
+      "review": {
+        "title": "Review before saving",
+        "description": "Final step to fine-tune action-level overrides when this plan needs distinct AI behavior.",
+        "planInfo": "Plan information",
+        "entitlementSnapshot": "Entitlement snapshot",
+        "noFeatures": "No features enabled yet.",
+        "aiSnapshot": "AI snapshot",
+        "modelGroupsAssigned": "Groups with assigned models",
+        "overrideActions": "Override actions",
+        "aiOverrides": "AI function overrides",
+        "aiOverridesHint": "Leave empty to use the default capability model.",
+        "aiOverridesGroupHint": "Only override when this plan truly needs behavior different from the group default model.",
+        "providerAvailable": "Available provider: {{provider}}.",
+        "useDefaultHint": "Leave empty to use the default for {{group}}.",
+        "useCompatibleDefault": "Use the compatible default model",
+        "useGroupDefault": "Use the group default model"
+      }
     }
   },
   "aiModels": {
@@ -1590,6 +1818,7 @@
       "create": "Create",
       "share": "Share",
       "settings": "Settings",
+      "editWorkspace": "Edit workspace",
       "groupSubtitle": "Group Workspace",
       "createWorkspace": "Create new workspace",
       "invite": "Invite"
@@ -1845,6 +2074,7 @@
         "templateFormat": "Template format",
         "templateDurationMinutes": "Exam duration (minutes)",
         "templateQuestionCount": "Question count",
+        "templateTotalSectionPoints": "Section total points",
         "knowledgeLoad": "Knowledge amount",
         "adaptationMode": "Adaptation mode",
         "roadmapSpeedMode": "Roadmap speed mode",
@@ -2142,6 +2372,8 @@
     },
     "upload": {
       "title": "Upload Documents",
+      "groupReviewTitle": "Upload for leader review",
+      "groupReviewDescription": "Your documents will be checked by the group's profile, then queued for leader approval before appearing in shared sources.",
       "desc": "Choose the type of document you want to add to this workspace.",
       "dragDrop": "Drag & drop files here",
       "orBrowse": "or click to browse",
@@ -2176,6 +2408,7 @@
       "webYoutubeNote4": "Only YouTube video transcripts can be imported.",
       "webYoutubeNote5": "Only public YouTube videos are supported.",
       "insertUrl": "Insert",
+      "untitled": "Untitled",
       "uploading": "Uploading...",
       "uploadUserFiles": "Upload user files",
       "uploadAllSources": "Upload user + suggested files",
@@ -2469,7 +2702,8 @@
         "timeDurationRequired": "Please enter total duration for the quiz.",
         "materialRequired": "Vui lòng chọn ít nhất một tài liệu.",
         "minimumTimePerQuestion": "Minimum Time Per Question",
-        "minimumTimePerQuestionHint": "Minimum Time Per Question Hint"
+        "minimumTimePerQuestionHint": "Minimum Time Per Question Hint",
+        "durationAutoAdjusted": "Minimum time has been adjusted to {{minutes}} minute(s) for {{count}} question(s)."
       },
       "contextSelector": {
         "title": "Quiz Location",
@@ -2608,7 +2842,10 @@
         "structureDifficulty": "Difficulty",
         "structureQuestionType": "Question type",
         "structureBloom": "Bloom",
-        "structureQuantity": "Quantity"
+        "structureQuantity": "Quantity",
+        "materialFallback": "Material #{{id}}",
+        "questionTypeFallback": "Type #{{id}}",
+        "bloomFallback": "Bloom #{{id}}"
       },
       "detail": {
         "edit": "Edit",
@@ -2619,7 +2856,19 @@
         "section": "Section",
         "questions": "questions",
         "noQuestions": "No questions in this section.",
-        "assign": "Assign"
+        "assign": "Assign",
+        "assignComingSoon": "Group assignment will be available soon.",
+        "answersAndOptions": "Answers & options",
+        "config": "Config",
+        "matchingNoData": "No matching data available",
+        "noQuestionsToCheck": "No questions to check yet.",
+        "publishFailed": "Could not publish quiz.",
+        "readyToPublish": "Ready to publish?",
+        "readyToPublishBody": "Open the Check tab to verify questions, settings, and answers. Then publish and set who can access the quiz.",
+        "reviewHint": "Each card shows question type, difficulty, cognitive level, and all answer options. Correct options are highlighted.",
+        "stepCheck": "1 ? Check",
+        "stepPublish": "2 ? Publish",
+        "stepDistribute": "3 ? Distribute"
       },
       "edit": {
         "title": "Edit Quiz",
@@ -2800,28 +3049,35 @@
         "actionsSection": "Next actions",
         "questionList": "Question list",
         "noReviewData": "No detailed data available to review this attempt.",
-        "assessmentLoading": "Assessment Loading",
-        "assessmentNoSummary": "Assessment No Summary",
-        "assessmentProcessing": "Assessment Processing",
-        "generateFromAssessmentFail": "Generate From Assessment Fail",
-        "generateFromAssessmentSuccess": "Generate From Assessment Success",
-        "generateQuizFromAssessment": "Generate Quiz From Assessment",
-        "incompleteAttempt": "Incomplete Attempt",
-        "loading": "Loading",
+        "assessmentLoading": "Loading AI assessment...",
+        "assessmentNoSummary": "No AI assessment summary yet.",
+        "assessmentProcessing": "AI assessment is still processing. This page will refresh automatically.",
+        "generateFromAssessmentFail": "Failed to generate quiz from AI assessment.",
+        "generateFromAssessmentSuccess": "Quiz generated from AI assessment successfully.",
+        "generateQuizFromAssessment": "Generate quiz from AI assessment",
+        "incompleteAttempt": "This quiz attempt is not complete yet. Return to continue or submit before viewing the result.",
+        "loading": "Loading result...",
         "nextQuizPlan": "Next Quiz Plan",
-        "pendingOrMissing": "Pending Or Missing",
+        "pendingOrMissing": "This attempt result is not ready yet or no longer exists.",
         "recurringMistakes": "Recurring Mistakes",
-        "refreshAssessment": "Refresh Assessment",
-        "resumeAttempt": "Resume Attempt",
-        "retryLoad": "Retry Load",
+        "refreshAssessment": "Refresh",
+        "resumeAttempt": "Resume attempt",
+        "retryLoad": "Retry",
         "strengths": "Strengths",
-        "unavailable": "Unavailable",
+        "unavailable": "This attempt result is currently unavailable. Please try again.",
         "unknownTopic": "Unknown Topic",
-        "waitingForResult": "Waiting For Result",
-        "weaknesses": "Weaknesses",
-        "wrong": "Wrong"
+        "waitingForResult": "Waiting for your result...",
+        "weaknesses": "Needs improvement",
+        "assessmentFailed": "AI assessment could not be completed yet. Try refreshing after grading finishes.",
+        "nextResultSummary": "Next suggestion",
+        "profileResultPending": "The system will suggest more accurately after a few more quizzes.",
+        "questionListHint": "Click a number to jump straight to that question.",
+        "recommendedQuizGoal": "Goal",
+        "recommendedQuizTitle": "Recommended next quiz",
+        "communitySuggestionTitle": "Relevant community quiz",
+        "feedbackAction": "Feedback"
       },
-      "answerLocked": "Answer Locked",
+      "answerLocked": "Finish the quiz to view answers and explanations.",
       "close": "Close",
       "common": {
         "cancel": "Cancel"
@@ -2841,14 +3097,52 @@
       "deleteConfirm": "Delete Confirm",
       "history": {
         "attempt": "Attempt",
-        "empty": "Empty",
-        "loading": "Loading"
+        "empty": "No attempt history yet.",
+        "loading": "Loading history..."
       },
-      "startExamPrompt": "Start Exam Prompt",
+      "startExamPrompt": "Start exam mode for this quiz?",
       "tabs": {
         "history": "History",
         "overview": "Overview",
-        "questions": "Questions"
+        "questions": "Questions",
+        "review": "Check"
+      },
+      "confirm": "Confirm",
+      "continue": "Continue",
+      "distribution": "Distribution",
+      "publish": "Publish",
+      "save": "Save",
+      "audience": {
+        "title": "Quiz distribution",
+        "description": "Choose whether all members see this quiz or only selected members.",
+        "visibility": "Visibility",
+        "allMembersTitle": "All members",
+        "allMembersDescription": "Everyone in the group can open this quiz.",
+        "selectedMembersTitle": "Specific members only",
+        "selectedMembersDescription": "Pick who should see the quiz below.",
+        "members": "Members",
+        "loadingMembers": "Loading members...",
+        "noMembers": "No members found.",
+        "memberFallback": "User {{id}}",
+        "saveFailed": "Could not save distribution.",
+        "selectMemberRequired": "Select at least one member."
+      },
+      "reviewCard": {
+        "markForReview": "Mark question for review",
+        "unmarkForReview": "Unmark question for review",
+        "multipleSelectHint": "Select all that apply",
+        "matchingReviewInstruction": "Review the correct matching pairs below.",
+        "unanswered": "Not answered",
+        "fillBlankPlaceholder": "Enter your answer",
+        "shortAnswerPlaceholder": "Enter a short answer",
+        "yourAnswerLabel": "Your answer",
+        "statusLabel": "Status",
+        "gradingByAI": "Grading by AI...",
+        "noData": "No data available",
+        "noAnswerProvided": "No answer provided",
+        "noAnswerSelected": "No answer selected",
+        "correct": "Correct!",
+        "incorrect": "Incorrect"
       }
     },
     "flashcard": {
@@ -2918,6 +3212,8 @@
       "statusACTIVE": "Active",
       "createVia": "Created via",
       "contextType": "Context",
+      "assign": "Assign",
+      "assignComingSoon": "Assign feature for groups is coming soon!",
       "addItemSuccess": "Item added successfully!",
       "updateItemSuccess": "Item updated successfully!",
       "deleteItemSuccess": "Item deleted successfully!",
@@ -2946,6 +3242,9 @@
       "emptyPhase": "No phases yet.",
       "emptyKnowledge": "No knowledge items yet.",
       "aiOnlyHint": "Ai Only Hint"
+    },
+    "phase": {
+      "fallbackName": "Phase #{{id}}"
     },
     "roadmap": {
       "createTitle": "Create Roadmap",
@@ -2980,6 +3279,8 @@
       "aiGenerateHint": "After generation, the roadmap opens directly in the canvas view so you can inspect and move through the flow.",
       "canvasViewLabel": "Choose roadmap canvas view",
       "canvasViewHint": "Select the roadmap interface first so the generated roadmap opens in the layout you want to review.",
+      "refreshPhasesTooltip": "Refresh roadmap phases",
+      "fallbackName": "Roadmap #{{id}}",
       "canvasView1Title": "Canvas view 1",
       "canvasView1Description": "Branch-based roadmap canvas with free pan, zoom, and drag interactions.",
       "canvasView2Title": "Canvas view 2",
@@ -3138,6 +3439,7 @@
     },
     "mockTest": {
       "title": "Mock Test",
+      "workspaceLabel": "Workspace",
       "desc": "Create a mock test based on your documents.",
       "allRoadmapsCovered": "All roadmaps already have a mock test.",
       "createTitle": "Create Mock Test",
@@ -3330,42 +3632,43 @@
     "createdAt": "Created At",
     "noMembers": "No members yet.",
     "roadmaps": "Roadmaps",
-      "noRoadmaps": "No roadmaps.",
-      "noLogs": "No logs yet.",
-      "noSubscription": "No subscription.",
-      "status": "Status",
-      "endDate": "End Date",
-      "price": "Price",
-      "untitledGroup": "Untitled group",
-      "noDescription": "This group does not have a detailed description yet.",
-      "unknownLeader": "Unknown",
-      "workspaceId": "Workspace ID",
-      "commandCenter": "Group Command Center",
-      "commandCenterDesc": "Monitor members, roadmaps, logs, and operating status in a dedicated group view.",
-      "groupPulse": "Group Pulse",
-      "groupPulseDesc": "Core signals that show the current health of this group at a glance.",
-      "memberRoster": "Member Roster",
-      "memberRosterDesc": "See who leads, who contributes, and the current size of the group.",
-      "contentBoard": "Content Board",
-      "contentBoardDesc": "Roadmaps and learning assets currently attached to the group workspace.",
-      "activityStream": "Activity Stream",
-      "activityStreamDesc": "The latest changes and events happening inside this group.",
-      "governance": "Governance & Plan",
-      "governanceDesc": "Subscription status, leadership controls, and key group milestones.",
-      "memberMix": "Role Mix",
-      "lastEvent": "Latest Event",
-      "noEmail": "No email",
-      "noExpiry": "No expiry",
-      "unknownStatus": "Unknown",
-      "emptyRoadmapsDesc": "There are no roadmaps attached to this group yet.",
-      "emptyLogsDesc": "Recent activity will appear here as soon as the group starts moving.",
-      "emptySubscriptionDesc": "This group does not currently have an active subscription.",
-      "memberRoles": {
-        "leader": "Leader",
-        "contributor": "Contributor",
-        "member": "Member"
-      }
+    "noRoadmaps": "No roadmaps.",
+    "noLogs": "No logs yet.",
+    "noSubscription": "No subscription.",
+    "status": "Status",
+    "endDate": "End Date",
+    "price": "Price",
+    "untitledGroup": "Untitled group",
+    "noDescription": "This group does not have a detailed description yet.",
+    "unknownLeader": "Unknown",
+    "workspaceId": "Workspace ID",
+    "commandCenter": "Group Command Center",
+    "commandCenterDesc": "Monitor members, roadmaps, logs, and operating status in a dedicated group view.",
+    "groupPulse": "Group Pulse",
+    "groupPulseDesc": "Core signals that show the current health of this group at a glance.",
+    "memberRoster": "Member Roster",
+    "memberRosterDesc": "See who leads, who contributes, and the current size of the group.",
+    "contentBoard": "Content Board",
+    "contentBoardDesc": "Roadmaps and learning assets currently attached to the group workspace.",
+    "activityStream": "Activity Stream",
+    "activityStreamDesc": "The latest changes and events happening inside this group.",
+    "governance": "Governance & Plan",
+    "governanceDesc": "Subscription status, leadership controls, and key group milestones.",
+    "memberMix": "Role Mix",
+    "lastEvent": "Latest Event",
+    "noEmail": "No email",
+    "noExpiry": "No expiry",
+    "unknownStatus": "Unknown",
+    "emptyRoadmapsDesc": "There are no roadmaps attached to this group yet.",
+    "emptyLogsDesc": "Recent activity will appear here as soon as the group starts moving.",
+    "emptySubscriptionDesc": "This group does not currently have an active subscription.",
+    "memberRoles": {
+      "leader": "Leader",
+      "contributor": "Contributor",
+      "member": "Member"
     },
+    "loading": "Loading..."
+  },
   "groupPage": {
     "title": "Group Management",
     "desc": "Manage all study groups.",
@@ -3596,17 +3899,17 @@
       "stepCount": "Step {{current}} of {{total}}",
       "back": "Back",
       "continue": "Continue",
-        "saving": "Saving...",
-        "retry": "Retry",
-        "select": "Select",
-        "selected": "Selected",
-        "close": "Close",
-        "later": "Later",
-        "finish": "Save and finish",
-        "finishIncomplete": "Review to finish",
-        "enabled": "Enabled",
-        "disabled": "Disabled"
-      },
+      "saving": "Saving...",
+      "retry": "Retry",
+      "select": "Select",
+      "selected": "Selected",
+      "close": "Close",
+      "later": "Later",
+      "finish": "Save and finish",
+      "finishIncomplete": "Review to finish",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
     "messages": {
       "basicsSaved": "Group basics saved.",
       "basicsSaveError": "Unable to save the group basics.",
@@ -4157,5 +4460,138 @@
       "noRules": "No additional rules yet."
     }
   },
-  "workspaceSettings": "Workspace settings"
+  "workspaceSettings": "Workspace settings",
+  "adminLayout": {
+    "brand": "Admin QuizMate"
+  },
+  "superAdminLayout": {
+    "brand": "Super Admin"
+  },
+  "aiAudit": {
+    "title": "AI Audit",
+    "description": "Track AI requests, token usage, models, statuses, and open detailed traces when needed.",
+    "errors": {
+      "loadLogs": "Unable to load AI audit logs."
+    },
+    "metrics": {
+      "totalRequests": "Total requests",
+      "totalRequestsHint": "Based on the current filters",
+      "pageTokens": "Tokens on this page",
+      "pageTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
+      "averageTokens": "Avg tokens / request",
+      "averageTokensHint": "Calculated from the visible logs",
+      "errors": "Errors",
+      "errorsHint": "Errored requests on the current page"
+    },
+    "filters": {
+      "title": "AI audit filters",
+      "allProviders": "All providers",
+      "allStatuses": "All statuses",
+      "featureKeyPlaceholder": "Feature key",
+      "userIdPlaceholder": "User ID",
+      "taskIdPlaceholder": "Task ID",
+      "reset": "Reset filters",
+      "apply": "Apply filters"
+    },
+    "table": {
+      "title": "AI request list",
+      "actor": "Actor",
+      "feature": "Feature",
+      "tokens": "Tokens",
+      "model": "Model",
+      "provider": "Provider",
+      "status": "Request status",
+      "createdAt": "Created",
+      "systemUser": "System user",
+      "noEmail": "No email",
+      "empty": "No AI audit logs match the current filters."
+    },
+    "detail": {
+      "title": "AI request details",
+      "user": "User",
+      "requestStatus": "Request status",
+      "featureAndModel": "Feature and model",
+      "modelLabel": "Model:",
+      "apiKeyLabel": "API key label",
+      "apiKeyHint": "The key is masked so the real secret is not exposed.",
+      "tokens": "Tokens",
+      "inputTokens": "Input",
+      "thoughtTokens": "Thought",
+      "outputTokens": "Output",
+      "totalTokens": "Total",
+      "operation": "Operation",
+      "operationLabel": "Operation:",
+      "endpointLabel": "Endpoint:",
+      "error": "Error",
+      "requestPreview": "Input",
+      "responsePreview": "Output",
+      "noPreview": "No data available",
+      "missing": "This request is no longer present in the current list. Close the dialog and refresh the list if needed."
+    },
+    "status": {
+      "PROCESSING": "Processing",
+      "SUCCESS": "Success",
+      "ERROR": "Error"
+    },
+    "features": {
+      "GENERATE_FLASHCARDS": "Generate flashcards",
+      "GENERATE_QUIZ": "Generate quiz",
+      "EVALUATE_SHORT_ANSWER": "Evaluate short answer",
+      "COMPANION_INTERPRET": "Companion answer",
+      "COMPANION_TRANSCRIBE": "Companion speech-to-text",
+      "COMPANION_TTS": "Companion text-to-speech",
+      "GENERATE_ROADMAP": "Generate roadmap",
+      "GENERATE_ROADMAP_PHASES": "Generate roadmap phases",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Generate phase content",
+      "CHECK_MATERIAL_COVERAGE": "Check material coverage",
+      "WORKSPACE_QUIZ_ASSESSMENT": "Workspace quiz assessment",
+      "PHASE_PRE_LEARNING_ASSESSMENT": "Pre-learning assessment",
+      "PHASE_POST_LEARNING_ASSESSMENT": "Post-learning assessment",
+      "PHASE_PROGRESS_REVIEW": "Progress review",
+      "RAG_ASK": "RAG Q&A",
+      "CONTENT_MODERATION": "Content moderation",
+      "GEMINI_VISION_OCR": "Image OCR",
+      "GEMINI_PDF_FILE_OCR": "PDF OCR",
+      "GEMINI_VIDEO_FILE_ANALYSIS": "Video analysis"
+    }
+  },
+  "aiProviders": {
+    "title": "AI Providers",
+    "subtitle": "Overview of provider catalogs, health status, and models grouped by provider.",
+    "providerHint": "{{count}} models in catalog, {{active}} active and {{archived}} archived.",
+    "health": {
+      "configured": "Configured",
+      "reachable": "Reachable",
+      "keyCount": "Keys",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "metrics": {
+      "models": "Models",
+      "active": "Active",
+      "archived": "Archived",
+      "requests": "Requests",
+      "providerCost": "Provider cost",
+      "profit": "Profit"
+    },
+    "table": {
+      "modelCode": "Model code",
+      "modelGroup": "Capability",
+      "systemDefault": "System default",
+      "status": "Status"
+    },
+    "systemDefault": "System default",
+    "notDefault": "Custom",
+    "emptyModels": "No models registered for this provider yet.",
+    "providerStatus": {
+      "HEALTHY": "Healthy",
+      "UNREACHABLE": "Unreachable",
+      "UNCONFIGURED": "Unconfigured"
+    },
+    "modelStatus": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived",
+      "INACTIVE": "Inactive"
+    }
+  }
 }

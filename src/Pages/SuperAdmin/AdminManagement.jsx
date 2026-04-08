@@ -45,15 +45,15 @@ import {
 } from '@/lib/learningConfigAdminFilters';
 
 const PERM_CATEGORIES = [
-  { prefix: 'user:',              label: 'Users',          icon: Users,         color: 'text-blue-400',    bg: 'from-blue-500 to-blue-600' },
-  { prefix: 'group:',             label: 'Groups',         icon: UsersRound,    color: 'text-violet-400',  bg: 'from-violet-500 to-purple-600' },
-  { prefix: 'plan:',              label: 'Plans',          icon: Package,       color: 'text-cyan-400',    bg: 'from-cyan-500 to-teal-500' },
-  { prefix: 'subscription:',      label: 'Subscriptions',  icon: CreditCard,    color: 'text-emerald-400', bg: 'from-emerald-500 to-green-600' },
-  { prefix: 'credit-package:',    label: 'Credit Packs',   icon: CreditCard,    color: 'text-sky-400',     bg: 'from-sky-500 to-blue-600' },
-  { prefix: 'payment:',           label: 'Payments',       icon: Banknote,      color: 'text-amber-400',   bg: 'from-amber-500 to-orange-500' },
-  { prefix: 'material:',          label: 'Materials',      icon: FileText,      color: 'text-rose-400',    bg: 'from-rose-500 to-pink-600' },
-  { prefix: 'audit:',             label: 'Audit',          icon: ClipboardList, color: 'text-indigo-400',  bg: 'from-indigo-500 to-blue-600' },
-  { prefix: 'system-settings:',   label: 'Settings',       icon: ShieldCheck,   color: 'text-fuchsia-400', bg: 'from-fuchsia-500 to-pink-600' },
+  { prefix: 'user:',            labelKey: 'sidebar.users', icon: Users,         color: 'text-blue-400',    bg: 'from-blue-500 to-blue-600' },
+  { prefix: 'group:',           labelKey: 'sidebar.groups', icon: UsersRound,   color: 'text-violet-400',  bg: 'from-violet-500 to-purple-600' },
+  { prefix: 'plan:',            labelKey: 'adminManagement.categories.plans', icon: Package, color: 'text-cyan-400', bg: 'from-cyan-500 to-teal-500' },
+  { prefix: 'subscription:',    labelKey: 'sidebar.subscriptions', icon: CreditCard, color: 'text-emerald-400', bg: 'from-emerald-500 to-green-600' },
+  { prefix: 'credit-package:',  labelKey: 'sidebar.creditPackages', icon: CreditCard, color: 'text-sky-400', bg: 'from-sky-500 to-blue-600' },
+  { prefix: 'payment:',         labelKey: 'sidebar.payments', icon: Banknote,   color: 'text-amber-400',   bg: 'from-amber-500 to-orange-500' },
+  { prefix: 'material:',        labelKey: 'adminManagement.categories.materials', icon: FileText, color: 'text-rose-400', bg: 'from-rose-500 to-pink-600' },
+  { prefix: 'audit:',           labelKey: 'adminManagement.categories.audit', icon: ClipboardList, color: 'text-indigo-400', bg: 'from-indigo-500 to-blue-600' },
+  { prefix: 'system-settings:', labelKey: 'sidebar.systemSettings', icon: ShieldCheck, color: 'text-fuchsia-400', bg: 'from-fuchsia-500 to-pink-600' },
 ];
 
 const getPermAction = (code) => {
@@ -107,7 +107,7 @@ function AdminManagement() {
       const list = Array.isArray(pageData?.content) ? pageData.content : (Array.isArray(pageData) ? pageData : []);
       setAdmins(list.filter((u) => u.role === 'ADMIN'));
     } catch (err) {
-      setError(getFriendlyError(err, null, 'Không thể tải danh sách admin'));
+      setError(getFriendlyError(err, 'adminManagement.errors.loadAdmins'));
     } finally {
       setIsLoading(false);
     }
@@ -222,9 +222,11 @@ function AdminManagement() {
       admin.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+
   const formatDate = (d) => {
     if (!d) return '-';
-    return new Date(d).toLocaleDateString('vi-VN', {
+    return new Date(d).toLocaleDateString(locale, {
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit',
     });
@@ -312,7 +314,7 @@ function AdminManagement() {
                   <TableHead className="w-[180px] text-left font-bold text-slate-500">{t('adminManagement.table.username')}</TableHead>
                   <TableHead className="w-[220px] min-w-[200px] text-left font-bold text-slate-500">{t('adminManagement.table.email')}</TableHead>
                   <TableHead className="w-[120px] text-left font-bold text-slate-500">{t('adminManagement.table.status')}</TableHead>
-                  <TableHead className="w-[100px] text-left font-bold text-slate-500">Role</TableHead>
+                  <TableHead className="w-[100px] text-left font-bold text-slate-500">{t('adminManagement.table.role')}</TableHead>
                   <TableHead className="w-[150px] text-left font-bold text-slate-500">{t('adminManagement.table.lastLogin')}</TableHead>
                   <TableHead className="w-[140px] text-right font-bold text-slate-500">{t('adminManagement.table.actions')}</TableHead>
                 </TableRow>
@@ -355,7 +357,7 @@ function AdminManagement() {
                           onClick={() => openRbacPopup(admin)}
                         >
                           <Shield className="w-4 h-4 mr-2" />
-                          RBAC
+                          {t('adminManagement.table.rbac', 'RBAC')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -388,18 +390,18 @@ function AdminManagement() {
           <DialogHeader>
             <DialogTitle>{t('adminManagement.add')}</DialogTitle>
             <DialogDescription>
-              Tạo tài khoản Admin mới. Nhấn RBAC trên từng dòng để gán quyền.
+              {t('adminManagement.form.description', 'Create a new admin account. Open RBAC on each row to assign permissions.')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateAdmin} className="space-y-4">
-            <div><Label>Username *</Label><Input required minLength={3} value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="admin_username" className="mt-1" /></div>
-            <div><Label>Email *</Label><Input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="admin@example.com" className="mt-1" /></div>
-            <div><Label>Mật khẩu *</Label><Input required type="password" minLength={6} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Tối thiểu 6 ký tự" className="mt-1" /></div>
-            <div><Label>Xác nhận mật khẩu *</Label><Input required type="password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} placeholder="Nhập lại mật khẩu" className="mt-1" /></div>
-            <div><Label>Họ tên (tuỳ chọn)</Label><Input value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder="Admin Name" className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.username')} *</Label><Input required minLength={3} value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder={t('adminManagement.form.usernamePlaceholder', 'admin_username')} className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.email')} *</Label><Input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder={t('adminManagement.form.emailPlaceholder', 'admin@example.com')} className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.password')} *</Label><Input required type="password" minLength={6} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder={t('adminManagement.form.passwordPlaceholder', 'At least 6 characters')} className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.confirmPassword')} *</Label><Input required type="password" value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} placeholder={t('adminManagement.form.confirmPasswordPlaceholder', 'Re-enter password')} className="mt-1" /></div>
+            <div><Label>{t('adminManagement.form.fullNameOptional', 'Full Name (Optional)')}</Label><Input value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder={t('adminManagement.form.fullNamePlaceholder', 'Admin Name')} className="mt-1" /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t('auth.cancel')}</Button>
-              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Đang tạo...' : 'Tạo Admin'}</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? t('adminManagement.form.creating', 'Creating...') : t('adminManagement.form.submit')}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -412,10 +414,16 @@ function AdminManagement() {
           <div className={`flex-shrink-0 px-6 pt-6 pb-4 border-b ${isDarkMode ? 'border-white/[0.06]' : 'border-slate-100'}`}>
             <DialogHeader className="p-0 space-y-1">
               <DialogTitle className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                Phân quyền: {selectedAdmin?.username}
+                {t('adminManagement.rbac.title', {
+                  username: selectedAdmin?.username,
+                  defaultValue: 'Permissions: {{username}}',
+                })}
               </DialogTitle>
               <DialogDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-                Bật/tắt quyền cho tài khoản ADMIN. SUPER_ADMIN có toàn quyền mặc định.
+                {t(
+                  'adminManagement.rbac.description',
+                  'Toggle permissions for ADMIN accounts. SUPER_ADMIN keeps full default access.'
+                )}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -430,7 +438,10 @@ function AdminManagement() {
                       <ShieldCheck className="w-7 h-7 text-white" />
                     </div>
                     <p className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Tài khoản SUPER_ADMIN có toàn quyền mặc định.
+                      {t(
+                        'adminManagement.rbac.superAdminReadonly',
+                        'SUPER_ADMIN accounts always have full default access.'
+                      )}
                     </p>
                   </div>
                 ) : selectedAdmin.role === 'ADMIN' && (
@@ -443,7 +454,7 @@ function AdminManagement() {
                         }`}>
                           {userPermissions.length}/{permissions.length}
                         </div>
-                        <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>quyền đã cấp</span>
+                        <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('adminManagement.form.grantedPermissions', 'granted permissions')}</span>
                       </div>
                       <Button
                         type="button"
@@ -452,7 +463,9 @@ function AdminManagement() {
                         onClick={() => setAllPermissions(!allSelected)}
                         className={`rounded-lg text-xs h-8 cursor-pointer ${isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}
                       >
-                        {allSelected ? 'Bỏ tất cả' : 'Cấp tất cả'}
+                        {allSelected
+                          ? t('adminManagement.rbac.clearAll', 'Clear all')
+                          : t('adminManagement.rbac.grantAll', 'Grant all')}
                       </Button>
                     </div>
 
@@ -472,7 +485,7 @@ function AdminManagement() {
                                 <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${cat.bg} flex items-center justify-center shadow-sm`}>
                                   <CatIcon className="w-3.5 h-3.5 text-white" />
                                 </div>
-                                <span className={`text-xs font-bold uppercase tracking-wider ${cat.color}`}>{cat.label}</span>
+                                <span className={`text-xs font-bold uppercase tracking-wider ${cat.color}`}>{t(cat.labelKey)}</span>
                                 <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                                   allCatChecked
                                     ? isDarkMode ? 'bg-emerald-500/15 text-emerald-400' : 'bg-emerald-100 text-emerald-600'
@@ -528,10 +541,10 @@ function AdminManagement() {
 
           {/* Fixed footer */}
           <div className={`flex-shrink-0 px-6 py-4 border-t flex justify-end gap-3 ${isDarkMode ? 'border-white/[0.06]' : 'border-slate-100'}`}>
-            <Button variant="outline" onClick={() => setIsRbacOpen(false)} className={`rounded-lg cursor-pointer ${isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>Đóng</Button>
+            <Button variant="outline" onClick={() => setIsRbacOpen(false)} className={`rounded-lg cursor-pointer ${isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''}`}>{t('common.close', 'Close')}</Button>
             {selectedAdmin?.role === 'ADMIN' && (
               <Button onClick={handleSyncPermissions} disabled={isRbacLoading} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-lg shadow-blue-600/25 cursor-pointer">
-                Đồng bộ quyền
+                {t('adminManagement.form.syncPermissions', 'Sync permissions')}
               </Button>
             )}
           </div>

@@ -37,29 +37,29 @@ import {
 const WIZARD_STEPS = [
   {
     id: 'basic',
-    title: 'Thông tin cơ bản',
-    description: 'Đặt tên, scope và mức giá cho gói.',
+    titleKey: 'subscription.wizard.steps.basic.title',
+    descriptionKey: 'subscription.wizard.steps.basic.description',
     icon: Layers3,
     accent: 'from-cyan-500 to-blue-600',
   },
   {
     id: 'entitlement',
-    title: 'Quyền lợi',
-    description: 'Thiết lập giới hạn và feature toggle.',
+    titleKey: 'subscription.wizard.steps.entitlement.title',
+    descriptionKey: 'subscription.wizard.steps.entitlement.description',
     icon: ShieldCheck,
     accent: 'from-emerald-500 to-teal-600',
   },
   {
     id: 'models',
-    title: 'Mô hình AI',
-    description: 'Gán model mặc định theo từng nhóm năng lực.',
+    titleKey: 'subscription.wizard.steps.models.title',
+    descriptionKey: 'subscription.wizard.steps.models.description',
     icon: Bot,
     accent: 'from-violet-500 to-fuchsia-600',
   },
   {
     id: 'review',
-    title: 'Rà soát',
-    description: 'Tinh chỉnh override và kiểm tra trước khi lưu.',
+    titleKey: 'subscription.wizard.steps.review.title',
+    descriptionKey: 'subscription.wizard.steps.review.description',
     icon: Sparkles,
     accent: 'from-amber-400 to-orange-500',
   },
@@ -71,14 +71,16 @@ const DARK_SELECT_STYLE = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
 };
 
-function formatCurrency(value, t) {
+function formatCurrency(value, t, locale) {
   const amount = Number(value) || 0;
   if (amount === 0) return t('subscription.free');
-  return `${amount.toLocaleString('vi-VN')} VND`;
+  return `${amount.toLocaleString(locale)} VND`;
 }
 
-function getScopeLabel(scope) {
-  return scope === 'WORKSPACE' ? 'Group workspace' : 'USER';
+function getScopeLabel(scope, t) {
+  return scope === 'WORKSPACE'
+    ? t('subscription.scope.workspace', 'Group workspace')
+    : t('subscription.scope.user', 'User');
 }
 
 function getModelById(models, modelId) {
@@ -91,6 +93,7 @@ function PlanFormWizard({
   onOpenChange,
   isDarkMode,
   t,
+  locale,
   editingPlan,
   isSubmitting,
   formData,
@@ -108,9 +111,17 @@ function PlanFormWizard({
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const showPlanLevel = formData.planScope !== 'WORKSPACE';
+  const steps = useMemo(
+    () => WIZARD_STEPS.map((step) => ({
+      ...step,
+      title: t(step.titleKey),
+      description: t(step.descriptionKey),
+    })),
+    [t]
+  );
 
-  const activeStep = WIZARD_STEPS[currentStep];
-  const isLastStep = currentStep === WIZARD_STEPS.length - 1;
+  const activeStep = steps[currentStep];
+  const isLastStep = currentStep === steps.length - 1;
 
   const inputCls = cn(
     'mt-1.5 h-11 rounded-2xl transition-colors duration-200',
@@ -181,24 +192,31 @@ function PlanFormWizard({
 
   const checklist = [
     {
-      label: 'Code gói',
+      label: t('subscription.wizard.checklist.code', 'Plan code'),
       done: Boolean(formData.code?.trim()),
-      value: formData.code?.trim() || 'Chưa nhập',
+      value: formData.code?.trim() || t('subscription.wizard.empty', 'Not entered'),
     },
     {
-      label: 'Tên hiển thị',
+      label: t('subscription.wizard.checklist.displayName', 'Display name'),
       done: Boolean(formData.displayName?.trim()),
-      value: formData.displayName?.trim() || 'Chưa nhập',
+      value: formData.displayName?.trim() || t('subscription.wizard.empty', 'Not entered'),
     },
     {
-      label: 'Feature đang bật',
+      label: t('subscription.wizard.checklist.enabledFeatures', 'Enabled features'),
       done: enabledFeatures.length > 0,
-      value: `${enabledFeatures.length} quyền lợi`,
+      value: t('subscription.wizard.checklist.enabledFeaturesValue', {
+        count: enabledFeatures.length,
+        defaultValue: '{{count}} features',
+      }),
     },
     {
-      label: 'Model AI đã gán',
+      label: t('subscription.wizard.checklist.assignedModels', 'Assigned AI models'),
       done: assignedModels.some((item) => item.assignedModelId),
-      value: `${assignedModels.filter((item) => item.assignedModelId).length}/${assignedModels.length} nhóm`,
+      value: t('subscription.wizard.checklist.assignedModelsValue', {
+        assigned: assignedModels.filter((item) => item.assignedModelId).length,
+        total: assignedModels.length,
+        defaultValue: '{{assigned}}/{{total}} groups',
+      }),
     },
   ];
 
@@ -209,8 +227,8 @@ function PlanFormWizard({
 
   const getValidationError = () => {
     if (currentStep !== 0) return null;
-    if (!formData.code?.trim()) return 'Vui lòng nhập code gói.';
-    if (!formData.displayName?.trim()) return 'Vui lòng nhập tên gói.';
+    if (!formData.code?.trim()) return t('subscription.validation.codeRequired', 'Please enter a plan code.');
+    if (!formData.displayName?.trim()) return t('subscription.validation.displayNameRequired', 'Please enter a plan name.');
     return null;
   };
 
@@ -220,7 +238,7 @@ function PlanFormWizard({
       onValidationError(validationError);
       return;
     }
-    setCurrentStep((prev) => Math.min(prev + 1, WIZARD_STEPS.length - 1));
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
 
   const handleBack = () => {
@@ -256,7 +274,12 @@ function PlanFormWizard({
   const renderBasicStep = () => (
     <div className="space-y-6">
       <section className={sectionCls}>
-        {renderStepHeader(Layers3, 'Khởi tạo gói', 'Bước đầu chỉ cần xác định danh tính và phạm vi của gói.', 'from-cyan-500 to-blue-600')}
+        {renderStepHeader(
+          Layers3,
+          t('subscription.wizard.basic.title', 'Set up the plan'),
+          t('subscription.wizard.basic.description', 'Start by defining the plan identity and scope.'),
+          'from-cyan-500 to-blue-600'
+        )}
 
         {editingPlan ? (
           <div
@@ -267,7 +290,12 @@ function PlanFormWizard({
           >
             <div className="flex items-start gap-3">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>Code và scope đang được khóa khi chỉnh sửa để tránh lệch catalog đang hoạt động.</p>
+              <p>
+                {t(
+                  'subscription.wizard.basic.editingLocked',
+                  'Code and scope stay locked while editing to avoid drifting from the active catalog.'
+                )}
+              </p>
             </div>
           </div>
         ) : null}
@@ -276,14 +304,14 @@ function PlanFormWizard({
           {[
             {
               value: 'USER',
-              title: 'USER plan',
-              description: 'Dành cho tài khoản cá nhân, onboarding và trải nghiệm học riêng.',
+              title: t('subscription.scope.userPlan', 'User plan'),
+              description: t('subscription.scope.userPlanDescription', 'For individual accounts, onboarding, and solo learning flows.'),
               icon: User,
             },
             {
               value: 'WORKSPACE',
-              title: 'Group workspace plan',
-              description: 'Dành cho workspace nhóm, cộng tác và tài nguyên dùng chung.',
+              title: t('subscription.scope.workspacePlan', 'Group workspace plan'),
+              description: t('subscription.scope.workspacePlanDescription', 'For team workspaces, collaboration, and shared resources.'),
               icon: Users,
             },
           ].map((scopeOption) => {
@@ -345,7 +373,9 @@ function PlanFormWizard({
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div>
-            <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>Code gói *</Label>
+            <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
+              {t('subscription.wizard.fields.code', 'Plan code')} *
+            </Label>
             <Input
               required
               disabled={Boolean(editingPlan)}
@@ -356,18 +386,22 @@ function PlanFormWizard({
             />
           </div>
           <div>
-            <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>Tên hiển thị *</Label>
+            <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
+              {t('subscription.wizard.fields.displayName', 'Display name')} *
+            </Label>
             <Input
               required
               value={formData.displayName}
               onChange={(event) => setFormData((prev) => ({ ...prev, displayName: event.target.value }))}
-              placeholder="Ví dụ: Pro cá nhân, Team Growth..."
+              placeholder={t('subscription.wizard.fields.displayNamePlaceholder', 'Example: Individual Pro, Team Growth...')}
               className={inputCls}
             />
           </div>
           {showPlanLevel ? (
             <div>
-              <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>Level</Label>
+              <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
+                {t('subscription.table.level', 'Level')}
+              </Label>
               <select
                 disabled={Boolean(editingPlan)}
                 value={resolvedPlanLevel}
@@ -381,13 +415,18 @@ function PlanFormWizard({
               </select>
               {!editingPlan ? (
                 <p className={cn('mt-2 text-xs leading-5', mutedCls)}>
-                  Một level có thể chứa nhiều gói, bạn có thể chọn lại level phù hợp cho plan này.
+                  {t(
+                    'subscription.wizard.fields.levelHint',
+                    'A level can contain multiple plans, so choose the level that best fits this plan.'
+                  )}
                 </p>
               ) : null}
             </div>
           ) : null}
           <div>
-            <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>Giá (VND)</Label>
+            <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
+              {t('subscription.wizard.fields.price', 'Price (VND)')}
+            </Label>
             <Input
               type="number"
               min="0"
@@ -400,11 +439,16 @@ function PlanFormWizard({
         </div>
 
         <div className="mt-4">
-          <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>Mô tả</Label>
+          <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
+            {t('subscription.wizard.fields.description', 'Description')}
+          </Label>
           <textarea
             value={formData.description}
             onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
-            placeholder="Mô tả ngắn gói này dành cho ai và giá trị chính là gì."
+            placeholder={t(
+              'subscription.wizard.fields.descriptionPlaceholder',
+              'Briefly describe who this plan is for and its main value.'
+            )}
             className={textareaCls}
           />
         </div>
@@ -415,24 +459,32 @@ function PlanFormWizard({
   const renderEntitlementStep = () => (
     <div className="space-y-6">
       <section className={sectionCls}>
-        {renderStepHeader(ShieldCheck, 'Quyền lợi và giới hạn', 'Giữ phần này thật gọn: trước là giới hạn định lượng, sau là các capability bật/tắt.', 'from-emerald-500 to-teal-600')}
+        {renderStepHeader(
+          ShieldCheck,
+          t('subscription.wizard.entitlement.title', 'Entitlements and limits'),
+          t(
+            'subscription.wizard.entitlement.description',
+            'Keep this part compact: quantities first, then the capability toggles.'
+          ),
+          'from-emerald-500 to-teal-600'
+        )}
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[
             {
               key: 'maxIndividualWorkspace',
-              label: 'Max individual workspace',
-              hint: 'Số workspace cá nhân tối đa mà plan cho phép.',
+              label: t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace'),
+              hint: t('subscription.wizard.entitlement.maxIndividualWorkspaceHint', 'Maximum number of individual workspaces allowed by this plan.'),
             },
             {
               key: 'maxMaterialInWorkspace',
-              label: 'Max material / workspace',
-              hint: 'Giới hạn tài liệu trong mỗi workspace.',
+              label: t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace'),
+              hint: t('subscription.wizard.entitlement.maxMaterialInWorkspaceHint', 'Material limit inside each workspace.'),
             },
             {
               key: 'planIncludedCredits',
-              label: 'Included credits',
-              hint: 'Số credit được nạp sẵn trong gói.',
+              label: t('subscription.detail.planIncludedCredits', 'Included credits'),
+              hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
             },
           ].map((field) => (
             <div
@@ -457,11 +509,16 @@ function PlanFormWizard({
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>Feature toggle</p>
+            <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+              {t('subscription.wizard.entitlement.featureToggle', 'Feature toggle')}
+            </p>
             <p className={cn('mt-1 text-xs leading-5', mutedCls)}>
               {enabledFeatures.length > 0
-                ? `Đang bật ${enabledFeatures.length} quyền lợi.`
-                : 'Chưa bật capability nào cho plan này.'}
+                ? t('subscription.wizard.entitlement.enabledCount', {
+                  count: enabledFeatures.length,
+                  defaultValue: '{{count}} features enabled.',
+                })
+                : t('subscription.wizard.entitlement.noneEnabled', 'No capabilities enabled for this plan yet.')}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -481,7 +538,7 @@ function PlanFormWizard({
                 isDarkMode ? 'border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/10' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
               )}
             >
-              Bật hết
+              {t('subscription.wizard.entitlement.enableAll', 'Enable all')}
             </Button>
             <Button
               type="button"
@@ -499,7 +556,7 @@ function PlanFormWizard({
                 isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/[0.05]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
               )}
             >
-              Tắt hết
+              {t('subscription.wizard.entitlement.disableAll', 'Disable all')}
             </Button>
           </div>
         </div>
@@ -543,10 +600,12 @@ function PlanFormWizard({
                 </div>
                 <div className="min-w-0">
                   <p className={cn('text-sm font-semibold', checked ? (isDarkMode ? 'text-white' : 'text-slate-900') : mutedCls)}>
-                    {meta.label}
+                    {t(meta.labelKey, meta.defaultLabel)}
                   </p>
                   <p className={cn('mt-1 text-xs', checked ? (isDarkMode ? 'text-blue-100/80' : 'text-blue-700/80') : mutedCls)}>
-                    {checked ? 'Đang mở cho plan này.' : 'Đang tắt.'}
+                    {checked
+                      ? t('subscription.wizard.entitlement.enabledState', 'Enabled for this plan.')
+                      : t('subscription.wizard.entitlement.disabledState', 'Disabled.')}
                   </p>
                 </div>
               </label>
@@ -560,7 +619,15 @@ function PlanFormWizard({
   const renderModelsStep = () => (
     <div className="space-y-6">
       <section className={sectionCls}>
-        {renderStepHeader(Bot, 'Model mặc định theo capability', 'Mỗi nhóm năng lực nên có model mặc định riêng để giảm công chỉnh tay ở bước cuối.', 'from-violet-500 to-fuchsia-600')}
+        {renderStepHeader(
+          Bot,
+          t('subscription.wizard.models.title', 'Default models by capability'),
+          t(
+            'subscription.wizard.models.description',
+            'Each capability group should have a default model to reduce manual tuning at the end.'
+          ),
+          'from-violet-500 to-fuchsia-600'
+        )}
 
         <div
           className={cn(
@@ -568,7 +635,10 @@ function PlanFormWizard({
             isDarkMode ? 'border-violet-400/20 bg-violet-500/10 text-violet-100' : 'border-violet-200 bg-violet-50 text-violet-800'
           )}
         >
-          Model có trạng thái khác `ACTIVE` vẫn hiển thị để xem lại cấu hình cũ, nhưng không thể chọn mới.
+          {t(
+            'subscription.wizard.models.inactiveHint',
+            'Models outside the ACTIVE state still appear for historical review, but cannot be newly selected.'
+          )}
         </div>
 
         <div className="mt-6 grid gap-4 xl:grid-cols-2">
@@ -600,7 +670,10 @@ function PlanFormWizard({
                       isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-white text-slate-700'
                     )}
                   >
-                    {groupModels.length} model
+                    {t('subscription.wizard.models.groupCount', {
+                      count: groupModels.length,
+                      defaultValue: '{{count}} model',
+                    })}
                   </span>
                 </div>
 
@@ -636,7 +709,10 @@ function PlanFormWizard({
                   </div>
                 ) : (
                   <p className={cn('mt-3 text-xs leading-5', mutedCls)}>
-                    Chưa gán model riêng. Hệ thống sẽ dùng cách resolve mặc định tương ứng.
+                    {t(
+                      'subscription.wizard.models.noAssignmentHint',
+                      'No dedicated model assigned. The system will use the matching default resolution instead.'
+                    )}
                   </p>
                 )}
               </div>
@@ -650,7 +726,15 @@ function PlanFormWizard({
   const renderReviewStep = () => (
     <div className="space-y-6">
       <section className={sectionCls}>
-        {renderStepHeader(Sparkles, 'Kiểm tra trước khi lưu', 'Bước cuối để override chi tiết theo từng action nếu plan này cần hành vi AI riêng.', 'from-amber-400 to-orange-500')}
+        {renderStepHeader(
+          Sparkles,
+          t('subscription.wizard.review.title', 'Review before saving'),
+          t(
+            'subscription.wizard.review.description',
+            'Final step to fine-tune action-level overrides when this plan needs distinct AI behavior.'
+          ),
+          'from-amber-400 to-orange-500'
+        )}
 
         <div className="mt-6 grid gap-4 xl:grid-cols-3">
           <div
@@ -659,26 +743,28 @@ function PlanFormWizard({
               isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
             )}
           >
-            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>Thông tin plan</p>
+            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>
+              {t('subscription.wizard.review.planInfo', 'Plan information')}
+            </p>
             <h4 className={cn('mt-3 text-lg font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {formData.displayName?.trim() || 'Chưa đặt tên'}
+              {formData.displayName?.trim() || t('subscription.wizard.untitled', 'Untitled plan')}
             </h4>
             <div className="mt-4 space-y-2 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Code</span>
+                <span className={mutedCls}>{t('subscription.wizard.fields.code', 'Plan code')}</span>
                 <span className={cn('font-mono', isDarkMode ? 'text-white' : 'text-slate-900')}>{formData.code || '—'}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Scope</span>
-                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{getScopeLabel(formData.planScope)}</span>
+                <span className={mutedCls}>{t('subscription.table.scope', 'Scope')}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{getScopeLabel(formData.planScope, t)}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Giá</span>
-                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(formData.price, t)}</span>
+                <span className={mutedCls}>{t('subscription.table.price')}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(formData.price, t, locale)}</span>
               </div>
               {showPlanLevel ? (
                 <div className="flex items-center justify-between gap-3">
-                  <span className={mutedCls}>Level</span>
+                  <span className={mutedCls}>{t('subscription.table.level', 'Level')}</span>
                   <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formData.planLevel || '—'}</span>
                 </div>
               ) : null}
@@ -691,18 +777,20 @@ function PlanFormWizard({
               isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
             )}
           >
-            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>Entitlement snapshot</p>
+            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>
+              {t('subscription.wizard.review.entitlementSnapshot', 'Entitlement snapshot')}
+            </p>
             <div className="mt-4 grid gap-2 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Workspace cá nhân</span>
+                <span className={mutedCls}>{t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace')}</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{entitlement.maxIndividualWorkspace ?? 0}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Material / workspace</span>
+                <span className={mutedCls}>{t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')}</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{entitlement.maxMaterialInWorkspace ?? 0}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Included credits</span>
+                <span className={mutedCls}>{t('subscription.detail.planIncludedCredits', 'Included credits')}</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{entitlement.planIncludedCredits ?? 0}</span>
               </div>
             </div>
@@ -710,17 +798,17 @@ function PlanFormWizard({
               {enabledFeatures.length > 0 ? (
                 enabledFeatures.slice(0, 6).map(([, meta]) => (
                   <span
-                    key={meta.label}
+                    key={meta.labelKey}
                     className={cn(
                       'rounded-full px-3 py-1 text-[11px] font-semibold',
                       isDarkMode ? 'bg-emerald-500/10 text-emerald-200' : 'bg-emerald-50 text-emerald-700'
                     )}
                   >
-                    {meta.label}
+                    {t(meta.labelKey, meta.defaultLabel)}
                   </span>
                 ))
               ) : (
-                <span className={cn('text-xs', mutedCls)}>Chưa bật quyền lợi nào.</span>
+                <span className={cn('text-xs', mutedCls)}>{t('subscription.wizard.review.noFeatures', 'No features enabled yet.')}</span>
               )}
             </div>
           </div>
@@ -731,16 +819,18 @@ function PlanFormWizard({
               isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
             )}
           >
-            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>AI snapshot</p>
+            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>
+              {t('subscription.wizard.review.aiSnapshot', 'AI snapshot')}
+            </p>
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Nhóm có model riêng</span>
+                <span className={mutedCls}>{t('subscription.wizard.review.modelGroupsAssigned', 'Groups with assigned models')}</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                   {assignedModels.filter((item) => item.assignedModelId).length}/{assignedModels.length}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>Override action</span>
+                <span className={mutedCls}>{t('subscription.wizard.review.overrideActions', 'Override actions')}</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{assignedOverrides.length}</span>
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
@@ -755,7 +845,7 @@ function PlanFormWizard({
                     {t(item.group.labelKey)}
                   </span>
                 ))}
-                {assignedModels.every((item) => !item.model) ? <span className={cn('text-xs', mutedCls)}>Chưa gán model riêng.</span> : null}
+                {assignedModels.every((item) => !item.model) ? <span className={cn('text-xs', mutedCls)}>{t('subscription.wizard.models.noAssignmentHint', 'No dedicated model assigned. The system will use the matching default resolution instead.')}</span> : null}
               </div>
             </div>
           </div>
@@ -769,10 +859,10 @@ function PlanFormWizard({
         <summary className={cn('flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
           <span className="flex items-center gap-2">
             <Wand2 className="h-4 w-4" />
-            AI Function Overrides
+            {t('subscription.wizard.review.aiOverrides', 'AI function overrides')}
           </span>
           <span className={cn('text-xs font-medium', mutedCls)}>
-            Để trống để dùng model mặc định theo capability.
+            {t('subscription.wizard.review.aiOverridesHint', 'Leave empty to use the default capability model.')}
           </span>
         </summary>
 
@@ -790,7 +880,10 @@ function PlanFormWizard({
                   {t(group.labelKey)}
                 </p>
                 <p className={cn('mt-1 text-xs leading-5', mutedCls)}>
-                  Chỉ override khi plan này thật sự cần hành vi khác với model mặc định của nhóm.
+                  {t(
+                    'subscription.wizard.review.aiOverridesGroupHint',
+                    'Only override when this plan truly needs behavior different from the group default model.'
+                  )}
                 </p>
               </div>
 
@@ -815,8 +908,14 @@ function PlanFormWizard({
                         </p>
                         <p className={cn('mt-1 text-xs leading-5', mutedCls)}>
                           {isProviderRestricted
-                            ? `Provider khả dụng: ${allowedProviders[0]}.`
-                            : `Giữ trống nếu muốn dùng default của ${t(group.labelKey)}.`}
+                            ? t('subscription.wizard.review.providerAvailable', {
+                              provider: allowedProviders[0],
+                              defaultValue: 'Available provider: {{provider}}.',
+                            })
+                            : t('subscription.wizard.review.useDefaultHint', {
+                              group: t(group.labelKey),
+                              defaultValue: 'Leave empty to use the default for {{group}}.',
+                            })}
                         </p>
                       </div>
 
@@ -827,7 +926,9 @@ function PlanFormWizard({
                         style={selectStyle}
                       >
                         <option value="">
-                          {isProviderRestricted ? 'Dùng model tương thích mặc định' : 'Dùng model mặc định của nhóm'}
+                          {isProviderRestricted
+                            ? t('subscription.wizard.review.useCompatibleDefault', 'Use the compatible default model')
+                            : t('subscription.wizard.review.useGroupDefault', 'Use the group default model')}
                         </option>
                         {actionModels.map((model) => (
                           <option
@@ -883,8 +984,14 @@ function PlanFormWizard({
             </DialogTitle>
             <DialogDescription className={cn('text-sm', mutedCls)}>
               {editingPlan
-                ? 'Chỉnh plan theo từng bước để không phải cuộn qua toàn bộ cấu hình trong một màn.'
-                : 'Tạo plan mới theo flow từng bước để dễ rà soát hơn trước khi lưu.'}
+                ? t(
+                  'subscription.wizard.dialogEditDescription',
+                  'Edit the plan step by step so you do not need to scroll through the full configuration in one screen.'
+                )
+                : t(
+                  'subscription.wizard.dialogCreateDescription',
+                  'Create a new plan through a step-by-step flow that is easier to review before saving.'
+                )}
             </DialogDescription>
           </DialogHeader>
 
@@ -896,7 +1003,11 @@ function PlanFormWizard({
                   isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-700'
                 )}
               >
-                Bước {currentStep + 1}/{WIZARD_STEPS.length}
+                {t('subscription.wizard.stepCounter', {
+                  current: currentStep + 1,
+                  total: steps.length,
+                  defaultValue: 'Step {{current}}/{{total}}',
+                })}
               </span>
               <span className={cn('text-sm font-medium', isDarkMode ? 'text-white' : 'text-slate-900')}>
                 {activeStep.title}
@@ -904,7 +1015,7 @@ function PlanFormWizard({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {WIZARD_STEPS.map((step, index) => {
+              {steps.map((step, index) => {
                 const Icon = step.icon;
                 const isCompleted = index < currentStep;
                 const isActive = index === currentStep;
@@ -975,7 +1086,7 @@ function PlanFormWizard({
                   {activeStep.title}
                 </div>
                 <h4 className={cn('mt-4 text-lg font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                  {formData.displayName?.trim() || 'Gói chưa đặt tên'}
+                  {formData.displayName?.trim() || t('subscription.wizard.untitled', 'Untitled plan')}
                 </h4>
                 <p className={cn('mt-2 text-sm leading-6', mutedCls)}>
                   {activeStep.description}
@@ -983,8 +1094,8 @@ function PlanFormWizard({
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   {[
-                    { label: 'Giá', value: formatCurrency(formData.price, t), icon: Coins },
-                    { label: 'Scope', value: getScopeLabel(formData.planScope), icon: formData.planScope === 'WORKSPACE' ? Users : User },
+                    { label: t('subscription.table.price'), value: formatCurrency(formData.price, t, locale), icon: Coins },
+                    { label: t('subscription.table.scope', 'Scope'), value: getScopeLabel(formData.planScope, t), icon: formData.planScope === 'WORKSPACE' ? Users : User },
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
@@ -1023,7 +1134,9 @@ function PlanFormWizard({
                   isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-slate-50/80'
                 )}
               >
-                <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>Checklist nhanh</p>
+                <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>
+                  {t('subscription.wizard.checklist.title', 'Quick checklist')}
+                </p>
                 <div className="mt-4 space-y-3">
                   {checklist.map((item) => (
                     <div key={item.label} className="flex items-start gap-3">
@@ -1056,8 +1169,14 @@ function PlanFormWizard({
                   )}
                 >
                   {isLastStep
-                    ? 'Bạn đang ở bước cuối. Có thể lưu ngay hoặc quay lại một bước bất kỳ để chỉnh.'
-                    : 'Dùng nút "Tiếp tục" để đi lần lượt từng bước và giữ dialog gọn hơn.'}
+                    ? t(
+                      'subscription.wizard.finalHint',
+                      'You are on the final step. Save now or jump back to any previous step to adjust.'
+                    )
+                    : t(
+                      'subscription.wizard.nextHint',
+                      'Use the "Next" button to move through each step and keep the dialog compact.'
+                    )}
                 </div>
               </div>
             </aside>
@@ -1067,7 +1186,12 @@ function PlanFormWizard({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                  Bước {currentStep + 1}/{WIZARD_STEPS.length}: {activeStep.title}
+                  {t('subscription.wizard.stepTitle', {
+                    current: currentStep + 1,
+                    total: steps.length,
+                    title: activeStep.title,
+                    defaultValue: 'Step {{current}}/{{total}}: {{title}}',
+                  })}
                 </p>
                 <p className={cn('mt-1 text-xs', mutedCls)}>{activeStep.description}</p>
               </div>
@@ -1092,7 +1216,7 @@ function PlanFormWizard({
                     className={cn('rounded-full cursor-pointer', isDarkMode ? 'border-white/10 text-slate-300 hover:bg-white/5' : '')}
                   >
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại
+                    {t('common.back', 'Back')}
                   </Button>
                 ) : null}
 
@@ -1108,7 +1232,7 @@ function PlanFormWizard({
                     </>
                   ) : (
                     <>
-                      Tiếp tục
+                      {t('common.next', 'Next')}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}

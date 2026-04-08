@@ -311,7 +311,7 @@ function CreateQuizAiFormContent({
                     className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}`}
                   />
                   <span className={`min-w-0 flex-1 break-words leading-snug ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                    {item.name || `Material #${id ?? ""}`}
+                    {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: id ?? "" })}
                   </span>
                 </label>
               );
@@ -498,7 +498,7 @@ function CreateQuizAiFormContent({
               <div key={level}>
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <label className={`block text-[10px] font-bold uppercase ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
-                    {level} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})
+                    {getDifficultyLabel(level.toUpperCase())} ({questionUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"})
                   </label>
                   <button
                     type="button"
@@ -648,7 +648,7 @@ function CreateQuizAiFormContent({
               return (
                 <div key={item.questionTypeId} className={`flex items-center gap-2 rounded-md border p-2 text-xs ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
                   <span className="flex-1 truncate" title={detail?.description}>
-                    {detail?.questionType ? getQuestionTypeLabel(detail.questionType) : `Type #${item.questionTypeId}`}
+                    {detail?.questionType ? getQuestionTypeLabel(detail.questionType) : t("workspace.quiz.aiConfig.questionTypeFallback", { id: item.questionTypeId })}
                   </span>
                   <input
                     type="number"
@@ -740,7 +740,7 @@ function CreateQuizAiFormContent({
               return (
                 <div key={item.bloomId} className={`flex items-center gap-2 rounded-md border p-2 text-xs ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
                   <span className="flex-1 truncate" title={detail?.description}>
-                    {detail?.bloomName || `Bloom #${item.bloomId}`}
+                    {detail?.bloomName || t("workspace.quiz.aiConfig.bloomFallback", { id: item.bloomId })}
                   </span>
                   <input
                     type="number"

@@ -70,24 +70,36 @@ const EMPTY_AI_MODEL_ASSIGNMENTS = buildAiModelAssignmentMap([]);
 const EMPTY_FUNCTION_ASSIGNMENTS = buildFunctionAssignmentMap([]);
 
 const ENTITLEMENT_TOGGLES = {
-  canProcessPdf:          { label: 'PDF',              icon: FileText },
-  canProcessWord:         { label: 'Word',             icon: FileType },
-  canProcessSlide:        { label: 'Slide',            icon: Presentation },
-  canProcessExcel:        { label: 'Excel',            icon: FileSpreadsheet },
-  canProcessText:         { label: 'Text',             icon: AlignLeft },
-  canProcessImage:        { label: 'Image',            icon: Image },
-  canProcessVideo:        { label: 'Video',            icon: Film },
-  canProcessAudio:        { label: 'Audio',            icon: Headphones },
-  canBuyCredit:           { label: 'Buy Credit',       icon: Coins },
-  hasAdvanceQuizConfig:   { label: 'Advanced Quiz Types', icon: SlidersHorizontal },
-  canCreateRoadMap:       { label: 'Create Roadmap',   icon: Map },
-  hasAiCompanionMode:     { label: 'AI Companion',     icon: Bot },
-  hasWorkspaceAnalytics:  { label: 'Analytics',        icon: BarChart3 },
-  hasAiSummaryAndTextReading: { label: 'AI Summary',   icon: BookOpenText },
-  hasAiQuizAssessmentAndRecommendation: { label: 'AI Quiz Assessment', icon: Zap },
+  canProcessPdf: { labelKey: 'subscription.entitlements.canProcessPdf', defaultLabel: 'PDF', icon: FileText },
+  canProcessWord: { labelKey: 'subscription.entitlements.canProcessWord', defaultLabel: 'Word', icon: FileType },
+  canProcessSlide: { labelKey: 'subscription.entitlements.canProcessSlide', defaultLabel: 'Slide', icon: Presentation },
+  canProcessExcel: { labelKey: 'subscription.entitlements.canProcessExcel', defaultLabel: 'Excel', icon: FileSpreadsheet },
+  canProcessText: { labelKey: 'subscription.entitlements.canProcessText', defaultLabel: 'Text', icon: AlignLeft },
+  canProcessImage: { labelKey: 'subscription.entitlements.canProcessImage', defaultLabel: 'Image', icon: Image },
+  canProcessVideo: { labelKey: 'subscription.entitlements.canProcessVideo', defaultLabel: 'Video', icon: Film },
+  canProcessAudio: { labelKey: 'subscription.entitlements.canProcessAudio', defaultLabel: 'Audio', icon: Headphones },
+  canBuyCredit: { labelKey: 'subscription.entitlements.canBuyCredit', defaultLabel: 'Buy Credit', icon: Coins },
+  hasAdvanceQuizConfig: { labelKey: 'subscription.entitlements.hasAdvanceQuizConfig', defaultLabel: 'Advanced Quiz Types', icon: SlidersHorizontal },
+  canCreateRoadMap: { labelKey: 'subscription.entitlements.canCreateRoadMap', defaultLabel: 'Create Roadmap', icon: Map },
+  hasAiCompanionMode: { labelKey: 'subscription.entitlements.hasAiCompanionMode', defaultLabel: 'AI Companion', icon: Bot },
+  hasWorkspaceAnalytics: { labelKey: 'subscription.entitlements.hasWorkspaceAnalytics', defaultLabel: 'Analytics', icon: BarChart3 },
+  hasAiSummaryAndTextReading: { labelKey: 'subscription.entitlements.hasAiSummaryAndTextReading', defaultLabel: 'AI Summary', icon: BookOpenText },
+  hasAiQuizAssessmentAndRecommendation: { labelKey: 'subscription.entitlements.hasAiQuizAssessmentAndRecommendation', defaultLabel: 'AI Quiz Assessment', icon: Zap },
 };
 
 const extractApiData = (response) => response?.data?.data ?? response?.data ?? response ?? null;
+
+function formatCurrency(value, t, locale) {
+  const amount = Number(value) || 0;
+  if (amount === 0) return t('subscription.free');
+  return `${amount.toLocaleString(locale)} VND`;
+}
+
+function getScopeLabel(scope, t) {
+  return scope === 'WORKSPACE'
+    ? t('subscription.scope.workspace', 'Group workspace')
+    : t('subscription.scope.user', 'User');
+}
 
 function PlanManagement() {
   const { t, i18n } = useTranslation();
@@ -107,6 +119,7 @@ function PlanManagement() {
       ? '"Poppins", var(--quiz-ui-font)'
       : '"Be Vietnam Pro", var(--quiz-ui-font)',
   };
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
   const dk = isDarkMode;
 
   const [plans, setPlans] = useState([]);
@@ -284,7 +297,6 @@ function PlanManagement() {
     const term = searchTerm.toLowerCase();
     return name.includes(term) || code.includes(term);
   });
-  const formatCurrency = (val) => (val == null || val === 0) ? t('subscription.free') : `${Number(val).toLocaleString()} VND`;
   const isActive = (s) => (s || '').toUpperCase() === 'ACTIVE';
 
   const userScopeCount = plans.filter(p => p.planScope === 'USER').length;
@@ -326,8 +338,8 @@ function PlanManagement() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: t('subscription.stats.totalPlans'), value: plans.length, icon: Package, from: 'from-blue-500', to: 'to-blue-600', shadow: 'shadow-blue-500/20' },
-          { label: 'USER scope', value: userScopeCount, icon: User, from: 'from-cyan-500', to: 'to-teal-500', shadow: 'shadow-cyan-500/20' },
-          { label: 'Group workspace scope', value: workspaceScopeCount, icon: Users, from: 'from-violet-500', to: 'to-purple-600', shadow: 'shadow-violet-500/20' },
+          { label: t('subscription.stats.userScope', 'User scope'), value: userScopeCount, icon: User, from: 'from-cyan-500', to: 'to-teal-500', shadow: 'shadow-cyan-500/20' },
+          { label: t('subscription.stats.workspaceScope', 'Group workspace scope'), value: workspaceScopeCount, icon: Users, from: 'from-violet-500', to: 'to-purple-600', shadow: 'shadow-violet-500/20' },
           { label: t('subscription.stats.activeSubs'), value: `${activeCount}/${plans.length}`, icon: Zap, from: 'from-amber-400', to: 'to-orange-500', shadow: 'shadow-amber-500/20' },
         ].map((s) => (
           <div key={s.label} className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] cursor-default ${
@@ -369,8 +381,8 @@ function PlanManagement() {
             <TableHeader>
               <TableRow className={dk ? 'bg-white/[0.02] border-b border-white/[0.06]' : 'bg-slate-50 border-b border-slate-200'}>
                 <TableHead className="w-[220px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.name')}</TableHead>
-                <TableHead className="w-[90px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Scope</TableHead>
-                <TableHead className="w-[80px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">Level</TableHead>
+                <TableHead className="w-[90px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.scope', 'Scope')}</TableHead>
+                <TableHead className="w-[80px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.level', 'Level')}</TableHead>
                 <TableHead className="w-[130px] font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.price')}</TableHead>
                 <TableHead className="w-[90px] text-center font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.status')}</TableHead>
                 <TableHead className="w-[130px] text-right font-bold text-xs uppercase tracking-[0.14em] text-slate-500">{t('subscription.table.actions')}</TableHead>
@@ -405,7 +417,7 @@ function PlanManagement() {
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold ${
                       dk ? 'bg-slate-100/10 text-slate-300' : 'bg-slate-100 text-slate-700'
                     }`}>
-                      {plan.planScope === 'WORKSPACE' ? 'Group workspace' : plan.planScope}
+                      {getScopeLabel(plan.planScope, t)}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -415,7 +427,7 @@ function PlanManagement() {
                   </TableCell>
                   <TableCell>
                     <span className={`font-extrabold ${(plan.price ?? 0) === 0 ? 'text-emerald-600' : dk ? 'text-white' : 'text-slate-900'}`}>
-                      {formatCurrency(plan.price)}
+                      {formatCurrency(plan.price, t, locale)}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
@@ -433,7 +445,7 @@ function PlanManagement() {
                       {[
                         { icon: Eye, color: dk ? 'text-blue-400 hover:bg-blue-500/10' : 'text-blue-500 hover:bg-blue-50', action: () => { setDetailPlan(plan); setIsDetailOpen(true); }, tip: t('subscription.viewDetail') },
                         ...(canWrite ? [
-                          { icon: isActive(plan.status) ? ToggleRight : ToggleLeft, color: isActive(plan.status) ? (dk ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-500 hover:bg-emerald-50') : (dk ? 'text-slate-500 hover:bg-white/5' : 'text-slate-400 hover:bg-slate-50'), action: () => handleToggleStatus(plan), tip: 'Toggle' },
+                          { icon: isActive(plan.status) ? ToggleRight : ToggleLeft, color: isActive(plan.status) ? (dk ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-500 hover:bg-emerald-50') : (dk ? 'text-slate-500 hover:bg-white/5' : 'text-slate-400 hover:bg-slate-50'), action: () => handleToggleStatus(plan), tip: t('subscription.actions.toggleStatus', 'Toggle status') },
                           { icon: Edit2, color: dk ? 'text-amber-400 hover:bg-amber-500/10' : 'text-amber-500 hover:bg-amber-50', action: () => openEditForm(plan), tip: t('subscription.edit') },
                           { icon: Trash2, color: dk ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-500 hover:bg-rose-50', action: () => confirmDelete(plan), tip: t('subscription.delete') },
                         ] : []),
@@ -459,6 +471,7 @@ function PlanManagement() {
           onOpenChange={setIsFormOpen}
           isDarkMode={dk}
           t={t}
+          locale={locale}
           editingPlan={editingPlan}
           isSubmitting={isSubmitting}
           formData={formData}
@@ -508,7 +521,12 @@ function PlanManagement() {
                     </div>
                     <div>
                       <h3 className={`text-lg font-bold ${dk ? 'text-white' : 'text-slate-900'}`}>{detailPlan.displayName}</h3>
-                      <p className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>{detailPlan.planScope === 'WORKSPACE' ? 'Group workspace' : detailPlan.planScope} Plan</p>
+                      <p className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {t('subscription.detail.planType', {
+                          scope: getScopeLabel(detailPlan.planScope, t),
+                          defaultValue: '{{scope}} plan',
+                        })}
+                      </p>
                     </div>
                   </div>
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
@@ -526,9 +544,9 @@ function PlanManagement() {
                 {/* Quick stats */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: t('subscription.table.price'), value: formatCurrency(detailPlan.price), color: dk ? 'text-emerald-400' : 'text-emerald-600' },
-                    { label: 'Scope', value: detailPlan.planScope === 'WORKSPACE' ? 'Group workspace' : detailPlan.planScope, color: dk ? 'text-blue-400' : 'text-blue-600' },
-                    { label: 'Level', value: detailPlan.planLevel ?? '-', color: dk ? 'text-amber-400' : 'text-amber-600' },
+                    { label: t('subscription.table.price'), value: formatCurrency(detailPlan.price, t, locale), color: dk ? 'text-emerald-400' : 'text-emerald-600' },
+                    { label: t('subscription.table.scope', 'Scope'), value: getScopeLabel(detailPlan.planScope, t), color: dk ? 'text-blue-400' : 'text-blue-600' },
+                    { label: t('subscription.table.level', 'Level'), value: detailPlan.planLevel ?? '-', color: dk ? 'text-amber-400' : 'text-amber-600' },
                   ].map((item) => (
                     <div key={item.label} className={`p-3.5 rounded-xl text-center ${dk ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-slate-50 border border-slate-100'}`}>
                       <p className={`text-[11px] font-semibold uppercase tracking-wider ${dk ? 'text-slate-500' : 'text-slate-400'}`}>{item.label}</p>
@@ -540,22 +558,32 @@ function PlanManagement() {
                 {/* Entitlement & features */}
                 {detailPlan.entitlement && (
                   <div className={sectionCls}>
-                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>Entitlement</p>
+                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                      {t('subscription.detail.entitlement', 'Entitlement')}
+                    </p>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-4">
                       <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
-                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max individual workspace</span>
+                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace')}
+                        </span>
                         <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.maxIndividualWorkspace ?? '—'}</span>
                       </div>
                       <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
-                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Max material / workspace</span>
+                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')}
+                        </span>
                         <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.maxMaterialInWorkspace ?? '—'}</span>
                       </div>
                       <div className={`flex items-center justify-between py-1.5 border-b ${dk ? 'border-white/[0.04]' : 'border-slate-100'}`}>
-                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>Included credits</span>
+                        <span className={`text-sm ${dk ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {t('subscription.detail.planIncludedCredits', 'Included credits')}
+                        </span>
                         <span className={`font-bold text-sm tabular-nums ${dk ? 'text-white' : 'text-slate-800'}`}>{detailPlan.entitlement.planIncludedCredits ?? 0}</span>
                       </div>
                     </div>
-                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>Features</p>
+                    <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${dk ? 'text-violet-400' : 'text-violet-600'}`}>
+                      {t('subscription.detail.features', 'Features')}
+                    </p>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(ENTITLEMENT_TOGGLES).map(([key, meta]) => {
                         const enabled = detailPlan.entitlement[key];
@@ -570,7 +598,7 @@ function PlanManagement() {
                             <Icon className={`w-4 h-4 flex-shrink-0 ${enabled ? 'text-blue-400' : dk ? 'text-slate-600' : 'text-slate-300'}`} />
                             <span className={`text-sm font-medium ${
                               enabled ? dk ? 'text-white' : 'text-slate-700' : dk ? 'text-slate-600 line-through' : 'text-slate-400 line-through'
-                            }`}>{meta.label}</span>
+                            }`}>{t(meta.labelKey, meta.defaultLabel)}</span>
                           </div>
                         );
                       })}

@@ -175,11 +175,11 @@ function resolveSubscriptionStatus(subscription, t) {
   return normalizeText(subscription?.status) || t('groupDetail.unknownStatus');
 }
 
-function LoadingState({ isDarkMode }) {
+function LoadingState({ isDarkMode, t }) {
   return (
     <div className={cn('flex items-center gap-2 rounded-2xl border px-4 py-4 text-sm', isDarkMode ? 'border-slate-700 bg-slate-900/70 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600')}>
       <RefreshCw className="h-4 w-4 animate-spin" />
-      <span>Loading...</span>
+      <span>{t('groupDetail.loading', 'Loading...')}</span>
     </div>
   );
 }
@@ -926,7 +926,7 @@ function GroupDetailPage() {
               className="min-h-[280px]"
             >
               {panelLoading.roadmaps ? (
-                <LoadingState isDarkMode={isDarkMode} />
+                <LoadingState isDarkMode={isDarkMode} t={t} />
               ) : roadmaps.length > 0 ? (
                 <div className="grid gap-4 xl:grid-cols-2">
                   {roadmaps.slice(0, 4).map((roadmap, index) => (
@@ -960,7 +960,7 @@ function GroupDetailPage() {
               className="min-h-[300px]"
             >
               {panelLoading.logs ? (
-                <LoadingState isDarkMode={isDarkMode} />
+                <LoadingState isDarkMode={isDarkMode} t={t} />
               ) : recentLogs.length > 0 ? (
                 <div className="space-y-3">
                   {recentLogs.map((log, index) => (
@@ -991,7 +991,7 @@ function GroupDetailPage() {
               className="min-h-[280px]"
             >
               {panelLoading.subscription ? (
-                <LoadingState isDarkMode={isDarkMode} />
+                <LoadingState isDarkMode={isDarkMode} t={t} />
               ) : (
                 <div className="space-y-4">
                   <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-950/55' : 'border-slate-200 bg-slate-50')}>
@@ -1108,7 +1108,7 @@ function GroupDetailPage() {
           isDarkMode={isDarkMode}
         >
           {panelLoading.roadmaps ? (
-            <LoadingState isDarkMode={isDarkMode} />
+            <LoadingState isDarkMode={isDarkMode} t={t} />
           ) : roadmaps.length > 0 ? (
             <div className="grid gap-4 xl:grid-cols-2">
               {roadmaps.map((roadmap, index) => (
@@ -1141,7 +1141,7 @@ function GroupDetailPage() {
           isDarkMode={isDarkMode}
         >
           {panelLoading.logs ? (
-            <LoadingState isDarkMode={isDarkMode} />
+            <LoadingState isDarkMode={isDarkMode} t={t} />
           ) : sortedLogs.length > 0 ? (
             <div className="grid gap-4 xl:grid-cols-2">
               {sortedLogs.map((log, index) => (
@@ -1174,7 +1174,7 @@ function GroupDetailPage() {
             isDarkMode={isDarkMode}
           >
             {panelLoading.subscription ? (
-              <LoadingState isDarkMode={isDarkMode} />
+              <LoadingState isDarkMode={isDarkMode} t={t} />
             ) : subscription ? (
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
                 <div

@@ -138,7 +138,7 @@ function WorkspaceHeader({
                   type="button"
                   onClick={openEditDialog}
                   className={`p-1 rounded-md transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-400 hover:text-slate-200" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
-                  aria-label="Edit workspace"
+                  aria-label={t("workspace.header.editWorkspace")}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
@@ -177,7 +177,7 @@ function WorkspaceHeader({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/wallet", { state: { from: location.pathname } })}
+                onClick={() => navigate("/wallets", { state: { from: location.pathname } })}
                 className={`flex h-9 items-center gap-2 rounded-full px-3.5 ${
                   isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"
                 }`}

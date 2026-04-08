@@ -216,7 +216,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
                   <option value="">{roadmapLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
                   {roadmaps.map((rm) => (
                     <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
-                      {rm.title || rm.name || `Roadmap #${rm.roadmapId || rm.id}`}
+                      {rm.title || rm.name || t("workspace.roadmap.fallbackName", { id: rm.roadmapId || rm.id })}
                     </option>
                   ))}
                 </select>
@@ -226,7 +226,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
               {checkingRoadmap && (
                 <div className="flex items-center gap-2 mt-1">
                   <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>Checking...</span>
+                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("common.checking")}</span>
                 </div>
               )}
               {roadmapHasMockTest && !checkingRoadmap && (
@@ -356,8 +356,8 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
                   {q.type === "trueFalse" && (
                     <select className={selectCls} value={q.correctAnswer || "true"}
                       onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)}>
-                      <option value="true">True</option>
-                      <option value="false">False</option>
+                      <option value="true">{t("common.boolean.true")}</option>
+                      <option value="false">{t("common.boolean.false")}</option>
                     </select>
                   )}
                   {(q.type === "fillBlank" || q.type === "shortAnswer") && (

@@ -2034,7 +2034,7 @@ function WorkspacePage() {
         aria-label={t("common.language")}
       >
         <span className="text-base leading-none" aria-hidden="true">
-          {currentLang === "vi" ? "🇻🇳" : "🇬🇧"}
+          {currentLang === "vi" ? "VN" : "EN"}
         </span>
       </Button>
 

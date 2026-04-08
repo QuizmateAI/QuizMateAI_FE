@@ -85,7 +85,7 @@ function RbacManagement() {
       const list = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
       setPermissions(filterRemovedLearningConfigPermissions(list));
     } catch (err) {
-      setError(getFriendlyError(err, 'Không thể tải danh sách quyền'));
+      setError(getFriendlyError(err, null, 'rbac.errors.loadPermissions'));
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +100,7 @@ function RbacManagement() {
       const list = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
       setAuditLogs(filterRemovedLearningConfigAuditLogs(list));
     } catch (err) {
-      setError(getFriendlyError(err, 'Không thể tải nhật ký kiểm toán'));
+      setError(getFriendlyError(err, null, 'rbac.errors.loadAuditLogs'));
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +114,7 @@ function RbacManagement() {
       const data = res?.data ?? res;
       setRoles(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(getFriendlyError(err, 'Không thể tải danh sách vai trò'));
+      setError(getFriendlyError(err, null, 'rbac.errors.loadRoles'));
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +177,7 @@ function RbacManagement() {
     try {
       await ensurePermissionsLoaded();
     } catch (err) {
-      const msg = getFriendlyError(err, 'Không thể tải danh sách quyền');
+      const msg = getFriendlyError(err, null, 'rbac.errors.loadPermissions');
       setError(msg);
       showError(msg);
     } finally {
@@ -207,7 +207,7 @@ function RbacManagement() {
   const handleCreateRole = async () => {
     const trimmedRoleName = newRoleName.trim();
     if (!trimmedRoleName) {
-      const msg = 'Tên role không được để trống';
+      const msg = t('rbac.errors.roleNameRequired');
       setError(msg);
       showError(msg);
       return;
@@ -219,10 +219,10 @@ function RbacManagement() {
       await createRole({ roleName: trimmedRoleName });
       setNewRoleName('');
       setIsCreateRoleOpen(false);
-      showSuccess('Tạo role thành công');
+      showSuccess(t('rbac.success.roleCreated'));
       await fetchRoles();
     } catch (err) {
-      const msg = getFriendlyError(err, 'Không thể tạo role');
+      const msg = getFriendlyError(err, null, 'rbac.errors.createRole');
       setError(msg);
       showError(msg);
     } finally {
@@ -236,7 +236,7 @@ function RbacManagement() {
     setError('');
     try {
       await syncRolePermissions(selectedRole.roleId, rolePermissions);
-      showSuccess('Đồng bộ quyền cho role thành công');
+      showSuccess(t('rbac.success.rolePermissionsSynced'));
       await fetchRoles();
       setRoles((currentRoles) =>
         currentRoles.map((role) =>
@@ -246,7 +246,7 @@ function RbacManagement() {
         )
       );
     } catch (err) {
-      const msg = getFriendlyError(err, 'Không thể đồng bộ quyền cho role');
+      const msg = getFriendlyError(err, null, 'rbac.errors.syncRolePermissions');
       setError(msg);
       showError(msg);
     } finally {
@@ -256,17 +256,22 @@ function RbacManagement() {
 
   const handleDeleteRole = async (role) => {
     if (!role || role.isSystem) return;
-    const confirmed = window.confirm(`Xóa role ${role.roleName}?`);
+    const confirmed = window.confirm(
+      t('rbac.confirmDeleteRole', {
+        role: role.roleName,
+        defaultValue: 'Delete role {{role}}?',
+      })
+    );
     if (!confirmed) return;
 
     setIsLoading(true);
     setError('');
     try {
       await deleteRole(role.roleId);
-      showSuccess('Xóa role thành công');
+      showSuccess(t('rbac.success.roleDeleted'));
       await fetchRoles();
     } catch (err) {
-      const msg = getFriendlyError(err, 'Không thể xóa role');
+      const msg = getFriendlyError(err, null, 'rbac.errors.deleteRole');
       setError(msg);
       showError(msg);
     } finally {
@@ -290,13 +295,15 @@ function RbacManagement() {
     }
   };
 
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+
   const formatDate = (d) => {
     if (!d) return '-';
-    return new Date(d).toLocaleString('vi-VN');
+    return new Date(d).toLocaleString(locale);
   };
 
   const tabs = [
-    { id: 'roles', labelKey: 'Vai trò', icon: Shield },
+    { id: 'roles', labelKey: 'rbac.tabs.roles', icon: Shield },
     { id: 'permissions', labelKey: 'rbac.tabs.permissions', icon: Key },
     { id: 'audit', labelKey: 'rbac.tabs.auditLogs', icon: ClipboardList },
   ];
@@ -341,10 +348,10 @@ function RbacManagement() {
           <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
             <div>
               <CardTitle className={`text-xl ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                Quản lý vai trò
+                {t('rbac.roleManagementTitle', 'Role management')}
               </CardTitle>
               <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Tạo role custom, xem permission hiện có và đồng bộ permission theo role.
+                {t('rbac.roleManagementDesc', 'Create custom roles, review permissions, and sync permissions by role.')}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -361,7 +368,7 @@ function RbacManagement() {
               </Button>
               <Button size="sm" onClick={() => setIsCreateRoleOpen(true)} className="rounded-xl">
                 <Plus className="w-4 h-4 mr-2" />
-                Tạo role
+                {t('rbac.createRole', 'Create role')}
               </Button>
             </div>
           </CardHeader>
@@ -370,10 +377,10 @@ function RbacManagement() {
               <Table>
                 <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                   <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                    <TableHead className="font-bold text-slate-500">Role</TableHead>
-                    <TableHead className="font-bold text-slate-500">Loại</TableHead>
-                    <TableHead className="font-bold text-slate-500">Permissions</TableHead>
-                    <TableHead className="text-right font-bold text-slate-500">Hành động</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.role', 'Role')}</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.type', 'Type')}</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.permissions', 'Permissions')}</TableHead>
+                    <TableHead className="text-right font-bold text-slate-500">{t('rbac.columns.actions', 'Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -386,7 +393,7 @@ function RbacManagement() {
                   ) : roles.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-12 text-slate-400 italic">
-                        Chưa có role nào
+                        {t('rbac.emptyRoles', 'No roles yet')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -404,7 +411,9 @@ function RbacManagement() {
                                 : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                             }
                           >
-                            {role.isSystem ? 'SYSTEM' : 'CUSTOM'}
+                            {role.isSystem
+                              ? t('rbac.systemRoleLabel', 'SYSTEM')
+                              : t('rbac.customRoleLabel', 'CUSTOM')}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -420,7 +429,7 @@ function RbacManagement() {
                               </Badge>
                             )}
                             {(role.permissions || []).length === 0 && (
-                              <span className="text-sm text-slate-400">Không có permission</span>
+                              <span className="text-sm text-slate-400">{t('rbac.noPermission', 'No permissions')}</span>
                             )}
                           </div>
                         </TableCell>
@@ -433,7 +442,7 @@ function RbacManagement() {
                               className="rounded-lg"
                             >
                               <Shield className="w-4 h-4 mr-2" />
-                              Quyền
+                              {t('rbac.permissionsAction', 'Permissions')}
                             </Button>
                             {!role.isSystem && (
                               <Button
@@ -443,7 +452,7 @@ function RbacManagement() {
                                 className="rounded-lg text-rose-600 border-rose-200 hover:text-rose-700"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Xóa
+                                {t('rbac.deleteAction', 'Delete')}
                               </Button>
                             )}
                           </div>
@@ -486,8 +495,8 @@ function RbacManagement() {
                 <Table>
                   <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                     <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                      <TableHead className="font-bold text-slate-500">Code</TableHead>
-                      <TableHead className="font-bold text-slate-500">Mô tả</TableHead>
+                      <TableHead className="font-bold text-slate-500">{t('rbac.columns.code', 'Code')}</TableHead>
+                      <TableHead className="font-bold text-slate-500">{t('rbac.columns.description', 'Description')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -532,11 +541,11 @@ function RbacManagement() {
                 <Table>
                   <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                     <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                      <TableHead className="font-bold text-slate-500">Username</TableHead>
-                      <TableHead className="font-bold text-slate-500">Email</TableHead>
-                      <TableHead className="font-bold text-slate-500">Role</TableHead>
-                      <TableHead className="font-bold text-slate-500">Status</TableHead>
-                      <TableHead className="text-right font-bold text-slate-500">Hành động</TableHead>
+                      <TableHead className="font-bold text-slate-500">{t('rbac.columns.username', 'Username')}</TableHead>
+                      <TableHead className="font-bold text-slate-500">{t('rbac.columns.email', 'Email')}</TableHead>
+                      <TableHead className="font-bold text-slate-500">{t('rbac.columns.role', 'Role')}</TableHead>
+                      <TableHead className="font-bold text-slate-500">{t('rbac.columns.status', 'Status')}</TableHead>
+                      <TableHead className="text-right font-bold text-slate-500">{t('rbac.columns.actions', 'Actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -579,7 +588,7 @@ function RbacManagement() {
                               className="rounded-lg"
                             >
                               <Shield className="w-4 h-4 mr-2" />
-                              Quản lý quyền
+                              {t('rbac.managePermissionsAction', 'Manage permissions')}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -619,11 +628,11 @@ function RbacManagement() {
               <Table>
                 <TableHeader className={isDarkMode ? 'bg-slate-950/50' : 'bg-slate-50/50'}>
                   <TableRow className="border-b border-slate-100 dark:border-slate-800">
-                    <TableHead className="font-bold text-slate-500">Actor</TableHead>
-                    <TableHead className="font-bold text-slate-500">Action</TableHead>
-                    <TableHead className="font-bold text-slate-500">Target</TableHead>
-                    <TableHead className="font-bold text-slate-500">Trước → Sau</TableHead>
-                    <TableHead className="font-bold text-slate-500">Thời gian</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.actor', 'Actor')}</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.action', 'Action')}</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.target', 'Target')}</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.change', 'Before → After')}</TableHead>
+                    <TableHead className="font-bold text-slate-500">{t('rbac.columns.time', 'Time')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -636,7 +645,7 @@ function RbacManagement() {
                   ) : auditLogs.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-12 text-slate-400 italic">
-                        Chưa có nhật ký
+                        {t('rbac.noAuditLogs', 'No audit logs yet')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -677,10 +686,10 @@ function RbacManagement() {
         >
           <DialogHeader>
             <DialogTitle className={isDarkMode ? 'text-white' : ''}>
-              Quản lý quyền: {selectedUser?.username}
+              {t('rbac.userPermissionTitle', { username: selectedUser?.username, defaultValue: 'Manage permissions: {{username}}' })}
             </DialogTitle>
             <DialogDescription>
-              Gán role và cấu hình permissions cho tài khoản ADMIN. SUPER_ADMIN có toàn quyền mặc định.
+              {t('rbac.userPermissionDesc', 'Assign roles and configure permissions for ADMIN accounts. SUPER_ADMIN keeps full default access.')}
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
@@ -688,7 +697,7 @@ function RbacManagement() {
               {selectedUser.role === 'ADMIN' && (
                 <div>
                   <label className="text-sm font-medium text-slate-600 dark:text-slate-400 block mb-2">
-                    Permissions ({userPermissions.length})
+                    {t('rbac.userPermissionsCount', { count: userPermissions.length, defaultValue: 'Permissions ({{count}})' })}
                   </label>
                   <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 border rounded-xl dark:border-slate-700">
                     {permissions.map((p) => {
@@ -711,11 +720,11 @@ function RbacManagement() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-              Đóng
+              {t('common.close', 'Close')}
             </Button>
             {selectedUser?.role === 'ADMIN' && (
               <Button onClick={handleSyncPermissions} disabled={isModalLoading}>
-                Đồng bộ Permissions
+                {t('rbac.syncPermissions', 'Sync permissions')}
               </Button>
             )}
           </DialogFooter>
@@ -729,25 +738,25 @@ function RbacManagement() {
           }`}
         >
           <DialogHeader>
-            <DialogTitle className={isDarkMode ? 'text-white' : ''}>Tạo role mới</DialogTitle>
+            <DialogTitle className={isDarkMode ? 'text-white' : ''}>{t('rbac.createRoleTitle', 'Create a new role')}</DialogTitle>
             <DialogDescription>
-              Nhập tên role mới. Backend sẽ chuẩn hóa tên sang định dạng uppercase.
+              {t('rbac.createRoleDesc', 'Enter the new role name. The backend will normalize it to uppercase.')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
-            <label className="text-sm font-medium text-slate-600 dark:text-slate-400 block">Role name</label>
+            <label className="text-sm font-medium text-slate-600 dark:text-slate-400 block">{t('rbac.roleName', 'Role name')}</label>
             <Input
               value={newRoleName}
               onChange={(e) => setNewRoleName(e.target.value)}
-              placeholder="Ví dụ: CONTENT_MANAGER"
+              placeholder={t('rbac.roleNamePlaceholder', 'Example: CONTENT_MANAGER')}
             />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateRoleOpen(false)}>
-              Đóng
+              {t('common.close', 'Close')}
             </Button>
             <Button onClick={handleCreateRole} disabled={isModalLoading}>
-              Tạo role
+              {t('rbac.createRole', 'Create role')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -761,12 +770,12 @@ function RbacManagement() {
         >
           <DialogHeader>
             <DialogTitle className={isDarkMode ? 'text-white' : ''}>
-              Đồng bộ quyền cho role: {selectedRole?.roleName}
+              {t('rbac.rolePermissionTitle', { role: selectedRole?.roleName, defaultValue: 'Sync permissions for role: {{role}}' })}
             </DialogTitle>
             <DialogDescription>
               {selectedRole?.roleName === 'SUPER_ADMIN'
-                ? 'Role SUPER_ADMIN luôn có toàn bộ permission mặc định và không cho phép chỉnh sửa thủ công.'
-                : 'Chọn danh sách permission áp dụng cho role. Hành động này sẽ sync lại toàn bộ permission của role.'}
+                ? t('rbac.superAdminReadonlyDesc', 'SUPER_ADMIN always has all default permissions and cannot be edited manually.')
+                : t('rbac.syncRoleDesc', 'Choose the permissions applied to this role. This action syncs the full permission set for the role.')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -778,10 +787,12 @@ function RbacManagement() {
                     : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                 }
               >
-                {selectedRole?.isSystem ? 'SYSTEM' : 'CUSTOM'}
+                {selectedRole?.isSystem
+                  ? t('rbac.systemRoleLabel', 'SYSTEM')
+                  : t('rbac.customRoleLabel', 'CUSTOM')}
               </Badge>
               <span className="text-sm text-slate-500 dark:text-slate-400">
-                {rolePermissions.length} permission được chọn
+                {t('rbac.selectedPermissionsCount', { count: rolePermissions.length, defaultValue: '{{count}} permissions selected' })}
               </span>
             </div>
             {isRoleModalLoading ? (
@@ -806,13 +817,13 @@ function RbacManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRoleModalOpen(false)}>
-              Đóng
+              {t('common.close', 'Close')}
             </Button>
             <Button
               onClick={handleSyncRolePermissions}
               disabled={isRoleModalLoading || !selectedRole || selectedRole?.roleName === 'SUPER_ADMIN'}
             >
-              Đồng bộ permissions
+              {t('rbac.syncPermissions', 'Sync permissions')}
             </Button>
           </DialogFooter>
         </DialogContent>
