@@ -398,6 +398,16 @@ export const getUserPayments = async (page = 0, size = 10) => {
   return response;
 };
 
+export const getWorkspacePayments = async (workspaceId, page = 0, size = 10) => {
+  const response = await api.get(`/payment/workspace/${workspaceId}?page=${page}&size=${size}`);
+  return response;
+};
+
+export const getPaymentByOrderId = async (orderId) => {
+  const response = await api.get(`/payment/order/${encodeURIComponent(orderId)}`);
+  return response;
+};
+
 export const getAdminPayments = async ({ page = 0, size = 10, userId, workspaceId, status } = {}) => {
   const params = new URLSearchParams();
   params.append('page', page);
@@ -441,8 +451,18 @@ export const getMyWallet = async () => {
   return response;
 };
 
+export const getGroupWorkspaceWallet = async (workspaceId) => {
+  const response = await api.get(`/credit-wallet/group-workspace/${workspaceId}`);
+  return response;
+};
+
 export const getMyWalletTransactions = async (page = 0, size = 20) => {
   const response = await api.get(`/credit-wallet/me/transactions?page=${page}&size=${size}`);
+  return response;
+};
+
+export const getGroupWorkspaceWalletTransactions = async (workspaceId, page = 0, size = 20) => {
+  const response = await api.get(`/credit-wallet/group-workspace/${workspaceId}/transactions?page=${page}&size=${size}`);
   return response;
 };
 

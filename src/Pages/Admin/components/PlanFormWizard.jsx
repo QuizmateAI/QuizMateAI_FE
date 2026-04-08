@@ -10,7 +10,6 @@ import {
   Lock,
   ShieldCheck,
   Sparkles,
-  Wand2,
   User,
   Users,
 } from 'lucide-react';
@@ -28,17 +27,14 @@ import {
 import { cn } from '@/lib/utils';
 import {
   AI_MODEL_GROUP_OPTIONS,
-  filterAiModelsForAction,
-  getAiActionAllowedProviders,
-  getAiActionLabel,
-  groupAiActionsByModelGroup,
 } from '@/lib/aiModelCatalog';
 
 const WIZARD_STEPS = [
   {
     id: 'basic',
     titleKey: 'subscription.wizard.steps.basic.title',
-    descriptionKey: 'subscription.wizard.steps.basic.description',
+    descriptionKey: 'subscription.wizard.steps.basic.catalogDescription',
+    descriptionFallback: 'Name the plan and choose its scope. Price is inferred from included credits.',
     icon: Layers3,
     accent: 'from-cyan-500 to-blue-600',
   },
@@ -65,7 +61,7 @@ const WIZARD_STEPS = [
   },
 ];
 
-const USER_PLAN_LEVEL_OPTIONS = ['0', '1', '2'];
+const PLAN_LEVEL_OPTIONS = ['0', '1', '2'];
 
 const DARK_SELECT_STYLE = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
@@ -104,18 +100,21 @@ function PlanFormWizard({
   aiModelAssignments,
   setAiModelAssignments,
   functionAssignmentMap,
-  setFunctionAssignmentMap,
   availableAiModels,
+  creditUnitPrice = 200,
+  highestActiveUserPlanEntitlement,
   onSubmit,
   onValidationError,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
-  const showPlanLevel = formData.planScope !== 'WORKSPACE';
+  const isWorkspace = formData.planScope === 'WORKSPACE';
+  const showPlanLevel = true;
+  const requireIndividualPlanLimits = formData.planScope !== 'WORKSPACE';
   const steps = useMemo(
     () => WIZARD_STEPS.map((step) => ({
       ...step,
-      title: t(step.titleKey),
-      description: t(step.descriptionKey),
+      title: t(step.titleKey, step.titleFallback),
+      description: t(step.descriptionKey, step.descriptionFallback),
     })),
     [t]
   );
@@ -167,68 +166,114 @@ function PlanFormWizard({
     [aiModelAssignments, availableAiModels]
   );
 
-  const assignedOverrides = useMemo(
-    () => Object.entries(functionAssignmentMap)
-      .filter(([, modelId]) => Boolean(modelId))
-      .map(([actionKey, modelId]) => ({
-        actionKey,
-        label: getAiActionLabel(actionKey, t),
-        model: getModelById(availableAiModels, modelId),
-      })),
-    [availableAiModels, functionAssignmentMap, t]
+  const assignedOverrideCount = useMemo(
+    () => Object.values(functionAssignmentMap).filter(Boolean).length,
+    [functionAssignmentMap]
   );
 
-  const resolvedPlanLevel = showPlanLevel
-    ? (USER_PLAN_LEVEL_OPTIONS.includes(String(formData.planLevel ?? ''))
-      ? String(formData.planLevel ?? '')
-      : (USER_PLAN_LEVEL_OPTIONS[0] ?? ''))
-    : '';
+  const resolvedPlanLevel = PLAN_LEVEL_OPTIONS.includes(String(formData.planLevel ?? ''))
+    ? String(formData.planLevel ?? '')
+    : (PLAN_LEVEL_OPTIONS[0] ?? '');
 
   useEffect(() => {
-    if (!showPlanLevel || editingPlan) return;
+    if (editingPlan) return;
     if (formData.planLevel === resolvedPlanLevel) return;
     setFormData((prev) => ({ ...prev, planLevel: resolvedPlanLevel }));
-  }, [showPlanLevel, editingPlan, formData.planLevel, resolvedPlanLevel, setFormData]);
+  }, [editingPlan, formData.planLevel, resolvedPlanLevel, setFormData]);
 
-  const checklist = [
-    {
-      label: t('subscription.wizard.checklist.code', 'Plan code'),
-      done: Boolean(formData.code?.trim()),
-      value: formData.code?.trim() || t('subscription.wizard.empty', 'Not entered'),
-    },
-    {
-      label: t('subscription.wizard.checklist.displayName', 'Display name'),
-      done: Boolean(formData.displayName?.trim()),
-      value: formData.displayName?.trim() || t('subscription.wizard.empty', 'Not entered'),
-    },
-    {
-      label: t('subscription.wizard.checklist.enabledFeatures', 'Enabled features'),
-      done: enabledFeatures.length > 0,
-      value: t('subscription.wizard.checklist.enabledFeaturesValue', {
-        count: enabledFeatures.length,
-        defaultValue: '{{count}} features',
-      }),
-    },
-    {
-      label: t('subscription.wizard.checklist.assignedModels', 'Assigned AI models'),
-      done: assignedModels.some((item) => item.assignedModelId),
-      value: t('subscription.wizard.checklist.assignedModelsValue', {
-        assigned: assignedModels.filter((item) => item.assignedModelId).length,
-        total: assignedModels.length,
-        defaultValue: '{{assigned}}/{{total}} groups',
-      }),
-    },
-  ];
+  const includedCredits = Number(entitlement.planIncludedCredits) || 0;
+  const minPrice = includedCredits * creditUnitPrice;
+  const currentPrice = Number(formData.price) || 0;
+  const effectivePrice = Math.max(currentPrice, minPrice);
+  const hasCustomPrice = currentPrice > minPrice;
+  const willAutoRaisePrice = currentPrice > 0 && currentPrice < minPrice;
+
+  useEffect(() => {
+    if (!isWorkspace || editingPlan || !highestActiveUserPlanEntitlement) return;
+    setEntitlement((prev) => {
+      const next = { ...prev };
+      const src = highestActiveUserPlanEntitlement;
+      Object.keys(entitlementToggles).forEach((key) => {
+        if (src[key] === true) next[key] = true;
+      });
+      return next;
+    });
+  }, [isWorkspace, editingPlan, highestActiveUserPlanEntitlement, entitlementToggles, setEntitlement]);
 
   const handleDialogOpenChange = (nextOpen) => {
     if (isSubmitting) return;
     onOpenChange(nextOpen);
   };
 
-  const getValidationError = () => {
-    if (currentStep !== 0) return null;
-    if (!formData.code?.trim()) return t('subscription.validation.codeRequired', 'Please enter a plan code.');
-    if (!formData.displayName?.trim()) return t('subscription.validation.displayNameRequired', 'Please enter a plan name.');
+  const handleIncludedCreditsChange = (event) => {
+    const nextCreditsValue = event.target.value;
+    setEntitlement((prev) => ({ ...prev, planIncludedCredits: nextCreditsValue }));
+
+    if (nextCreditsValue === '') {
+      setFormData((prev) => ({ ...prev, price: '' }));
+      return;
+    }
+
+    const parsedCredits = Number(nextCreditsValue);
+    if (!Number.isFinite(parsedCredits)) return;
+
+    const inferredPrice = Math.max(0, Math.floor(parsedCredits * creditUnitPrice));
+    setFormData((prev) => ({ ...prev, price: String(inferredPrice) }));
+  };
+
+  const handlePriceChange = (event) => {
+    const nextPriceValue = event.target.value;
+    setFormData((prev) => ({ ...prev, price: nextPriceValue }));
+
+    if (nextPriceValue === '') {
+      setEntitlement((prev) => ({ ...prev, planIncludedCredits: '' }));
+      return;
+    }
+
+    const parsedPrice = Number(nextPriceValue);
+    if (!Number.isFinite(parsedPrice) || creditUnitPrice <= 0) return;
+
+    const inferredCredits = Math.max(0, Math.floor(parsedPrice / creditUnitPrice));
+    setEntitlement((prev) => ({ ...prev, planIncludedCredits: String(inferredCredits) }));
+  };
+
+  const getIndividualPlanLimitError = () => {
+    if (!requireIndividualPlanLimits) return null;
+
+    const maxIndividualWorkspace = Number(entitlement.maxIndividualWorkspace);
+    if (!Number.isFinite(maxIndividualWorkspace) || maxIndividualWorkspace <= 0) {
+      return t(
+        'subscription.wizard.validation.maxIndividualWorkspaceRequired',
+        'Max individual workspace is required and must be greater than 0.'
+      );
+    }
+
+    const maxMaterialInWorkspace = Number(entitlement.maxMaterialInWorkspace);
+    if (!Number.isFinite(maxMaterialInWorkspace) || maxMaterialInWorkspace <= 0) {
+      return t(
+        'subscription.wizard.validation.maxMaterialInWorkspaceRequired',
+        'Max material / workspace is required and must be greater than 0.'
+      );
+    }
+
+    const planIncludedCredits = Number(entitlement.planIncludedCredits);
+    if (!Number.isFinite(planIncludedCredits) || planIncludedCredits <= 0) {
+      return t(
+        'subscription.wizard.validation.planIncludedCreditsRequired',
+        'Included credits is required and must be greater than 0.'
+      );
+    }
+
+    return null;
+  };
+
+  const getValidationError = ({ forSubmit = false } = {}) => {
+    if ((currentStep === 0 || forSubmit) && !formData.code?.trim()) return 'Vui lòng nhập code gói.';
+    if ((currentStep === 0 || forSubmit) && !formData.displayName?.trim()) return 'Vui lòng nhập tên gói.';
+    if (currentStep === 1 || forSubmit) {
+      const leveledPlanFieldError = getIndividualPlanLimitError();
+      if (leveledPlanFieldError) return leveledPlanFieldError;
+    }
     return null;
   };
 
@@ -245,13 +290,22 @@ function PlanFormWizard({
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
+  const submitWizard = () => {
+    const validationError = getValidationError({ forSubmit: true });
+    if (validationError) {
+      onValidationError(validationError);
+      return;
+    }
+    onSubmit();
+  };
+
   const handleInternalSubmit = (event) => {
+    event?.preventDefault?.();
     if (!isLastStep) {
-      event.preventDefault();
       handleNext();
       return;
     }
-    onSubmit(event);
+    submitWizard();
   };
 
   const renderStepHeader = (Icon, title, description, accentClass) => (
@@ -325,11 +379,9 @@ function PlanFormWizard({
                 onClick={() => setFormData((prev) => ({
                   ...prev,
                   planScope: scopeOption.value,
-                  planLevel: scopeOption.value === 'WORKSPACE'
-                    ? ''
-                    : (USER_PLAN_LEVEL_OPTIONS.includes(String(prev.planLevel ?? ''))
-                      ? String(prev.planLevel ?? '')
-                      : (USER_PLAN_LEVEL_OPTIONS[0] ?? '')),
+                  planLevel: PLAN_LEVEL_OPTIONS.includes(String(prev.planLevel ?? ''))
+                    ? String(prev.planLevel ?? '')
+                    : (PLAN_LEVEL_OPTIONS[0] ?? ''),
                 }))}
                 className={cn(
                   'rounded-[24px] border p-4 text-left transition-all',
@@ -399,9 +451,7 @@ function PlanFormWizard({
           </div>
           {showPlanLevel ? (
             <div>
-              <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
-                {t('subscription.table.level', 'Level')}
-              </Label>
+              <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>Level</Label>
               <select
                 disabled={Boolean(editingPlan)}
                 value={resolvedPlanLevel}
@@ -409,7 +459,7 @@ function PlanFormWizard({
                 className={selectCls}
                 style={selectStyle}
               >
-                {USER_PLAN_LEVEL_OPTIONS.map((level) => (
+                {PLAN_LEVEL_OPTIONS.map((level) => (
                   <option key={level} value={level}>{level}</option>
                 ))}
               </select>
@@ -417,25 +467,12 @@ function PlanFormWizard({
                 <p className={cn('mt-2 text-xs leading-5', mutedCls)}>
                   {t(
                     'subscription.wizard.fields.levelHint',
-                    'A level can contain multiple plans, so choose the level that best fits this plan.'
+                    'Một level có thể chứa nhiều gói, bạn có thể chọn lại level phù hợp cho plan này.'
                   )}
                 </p>
               ) : null}
             </div>
           ) : null}
-          <div>
-            <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
-              {t('subscription.wizard.fields.price', 'Price (VND)')}
-            </Label>
-            <Input
-              type="number"
-              min="0"
-              value={formData.price}
-              onChange={(event) => setFormData((prev) => ({ ...prev, price: event.target.value }))}
-              placeholder="0"
-              className={inputCls}
-            />
-          </div>
         </div>
 
         <div className="mt-4">
@@ -469,24 +506,27 @@ function PlanFormWizard({
           'from-emerald-500 to-teal-600'
         )}
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {[
-            {
-              key: 'maxIndividualWorkspace',
-              label: t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace'),
-              hint: t('subscription.wizard.entitlement.maxIndividualWorkspaceHint', 'Maximum number of individual workspaces allowed by this plan.'),
-            },
-            {
-              key: 'maxMaterialInWorkspace',
-              label: t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace'),
-              hint: t('subscription.wizard.entitlement.maxMaterialInWorkspaceHint', 'Material limit inside each workspace.'),
-            },
-            {
-              key: 'planIncludedCredits',
-              label: t('subscription.detail.planIncludedCredits', 'Included credits'),
-              hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
-            },
-          ].map((field) => (
+        <div className={cn('mt-6 grid gap-4', isWorkspace ? 'md:grid-cols-2' : 'md:grid-cols-3')}>
+          {(!isWorkspace
+            ? [
+              {
+                key: 'maxIndividualWorkspace',
+                label: `${t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace')} *`,
+                hint: t('subscription.wizard.entitlement.maxIndividualWorkspaceHint', 'Maximum number of individual workspaces allowed by this plan.'),
+              },
+              {
+                key: 'maxMaterialInWorkspace',
+                label: `${t('subscription.detail.maxMaterialInWorkspace', 'Max material / workspace')} *`,
+                hint: t('subscription.wizard.entitlement.maxMaterialInWorkspaceHint', 'Material limit inside each workspace.'),
+              },
+              {
+                key: 'planIncludedCredits',
+                label: `${t('subscription.detail.planIncludedCredits', 'Included credits')} *`,
+                hint: t('subscription.wizard.entitlement.planIncludedCreditsHint', 'Credits preloaded in the plan.'),
+              },
+            ]
+            : []
+          ).map((field) => (
             <div
               key={field.key}
               className={cn(
@@ -497,14 +537,75 @@ function PlanFormWizard({
               <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>{field.label}</Label>
               <Input
                 type="number"
-                min="0"
+                min="1"
+                required={requireIndividualPlanLimits}
                 value={entitlement[field.key] ?? ''}
-                onChange={(event) => setEntitlement((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                onChange={field.key === 'planIncludedCredits'
+                  ? handleIncludedCreditsChange
+                  : (event) => setEntitlement((prev) => ({ ...prev, [field.key]: event.target.value }))}
                 className={cn(inputCls, 'h-10')}
               />
               <p className={cn('mt-2 text-xs leading-5', mutedCls)}>{field.hint}</p>
             </div>
           ))}
+        </div>
+
+        <div
+          className={cn(
+            'mt-4 rounded-[24px] border p-4',
+            isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
+          )}
+        >
+          <Label className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-300' : 'text-slate-600')}>
+            {t('subscription.table.price', 'Price')} *
+          </Label>
+          <Input
+            type="number"
+            min="0"
+            required={requireIndividualPlanLimits}
+            value={formData.price}
+            onChange={handlePriceChange}
+            placeholder={String(minPrice)}
+            className={cn(inputCls, 'h-10')}
+          />
+
+          <div className="mt-4 grid gap-2 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className={mutedCls}>{t('subscription.wizard.entitlement.inferredFloor', 'Credit-based floor')}</span>
+              <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                {formatCurrency(minPrice, t, locale)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className={mutedCls}>{t('subscription.detail.planIncludedCredits', 'Included credits')}</span>
+              <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                {includedCredits.toLocaleString(locale)}
+              </span>
+            </div>
+            {hasCustomPrice ? (
+              <div className="flex items-center justify-between gap-3">
+                <span className={mutedCls}>{t('subscription.wizard.entitlement.currentStoredPrice', 'Current selling price')}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                  {formatCurrency(currentPrice, t, locale)}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          <p className={cn('mt-3 text-xs leading-5', mutedCls)}>
+            {t(
+              'subscription.wizard.entitlement.priceDerivedHint',
+              'Edit included credits to infer the floor price, or edit price to infer how many credits the plan includes. The saved price can never be lower than the credit-based floor.'
+            )}
+          </p>
+          {willAutoRaisePrice ? (
+            <p className={cn('mt-2 text-xs font-semibold', 'text-amber-500')}>
+              {t(
+                'subscription.wizard.entitlement.priceAutoRaiseHint',
+                'The current saved price is below the new floor and will be raised automatically when you save.'
+              )}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
@@ -561,16 +662,29 @@ function PlanFormWizard({
           </div>
         </div>
 
+        {isWorkspace && highestActiveUserPlanEntitlement ? (
+          <div
+            className={cn(
+              'mt-4 rounded-[22px] border px-4 py-3 text-sm',
+              isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+            )}
+          >
+            Gói group tự động kế thừa toàn bộ quyền lợi từ gói cá nhân cao nhất đang active. Các feature kế thừa không thể tắt.
+          </div>
+        ) : null}
+
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {Object.entries(entitlementToggles).map(([key, meta]) => {
             const checked = Boolean(entitlement[key]);
             const Icon = meta.icon;
+            const inheritedFromUser = isWorkspace && highestActiveUserPlanEntitlement && highestActiveUserPlanEntitlement[key] === true;
 
             return (
               <label
                 key={key}
                 className={cn(
-                  'flex items-center gap-3 rounded-[22px] border px-4 py-3 transition-all cursor-pointer',
+                  'flex items-center gap-3 rounded-[22px] border px-4 py-3 transition-all',
+                  inheritedFromUser ? 'cursor-not-allowed' : 'cursor-pointer',
                   checked
                     ? isDarkMode
                       ? 'border-blue-400/20 bg-blue-500/10 shadow-[0_18px_40px_-28px_rgba(59,130,246,0.7)]'
@@ -582,6 +696,7 @@ function PlanFormWizard({
               >
                 <Switch
                   checked={checked}
+                  disabled={inheritedFromUser}
                   onCheckedChange={(value) => setEntitlement((prev) => ({ ...prev, [key]: value }))}
                 />
                 <div
@@ -603,9 +718,7 @@ function PlanFormWizard({
                     {t(meta.labelKey, meta.defaultLabel)}
                   </p>
                   <p className={cn('mt-1 text-xs', checked ? (isDarkMode ? 'text-blue-100/80' : 'text-blue-700/80') : mutedCls)}>
-                    {checked
-                      ? t('subscription.wizard.entitlement.enabledState', 'Enabled for this plan.')
-                      : t('subscription.wizard.entitlement.disabledState', 'Disabled.')}
+                    {checked ? 'Đang mở cho plan này.' : 'Đang tắt.'}
                   </p>
                 </div>
               </label>
@@ -759,12 +872,12 @@ function PlanFormWizard({
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{getScopeLabel(formData.planScope, t)}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>{t('subscription.table.price')}</span>
-                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(formData.price, t, locale)}</span>
+                <span className={mutedCls}>{t('subscription.table.price', 'Price')}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatCurrency(effectivePrice, t, locale)}</span>
               </div>
               {showPlanLevel ? (
                 <div className="flex items-center justify-between gap-3">
-                  <span className={mutedCls}>{t('subscription.table.level', 'Level')}</span>
+                  <span className={mutedCls}>Level</span>
                   <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formData.planLevel || '—'}</span>
                 </div>
               ) : null}
@@ -782,7 +895,7 @@ function PlanFormWizard({
             </p>
             <div className="mt-4 grid gap-2 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <span className={mutedCls}>{t('subscription.detail.maxIndividualWorkspace', 'Max individual workspace')}</span>
+                <span className={mutedCls}>Workspace cá nhân</span>
                 <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{entitlement.maxIndividualWorkspace ?? 0}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
@@ -831,7 +944,7 @@ function PlanFormWizard({
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className={mutedCls}>{t('subscription.wizard.review.overrideActions', 'Override actions')}</span>
-                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{assignedOverrides.length}</span>
+                <span className={cn('font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{assignedOverrideCount}</span>
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
                 {assignedModels.filter((item) => item.model).slice(0, 4).map((item) => (
@@ -851,103 +964,6 @@ function PlanFormWizard({
           </div>
         </div>
       </section>
-
-      <details
-        className={sectionCls}
-        open={assignedOverrides.length > 0}
-      >
-        <summary className={cn('flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-          <span className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4" />
-            {t('subscription.wizard.review.aiOverrides', 'AI function overrides')}
-          </span>
-          <span className={cn('text-xs font-medium', mutedCls)}>
-            {t('subscription.wizard.review.aiOverridesHint', 'Leave empty to use the default capability model.')}
-          </span>
-        </summary>
-
-        <div className="mt-5 grid gap-4">
-          {groupAiActionsByModelGroup().map((group) => (
-            <div
-              key={group.value}
-              className={cn(
-                'rounded-[24px] border p-4',
-                isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'
-              )}
-            >
-              <div className="mb-4">
-                <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                  {t(group.labelKey)}
-                </p>
-                <p className={cn('mt-1 text-xs leading-5', mutedCls)}>
-                  {t(
-                    'subscription.wizard.review.aiOverridesGroupHint',
-                    'Only override when this plan truly needs behavior different from the group default model.'
-                  )}
-                </p>
-              </div>
-
-              <div className="grid gap-3">
-                {group.actions.map((actionKey) => {
-                  const actionModels = filterAiModelsForAction(actionKey, availableAiModels);
-                  const allowedProviders = getAiActionAllowedProviders(actionKey);
-                  const selectedModelId = functionAssignmentMap[actionKey] ?? '';
-                  const isProviderRestricted = allowedProviders.length === 1;
-
-                  return (
-                    <div
-                      key={actionKey}
-                      className={cn(
-                        'grid gap-3 rounded-[20px] border p-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]',
-                        isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'
-                      )}
-                    >
-                      <div>
-                        <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                          {getAiActionLabel(actionKey, t)}
-                        </p>
-                        <p className={cn('mt-1 text-xs leading-5', mutedCls)}>
-                          {isProviderRestricted
-                            ? t('subscription.wizard.review.providerAvailable', {
-                              provider: allowedProviders[0],
-                              defaultValue: 'Available provider: {{provider}}.',
-                            })
-                            : t('subscription.wizard.review.useDefaultHint', {
-                              group: t(group.labelKey),
-                              defaultValue: 'Leave empty to use the default for {{group}}.',
-                            })}
-                        </p>
-                      </div>
-
-                      <select
-                        value={selectedModelId}
-                        onChange={(event) => setFunctionAssignmentMap((prev) => ({ ...prev, [actionKey]: event.target.value }))}
-                        className={selectCls}
-                        style={selectStyle}
-                      >
-                        <option value="">
-                          {isProviderRestricted
-                            ? t('subscription.wizard.review.useCompatibleDefault', 'Use the compatible default model')
-                            : t('subscription.wizard.review.useGroupDefault', 'Use the group default model')}
-                        </option>
-                        {actionModels.map((model) => (
-                          <option
-                            key={`${actionKey}-${model.aiModelId}`}
-                            value={model.aiModelId}
-                            disabled={model.status !== 'ACTIVE' && String(model.aiModelId) !== String(selectedModelId)}
-                          >
-                            {model.displayName} ({model.provider} / {model.modelCode}){model.status !== 'ACTIVE' ? ` • ${model.status}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </details>
     </div>
   );
 
@@ -1094,8 +1110,8 @@ function PlanFormWizard({
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   {[
-                    { label: t('subscription.table.price'), value: formatCurrency(formData.price, t, locale), icon: Coins },
-                    { label: t('subscription.table.scope', 'Scope'), value: getScopeLabel(formData.planScope, t), icon: formData.planScope === 'WORKSPACE' ? Users : User },
+                    { label: t('subscription.table.price', 'Price'), value: formatCurrency(effectivePrice, t, locale), icon: Coins },
+                    { label: 'Scope', value: getScopeLabel(formData.planScope, t), icon: formData.planScope === 'WORKSPACE' ? Users : User },
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
@@ -1128,57 +1144,6 @@ function PlanFormWizard({
                 </div>
               </div>
 
-              <div
-                className={cn(
-                  'mt-4 rounded-[28px] border p-5',
-                  isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-slate-50/80'
-                )}
-              >
-                <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', mutedCls)}>
-                  {t('subscription.wizard.checklist.title', 'Quick checklist')}
-                </p>
-                <div className="mt-4 space-y-3">
-                  {checklist.map((item) => (
-                    <div key={item.label} className="flex items-start gap-3">
-                      <div
-                        className={cn(
-                          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
-                          item.done
-                            ? isDarkMode
-                              ? 'bg-emerald-500/15 text-emerald-300'
-                              : 'bg-emerald-100 text-emerald-700'
-                            : isDarkMode
-                              ? 'bg-slate-900/70 text-slate-500'
-                              : 'bg-slate-100 text-slate-400'
-                        )}
-                      >
-                        {item.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className={cn('text-sm font-medium', isDarkMode ? 'text-white' : 'text-slate-900')}>{item.label}</p>
-                        <p className={cn('mt-1 text-xs leading-5', mutedCls)}>{item.value}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div
-                  className={cn(
-                    'mt-5 rounded-[22px] border px-4 py-3 text-sm',
-                    isDarkMode ? 'border-blue-400/20 bg-blue-500/10 text-blue-100' : 'border-blue-200 bg-blue-50 text-blue-800'
-                  )}
-                >
-                  {isLastStep
-                    ? t(
-                      'subscription.wizard.finalHint',
-                      'You are on the final step. Save now or jump back to any previous step to adjust.'
-                    )
-                    : t(
-                      'subscription.wizard.nextHint',
-                      'Use the "Next" button to move through each step and keep the dialog compact.'
-                    )}
-                </div>
-              </div>
             </aside>
           </div>
 
@@ -1221,8 +1186,8 @@ function PlanFormWizard({
                 ) : null}
 
                 <Button
-                  type={isLastStep ? 'submit' : 'button'}
-                  onClick={isLastStep ? undefined : handleNext}
+                  type="button"
+                  onClick={isLastStep ? submitWizard : handleNext}
                   disabled={isSubmitting}
                   className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-700 cursor-pointer"
                 >
