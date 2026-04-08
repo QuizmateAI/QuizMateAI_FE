@@ -64,7 +64,7 @@ export default function PersonalizedNextStepCard({
   const tasks = Array.isArray(dailyPlan?.tasks) ? dailyPlan.tasks.slice(0, 3) : [];
   const reviewQueue = Array.isArray(personalization?.reviewQueue) ? personalization.reviewQueue.slice(0, 3) : [];
   const quizTask = tasks.find((task) => String(task?.type || "").toUpperCase() === "TAKE_QUIZ") || null;
-  const whyThisQuiz = quizTask?.reason || personalization?.learnerExplanation?.whyThisQuiz || null;
+  const whyThisQuiz = quizTask?.reason || null;
 
   if (!dailyPlan || tasks.length === 0) {
     return null;

@@ -304,6 +304,12 @@ export const generateQuizFromWorkspaceAssessment = async (assessmentId) => {
   return response;
 };
 
+// Bỏ qua một recommendation (chuyển sang DISMISSED)
+export const dismissRecommendation = async (assessmentId) => {
+  const response = await api.patch(`/workspace-assessments/${assessmentId}/dismiss`);
+  return response;
+};
+
 // Lấy lịch sử làm bài của 1 quiz
 export const getQuizHistory = async (quizId) => {
   const response = await api.get(`/quiz-attempts/history?quizId=${quizId}`);

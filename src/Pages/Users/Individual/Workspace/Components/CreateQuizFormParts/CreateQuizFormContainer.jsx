@@ -8,6 +8,7 @@ import CreateQuizAiFormContent from "./CreateQuizAiFormContent";
 import CreateQuizAiRecommendationsPanel from "./CreateQuizAiRecommendationsPanel";
 import { useCreateQuizAiForm } from "./useCreateQuizAiForm";
 import { useInlineQuizRecommendations } from "./useInlineQuizRecommendations";
+import { getBloomSkillLabel, getQuizDifficultyLabel, getQuizQuestionTypeLabel } from "@/lib/quizQuestionTypes";
 
 function resolvePersonalizationFocusTopic(preset) {
   const reviewTopic = String(preset?.reviewTopic || "").trim();
@@ -81,9 +82,11 @@ function CreateQuizForm({
     inlineRecommendations,
     inlineRecError,
     inlineRecGeneratingId,
+    inlineRecDismissingId,
     inlineRecLoading,
     setExpandedRecId,
     handleGenerateFromInlineRecommendation,
+    handleDismissRecommendation,
   } = useInlineQuizRecommendations({
     contextId: defaultContextId,
     enabled: showInlineRecommendations,
@@ -175,8 +178,12 @@ function CreateQuizForm({
   const getQuestionTypeLabel = useCallback((questionType) => {
     const normalizedType = String(questionType || "").toUpperCase();
     const fallbackLabel = QUESTION_TYPE_LABEL_FALLBACKS[normalizedType] || questionType || "-";
-    return t(`workspace.quiz.aiConfig.questionTypeLabels.${normalizedType}`, fallbackLabel);
+    return getQuizQuestionTypeLabel(normalizedType, t) || fallbackLabel;
   }, [t]);
+
+  const getDifficultyLabel = useCallback((difficulty) => getQuizDifficultyLabel(difficulty, t), [t]);
+
+  const getBloomLabel = useCallback((bloomSkill) => getBloomSkillLabel(bloomSkill, t), [t]);
 
   const formatDifficultyPreviewPercent = useCallback((value) => {
     const rounded = Math.round((Number(value) || 0) * 100) / 100;
@@ -245,21 +252,21 @@ function CreateQuizForm({
           {t("workspace.quiz.validation.requiredFieldsHint")}
         </div>
 
-        {showInlineRecommendations ? (
-          <CreateQuizAiRecommendationsPanel
-            activeRecommendation={activeRecommendation}
-            expandedRecId={expandedRecId}
-            fontClass={fontClass}
-            inlineRecommendations={inlineRecommendations}
-            inlineRecError={inlineRecError}
-            inlineRecGeneratingId={inlineRecGeneratingId}
-            inlineRecLoading={inlineRecLoading}
-            isDarkMode={isDarkMode}
-            onGenerateRecommendation={handleGenerateFromInlineRecommendation}
-            onToggleRecommendation={setExpandedRecId}
-            t={t}
-          />
-        ) : null}
+        <CreateQuizAiRecommendationsPanel
+          activeRecommendation={activeRecommendation}
+          expandedRecId={expandedRecId}
+          fontClass={fontClass}
+          inlineRecommendations={inlineRecommendations}
+          inlineRecError={inlineRecError}
+          inlineRecGeneratingId={inlineRecGeneratingId}
+          inlineRecDismissingId={inlineRecDismissingId}
+          inlineRecLoading={inlineRecLoading}
+          isDarkMode={isDarkMode}
+          onGenerateRecommendation={handleGenerateFromInlineRecommendation}
+          onDismissRecommendation={handleDismissRecommendation}
+          onToggleRecommendation={setExpandedRecId}
+          t={t}
+        />
 
         {error && (
           insufficientCreditError ? (
@@ -324,6 +331,8 @@ function CreateQuizForm({
           ui={{
             fontClass,
             formatDifficultyPreviewPercent,
+            getBloomLabel,
+            getDifficultyLabel,
             getQuestionTypeLabel,
             isDarkMode,
             t,

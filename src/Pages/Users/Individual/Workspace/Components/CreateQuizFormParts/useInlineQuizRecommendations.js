@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { generateQuizFromWorkspaceAssessment, getPendingRecommendations } from "@/api/QuizAPI";
+import { dismissRecommendation, generateQuizFromWorkspaceAssessment, getPendingRecommendations } from "@/api/QuizAPI";
 
 export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t, enabled = true }) => {
   const [inlineRecommendations, setInlineRecommendations] = useState([]);
@@ -7,6 +7,7 @@ export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t, enabl
   const [inlineRecError, setInlineRecError] = useState("");
   const [expandedRecId, setExpandedRecId] = useState(null);
   const [inlineRecGeneratingId, setInlineRecGeneratingId] = useState(null);
+  const [inlineRecDismissingId, setInlineRecDismissingId] = useState(null);
 
   useEffect(() => {
     if (!enabled) {
@@ -82,6 +83,22 @@ export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t, enabl
     }
   }, [enabled, onCreateQuiz, t]);
 
+  const handleDismissRecommendation = useCallback(async (assessmentId) => {
+    if (!assessmentId) return;
+    setInlineRecDismissingId(assessmentId);
+    setInlineRecError("");
+    try {
+      await dismissRecommendation(assessmentId);
+      setInlineRecommendations((prev) => prev.filter((r) => r.assessmentId !== assessmentId));
+      setExpandedRecId((prev) => (prev === assessmentId ? null : prev));
+    } catch (error) {
+      console.error("Failed to dismiss inline recommendation:", error);
+      setInlineRecError(error?.message || t("workspace.quiz.aiRecommendations.dismissFailed"));
+    } finally {
+      setInlineRecDismissingId(null);
+    }
+  }, [t]);
+
   const activeRecommendation = useMemo(
     () => inlineRecommendations.find((item) => item.assessmentId === expandedRecId) || null,
     [expandedRecId, inlineRecommendations]
@@ -93,8 +110,10 @@ export const useInlineQuizRecommendations = ({ contextId, onCreateQuiz, t, enabl
     inlineRecommendations,
     inlineRecError,
     inlineRecGeneratingId,
+    inlineRecDismissingId,
     inlineRecLoading,
     setExpandedRecId,
     handleGenerateFromInlineRecommendation,
+    handleDismissRecommendation,
   };
 };
