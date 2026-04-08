@@ -6,14 +6,14 @@ import { getCurrentUser, isAuthenticated } from '@/api/Authentication';
 import { unwrapApiList } from '@/Utils/apiResponse';
 
 const AUTO_PROMPT_TARGET_TYPES = new Set(['WORKSPACE', 'SYSTEM_MILESTONE']);
-const BLOCKED_PREFIXES = ['/login', '/register', '/forgot-password', '/pricing', '/payment', '/admin', '/super-admin'];
+const BLOCKED_PREFIXES = ['/login', '/register', '/forgot-password', '/pricing', '/payments', '/admin', '/super-admin'];
 
 function shouldBlockAutoPrompt(pathname) {
   if (!pathname) {
     return true;
   }
 
-  if (pathname === '/feedback') {
+  if (pathname === '/feedbacks') {
     return true;
   }
 
@@ -21,7 +21,7 @@ function shouldBlockAutoPrompt(pathname) {
     return true;
   }
 
-  return pathname.startsWith('/quiz/practice/') || pathname.startsWith('/quiz/exam/');
+  return pathname.startsWith('/quizzes/practice/') || pathname.startsWith('/quizzes/exams/');
 }
 
 function FeedbackAutoPrompt() {

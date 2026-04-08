@@ -28,7 +28,7 @@ vi.mock('react-router-dom', async () => {
     useParams: () => ({ quizId: '45' }),
     useNavigate: () => mockNavigate,
     useLocation: () => ({
-      pathname: '/quiz/exam/45',
+      pathname: '/quizzes/exams/45',
       search: '',
       state: mockLocationState,
     }),
@@ -145,7 +145,7 @@ describe('ExamQuizPage', () => {
   it('blocks browser back during an active exam without pushing duplicate history entries', async () => {
     const startedAt = new Date(Date.now() - 5_000).toISOString();
     const timeoutAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    mockLocationState = { autoStart: true, returnToQuizPath: '/workspace/42' };
+    mockLocationState = { autoStart: true, returnToQuizPath: '/workspaces/42' };
     mockUseQuery.mockReturnValue({
       data: {
         id: 45,
@@ -190,7 +190,7 @@ describe('ExamQuizPage', () => {
   it('asks for confirmation before submitting an active exam', async () => {
     const startedAt = new Date(Date.now() - 5_000).toISOString();
     const timeoutAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    mockLocationState = { autoStart: true, returnToQuizPath: '/workspace/42' };
+    mockLocationState = { autoStart: true, returnToQuizPath: '/workspaces/42' };
     mockUseQuery.mockReturnValue({
       data: {
         id: 45,

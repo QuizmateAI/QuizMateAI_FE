@@ -5,6 +5,7 @@ import Pagination from "./Pagination";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { useNavigateWithLoading } from "@/hooks/useNavigateWithLoading";
 import { preloadWorkspacePage } from "@/lib/routeLoaders";
+import { buildWorkspacePath } from "@/lib/routePaths";
 
 // Bổ sung displayTitle cho workspace không có tiêu đề: đầu tiên = untitledTitle, thứ 2 = (1), thứ 3 = (2)...
 function enrichWorkspacesWithDisplayTitle(workspaces, untitledTitle) {
@@ -210,7 +211,7 @@ function UserWorkspace({ viewMode, isDarkMode, workspaces, loading, pagination, 
 
   const handleOpenWorkspace = useCallback((workspaceId) => {
     void preloadWorkspacePage();
-    navigate(`/workspace/${workspaceId}`);
+    navigate(buildWorkspacePath(workspaceId));
   }, [navigate]);
 
   useEffect(() => {

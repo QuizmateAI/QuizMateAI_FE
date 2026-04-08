@@ -22,6 +22,7 @@ import {
   addQuizReviewContributor, removeQuizReviewContributor,
 } from '../../../../api/ChallengeAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
+import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
 import ChallengeLeaderboard from './ChallengeLeaderboard';
 
 function formatDateTime(dt) {
@@ -159,7 +160,9 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     try {
       const res = await startChallengeAttempt(workspaceId, eventId);
       const attempt = res.data;
-      navigate(`/quiz/exam/${attempt.quizId}`, {
+      const attemptPath = buildQuizAttemptPath('exam', attempt.quizId);
+      if (!attemptPath) return;
+      navigate(attemptPath, {
         state: {
           autoStart: true,
           challengeContext: { workspaceId, eventId, participantId: attempt.participantId },
@@ -181,13 +184,16 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const handleOpenDraftQuizEditor = useCallback(() => {
     const qid = detail?.snapshotQuizId;
     if (!qid) return;
-    navigate(`/group-workspace/${workspaceId}?section=quiz&challengeDraftQuizId=${qid}&challengeDraft=1`);
+    navigate(buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
+      challengeDraftQuizId: qid,
+      challengeDraft: 1,
+    }));
   }, [navigate, workspaceId, detail?.snapshotQuizId]);
 
   const handleViewSnapshotQuiz = useCallback(() => {
     const qid = detail?.snapshotQuizId;
     if (!qid) return;
-    navigate(`/group-workspace/${workspaceId}?section=quiz&viewQuizId=${qid}`);
+    navigate(buildGroupWorkspaceSectionPath(workspaceId, 'quiz', { viewQuizId: qid }));
   }, [navigate, workspaceId, detail?.snapshotQuizId]);
 
   const handleAddReviewer = useCallback(() => {

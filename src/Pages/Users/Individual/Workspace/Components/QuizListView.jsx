@@ -12,19 +12,17 @@ import { unwrapApiData } from "@/Utils/apiResponse";
 import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
 import { useToast } from "@/context/ToastContext";
 import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
+import {
+  buildQuizAttemptPath,
+  buildWorkspaceRoadmapsPath,
+  extractWorkspaceIdFromPath,
+  isWorkspaceRoadmapsPath,
+} from "@/lib/routePaths";
 
 function resolveWorkspaceRoadmapReturnPath(pathname, phaseId) {
-  const match = pathname.match(/^\/workspace\/(\d+)/);
-  if (!match || !phaseId) return null;
-  return `/workspace/${match[1]}/roadmap?phaseId=${phaseId}`;
-}
-
-function extractWorkspaceIdFromPath(path) {
-  if (!path) return null;
-  const match = String(path).match(/^\/workspace\/(\d+)/);
-  if (!match) return null;
-  const parsed = Number(match[1]);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  const workspaceId = extractWorkspaceIdFromPath(pathname);
+  if (!workspaceId || !phaseId) return null;
+  return buildWorkspaceRoadmapsPath(workspaceId, phaseId);
 }
 
 function extractPhaseIdFromPath(path) {
@@ -354,8 +352,8 @@ function QuizListView({
     const sourcePhaseId = phaseIdFromContext || phaseIdFromReturnPath || null;
 
     const isRoadmapContextType = ["ROADMAP", "PHASE", "KNOWLEDGE"].includes(normalizedContextType);
-    const isRoadmapPath = /\/workspace\/\d+\/roadmap(?:\/|$|\?)/.test(String(resolvedReturnToPath || ""))
-      || /\/workspace\/\d+\/roadmap(?:\/|$)/.test(String(location.pathname || ""));
+    const isRoadmapPath = isWorkspaceRoadmapsPath(resolvedReturnToPath)
+      || isWorkspaceRoadmapsPath(location.pathname);
 
     return {
       sourceView: isRoadmapContextType || isRoadmapPath ? "roadmap" : "quiz-panel",
@@ -375,7 +373,7 @@ function QuizListView({
   const handleStartQuiz = useCallback((mode, quizId) => {
     if (!mode || !quizId) return;
 
-    navigate(`/quiz/${mode}/${quizId}`, {
+    navigate(buildQuizAttemptPath(mode, quizId), {
       state: {
         returnToQuizPath: resolvedReturnToPath,
         ...(mode === 'practice' ? { autoStart: true } : {}),
@@ -388,7 +386,7 @@ function QuizListView({
     const resolvedQuizId = resolveQuizNavigationId(examStartQuiz);
     if (!resolvedQuizId) return;
 
-    navigate(`/quiz/exam/${resolvedQuizId}`, {
+    navigate(buildQuizAttemptPath("exam", resolvedQuizId), {
       state: {
         returnToQuizPath: resolvedReturnToPath,
         autoStart: true,
