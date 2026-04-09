@@ -537,28 +537,6 @@ function RoadmapCanvasView2({
     void syncPhaseReview();
   }, [syncPhaseReview, activePhase?.phaseId]);
 
-  const phaseReviewConfidencePercent = useMemo(() => {
-    const rawScore = Number(phaseReviewState?.data?.confidenceScore);
-    if (!Number.isFinite(rawScore)) return null;
-    const normalizedScore = Math.max(0, Math.min(1, rawScore));
-    return Math.round(normalizedScore * 100);
-  }, [phaseReviewState?.data?.confidenceScore]);
-
-  const phaseReviewSegmentFillPercents = useMemo(() => {
-    if (typeof phaseReviewConfidencePercent !== "number") {
-      return [0, 0, 0];
-    }
-
-    const segmentSize = 100 / 3;
-    return [0, 1, 2].map((index) => {
-      const segmentStart = index * segmentSize;
-      const segmentEnd = segmentStart + segmentSize;
-      if (phaseReviewConfidencePercent <= segmentStart) return 0;
-      if (phaseReviewConfidencePercent >= segmentEnd) return 100;
-      return Math.max(0, Math.min(100, ((phaseReviewConfidencePercent - segmentStart) / segmentSize) * 100));
-    });
-  }, [phaseReviewConfidencePercent]);
-
   const phaseReviewAssessedAtLabel = useMemo(() => {
     const rawValue = phaseReviewState?.data?.assessedAt;
     if (!rawValue) return null;
@@ -1004,53 +982,9 @@ function RoadmapCanvasView2({
                 {t("workspace.roadmap.phaseReviewTitle", "Đánh giá AI cho phase hiện tại")}
               </p>
             </div>
-
-            {typeof phaseReviewConfidencePercent === "number" ? (
-              <div className="mt-3">
-                <div className="flex items-center justify-between">
-                  <p className={`text-xs font-medium ${isDarkMode ? "text-emerald-100" : "text-emerald-800"} ${fontClass}`}>
-                    {t("workspace.roadmap.phaseReviewConfidence", "Độ tin cậy")}
-                  </p>
-                  <p className={`text-xs font-semibold ${isDarkMode ? "text-emerald-100" : "text-emerald-800"} ${fontClass}`}>
-                    {phaseReviewConfidencePercent}%
-                  </p>
-                </div>
-                <div className="mt-2 grid grid-cols-3 gap-1">
-                  {[
-                    { color: "#ef4444", fill: phaseReviewSegmentFillPercents[0] },
-                    { color: "#f59e0b", fill: phaseReviewSegmentFillPercents[1] },
-                    { color: "#22c55e", fill: phaseReviewSegmentFillPercents[2] },
-                  ].map((segment, index) => (
-                    <div
-                      key={`confidence-segment-${index}`}
-                      className={`h-3 overflow-hidden rounded-sm border ${isDarkMode ? "border-slate-700 bg-white/95" : "border-slate-200 bg-white"}`}
-                    >
-                      <div
-                        className="h-full"
-                        style={{
-                          width: `${segment.fill}%`,
-                          backgroundColor: segment.color,
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            <details className="group mt-2">
-              <summary className="list-none cursor-pointer">
-                <div className="flex items-center justify-between gap-2">
-                  <p className={`text-sm font-medium ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
-                    {t("workspace.roadmap.phaseReviewSummaryDropdown", "Xem tóm tắt đánh giá")}
-                  </p>
-                  <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-emerald-200" : "text-emerald-800"}`} />
-                </div>
-              </summary>
-              <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                {phaseReviewState.data.summary}
-              </p>
-            </details>
+            <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+              {phaseReviewState.data.summary}
+            </p>
 
             {phaseReviewAssessedAtLabel ? (
               <div className="mt-3 text-right">
