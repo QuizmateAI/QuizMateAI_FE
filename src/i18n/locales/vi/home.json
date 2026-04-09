@@ -289,6 +289,16 @@
     "heroBadge": "Gói AI cho học tập",
     "backToHome": "Về trang chủ",
     "back": "Quay lại",
+    "groupScopeTitle": "Chọn gói cho {{groupName}}",
+    "groupFallbackName": "nhóm này",
+    "groupScopeSubtitle": "Gói này chỉ áp dụng cho group hiện tại. Gói group được quản lý riêng, tách khỏi gói cá nhân.",
+    "groupScopeNoticeTitle": "Gói dành cho group hiện tại",
+    "groupEntryTitle": "Gói group được quản lý trong từng nhóm",
+    "leaderOnlyBadge": "Leader thanh toán",
+    "groupScopeLeaderDesc": "Gói này chỉ áp dụng cho {{groupName}}. Bạn là leader nên có thể chọn hoặc đổi gói cho group này tại đây.",
+    "groupScopeMemberDesc": "Gói này chỉ áp dụng cho {{groupName}}. Chỉ leader mới có thể chọn hoặc đổi gói cho group này.",
+    "groupEntryDesc": "Mỗi group mua gói riêng trong workspace của chính group đó. Hãy mở group bạn làm leader để xem gói và thanh toán tại đó.",
+    "groupLeaderManagedCta": "Leader quản lý gói",
     "types": {
       "individual": "Cá nhân",
       "group": "Nhóm"

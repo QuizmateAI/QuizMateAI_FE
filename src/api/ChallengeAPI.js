@@ -53,3 +53,46 @@ export const addQuizReviewContributor = async (workspaceId, quizId, body) => {
 export const removeQuizReviewContributor = async (workspaceId, quizId, userId) => {
   return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/${userId}`);
 };
+
+/** Reviewer: gửi phiếu duyệt APPROVED | REJECTED */
+export const submitQuizReviewDecision = async (workspaceId, quizId, decision) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/decision`, { decision });
+};
+
+/** Reviewer: ghi nhận đã mở xem snapshot */
+export const recordQuizReviewView = async (workspaceId, quizId) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-view`);
+};
+
+/** Leader: cho phép xuất bản khi reviewer không phối hợp (lý do ≥ 20 ký tự) */
+export const setLeaderPublishBypass = async (workspaceId, eventId, reason) => {
+  return await api.post(`/group/${workspaceId}/challenges/${eventId}/leader-publish-bypass`, { reason });
+};
+
+// ── Question flags (reviewer gửi yêu cầu xem xét câu hỏi) ──────
+
+export const listQuizReviewFlags = async (workspaceId, quizId) => {
+  return await api.get(`/group/${workspaceId}/quiz-review-contributors/${quizId}/flags`);
+};
+
+export const flagQuizQuestion = async (workspaceId, quizId, questionId, reason) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/flags`, { questionId, reason });
+};
+
+export const unflagQuizQuestion = async (workspaceId, quizId, questionId) => {
+  return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/flags/${questionId}`);
+};
+
+export const resolveQuizReviewFlag = async (workspaceId, quizId, flagId) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/flags/${flagId}/resolve`);
+};
+
+/** Reviewer: lấy bản ghi review của mình (xác nhận đề ổn, …) */
+export const getMyQuizReviewContributor = async (workspaceId, quizId) => {
+  return await api.get(`/group/${workspaceId}/quiz-review-contributors/${quizId}/me`);
+};
+
+/** Reviewer: xác nhận đã xem xong — đề ổn (acknowledged=false để bỏ xác nhận) */
+export const setQuizReviewCompleteOk = async (workspaceId, quizId, acknowledged = true) => {
+  return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}/review-complete-ok`, { acknowledged });
+};
