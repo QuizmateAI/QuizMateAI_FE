@@ -3,6 +3,8 @@ import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3 } from 
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import { getRoadmapReview } from "@/api/RoadmapAPI";
+import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 import CreateQuizForm from "./CreateQuizForm";
 
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
@@ -32,6 +34,23 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+  const [activeRoadmapId, setActiveRoadmapId] = React.useState(null);
+  const [roadmapReview, setRoadmapReview] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!activeRoadmapId) return;
+    let cancelled = false;
+    getRoadmapReview(activeRoadmapId)
+      .then((res) => {
+        if (cancelled) return;
+        const data = res?.data?.data ?? res?.data ?? null;
+        setRoadmapReview(data && data.assessmentId ? data : null);
+      })
+      .catch(() => {
+        if (!cancelled) setRoadmapReview(null);
+      });
+    return () => { cancelled = true; };
+  }, [activeRoadmapId]);
   const documentsHubLabel = i18n.language === "en" ? "Open documents hub" : "Mở trung tâm tài liệu";
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
@@ -156,7 +175,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
     switch (activeView) {
       case "roadmap":
-        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} />;
+        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={setActiveRoadmapId} />;
       case "quiz":
         return <LazyQuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} refreshToken={quizListRefreshToken} />;
       case "flashcard":
@@ -218,6 +237,9 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
               </div>
             </div>
           </div>
+        ) : null}
+        {activeView === "roadmap" ? (
+          <RoadmapReviewPanel review={roadmapReview} isDarkMode={isDarkMode} />
         ) : null}
         <DeferredPanel>{listContent}</DeferredPanel>
       </section>
