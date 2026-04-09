@@ -69,6 +69,7 @@ function RoadmapCanvasView2({
   const [unlockingPhaseIds, setUnlockingPhaseIds] = useState([]);
   const progressSyncDebounceRef = useRef(null);
   const phaseFocusDebounceRef = useRef(null);
+  const previousKnowledgeGenerationRef = useRef(false);
 
   const loadGlobalCurrentPhaseProgress = useCallback(async () => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -103,6 +104,21 @@ function RoadmapCanvasView2({
     }
   }, [roadmap?.roadmapId]);
 
+  const knowledgeGenerationSignature = useMemo(() => {
+    const normalizedPhaseIds = [
+      ...(Array.isArray(generatingKnowledgePhaseIds) ? generatingKnowledgePhaseIds : []),
+      ...(Array.isArray(generatingKnowledgeQuizPhaseIds) ? generatingKnowledgeQuizPhaseIds : []),
+    ]
+      .map((phaseId) => Number(phaseId))
+      .filter((phaseId) => Number.isInteger(phaseId) && phaseId > 0)
+      .filter((phaseId, index, array) => array.indexOf(phaseId) === index)
+      .sort((a, b) => a - b);
+
+    return normalizedPhaseIds.join(",");
+  }, [generatingKnowledgePhaseIds, generatingKnowledgeQuizPhaseIds]);
+
+  const hasKnowledgeGenerationRunning = knowledgeGenerationSignature.length > 0;
+
   useEffect(() => {
     if (progressSyncDebounceRef.current) {
       window.clearTimeout(progressSyncDebounceRef.current);
@@ -119,7 +135,24 @@ function RoadmapCanvasView2({
         window.clearTimeout(progressSyncDebounceRef.current);
       }
     };
-  }, [loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress, roadmap?.roadmapId, selectedPhaseId, openPhaseId]);
+  }, [
+    knowledgeGenerationSignature,
+    loadGlobalCurrentPhaseProgress,
+    loadCurrentKnowledgeProgress,
+    openPhaseId,
+    quizRefreshToken,
+    roadmap?.roadmapId,
+    selectedPhaseId,
+  ]);
+
+  useEffect(() => {
+    const wasGeneratingKnowledge = previousKnowledgeGenerationRef.current;
+    if (wasGeneratingKnowledge && !hasKnowledgeGenerationRunning) {
+      void loadGlobalCurrentPhaseProgress();
+      void loadCurrentKnowledgeProgress();
+    }
+    previousKnowledgeGenerationRef.current = hasKnowledgeGenerationRunning;
+  }, [hasKnowledgeGenerationRunning, loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress]);
   const [phaseReviewState, setPhaseReviewState] = useState({
     loading: false,
     data: null,
