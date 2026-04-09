@@ -3,6 +3,8 @@ import { UploadCloud, Sparkles, Route, BadgeCheck, Layers } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import { getRoadmapReview } from "@/api/RoadmapAPI";
+import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 import CreateQuizForm from "./CreateQuizForm";
 
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
@@ -92,6 +94,23 @@ function ChatPanel({
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+  const [activeRoadmapId, setActiveRoadmapId] = React.useState(null);
+  const [roadmapReview, setRoadmapReview] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!activeRoadmapId) return;
+    let cancelled = false;
+    getRoadmapReview(activeRoadmapId)
+      .then((res) => {
+        if (cancelled) return;
+        const data = res?.data?.data ?? res?.data ?? null;
+        setRoadmapReview(data && data.assessmentId ? data : null);
+      })
+      .catch(() => {
+        if (!cancelled) setRoadmapReview(null);
+      });
+    return () => { cancelled = true; };
+  }, [activeRoadmapId]);
 
   const getIsActionDisabled = React.useCallback((actionKey) => {
     if (actionKey === "quiz") return shouldDisableQuiz;
@@ -156,6 +175,7 @@ function ChatPanel({
             onShareRoadmap={onShareRoadmap}
             onShareQuiz={onShareQuiz}
             onEditRoadmapConfig={onEditRoadmapConfig}
+            onRoadmapLoad={setActiveRoadmapId}
           />
         );
       case "quiz":
@@ -288,6 +308,9 @@ function ChatPanel({
               </Button>
             </div>
           </div>
+        ) : null}
+        {activeView === "roadmap" ? (
+          <RoadmapReviewPanel review={roadmapReview} isDarkMode={isDarkMode} />
         ) : null}
         <DeferredPanel>{content}</DeferredPanel>
       </section>

@@ -219,6 +219,7 @@ function RoadmapCanvasView({
   selectedEmptyStateMaterialIds = [],
   onToggleEmptyStateMaterial,
   onToggleAllEmptyStateMaterials,
+  onRoadmapLoad,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -324,6 +325,9 @@ function RoadmapCanvasView({
       setRoadmap(mergedRoadmap);
       if (mergedRoadmap?.canvasView) {
         onCanvasViewChange?.(mergedRoadmap.canvasView);
+      }
+      if (mergedRoadmap?.roadmapId) {
+        onRoadmapLoad?.(mergedRoadmap.roadmapId);
       }
 
       if (!shouldKeepViewportState) {
