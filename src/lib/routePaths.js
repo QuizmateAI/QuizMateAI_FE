@@ -14,6 +14,7 @@ export const APP_ROUTE_SEGMENTS = {
 export const WORKSPACE_ROUTE_SEGMENTS = {
   roadmaps: "roadmaps",
   phases: "phases",
+  knowledges: "knowledges",
   quizzes: "quizzes",
   flashcards: "flashcards",
   mockTests: "mock-tests",
@@ -143,12 +144,20 @@ export function buildWorkspaceQuizPath(workspaceId, quizId) {
 
 export function buildWorkspaceRoadmapQuizPath(
   workspaceId,
-  { roadmapId = null, phaseId = null, quizId, edit = false } = {},
+  {
+    roadmapId = null,
+    phaseId = null,
+    knowledgeId = null,
+    quizId,
+    edit = false,
+  } = {},
 ) {
   if (!quizId) return null;
 
   const normalizedRoadmapId = Number(roadmapId);
   const normalizedPhaseId = Number(phaseId);
+  const normalizedKnowledgeId = Number(knowledgeId);
+  const hasKnowledgeId = Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0;
   const editSuffix = edit ? "/edit" : "";
 
   if (
@@ -157,9 +166,13 @@ export function buildWorkspaceRoadmapQuizPath(
     Number.isInteger(normalizedPhaseId) &&
     normalizedPhaseId > 0
   ) {
+    const knowledgePart = hasKnowledgeId
+      ? `/${WORKSPACE_ROUTE_SEGMENTS.knowledges}/${normalizedKnowledgeId}`
+      : "";
+
     return buildWorkspacePath(
       workspaceId,
-      `${WORKSPACE_ROUTE_SEGMENTS.roadmaps}/${normalizedRoadmapId}/${WORKSPACE_ROUTE_SEGMENTS.phases}/${normalizedPhaseId}/${WORKSPACE_ROUTE_SEGMENTS.quizzes}/${quizId}${editSuffix}`,
+      `${WORKSPACE_ROUTE_SEGMENTS.roadmaps}/${normalizedRoadmapId}/${WORKSPACE_ROUTE_SEGMENTS.phases}/${normalizedPhaseId}${knowledgePart}/${WORKSPACE_ROUTE_SEGMENTS.quizzes}/${quizId}${editSuffix}`,
     );
   }
 
@@ -202,7 +215,7 @@ export function isWorkspaceRoadmapsPath(path) {
 }
 
 export function isWorkspaceQuizDetailPath(path) {
-  return /\/workspaces\/\d+\/(?:quizzes(?:\/\d+)?|roadmaps\/(?:\d+\/phases\/\d+\/)?quizzes\/\d+)(?:\?|$)/.test(String(path || ""));
+  return /\/workspaces\/\d+\/(?:quizzes(?:\/\d+)?|roadmaps\/(?:\d+\/phases\/\d+(?:\/knowledges\/\d+)?\/)?quizzes\/\d+)(?:\?|$)/.test(String(path || ""));
 }
 
 export function isGroupWorkspacePath(path) {
