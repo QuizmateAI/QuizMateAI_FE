@@ -119,6 +119,9 @@ const ERROR_CODES = {
 
   // ========== CREDIT ==========
   1129: 'error.insufficientCredit',
+
+  // ========== QUIZ REVIEW (CHALLENGE SNAPSHOT) ==========
+  1179: 'error.quizReviewViewRequired',
 };
 
 export default ERROR_CODES;

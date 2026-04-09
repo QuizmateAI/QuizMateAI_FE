@@ -1,17 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
 import ListSpinner from '@/Components/ui/ListSpinner';
-import UploadSourceDialog from './Components/UploadSourceDialog';
-import GroupDocumentsTab from './Components/GroupDocumentsTab';
-import InviteMemberDialog from './Group_leader/InviteMemberDialog';
-import GroupWorkspaceProfileConfigDialog from './Components/GroupWorkspaceProfileConfigDialog';
-import GroupDashboardTab from './Group_leader/GroupDashboardTab';
-import GroupMembersTab from './Group_leader/GroupMembersTab';
-import GroupSettingsTab from './Group_leader/GroupSettingsTab';
 import GroupWalletTab from './Group_leader/GroupWalletTab';
-import ChatPanel from './Components/ChatPanel';
-import ChallengeTab from './Components/ChallengeTab';
 import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
 import {
   Activity,
@@ -76,8 +68,8 @@ const LazyGroupMembersTab = React.lazy(loadGroupMembersTab);
 const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
 const LazyGroupChatPanel = React.lazy(loadGroupChatPanel);
 const LazyChallengeTab = React.lazy(loadChallengeTab);
-const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
-const LazyPlanUpgradeModal = React.lazy(loadPlanUpgradeModal);
+React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
+React.lazy(loadPlanUpgradeModal);
 const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
 const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigSummaryDialog"));
 const LazyRoadmapJourPanel = React.lazy(() => import("./Components/RoadmapJourPanel"));
@@ -95,7 +87,7 @@ import { unwrapApiData } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
-import { buildGroupWorkspacePath } from '@/lib/routePaths';
+import { buildGroupWorkspacePath, buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { generateRoadmap } from '@/api/AIAPI';
@@ -469,6 +461,7 @@ function getLogLabel(action, lang = 'vi') {
 }
 
 function GroupWorkspacePage() {
+  const queryClient = useQueryClient();
   const { workspaceId } = useParams();
   const location = useLocation();
   const navigate = useNavigateWithLoading();
@@ -897,6 +890,7 @@ function GroupWorkspacePage() {
         setQuizDetailFromChallengeReview(true);
         const next = new URLSearchParams(searchParams);
         next.delete('viewQuizId');
+        /* Giữ challengeEventId trên URL (nếu có) để nút quay lại từ quiz snapshot về đúng challenge */
         setSearchParams(next, { replace: true });
       } catch (e) {
         console.error('viewQuizId', e);
@@ -1582,6 +1576,13 @@ function GroupWorkspacePage() {
     refreshGroupMaterialViews,
   ]);
 
+  const handleChallengeRealtime = useCallback(() => {
+    if (isCreating || !workspaceId || workspaceId === 'new') return;
+    void queryClient.invalidateQueries({ queryKey: ['challenges'] });
+    void queryClient.invalidateQueries({ queryKey: ['challenge-detail'] });
+    void queryClient.invalidateQueries({ queryKey: ['challenge-leaderboard'] });
+  }, [isCreating, queryClient, workspaceId]);
+
   const { isConnected: wsConnected, lastMessage: wsLastMessage } = useWebSocket({
     workspaceId: !isCreating ? workspaceId : null,
     enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
@@ -1591,6 +1592,7 @@ function GroupWorkspacePage() {
     },
     onMaterialUpdated: handleRealtimeMaterialUpdate,
     onProgress: handleRealtimeProgress,
+    onChallengeUpdate: handleChallengeRealtime,
   });
 
   const { refreshActiveTaskSnapshot } = useActiveTaskFallback({
@@ -2424,6 +2426,23 @@ function GroupWorkspacePage() {
   }, []);
 
   const handleBackFromForm = useCallback(() => {
+    const restore = location.state?.restoreGroupWorkspace;
+    if (activeView === 'quizDetail' && quizDetailFromChallengeReview) {
+      const fromState = restore?.challengeEventId != null ? Number(restore.challengeEventId) : NaN;
+      const fromQuery = Number(searchParams.get('challengeEventId'));
+      const eid = Number.isInteger(fromState) && fromState > 0 ? fromState : fromQuery;
+      if (Number.isInteger(eid) && eid > 0) {
+        setQuizDetailFromChallengeReview(false);
+        setSelectedQuiz(null);
+        setActiveView(null);
+        navigate(
+          buildGroupWorkspaceSectionPath(resolvedWorkspaceId || workspaceId, 'challenge', { challengeEventId: eid }),
+          { replace: true, state: {} },
+        );
+        return;
+      }
+    }
+
     const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
     const nextView = formToList[activeView] || null;
     if ((activeView === 'editQuiz' || activeView === 'createQuiz') && searchParams.get('challengeDraft') === '1') {
@@ -2438,7 +2457,16 @@ function GroupWorkspacePage() {
     if (nextView !== 'flashcardDetail') setSelectedFlashcard(null);
     if (nextView !== 'mockTestDetail' && nextView !== 'editMockTest') setSelectedMockTest(null);
     setActiveView(nextView);
-  }, [activeView, searchParams, setSearchParams]);
+  }, [
+    activeView,
+    quizDetailFromChallengeReview,
+    location.state,
+    navigate,
+    resolvedWorkspaceId,
+    workspaceId,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
@@ -3333,25 +3361,27 @@ function GroupWorkspacePage() {
       {(profileConfigOpen || shouldForceProfileSetup) ? (
         <React.Suspense fallback={null}>
           <LazyGroupWorkspaceProfileConfigDialog
-        open={profileConfigOpen}
-        onOpenChange={handleProfileConfigChange}
-        isDarkMode={isDarkMode}
-        workspaceId={createdGroupWorkspaceId || (!isCreating ? workspaceId : null)}
-        canClose={!shouldForceProfileSetup}
-        onTemporaryClose={shouldForceProfileSetup ? dismissProfileConfig : undefined}
-        onComplete={async () => {
-          try {
-            await handleGroupUpdated();
-          } catch (error) {
-            console.error('Failed to refresh group workspace after profile setup:', error);
-          }
-          setProfileConfigOpen(false);
-          if (location.state?.openProfileConfig) {
-            navigate(`${location.pathname}${location.search}`, { replace: true });
-          }
-          showInfo(t('home.group.setupComplete', 'Cấu hình nhóm hoàn tất!'));
-        }}
-      />
+            open={profileConfigOpen}
+            onOpenChange={handleProfileConfigChange}
+            isDarkMode={isDarkMode}
+            workspaceId={createdGroupWorkspaceId || (!isCreating ? workspaceId : null)}
+            canClose={!shouldForceProfileSetup}
+            onTemporaryClose={shouldForceProfileSetup ? dismissProfileConfig : undefined}
+            onComplete={async () => {
+              try {
+                await handleGroupUpdated();
+              } catch (error) {
+                console.error('Failed to refresh group workspace after profile setup:', error);
+              }
+              setProfileConfigOpen(false);
+              if (location.state?.openProfileConfig) {
+                navigate(`${location.pathname}${location.search}`, { replace: true });
+              }
+              showInfo(t('home.group.setupComplete', 'Cấu hình nhóm hoàn tất!'));
+            }}
+          />
+        </React.Suspense>
+      ) : null}
 
       <WorkspaceOnboardingUpdateGuardDialog
         open={profileUpdateGuardOpen}

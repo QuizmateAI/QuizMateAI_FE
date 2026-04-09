@@ -220,6 +220,7 @@
         "DRAFT": "Bản nháp",
         "PROCESSING": "Đang tạo",
         "ACTIVE": "Sẵn sàng",
+        "REVIEW_PENDING": "Chờ reviewer",
         "ERROR": "Lỗi tạo quiz"
       },
       "reviewContributorsTitle": "Người review đề",
@@ -228,7 +229,10 @@
       "reviewContributorPickPlaceholder": "Chọn thành viên…",
       "reviewContributorAdd": "Thêm",
       "reviewContributorRemove": "Gỡ",
-      "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này."
+      "reviewContributorCannotRegister": "Bạn được gán review đề nên không thể đăng ký tham gia challenge này.",
+      "reviewInviteeNotice": "Bạn được mời review đề cho challenge này. Hãy mở «Xem quiz» → tab Kiểm tra: xác nhận «Đề ổn» hoặc gửi phiếu duyệt APPROVED khi thấy ổn. Đến giờ bắt đầu, hệ thống sẽ tự mở challenge nếu đã đủ điều kiện review.",
+      "reviewInviteeShortHint": "Chỉ cần bấm «Xem quiz» ở khối Quiz challenge phía trên, rồi mở tab «Kiểm tra».",
+      "reviewQuizNotReadyHint": "Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau."
     },
     "members": {
       "loading": "Đang tải danh sách thành viên...",
