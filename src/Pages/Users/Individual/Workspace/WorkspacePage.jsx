@@ -2329,6 +2329,7 @@ function WorkspacePage() {
               workspaceId={workspaceId}
               isStudyNewRoadmap={isStudyNewRoadmap}
               selectedPhaseId={selectedRoadmapPhaseId}
+              selectedKnowledgeId={selectedRoadmapKnowledgeId}
               onSelectPhase={handleSelectRoadmapPhase}
               reloadToken={roadmapReloadToken}
               isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
