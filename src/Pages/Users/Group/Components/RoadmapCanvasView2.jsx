@@ -6,7 +6,6 @@ import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import QuizListView from "./QuizListView";
 import { useToast } from "@/context/ToastContext";
 import {
-  createPhaseProgressReview,
   getCurrentRoadmapPhaseProgress,
   getPhaseProgressReview,
   submitRoadmapPhaseRemedialDecision,
@@ -76,6 +75,7 @@ function RoadmapCanvasView2({
   const [roadmapPreLearningCheckDone, setRoadmapPreLearningCheckDone] = useState(false);
   const progressSyncDebounceRef = useRef(null);
   const previousKnowledgeGenerationRef = useRef(false);
+  const canShowRoadmapLevelFeedback = useRef(false);
 
   const normalizeGroupPreLearningQuestionCount = useCallback((value) => {
     const numericValue = Number(value);
@@ -464,20 +464,6 @@ function RoadmapCanvasView2({
     return postLearningQuizzes.some((quiz) => quiz?.myPassed === true);
   }, []);
 
-  const canShowRoadmapLevelFeedback = useMemo(() => {
-    if (!Array.isArray(phases) || phases.length === 0) return false;
-
-    const allPhasesFinished = phases.every((phase) => isPhaseFinishedStatus(phase?.status));
-
-    const postLearningSatisfied = phases.every((phase) => {
-      const pl = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
-      if (pl.length === 0) return true;
-      return hasCompletedPostLearning(phase);
-    });
-
-    return allPhasesFinished && postLearningSatisfied;
-  }, [phases, isPhaseFinishedStatus, hasCompletedPostLearning]);
-
   const resolvePostLearningReviewEligibility = useCallback((phase) => {
     if (!phase) return false;
     const isFlexible = normalizedAdaptationMode === "FLEXIBLE";
@@ -508,42 +494,6 @@ function RoadmapCanvasView2({
     setPhaseReviewState({ loading: true, data: null, phaseId: activePhaseId });
 
     try {
-      const currentResponse = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
-      const currentPhaseProgress = currentResponse?.data?.data || currentResponse?.data || null;
-      const phaseProgressId = Number(currentPhaseProgress?.phaseProgressId);
-      const currentPhaseId = Number(currentPhaseProgress?.phaseId);
-
-      const currentPhase = phases.find((phase) => Number(phase?.phaseId) === activePhaseId) || null;
-      const eligibleToCreateReview = resolvePostLearningReviewEligibility(currentPhase);
-      const canCreateForActivePhase = Number.isInteger(currentPhaseId)
-        && currentPhaseId === activePhaseId;
-      const reviewCreationKey = `phase_review_created:${normalizedRoadmapId}:${phaseProgressId}`;
-      const alreadyCreated = typeof window !== "undefined"
-        ? window.sessionStorage.getItem(reviewCreationKey) === "1"
-        : false;
-
-      if (
-        canCreateForActivePhase
-        &&
-        eligibleToCreateReview
-        && Number.isInteger(phaseProgressId)
-        && phaseProgressId > 0
-        && !alreadyCreated
-      ) {
-        try {
-          await createPhaseProgressReview(phaseProgressId);
-          if (typeof window !== "undefined") {
-            window.sessionStorage.setItem(reviewCreationKey, "1");
-          }
-        } catch (createError) {
-          const createStatus = Number(createError?.response?.status || 0);
-          // 409 thuong la du lieu progress chua du, van thu GET review de hien thi neu da ton tai.
-          if (createStatus !== 409) {
-            console.error("Failed to create phase progress review:", createError);
-          }
-        }
-      }
-
       try {
         const reviewResponse = await getPhaseProgressReview(activePhaseId);
         const reviewData = reviewResponse?.data?.data || reviewResponse?.data || null;
@@ -563,7 +513,7 @@ function RoadmapCanvasView2({
     } finally {
       phaseReviewInFlightRef.current = false;
     }
-  }, [activePhase?.phaseId, phases, resolvePostLearningReviewEligibility, roadmap?.roadmapId]);
+  }, [activePhase?.phaseId, roadmap?.roadmapId]);
 
   useEffect(() => {
     void syncPhaseReview();
