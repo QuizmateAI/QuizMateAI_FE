@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, Sparkles, Route, BadgeCheck, Layers } from "lucide-react";
+import { UploadCloud, Sparkles, Route, BadgeCheck, Layers, Rows3, Map, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -124,16 +124,17 @@ function ChatPanel({
     && getIsActionDisabled("quiz")
     && getIsActionDisabled("flashcard");
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
-  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view1");
+  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view2");
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView("view1");
+      setRoadmapCanvasView("view2");
       return;
     }
 
-    setRoadmapCanvasView("view1");
-    localStorage.setItem(`workspace_${workspaceId}_roadmap_canvas_view`, "view1");
+    const savedView = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
+    const normalizedView = ["view1", "view2", "overview"].includes(savedView) ? savedView : "view2";
+    setRoadmapCanvasView(normalizedView);
   }, [workspaceId]);
 
   React.useEffect(() => {
@@ -306,6 +307,38 @@ function ChatPanel({
                 </svg>
                 <span className={`text-xs ml-1 ${fontClass}`}>{t("common.refresh")}</span>
               </Button>
+              <div className="inline-flex items-center gap-1 rounded-full border p-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
+                  onClick={() => setRoadmapCanvasView("view2")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Rows3 className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
+                  onClick={() => setRoadmapCanvasView("overview")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "overview" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Map className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                  onClick={() => setRoadmapCanvasView("view1")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Eye className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
+                </Button>
+              </div>
             </div>
           </div>
         ) : null}

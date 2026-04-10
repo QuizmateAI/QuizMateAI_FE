@@ -951,6 +951,7 @@ function RoadmapCanvasView({
         onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
         onCreatePhasePreLearning={onCreatePhasePreLearning}
         onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+        onEditRoadmapConfig={onEditRoadmapConfig}
       />
     );
   }

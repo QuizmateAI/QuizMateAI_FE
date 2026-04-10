@@ -46,9 +46,73 @@ function RoadmapCanvasViewOverview({
   const ROOT_POSITION = { x: 250, y: 170 };
   const PHASE_X = 700;
   const KNOWLEDGE_X = 1210;
-  const PHASE_VERTICAL_GAP = 250;
   const PHASE_START_Y = 170;
-  const overviewCanvasHeight = Math.max(CANVAS_HEIGHT, PHASE_START_Y + roadmapPhases.length * PHASE_VERTICAL_GAP + 260);
+  const PHASE_CARD_BASE_HEIGHT = 188;
+  const KNOWLEDGE_CARD_HEIGHT_COLLAPSED = 118;
+  const KNOWLEDGE_CARD_HEIGHT_EXPANDED = 152;
+  const KNOWLEDGE_CARD_VERTICAL_GAP = 22;
+  const PHASE_BLOCK_GAP = 72;
+
+  const estimatePhaseCardHeight = (phase) => {
+    const title = String(phase?.title || "");
+    const description = String(phase?.description || "");
+
+    const estimatedTitleLines = Math.max(1, Math.ceil(title.length / 28));
+    const estimatedDescriptionLines = Math.max(1, Math.ceil(description.length / 48));
+
+    const titleHeight = estimatedTitleLines * 24;
+    const descriptionHeight = estimatedDescriptionLines * 20;
+    return Math.max(PHASE_CARD_BASE_HEIGHT, 112 + titleHeight + descriptionHeight);
+  };
+
+  const phaseOverviewLayouts = [];
+  let phaseCursorTop = PHASE_START_Y;
+
+  roadmapPhases.forEach((phase) => {
+    const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+    const phaseKnowledgeLayouts = phaseKnowledges.map((knowledge) => {
+      const isExpanded = Boolean(expandedKnowledges[knowledge?.knowledgeId]);
+      return {
+        knowledge,
+        cardHeight: isExpanded ? KNOWLEDGE_CARD_HEIGHT_EXPANDED : KNOWLEDGE_CARD_HEIGHT_COLLAPSED,
+      };
+    });
+
+    const phaseTrackHeight = phaseKnowledgeLayouts.length > 0
+      ? phaseKnowledgeLayouts.reduce((totalHeight, currentKnowledge, index) => (
+        totalHeight
+        + currentKnowledge.cardHeight
+        + (index > 0 ? KNOWLEDGE_CARD_VERTICAL_GAP : 0)
+      ), 0)
+      : 72;
+
+    const phaseCardHeight = estimatePhaseCardHeight(phase);
+    const phaseBlockHeight = Math.max(phaseCardHeight, phaseTrackHeight);
+    const phaseY = phaseCursorTop + phaseBlockHeight / 2;
+    const phaseTrackTop = phaseY - phaseTrackHeight / 2;
+
+    let knowledgeCursorY = phaseTrackTop;
+    const positionedKnowledges = phaseKnowledgeLayouts.map((knowledgeLayout) => {
+      const knowledgeY = knowledgeCursorY + knowledgeLayout.cardHeight / 2;
+      knowledgeCursorY += knowledgeLayout.cardHeight + KNOWLEDGE_CARD_VERTICAL_GAP;
+      return {
+        ...knowledgeLayout,
+        y: knowledgeY,
+      };
+    });
+
+    phaseOverviewLayouts.push({
+      phase,
+      phaseY,
+      phaseTrackTop,
+      phaseTrackHeight,
+      knowledges: positionedKnowledges,
+    });
+
+    phaseCursorTop += phaseBlockHeight + PHASE_BLOCK_GAP;
+  });
+
+  const overviewCanvasHeight = Math.max(CANVAS_HEIGHT, phaseCursorTop + 240);
   const content = (
     <div className={`${isExpandedMode
       ? `fixed inset-3 sm:inset-5 z-[140] rounded-2xl border shadow-2xl flex flex-col transition-all duration-200 ease-out ${isExpandedClosing ? "animate-[roadmapPopOut_180ms_ease-in_forwards]" : "animate-[roadmapPopIn_180ms_ease-out]"} ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`
@@ -201,11 +265,8 @@ function RoadmapCanvasViewOverview({
           }}
         >
           <svg className="absolute left-0 top-0 overflow-visible pointer-events-none" width={CANVAS_WIDTH} height={overviewCanvasHeight}>
-            {roadmapPhases.map((phase, index) => {
-              const phaseY = PHASE_START_Y + index * PHASE_VERTICAL_GAP;
-              const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
-              const phaseTrackHeight = Math.max(72, phaseKnowledges.length * 102);
-              const phaseTrackTop = phaseY - phaseTrackHeight / 2;
+            {phaseOverviewLayouts.map((phaseLayout) => {
+              const { phase, phaseY, phaseTrackHeight, knowledges } = phaseLayout;
               const elbowX = ROOT_POSITION.x + 180;
 
               return (
@@ -217,7 +278,7 @@ function RoadmapCanvasViewOverview({
                     strokeWidth="2.5"
                     strokeLinecap="round"
                   />
-                  {phaseKnowledges.length > 0 ? (
+                  {knowledges.length > 0 ? (
                     <path
                       d={`M ${PHASE_X + 170} ${phaseY} L ${KNOWLEDGE_X - 180} ${phaseY}`}
                       fill="none"
@@ -228,8 +289,7 @@ function RoadmapCanvasViewOverview({
                     />
                   ) : null}
 
-                  {phaseKnowledges.map((knowledge, knowledgeIndex) => {
-                    const knowledgeY = phaseTrackTop + 36 + knowledgeIndex * 102;
+                  {knowledges.map(({ knowledge, y: knowledgeY }) => {
                     return (
                       <path
                         key={`knowledge-connector:${phase.phaseId}:${knowledge.knowledgeId}`}
@@ -263,11 +323,8 @@ function RoadmapCanvasViewOverview({
             </div>
           </div>
 
-          {roadmapPhases.map((phase, index) => {
-            const phaseY = PHASE_START_Y + index * PHASE_VERTICAL_GAP;
-            const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
-            const phaseTrackHeight = Math.max(72, phaseKnowledges.length * 102);
-            const phaseTrackTop = phaseY - phaseTrackHeight / 2;
+          {phaseOverviewLayouts.map((phaseLayout) => {
+            const { phase, phaseY, knowledges: phaseKnowledges } = phaseLayout;
 
             return (
               <React.Fragment key={phase.phaseId}>
@@ -292,8 +349,7 @@ function RoadmapCanvasViewOverview({
                   </div>
                 </div>
 
-                {phaseKnowledges.map((knowledge, knowledgeIndex) => {
-                  const knowledgeY = phaseTrackTop + 36 + knowledgeIndex * 102;
+                {phaseKnowledges.map(({ knowledge, y: knowledgeY }) => {
                   const isExpanded = Boolean(expandedKnowledges[knowledge.knowledgeId]);
                   return (
                     <button

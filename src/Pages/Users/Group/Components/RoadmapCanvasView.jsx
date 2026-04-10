@@ -317,7 +317,7 @@ function RoadmapCanvasView({
         : null;
       const resolvedCanvasView = forcedCanvasView
         || nextRoadmap?.canvasView
-        || (storedCanvasView === "view1" || storedCanvasView === "view2" ? storedCanvasView : null)
+        || (storedCanvasView === "view1" || storedCanvasView === "view2" || storedCanvasView === "overview" ? storedCanvasView : null)
         || "view1";
       const mergedRoadmap = nextRoadmap
         ? { ...nextRoadmap, canvasView: resolvedCanvasView }
@@ -916,9 +916,13 @@ function RoadmapCanvasView({
     );
   }
 
-  // Swapped mapping by request:
-  // view1 -> canvas view 2, view2 -> canvas view 1
-  const effectiveCanvasView = roadmap?.canvasView === "view2" ? "view2" : "view1";
+  // Canvas mapping:
+  // view2 -> Stage (Chi tiet), overview -> Overview (Tong quan), view1 -> Kiem thu (RoadmapCanvasView2)
+  const effectiveCanvasView = roadmap?.canvasView === "overview"
+    ? "overview"
+    : roadmap?.canvasView === "view2"
+    ? "view2"
+    : "view1";
 
   if (effectiveCanvasView === "view1") {
     return (
