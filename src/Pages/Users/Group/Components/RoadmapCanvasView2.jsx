@@ -74,6 +74,7 @@ function RoadmapCanvasView2({
   const [hasRoadmapLevelPreLearning, setHasRoadmapLevelPreLearning] = useState(false);
   const [roadmapPreLearningCheckDone, setRoadmapPreLearningCheckDone] = useState(false);
   const progressSyncDebounceRef = useRef(null);
+  const previousKnowledgeGenerationRef = useRef(false);
   const canShowRoadmapLevelFeedback = useRef(false);
 
   const normalizeGroupPreLearningQuestionCount = useCallback((value) => {
@@ -114,6 +115,21 @@ function RoadmapCanvasView2({
       setCurrentKnowledgePayload(null);
     }
   }, [roadmap?.roadmapId]);
+
+  const knowledgeGenerationSignature = useMemo(() => {
+    const normalizedPhaseIds = [
+      ...(Array.isArray(generatingKnowledgePhaseIds) ? generatingKnowledgePhaseIds : []),
+      ...(Array.isArray(generatingKnowledgeQuizPhaseIds) ? generatingKnowledgeQuizPhaseIds : []),
+    ]
+      .map((phaseId) => Number(phaseId))
+      .filter((phaseId) => Number.isInteger(phaseId) && phaseId > 0)
+      .filter((phaseId, index, array) => array.indexOf(phaseId) === index)
+      .sort((a, b) => a - b);
+
+    return normalizedPhaseIds.join(",");
+  }, [generatingKnowledgePhaseIds, generatingKnowledgeQuizPhaseIds]);
+
+  const hasKnowledgeGenerationRunning = knowledgeGenerationSignature.length > 0;
 
   const handleCreateGroupPreLearning = useCallback(async () => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -168,7 +184,23 @@ function RoadmapCanvasView2({
         window.clearTimeout(progressSyncDebounceRef.current);
       }
     };
-  }, [loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress, roadmap?.roadmapId, selectedPhaseId]);
+  }, [
+    knowledgeGenerationSignature,
+    loadGlobalCurrentPhaseProgress,
+    loadCurrentKnowledgeProgress,
+    quizRefreshToken,
+    roadmap?.roadmapId,
+    selectedPhaseId,
+  ]);
+
+  useEffect(() => {
+    const wasGeneratingKnowledge = previousKnowledgeGenerationRef.current;
+    if (wasGeneratingKnowledge && !hasKnowledgeGenerationRunning) {
+      void loadGlobalCurrentPhaseProgress();
+      void loadCurrentKnowledgeProgress();
+    }
+    previousKnowledgeGenerationRef.current = hasKnowledgeGenerationRunning;
+  }, [hasKnowledgeGenerationRunning, loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress]);
 
   useEffect(() => {
     const roadmapScopeId = Number(roadmap?.roadmapId);

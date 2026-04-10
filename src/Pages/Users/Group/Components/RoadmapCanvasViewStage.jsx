@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpenCheck, CheckCircle2, GitBranch, Layers3, Loader2, Lock, Sparkles, Unlock } from "lucide-react";
+import { BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, GitBranch, Layers3, Loader2, Lock, Sparkles, Unlock } from "lucide-react";
 import QuizListView from "./QuizListView";
 import { Button } from "@/Components/ui/button";
 import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
@@ -57,6 +57,7 @@ function RoadmapCanvasViewStage({
   const [selectedType, setSelectedType] = useState("roadmap");
   const [selectedPhaseId, setSelectedPhaseId] = useState(normalizePositiveId(roadmap?.phases?.[0]?.phaseId));
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(null);
+  const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
   const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
   const [currentKnowledgePayload, setCurrentKnowledgePayload] = useState(null);
   const [optimisticUnlockedPhaseIds, setOptimisticUnlockedPhaseIds] = useState([]);
@@ -257,6 +258,12 @@ function RoadmapCanvasViewStage({
   const branchOffset = selectedPhaseIndex < 0
     ? TIMELINE_PADDING
     : TIMELINE_PADDING + ROOT_CARD_WIDTH + TIMELINE_GAP + selectedPhaseIndex * (PHASE_CARD_WIDTH + TIMELINE_GAP);
+  const topPhaseLineWidth = phases.length > 0
+    ? phases.length * PHASE_CARD_WIDTH + phases.length * TIMELINE_GAP
+    : 0;
+  const knowledgeBranchLineWidth = selectedKnowledges.length > 0
+    ? selectedKnowledges.length * KNOWLEDGE_CARD_WIDTH + Math.max(selectedKnowledges.length - 1, 0) * 12
+    : 0;
 
   const getSelectedPhaseViewportLeft = (timelineElement) => {
     if (!timelineElement || selectedPhaseIndex < 0) {
@@ -489,9 +496,17 @@ function RoadmapCanvasViewStage({
         <div className="relative">
           <div className={`space-y-6 ${isSelectedKnowledgeLocked ? "opacity-40 pointer-events-none select-none" : ""}`}>
             <div>
-              <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
-                {t("workspace.roadmap.canvas.view2KnowledgeDetail")}
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
+                  {t("workspace.roadmap.canvas.view2KnowledgeDetail")}
+                </p>
+                {isFinishedKnowledgeStatus(selectedKnowledge?.status) ? (
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${isDarkMode ? "bg-emerald-900/40 text-emerald-300" : "bg-emerald-100 text-emerald-700"}`}>
+                    <CheckCircle2 className="h-3 w-3" />
+                    {t("workspace.quiz.statusLabels.COMPLETED", "Completed")}
+                  </span>
+                ) : null}
+              </div>
               <h3 className={`mt-2 text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                 {selectedKnowledge.title}
               </h3>
@@ -609,6 +624,24 @@ function RoadmapCanvasViewStage({
         && !hasPreLearningQuiz
         && phaseKnowledges.length === 0
         && !isSkipPreLearningPhase;
+      const totalKnowledgeCount = phaseKnowledges.length;
+      const currentKnowledgeIndexInPhase = Number.isInteger(currentKnowledgeId) && currentKnowledgeId > 0
+        ? phaseKnowledges.findIndex((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === currentKnowledgeId)
+        : -1;
+      const isPhaseBeforeCurrentKnowledge = currentKnowledgePhaseIndex >= 0 && selectedPhaseIndex < currentKnowledgePhaseIndex;
+      const completedKnowledgeCount = phaseKnowledges.reduce((count, _knowledge, knowledgeIndex) => {
+        const isKnowledgeCompleted = isFinishedPhaseStatus(selectedPhase.status)
+          || isPhaseBeforeCurrentKnowledge
+          || (selectedPhaseIndex === currentKnowledgePhaseIndex && currentKnowledgeIndexInPhase >= 0 && (
+            knowledgeIndex < currentKnowledgeIndexInPhase
+            || (knowledgeIndex === currentKnowledgeIndexInPhase && isCurrentKnowledgeDoneStatus)
+          ));
+        return isKnowledgeCompleted ? count + 1 : count;
+      }, 0);
+      const shouldLockPostLearning = hasPostLearningQuiz
+        && !isFinishedPhaseStatus(selectedPhase.status)
+        && totalKnowledgeCount > 0
+        && completedKnowledgeCount < totalKnowledgeCount;
 
       return (
         <div className="space-y-6">
@@ -725,12 +758,110 @@ function RoadmapCanvasViewStage({
             </div>
           ) : null}
 
+          {phaseKnowledges.length > 0 ? (
+            <div>
+              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                {t("workspace.roadmap.canvas.view2KnowledgeBranch")}
+              </p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {phaseKnowledges.map((knowledge, index) => {
+                  const active = normalizedSelectedKnowledgeId === normalizePositiveId(knowledge?.knowledgeId) && selectedType === "knowledge";
+                  const normalizedKnowledgeId = normalizePositiveId(knowledge?.knowledgeId);
+                  const normalizedPhaseId = normalizePositiveId(selectedPhase?.phaseId);
+                  const knowledgeQuizRequestKey = `${normalizedPhaseId}:${normalizedKnowledgeId}`;
+                  const normalizedKnowledgeStatus = String(knowledge?.status || "").toUpperCase();
+                  const isKnowledgeCompleted = isFinishedKnowledgeStatus(normalizedKnowledgeStatus);
+                  const isKnowledgeProcessing = !isKnowledgeCompleted && (
+                    normalizedKnowledgeStatus === "PROCESSING"
+                    || normalizedKnowledgeStatus === "GENERATING"
+                    || generatingKnowledgeQuizKnowledgeKeys.includes(knowledgeQuizRequestKey)
+                  );
+                  return (
+                    <button
+                      key={knowledge.knowledgeId}
+                      type="button"
+                      onClick={() => selectKnowledge(selectedPhase.phaseId, knowledge.knowledgeId)}
+                      className={`rounded-2xl border px-4 py-3 text-left transition-all ${active
+                        ? isDarkMode
+                          ? "border-sky-400 bg-sky-500/10"
+                          : "border-sky-500 bg-sky-50"
+                        : isDarkMode
+                          ? "border-slate-800 bg-slate-950/50 hover:border-slate-700"
+                          : "border-gray-200 bg-white hover:border-gray-300"}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
+                          {t("workspace.roadmap.canvas.knowledge", "Kiến thức")} {index + 1}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          {isKnowledgeCompleted ? (
+                            <CheckCircle2 className={`h-3.5 w-3.5 ${isDarkMode ? "text-emerald-300" : "text-emerald-600"}`} />
+                          ) : null}
+                          {isKnowledgeProcessing ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-500" />
+                          ) : null}
+                          {normalizedKnowledgeStatus === "LOCKED" ? (
+                            <Lock className={`h-3.5 w-3.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="mt-1.5">
+                        <p className={`text-sm font-medium ${active
+                          ? isDarkMode ? "text-sky-200" : "text-sky-900"
+                          : isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                          {knowledge.title}
+                        </p>
+                      </div>
+                      <p className={`mt-1 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                        {knowledge.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : shouldShowKnowledgePlaceholder ? (
+            <div>
+              <p className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                {t("workspace.roadmap.canvas.knowledge", "Kiến thức")}
+              </p>
+              <div className="space-y-2">
+                {isGeneratingPhaseContent ? renderLoadingPlaceholder(
+                  t("workspace.roadmap.generatingKnowledge", "Please wait while AI generates knowledge for this phase..."),
+                  false,
+                  phaseKnowledgePercent,
+                ) : null}
+                {isGeneratingKnowledgeQuiz ? renderLoadingPlaceholder(
+                  t("workspace.roadmap.generatingKnowledgeQuiz", "AI is generating quiz for this knowledge..."),
+                  false,
+                  phaseKnowledgePercent,
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           {hasPostLearningQuiz ? (
-            <div className={`rounded-[26px] border p-4 ${isDarkMode ? "border-emerald-900/60 bg-emerald-950/25" : "border-emerald-100 bg-emerald-50"}`}>
+            <div className={`relative rounded-[26px] border p-4 ${isDarkMode ? "border-emerald-900/60 bg-emerald-950/25" : "border-emerald-100 bg-emerald-50"}`}>
+              {shouldLockPostLearning ? (
+                <div className={`absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm rounded-[26px] ${isDarkMode ? "bg-slate-900/45" : "bg-white/65"}`}>
+                  <div className={`rounded-xl border px-4 py-3 max-w-sm text-center ${fontClass} ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-white" : "border-slate-300 bg-white/95 text-slate-700"}`}>
+                    <div className={`flex items-center justify-center gap-2 text-base font-semibold ${fontClass}`}>
+                      <Lock className={`w-5 h-5 ${isDarkMode ? "text-slate-300" : "text-slate-500"}`} />
+                      <span className={fontClass}>{t("workspace.roadmap.postLearningLocked", "Please complete all knowledge items in this phase to unlock post-learning.")}</span>
+                    </div>
+                    <p className={`mt-1 text-sm ${fontClass} ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
+                      {t("workspace.roadmap.postLearningUnlockProgress", "Knowledge progress to unlock: {{completed}}/{{total}}", {
+                        completed: completedKnowledgeCount,
+                        total: totalKnowledgeCount,
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
               <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
                 {t("workspace.roadmap.canvas.postLearning")}
               </p>
-              <div className="mt-3">
+              <div className={`mt-3 ${shouldLockPostLearning ? "opacity-50 pointer-events-none select-none" : ""}`}>
                 <QuizListView
                   isDarkMode={isDarkMode}
                   contextType="PHASE"
@@ -748,58 +879,6 @@ function RoadmapCanvasViewStage({
                   hideCreateButton
                   title={t("workspace.roadmap.canvas.quiz")}
                 />
-              </div>
-            </div>
-          ) : null}
-
-          {phaseKnowledges.length > 0 ? (
-            <div>
-              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                {t("workspace.roadmap.canvas.view2KnowledgeBranch")}
-              </p>
-              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {phaseKnowledges.map((knowledge) => {
-                  const active = normalizedSelectedKnowledgeId === normalizePositiveId(knowledge?.knowledgeId) && selectedType === "knowledge";
-                  return (
-                    <button
-                      key={knowledge.knowledgeId}
-                      type="button"
-                      onClick={() => selectKnowledge(selectedPhase.phaseId, knowledge.knowledgeId)}
-                      className={`rounded-2xl border px-4 py-3 text-left transition-all ${active
-                        ? isDarkMode
-                          ? "border-emerald-400 bg-emerald-500/10"
-                          : "border-emerald-500 bg-emerald-50"
-                        : isDarkMode
-                          ? "border-slate-800 bg-slate-950/50 hover:border-slate-700"
-                          : "border-gray-200 bg-white hover:border-gray-300"}`}
-                    >
-                      <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                        {knowledge.title}
-                      </p>
-                      <p className={`mt-1 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                        {knowledge.description}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : shouldShowKnowledgePlaceholder ? (
-            <div>
-              <p className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                {t("workspace.roadmap.canvas.knowledge", "Knowledge")}
-              </p>
-              <div className="space-y-2">
-                {isGeneratingPhaseContent ? renderLoadingPlaceholder(
-                  t("workspace.roadmap.generatingKnowledge", "Please wait while AI generates knowledge for this phase..."),
-                  false,
-                  phaseKnowledgePercent,
-                ) : null}
-                {isGeneratingKnowledgeQuiz ? renderLoadingPlaceholder(
-                  t("workspace.roadmap.generatingKnowledgeQuiz", "AI is generating quiz for this knowledge..."),
-                  false,
-                  phaseKnowledgePercent,
-                ) : null}
               </div>
             </div>
           ) : null}
@@ -899,17 +978,44 @@ function RoadmapCanvasViewStage({
   return (
     <div className={`h-full overflow-hidden ${isDarkMode ? "bg-slate-900" : "bg-white"}`}>
       <div className="flex h-full min-h-0 flex-col p-4">
-        <div className={`h-[248px] shrink-0 overflow-hidden rounded-[30px] border ${isDarkMode ? "border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "border-gray-200 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}>
+        <div className={`shrink-0 overflow-hidden rounded-[30px] border transition-all duration-300 ${isTopSectionCollapsed ? "h-[58px]" : "h-[248px]"} ${isDarkMode ? "border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "border-gray-200 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}>
           <div className="flex h-full flex-col overflow-hidden rounded-[30px]">
-            <div
-              ref={timelineRef}
-              className="relative flex-1 overflow-x-auto overflow-y-auto [scrollbar-gutter:stable_both-edges]"
-              onScroll={handleTimelineScroll}
-              onPointerDown={startTimelineDrag}
-              onPointerMove={moveTimelineDrag}
-              onPointerUp={stopTimelineDrag}
-              onPointerCancel={stopTimelineDrag}
-            >
+            <div className={`flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm ${isDarkMode ? "border-slate-800/80" : "border-slate-200/80"}`}>
+              <div className="flex items-center gap-2.5">
+                <span className={`h-2 w-2 rounded-full ${isTopSectionCollapsed
+                  ? (isDarkMode ? "bg-slate-500" : "bg-slate-400")
+                  : "bg-emerald-500"}`}
+                />
+                <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
+                  {t("workspace.roadmap.canvas.view2TopSectionTitle", "Lộ trình theo giai đoạn")}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsTopSectionCollapsed((current) => !current)}
+                className={`h-8 min-w-[132px] gap-2 rounded-full px-3.5 text-xs font-medium shadow-sm transition-all active:scale-95 ${isDarkMode ? "border-slate-600 bg-slate-900/85 text-slate-100 hover:bg-slate-800" : "border-slate-300 bg-white/90 text-slate-700 hover:bg-slate-100"}`}
+              >
+                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}>
+                  {isTopSectionCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                </span>
+                {isTopSectionCollapsed
+                  ? t("workspace.roadmap.canvas.expandTopSection", "Mở rộng sơ đồ")
+                  : t("workspace.roadmap.canvas.collapseTopSection", "Thu gọn sơ đồ")}
+              </Button>
+            </div>
+
+            {!isTopSectionCollapsed ? (
+              <div
+                ref={timelineRef}
+                className="relative flex-1 overflow-x-auto overflow-y-auto [scrollbar-gutter:stable_both-edges]"
+                onScroll={handleTimelineScroll}
+                onPointerDown={startTimelineDrag}
+                onPointerMove={moveTimelineDrag}
+                onPointerUp={stopTimelineDrag}
+                onPointerCancel={stopTimelineDrag}
+              >
               <div
                 className="absolute inset-0 opacity-45"
                 style={{
@@ -921,7 +1027,10 @@ function RoadmapCanvasViewStage({
               />
 
               <div className="relative min-w-max pb-8 pl-6 pr-6 pt-7">
-                <div className={`absolute left-[52px] right-[52px] top-[70px] h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
+                <div
+                  className={`absolute left-[52px] top-[70px] h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
+                  style={{ width: topPhaseLineWidth }}
+                />
 
                 <div className="relative flex items-start gap-6">
                   <button
@@ -939,7 +1048,7 @@ function RoadmapCanvasViewStage({
                     <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
                       {t("workspace.roadmap.canvas.centralRoadmap")}
                     </p>
-                    <h3 className={`mt-2 text-lg font-semibold leading-7 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                    <h3 className={`mt-2 text-[clamp(13px,1.2vw,18px)] font-semibold leading-6 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                       {roadmap?.title}
                     </h3>
                   </button>
@@ -978,7 +1087,7 @@ function RoadmapCanvasViewStage({
                             {isPhaseLocked ? <Lock className={`h-3.5 w-3.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} /> : null}
                           </div>
                         </div>
-                        <h4 className={`mt-2 text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                        <h4 className={`mt-2 text-[clamp(12px,1.2vw,16px)] font-semibold leading-5 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                           {phase.title}
                         </h4>
                       </button>
@@ -989,7 +1098,10 @@ function RoadmapCanvasViewStage({
                 {selectedType !== "roadmap" && selectedPhase && hasSelectedPhaseKnowledges ? (
                   <div ref={knowledgeBranchRef} className="relative mt-7 min-h-[132px] pb-2" style={{ marginLeft: branchOffset }}>
                     <div className={`absolute left-8 top-[-20px] h-[20px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
-                    <div className={`absolute left-8 right-0 top-0 h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
+                    <div
+                      className={`absolute left-8 top-0 h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
+                      style={{ width: knowledgeBranchLineWidth }}
+                    />
                     <div className="relative flex min-w-max items-start gap-3 pt-4">
                       {selectedKnowledges.map((knowledge) => {
                         const active = selectedType === "knowledge" && normalizedSelectedKnowledgeId === normalizePositiveId(knowledge?.knowledgeId);
@@ -1006,6 +1118,7 @@ function RoadmapCanvasViewStage({
                         const isKnowledgeLocked = knowledgeStatus === "LOCKED"
                           || knowledgeLockState.isPhaseLockedForKnowledge
                           || knowledgeLockState.isKnowledgeLockedBySequence;
+                        const knowledgeQuizRequestKey = `${normalizePositiveId(selectedPhaseInTimeline?.phaseId)}:${normalizePositiveId(knowledge?.knowledgeId)}`;
                         const isCompletedPhase = isPhaseCompleted(selectedPhaseInTimeline, selectedPhaseIndexInTimeline);
                         const isKnowledgeCompleted = isCompletedPhase
                           || isPhaseBeforeCurrentKnowledge
@@ -1013,6 +1126,11 @@ function RoadmapCanvasViewStage({
                             knowledgeIndex < currentKnowledgeIndexInPhase
                             || (knowledgeIndex === currentKnowledgeIndexInPhase && isCurrentKnowledgeDoneStatus)
                           ));
+                        const isKnowledgeProcessing = !isKnowledgeCompleted && !isKnowledgeLocked && (
+                          knowledgeStatus === "PROCESSING"
+                          || knowledgeStatus === "GENERATING"
+                          || generatingKnowledgeQuizKnowledgeKeys.includes(knowledgeQuizRequestKey)
+                        );
                         return (
                           <button
                             key={knowledge.knowledgeId}
@@ -1025,31 +1143,36 @@ function RoadmapCanvasViewStage({
                                 : "cursor-pointer border-gray-200 bg-gray-100 opacity-80"
                               : active
                               ? isDarkMode
-                                ? "border-emerald-400 bg-emerald-500/10"
-                                : "border-emerald-500 bg-emerald-50"
+                                ? "border-sky-400 bg-sky-500/10"
+                                : "border-sky-500 bg-sky-50"
                               : isDarkMode
                                 ? "border-slate-700 bg-slate-950/95 hover:border-slate-600"
                                 : "border-white/80 bg-white/95 hover:border-emerald-200"}`}
                           >
                             <div className={`absolute left-7 top-[-16px] h-[16px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
-                            <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
-                              {t("workspace.roadmap.canvas.knowledges")}
-                            </p>
-                            <h5 className={`mt-2 text-sm font-semibold leading-5 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                              {knowledge.title}
-                            </h5>
-                            {isKnowledgeCompleted ? (
-                              <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${isDarkMode ? "bg-emerald-900/40 text-emerald-300" : "bg-emerald-100 text-emerald-700"}`}>
-                                <CheckCircle2 className="h-3 w-3" />
-                                {t("workspace.quiz.statusLabels.COMPLETED", "Completed")}
-                              </span>
-                            ) : null}
-                            {isKnowledgeLocked ? (
-                              <span className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-200 text-slate-600"}`}>
-                                <Lock className="h-3 w-3" />
-                                {t("workspace.quiz.statusLabels.LOCKED", "Locked")}
-                              </span>
-                            ) : null}
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
+                                {t("workspace.roadmap.canvas.knowledge", "Kiến thức")} {knowledgeIndex + 1}
+                              </p>
+                              <div className="flex items-center gap-1.5">
+                                {isKnowledgeCompleted ? (
+                                  <CheckCircle2 className={`h-3.5 w-3.5 ${isDarkMode ? "text-emerald-300" : "text-emerald-600"}`} />
+                                ) : null}
+                                {isKnowledgeProcessing ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-yellow-500" />
+                                ) : null}
+                                {isKnowledgeLocked ? (
+                                  <Lock className={`h-3.5 w-3.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="mt-2">
+                              <h5 className={`text-[clamp(11px,1.1vw,15px)] font-semibold leading-5 whitespace-normal break-words ${active
+                                ? isDarkMode ? "text-sky-200" : "text-sky-900"
+                                : isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                                {knowledge.title}
+                              </h5>
+                            </div>
                           </button>
                         );
                       })}
@@ -1057,7 +1180,8 @@ function RoadmapCanvasViewStage({
                   </div>
                 ) : null}
               </div>
-            </div>
+              </div>
+            ) : null}
           </div>
         </div>
 

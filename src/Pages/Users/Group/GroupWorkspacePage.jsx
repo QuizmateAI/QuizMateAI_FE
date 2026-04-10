@@ -2416,7 +2416,7 @@ function GroupWorkspacePage() {
   const handleViewMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('mockTestDetail'); }, []);
   const handleEditMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('editMockTest'); }, []);
   const handleSaveMockTest = useCallback((updatedMt) => { setSelectedMockTest((p) => ({ ...p, ...updatedMt })); setActiveView('mockTestDetail'); }, []);
-  const handleSelectRoadmapPhase = useCallback((phaseId) => {
+  const handleSelectRoadmapPhase = useCallback((phaseId, _options = {}) => {
     const normalizedPhaseId = Number(phaseId);
     if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
     setSelectedRoadmapPhaseId(normalizedPhaseId);
@@ -3333,25 +3333,27 @@ function GroupWorkspacePage() {
       {(profileConfigOpen || shouldForceProfileSetup) ? (
         <React.Suspense fallback={null}>
           <LazyGroupWorkspaceProfileConfigDialog
-        open={profileConfigOpen}
-        onOpenChange={handleProfileConfigChange}
-        isDarkMode={isDarkMode}
-        workspaceId={createdGroupWorkspaceId || (!isCreating ? workspaceId : null)}
-        canClose={!shouldForceProfileSetup}
-        onTemporaryClose={shouldForceProfileSetup ? dismissProfileConfig : undefined}
-        onComplete={async () => {
-          try {
-            await handleGroupUpdated();
-          } catch (error) {
-            console.error('Failed to refresh group workspace after profile setup:', error);
-          }
-          setProfileConfigOpen(false);
-          if (location.state?.openProfileConfig) {
-            navigate(`${location.pathname}${location.search}`, { replace: true });
-          }
-          showInfo(t('home.group.setupComplete', 'Cấu hình nhóm hoàn tất!'));
-        }}
-      />
+            open={profileConfigOpen}
+            onOpenChange={handleProfileConfigChange}
+            isDarkMode={isDarkMode}
+            workspaceId={createdGroupWorkspaceId || (!isCreating ? workspaceId : null)}
+            canClose={!shouldForceProfileSetup}
+            onTemporaryClose={shouldForceProfileSetup ? dismissProfileConfig : undefined}
+            onComplete={async () => {
+              try {
+                await handleGroupUpdated();
+              } catch (error) {
+                console.error('Failed to refresh group workspace after profile setup:', error);
+              }
+              setProfileConfigOpen(false);
+              if (location.state?.openProfileConfig) {
+                navigate(`${location.pathname}${location.search}`, { replace: true });
+              }
+              showInfo(t('home.group.setupComplete', 'Cấu hình nhóm hoàn tất!'));
+            }}
+          />
+        </React.Suspense>
+      ) : null}
 
       <WorkspaceOnboardingUpdateGuardDialog
         open={profileUpdateGuardOpen}
