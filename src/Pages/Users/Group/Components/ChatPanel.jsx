@@ -1,5 +1,5 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3 } from "lucide-react";
+import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
@@ -54,23 +54,23 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   const documentsHubLabel = i18n.language === "en" ? "Open documents hub" : "Mở trung tâm tài liệu";
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
-    if (!workspaceId) return null;
+    if (!workspaceId) return "view2";
     const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    return saved === "view1" || saved === "view2" ? saved : null;
+    return saved === "view1" || saved === "view2" || saved === "overview" ? saved : "view2";
   });
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView(null);
+      setRoadmapCanvasView("view2");
       return;
     }
 
     const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    setRoadmapCanvasView(saved === "view1" || saved === "view2" ? saved : null);
+    setRoadmapCanvasView(saved === "view1" || saved === "view2" || saved === "overview" ? saved : "view2");
   }, [workspaceId]);
 
   const handleSwitchRoadmapView = React.useCallback((canvasView) => {
-    if (canvasView !== "view1" && canvasView !== "view2") return;
+    if (canvasView !== "view1" && canvasView !== "view2" && canvasView !== "overview") return;
     setRoadmapCanvasView(canvasView);
     if (roadmapCanvasStorageKey) {
       localStorage.setItem(roadmapCanvasStorageKey, canvasView);
@@ -217,22 +217,32 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <Button
                   type="button"
                   size="sm"
-                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view1")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-                >
-                  <Rows3 className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>View 1</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
                   variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
                   onClick={() => handleSwitchRoadmapView("view2")}
                   className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
                 >
+                  <Eye className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
+                  onClick={() => handleSwitchRoadmapView("overview")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "overview" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Rows3 className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                  onClick={() => handleSwitchRoadmapView("view1")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
                   <Map className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>View 2</span>
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
                 </Button>
               </div>
             </div>

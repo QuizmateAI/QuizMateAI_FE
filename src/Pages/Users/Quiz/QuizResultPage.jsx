@@ -876,10 +876,19 @@ handleBack,
     knowledgeGenerationHydrated,
   ]);
 
-  const canShowSkipDecision = canTriggerKnowledgeAfterPreLearning
+  const hasSkipableDecision = currentPhaseProgress?.skipable === true
+    || currentPhaseProgress?.skipable === false;
+  const normalizedCurrentPhaseStatus = String(currentPhaseProgress?.status || '').toUpperCase();
+  const isCurrentPhaseCompleted = normalizedCurrentPhaseStatus === 'COMPLETED';
+  const shouldRenderPreLearningDecisionCard = canTriggerKnowledgeAfterPreLearning
     && isAssessmentReady
-    && currentPhaseProgress?.skipable === true
-    && !knowledgeGenerationTriggered;
+    && hasSkipableDecision
+    && !isCurrentPhaseCompleted;
+  const canShowSkipDecision = shouldRenderPreLearningDecisionCard
+    && currentPhaseProgress?.skipable === true;
+  const canShowGenerateKnowledgeFallback = shouldRenderPreLearningDecisionCard
+    && !loadingCurrentPhase
+    && !canShowSkipDecision;
 
   const handleSkipDecision = useCallback(async (skipped) => {
     if (!canTriggerKnowledgeAfterPreLearning || submittingSkipDecision) return;
@@ -1336,7 +1345,7 @@ handleBack,
                   </div>
                 )}
 
-                {!loadingCurrentPhase && preLearningGenerationContext.isPreLearningQuiz && !canShowSkipDecision && (
+                {canShowGenerateKnowledgeFallback && (
                   <Button
                     type="button"
                     onClick={handleGenerateKnowledgeAfterPreLearning}
