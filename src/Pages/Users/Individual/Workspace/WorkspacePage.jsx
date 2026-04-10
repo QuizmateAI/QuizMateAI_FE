@@ -102,6 +102,7 @@ const LazyRoadmapConfigEditDialog = React.lazy(
 const {
   roadmaps: workspaceRoadmapsPath,
   phases: workspacePhasesPath,
+  knowledges: workspaceKnowledgesPath,
   quizzes: workspaceQuizzesPath,
   postLearnings: workspacePostLearningsPath,
 } = WORKSPACE_ROUTE_SEGMENTS;
@@ -235,6 +236,8 @@ function WorkspacePage() {
   // Selected mock-test state for detail and edit flows
   const [selectedMockTest, setSelectedMockTest] = useState(null);
   const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
+  const [selectedRoadmapKnowledgeId, setSelectedRoadmapKnowledgeId] =
+    useState(null);
   const [roadmapAiRoadmapId, setRoadmapAiRoadmapId] = useState(null);
   const [roadmapHasPhases, setRoadmapHasPhases] = useState(false);
   const [isRoadmapStructureMissing, setIsRoadmapStructureMissing] =
@@ -323,7 +326,7 @@ function WorkspacePage() {
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
     return new RegExp(
-      `^/workspaces/${workspaceId}/(?:${workspaceQuizzesPath}(?:/|$)|${workspaceRoadmapsPath}/(?:\\d+/${workspacePhasesPath}/\\d+/)?${workspaceQuizzesPath}(?:/|$))`,
+      `^/workspaces/${workspaceId}/(?:${workspaceQuizzesPath}(?:/|$)|${workspaceRoadmapsPath}/(?:\\d+/${workspacePhasesPath}/\\d+(?:/${workspaceKnowledgesPath}/\\d+)?/)?${workspaceQuizzesPath}(?:/|$))`,
     ).test(location.pathname);
   }, [location.pathname, workspaceId]);
 
@@ -565,6 +568,7 @@ function WorkspacePage() {
 
       if (Number.isInteger(parsedPhaseId) && parsedPhaseId > 0) {
         setSelectedRoadmapPhaseId(parsedPhaseId);
+        setSelectedRoadmapKnowledgeId(null);
       }
     }
 
@@ -573,6 +577,7 @@ function WorkspacePage() {
       quizId,
       backTarget,
       phaseId: mappedPhaseId,
+      knowledgeId: mappedKnowledgeId,
       roadmapId: mappedRoadmapId,
     } = resolveWorkspaceViewFromSubPath(subPath);
 
@@ -600,12 +605,25 @@ function WorkspacePage() {
 
         phaseId: normalizedPhaseId,
 
+        knowledgeId:
+          Number.isInteger(Number(backTarget?.knowledgeId)) &&
+          Number(backTarget.knowledgeId) > 0
+            ? Number(backTarget.knowledgeId)
+            : null,
+
         roadmapId: normalizedRoadmapId,
       });
 
       if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
         setSelectedRoadmapPhaseId(normalizedPhaseId);
       }
+
+      setSelectedRoadmapKnowledgeId(
+        Number.isInteger(Number(backTarget?.knowledgeId)) &&
+          Number(backTarget.knowledgeId) > 0
+          ? Number(backTarget.knowledgeId)
+          : null,
+      );
     } else if (mappedView === "quizDetail" || mappedView === "editQuiz") {
       setQuizBackTarget(null);
     }
@@ -614,6 +632,12 @@ function WorkspacePage() {
       if (Number.isInteger(mappedPhaseId) && mappedPhaseId > 0) {
         setSelectedRoadmapPhaseId(mappedPhaseId);
       }
+
+      setSelectedRoadmapKnowledgeId(
+        Number.isInteger(mappedKnowledgeId) && mappedKnowledgeId > 0
+          ? mappedKnowledgeId
+          : null,
+      );
 
       if (Number.isInteger(mappedRoadmapId) && mappedRoadmapId > 0) {
         setRoadmapAiRoadmapId((prev) => prev || mappedRoadmapId);
@@ -653,6 +677,13 @@ function WorkspacePage() {
           selectedRoadmapPhaseId > 0
         ) {
           mappedPath += `/${workspacePhasesPath}/${selectedRoadmapPhaseId}`;
+
+          if (
+            Number.isInteger(selectedRoadmapKnowledgeId) &&
+            selectedRoadmapKnowledgeId > 0
+          ) {
+            mappedPath += `/${workspaceKnowledgesPath}/${selectedRoadmapKnowledgeId}`;
+          }
         }
       }
     }
@@ -664,7 +695,7 @@ function WorkspacePage() {
     const isQuizDeepLink =
       new RegExp(`^${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath) ||
       new RegExp(`^${workspaceRoadmapsPath}/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath) ||
-      new RegExp(`^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath);
+      new RegExp(`^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+(?:/${workspaceKnowledgesPath}/\\d+)?/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath);
 
     const isQuizDetailView =
       activeView === "quizDetail" || activeView === "editQuiz";
@@ -698,6 +729,7 @@ function WorkspacePage() {
     quizBackTarget,
     selectedQuiz,
     selectedRoadmapPhaseId,
+    selectedRoadmapKnowledgeId,
     roadmapAiRoadmapId,
     workspaceId,
   ]);
@@ -904,6 +936,7 @@ function WorkspacePage() {
 
   const clearRoadmapPhaseSelection = useCallback(() => {
     setSelectedRoadmapPhaseId(null);
+    setSelectedRoadmapKnowledgeId(null);
   }, []);
 
   const {
@@ -1685,6 +1718,7 @@ function WorkspacePage() {
 
       if (actionKey !== "roadmap") {
         setSelectedRoadmapPhaseId(null);
+        setSelectedRoadmapKnowledgeId(null);
       }
     },
     [
@@ -1696,10 +1730,16 @@ function WorkspacePage() {
 
   const handleSelectRoadmapPhase = useCallback((phaseId, options = {}) => {
     const normalizedPhaseId = Number(phaseId);
+    const normalizedKnowledgeId = Number(options?.knowledgeId);
 
     if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
 
     setSelectedRoadmapPhaseId(normalizedPhaseId);
+    setSelectedRoadmapKnowledgeId(
+      Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
+        ? normalizedKnowledgeId
+        : null,
+    );
 
     // Giữ nguyên view hiện tại khi chỉ auto-chọn phase nền, tránh bị kéo khỏi quiz lúc reload.
 
@@ -1753,7 +1793,23 @@ function WorkspacePage() {
   // Open quiz detail when the user selects a quiz from the list
 
   const handleViewQuiz = useCallback((quiz, options = null) => {
-    const backTarget = options?.backTarget || null;
+    const rawBackTarget = options?.backTarget || null;
+    const normalizedQuizKnowledgeId = Number(quiz?.knowledgeId);
+    const resolvedKnowledgeId =
+      Number.isInteger(Number(rawBackTarget?.knowledgeId)) &&
+      Number(rawBackTarget.knowledgeId) > 0
+        ? Number(rawBackTarget.knowledgeId)
+        : Number.isInteger(normalizedQuizKnowledgeId) && normalizedQuizKnowledgeId > 0
+          ? normalizedQuizKnowledgeId
+          : null;
+
+    const backTarget =
+      rawBackTarget?.view === "roadmap"
+        ? {
+            ...rawBackTarget,
+            knowledgeId: resolvedKnowledgeId,
+          }
+        : rawBackTarget;
 
     setSelectedQuiz(quiz);
 
@@ -1765,6 +1821,12 @@ function WorkspacePage() {
       Number(backTarget.phaseId) > 0
     ) {
       setSelectedRoadmapPhaseId(Number(backTarget.phaseId));
+      setSelectedRoadmapKnowledgeId(
+        Number.isInteger(Number(backTarget?.knowledgeId)) &&
+          Number(backTarget.knowledgeId) > 0
+          ? Number(backTarget.knowledgeId)
+          : null,
+      );
     }
 
     setActiveView("quizDetail");
@@ -1871,6 +1933,7 @@ function WorkspacePage() {
   const handleBackFromForm = useCallback(() => {
     if (activeView === "quizDetail" && quizBackTarget?.view === "roadmap") {
       const phaseId = Number(quizBackTarget?.phaseId);
+      const knowledgeId = Number(quizBackTarget?.knowledgeId);
 
       setSelectedQuiz(null);
 
@@ -1878,6 +1941,9 @@ function WorkspacePage() {
 
       if (Number.isInteger(phaseId) && phaseId > 0) {
         setSelectedRoadmapPhaseId(phaseId);
+        setSelectedRoadmapKnowledgeId(
+          Number.isInteger(knowledgeId) && knowledgeId > 0 ? knowledgeId : null,
+        );
 
         const normalizedRoadmapId = Number(
           quizBackTarget?.roadmapId || roadmapAiRoadmapId,
@@ -1888,14 +1954,18 @@ function WorkspacePage() {
           Number.isInteger(normalizedRoadmapId) &&
           normalizedRoadmapId > 0
         ) {
-          navigate(
-            buildWorkspaceRoadmapPhasePath(
-              workspaceId,
-              normalizedRoadmapId,
-              phaseId,
-            ),
-            { replace: true },
+          const roadmapPhasePath = buildWorkspaceRoadmapPhasePath(
+            workspaceId,
+            normalizedRoadmapId,
+            phaseId,
           );
+
+          const roadmapKnowledgePath =
+            Number.isInteger(knowledgeId) && knowledgeId > 0
+              ? `${roadmapPhasePath}/${workspaceKnowledgesPath}/${knowledgeId}`
+              : roadmapPhasePath;
+
+          navigate(roadmapKnowledgePath, { replace: true });
         } else if (workspaceId) {
           navigate(buildWorkspaceRoadmapsPath(workspaceId), { replace: true });
         }
@@ -1945,6 +2015,10 @@ function WorkspacePage() {
       setQuizBackTarget(null);
     }
 
+    if (nextView !== "roadmap") {
+      setSelectedRoadmapKnowledgeId(null);
+    }
+
     if (nextView !== "flashcardDetail") {
       setSelectedFlashcard(null);
     }
@@ -1954,7 +2028,13 @@ function WorkspacePage() {
     }
 
     setActiveView(nextView);
-  }, [activeView, navigate, quizBackTarget, roadmapAiRoadmapId, workspaceId]);
+  }, [
+    activeView,
+    navigate,
+    quizBackTarget,
+    roadmapAiRoadmapId,
+    workspaceId,
+  ]);
 
   // Return to the mock-test list after creation succeeds
 
@@ -2112,6 +2192,8 @@ function WorkspacePage() {
 
     selectedRoadmapPhaseId,
 
+    selectedRoadmapKnowledgeId,
+
     activeView,
 
     onUploadClick: handleUploadClickSafe,
@@ -2245,6 +2327,7 @@ function WorkspacePage() {
             <LazyRoadmapJourPanel
               isDarkMode={isDarkMode}
               workspaceId={workspaceId}
+              isStudyNewRoadmap={isStudyNewRoadmap}
               selectedPhaseId={selectedRoadmapPhaseId}
               onSelectPhase={handleSelectRoadmapPhase}
               reloadToken={roadmapReloadToken}

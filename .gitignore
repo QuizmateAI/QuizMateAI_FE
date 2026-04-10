@@ -36,6 +36,7 @@ dist-ssr
 .env.example
 
 AGENTS.md
+SKILL.md
 .agents
 .claude
 skills-lock.json

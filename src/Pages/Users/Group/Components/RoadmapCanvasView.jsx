@@ -7,6 +7,7 @@ import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
 import RoadmapCanvasView2 from "./RoadmapCanvasView2";
+import RoadmapCanvasViewStage from "./RoadmapCanvasViewStage";
 
 const CANVAS_WIDTH = 1800;
 const CANVAS_HEIGHT = 1220;
@@ -218,6 +219,7 @@ function RoadmapCanvasView({
   selectedEmptyStateMaterialIds = [],
   onToggleEmptyStateMaterial,
   onToggleAllEmptyStateMaterials,
+  onRoadmapLoad,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -323,6 +325,9 @@ function RoadmapCanvasView({
       setRoadmap(mergedRoadmap);
       if (mergedRoadmap?.canvasView) {
         onCanvasViewChange?.(mergedRoadmap.canvasView);
+      }
+      if (mergedRoadmap?.roadmapId) {
+        onRoadmapLoad?.(mergedRoadmap.roadmapId);
       }
 
       if (!shouldKeepViewportState) {
@@ -946,6 +951,32 @@ function RoadmapCanvasView({
     );
   }
 
+  if (effectiveCanvasView === "view2") {
+    return (
+      <RoadmapCanvasViewStage
+        roadmap={roadmap}
+        isDarkMode={isDarkMode}
+        fontClass={fontClass}
+        onViewQuiz={onViewQuiz}
+        isStudyNewRoadmap={isStudyNewRoadmap}
+        adaptationMode={adaptationMode}
+        generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+        generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+        generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
+        knowledgeQuizRefreshByKnowledgeKey={knowledgeQuizRefreshByKey}
+        quizRefreshToken={reloadToken}
+        progressTracking={progressTracking}
+        generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+        skipPreLearningPhaseIds={skipPreLearningPhaseIds}
+        onReloadRoadmap={onReloadRoadmap}
+        onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
+        onCreatePhasePreLearning={onCreatePhasePreLearning}
+        onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+      />
+    );
+  }
+
+  // Legacy view2 mindmap block kept as fallback.
   const content = (
     <div className={`${isExpandedMode
       ? `fixed inset-3 sm:inset-5 z-[140] rounded-2xl border shadow-2xl flex flex-col transition-all duration-200 ease-out ${isExpandedClosing ? "animate-[roadmapPopOut_180ms_ease-in_forwards]" : "animate-[roadmapPopIn_180ms_ease-out]"} ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`

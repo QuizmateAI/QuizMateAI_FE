@@ -269,7 +269,7 @@ describe('WorkspacePage', () => {
 
   it('hydrates edit view state from deep-link route', async () => {
     hoisted.setLocation({
-      pathname: '/workspaces/42/roadmaps/77/phases/11/quizzes/5/edit',
+      pathname: '/workspaces/42/roadmaps/77/phases/11/knowledges/9/quizzes/5/edit',
       search: '',
       state: {},
     });
