@@ -9,6 +9,7 @@ import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
 function RoadmapJourPanel({
   isDarkMode = false,
   workspaceId = null,
+  isStudyNewRoadmap = false,
   isCollapsed = false,
   onToggleCollapse,
   selectedPhaseId: selectedPhaseIdProp = null,
@@ -118,14 +119,34 @@ function RoadmapJourPanel({
     }
     const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
 
+    if (isStudyNewRoadmap) {
+      const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
+        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
+        const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
+        const isFinished = isPhaseFinishedStatus(phase?.status);
+
+        if (hasPreLearning || hasKnowledge || hasPostLearning || isFinished) {
+          return Math.max(maxIndex, index);
+        }
+
+        return maxIndex;
+      }, 0);
+
+      return Math.max(0, unlockedByManualProgressIndex);
+    }
+
     return Math.max(0, globalCurrentIndex, unlockedByStatusIndex);
-  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, phases]);
+  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, isStudyNewRoadmap, phases]);
 
   const isCurrentPayloadFinished = useMemo(() => {
     return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
   }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
-  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+    ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+    : -1;
 
   const isPhaseVisuallyCompleted = useCallback((phase, phaseIndex) => {
     if (!phase) return false;

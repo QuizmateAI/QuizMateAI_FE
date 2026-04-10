@@ -365,6 +365,7 @@ function QuizDetailView({
     sourceView: isRoadmapQuizSource ? "roadmap" : "quiz-panel",
     sourceWorkspaceId: Number(effectiveQuiz?.workspaceId) || null,
     sourcePhaseId: Number(effectiveQuiz?.phaseId) || null,
+    sourceKnowledgeId: Number(effectiveQuiz?.knowledgeId) || null,
     sourceRoadmapId: Number(effectiveQuiz?.roadmapId) || null,
   };
   const handleStartQuiz = useCallback((mode) => {
