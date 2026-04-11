@@ -143,4 +143,53 @@ describe('UploadSourceDialogBase', () => {
 
     expect(onSuggestedImported).toHaveBeenCalled();
   });
+
+  it('prevents duplicate local upload submissions while the first request is still pending', async () => {
+    const onOpenChange = vi.fn();
+    let resolveUpload;
+    const onUploadFiles = vi.fn().mockImplementation(
+      () => new Promise((resolve) => {
+        resolveUpload = resolve;
+      }),
+    );
+
+    render(
+      <UploadSourceDialogBase
+        open
+        onOpenChange={onOpenChange}
+        isDarkMode={false}
+        workspaceId={42}
+        onUploadFiles={onUploadFiles}
+        planEntitlements={{
+          canUploadPdf: true,
+          canUploadWord: true,
+          canUploadSlide: true,
+          canUploadExcel: true,
+          canUploadText: true,
+          canUploadImage: true,
+          canUploadAudio: true,
+          canUploadVideo: true,
+        }}
+      />,
+    );
+
+    const fileInput = document.querySelector('input[type="file"]');
+    fireEvent.change(fileInput, {
+      target: {
+        files: [new File(['local'], 'source.pdf', { type: 'application/pdf' })],
+      },
+    });
+
+    const uploadButton = screen.getByRole('button', { name: 'workspace.upload.uploadUserFiles' });
+    fireEvent.click(uploadButton);
+    fireEvent.click(uploadButton);
+
+    expect(onUploadFiles).toHaveBeenCalledTimes(1);
+
+    resolveUpload?.();
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+  });
 });
