@@ -26,7 +26,10 @@
     "collapseSidebar": "Collapse sidebar",
     "paginationSummary": "Showing {{start}} - {{end}} of {{total}}",
     "pageSizeOption": "{{count}} / page",
-    "close": "Close"
+    "close": "Close",
+    "home": "Home",
+    "goHome": "Go to Home",
+    "backToHome": "Back to Home"
   },
   "validation": {
     "fullnameRequired": "Full name is required",

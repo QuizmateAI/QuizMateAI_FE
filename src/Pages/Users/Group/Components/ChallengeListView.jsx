@@ -75,6 +75,13 @@ function ChallengeCard({ challenge, isDarkMode, onSelect }) {
                 Mời riêng
               </span>
             )}
+            {challenge.published === false && (
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                isDarkMode ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-800'
+              }`}>
+                Chưa publish
+              </span>
+            )}
           </div>
 
           <h3 className={`truncate text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>

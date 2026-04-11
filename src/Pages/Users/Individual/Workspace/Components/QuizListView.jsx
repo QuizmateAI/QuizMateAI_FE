@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock, MoreVertical, Users, UserPlus } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
+import HomeButton from "@/Components/ui/HomeButton";
 import { getQuizzesByScope, deleteQuiz, getQuizById } from "@/api/QuizAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
@@ -103,9 +104,6 @@ const QUIZ_CARD_THEMES = {
     iconColor: "text-slate-700",
   },
 };
-
-// Bộ lọc theo trạng thái
-const STATUS_FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT", "COMPLETED"];
 
 function hasQuizListChanged(prevList, nextList) {
   if (!Array.isArray(prevList) || !Array.isArray(nextList)) return true;
@@ -265,12 +263,12 @@ function QuizListView({
   refreshToken = 0,
   disableCreate = false,
   title = null,
+  onNavigateHome,
   onShareQuiz,
   onOpenCommunityQuiz,
   progressTracking = null,
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
-  legacyRoadmapUI = false,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -278,7 +276,7 @@ function QuizListView({
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -286,6 +284,8 @@ function QuizListView({
   const [sharingQuizId, setSharingQuizId] = useState(null);
   const [examStartQuiz, setExamStartQuiz] = useState(null);
   const [feedbackStatusByQuizId, setFeedbackStatusByQuizId] = useState({});
+  const [hasResolvedInitialFetch, setHasResolvedInitialFetch] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [groupMembers, setGroupMembers] = useState([]);
   const [groupMembersLoading, setGroupMembersLoading] = useState(false);
   /** all | ALL_MEMBERS | SELECTED_MEMBERS */
@@ -306,6 +306,18 @@ function QuizListView({
   }, [contextId, contextType, location.pathname, location.search, returnToPath]);
 
   const isGroupQuizList = String(contextType || "").toUpperCase() === "GROUP";
+  const intentFilterKey = useMemo(
+    () =>
+      Array.isArray(intentFilter) && intentFilter.length > 0
+        ? intentFilter.join(",")
+        : "ALL",
+    [intentFilter],
+  );
+
+  useEffect(() => {
+    setHasResolvedInitialFetch(false);
+    setFetchError(null);
+  }, [contextId, contextType, intentFilterKey]);
 
   useEffect(() => {
     if (!isGroupQuizList || !contextId) {
@@ -400,10 +412,12 @@ function QuizListView({
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
     if (!scopeId) {
       setQuizzes([]);
+      setFetchError(null);
+      setHasResolvedInitialFetch(true);
       return;
     }
 
-    const requestKey = `${String(contextType || "").toUpperCase()}:${Number(scopeId) || scopeId}:${Array.isArray(intentFilter) ? intentFilter.join(",") : "ALL"}`;
+    const requestKey = `${String(contextType || "").toUpperCase()}:${Number(scopeId) || scopeId}:${intentFilterKey}`;
     const now = Date.now();
     const isDuplicateBurst = silent
       && fetchGuardRef.current.lastKey === requestKey
@@ -438,16 +452,22 @@ function QuizListView({
       }
       
       setQuizzes((prev) => (hasQuizListChanged(prev, incoming) ? incoming : prev));
+      setFetchError(null);
 
     } catch (err) {
       console.error("Lỗi khi lấy danh sách quiz:", err);
-      if (!silent) setQuizzes([]);
+      if (!silent) {
+        setFetchError(err);
+      }
     } finally {
       fetchGuardRef.current.inFlight = false;
       fetchGuardRef.current.lastFetchedAt = Date.now();
-      if (!silent) setLoading(false);
+      if (!silent) {
+        setLoading(false);
+        setHasResolvedInitialFetch(true);
+      }
     }
-  }, [contextId, contextType, intentFilter]);
+  }, [contextId, contextType, intentFilter, intentFilterKey]);
 
   // Gọi API khi component mount hoặc context thay đổi
   useEffect(() => {
@@ -618,13 +638,8 @@ function QuizListView({
   // Lọc quiz theo trạng thái và tìm kiếm
   const filtered = useMemo(() => {
     let items = quizzes;
-    if (filterStatus === "COMPLETED") {
-      items = items.filter((q) => q?.myAttempted === true || q?.status === "COMPLETED");
-    } else if (filterStatus !== "all") {
-      items = items.filter((q) => q.status === filterStatus);
-    }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (deferredSearchQuery.trim()) {
+      const query = deferredSearchQuery.toLowerCase();
       items = items.filter((q) => q.title?.toLowerCase().includes(query));
     }
     if (isGroupQuizList) {
@@ -639,8 +654,8 @@ function QuizListView({
       }
     }
     return items;
-  }, [quizzes, searchQuery, filterStatus, isGroupQuizList, groupAudienceFilter, groupMemberUserId]);
-  const useLegacyRoadmapCards = legacyRoadmapUI;
+  }, [quizzes, deferredSearchQuery, isGroupQuizList, groupAudienceFilter, groupMemberUserId]);
+  const useLegacyRoadmapCards = false;
 
   const renderQuizFeedbackAction = (quizId, className = "") => (
     <div onClick={(e) => e.stopPropagation()}>
@@ -912,204 +927,176 @@ function QuizListView({
   };
 
   return (
-    <div className={`${embedded ? "" : "h-full flex flex-col"} ${fontClass}`}>
-      {/* Header */}
+    <div className={`${embedded ? "" : "flex h-full flex-col px-2 py-3 sm:px-3 sm:py-4"} ${fontClass}`}>
       {!embedded ? (
-      <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div className="flex items-center gap-2">
-          <BadgeCheck className="w-5 h-5 text-blue-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{title || t("workspace.studio.actions.quiz")}</p>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
-            {quizzes.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => fetchQuizzes({ scopeId: contextId })} disabled={loading}
-            className={`rounded-full h-9 w-9 p-0 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          {String(contextType || "").toUpperCase() === "WORKSPACE" && typeof onOpenCommunityQuiz === "function" ? (
-          <Button
-            variant="outline"
-            onClick={onOpenCommunityQuiz}
-            className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : ""}`}
-          >
-            <Globe className="w-4 h-4" />
-            <span className="text-sm">{t("workspace.quiz.communityExplorer.title", "Community Quiz")}</span>
-          </Button>
-          ) : null}
-          {!hideCreateButton ? (
-          <Button disabled={disableCreate} onClick={onCreateQuiz} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
-            <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
-          </Button>
-          ) : null}
-        </div>
-      </div>
-      ) : null}
-
-      {/* Tìm kiếm + bộ lọc */}
-      {!embedded ? (
-      <div className="px-4 py-3">
-        <div
-          className={`rounded-2xl border p-3 shadow-sm ${
-            isDarkMode ? "border-slate-700/90 bg-slate-900/45" : "border-slate-200/90 bg-slate-50/90"
-          }`}
-        >
-          <div className="relative">
-            <Search className={`pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("workspace.listView.searchPlaceholder")}
-              className={`w-full rounded-xl border py-2.5 pl-10 pr-9 text-sm outline-none transition-colors ${
-                isDarkMode
-                  ? "border-slate-700 bg-slate-950/50 text-white placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30"
-                  : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-              }`}
-            />
-            {searchQuery ? (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 ${isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"}`}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            ) : null}
-          </div>
-
-          <div
-            className={`mt-3 flex flex-col gap-3 sm:mt-3.5 sm:flex-row sm:items-stretch sm:gap-0 ${
-              isGroupQuizList ? (isDarkMode ? "sm:border-t sm:border-slate-700/80 sm:pt-3" : "sm:border-t sm:border-slate-200/90 sm:pt-3") : ""
-            }`}
-          >
-            <div className="min-w-0 flex-1 sm:pr-4">
-              <p className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
-                {t("workspace.quiz.filterBar.statusSection", "Trạng thái")}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {STATUS_FILTER_OPTIONS.map((opt) => (
+        <div className={`mb-4 border-b px-2 pb-4 ${isDarkMode ? "border-slate-800" : "border-slate-200/90"}`}>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              {typeof onNavigateHome === "function" ? (
+                <HomeButton onClick={onNavigateHome} />
+              ) : null}
+              <div className="min-w-0 flex-1 sm:max-w-[420px] md:max-w-[460px] lg:max-w-[520px]">
+              <div className="relative">
+                <Search className={`pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
+                  placeholder={t("workspace.listView.searchPlaceholder")}
+                  className={`h-11 w-full rounded-full border py-2 pl-10 pr-10 text-sm outline-none transition-colors ${
+                    isDarkMode
+                      ? "border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30"
+                      : "border-slate-200 bg-[#f8fafc] text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  }`}
+                />
+                {searchQuery ? (
                   <button
-                    key={opt}
                     type="button"
-                    onClick={() => setFilterStatus(opt)}
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                      filterStatus === opt
-                        ? isDarkMode
-                          ? "bg-blue-600/25 text-blue-300 ring-1 ring-blue-500/35"
-                          : "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
-                        : isDarkMode
-                          ? "text-slate-400 hover:bg-slate-800/80"
-                          : "text-slate-600 hover:bg-white"
-                    }`}
+                    onClick={() => setSearchQuery("")}
+                    className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 ${isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-white hover:text-slate-600"}`}
                   >
-                    {t(`workspace.quiz.statusFilter.${opt}`)}
+                    <X className="h-4 w-4" />
                   </button>
-                ))}
+                ) : null}
               </div>
             </div>
+            </div>
 
-            {isGroupQuizList ? (
-              <>
-                <div className={`h-px w-full sm:hidden ${isDarkMode ? "bg-slate-700/80" : "bg-slate-200"}`} aria-hidden />
-                <div
-                  className={`hidden w-px shrink-0 self-stretch sm:block ${isDarkMode ? "bg-slate-700/90" : "bg-slate-200/95"}`}
-                  aria-hidden
-                />
-                <div className="min-w-0 flex-1 sm:pl-2">
-                  <p className={`mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
-                    {t("workspace.quiz.filterBar.groupSection", "Nhóm")}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {[
-                      { key: "all", label: t("workspace.quiz.groupAudience.all", "Tất cả") },
-                      { key: "ALL_MEMBERS", label: t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm") },
-                      { key: "SELECTED_MEMBERS", label: t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng") },
-                    ].map(({ key, label }) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setGroupAudienceFilter(key)}
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                          groupAudienceFilter === key
-                            ? isDarkMode
-                              ? "bg-violet-600/25 text-violet-200 ring-1 ring-violet-500/35"
-                              : "bg-violet-600 text-white shadow-sm shadow-violet-600/15"
-                            : isDarkMode
-                              ? "text-slate-400 hover:bg-slate-800/80"
-                              : "text-slate-600 hover:bg-white"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                    {groupAudienceFilter === "SELECTED_MEMBERS" ? (
-                      <select
-                        value={groupMemberUserId ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setGroupMemberUserId(v === "" ? null : Number(v));
-                        }}
-                        disabled={groupMembersLoading}
-                        title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
-                        className={`max-w-[min(200px,100%)] shrink rounded-lg border px-2 py-1 text-[11px] outline-none transition-colors ${
-                          isDarkMode
-                            ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
-                            : "border-slate-200 bg-white text-slate-900 disabled:opacity-50"
-                        }`}
-                      >
-                        <option value="">{t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}</option>
-                        {groupMembers.map((m) => {
-                          const uid = Number(m.userId ?? m.id);
-                          if (!Number.isInteger(uid) || uid <= 0) return null;
-                          const optLabel = m.fullName || m.username || `User ${uid}`;
-                          return (
-                            <option key={uid} value={uid}>{optLabel}</option>
-                          );
-                        })}
-                      </select>
-                    ) : null}
-                  </div>
-                </div>
-              </>
-            ) : null}
+            <div className="flex shrink-0 flex-wrap items-center gap-2 md:ml-auto">
+              <Button
+                variant="outline"
+                onClick={() => fetchQuizzes({ silent: true, scopeId: contextId })}
+                disabled={loading}
+                className={`h-11 rounded-full border px-3 ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+              {String(contextType || "").toUpperCase() === "WORKSPACE" && typeof onOpenCommunityQuiz === "function" ? (
+                <Button
+                  variant="outline"
+                  onClick={onOpenCommunityQuiz}
+                  className={`h-11 rounded-full border px-4 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}
+                >
+                  <Globe className="mr-2 h-4 w-4" />
+                  <span className="text-sm">{t("workspace.quiz.communityExplorer.title", "Community Quiz")}</span>
+                </Button>
+              ) : null}
+              {!hideCreateButton ? (
+                <Button
+                  disabled={disableCreate}
+                  onClick={onCreateQuiz}
+                  className="h-11 rounded-full bg-[#2563EB] px-4 text-white transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span className="text-sm">{t("workspace.listView.create")}</span>
+                </Button>
+              ) : null}
+            </div>
           </div>
+
+          {isGroupQuizList ? (
+            <div className={`mt-3 flex flex-wrap items-center gap-2 pt-1 ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
+              {[
+                { key: "all", label: t("workspace.quiz.groupAudience.all", "Tất cả") },
+                { key: "ALL_MEMBERS", label: t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm") },
+                { key: "SELECTED_MEMBERS", label: t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng") },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setGroupAudienceFilter(key)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                    groupAudienceFilter === key
+                      ? isDarkMode
+                        ? "bg-violet-600/25 text-violet-200 ring-1 ring-violet-500/35"
+                        : "bg-slate-900 text-white"
+                      : isDarkMode
+                        ? "bg-slate-900 text-slate-300 hover:bg-slate-800"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              {groupAudienceFilter === "SELECTED_MEMBERS" ? (
+                <select
+                  value={groupMemberUserId ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setGroupMemberUserId(v === "" ? null : Number(v));
+                  }}
+                  disabled={groupMembersLoading}
+                  title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
+                  className={`h-9 max-w-[min(240px,100%)] rounded-full border px-3 text-xs outline-none transition-colors ${
+                    isDarkMode
+                      ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
+                      : "border-slate-200 bg-[#f8fafc] text-slate-900 disabled:opacity-50"
+                  }`}
+                >
+                  <option value="">{t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}</option>
+                  {groupMembers.map((m) => {
+                    const uid = Number(m.userId ?? m.id);
+                    if (!Number.isInteger(uid) || uid <= 0) return null;
+                    const optLabel = m.fullName || m.username || `User ${uid}`;
+                    return <option key={uid} value={uid}>{optLabel}</option>;
+                  })}
+                </select>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      </div>
       ) : null}
 
       {/* Danh sách quiz */}
-      <div className={`${embedded ? "px-0" : "flex-1 overflow-y-auto px-4 pb-4"}`}>
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+      <div className={`${embedded ? "px-0" : "min-h-0 flex-1 overflow-y-auto"}`}>
+        {fetchError && quizzes.length > 0 ? (
+          <div
+            className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+              isDarkMode
+                ? "border-amber-500/20 bg-amber-500/10 text-amber-200"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+            }`}
+          >
+            {t(
+              "workspace.quiz.loadErrorInline",
+              "Không thể làm mới danh sách quiz lúc này. Nội dung cũ vẫn được giữ lại để tránh giật giao diện.",
+            )}
+          </div>
+        ) : null}
+        {loading && !hasResolvedInitialFetch && quizzes.length === 0 ? (
+          <div className="flex min-h-[300px] flex-col items-center justify-center py-16">
+            <Loader2 className={`mb-2 h-8 w-8 animate-spin ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.loading")}</p>
           </div>
         ) : quizzes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
+          <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
+            <FolderOpen className={`mb-3 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {t("workspace.roadmap.noQuizYet")}
+              {fetchError
+                ? t(
+                    "workspace.quiz.loadErrorSoft",
+                    "Không tải được danh sách quiz lúc này. Giao diện vẫn được giữ ổn định, hãy thử lại sau ít phút.",
+                  )
+                : t("workspace.roadmap.noQuizYet")}
             </p>
             {!hideCreateButton ? (
-            <Button
-              disabled={disableCreate}
-              onClick={onCreateQuiz}
-              className="mt-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.studio.actions.createQuiz")}</span>
-            </Button>
+              <Button
+                disabled={disableCreate}
+                onClick={onCreateQuiz}
+                className="mt-4 h-10 rounded-full bg-[#2563EB] px-4 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span className="text-sm">{t("workspace.studio.actions.createQuiz")}</span>
+              </Button>
             ) : null}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
+          <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16">
+            <FolderOpen className={`mb-3 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
-          <div className={useLegacyRoadmapCards ? "space-y-2" : "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"}>
+          <div className={useLegacyRoadmapCards ? "space-y-2" : "mx-auto grid max-w-[1080px] grid-cols-1 gap-4 md:grid-cols-2"}>
             {filtered.map((quiz) => {
               if (useLegacyRoadmapCards) {
                 return renderLegacyRoadmapCard(quiz);
@@ -1122,14 +1109,6 @@ function QuizListView({
               const durationInMinutes = getDurationInMinutes(quiz);
               const normalizedStatus = String(quiz?.status || "").toUpperCase();
               const isProcessing = normalizedStatus === "PROCESSING";
-              const statusMeta = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
-              const VisibilityIcon = isCommunityShared ? Globe : Lock;
-              const visibilityIconWrap = isCommunityShared
-                ? (isDarkMode ? "border-emerald-900/60 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50")
-                : (isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-white");
-              const visibilityIconColor = isCommunityShared
-                ? (isDarkMode ? "text-emerald-300" : "text-emerald-600")
-                : (isDarkMode ? "text-slate-300" : "text-slate-600");
               const processingPercent = resolveQuizProcessingPercent(
                 quiz,
                 progressTracking,
@@ -1139,320 +1118,195 @@ function QuizListView({
               const processingBarWidth = processingPercent > 0 ? Math.max(10, processingPercent) : 10;
               const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
               const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
-              const theme = resolveQuizCardTheme(difficultyKey);
               const myAttempted = quiz?.myAttempted === true;
+              const myPassed = quiz?.myPassed === true;
               const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
               const intentLabel = quiz?.quizIntent && !isRoadmapContextQuiz
                 ? t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)
                 : null;
-              const timerLabel = typeof quiz.timerMode === "boolean"
-                ? (
-                  quiz.timerMode
-                    ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
-                    : t("workspace.quiz.examModeType2Short", "Theo từng câu")
-                )
-                : null;
-              const specialStatusLabel = ["PROCESSING", "DRAFT", "ERROR"].includes(normalizedStatus)
-                ? t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus)
-                : null;
-              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz;
-              const showExamAction = normalizedStatus === "ACTIVE";
-              const showFeedbackAction = myAttempted
-                && !hasSubmittedFeedback
-                && resolvedQuizId != null
-                && resolvedQuizId !== "";
-              const hasPrimaryActions = showPracticeAction || showExamAction;
-              const actionGridClassName = showFeedbackAction && hasPrimaryActions
-                ? "grid-cols-2"
-                : showPracticeAction && showExamAction
-                  ? "grid-cols-2"
-                  : "grid-cols-1";
               const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
-              const updatedLabel = formatCardDate(quiz.updatedAt || quiz.createdAt);
-              const groupAudienceForCard = isGroupQuizList ? normalizeGroupAudienceMode(quiz) : null;
-              const assignedIdsForCard = isGroupQuizList ? getQuizAssignedUserIds(quiz) : [];
-              const singleAssigneeIdForCard = groupAudienceForCard === "SELECTED_MEMBERS" && assignedIdsForCard.length === 1
-                ? assignedIdsForCard[0]
+              const questionCount = Number(quiz?.questionCount ?? quiz?.totalQuestion ?? quiz?.totalQuestions ?? 0) || 0;
+              const scoreValue = Number(quiz?.latestScore ?? quiz?.score ?? quiz?.myScore ?? quiz?.marksScored ?? quiz?.markScored);
+              const resolvedScoreValue = Number.isFinite(scoreValue) && scoreValue >= 0 ? scoreValue : null;
+              const maxScore = Number(quiz?.maxScore);
+              const resultLabel = isProcessing
+                ? t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")
+                : myAttempted
+                  ? (myPassed ? t("workspace.quiz.myPassedTrue", "Đã đậu") : t("workspace.quiz.myPassedFalse", "Chưa đậu"))
+                  : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
+              const resultToneClassName = isProcessing
+                ? (isDarkMode ? "text-sky-300" : "text-sky-700")
+                : myAttempted
+                  ? (myPassed ? (isDarkMode ? "text-emerald-300" : "text-emerald-700") : (isDarkMode ? "text-amber-300" : "text-amber-700"))
+                  : (isDarkMode ? "text-slate-300" : "text-slate-700");
+              const difficultyLabel = difficultyKey === "CUSTOM"
+                ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
+                : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`);
+              const resultDisplay = resolvedScoreValue != null
+                ? (maxScore > 0 ? `${resolvedScoreValue}/${maxScore}` : `${resolvedScoreValue}`)
+                : resultLabel;
+              const durationLabel = durationInMinutes > 0
+                ? `${durationInMinutes} ${t("workspace.quiz.minutesShort", "phút")}`
                 : null;
-              const memberRowForAvatar = singleAssigneeIdForCard != null
-                ? resolveGroupMember(singleAssigneeIdForCard, groupMembers)
-                : null;
-              const avatarInitial = String(
-                memberRowForAvatar?.fullName || memberRowForAvatar?.username || singleAssigneeIdForCard || "?",
-              )
-                .trim()
-                .charAt(0)
-                .toUpperCase() || "?";
-              const avatarSrc = memberRowForAvatar?.avatar || memberRowForAvatar?.avatarUrl || "";
+              const createdAtLabel = formatShortDate(quiz.createdAt || quiz.updatedAt);
+              const difficultyTextClassName = difficultyKey === "HARD"
+                ? (isDarkMode ? "text-rose-300" : "text-rose-600")
+                : difficultyKey === "MEDIUM"
+                  ? (isDarkMode ? "text-amber-300" : "text-amber-600")
+                  : difficultyKey === "EASY"
+                    ? (isDarkMode ? "text-emerald-300" : "text-emerald-600")
+                    : (isDarkMode ? "text-slate-300" : "text-slate-600");
 
               return (
                 <article
                   key={resolvedQuizId}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onViewQuiz?.(quiz)}
-                  className={`overflow-hidden rounded-[28px] border cursor-pointer shadow-[0_20px_50px_rgba(15,23,42,0.08)] ${
-                    isCommunityShared
-                      ? (isDarkMode ? "border-emerald-900/60 bg-slate-900/60" : "border-emerald-200 bg-white")
-                      : (isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white")
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onViewQuiz?.(quiz);
+                    }
+                  }}
+                  className={`h-full cursor-pointer rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                    isDarkMode
+                      ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
+                      : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
                   }`}
                 >
-                  <div className={`border-b px-4 py-3 ${isDarkMode ? "bg-slate-800/40 border-slate-700/50" : `${theme.banner} border-slate-100`}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-start gap-3">
-                        {isGroupQuizList ? (
-                          groupAudienceForCard === "ALL_MEMBERS" ? (
-                            <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
-                                isDarkMode ? "border-cyan-800/60 bg-cyan-950/40" : "border-cyan-200 bg-cyan-50"
-                              }`}
-                              title={t("workspace.quiz.groupAudience.badgeWholeGroup", "Chung nhóm")}
-                            >
-                              <Users className={`h-5 w-5 ${isDarkMode ? "text-cyan-300" : "text-cyan-700"}`} />
-                            </div>
-                          ) : singleAssigneeIdForCard != null ? (
-                            <div
-                              className={`flex h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 ${
-                                isDarkMode ? "border-fuchsia-800/70 bg-fuchsia-950/30" : "border-fuchsia-200 bg-fuchsia-50"
-                              }`}
-                              title={resolveMemberDisplayName(singleAssigneeIdForCard, groupMembers)}
-                            >
-                              {avatarSrc ? (
-                                <img src={avatarSrc} alt="" className="h-full w-full object-cover" />
-                              ) : (
-                                <span
-                                  className={`flex h-full w-full items-center justify-center text-sm font-bold ${
-                                    isDarkMode ? "text-fuchsia-200" : "text-fuchsia-800"
-                                  }`}
-                                >
-                                  {avatarInitial}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <div
-                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
-                                isDarkMode ? "border-fuchsia-900/50 bg-fuchsia-950/35" : "border-fuchsia-200 bg-fuchsia-50"
-                              }`}
-                              title={t("workspace.quiz.groupAudience.badgeAssigned", "Giao riêng")}
-                            >
-                              <UserPlus className={`h-5 w-5 ${isDarkMode ? "text-fuchsia-300" : "text-fuchsia-700"}`} />
-                            </div>
-                          )
-                        ) : (
-                          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${visibilityIconWrap}`}>
-                            <VisibilityIcon className={`h-5 w-5 ${visibilityIconColor}`} />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <h3 className={`line-clamp-2 break-words text-left text-[15px] font-semibold leading-snug ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                            {quiz.title || "—"}
-                          </h3>
-                          <div className={`mt-1 flex items-center gap-1.5 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                            <Clock className="h-3.5 w-3.5 shrink-0 opacity-80" />
-                            <span>{formatShortDate(quiz.createdAt)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        {specialStatusLabel ? (
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusMeta.dark : statusMeta.light}`}>
-                            {specialStatusLabel}
-                          </span>
-                        ) : null}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => e.stopPropagation()}
-                              className={`h-8 w-8 rounded-full ${
-                                isDarkMode
-                                  ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-                                  : "text-slate-500 hover:bg-white hover:text-slate-900"
-                              }`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className={`w-52 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className={`line-clamp-2 text-[21px] font-semibold leading-snug tracking-[-0.02em] ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
+                        {quiz.title || "—"}
+                      </h3>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`h-8 w-8 rounded-full ${
+                              isDarkMode
+                                ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                                : "text-slate-500 hover:bg-white hover:text-slate-900"
+                            }`}
                           >
-                            {showShareAction ? (
-                              <DropdownMenuItem
-                                disabled={sharingQuizId === quiz.quizId}
-                                onSelect={async (e) => {
-                                  e?.stopPropagation?.();
-                                  if (sharingQuizId === quiz.quizId) return;
-                                  setSharingQuizId(quiz.quizId);
-                                  try {
-                                    await onShareQuiz(quiz);
-                                    await fetchQuizzes({ silent: true });
-                                  } catch (error) {
-                                    showError(error?.message || t("home.actions.share", "Share"));
-                                  } finally {
-                                    setSharingQuizId(null);
-                                  }
-                                }}
-                                className="cursor-pointer"
-                              >
-                                {sharingQuizId === quiz.quizId ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : isCommunityShared ? (
-                                  <Lock className="h-4 w-4" />
-                                ) : (
-                                  <Globe className="h-4 w-4" />
-                                )}
-                                <span>
-                                  {isCommunityShared
-                                    ? t("workspace.quiz.makePrivateShort", "Riêng tư")
-                                    : t("workspace.quiz.makePublicShort", "Công khai")}
-                                </span>
-                              </DropdownMenuItem>
-                            ) : null}
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className={`w-52 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                        >
+                          {showShareAction ? (
                             <DropdownMenuItem
-                              disabled={deletingId === quiz.quizId}
-                              onSelect={() => handleRequestDeleteQuiz({ stopPropagation: () => {} }, quiz)}
-                              className={`cursor-pointer ${isDarkMode ? "text-red-300 focus:text-red-200" : "text-red-600 focus:text-red-600"}`}
+                              disabled={sharingQuizId === quiz.quizId}
+                              onSelect={async (e) => {
+                                e?.stopPropagation?.();
+                                if (sharingQuizId === quiz.quizId) return;
+                                setSharingQuizId(quiz.quizId);
+                                try {
+                                  await onShareQuiz(quiz);
+                                  await fetchQuizzes({ silent: true });
+                                } catch (error) {
+                                  showError(error?.message || t("home.actions.share", "Share"));
+                                } finally {
+                                  setSharingQuizId(null);
+                                }
+                              }}
+                              className="cursor-pointer"
                             >
-                              {deletingId === quiz.quizId ? (
+                              {sharingQuizId === quiz.quizId ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : isCommunityShared ? (
+                                <Lock className="h-4 w-4" />
                               ) : (
-                                <Trash2 className="h-4 w-4" />
+                                <Globe className="h-4 w-4" />
                               )}
-                              <span>{t("workspace.quiz.deleteQuiz")}</span>
+                              <span>
+                                {isCommunityShared
+                                  ? t("workspace.quiz.makePrivateShort", "Riêng tư")
+                                  : t("workspace.quiz.makePublicShort", "Công khai")}
+                              </span>
                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                          ) : null}
+                          <DropdownMenuItem
+                            disabled={deletingId === quiz.quizId}
+                            onSelect={() => handleRequestDeleteQuiz({ stopPropagation: () => {} }, quiz)}
+                            className={`cursor-pointer ${isDarkMode ? "text-red-300 focus:text-red-200" : "text-red-600 focus:text-red-600"}`}
+                          >
+                            {deletingId === quiz.quizId ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                            <span>{t("workspace.quiz.deleteQuiz")}</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
 
-                  <div className="space-y-4 p-4">
-                    {isProcessing ? (
-                      <div className={`rounded-[22px] border px-4 py-4 ${
-                        isDarkMode
-                          ? "border-sky-900/60 bg-sky-950/20"
-                          : "border-sky-200 bg-sky-50/80"
-                      }`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                              {t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}
-                            </p>
-                            <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                              {t("workspace.quiz.processingProgressHint", "Hệ thống đang sinh câu hỏi và cấu hình bài kiểm tra.")}
-                            </p>
-                          </div>
-                          <span className={`shrink-0 text-sm font-semibold tabular-nums ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                            {processingPercent}%
-                          </span>
-                        </div>
-                        <div className={`mt-3 h-2 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-white"}`}>
-                          <div
-                            className="h-full rounded-full bg-sky-500"
-                            style={{ width: `${processingBarWidth}%` }}
-                          />
-                        </div>
+                  {isProcessing ? (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                          {t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}
+                        </p>
+                        <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div className={`rounded-[20px] border px-3 py-3 ${isDarkMode ? "border-slate-700/50 bg-slate-800/50" : "border-slate-200 bg-slate-50"}`}>
-                          <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400/80" : "text-slate-500"}`}>
-                            {t("workspace.quiz.timeDuration", "Thời gian")}
-                          </p>
-                          <p className={`mt-2 flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
-                            <Timer className="h-3.5 w-3.5" />
-                            <span>{durationInMinutes > 0 ? `${durationInMinutes} ${t("workspace.quiz.minutes", "phút")}` : "-"}</span>
-                          </p>
-                        </div>
-                        <div className={`rounded-[20px] border px-3 py-3 ${isDarkMode ? "border-slate-700/50 bg-slate-800/50" : "border-slate-200 bg-slate-50"}`}>
-                          <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400/80" : "text-slate-500"}`}>
-                            {t("workspace.quiz.overallDifficulty", "Độ khó")}
-                          </p>
-                          <span className={`mt-2 inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
-                            <BarChart3 className="h-3.5 w-3.5" />
-                            <span>
-                              {difficultyKey === "CUSTOM"
-                                ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
-                                : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`)}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        {intentLabel ? (
-                          <span className={`inline-flex max-w-full items-center rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-slate-700/60 text-slate-300" : "bg-slate-200/70 text-slate-700"}`}>
-                            {intentLabel}
-                          </span>
-                        ) : null}
-                        {timerLabel ? (
-                          <span className={`inline-flex max-w-full items-center rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-slate-700/60 text-slate-300" : "bg-slate-200/70 text-slate-700"}`}>
-                            {timerLabel}
-                          </span>
-                        ) : null}
-                        {isGroupQuizList ? (
-                          normalizeGroupAudienceMode(quiz) === "ALL_MEMBERS" ? (
-                            <span className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-cyan-950/40 text-cyan-300" : "bg-cyan-100 text-cyan-800"}`}>
-                              <Users className="h-3 w-3 shrink-0" />
-                              {t("workspace.quiz.groupAudience.badgeWholeGroup", "Chung nhóm")}
-                            </span>
-                          ) : (
-                            <span
-                              className={`inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold ${isDarkMode ? "bg-fuchsia-950/40 text-fuchsia-300" : "bg-fuchsia-100 text-fuchsia-900"}`}
-                              title={formatAssignedNames(quiz, groupMembers, 12)}
-                            >
-                              <UserPlus className="h-3 w-3 shrink-0" />
-                              <span className="truncate">
-                                {t("workspace.quiz.groupAudience.badgeAssigned", "Giao riêng")}
-                                {formatAssignedNames(quiz, groupMembers) ? `: ${formatAssignedNames(quiz, groupMembers)}` : ""}
-                              </span>
-                            </span>
-                          )
-                        ) : null}
+                      <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
+                        <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
                       </div>
                     </div>
+                  ) : null}
 
-                    {showPracticeAction || showExamAction || showFeedbackAction ? (
-                      <div className={`grid gap-2 ${actionGridClassName}`}>
-                        {showPracticeAction ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStartQuiz('practice', quiz.quizId); }}
-                            className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${isDarkMode ? "border-blue-900/50 bg-blue-950/20 text-blue-300 hover:bg-blue-900/30" : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"}`}
-                            title={t("workspace.quiz.practice", "Luyện tập")}
-                          >
-                            <Play className="h-4.5 w-4.5" />
-                            <span>{t("workspace.quiz.practice", "Luyện tập")}</span>
-                          </button>
-                        ) : null}
-                        {showExamAction ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setExamStartQuiz(quiz); }}
-                            className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${isDarkMode ? "border-emerald-900/50 bg-emerald-950/20 text-emerald-300 hover:bg-emerald-900/30" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
-                            title={t("workspace.quiz.exam", "Kiểm tra")}
-                          >
-                            <ClipboardCheck className="h-4.5 w-4.5" />
-                            <span>{t("workspace.quiz.exam", "Kiểm tra")}</span>
-                          </button>
-                        ) : null}
-                        {showFeedbackAction ? (
-                          <div className={hasPrimaryActions ? "col-span-2" : ""}>
-                            {renderQuizFeedbackAction(
-                              resolvedQuizId,
-                              `inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${
-                                isDarkMode
-                                  ? "border-slate-700 bg-slate-900/70 text-slate-200 hover:bg-slate-800"
-                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                              }`,
-                            )}
-                          </div>
-                        ) : null}
+                  <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                    {myAttempted ? (
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>Kết quả</span>
+                        <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
                       </div>
                     ) : null}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("workspace.quiz.roadmapOverview.questions", "Câu hỏi")}</span>
+                      <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
                     </div>
+                  </div>
+
+                  <div className={`mt-4 flex items-end justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
+                        <BarChart3 className="h-3.5 w-3.5" />
+                        <span>{difficultyLabel}</span>
+                      </div>
+                      {durationLabel ? (
+                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                          <Timer className="h-3.5 w-3.5" />
+                          <span>{durationLabel}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className={`flex flex-wrap items-center justify-end gap-2 text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                      {!shouldHideRoadmapVisibility ? (
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                          {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                          <span>{isCommunityShared ? t("workspace.quiz.communityPublic", "Công khai") : t("workspace.quiz.privateShort", "Riêng tư")}</span>
+                        </span>
+                      ) : null}
+                      {createdAtLabel ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{createdAtLabel}</span>
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
                 </article>
               );
             })}

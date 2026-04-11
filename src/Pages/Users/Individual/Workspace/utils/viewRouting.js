@@ -10,6 +10,8 @@ const {
 } = WORKSPACE_ROUTE_SEGMENTS;
 
 export const VIEW_TO_PATH = {
+	overview: "",
+	sources: "sources",
 	roadmap: roadmaps,
 	quiz: quizzes,
 	communityQuiz: `${quizzes}/community`,
@@ -28,7 +30,15 @@ const PATH_TO_VIEW = Object.entries(VIEW_TO_PATH).reduce((result, [view, path]) 
 }, {});
 
 export function resolveWorkspaceViewFromSubPath(subPath) {
-	if (!subPath) return { view: null, quizId: null, backTarget: null };
+	if (!subPath) {
+		return {
+			view: "overview",
+			quizId: null,
+			backTarget: null,
+			roadmapId: null,
+			phaseId: null,
+		};
+	}
 
 	const roadmapPathMatch = subPath.match(new RegExp(`^${roadmaps}/(\\d+)(?:/${phases}/(\\d+))?$`));
 	if (roadmapPathMatch) {
@@ -108,7 +118,13 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 		return { view: "quizDetail", quizId: Number(quizDetailMatch[1]), backTarget: null };
 	}
 
-	return { view: null, quizId: null, backTarget: null };
+	return {
+		view: null,
+		quizId: null,
+		backTarget: null,
+		roadmapId: null,
+		phaseId: null,
+	};
 }
 
 export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget) {
@@ -136,5 +152,9 @@ export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget) {
 		return `${quizzes}/${selectedQuiz.quizId}/edit`;
 	}
 
-	return VIEW_TO_PATH[view] || null;
+	if (view === "overview") {
+		return "";
+	}
+
+	return VIEW_TO_PATH[view] ?? null;
 }

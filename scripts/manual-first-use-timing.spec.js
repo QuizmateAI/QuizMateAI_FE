@@ -1,6 +1,8 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { test } from 'playwright/test';
+/* global process */
+import fs from 'fs';
+import path from 'path';
+// eslint-disable-next-line import/no-unresolved
+import { test } from '@playwright/test';
 
 const PREVIEW_URL = process.env.PREVIEW_URL || 'http://127.0.0.1:4173';
 const API_ORIGIN = process.env.API_ORIGIN || 'http://localhost:8080';

@@ -6,15 +6,23 @@ import {
 } from '@/Pages/Users/Individual/Workspace/utils/viewRouting';
 
 describe('workspace viewRouting', () => {
-  it('maps direct post-learning routes to the expected workspace views', () => {
-    expect(resolveWorkspaceViewFromSubPath('post-learnings')).toEqual({
-      view: 'postLearning',
+  it('resolves the bare workspace route to overview', () => {
+    expect(resolveWorkspaceViewFromSubPath('')).toEqual({
+      view: 'overview',
       quizId: null,
       backTarget: null,
+      roadmapId: null,
+      phaseId: null,
     });
+  });
 
-    expect(resolveWorkspaceViewFromSubPath('post-learnings/create')).toEqual({
-      view: 'createPostLearning',
+  it('maps overview and sources routes for the new shell', () => {
+    expect(VIEW_TO_PATH.overview).toBe('');
+    expect(VIEW_TO_PATH.sources).toBe('sources');
+    expect(buildWorkspacePathForView('overview')).toBe('');
+    expect(buildWorkspacePathForView('sources')).toBe('sources');
+    expect(resolveWorkspaceViewFromSubPath('sources')).toEqual({
+      view: 'sources',
       quizId: null,
       backTarget: null,
     });
