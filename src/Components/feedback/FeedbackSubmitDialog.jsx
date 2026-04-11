@@ -12,6 +12,7 @@ import {
 } from '@/Components/ui/dialog';
 import FeedbackQuestionFields from '@/Components/feedback/FeedbackQuestionFields';
 import {
+  dismissFeedbackRequest,
   resolveFeedbackForm,
   submitDirectFeedback,
   submitFeedbackRequest,
@@ -34,6 +35,8 @@ function FeedbackSubmitDialog({
   description = '',
   isDarkMode = false,
   onSubmitted,
+  onDismissed,
+  allowDismiss = false,
 }) {
   const { t, i18n } = useTranslation();
   const { showError, showSuccess } = useToast();
@@ -43,6 +46,7 @@ function FeedbackSubmitDialog({
   const [answersByQuestionId, setAnswersByQuestionId] = useState({});
   const [loadingForm, setLoadingForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
   const [inlineError, setInlineError] = useState('');
 
   const activeForm = request?.form ?? resolvedForm;
@@ -169,6 +173,31 @@ function FeedbackSubmitDialog({
     }
   };
 
+  const handleDismiss = async () => {
+    if (!isRequestMode || !request?.requestId) {
+      onOpenChange?.(false);
+      return;
+    }
+
+    setDismissing(true);
+    setInlineError('');
+
+    try {
+      await dismissFeedbackRequest(request.requestId);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('feedbackUpdated'));
+      }
+      onOpenChange?.(false);
+      onDismissed?.(request.requestId);
+    } catch (error) {
+      const message = getErrorMessage(t, error);
+      setInlineError(message);
+      showError(message);
+    } finally {
+      setDismissing(false);
+    }
+  };
+
   const resolvedTargetLabel = getFeedbackTargetLabel(targetType ?? request?.targetType, currentLang);
   const dialogTitle = title || activeForm?.title || (isEnglish ? `Feedback for ${resolvedTargetLabel}` : `Phản hồi cho ${resolvedTargetLabel}`);
   const dialogDescription = description || activeForm?.description || (isEnglish
@@ -221,16 +250,31 @@ function FeedbackSubmitDialog({
         ) : null}
 
         <DialogFooter className="gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange?.(false)}
-            disabled={submitting}
-            className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
-          >
-            {isEnglish ? 'Cancel' : 'Hủy'}
-          </Button>
-          <Button type="button" onClick={handleSubmit} disabled={submitting || loadingForm || !activeForm}>
+          {allowDismiss && isRequestMode ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleDismiss}
+              disabled={submitting || dismissing}
+              className={isDarkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}
+            >
+              {dismissing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {dismissing
+                ? (isEnglish ? 'Skipping...' : 'Đang bỏ qua...')
+                : (isEnglish ? 'Skip' : 'Bỏ qua')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange?.(false)}
+              disabled={submitting || dismissing}
+              className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
+            >
+              {isEnglish ? 'Cancel' : 'Hủy'}
+            </Button>
+          )}
+          <Button type="button" onClick={handleSubmit} disabled={submitting || dismissing || loadingForm || !activeForm}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {submitting
               ? (isEnglish ? 'Submitting...' : 'Đang gửi...')

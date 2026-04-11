@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -14,6 +15,7 @@ import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory,
   publishGroupQuiz, setGroupQuizAudience,
 } from "@/api/QuizAPI";
+import { recordQuizReviewView } from "@/api/ChallengeAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
@@ -104,6 +106,7 @@ function QuizDetailView({
   challengeSnapshotReviewMode = false,
 }) {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -145,6 +148,22 @@ function QuizDetailView({
   useEffect(() => {
     setCurrentStatus(quizMeta?.status || quiz?.status || "DRAFT");
   }, [quizMeta?.status, quiz?.status]);
+
+  /** Reviewer challenge: ghi nhận đã mở xem snapshot (phục vụ nhắc mail & nghiệp vụ gỡ reviewer). */
+  useEffect(() => {
+    if (!challengeSnapshotReviewMode || _contextType !== "GROUP" || !_contextId || !quiz?.quizId) return;
+    const ws = Number(_contextId);
+    const qid = Number(quiz.quizId);
+    if (!Number.isFinite(ws) || !Number.isFinite(qid)) return;
+    void (async () => {
+      try {
+        await recordQuizReviewView(ws, qid);
+        queryClient.invalidateQueries({ queryKey: ["challenge-detail", ws] });
+      } catch {
+        /* Chỉ reviewer mới thành công; lỗi khác không chặn xem đề */
+      }
+    })();
+  }, [challengeSnapshotReviewMode, _contextType, _contextId, quiz?.quizId, queryClient]);
 
   // Lấy toàn bộ dữ liệu quiz chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {
@@ -492,10 +511,28 @@ function QuizDetailView({
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
-  /** Nhóm + leader: tab Kiểm tra (duyệt câu + đáp án). Member nhóm: tab Câu hỏi như workspace cá nhân. */
-  const showGroupReviewTab = _contextType === "GROUP" && isGroupLeader && !fairPlayRestricts;
+  /** Nhóm + leader: tab Kiểm tra. Snapshot challenge (mở từ «Xem quiz»): cả reviewer (member) cũng cần tab Kiểm tra để xem đủ đáp án. */
+  const showGroupReviewTab =
+    _contextType === "GROUP"
+    && !fairPlayRestricts
+    && (isGroupLeader || challengeSnapshotReviewMode);
   const showQuestionsTab = !showGroupReviewTab;
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
+
+  const snapshotReviewPreferCheckTabRef = React.useRef(false);
+  useEffect(() => {
+    if (snapshotReviewPreferCheckTabRef.current) return;
+    if (
+      !challengeSnapshotReviewMode
+      || !showGroupReviewTab
+      || fairPlayRestricts
+      || isGroupLeader
+    ) {
+      return;
+    }
+    snapshotReviewPreferCheckTabRef.current = true;
+    setActiveTab("review");
+  }, [challengeSnapshotReviewMode, showGroupReviewTab, fairPlayRestricts, isGroupLeader]);
 
   useEffect(() => {
     if (showGroupReviewTab && activeTab === "questions") {
@@ -690,6 +727,10 @@ function QuizDetailView({
             questionsMap={questionsMap}
             answersMap={answersMap}
             loading={loading}
+            quizId={quiz?.quizId}
+            workspaceId={_contextId}
+            isLeader={isGroupLeader}
+            isReviewer={challengeSnapshotReviewMode && !isGroupLeader}
           />
         )}
 

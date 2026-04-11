@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
@@ -26,7 +26,11 @@ const HomePage = lazy(loadHomePage);
 const ProfilePage = lazy(() => import('./Pages/Users/Profile/ProfilePage'));
 const PlanPage = lazy(() => import('./Pages/Users/Plan/PlanPage'));
 const WalletPage = lazy(() => import('./Pages/Users/Credit/WalletPage'));
+const FeedbackSystemLayout = lazy(() => import('./Pages/Users/Feedback/FeedbackSystemLayout'));
 const FeedbackCenterPage = lazy(() => import('./Pages/Users/Feedback/FeedbackCenterPage'));
+const FeedbackProductPage = lazy(() => import('./Pages/Users/Feedback/FeedbackProductPage'));
+const FeedbackSystemPage = lazy(() => import('./Pages/Users/Feedback/FeedbackSystemPage'));
+const FeedbackSurveyPage = lazy(() => import('./Pages/Users/Feedback/FeedbackSurveyPage'));
 const WorkspacePage = lazy(loadWorkspacePage);
 const GroupWorkspacePage = lazy(loadGroupWorkspacePage);
 const GroupManagementPage = lazy(() => import('./Pages/Users/Group/Group_leader/GroupManagementPage'));
@@ -65,7 +69,10 @@ const AiModelsManagement = lazy(() => import('./Pages/SuperAdmin/AiModelsManagem
 const AiCostManagement = lazy(() => import('./Pages/SuperAdmin/AiCostManagement'));
 const UserDetailPage = lazy(() => import('./Pages/SuperAdmin/UserDetailPage'));
 const GroupDetailPage = lazy(() => import('./Pages/SuperAdmin/GroupDetailPage'));
+const FeedbackManagementLayout = lazy(() => import('./Pages/SuperAdmin/FeedbackManagementLayout'));
 const FeedbackManagement = lazy(() => import('./Pages/SuperAdmin/FeedbackManagement'));
+const FeedbackTicketManagementPage = lazy(() => import('./Pages/SuperAdmin/FeedbackTicketManagementPage'));
+const FeedbackResponseActivityPage = lazy(() => import('./Pages/SuperAdmin/FeedbackResponseActivityPage'));
 
 function MainRoutes() {
   return (
@@ -93,7 +100,13 @@ function MainRoutes() {
         <Route path="/profiles" element={<ProfilePage />} />
         <Route path="/plans" element={<PlanPage />} />
         <Route path="/wallets" element={<WalletPage />} />
-        <Route path="/feedbacks" element={<FeedbackCenterPage />} />
+        <Route path="/feedbacks" element={<FeedbackSystemLayout />}>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<FeedbackCenterPage />} />
+          <Route path="product" element={<FeedbackProductPage />} />
+          <Route path="system" element={<FeedbackSystemPage />} />
+          <Route path="surveys" element={<FeedbackSurveyPage />} />
+        </Route>
         <Route path="/home" element={<HomePage />} />
         <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
         <Route path="/workspaces/:workspaceId/*" element={<WorkspacePage />} />
@@ -124,7 +137,12 @@ function MainRoutes() {
           <Route path="payments" element={<AdminPaymentManagement />} />
             <Route path="system-settings" element={<SystemSettingManagement />} />
             <Route path="ai-action-policies" element={<AiActionPolicyManagement />} />
-            <Route path="feedbacks" element={<FeedbackManagement />} />
+            <Route path="feedbacks" element={<FeedbackManagementLayout />}>
+              <Route index element={<Navigate to="forms" replace />} />
+              <Route path="forms" element={<FeedbackManagement />} />
+              <Route path="tickets" element={<FeedbackTicketManagementPage />} />
+              <Route path="activity" element={<FeedbackResponseActivityPage />} />
+            </Route>
         </Route>
       </Route>
 
