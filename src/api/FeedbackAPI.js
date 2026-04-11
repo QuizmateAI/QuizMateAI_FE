@@ -119,8 +119,24 @@ export const submitFeedbackRequest = async (requestId, payload) => {
   return response;
 };
 
+export const dismissFeedbackRequest = async (requestId) => {
+  const response = await api.post(`/feedback/requests/${requestId}/dismiss`);
+  return response;
+};
+
 export const submitDirectFeedback = async (payload) => {
   const response = await api.post('/feedback/direct-submit', payload);
+  return response;
+};
+
+export const getMyFeedbackTickets = async (params = {}) => {
+  const suffix = buildQueryString(params);
+  const response = await api.get(`/feedback/tickets${suffix}`);
+  return response;
+};
+
+export const createFeedbackTicket = async (payload) => {
+  const response = await api.post('/feedback/tickets', payload);
   return response;
 };
 
@@ -146,6 +162,22 @@ export const updateManagementFeedbackForm = async (formId, payload) => {
 
 export const getManagementFeedbackOverviewStats = async () => {
   const response = await api.get('/management/feedback/stats/overview');
+  return response;
+};
+
+export const getManagementFeedbackTickets = async (params = {}) => {
+  const suffix = buildQueryString(params);
+  const response = await api.get(`/management/feedback/tickets${suffix}`);
+  return response;
+};
+
+export const getManagementFeedbackTicketDetail = async (requestId) => {
+  const response = await api.get(`/management/feedback/tickets/${requestId}`);
+  return response;
+};
+
+export const updateManagementFeedbackTicket = async (requestId, payload) => {
+  const response = await api.patch(`/management/feedback/tickets/${requestId}`, payload);
   return response;
 };
 

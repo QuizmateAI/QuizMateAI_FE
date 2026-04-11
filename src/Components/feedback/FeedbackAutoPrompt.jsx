@@ -13,7 +13,7 @@ function shouldBlockAutoPrompt(pathname) {
     return true;
   }
 
-  if (pathname === '/feedbacks') {
+  if (pathname.startsWith('/feedbacks')) {
     return true;
   }
 
@@ -80,7 +80,12 @@ function FeedbackAutoPrompt() {
       open={open}
       onOpenChange={setOpen}
       request={activeRequest}
+      allowDismiss
       onSubmitted={() => {
+        setActiveRequest(null);
+        setOpen(false);
+      }}
+      onDismissed={() => {
         setActiveRequest(null);
         setOpen(false);
       }}

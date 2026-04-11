@@ -43,7 +43,6 @@ import {
   getManagementFeedbackOverviewStats,
   updateManagementFeedbackForm,
 } from '@/api/FeedbackAPI';
-import FeedbackResponseActivityPanel from '@/Pages/SuperAdmin/Components/FeedbackResponseActivityPanel';
 import {
   buildFeedbackFormConfig,
   buildFeedbackQuestionConfig,
@@ -59,7 +58,7 @@ import {
 } from '@/lib/feedback';
 import { cn } from '@/lib/utils';
 
-const TARGET_OPTIONS = ['QUIZ', 'PHASE', 'FLASHCARD', 'ROADMAP', 'WORKSPACE', 'SYSTEM_MILESTONE'];
+const TARGET_OPTIONS = ['QUIZ', 'PHASE', 'FLASHCARD', 'ROADMAP', 'WORKSPACE', 'SYSTEM_MILESTONE', 'SUPPORT'];
 const TRIGGER_OPTIONS = ['AFTER_COMPLETION', 'AFTER_TIME', 'AFTER_N_COMPLETIONS', 'MANUAL'];
 const QUESTION_TYPE_OPTIONS = ['STAR_RATING', 'YES_NO', 'TEXT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE'];
 
@@ -848,11 +847,6 @@ function FeedbackManagement() {
               )}
           </section>
         </div>
-
-        <FeedbackResponseActivityPanel
-          forms={forms}
-          isDarkMode={isDarkMode}
-        />
 
         <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
           <DialogContent className={cn('max-w-5xl', isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : '')}>
