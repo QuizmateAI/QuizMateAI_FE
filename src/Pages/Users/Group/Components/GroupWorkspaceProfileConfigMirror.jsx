@@ -204,7 +204,7 @@ function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled,
             : 'border-cyan-300 bg-cyan-50'
           : isDarkMode
             ? 'border-white/10 bg-white/[0.03] hover:border-white/20'
-            : 'border-slate-200 bg-white hover:border-slate-300',
+            : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] hover:border-[color:var(--surface-border-strong)]',
         disabled && 'cursor-not-allowed opacity-60'
       )}
     >
@@ -213,7 +213,7 @@ function ChoiceCard({ active, onClick, icon: Icon, title, description, disabled,
           'flex h-10 w-10 items-center justify-center rounded-2xl border',
           active
             ? isDarkMode ? 'border-cyan-300/35 bg-cyan-400/20 text-cyan-100' : 'border-cyan-200 bg-white text-cyan-700'
-            : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'
+            : isDarkMode ? 'border-white/10 bg-slate-900/70 text-slate-200' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)] text-slate-600'
         )}>
           <Icon className="h-5 w-5" />
         </div>
@@ -239,7 +239,7 @@ function ToggleTile({ checked, onChange, title, description, badge, disabled, is
             : 'border-cyan-200 bg-cyan-50/90'
           : isDarkMode
             ? 'border-white/10 bg-white/[0.03]'
-            : 'border-slate-200 bg-white',
+            : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)]',
         disabled && 'cursor-not-allowed opacity-70'
       )}
     >
@@ -287,7 +287,7 @@ function GroupWorkspaceProfileConfigMirror({
     'w-full rounded-[22px] border px-4 py-3.5 text-sm outline-none transition-all duration-200 focus:ring-4',
     isDarkMode
       ? 'border-slate-700/90 bg-slate-950/80 text-white placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] focus:border-cyan-300 focus:bg-slate-950 focus:ring-cyan-400/10'
-      : 'border-slate-300 bg-white text-slate-950 placeholder:text-slate-400 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.28)] focus:border-cyan-500 focus:bg-cyan-50/30 focus:ring-cyan-500/15'
+      : 'border-[color:var(--surface-border-mid)] bg-[color:var(--design-30)] text-slate-950 placeholder:text-slate-400 shadow-[var(--surface-shadow-soft)] focus:border-cyan-500 focus:bg-cyan-50/35 focus:ring-cyan-500/15'
   );
   const textareaClass = cn(inputClass, 'min-h-[156px] resize-none rounded-[24px] px-4 py-4');
   const compactTextareaClass = cn(inputClass, 'min-h-[72px] overflow-hidden resize-none');
@@ -295,7 +295,7 @@ function GroupWorkspaceProfileConfigMirror({
     'rounded-[26px] border p-4 md:p-5',
     isDarkMode
       ? 'border-white/10 bg-white/[0.035]'
-      : 'border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(247,250,255,0.98))] shadow-[0_24px_54px_-40px_rgba(14,165,233,0.24)]'
+      : 'border-[color:var(--surface-border-soft)] bg-[linear-gradient(180deg,var(--design-30)_0%,var(--design-60)_100%)] shadow-[var(--surface-shadow-soft)]'
   );
   const fieldEyebrowClass = cn(
     'text-[11px] font-semibold uppercase tracking-[0.16em]',
@@ -710,8 +710,8 @@ function GroupWorkspaceProfileConfigMirror({
     onOpenChange(false);
   };
 
-  const shellClass = isDarkMode ? 'border-slate-800 bg-gradient-to-br from-[#020817] via-[#020817] to-slate-900/50 text-white' : 'border-slate-300 bg-[linear-gradient(180deg,#f8fbff_0%,#edf6ff_100%)] text-slate-900';
-  const panelClass = isDarkMode ? 'border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.02]' : 'border-slate-300 bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] shadow-[0_30px_64px_-48px_rgba(15,23,42,0.22)]';
+  const shellClass = isDarkMode ? 'border-slate-800 bg-gradient-to-br from-[#020817] via-[#020817] to-slate-900/50 text-white' : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(180deg,var(--design-60)_0%,#edf6ff_100%)] text-slate-900';
+  const panelClass = isDarkMode ? 'border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.02]' : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(180deg,var(--design-30)_0%,#f7fbff_100%)] shadow-[0_30px_64px_-48px_rgba(15,23,42,0.18)]';
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
   const analysisToneClass = knowledgeAnalysis?.warning
     ? isDarkMode
@@ -727,7 +727,7 @@ function GroupWorkspaceProfileConfigMirror({
         hideClose
         onEscapeKeyDown={canClose ? undefined : (event) => event.preventDefault()}
         onInteractOutside={canClose ? undefined : (event) => event.preventDefault()}
-        className={cn('max-h-[92vh] max-w-6xl overflow-hidden rounded-[32px] border p-0 shadow-2xl', shellClass, fontClass)}
+        className={cn('flex max-h-[92vh] max-w-6xl flex-col overflow-hidden rounded-[32px] border p-0 shadow-2xl', shellClass, fontClass)}
       >
         <DialogHeader className="border-b border-inherit px-8 pb-5 pt-5 text-left">
           <div className="flex items-start justify-between gap-4">
@@ -773,7 +773,7 @@ function GroupWorkspaceProfileConfigMirror({
                   'inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors',
                   isDarkMode
                     ? 'border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-900'
-                    : 'border-slate-300 bg-white text-slate-700 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.35)] hover:bg-slate-50'
+                    : 'border-[color:var(--surface-border-mid)] bg-[color:var(--design-30)] text-slate-700 shadow-[var(--surface-shadow-soft)] hover:bg-[color:var(--design-60)]'
                 )}
               >
                 <X className="h-4 w-4" />
@@ -782,7 +782,7 @@ function GroupWorkspaceProfileConfigMirror({
               <button
                 type="button"
                 onClick={handleHeaderClose}
-                className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl border', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-slate-200 bg-white text-slate-600')}
+                className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl border', isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] text-slate-600')}
                 aria-label={t('groupProfileConfig.common.close')}
               >
                 <X className="h-4 w-4" />
@@ -795,7 +795,7 @@ function GroupWorkspaceProfileConfigMirror({
                 'rounded-[26px] border px-5 py-5 shadow-[0_20px_44px_-30px_rgba(15,23,42,0.35)]',
                 isDarkMode
                   ? 'border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,47,73,0.78),rgba(6,78,59,0.78))]'
-                  : 'border-slate-300 bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(239,246,255,1),rgba(236,253,245,0.98))]'
+                  : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(135deg,rgba(255,255,255,0.99),rgba(239,246,255,1),rgba(236,253,245,0.98))]'
               )}>
                 <div className="flex items-start gap-3">
                   <div className={cn(
@@ -837,7 +837,7 @@ function GroupWorkspaceProfileConfigMirror({
                           : 'border-cyan-400 bg-[linear-gradient(135deg,#ecfeff_0%,#f0fdfa_100%)] shadow-[0_24px_44px_-34px_rgba(6,182,212,0.3)]'
                         : isDarkMode
                           ? 'border-white/10 bg-white/[0.03]'
-                          : 'border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50',
+                          : 'border-[color:var(--surface-border-mid)] bg-[color:var(--design-30)] hover:border-[color:var(--surface-border-strong)] hover:bg-[color:var(--design-60)]',
                       !unlocked && 'opacity-60'
                     )}
                   >
@@ -850,7 +850,7 @@ function GroupWorkspaceProfileConfigMirror({
                             : 'border-cyan-200 bg-white text-cyan-700 shadow-sm'
                           : isDarkMode
                             ? 'border-white/10 bg-slate-900/70 text-slate-200'
-                            : 'border-slate-300 bg-slate-50 text-slate-600'
+                            : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)] text-slate-600'
                       )}>
                         <Icon className="h-5 w-5" />
                       </div>
@@ -866,7 +866,7 @@ function GroupWorkspaceProfileConfigMirror({
           )}
         </DialogHeader>
 
-        <div className="custom-scrollbar-group-setup max-h-[64vh] overflow-y-auto px-8 pb-7 pt-4 scroll-smooth md:pb-8">
+        <div className="custom-scrollbar-group-setup min-h-0 flex-1 overflow-y-auto px-8 pb-8 pt-4 scroll-smooth md:pb-10">
           {loading ? (
             <div className="flex min-h-[320px] items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
@@ -875,7 +875,7 @@ function GroupWorkspaceProfileConfigMirror({
             <div className="space-y-4">
               <div className={cn(
                 'rounded-[20px] border px-4 py-3',
-                isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'
+                isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)]'
               )}>
                 <p className={cn('text-sm leading-6', confirmMutedClass)}>
                   {isVi
@@ -888,7 +888,7 @@ function GroupWorkspaceProfileConfigMirror({
                 'rounded-[26px] border px-5 py-5 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.28)]',
                 isDarkMode
                   ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.82))]'
-                  : 'border-slate-300 bg-[linear-gradient(180deg,#ffffff_0%,#f4f9ff_100%)]'
+                  : 'border-[color:var(--surface-border-mid)] bg-[linear-gradient(180deg,var(--design-30)_0%,#f4f9ff_100%)]'
               )}>
                 <div className="border-b border-inherit pb-4">
                   <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
@@ -925,7 +925,7 @@ function GroupWorkspaceProfileConfigMirror({
                               'rounded-[20px] border px-3.5 py-3.5 shadow-sm',
                               isDarkMode
                                 ? 'border-white/10 bg-white/[0.04]'
-                                : 'border-slate-300 bg-slate-50'
+                                : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)]'
                             )}
                           >
                             <p className={cn('text-[11px] font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
@@ -1108,7 +1108,7 @@ function GroupWorkspaceProfileConfigMirror({
                   {analysisStatus === 'success' ? (
                     <div className={cn(
                       'rounded-[24px] border p-4',
-                      isDarkMode ? 'border-slate-700 bg-slate-950/50' : 'border-slate-200 bg-slate-50/80'
+                      isDarkMode ? 'border-slate-700 bg-slate-950/50' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)]'
                     )}>
                       <p className="mb-3 text-sm font-semibold">
                         {t('groupProfileConfig.stepTwo.domainSuggestions')} <span className="text-rose-500">*</span>
@@ -1134,7 +1134,7 @@ function GroupWorkspaceProfileConfigMirror({
                                       : 'border-cyan-300 bg-cyan-50 text-cyan-900 hover:border-cyan-400'
                                     : isDarkMode
                                       ? 'border-white/10 bg-white/[0.03] hover:border-white/20'
-                                      : 'border-slate-200 bg-white hover:border-slate-300'
+                                      : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] hover:border-[color:var(--surface-border-strong)]'
                                 )}
                               >
                                 <div className={cn(
@@ -1168,7 +1168,7 @@ function GroupWorkspaceProfileConfigMirror({
                       ) : (
                         <div className={cn(
                           'rounded-[20px] border border-dashed px-4 py-3 text-sm leading-6',
-                          isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-white text-slate-600'
+                          isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] text-slate-600'
                         )}>
                           <p className="font-semibold">
                             {t('groupProfileConfig.stepTwo.analysis.emptyDomainTitle')}
@@ -1275,7 +1275,7 @@ function GroupWorkspaceProfileConfigMirror({
 
                   <div className={cn(
                     'mt-4 rounded-[24px] border p-4',
-                    isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-slate-50/80'
+                    isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-60)]'
                   )}>
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-semibold">{t('groupProfileConfig.stepTwo.ready.title')}</p>
@@ -1302,7 +1302,7 @@ function GroupWorkspaceProfileConfigMirror({
                                 : 'border-emerald-100 bg-emerald-50/80'
                               : isDarkMode
                                 ? 'border-white/10 bg-slate-950/50'
-                                : 'border-slate-200 bg-white'
+                                : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)]'
                           )}
                         >
                           <div className={cn(
@@ -1329,10 +1329,10 @@ function GroupWorkspaceProfileConfigMirror({
         </div>
 
         <DialogFooter className={cn(
-          'sticky bottom-0 left-0 right-0 flex flex-wrap items-center justify-between gap-3 border-t px-8 py-4 backdrop-blur-xl',
+          'relative z-10 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t px-8 py-4 backdrop-blur-xl',
           isDarkMode 
             ? 'border-slate-800 bg-gradient-to-t from-[#020817] via-[#020817]/95 to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]' 
-            : 'border-slate-200 bg-gradient-to-t from-[#f8fbff] via-[#f8fbff]/95 to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
+            : 'border-[color:var(--surface-border-soft)] bg-gradient-to-t from-[var(--design-60)] via-[var(--design-60)] to-transparent shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
         )}>
           <div className="space-y-1">
             <div className={cn('text-xs leading-5', showProfileConfirm ? confirmMutedClass : mutedClass)}>
@@ -1354,7 +1354,7 @@ function GroupWorkspaceProfileConfigMirror({
                   onClick={() => setShowProfileConfirm(false)}
                   className={cn(
                     'rounded-[24px] px-5',
-                    isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] text-slate-700 hover:bg-[color:var(--design-60)]'
                   )}
                 >
                   {isVi ? 'Quay lại chỉnh sửa' : 'Back to edit'}

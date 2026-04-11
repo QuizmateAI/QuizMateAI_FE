@@ -317,8 +317,8 @@ export default function GroupWalletTab({
     });
   };
 
-  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-white/10 bg-[#08131a]/92' : 'border-white/80 bg-white/82'}`;
-  const innerCardClass = isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-white/80 bg-white/78';
+  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-white/12 bg-[#08131a]/92' : 'border-slate-200/85 bg-white/86'}`;
+  const innerCardClass = isDarkMode ? 'border-white/12 bg-white/[0.045]' : 'border-slate-200/80 bg-white/92';
   const subtleTextClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const eyebrowClass = 'text-slate-500';
 
@@ -489,7 +489,7 @@ export default function GroupWalletTab({
                     type="button"
                     className={cn(
                       'flex w-full max-w-full items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:brightness-110',
-                      isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200 bg-white/80',
+                      isDarkMode ? 'border-white/12 bg-black/20' : 'border-slate-200/90 bg-white/94',
                     )}
                     onClick={() => openGroupCreditCheckout(pkg.creditPackageId)}
                   >
@@ -542,7 +542,7 @@ export default function GroupWalletTab({
             ) : purchaseHistory.map((payment) => {
               const statusMeta = paymentStatusMeta(payment.paymentStatus, lang, isDarkMode);
               return (
-                <div key={payment.paymentId || payment.orderId} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200 bg-white/80')}>
+                <div key={payment.paymentId || payment.orderId} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/12 bg-black/20' : 'border-slate-200/90 bg-white/94')}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
@@ -601,7 +601,7 @@ export default function GroupWalletTab({
                 : sanitizeActivityNote(tx.note);
 
               return (
-                <div key={tx.creditTransactionId} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200 bg-white/80')}>
+                <div key={tx.creditTransactionId} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/12 bg-black/20' : 'border-slate-200/90 bg-white/94')}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">

@@ -46,6 +46,7 @@ function CreateQuizForm({
   contextId: defaultContextId,
   selectedSourceIds = [],
   sources = [],
+  workspaceMaterialsEmptyMessage,
   planEntitlements = null,
   /** Gợi ý từ pending assessment — chỉ hỗ trợ workspace cá nhân; group nên tắt. */
   showInlineRecommendations = true,
