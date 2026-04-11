@@ -1,5 +1,5 @@
 import React from "react";
-import { BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, GripHorizontal, Layers3, Map, Maximize2, Minimize2, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
+import { BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, Layers3, Map, Maximize2, Minimize2, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 

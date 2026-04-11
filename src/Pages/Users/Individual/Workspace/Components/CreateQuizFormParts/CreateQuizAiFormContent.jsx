@@ -66,6 +66,7 @@ function CreateQuizAiFormContent({
     hasAdvanceQuizConfig = false,
     onToggleMaterialSelection,
     readOnly = false,
+    workspaceMaterialsEmptyMessage,
   } = ui;
   const {
     aiDuration,
@@ -282,7 +283,7 @@ function CreateQuizAiFormContent({
         </div>
         {workspaceSources.length === 0 ? (
           <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
+            {workspaceMaterialsEmptyMessage || t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
           </p>
         ) : (
           <div

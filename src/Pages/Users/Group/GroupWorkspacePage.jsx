@@ -2,16 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
 import ListSpinner from '@/Components/ui/ListSpinner';
-import UploadSourceDialog from './Components/UploadSourceDialog';
-import GroupDocumentsTab from './Components/GroupDocumentsTab';
-import InviteMemberDialog from './Group_leader/InviteMemberDialog';
-import GroupWorkspaceProfileConfigDialog from './Components/GroupWorkspaceProfileConfigDialog';
-import GroupDashboardTab from './Group_leader/GroupDashboardTab';
-import GroupMembersTab from './Group_leader/GroupMembersTab';
-import GroupSettingsTab from './Group_leader/GroupSettingsTab';
 import GroupWalletTab from './Group_leader/GroupWalletTab';
-import ChatPanel from './Components/ChatPanel';
-import ChallengeTab from './Components/ChallengeTab';
 import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
 import {
   Activity,
@@ -61,6 +52,7 @@ const loadInviteMemberDialog = () => import("./Group_leader/InviteMemberDialog")
 const loadGroupWorkspaceProfileConfigDialog = () => import("./Components/GroupWorkspaceProfileConfigDialog");
 const loadGroupDashboardTab = () => import("./Group_leader/GroupDashboardTab");
 const loadGroupMembersTab = () => import("./Group_leader/GroupMembersTab");
+const loadGroupMemberStatsTab = () => import("./Group_leader/GroupMemberStatsTab");
 const loadGroupSettingsTab = () => import("./Group_leader/GroupSettingsTab");
 const loadGroupChatPanel = () => import("./Components/ChatPanel");
 const loadChallengeTab = () => import("./Components/ChallengeTab");
@@ -73,6 +65,7 @@ const LazyInviteMemberDialog = React.lazy(loadInviteMemberDialog);
 const LazyGroupWorkspaceProfileConfigDialog = React.lazy(loadGroupWorkspaceProfileConfigDialog);
 const LazyGroupDashboardTab = React.lazy(loadGroupDashboardTab);
 const LazyGroupMembersTab = React.lazy(loadGroupMembersTab);
+const LazyGroupMemberStatsTab = React.lazy(loadGroupMemberStatsTab);
 const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
 const LazyGroupChatPanel = React.lazy(loadGroupChatPanel);
 const LazyChallengeTab = React.lazy(loadChallengeTab);
@@ -256,6 +249,7 @@ const GROUP_WORKSPACE_VALID_SECTIONS = [
   'personalDashboard',
   'documents',
   'members',
+  'memberStats',
   'notifications',
   'flashcard',
   'quiz',
@@ -265,6 +259,14 @@ const GROUP_WORKSPACE_VALID_SECTIONS = [
   'wallet',
   'settings',
 ];
+
+const GROUP_SECTIONS_REQUIRE_MATERIALS = new Set([
+  'roadmap',
+  'quiz',
+  'flashcard',
+  'mockTest',
+  'challenge',
+]);
 
 function shouldTrackInLeaderReviewQueue(status, needReview) {
   return isProcessingMaterialStatus(status) || Boolean(needReview);
@@ -699,6 +701,11 @@ function GroupWorkspacePage() {
       return;
     }
 
+    if (activeSection === 'memberStats' && !isMember) {
+      void loadGroupMemberStatsTab();
+      return;
+    }
+
     if (activeSection === 'challenge') {
       void loadChallengeTab();
       return;
@@ -790,6 +797,25 @@ function GroupWorkspacePage() {
     ? 'bg-[#06131a] text-white'
     : 'bg-[linear-gradient(180deg,#fffaf0_0%,#f4fbf7_46%,#eef6ff_100%)] text-slate-900';
   const resolveUiErrorMessage = useCallback((error) => getErrorMessage(t, error), [t]);
+
+  useEffect(() => {
+    const hasEnoughSourceStateToEnforce = hasCheckedInitialSources || hasMaterialsFromProfile;
+    if (!hasEnoughSourceStateToEnforce) return;
+    if (hasUploadedMaterials) return;
+    if (!GROUP_SECTIONS_REQUIRE_MATERIALS.has(activeSection)) return;
+
+    setActiveSection('documents');
+    setActiveView(null);
+    showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
+  }, [
+    activeSection,
+    hasCheckedInitialSources,
+    hasMaterialsFromProfile,
+    hasUploadedMaterials,
+    setActiveSection,
+    showInfo,
+    t,
+  ]);
 
   const handleGroupBuyCreditPrimary = useCallback(() => {
     setGroupBuyCreditModalOpen(false);
@@ -1981,12 +2007,22 @@ function GroupWorkspacePage() {
     }
 
     const disabledActionsByRole = {
-      MEMBER: new Set(['dashboard', 'members', 'wallet', 'settings']),
+      MEMBER: new Set(['dashboard', 'members', 'memberStats', 'wallet', 'settings']),
       CONTRIBUTOR: new Set(['dashboard', 'wallet', 'settings']),
       LEADER: new Set([]),
     };
     if (disabledActionsByRole[currentRoleKey]?.has(actionKey)) {
       showInfo(currentLang === 'en' ? 'This feature is not available for your role.' : 'Tính năng này chưa khả dụng cho vai trò của bạn.');
+      return;
+    }
+
+    if (GROUP_SECTIONS_REQUIRE_MATERIALS.has(actionKey) && !hasUploadedMaterials) {
+      showInfo(t('groupWorkspace.studio.requireUploadBeforeActions'));
+      setActiveSection('documents');
+      setActiveView(null);
+      if (canUploadSource) {
+        setUploadDialogOpen(true);
+      }
       return;
     }
 
@@ -2005,7 +2041,17 @@ function GroupWorkspacePage() {
     }
     setActiveView(actionKey);
     setMobilePanel(null);
-  }, [setActiveSection, currentRoleKey, showInfo, currentLang, shouldForceProfileSetup, planEntitlements.hasWorkspaceAnalytics]);
+  }, [
+    setActiveSection,
+    currentRoleKey,
+    showInfo,
+    currentLang,
+    shouldForceProfileSetup,
+    hasUploadedMaterials,
+    canUploadSource,
+    planEntitlements.hasWorkspaceAnalytics,
+    t,
+  ]);
 
   const handleDismissWelcome = useCallback(() => {
     if (!resolvedWorkspaceId) return;
@@ -2453,9 +2499,10 @@ function GroupWorkspacePage() {
     quiz: t('workspace.studio.actions.quiz'),
     flashcard: t('workspace.studio.actions.flashcard'),
     mockTest: t('workspace.studio.actions.mockTest'),
-    challenge: 'Challenge',
+    challenge: t('groupWorkspace.challenge.title'),
     notifications: t('groupWorkspace.studio.activity'),
     members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
+    memberStats: t('groupWorkspace.studio.memberStats'),
     wallet: t('groupWorkspace.studio.wallet', 'Group wallet'),
     settings: t('workspaceSettings'),
   };
@@ -2510,13 +2557,14 @@ function GroupWorkspacePage() {
       ? [{ key: 'dashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.dashboard, disabled: false }]
       : [{ key: 'personalDashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.personalDashboard, disabled: false }]),
     { key: 'documents', icon: FolderOpen, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-500/20', label: sectionLabels.documents },
-    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.roadmap },
-    { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionLabels.quiz },
-    { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard },
-    { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest },
-    { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge },
+    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.roadmap, disabled: !hasUploadedMaterials },
+    { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionLabels.quiz, disabled: !hasUploadedMaterials },
+    { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard, disabled: !hasUploadedMaterials },
+    { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest, disabled: !hasUploadedMaterials },
+    { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge, disabled: !hasUploadedMaterials },
     { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionLabels.notifications, disabled: false },
     { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: sectionLabels.members, disabled: isMember },
+    { key: 'memberStats', icon: Activity, color: 'text-teal-500', bg: 'bg-teal-100 dark:bg-teal-500/20', label: sectionLabels.memberStats, disabled: isMember },
     { key: 'wallet', icon: CreditCard, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.wallet, disabled: !isLeader || !canManageGroup },
     { key: 'settings', icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20', label: sectionLabels.settings, disabled: !isLeader || !canManageGroup }
   ];
@@ -2524,7 +2572,7 @@ function GroupWorkspacePage() {
   const groupStudioActionGroups = [
     { label: t('groupWorkspace.studio.groupStudy', 'Học tập'), keys: ['documents', 'roadmap', 'quiz', 'flashcard', 'mockTest'] },
     { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'notifications'] },
-    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'wallet', 'settings'] },
+    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'memberStats', 'wallet', 'settings'] },
   ];
 
   const renderActivityFeed = (compact = false) => (
@@ -2643,7 +2691,7 @@ function GroupWorkspacePage() {
               <div className="mt-5 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={() => setActiveSection('roadmap')}
+                  onClick={() => handleStudioAction('roadmap')}
                   className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-700"
                 >
                   <MapIcon className="h-4 w-4" />
@@ -2697,16 +2745,13 @@ function GroupWorkspacePage() {
             const Icon = item.icon;
             return (
               <div key={item.label} className={`rounded-[24px] border p-5 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
-                <div className="flex items-center justify-between">
-                  <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-white/[0.06] text-cyan-200' : 'bg-cyan-50 text-cyan-700'}`}>
+                <div className="flex items-center gap-3">
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-white/[0.06] text-cyan-200' : 'bg-cyan-50 text-cyan-700'}`}>
                     <Icon className="h-5 w-5" />
                   </span>
-                  <span className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                    {currentLang === 'en' ? 'Live' : 'Live'}
-                  </span>
+                  <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</p>
                 </div>
                 <p className={`mt-4 text-lg font-bold leading-7 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.value}</p>
-                <p className={`mt-2 text-xs uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.label}</p>
               </div>
             );
           })}
@@ -2989,6 +3034,7 @@ function GroupWorkspacePage() {
               compactMode
               currentUserId={currentUser?.userID}
               hasWorkspaceAnalytics={planEntitlements.hasWorkspaceAnalytics}
+              onOpenMemberStats={() => setActiveSection('memberStats')}
               onRequestAnalyticsUpgrade={() => {
                 setPlanUpgradeFeatureName(currentLang === 'en' ? 'Workspace analytics' : 'Thống kê workspace');
                 setPlanUpgradeModalOpen(true);
@@ -3040,6 +3086,24 @@ function GroupWorkspacePage() {
             onUpdateRole={updateMemberRole}
             onRemoveMember={removeMember}
             onOpenInvite={() => setInviteDialogOpen(true)}
+            />
+          </React.Suspense>
+        );
+
+      case 'memberStats':
+        if (isMember) {
+          return renderPersonalDashboard();
+        }
+        return (
+          <React.Suspense fallback={renderSectionFallback(360)}>
+            <LazyGroupMemberStatsTab
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            members={members}
+            membersLoading={membersLoading}
+            isLeader={isLeader}
+            isContributor={isContributor}
+            onOpenQuizSection={() => handleStudioAction('quiz')}
             />
           </React.Suspense>
         );

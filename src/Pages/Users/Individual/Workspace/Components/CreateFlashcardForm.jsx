@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
 import { ArrowLeft, CheckSquare, CreditCard, Loader2, Lock, Sparkles, Unlock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { generateAIFlashcardSet } from "@/api/FlashcardAPI";
@@ -186,6 +187,8 @@ function CreateFlashcardForm({
   contextId: defaultContextId,
   sources = [],
   selectedSourceIds = [],
+  onToggleMaterialSelection,
+  workspaceMaterialsEmptyMessage,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -232,6 +235,7 @@ function CreateFlashcardForm({
     () => selectedReadySourceItems.map((item) => item.id),
     [selectedReadySourceItems]
   );
+  const canSelectMaterialsInForm = typeof onToggleMaterialSelection === "function";
 
   const distributionTarget = useMemo(
     () => getDistributionTarget(aiTotalCards, distributionUnitByCount),
@@ -376,6 +380,59 @@ function CreateFlashcardForm({
           <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
             <CheckSquare className="w-4 h-4 text-green-500" /> {t("workspace.quiz.aiConfig.selectedMaterials")}
           </h3>
+          {normalizedSources.length > 0 && canSelectMaterialsInForm ? (
+            <div className="mb-3 space-y-2">
+              <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                {t("groupWorkspace.forms.sourceSelectHint")}
+              </p>
+              <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+                {t("workspace.quiz.aiConfig.materialsSelectedSummary", {
+                  selected: selectedSourceItems.length,
+                  total: normalizedSources.length,
+                })}
+              </p>
+
+              <div
+                className={`max-h-44 overflow-y-auto rounded-lg border ${
+                  isDarkMode ? "divide-slate-800 border-slate-700/80 divide-y" : "divide-gray-100 border-gray-200/90 divide-y"
+                }`}
+              >
+                {normalizedSources.map((item, index) => {
+                  const isSelected = selectedSourceIdSet.has(item.id);
+                  const isReady = isMaterialReadyForFlashcard(item.status);
+
+                  return (
+                    <label
+                      key={item.id ?? `material-${index}`}
+                      className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 text-xs transition-colors ${
+                        isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50/90"
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) => {
+                          onToggleMaterialSelection(item.id, checked === true);
+                        }}
+                        className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}`}
+                      />
+
+                      <span className="min-w-0 flex-1">
+                        <span className={`block break-words leading-snug ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                          {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: item.id })}
+                        </span>
+                        {!isReady ? (
+                          <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${isDarkMode ? "bg-amber-500/15 text-amber-200" : "bg-amber-100 text-amber-700"}`}>
+                            {item.status || "PENDING"}
+                          </span>
+                        ) : null}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           {selectedMaterialIds.length > 0 ? (
             <div className="space-y-2">
               <div className={`text-xs px-3 py-2.5 rounded-lg ${isDarkMode ? "bg-emerald-950/20 text-emerald-400 border border-emerald-900/30" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
@@ -399,9 +456,11 @@ function CreateFlashcardForm({
             </div>
           ) : (
             <div className={`text-xs px-3 py-2.5 rounded-lg ${isDarkMode ? "bg-amber-950/20 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-              {selectedSourceItems.length > 0
-                ? t("workspace.flashcard.aiConfig.noActiveSelectedMaterials", "Chua co tai lieu ACTIVE trong danh sach da chon. Vui long doi xu ly tai lieu hoan tat.")
-                : t("workspace.quiz.aiConfig.noSelectedMaterials")}
+              {normalizedSources.length === 0
+                ? (workspaceMaterialsEmptyMessage || t("workspace.quiz.aiConfig.workspaceMaterialsEmpty"))
+                : selectedSourceItems.length > 0
+                  ? t("workspace.flashcard.aiConfig.noActiveSelectedMaterials", "Chua co tai lieu ACTIVE trong danh sach da chon. Vui long doi xu ly tai lieu hoan tat.")
+                  : t("workspace.quiz.aiConfig.noSelectedMaterials")}
             </div>
           )}
         </div>
