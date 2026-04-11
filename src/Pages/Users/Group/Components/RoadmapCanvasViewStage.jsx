@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, GitBranch, Layers3, Loader2, Lock, Sparkles, Unlock } from "lucide-react";
 import QuizListView from "./QuizListView";
@@ -12,8 +12,80 @@ import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDec
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;
 const KNOWLEDGE_CARD_WIDTH = 196;
+const TOP_SECTION_CARD_MAX_WIDTH = 320;
 const TIMELINE_GAP = 24;
 const TIMELINE_PADDING = 24;
+
+function getCanvasContext() {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  return canvas.getContext("2d");
+}
+
+function countWrappedLines(text, availableWidth, measureWord) {
+  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return 1;
+
+  let lines = 1;
+  let currentLineWidth = 0;
+  const spaceWidth = measureWord(" ");
+
+  words.forEach((word) => {
+    const wordWidth = measureWord(word);
+    const nextWidth = currentLineWidth === 0 ? wordWidth : currentLineWidth + spaceWidth + wordWidth;
+
+    if (nextWidth <= availableWidth) {
+      currentLineWidth = nextWidth;
+      return;
+    }
+
+    lines += 1;
+    currentLineWidth = wordWidth;
+  });
+
+  return lines;
+}
+
+function getTitleWidthForTwoLines(text, { minWidth, maxWidth, horizontalPadding = 40, font = "600 15px sans-serif" }) {
+  if (!String(text || "").trim()) return minWidth;
+
+  const context = getCanvasContext();
+  if (!context) return minWidth;
+  context.font = font;
+
+  const measureWord = (value) => context.measureText(value).width;
+  const safeMinWidth = Math.max(80, Number(minWidth) || 80);
+  const safeMaxWidth = Math.max(safeMinWidth, Number(maxWidth) || safeMinWidth);
+
+  let left = safeMinWidth;
+  let right = safeMaxWidth;
+  let answer = safeMaxWidth;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    const availableWidth = Math.max(40, mid - horizontalPadding);
+    const lines = countWrappedLines(text, availableWidth, measureWord);
+
+    if (lines <= 2) {
+      answer = mid;
+      right = mid - 1;
+    } else {
+      left = mid + 1;
+    }
+  }
+
+  return answer;
+}
+
+function normalizeTitleForWidth(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  return raw
+    .replace(/^giai\s*doan\s*\d+\s*[:\-.)]?\s*/i, "")
+    .replace(/^phase\s*\d+\s*[:\-.)]?\s*/i, "")
+    .trim();
+}
 
 function normalizePositiveId(value) {
   const normalized = Number(value);
@@ -74,6 +146,27 @@ function RoadmapCanvasViewStage({
   const selectedKnowledge = selectedPhase && selectedKnowledgeId
     ? selectedKnowledges.find((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizedSelectedKnowledgeId) ?? null
     : null;
+  const roadmapCardWidth = useMemo(() => {
+    const normalizedTitle = normalizeTitleForWidth(roadmap?.title) || String(roadmap?.title || "");
+    return getTitleWidthForTwoLines(normalizedTitle, {
+      minWidth: ROOT_CARD_WIDTH,
+      maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
+    });
+  }, [roadmap?.title]);
+  const phaseCardWidths = useMemo(() => phases.map((phase) => {
+    const normalizedTitle = normalizeTitleForWidth(phase?.title) || String(phase?.title || "");
+    return getTitleWidthForTwoLines(normalizedTitle, {
+      minWidth: PHASE_CARD_WIDTH,
+      maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
+    });
+  }), [phases]);
+  const selectedKnowledgeCardWidths = useMemo(() => selectedKnowledges.map((knowledge) => {
+    const normalizedTitle = normalizeTitleForWidth(knowledge?.title) || String(knowledge?.title || "");
+    return getTitleWidthForTwoLines(normalizedTitle, {
+      minWidth: KNOWLEDGE_CARD_WIDTH,
+      maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
+    });
+  }), [selectedKnowledges]);
 
   const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
   const globalCurrentIndex = Number.isInteger(globalPhaseId)
@@ -257,12 +350,18 @@ function RoadmapCanvasViewStage({
     );
   const branchOffset = selectedPhaseIndex < 0
     ? TIMELINE_PADDING
-    : TIMELINE_PADDING + ROOT_CARD_WIDTH + TIMELINE_GAP + selectedPhaseIndex * (PHASE_CARD_WIDTH + TIMELINE_GAP);
+    : TIMELINE_PADDING
+      + roadmapCardWidth
+      + TIMELINE_GAP
+      + phaseCardWidths.slice(0, selectedPhaseIndex).reduce((sum, width) => sum + width, 0)
+      + selectedPhaseIndex * TIMELINE_GAP;
   const topPhaseLineWidth = phases.length > 0
-    ? phases.length * PHASE_CARD_WIDTH + phases.length * TIMELINE_GAP
+    ? phaseCardWidths.reduce((sum, width) => sum + width, 0) + phases.length * TIMELINE_GAP
     : 0;
   const knowledgeBranchLineWidth = selectedKnowledges.length > 0
-    ? selectedKnowledges.length * KNOWLEDGE_CARD_WIDTH + Math.max(selectedKnowledges.length - 1, 0) * 12
+    ? selectedKnowledgeCardWidths.slice(0, -1).reduce((sum, width) => sum + width, 0)
+      + Math.max(selectedKnowledges.length - 1, 0) * 12
+      + 8
     : 0;
 
   const getSelectedPhaseViewportLeft = (timelineElement) => {
@@ -271,9 +370,10 @@ function RoadmapCanvasViewStage({
     }
 
     const phaseLeft = TIMELINE_PADDING
-      + ROOT_CARD_WIDTH
+      + roadmapCardWidth
       + TIMELINE_GAP
-      + selectedPhaseIndex * (PHASE_CARD_WIDTH + TIMELINE_GAP);
+      + phaseCardWidths.slice(0, selectedPhaseIndex).reduce((sum, width) => sum + width, 0)
+      + selectedPhaseIndex * TIMELINE_GAP;
     const maxLeft = Math.max(0, timelineElement.scrollWidth - timelineElement.clientWidth - 16);
     return Math.max(0, Math.min(phaseLeft - 24, maxLeft));
   };
@@ -1036,7 +1136,7 @@ function RoadmapCanvasViewStage({
                   <button
                     type="button"
                     onClick={selectRoadmap}
-                    style={{ width: ROOT_CARD_WIDTH }}
+                    style={{ width: roadmapCardWidth }}
                     className={`relative z-20 shrink-0 rounded-[28px] border px-5 py-4 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
                       ? isDarkMode
                         ? "border-emerald-400 bg-emerald-500/10"
@@ -1063,7 +1163,7 @@ function RoadmapCanvasViewStage({
                         key={phase.phaseId}
                         type="button"
                         onClick={() => selectPhase(phase.phaseId)}
-                        style={{ width: PHASE_CARD_WIDTH }}
+                        style={{ width: phaseCardWidths[index] ?? PHASE_CARD_WIDTH }}
                         className={`relative z-10 shrink-0 rounded-[26px] border px-4 py-4 text-left shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all ${isPhaseLocked
                           ? isDarkMode
                             ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
@@ -1136,7 +1236,7 @@ function RoadmapCanvasViewStage({
                             key={knowledge.knowledgeId}
                             type="button"
                             onClick={() => selectKnowledge(selectedPhase.phaseId, knowledge.knowledgeId)}
-                            style={{ width: KNOWLEDGE_CARD_WIDTH }}
+                            style={{ width: selectedKnowledgeCardWidths[knowledgeIndex] ?? KNOWLEDGE_CARD_WIDTH }}
                             className={`relative shrink-0 rounded-[22px] border px-3.5 py-3.5 text-left shadow-[0_18px_45px_rgba(15,23,42,0.1)] transition-all ${isKnowledgeLocked
                               ? isDarkMode
                                 ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
@@ -1179,7 +1279,6 @@ function RoadmapCanvasViewStage({
                     </div>
                   </div>
                 ) : null}
-              </div>
               </div>
             ) : null}
           </div>

@@ -37,6 +37,7 @@ function RoadmapCanvasViewOverview({
   handleKnowledgeDragStart,
   onShareRoadmap,
   renderRoadmapConfigActionButtons,
+  onSelectCenterRoadmap,
 }) {
   const CANVAS_WIDTH = canvasWidth;
   const CANVAS_HEIGHT = canvasHeight;
@@ -48,9 +49,9 @@ function RoadmapCanvasViewOverview({
   const KNOWLEDGE_X = 1210;
   const PHASE_START_Y = 170;
   const PHASE_CARD_BASE_HEIGHT = 188;
-  const KNOWLEDGE_CARD_HEIGHT_COLLAPSED = 118;
-  const KNOWLEDGE_CARD_HEIGHT_EXPANDED = 152;
-  const KNOWLEDGE_CARD_VERTICAL_GAP = 22;
+  const KNOWLEDGE_CARD_HEIGHT_COLLAPSED = 132;
+  const KNOWLEDGE_CARD_HEIGHT_EXPANDED = 176;
+  const KNOWLEDGE_CARD_VERTICAL_GAP = 30;
   const PHASE_BLOCK_GAP = 72;
 
   const estimatePhaseCardHeight = (phase) => {
@@ -307,8 +308,16 @@ function RoadmapCanvasViewOverview({
           </svg>
 
           <div
-            className={`absolute -translate-x-1/2 -translate-y-1/2 w-[320px] rounded-2xl border px-6 py-5 shadow-xl ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
+            className={`absolute -translate-x-1/2 -translate-y-1/2 w-[320px] rounded-2xl border px-6 py-5 shadow-xl cursor-pointer transition-all hover:shadow-2xl ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-100 hover:bg-slate-900/98" : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"}`}
             style={{ left: ROOT_POSITION.x, top: ROOT_POSITION.y }}
+            onClick={() => onSelectCenterRoadmap?.()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                onSelectCenterRoadmap?.();
+              }
+            }}
           >
             <div className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-emerald-900/45 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}>
               <Map className="h-3.5 w-3.5" />
@@ -364,13 +373,13 @@ function RoadmapCanvasViewOverview({
                           <p className={`text-[10px] uppercase tracking-[0.16em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
                             {labels.knowledges}
                           </p>
-                          <h4 className={`mt-1 text-sm font-semibold leading-5 ${fontClass}`}>
+                          <h4 className={`mt-1 line-clamp-2 text-sm font-semibold leading-5 ${fontClass}`}>
                             {knowledge.title}
                           </h4>
                         </div>
                         {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
                       </div>
-                      <p className={`mt-2 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
+                      <p className={`mt-2 line-clamp-2 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
                         {knowledge.description}
                       </p>
                       {isExpanded ? (

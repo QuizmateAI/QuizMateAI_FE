@@ -2452,7 +2452,7 @@ function WorkspacePage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <span className={`text-xs font-semibold ${fontClass}`}>
                   {mockTestGenerationDisplayLabel}
                 </span>
@@ -2501,12 +2501,12 @@ function WorkspacePage() {
           {/* Layout workspace: bình thường là 3 cột, màn hình quá nhỏ thì đưa sources + studio xuống dưới */}
 
           {shouldStackSidePanels ? (
-            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-4">
+            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-1">
               <div className="min-h-0">
                 <ChatPanel {...chatPanelProps} />
               </div>
 
-              <div className="grid min-h-0 grid-cols-2 gap-4">
+              <div className="grid min-h-0 grid-cols-2 gap-1">
                 <div className="min-w-0 min-h-0">
                   {renderSourceWorkspacePanel(false)}
                 </div>
@@ -2517,7 +2517,7 @@ function WorkspacePage() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full gap-4">
+            <div className="flex h-full gap-1">
               {/* Source panel (left) */}
 
               <div

@@ -992,6 +992,7 @@ function RoadmapCanvasView({
         handleKnowledgeDragStart={handleKnowledgeDragStart}
         onShareRoadmap={onShareRoadmap}
         renderRoadmapConfigActionButtons={renderRoadmapConfigActionButtons}
+        onSelectCenterRoadmap={() => handleSelectCanvasView("view2")}
       />
     );
   }

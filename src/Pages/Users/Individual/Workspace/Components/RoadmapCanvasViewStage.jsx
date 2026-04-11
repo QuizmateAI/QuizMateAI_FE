@@ -11,8 +11,11 @@ import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDec
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
 
+const ROOT_CARD_WIDTH = 240;
+const PHASE_CARD_WIDTH = 208;
+const KNOWLEDGE_CARD_WIDTH = 196;
 const TOP_SECTION_CARD_BASE_WIDTH = 100;
-const TOP_SECTION_CARD_MAX_WIDTH = 230;
+const TOP_SECTION_CARD_MAX_WIDTH = 320;
 const TIMELINE_GAP = 20;
 const TIMELINE_PADDING = 20;
 const STAGE_TOP_COMPONENT_SCALE = 1;
@@ -171,23 +174,27 @@ function RoadmapCanvasViewStage({
   const selectedKnowledge = selectedPhase && selectedKnowledgeId
     ? selectedKnowledges.find((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizedSelectedKnowledgeId) ?? null
     : null;
-  const topSectionTitles = useMemo(() => [
-    roadmap?.title,
-    ...phases.map((phase) => phase?.title),
-    ...selectedKnowledges.map((knowledge) => knowledge?.title),
-  ].filter((value) => String(value || "").trim().length > 0), [phases, roadmap?.title, selectedKnowledges]);
-  const uniformTopCardWidth = useMemo(() => {
-    const requiredWidth = topSectionTitles.reduce((maxWidth, title) => {
-      const normalizedTitle = normalizeTitleForWidth(title) || String(title || "");
-      const titleWidth = getTitleWidthForTwoLines(normalizedTitle, {
-        minWidth: TOP_SECTION_CARD_BASE_WIDTH,
-        maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
-      });
-      return Math.max(maxWidth, titleWidth);
-    }, TOP_SECTION_CARD_BASE_WIDTH);
-
-    return Math.min(TOP_SECTION_CARD_MAX_WIDTH, Math.max(TOP_SECTION_CARD_BASE_WIDTH, requiredWidth));
-  }, [topSectionTitles]);
+  const roadmapCardWidth = useMemo(() => {
+    const normalizedTitle = normalizeTitleForWidth(roadmap?.title) || String(roadmap?.title || "");
+    return getTitleWidthForTwoLines(normalizedTitle, {
+      minWidth: ROOT_CARD_WIDTH,
+      maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
+    });
+  }, [roadmap?.title]);
+  const phaseCardWidths = useMemo(() => phases.map((phase) => {
+    const normalizedTitle = normalizeTitleForWidth(phase?.title) || String(phase?.title || "");
+    return getTitleWidthForTwoLines(normalizedTitle, {
+      minWidth: PHASE_CARD_WIDTH,
+      maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
+    });
+  }), [phases]);
+  const selectedKnowledgeCardWidths = useMemo(() => selectedKnowledges.map((knowledge) => {
+    const normalizedTitle = normalizeTitleForWidth(knowledge?.title) || String(knowledge?.title || "");
+    return getTitleWidthForTwoLines(normalizedTitle, {
+      minWidth: KNOWLEDGE_CARD_WIDTH,
+      maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
+    });
+  }), [selectedKnowledges]);
 
   const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
   const globalCurrentIndex = Number.isInteger(globalPhaseId)
@@ -599,12 +606,18 @@ function RoadmapCanvasViewStage({
   }, [onReloadRoadmap, roadmap?.roadmapId, showError, showSuccess, submittingRemedialDecision, t]);
   const branchOffset = selectedPhaseIndex < 0
     ? TIMELINE_PADDING
-    : TIMELINE_PADDING + uniformTopCardWidth + TIMELINE_GAP + selectedPhaseIndex * (uniformTopCardWidth + TIMELINE_GAP);
+    : TIMELINE_PADDING
+      + roadmapCardWidth
+      + TIMELINE_GAP
+      + phaseCardWidths.slice(0, selectedPhaseIndex).reduce((sum, width) => sum + width, 0)
+      + selectedPhaseIndex * TIMELINE_GAP;
   const topPhaseLineWidth = phases.length > 0
-    ? phases.length * uniformTopCardWidth + phases.length * TIMELINE_GAP
+    ? phaseCardWidths.reduce((sum, width) => sum + width, 0) + phases.length * TIMELINE_GAP
     : 0;
   const knowledgeBranchLineWidth = selectedKnowledges.length > 0
-    ? selectedKnowledges.length * uniformTopCardWidth + Math.max(selectedKnowledges.length - 1, 0) * 12
+    ? selectedKnowledgeCardWidths.slice(0, -1).reduce((sum, width) => sum + width, 0)
+      + Math.max(selectedKnowledges.length - 1, 0) * 12
+      + 8
     : 0;
 
   const getSelectedPhaseViewportLeft = (timelineElement) => {
@@ -613,9 +626,10 @@ function RoadmapCanvasViewStage({
     }
 
     const phaseLeft = TIMELINE_PADDING
-      + uniformTopCardWidth
+      + roadmapCardWidth
       + TIMELINE_GAP
-      + selectedPhaseIndex * (uniformTopCardWidth + TIMELINE_GAP);
+      + phaseCardWidths.slice(0, selectedPhaseIndex).reduce((sum, width) => sum + width, 0)
+      + selectedPhaseIndex * TIMELINE_GAP;
     const maxLeft = Math.max(0, timelineElement.scrollWidth - timelineElement.clientWidth - 16);
     return Math.max(0, Math.min(phaseLeft - 24, maxLeft));
   };
@@ -1561,7 +1575,7 @@ function RoadmapCanvasViewStage({
                   <button
                     type="button"
                     onClick={selectRoadmap}
-                    style={{ width: uniformTopCardWidth }}
+                    style={{ width: roadmapCardWidth }}
                     className={`relative z-20 shrink-0 rounded-[24px] border px-4 py-3 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
                       ? isDarkMode
                         ? "border-emerald-400 bg-emerald-500/10"
@@ -1588,7 +1602,7 @@ function RoadmapCanvasViewStage({
                         key={phase.phaseId}
                         type="button"
                         onClick={() => selectPhase(phase.phaseId)}
-                        style={{ width: uniformTopCardWidth }}
+                        style={{ width: phaseCardWidths[index] ?? PHASE_CARD_WIDTH }}
                         className={`relative z-10 shrink-0 rounded-[22px] border px-3.5 py-3 text-left shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all ${isPhaseLocked
                           ? isDarkMode
                             ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
@@ -1661,7 +1675,7 @@ function RoadmapCanvasViewStage({
                             key={knowledge.knowledgeId}
                             type="button"
                             onClick={() => selectKnowledge(selectedPhase.phaseId, knowledge.knowledgeId)}
-                            style={{ width: uniformTopCardWidth }}
+                            style={{ width: selectedKnowledgeCardWidths[knowledgeIndex] ?? KNOWLEDGE_CARD_WIDTH }}
                             className={`relative shrink-0 rounded-[20px] border px-3 py-2.5 text-left shadow-[0_18px_45px_rgba(15,23,42,0.1)] transition-all ${isKnowledgeLocked
                               ? isDarkMode
                                 ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
