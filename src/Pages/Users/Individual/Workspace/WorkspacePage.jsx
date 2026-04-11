@@ -256,12 +256,19 @@ function WorkspacePage() {
   const STUDIO_PANEL_MIN_WIDTH = 288;
   const CHAT_PANEL_MIN_WIDTH = 760;
   const CHAT_PANEL_COMFORT_WIDTH = 840;
+  const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] =
+    useState(false);
+  const [roadmapCanvasView, setRoadmapCanvasView] = useState("view2");
 
   const isRoadmapJourActive =
     activeView === "roadmap" ||
     (quizBackTarget?.view === "roadmap" &&
       (activeView === "quizDetail" || activeView === "editQuiz"));
-  const shouldProtectSourcesSpace = isMaterialDetailOpen || isRoadmapJourActive;
+  const shouldHideRoadmapJourOnOverview =
+    activeView === "roadmap" && roadmapCanvasView === "overview";
+  const shouldProtectSourcesSpace =
+    isMaterialDetailOpen ||
+    (isRoadmapJourActive && !shouldHideRoadmapJourOnOverview);
   const sourcesPanelTargetWidth = useMemo(
     () =>
       shouldProtectSourcesSpace
@@ -315,14 +322,17 @@ function WorkspacePage() {
         ? isStudioCollapsed
         : shouldPreferStudioCollapse));
 
-  const effectiveLeftWidth = effectiveSourcesCollapsed
+  const effectiveLeftBaseWidth = effectiveSourcesCollapsed
     ? COLLAPSED_WIDTH
     : sourcesPanelTargetWidth;
+  const effectiveLeftWidth = shouldHideRoadmapJourOnOverview
+    ? 0
+    : effectiveLeftBaseWidth;
+  const shouldShowLeftSeparator =
+    !shouldHideRoadmapJourOnOverview && !effectiveSourcesCollapsed;
   const effectiveRightWidth = effectiveStudioCollapsed
     ? COLLAPSED_WIDTH
     : STUDIO_PANEL_MIN_WIDTH;
-  const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] =
-    useState(false);
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
     return new RegExp(
@@ -336,7 +346,8 @@ function WorkspacePage() {
   }, [isOnWorkspaceQuizRoute]);
 
   const shouldRenderRoadmapJourPanel =
-    hasActivatedRoadmapPanel || isRoadmapJourActive;
+    (hasActivatedRoadmapPanel || isRoadmapJourActive) &&
+    !shouldHideRoadmapJourOnOverview;
 
   useEffect(() => {
     if (isRoadmapJourActive) {
@@ -2294,6 +2305,8 @@ function WorkspacePage() {
 
     planEntitlements,
 
+    onRoadmapCanvasViewChange: setRoadmapCanvasView,
+
     onEditRoadmapConfig: () => setRoadmapConfigEditOpen(true),
   };
 
@@ -2525,18 +2538,20 @@ function WorkspacePage() {
                   width: effectiveLeftWidth,
                   minWidth: effectiveLeftWidth,
                 }}
-                className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
+                className="shrink-0 h-full overflow-hidden transition-[width,min-width] duration-300 ease-in-out"
               >
-                {renderSourceWorkspacePanel(effectiveSourcesCollapsed)}
+                {!shouldHideRoadmapJourOnOverview
+                  ? renderSourceWorkspacePanel(effectiveSourcesCollapsed)
+                  : null}
               </div>
 
               {/* Left panel separator */}
 
               <div
                 aria-hidden="true"
-                className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${effectiveSourcesCollapsed ? "w-2" : "w-4"}`}
+                className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${shouldShowLeftSeparator ? "w-4" : "w-0"}`}
               >
-                {!effectiveSourcesCollapsed && (
+                {shouldShowLeftSeparator && (
                   <div
                     className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`}
                   />
