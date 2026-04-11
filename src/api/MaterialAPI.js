@@ -1,9 +1,14 @@
 import api from './api';
 
 const MATERIAL_REVIEW_TIMEOUT_MS = 60000;
+// Material uploads can legitimately stay open for several minutes while the
+// backend stores the file and starts downstream processing. A short client
+// timeout makes the UI think the upload failed even though the server may
+// still finish it, which leads to duplicate re-uploads.
+const MATERIAL_UPLOAD_TIMEOUT_MS = 0;
 
 function buildMultipartConfig(workspaceId, options = {}) {
-  const { onUploadProgress, timeout = 120000 } = options;
+  const { onUploadProgress, timeout = MATERIAL_UPLOAD_TIMEOUT_MS } = options;
 
   return {
     params: {

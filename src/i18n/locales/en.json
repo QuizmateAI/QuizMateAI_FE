@@ -4422,7 +4422,14 @@
       "wallet": "Group wallet",
       "groupStudy": "Study",
       "groupActivity": "Activity",
-      "groupManage": "Management"
+      "groupManage": "Management",
+      "requireUploadBeforeActions": "Upload at least one document in the Documents tab before using this feature."
+    },
+    "forms": {
+      "loadingMaterials": "Loading shared documents...",
+      "loadMaterialsError": "Unable to load shared documents. Please close and reopen this form.",
+      "workspaceMaterialsEmpty": "No shared documents yet. Upload files in the Documents tab, then select them directly in this form.",
+      "sourceSelectHint": "Choose the documents AI should use for this creation."
     },
     "upload": {
       "insufficientQmcNeedPlan": "Your group doesn't have enough QMC. Please purchase a plan to continue — then you can buy credits in the group wallet.",

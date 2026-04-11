@@ -2,6 +2,7 @@
 import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
+import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
 
 const IMAGE_MARKDOWN_REGEX = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 const IMAGE_URL_REGEX = /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i;
@@ -231,6 +232,7 @@ function mergeMaterialSource(previousSource, updatedMaterial) {
 function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const { hasAiSummaryAndTextReading } = usePlanEntitlements();
   const [currentSource, setCurrentSource] = useState(source);
 
   const [extractedText, setExtractedText] = useState(null);
@@ -240,6 +242,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryRequested, setSummaryRequested] = useState(false);
   const [moderationReport, setModerationReport] = useState(null);
   const [moderationLoading, setModerationLoading] = useState(false);
   const [moderationDetailOpen, setModerationDetailOpen] = useState(false);
@@ -249,6 +252,8 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
 
   useEffect(() => {
     setCurrentSource(source);
+    setSummary(null);
+    setSummaryRequested(false);
     setReviewError("");
     setReviewMessage("");
     setModerationDetailOpen(false);
@@ -321,9 +326,14 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
 
   useEffect(() => {
     fetchContent();
-    fetchSummary();
     fetchModerationReport();
-  }, [fetchContent, fetchSummary, fetchModerationReport]);
+  }, [fetchContent, fetchModerationReport]);
+
+  const handleRequestSummary = useCallback(async (forceRefresh = false) => {
+    if (!hasAiSummaryAndTextReading) return;
+    setSummaryRequested(true);
+    await fetchSummary(forceRefresh);
+  }, [fetchSummary, hasAiSummaryAndTextReading]);
 
   const keywords = useMemo(() => extractKeywords(summary), [summary]);
   const contentBlocks = useMemo(() => buildContentBlocks(extractedText), [extractedText]);
@@ -547,6 +557,43 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
 
             {summaryOpen && (
               <div className={`px-4 pb-4 max-h-64 overflow-y-auto`}>
+                {!hasAiSummaryAndTextReading ? (
+                  <p className={`text-xs py-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+                    {t("workspace.sources.summaryFeatureLocked")}
+                  </p>
+                ) : !summaryRequested ? (
+                  <div className="py-2 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleRequestSummary(false)}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/70 focus-visible:ring-offset-1 ${
+                        isDarkMode
+                          ? "bg-violet-500/90 text-white hover:bg-violet-400 shadow-sm shadow-violet-900/40"
+                          : "bg-violet-600 text-white hover:bg-violet-500 shadow-sm shadow-violet-200/70"
+                      } ${fontClass}`}
+                    >
+                      {t("workspace.sources.generateSummary")}
+                    </button>
+                    <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
+                      {t("workspace.sources.summaryOnDemandHint")}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-end pb-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleRequestSummary(true)}
+                        disabled={summaryLoading}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                          summaryLoading
+                            ? isDarkMode ? "bg-slate-700 text-slate-400 cursor-not-allowed" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                            : isDarkMode ? "bg-slate-700 text-slate-200 hover:bg-slate-600" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                        } ${fontClass}`}
+                      >
+                        {t("workspace.sources.retrySummary")}
+                      </button>
+                    </div>
                 {summaryLoading ? (
                   <div className="flex items-center gap-2 py-3">
                     <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
@@ -579,6 +626,8 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                   <p className={`text-xs py-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
                     {t("workspace.sources.noSummary")}
                   </p>
+                )}
+                  </>
                 )}
               </div>
             )}

@@ -36,7 +36,6 @@ function GroupMembersTab({
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
-  const currentLang = i18n.language;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -150,15 +149,13 @@ function GroupMembersTab({
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0 flex-1">
             <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
-              {currentLang === 'en' ? 'Roster board' : 'Bảng điều phối nhân sự'}
+              {t('groupManage.members.headingEyebrow')}
             </p>
             <h2 className={`mt-3 text-2xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {currentLang === 'en' ? 'People, roles, and contribution lanes' : 'Con người, vai trò và làn đóng góp'}
+              {t('groupManage.members.headingTitle')}
             </h2>
             <p className={`mt-2 max-w-3xl text-sm leading-6 ${subtleTextClass}`}>
-              {currentLang === 'en'
-                ? 'Treat the roster as a living system: shape permissions with intent and keep every role legible.'
-                : 'Xem roster như một hệ thống sống: cấp quyền có chủ đích và để từng vai trò luôn được nhìn thấy rõ ràng.'}
+              {t('groupManage.members.headingDescription')}
             </p>
           </div>
 
@@ -174,7 +171,7 @@ function GroupMembersTab({
               }`}
             >
               <RefreshCw className={`h-4 w-4 ${reloading ? 'animate-spin' : ''}`} />
-              {currentLang === 'en' ? 'Refresh roster' : 'Làm mới roster'}
+              {t('groupManage.members.refresh')}
             </button>
             {isLeader ? (
               <button
@@ -232,10 +229,10 @@ function GroupMembersTab({
       ) : (
         <div className={`rounded-[24px] border overflow-hidden ${shellClass}`}>
           <div className={`grid grid-cols-[minmax(220px,1.2fr)_minmax(180px,1fr)_minmax(180px,1fr)_64px] px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-400 bg-white/[0.03] border-b border-white/10' : 'text-slate-500 bg-slate-50 border-b border-slate-200'}`}>
-            <div>{currentLang === 'en' ? 'Member' : 'Thành viên'}</div>
-            <div>{currentLang === 'en' ? 'Role' : 'Vai trò'}</div>
-            <div>{currentLang === 'en' ? 'Upload Access' : 'Quyền upload'}</div>
-            <div className="text-right">{currentLang === 'en' ? 'Actions' : 'Thao tác'}</div>
+            <div>{t('groupManage.members.columns.member')}</div>
+            <div>{t('groupManage.members.columns.role')}</div>
+            <div>{t('groupManage.members.columns.uploadAccess')}</div>
+            <div className="text-right">{t('groupManage.members.columns.actions')}</div>
           </div>
 
           <div className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -268,12 +265,12 @@ function GroupMembersTab({
                   {member.canUpload ? (
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700'}`}>
                       <Upload className="h-3 w-3" />
-                      {currentLang === 'en' ? 'Can upload' : 'Có thể upload'}
+                      {t('groupManage.members.uploadGranted')}
                     </span>
                   ) : (
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700'}`}>
                       <XCircle className="h-3 w-3" />
-                      {currentLang === 'en' ? 'Read & participate' : 'Đọc và tham gia'}
+                      {t('groupManage.members.uploadLimited')}
                     </span>
                   )}
                 </div>
@@ -332,7 +329,7 @@ function GroupMembersTab({
             isDarkMode ? 'border-white/10 bg-[#09131a] text-white' : 'border-white bg-white text-slate-900'
           }`}>
             <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
-              {currentLang === 'en' ? 'Removal gate' : 'Cổng xác nhận'}
+              {t('groupManage.members.removeConfirmEyebrow')}
             </p>
             <h3 className="mt-3 text-xl font-bold">
               {t('home.group.removeMember')}
