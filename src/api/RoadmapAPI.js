@@ -339,6 +339,16 @@ export const getCurrentRoadmapKnowledgeProgress = async (roadmapId) => {
   });
 };
 
+// Lấy roadmap review (đánh giá AI toàn bộ roadmap) theo roadmapId.
+export const getRoadmapReview = async (roadmapId) => {
+  const normalizedRoadmapId = Number(roadmapId);
+  if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+    return null;
+  }
+
+  return api.get(`/roadmaps/${normalizedRoadmapId}/review`);
+};
+
 // ==================== ROADMAP ====================
 
 // Tạo roadmap cho workspace

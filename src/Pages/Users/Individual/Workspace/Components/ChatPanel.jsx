@@ -1,8 +1,10 @@
 import React from "react";
-import { UploadCloud, Sparkles, Route, BadgeCheck, Layers, Map, Rows3 } from "lucide-react";
+import { UploadCloud, Sparkles, Route, BadgeCheck, Layers, Rows3, Map, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import { getRoadmapReview } from "@/api/RoadmapAPI";
+import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 import CreateQuizForm from "./CreateQuizForm";
 
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
@@ -56,6 +58,7 @@ function ChatPanel({
   onViewPostLearning,
   selectedSourceIds = [],
   selectedRoadmapPhaseId = null,
+  selectedRoadmapKnowledgeId = null,
   onCreateRoadmapPhases,
   onRoadmapPhaseFocus,
   onCreatePhaseKnowledge,
@@ -91,6 +94,23 @@ function ChatPanel({
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+  const [activeRoadmapId, setActiveRoadmapId] = React.useState(null);
+  const [roadmapReview, setRoadmapReview] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!activeRoadmapId) return;
+    let cancelled = false;
+    getRoadmapReview(activeRoadmapId)
+      .then((res) => {
+        if (cancelled) return;
+        const data = res?.data?.data ?? res?.data ?? null;
+        setRoadmapReview(data && data.assessmentId ? data : null);
+      })
+      .catch(() => {
+        if (!cancelled) setRoadmapReview(null);
+      });
+    return () => { cancelled = true; };
+  }, [activeRoadmapId]);
 
   const getIsActionDisabled = React.useCallback((actionKey) => {
     if (actionKey === "quiz") return shouldDisableQuiz;
@@ -104,31 +124,23 @@ function ChatPanel({
     && getIsActionDisabled("quiz")
     && getIsActionDisabled("flashcard");
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
-  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
-    if (!workspaceId) return null;
-    const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    return saved === "view1" || saved === "view2" ? saved : null;
-  });
+  const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view2");
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView(null);
+      setRoadmapCanvasView("view2");
       return;
     }
 
-    const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    setRoadmapCanvasView(saved === "view1" || saved === "view2" ? saved : null);
+    const savedView = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
+    const normalizedView = ["view1", "view2", "overview"].includes(savedView) ? savedView : "view2";
+    setRoadmapCanvasView(normalizedView);
   }, [workspaceId]);
 
   React.useEffect(() => {
     if (!roadmapCanvasStorageKey || !roadmapCanvasView) return;
     localStorage.setItem(roadmapCanvasStorageKey, roadmapCanvasView);
   }, [roadmapCanvasStorageKey, roadmapCanvasView]);
-
-  const handleSwitchRoadmapView = React.useCallback((view) => {
-    if (view !== "view1" && view !== "view2") return;
-    setRoadmapCanvasView(view);
-  }, []);
 
   const renderContent = () => {
     switch (activeView) {
@@ -159,10 +171,12 @@ function ChatPanel({
             forcedCanvasView={roadmapCanvasView}
             onCanvasViewChange={setRoadmapCanvasView}
             selectedPhaseId={selectedRoadmapPhaseId}
+            selectedKnowledgeId={selectedRoadmapKnowledgeId}
             progressTracking={progressTracking}
             onShareRoadmap={onShareRoadmap}
             onShareQuiz={onShareQuiz}
             onEditRoadmapConfig={onEditRoadmapConfig}
+            onRoadmapLoad={setActiveRoadmapId}
           />
         );
       case "quiz":
@@ -297,26 +311,39 @@ function ChatPanel({
                 <Button
                   type="button"
                   size="sm"
-                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view1")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                  variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
+                  onClick={() => setRoadmapCanvasView("view2")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
                 >
                   <Rows3 className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
                 </Button>
                 <Button
                   type="button"
                   size="sm"
-                  variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view2")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                  variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
+                  onClick={() => setRoadmapCanvasView("overview")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "overview" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
                 >
                   <Map className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
+                  <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                  onClick={() => setRoadmapCanvasView("view1")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Eye className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
                 </Button>
               </div>
             </div>
           </div>
+        ) : null}
+        {activeView === "roadmap" ? (
+          <RoadmapReviewPanel review={roadmapReview} isDarkMode={isDarkMode} />
         ) : null}
         <DeferredPanel>{content}</DeferredPanel>
       </section>
