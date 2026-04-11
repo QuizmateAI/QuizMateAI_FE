@@ -1,7 +1,204 @@
-import React from "react";
-import { BookOpenCheck, ChevronDown, ChevronUp, Compass, GitBranch, Layers3, Map, Maximize2, Minimize2, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
-import { Button } from "@/Components/ui/button";
-import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Clock, Lock, Maximize2, Minimize2, ZoomIn, ZoomOut, CheckCircle2 } from "lucide-react";
+
+const DONE = new Set(["COMPLETED", "DONE", "SKIPPED", "PASSED", "FINISHED", "SUBMITTED"]);
+const ACTIVE = new Set(["CURRENT", "IN_PROGRESS", "PROCESSING", "ACTIVE"]);
+
+const ZOOM_STEP = 0.1;
+
+const NODE_COLORS = {
+  done: "#10b981",
+  current: "#0ea5e9",
+  next: "#f59e0b",
+  locked: "#94a3b8",
+};
+
+const STATUS_BADGE_STYLES = {
+  done: "bg-emerald-100 text-emerald-800 border border-emerald-300",
+  current: "bg-sky-100 text-sky-800 border border-sky-300",
+  next: "bg-amber-100 text-amber-800 border border-amber-300",
+  locked: "bg-slate-200 text-slate-600 border border-slate-300",
+};
+
+const STATUS_ICONS = {
+  done: CheckCircle2,
+  current: CircleDot,
+  next: Clock,
+  locked: Lock,
+};
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getStatus(value) {
+  return String(value || "").toUpperCase();
+}
+
+function getVisualState(phase, index, currentIndex) {
+  const status = getStatus(phase?.status);
+  if (DONE.has(status) || index < currentIndex) return "done";
+  if (ACTIVE.has(status) || index === currentIndex) return "current";
+  return index === currentIndex + 1 ? "next" : "locked";
+}
+
+function getCurrentIndex(phases) {
+  if (!Array.isArray(phases) || phases.length === 0) return 0;
+  const activeIndex = phases.findIndex((phase) => ACTIVE.has(getStatus(phase?.status)));
+  if (activeIndex >= 0) return activeIndex;
+
+  const firstIncomplete = phases.findIndex((phase) => !DONE.has(getStatus(phase?.status)));
+  if (firstIncomplete >= 0) return firstIncomplete;
+  return phases.length - 1;
+}
+
+function getResponsiveLayout(viewportWidth) {
+  const width = Number.isFinite(viewportWidth) && viewportWidth > 0 ? viewportWidth : 1280;
+
+  if (width < 640) {
+    return {
+      phaseGap: 200,
+      amplitude: 34,
+      centerY: 120,
+      svgHeight: 460,
+      cardWidth: 180,
+      cardHeight: 110,
+      padLeft: 100,
+      padRight: 100,
+      boneLength: 32,
+      nodeRadius: 8,
+      currentNodeRadius: 11,
+      waveGlowStroke: 24,
+      waveStroke: 4,
+      defaultZoom: 0.9,
+      minZoom: 0.72,
+      maxZoom: 1.2,
+    };
+  }
+
+  if (width < 900) {
+    return {
+      phaseGap: 240,
+      amplitude: 40,
+      centerY: 250,
+      svgHeight: 500,
+      cardWidth: 210,
+      cardHeight: 115,
+      padLeft: 120,
+      padRight: 120,
+      boneLength: 38,
+      nodeRadius: 9,
+      currentNodeRadius: 12,
+      waveGlowStroke: 28,
+      waveStroke: 4.5,
+      defaultZoom: 0.96,
+      minZoom: 0.75,
+      maxZoom: 1.25,
+    };
+  }
+
+  if (width < 1024) {
+    return {
+      phaseGap: 270,
+      amplitude: 46,
+      centerY: 290,
+      svgHeight: 580,
+      cardWidth: 236,
+      cardHeight: 125,
+      padLeft: 135,
+      padRight: 135,
+      boneLength: 42,
+      nodeRadius: 10,
+      currentNodeRadius: 13,
+      waveGlowStroke: 30,
+      waveStroke: 5,
+      defaultZoom: 1,
+      minZoom: 0.78,
+      maxZoom: 1.3,
+    };
+  }
+
+  if (width < 1500) {
+    return {
+      phaseGap: 300,
+      amplitude: 54,
+      centerY: 310,
+      svgHeight: 620,
+      cardWidth: 260,
+      cardHeight: 135,
+      padLeft: 150,
+      padRight: 150,
+      boneLength: 46,
+      nodeRadius: 10,
+      currentNodeRadius: 14,
+      waveGlowStroke: 32,
+      waveStroke: 5,
+      defaultZoom: 1,
+      minZoom: 0.8,
+      maxZoom: 1.4,
+    };
+  }
+
+  return {
+    phaseGap: 330,
+    amplitude: 58,
+    centerY: 330,
+    svgHeight: 660,
+    cardWidth: 280,
+    cardHeight: 145,
+    padLeft: 165,
+    padRight: 165,
+    boneLength: 48,
+    nodeRadius: 10,
+    currentNodeRadius: 14,
+    waveGlowStroke: 34,
+    waveStroke: 5,
+    defaultZoom: 1,
+    minZoom: 0.82,
+    maxZoom: 1.45,
+  };
+}
+
+function getPhaseX(index, padLeft, phaseGap) {
+  return padLeft + index * phaseGap;
+}
+
+function getPhaseY(index, centerY, amplitude) {
+  return centerY + (index % 2 === 0 ? -amplitude : amplitude);
+}
+
+function isCardAbove(index) {
+  return index % 2 === 0;
+}
+
+function computeWavePath(count, { padLeft, phaseGap, centerY, amplitude }) {
+  if (count < 1) return "";
+
+  const points = Array.from({ length: count }, (_, index) => ({
+    x: getPhaseX(index, padLeft, phaseGap),
+    y: getPhaseY(index, centerY, amplitude),
+  }));
+
+  if (count === 1) {
+    const point = points[0];
+    return `M ${point.x - 40},${centerY} Q ${point.x - 20},${point.y} ${point.x},${point.y} Q ${point.x + 20},${point.y} ${point.x + 40},${centerY}`;
+  }
+
+  let path = `M ${points[0].x - 60},${centerY} Q ${points[0].x - 30},${points[0].y} ${points[0].x},${points[0].y}`;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const current = points[index];
+    const next = points[index + 1];
+    const controlX = (current.x + next.x) / 2;
+    path += ` C ${controlX},${current.y} ${controlX},${next.y} ${next.x},${next.y}`;
+  }
+  const last = points[points.length - 1];
+  path += ` Q ${last.x + 30},${last.y} ${last.x + 60},${centerY}`;
+  return path;
+}
+
+function computeTotalWidth(count, { padLeft, padRight, phaseGap }) {
+  return padLeft + Math.max(0, count - 1) * phaseGap + padRight;
+}
 
 function RoadmapCanvasViewOverview({
   roadmap,
@@ -39,159 +236,91 @@ function RoadmapCanvasViewOverview({
   renderRoadmapConfigActionButtons,
   onSelectCenterRoadmap,
 }) {
+  const scrollContainerRef = useRef(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+
   const CANVAS_WIDTH = canvasWidth;
-  const CANVAS_HEIGHT = canvasHeight;
-  const CENTER_X = centerX;
-  const CENTER_Y = centerY;
+  const [viewportWidth, setViewportWidth] = useState(CANVAS_WIDTH || 1280);
   const roadmapPhases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
-  const ROOT_POSITION = { x: 250, y: 170 };
-  const PHASE_X = 700;
-  const KNOWLEDGE_X = 1210;
-  const PHASE_START_Y = 170;
-  const PHASE_CARD_BASE_HEIGHT = 188;
-  const KNOWLEDGE_CARD_HEIGHT_COLLAPSED = 132;
-  const KNOWLEDGE_CARD_HEIGHT_EXPANDED = 176;
-  const KNOWLEDGE_CARD_VERTICAL_GAP = 30;
-  const PHASE_BLOCK_GAP = 72;
 
-  const estimatePhaseCardHeight = (phase) => {
-    const title = String(phase?.title || "");
-    const description = String(phase?.description || "");
+  useEffect(() => {
+    const containerElement = viewportRef?.current;
+    if (!containerElement) return undefined;
 
-    const estimatedTitleLines = Math.max(1, Math.ceil(title.length / 28));
-    const estimatedDescriptionLines = Math.max(1, Math.ceil(description.length / 48));
+    const updateWidth = () => {
+      const nextWidth = containerElement.clientWidth || CANVAS_WIDTH || 1280;
+      setViewportWidth(nextWidth);
+    };
 
-    const titleHeight = estimatedTitleLines * 24;
-    const descriptionHeight = estimatedDescriptionLines * 20;
-    return Math.max(PHASE_CARD_BASE_HEIGHT, 112 + titleHeight + descriptionHeight);
+    updateWidth();
+
+    if (typeof ResizeObserver === "function") {
+      const resizeObserver = new ResizeObserver(() => updateWidth());
+      resizeObserver.observe(containerElement);
+      return () => resizeObserver.disconnect();
+    }
+
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [CANVAS_WIDTH, viewportRef]);
+
+  // Handle horizontal scrolling via mouse wheel
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (e.deltaY !== 0 && !e.shiftKey && scrollContainerRef.current) {
+        e.preventDefault();
+        scrollContainerRef.current.scrollLeft += e.deltaY;
+      }
+    };
+
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener("wheel", handleWheel, { passive: false });
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener("wheel", handleWheel);
+      }
+    };
+  }, []);
+
+  const currentIndex = useMemo(() => getCurrentIndex(roadmapPhases), [roadmapPhases]);
+
+  const FISHBONE_GLOBAL_SCALE = 0.9; // THAY ĐỔI CHỈ SỐ NÀY ĐỂ ZOOM TO/NHỎ TOÀN BỘ XƯƠNG CÁ (VD: 0.8 là nhỏ đi 20%, 1.2 là to lên 20%)
+  const FISHBONE_VERTICAL_SCALE = 0.5; // THAY ĐỔI CHỈ SỐ NÀY ĐỂ TĂNG/GIẢM KHÔNG GIAN CHIỀU DỌC TRÊN DƯỚI (VD: 0.8 là lùn đi, 1.2 là cao lên)
+
+  const baseLayoutConfig = useMemo(() => getResponsiveLayout(viewportWidth), [viewportWidth]);
+  const layoutConfig = useMemo(() => ({
+    ...baseLayoutConfig,
+    svgHeight: baseLayoutConfig.svgHeight * FISHBONE_VERTICAL_SCALE,
+    centerY: baseLayoutConfig.centerY * FISHBONE_VERTICAL_SCALE,
+  }), [baseLayoutConfig]);
+
+  const effectiveZoomLevel = clamp(zoomLevel, layoutConfig.minZoom, layoutConfig.maxZoom) * FISHBONE_GLOBAL_SCALE;
+
+  const totalWidth = computeTotalWidth(roadmapPhases.length, layoutConfig);
+  const wavePath = computeWavePath(roadmapPhases.length, layoutConfig);
+  const scaledWidth = Math.max(totalWidth * effectiveZoomLevel, 1);
+
+  const scrollByOffset = (offset) => {
+    scrollContainerRef.current?.scrollBy({ left: offset, behavior: "smooth" });
   };
 
-  const phaseOverviewLayouts = [];
-  let phaseCursorTop = PHASE_START_Y;
+  const zoomIn = () => setZoomLevel((current) => clamp(current + ZOOM_STEP, layoutConfig.minZoom, layoutConfig.maxZoom));
+  const zoomOut = () => setZoomLevel((current) => clamp(current - ZOOM_STEP, layoutConfig.minZoom, layoutConfig.maxZoom));
+  const resetFishboneViewport = () => {
+    setZoomLevel(layoutConfig.defaultZoom);
+    scrollContainerRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+  };
 
-  roadmapPhases.forEach((phase) => {
-    const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
-    const phaseKnowledgeLayouts = phaseKnowledges.map((knowledge) => {
-      const isExpanded = Boolean(expandedKnowledges[knowledge?.knowledgeId]);
-      return {
-        knowledge,
-        cardHeight: isExpanded ? KNOWLEDGE_CARD_HEIGHT_EXPANDED : KNOWLEDGE_CARD_HEIGHT_COLLAPSED,
-      };
-    });
-
-    const phaseTrackHeight = phaseKnowledgeLayouts.length > 0
-      ? phaseKnowledgeLayouts.reduce((totalHeight, currentKnowledge, index) => (
-        totalHeight
-        + currentKnowledge.cardHeight
-        + (index > 0 ? KNOWLEDGE_CARD_VERTICAL_GAP : 0)
-      ), 0)
-      : 72;
-
-    const phaseCardHeight = estimatePhaseCardHeight(phase);
-    const phaseBlockHeight = Math.max(phaseCardHeight, phaseTrackHeight);
-    const phaseY = phaseCursorTop + phaseBlockHeight / 2;
-    const phaseTrackTop = phaseY - phaseTrackHeight / 2;
-
-    let knowledgeCursorY = phaseTrackTop;
-    const positionedKnowledges = phaseKnowledgeLayouts.map((knowledgeLayout) => {
-      const knowledgeY = knowledgeCursorY + knowledgeLayout.cardHeight / 2;
-      knowledgeCursorY += knowledgeLayout.cardHeight + KNOWLEDGE_CARD_VERTICAL_GAP;
-      return {
-        ...knowledgeLayout,
-        y: knowledgeY,
-      };
-    });
-
-    phaseOverviewLayouts.push({
-      phase,
-      phaseY,
-      phaseTrackTop,
-      phaseTrackHeight,
-      knowledges: positionedKnowledges,
-    });
-
-    phaseCursorTop += phaseBlockHeight + PHASE_BLOCK_GAP;
-  });
-
-  const overviewCanvasHeight = Math.max(CANVAS_HEIGHT, phaseCursorTop + 240);
   const content = (
     <div className={`${isExpandedMode
       ? `fixed inset-3 sm:inset-5 z-[140] rounded-2xl border shadow-2xl flex flex-col transition-all duration-200 ease-out ${isExpandedClosing ? "animate-[roadmapPopOut_180ms_ease-in_forwards]" : "animate-[roadmapPopIn_180ms_ease-out]"} ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`
       : `h-full flex flex-col ${isDarkMode ? "bg-slate-900" : "bg-white"}`}`}
     >
-      <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-in-out ${isExpandedMode && isExpandedHeaderHidden ? "max-h-0 opacity-0 -translate-y-3 pointer-events-none" : "max-h-[220px] opacity-100 translate-y-0"}`}>
-      <div className={`px-5 py-4 border-b flex items-center justify-between gap-4 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div>
-          <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-            {roadmap.title}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {roadmap?.roadmapId ? (
-            <DirectFeedbackButton
-              targetType="ROADMAP"
-              targetId={roadmap.roadmapId}
-              label={i18n.language === "en" ? "Feedback" : "Feedback"}
-              isDarkMode={isDarkMode}
-              className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
-              title={i18n.language === "en" ? "Roadmap feedback" : "Roadmap feedback"}
-            />
-          ) : null}
-          {renderRoadmapConfigActionButtons()}
-          {onShareRoadmap && roadmap?.roadmapId ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onShareRoadmap(roadmap)}
-              className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              <span className={fontClass}>{t("home.actions.share", "Share")}</span>
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={resetViewport}
-            className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
-          >
-            <Compass className="w-4 h-4 mr-2" />
-            <span className={fontClass}>{labels.resetView}</span>
-          </Button>
-        </div>
-      </div>
-
-      <div className={`px-5 py-3 border-b flex flex-wrap items-center gap-2 ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-gray-200 bg-[#F7FBFF]"}`}>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <Layers3 className="w-3.5 h-3.5 text-emerald-500" />
-          <span className={fontClass}>{roadmap.stats?.phaseCount ?? 0} {labels.phases}</span>
-        </div>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <GitBranch className="w-3.5 h-3.5 text-blue-500" />
-          <span className={fontClass}>{roadmap.stats?.knowledgeCount ?? 0} {labels.knowledges}</span>
-        </div>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <BookOpenCheck className="w-3.5 h-3.5 text-amber-500" />
-          <span className={fontClass}>{roadmap.stats?.quizCount ?? 0} {labels.quizzes}</span>
-        </div>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <TimerReset className="w-3.5 h-3.5 text-violet-500" />
-          <span className={fontClass}>{roadmap.estimatedDuration}</span>
-        </div>
-        <p className={`text-xs ml-auto ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-          {labels.dragHint}
-        </p>
-      </div>
-      </div>
-
       <div
         ref={viewportRef}
-        className={`relative flex-1 overflow-hidden touch-none ${draggingMode ? "cursor-grabbing" : "cursor-grab"} ${isDarkMode ? "bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        className={`relative flex-1 flex flex-col overflow-hidden ${isDarkMode ? "bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}
         onDragStart={(event) => event.preventDefault()}
       >
         {isExpandedMode ? (
@@ -216,7 +345,7 @@ function RoadmapCanvasViewOverview({
             type="button"
             title={labels.zoomOut}
             aria-label={labels.zoomOut}
-            onClick={() => adjustZoom("out")}
+            onClick={zoomOut}
             className={`inline-flex h-9 w-9 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-100"}`}
           >
             <ZoomOut className="w-4 h-4" />
@@ -225,7 +354,7 @@ function RoadmapCanvasViewOverview({
             type="button"
             title={labels.zoomIn}
             aria-label={labels.zoomIn}
-            onClick={() => adjustZoom("in")}
+            onClick={zoomIn}
             className={`inline-flex h-9 w-9 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-100"}`}
           >
             <ZoomIn className="w-4 h-4" />
@@ -247,154 +376,222 @@ function RoadmapCanvasViewOverview({
           </button>
         </div>
 
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{
-            backgroundImage: isDarkMode
-              ? "linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)"
-              : "linear-gradient(rgba(148,163,184,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.15) 1px, transparent 1px)",
-            backgroundSize: "44px 44px",
-          }}
-        />
-
-        <div
-          className="absolute left-0 top-0 origin-top-left"
-          style={{
-            width: CANVAS_WIDTH,
-            height: overviewCanvasHeight,
-            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-          }}
+        <section
+          role="region"
+          aria-label={labels.selectorTitle}
+          className={`relative m-2 sm:m-3 lg:m-4 flex-1 flex flex-col overflow-visible rounded-[20px] sm:rounded-[24px] border shadow-[0_24px_56px_-42px_rgba(15,23,42,0.28)] ${isDarkMode ? "border-slate-700 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950" : "border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50"}`}
         >
-          <svg className="absolute left-0 top-0 overflow-visible pointer-events-none" width={CANVAS_WIDTH} height={overviewCanvasHeight}>
-            {phaseOverviewLayouts.map((phaseLayout) => {
-              const { phase, phaseY, phaseTrackHeight, knowledges } = phaseLayout;
-              const elbowX = ROOT_POSITION.x + 180;
+          <button
+            type="button"
+            className={`absolute -left-4 sm:-left-5 top-1/2 z-20 flex h-8 w-8 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-600 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white/95 text-slate-600 hover:bg-white"}`}
+            onClick={() => scrollByOffset(-layoutConfig.phaseGap)}
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            className={`absolute -right-4 sm:-right-5 top-1/2 z-20 flex h-8 w-8 sm:h-10 sm:w-10 -translate-y-1/2 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-600 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white/95 text-slate-600 hover:bg-white"}`}
+            onClick={() => scrollByOffset(layoutConfig.phaseGap)}
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
 
-              return (
-                <React.Fragment key={`connector:${phase.phaseId}`}>
-                  <path
-                    d={`M ${ROOT_POSITION.x + 120} ${ROOT_POSITION.y} L ${elbowX} ${ROOT_POSITION.y} L ${elbowX} ${phaseY} L ${PHASE_X - 170} ${phaseY}`}
-                    fill="none"
-                    stroke={isDarkMode ? "rgba(148,163,184,0.55)" : "rgba(59,130,246,0.55)"}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  {knowledges.length > 0 ? (
-                    <path
-                      d={`M ${PHASE_X + 170} ${phaseY} L ${KNOWLEDGE_X - 180} ${phaseY}`}
-                      fill="none"
-                      stroke={isDarkMode ? "rgba(148,163,184,0.45)" : "rgba(59,130,246,0.45)"}
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeDasharray="6 8"
-                    />
-                  ) : null}
-
-                  {knowledges.map(({ knowledge, y: knowledgeY }) => {
-                    return (
-                      <path
-                        key={`knowledge-connector:${phase.phaseId}:${knowledge.knowledgeId}`}
-                        d={`M ${KNOWLEDGE_X - 180} ${phaseY} L ${KNOWLEDGE_X - 120} ${phaseY} L ${KNOWLEDGE_X - 120} ${knowledgeY} L ${KNOWLEDGE_X - 95} ${knowledgeY}`}
-                        fill="none"
-                        stroke={isDarkMode ? "rgba(94,234,212,0.4)" : "rgba(14,165,233,0.35)"}
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                    );
-                  })}
-                </React.Fragment>
-              );
-            })}
-          </svg>
+          <div className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-4 sm:w-6 ${isDarkMode ? "bg-gradient-to-r from-slate-900 to-transparent" : "bg-gradient-to-r from-slate-50 to-transparent"}`} />
+          <div className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-4 sm:w-6 ${isDarkMode ? "bg-gradient-to-l from-slate-950 to-transparent" : "bg-gradient-to-l from-slate-50 to-transparent"}`} />
 
           <div
-            className={`absolute -translate-x-1/2 -translate-y-1/2 w-[320px] rounded-2xl border px-6 py-5 shadow-xl cursor-pointer transition-all hover:shadow-2xl ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-100 hover:bg-slate-900/98" : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"}`}
-            style={{ left: ROOT_POSITION.x, top: ROOT_POSITION.y }}
-            onClick={() => onSelectCenterRoadmap?.()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                onSelectCenterRoadmap?.();
-              }
-            }}
+            ref={scrollContainerRef}
+            className="relative flex-1 overflow-x-auto overflow-y-hidden flex items-center"
+            style={{ scrollbarWidth: "thin" }}
           >
-            <div className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-emerald-900/45 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}>
-              <Map className="h-3.5 w-3.5" />
-              <span className={fontClass}>{labels.centralRoadmap}</span>
-            </div>
-            <h2 className={`mt-3 text-xl font-semibold leading-7 ${fontClass}`}>{roadmap.title}</h2>
-            <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
-              {roadmap.description}
-            </p>
-            <div className={`mt-3 inline-flex items-center rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"} ${fontClass}`}>
-              {labels.estimatedDuration}: {roadmap.estimatedDuration}
+            <div className="relative shrink-0" style={{ width: scaledWidth, height: layoutConfig.svgHeight }}>
+              <div
+                className="absolute left-0 top-0 flex items-center justify-center"
+                style={{
+                  width: totalWidth,
+                  height: layoutConfig.svgHeight,
+                  transform: `scale(${effectiveZoomLevel})`,
+                  transformOrigin: "left center",
+                }}
+              >
+                <svg
+                  className="absolute inset-0 pointer-events-none"
+                  width={totalWidth}
+                  height={layoutConfig.svgHeight}
+                  viewBox={`0 0 ${totalWidth} ${layoutConfig.svgHeight}`}
+                >
+                  <defs>
+                    <linearGradient id="overview-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" />
+                      <stop offset="40%" stopColor="#14b8a6" />
+                      <stop offset="70%" stopColor="#0ea5e9" />
+                      <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                    <linearGradient id="overview-wave-dim" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.18" />
+                      <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.14" />
+                      <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.12" />
+                    </linearGradient>
+                  </defs>
+
+                  <path d={wavePath} fill="none" stroke="url(#overview-wave-dim)" strokeWidth={layoutConfig.waveGlowStroke} strokeLinecap="round" />
+                  <path d={wavePath} fill="none" stroke="url(#overview-wave-grad)" strokeWidth={layoutConfig.waveStroke} strokeLinecap="round" />
+                  <path d={wavePath} fill="none" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" opacity="0.32" strokeDasharray="8 12" />
+
+                  {roadmapPhases.map((phase, index) => {
+                    const state = getVisualState(phase, index, currentIndex);
+                    const x = getPhaseX(index, layoutConfig.padLeft, layoutConfig.phaseGap);
+                    const y = getPhaseY(index, layoutConfig.centerY, layoutConfig.amplitude);
+                    const above = isCardAbove(index);
+                    const nodeRadius = state === "current" ? layoutConfig.currentNodeRadius : layoutConfig.nodeRadius;
+                    const boneEndY = above ? y - layoutConfig.boneLength : y + layoutConfig.boneLength;
+
+                    return (
+                      <g key={`node:${phase.phaseId || index}`}>
+                        <line
+                          x1={x}
+                          y1={y + (above ? -nodeRadius - 4 : nodeRadius + 4)}
+                          x2={x}
+                          y2={boneEndY}
+                          stroke={NODE_COLORS[state]}
+                          strokeWidth="2"
+                          strokeDasharray={state === "locked" ? "4 4" : "none"}
+                          opacity={state === "locked" ? 0.45 : 0.74}
+                        />
+                        <circle cx={x} cy={boneEndY} r="3" fill={NODE_COLORS[state]} opacity={state === "locked" ? 0.45 : 0.64} />
+                        <circle cx={x} cy={y} r={nodeRadius + 8} fill={NODE_COLORS[state]} opacity={state === "locked" ? 0.16 : 0.24} />
+                        
+                        {state === "current" && (
+                          <circle cx={x} cy={y} r={nodeRadius + 3} fill="none" stroke={NODE_COLORS.current} strokeWidth="2" opacity="0.6">
+                            <animate attributeName="r" from={nodeRadius + 3} to={nodeRadius + 18} dur="2s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" from="0.6" to="0" dur="2s" repeatCount="indefinite" />
+                          </circle>
+                        )}
+                        
+                        <circle cx={x} cy={y} r={nodeRadius + 3} fill="#fff" />
+                        <circle cx={x} cy={y} r={nodeRadius} fill={NODE_COLORS[state]} />
+                        <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="central" fill="#ffffff" fontSize="10" fontWeight="700">
+                          {index + 1}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {roadmapPhases.map((phase, index) => {
+                  const state = getVisualState(phase, index, currentIndex);
+                  const StatusIcon = STATUS_ICONS[state];
+                  const above = isCardAbove(index);
+                  const x = getPhaseX(index, layoutConfig.padLeft, layoutConfig.phaseGap);
+                  const y = getPhaseY(index, layoutConfig.centerY, layoutConfig.amplitude);
+                  const cardTop = above
+                    ? y - layoutConfig.boneLength - layoutConfig.cardHeight - 12
+                    : y + layoutConfig.boneLength + 12;
+                  const isLocked = state === "locked";
+
+                  const borderColor = {
+                    done: "border-emerald-400",
+                    current: "border-sky-400",
+                    next: "border-amber-400",
+                    locked: "border-slate-300",
+                  }[state];
+
+                  const cardSurface = {
+                    done: isDarkMode ? "bg-emerald-900/20" : "bg-emerald-50/90",
+                    current: isDarkMode ? "bg-sky-900/20" : "bg-sky-50/90",
+                    next: isDarkMode ? "bg-amber-900/20" : "bg-amber-50/90",
+                    locked: isDarkMode ? "bg-slate-900/85" : "bg-slate-100/95",
+                  }[state];
+
+                  const accentBar = {
+                    done: "bg-emerald-500",
+                    current: "bg-sky-500",
+                    next: "bg-amber-500",
+                    locked: "bg-slate-400",
+                  }[state];
+
+                  return (
+                    <div
+                      key={`phase-card:${phase.phaseId || index}`}
+                      className="absolute"
+                      style={{
+                        left: x - layoutConfig.cardWidth / 2,
+                        top: cardTop,
+                        width: layoutConfig.cardWidth,
+                      }}
+                    >
+                      <div
+                        className={`relative overflow-hidden rounded-xl border-2 shadow-sm transition-all duration-300 ${borderColor} ${cardSurface} ${isLocked
+                          ? "opacity-85 saturate-0"
+                          : state === "current"
+                            ? "shadow-lg ring-2 ring-sky-300/70"
+                            : "hover:shadow-md"
+                        }`}
+                      >
+                        <div className={`h-1 w-full ${accentBar}`} />
+
+                        <div className="p-2.5 sm:p-3">
+                          <div className="mb-1 flex items-center gap-1.5">
+                            <span className={`text-[10px] uppercase tracking-[0.16em] font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-500"}`}>
+                              {labels.phase} {index + 1}
+                            </span>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${STATUS_BADGE_STYLES[state]}`}>
+                              <StatusIcon className="h-2.5 w-2.5" />
+                              {state === "done"
+                                ? t("workspace.shell.phaseCompleted", "Đã hoàn thành")
+                                : state === "current"
+                                  ? t("workspace.shell.phaseCurrent", "Hiện tại")
+                                  : state === "next"
+                                    ? t("workspace.timeline.phaseNext", "Next")
+                                    : t("workspace.shell.phaseLocked", "Đã khóa")}
+                            </span>
+                          </div>
+
+                          <h4 className={`leading-none font-bold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`} style={{ fontSize: layoutConfig.cardWidth < 180 ? 12 : 13, lineHeight: 1.35 }}>
+                            <span className={fontClass}>{phase?.title}</span>
+                          </h4>
+
+                          <p className={`mt-1 leading-5 line-clamp-2 ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`} style={{ fontSize: layoutConfig.cardWidth < 180 ? 10 : 11 }}>
+                            {phase?.description || t("workspace.shell.phaseDescriptionFallback", "Phase này sẵn sàng cho knowledge và quiz.")}
+                          </p>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {phase?.durationLabel ? (
+                              <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-white text-slate-600"}`}>
+                                {phase.durationLabel}
+                              </span>
+                            ) : null}
+                            <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-white text-slate-600"}`}>
+                              {(phase?.knowledges ?? []).length} {labels.knowledges}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {phaseOverviewLayouts.map((phaseLayout) => {
-            const { phase, phaseY, knowledges: phaseKnowledges } = phaseLayout;
-
-            return (
-              <React.Fragment key={phase.phaseId}>
-                <div
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 w-[340px] rounded-2xl border px-5 py-4 shadow-lg ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
-                  style={{ left: PHASE_X, top: phaseY }}
-                >
-                  <p className={`text-[11px] uppercase tracking-[0.18em] ${isDarkMode ? "text-sky-300" : "text-sky-700"} ${fontClass}`}>
-                    {labels.phase} {phase.phaseIndex + 1}
-                  </p>
-                  <h3 className={`mt-1 text-base font-semibold ${fontClass}`}>{phase.title}</h3>
-                  <p className={`mt-2 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
-                    {phase.description}
-                  </p>
-                  <div className={`mt-3 flex flex-wrap items-center gap-2 text-[11px] ${fontClass}`}>
-                    <span className={`rounded-full px-2.5 py-1 ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}>
-                      {phase.durationLabel}
-                    </span>
-                    <span className={`rounded-full px-2.5 py-1 ${isDarkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
-                      {(phase.knowledges ?? []).length} {labels.knowledges}
-                    </span>
-                  </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-2 sm:bottom-3 z-20 flex justify-center px-2 sm:px-4">
+            <div className={`flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 backdrop-blur-sm ${isDarkMode ? "border-slate-700 bg-slate-900/85" : "border-slate-200/90 bg-white/92"}`}>
+              {[
+                { state: "done", label: t("workspace.shell.phaseCompleted", "Đã hoàn thành") },
+                { state: "current", label: t("workspace.shell.phaseCurrent", "Hiện tại") },
+                { state: "next", label: t("workspace.timeline.phaseNext", "Next") },
+                { state: "locked", label: t("workspace.shell.phaseLocked", "Đã khóa") },
+              ].map(({ state, label }) => (
+                <div key={state} className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-50 text-slate-600"}`}>
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: NODE_COLORS[state] }} />
+                  {label}
                 </div>
-
-                {phaseKnowledges.map(({ knowledge, y: knowledgeY }) => {
-                  const isExpanded = Boolean(expandedKnowledges[knowledge.knowledgeId]);
-                  return (
-                    <button
-                      key={knowledge.knowledgeId}
-                      type="button"
-                      onClick={() => toggleKnowledge(knowledge.knowledgeId)}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 w-[250px] rounded-xl border px-4 py-3 text-left transition-all ${isDarkMode ? "border-slate-700 bg-slate-950/95 text-slate-100 hover:border-slate-500" : "border-slate-200 bg-white text-slate-900 hover:border-slate-400"}`}
-                      style={{ left: KNOWLEDGE_X, top: knowledgeY }}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-[0.16em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
-                            {labels.knowledges}
-                          </p>
-                          <h4 className={`mt-1 line-clamp-2 text-sm font-semibold leading-5 ${fontClass}`}>
-                            {knowledge.title}
-                          </h4>
-                        </div>
-                        {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
-                      </div>
-                      <p className={`mt-2 line-clamp-2 text-xs leading-5 ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
-                        {knowledge.description}
-                      </p>
-                      {isExpanded ? (
-                        <div className={`mt-2 border-t pt-2 text-[11px] ${isDarkMode ? "border-slate-800 text-slate-300" : "border-slate-200 text-slate-600"} ${fontClass}`}>
-                          <div>{labels.quiz}: {knowledge.quizzes?.length ?? 0}</div>
-                          <div>{labels.flashcard}: {knowledge.flashcards?.length ?? 0}</div>
-                        </div>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </React.Fragment>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
