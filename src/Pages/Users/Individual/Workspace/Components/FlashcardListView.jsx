@@ -1,146 +1,174 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { startTransition, useDeferredValue, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, CreditCard, FolderOpen, Loader2, Trash2 } from "lucide-react";
+import {
+  CreditCard,
+  FolderOpen,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import HomeButton from "@/Components/ui/HomeButton";
 import { getFlashcardsByScope, getFlashcardsByUser } from "@/api/FlashcardAPI";
 
-// Cấu hình màu badge trạng thái
-const STATUS_STYLES = {
-  ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
-  DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
-};
-
-const FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT"];
-
-// Danh sách flashcard sets — lấy từ API theo contextType/contextId
-function FlashcardListView({ isDarkMode, onCreateFlashcard, onViewFlashcard, onDeleteFlashcard, contextType = "WORKSPACE", contextId, disableCreate = false }) {
+function FlashcardListView({
+  onCreateFlashcard,
+  onNavigateHome,
+  onViewFlashcard,
+  onDeleteFlashcard,
+  contextType = "WORKSPACE",
+  contextId,
+  disableCreate = false,
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [flashcards, setFlashcards] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const deferredSearch = useDeferredValue(searchQuery.trim().toLowerCase());
 
-  // Lấy danh sách flashcard từ API (theo user hiện tại)
-  const fetchFlashcards = useCallback(async () => {
-    setLoading(true);
-    try {
+  const {
+    data: flashcards = [],
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["workspace-flashcards", contextType, Number(contextId) || 0],
+    queryFn: async () => {
       const hasScope = !!contextType && Number(contextId) > 0;
-      const res = hasScope
+      const response = hasScope
         ? await getFlashcardsByScope(contextType, Number(contextId))
         : await getFlashcardsByUser();
-      setFlashcards(res.data || []);
-    } catch (err) {
-      console.error("Lỗi khi lấy danh sách flashcard:", err);
-      setFlashcards([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [contextId, contextType]);
+      return response?.data || [];
+    },
+  });
 
-  useEffect(() => {
-    fetchFlashcards();
-  }, [fetchFlashcards]);
-
-  // Lọc và tìm kiếm
-  const filtered = React.useMemo(() => {
-    let items = flashcards;
-    if (filterType !== "all") items = items.filter(f => f.status === filterType);
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      items = items.filter(f => f.flashcardSetName?.toLowerCase().includes(q));
-    }
-    return items;
-  }, [flashcards, searchQuery, filterType]);
+  const filtered = useMemo(
+    () =>
+      (flashcards || []).filter((item) =>
+        deferredSearch
+          ? String(item?.flashcardSetName || "").toLowerCase().includes(deferredSearch)
+          : true,
+      ),
+    [deferredSearch, flashcards],
+  );
 
   return (
-    <div className={`h-full flex flex-col ${fontClass}`}>
-      {/* Header */}
-      <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div className="flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-amber-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{t("workspace.studio.actions.flashcard")}</p>
-        </div>
-        <Button disabled={disableCreate} onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
-          <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
-        </Button>
-      </div>
-
-      {/* Tìm kiếm + Lọc */}
-      <div className="px-4 py-3 flex flex-col gap-3">
-        <div className="relative max-w-sm">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("workspace.listView.searchPlaceholder")}
-            className={`w-full pl-9 pr-9 py-2 rounded-xl text-sm border outline-none transition-colors ${isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500" : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500"}`} />
-          {searchQuery && <button onClick={() => setSearchQuery("")} className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}><X className="w-4 h-4" /></button>}
-        </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {FILTER_OPTIONS.map(opt => (
-            <button key={opt} onClick={() => setFilterType(opt)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${filterType === opt
-                ? isDarkMode ? "bg-amber-950/50 text-amber-400" : "bg-amber-100 text-amber-700"
-                : isDarkMode ? "text-slate-400 hover:bg-slate-800" : "text-gray-500 hover:bg-gray-100"
-              }`}>
-              {opt === "all" ? t("workspace.listView.filter.all") : t(`workspace.flashcard.status${opt}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Danh sách */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+    <div className="flex h-full min-h-0 flex-col px-4 py-5 sm:px-5 lg:px-6">
+      <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {typeof onNavigateHome === "function" ? (
+            <HomeButton onClick={onNavigateHome} />
+          ) : null}
+          <div className="relative min-w-[220px] flex-1 sm:max-w-[420px] md:max-w-[460px] lg:max-w-[520px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) =>
+                startTransition(() => setSearchQuery(event.target.value))
+              }
+              placeholder={t("workspace.listView.searchPlaceholder")}
+              className="h-11 w-full rounded-full border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-400"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            ) : null}
           </div>
-        ) : flashcards.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <CreditCard className={`w-12 h-12 mb-3 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-            <p className={`text-sm mb-3 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.flashcard.noFlashcards")}</p>
-            <Button disabled={disableCreate} onClick={onCreateFlashcard} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
-              <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.flashcard.createFirstFlashcard")}</span>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2 md:ml-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="h-11 rounded-full border-slate-200 px-4"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          </Button>
+          <Button
+            disabled={disableCreate}
+            onClick={onCreateFlashcard}
+            className="h-11 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {t("workspace.listView.create")}
+          </Button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          </div>
+        ) : !flashcards.length ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+            <CreditCard className="mb-4 h-12 w-12 text-slate-300" />
+            <p className="text-sm text-slate-500">{t("workspace.flashcard.noFlashcards")}</p>
+            <Button
+              disabled={disableCreate}
+              onClick={onCreateFlashcard}
+              className="mt-4 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t("workspace.flashcard.createFirstFlashcard")}
             </Button>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
+        ) : !filtered.length ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+            <FolderOpen className="mb-4 h-10 w-10 text-slate-300" />
+            <p className="text-sm text-slate-500">{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map(fc => {
-              const ss = STATUS_STYLES[fc.status] || STATUS_STYLES.DRAFT;
-              return (
-                <div key={fc.flashcardSetId}
-                  onClick={() => onViewFlashcard?.(fc)}
-                  className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all group ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-amber-950/40" : "bg-amber-100"}`}>
-                    <CreditCard className="w-4 h-4 text-amber-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{fc.flashcardSetName}</p>
-                    <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      {fc.itemCount ?? fc.items?.length ?? 0} {t("workspace.flashcard.cards")}
-                    </p>
-                    <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      <span className="flex items-center gap-1">{t("workspace.flashcard.createVia")}: {fc.createVia}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
-                      {t(`workspace.flashcard.status${fc.status}`)}
-                    </span>
-                    {onDeleteFlashcard && (
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteFlashcard(fc); }}
-                        className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all ${isDarkMode ? "hover:bg-red-950/30 text-red-400" : "hover:bg-red-100 text-red-500"}`}
-                        title={t("workspace.flashcard.deleteSet")}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
+          <div className="divide-y divide-slate-200">
+            {filtered.map((flashcard) => (
+              <article
+                key={flashcard.flashcardSetId}
+                onClick={() => onViewFlashcard?.(flashcard)}
+                className="group flex cursor-pointer items-start gap-4 px-1 py-4 transition-colors hover:bg-slate-50/70"
+                style={{ contentVisibility: "auto" }}
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                  <CreditCard className="h-5 w-5" />
                 </div>
-              );
-            })}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className={`min-w-0 truncate text-sm font-semibold text-slate-900 ${fontClass}`}>
+                      {flashcard.flashcardSetName}
+                    </p>
+                    <span className="text-xs font-medium text-slate-400">·</span>
+                    <span className="text-xs text-slate-500">
+                      {flashcard.itemCount ?? flashcard.items?.length ?? 0} {t("workspace.flashcard.cards")}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t("workspace.flashcard.createVia")}: {flashcard.createVia}
+                  </p>
+                </div>
+                {onDeleteFlashcard ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDeleteFlashcard(flashcard);
+                    }}
+                    className="rounded-xl p-2 text-slate-400 transition-all hover:bg-rose-50 hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100"
+                    title={t("workspace.flashcard.deleteSet")}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </article>
+            ))}
           </div>
         )}
       </div>

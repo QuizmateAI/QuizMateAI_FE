@@ -29,17 +29,17 @@ function CreateQuizAiRecommendationsPanel({
   }
 
   return (
-    <div className={`rounded-2xl border p-4 md:p-5 ${isDarkMode ? "border-violet-700/50 bg-gradient-to-br from-violet-950/35 to-slate-900" : "border-violet-200 bg-gradient-to-br from-violet-50 to-white"}`}>
+    <div className={`border-b pb-5 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`text-base font-semibold ${isDarkMode ? "text-violet-200" : "text-violet-800"} ${fontClass}`}>
+          <p className={`text-base font-semibold ${isDarkMode ? "text-violet-200" : "text-slate-900"} ${fontClass}`}>
             {t("workspace.quiz.aiRecommendations.inlineTitle")}
           </p>
           <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
             {t("workspace.quiz.aiRecommendations.inlineDesc")}
           </p>
         </div>
-        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isDarkMode ? "bg-violet-500/20" : "bg-violet-100"}`}>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isDarkMode ? "bg-violet-500/20" : "bg-violet-100"}`}>
           <Sparkles className={`h-4.5 w-4.5 ${isDarkMode ? "text-violet-300" : "text-violet-600"}`} />
         </div>
       </div>
@@ -85,7 +85,7 @@ function CreateQuizAiRecommendationsPanel({
           </div>
 
           {activeRecommendation && (
-            <div className={`mt-4 rounded-xl border p-4 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
+            <div className={`mt-4 rounded-2xl border p-4 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-slate-200 bg-slate-50/70"}`}>
               <div className="flex items-start justify-between gap-2">
                 <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
                   {activeRecommendation.displayTitle}

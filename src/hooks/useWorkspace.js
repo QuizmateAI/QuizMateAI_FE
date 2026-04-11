@@ -160,7 +160,9 @@ export function useWorkspace(options = {}) {
       return workspace;
     } catch (err) {
       console.error('Lỗi khi lấy chi tiết workspace:', err);
-      setCurrentWorkspace(null);
+      setCurrentWorkspace((prev) =>
+        Number(prev?.workspaceId) === Number(workspaceId) ? prev : null,
+      );
       throw err;
     } finally {
       setWorkspaceDetailLoading(false);

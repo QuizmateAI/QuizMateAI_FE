@@ -207,18 +207,14 @@ function CreateQuizForm({
 
   const getAiSectionCardClass = useCallback((errorKeys = []) => {
     const hasError = errorKeys.some((key) => fieldErrors[key]);
-    const defaultClasses = isDarkMode
-      ? "bg-slate-900/50 border-slate-700/90"
-      : "bg-white border-gray-200 shadow-sm";
-
     if (!hasError) {
-      return `rounded-xl border p-3 transition-colors ${defaultClasses}`;
+      return `border-b pb-5 last:border-b-0 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`;
     }
 
-    return `rounded-xl border p-3 transition-colors ${
+    return `border-b pb-5 last:border-b-0 ${
       isDarkMode
-        ? "border-red-500/60 bg-red-950/10"
-        : "border-red-300 bg-red-50/70 shadow-sm"
+        ? "border-red-500/50"
+        : "border-red-300"
     }`;
   }, [fieldErrors, isDarkMode]);
 
@@ -232,7 +228,7 @@ function CreateQuizForm({
 
   return (
     <div id="create-quiz-header" className="flex h-full flex-col scroll-mt-20">
-      <div className={`flex h-12 shrink-0 items-center gap-3 border-b px-3 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      <div className={`flex h-14 shrink-0 items-center gap-3 border-b px-3 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button
           type="button"
           onClick={onBack}
@@ -248,14 +244,7 @@ function CreateQuizForm({
         </div>
       </div>
 
-      <div id="create-quiz-scroll-root" className="flex-1 space-y-3 overflow-y-auto p-3">
-        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-          {t("workspace.quiz.createDesc")}
-        </p>
-
-        <div className={`rounded-lg border px-3 py-2 text-xs ${isDarkMode ? "border-amber-900/40 bg-amber-950/30 text-amber-300" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
-          {t("workspace.quiz.validation.requiredFieldsHint")}
-        </div>
+      <div id="create-quiz-scroll-root" className="flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-4">
 
         <CreateQuizAiRecommendationsPanel
           activeRecommendation={activeRecommendation}
@@ -348,7 +337,7 @@ function CreateQuizForm({
         />
       </div>
 
-      <div className={`flex shrink-0 justify-end gap-2 border-t px-3 py-2.5 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      <div className={`flex shrink-0 justify-end gap-2 border-t px-4 py-3 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <Button
           variant="outline"
           onClick={onBack}

@@ -53,7 +53,7 @@ import { deleteQuiz, getQuizzesByScope } from '@/api/QuizAPI';
 import { getGroupWorkspaceProfile, normalizeGroupWorkspaceProfile } from '@/api/WorkspaceAPI';
 import { unwrapApiData, unwrapApiList } from '@/Utils/apiResponse';
 import { useToast } from '@/context/ToastContext';
-import WorkspaceHeader from '@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader';
+import GroupWorkspaceHeader from '../Components/GroupWorkspaceHeader';
 import UploadSourceDialog from '../Components/UploadSourceDialog';
 import InviteMemberDialog from '../Group_leader/InviteMemberDialog';
 import GroupWorkspaceProfileConfigDialog from '../Components/GroupWorkspaceProfileConfigDialog';
@@ -628,7 +628,7 @@ export default function GroupReviewWorkspaceShell() {
     };
   }, [isCreating, profileUpdateGuardOpen, resolvedWorkspaceId]);
 
-  useWebSocket({
+  const { isConnected: wsConnected } = useWebSocket({
     workspaceId: !isCreating ? resolvedWorkspaceId : null,
     enabled: !isCreating && Boolean(resolvedWorkspaceId),
     onMaterialUploaded: () => void fetchSources(),
@@ -1158,12 +1158,6 @@ export default function GroupReviewWorkspaceShell() {
         <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(true)}>
           <Upload className="h-4 w-4" />
           Upload
-        </Button>
-      ) : null}
-      {canManageMembers ? (
-        <Button size="sm" onClick={() => setInviteDialogOpen(true)} className="bg-cyan-600 text-white hover:bg-cyan-700">
-          <UserPlus className="h-4 w-4" />
-          Mời member
         </Button>
       ) : null}
     </div>
@@ -1992,7 +1986,14 @@ export default function GroupReviewWorkspaceShell() {
 
   return (
     <div className={`${pageShellClass} ${fontClass}`}>
-      <WorkspaceHeader isDarkMode={isDarkMode} workspaceTitle={resolvedGroupData.groupName} workspaceSubtitle={`${formatRoleLabel(actualRoleKey)} • ${LEARNING_MODE_LABELS[resolvedGroupData.learningMode] || 'Ôn tập theo nhóm'}`} workspaceDescription={resolvedGroupData.description} settingsMenu={headerSettingsMenu} showWalletSummary={false} />
+      <GroupWorkspaceHeader
+        workspaceId={resolvedWorkspaceId}
+        groupName={resolvedGroupData.groupName}
+        isDarkMode={isDarkMode}
+        settingsMenu={headerSettingsMenu}
+        wsConnected={wsConnected}
+        subtitle={`${formatRoleLabel(actualRoleKey)} • ${LEARNING_MODE_LABELS[resolvedGroupData.learningMode] || 'Ôn tập theo nhóm'}`}
+      />
       <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-6 xl:px-8">
         <div className="mb-4 flex flex-wrap gap-2 md:hidden">
           <Button variant="outline" size="sm" onClick={() => void refreshAllData()}><RefreshCw className="h-4 w-4" />Làm mới</Button>

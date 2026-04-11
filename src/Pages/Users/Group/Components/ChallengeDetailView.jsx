@@ -26,14 +26,14 @@ import ChallengeScheduleFields from './ChallengeScheduleFields';
 import {
   getChallengeDetail, registerForChallenge, acceptChallengeInvitation,
   startChallengeAttempt, cancelChallenge, updateChallenge,
-  addQuizReviewContributor, removeQuizReviewContributor,
+  addQuizReviewContributor, removeQuizReviewContributor, publishChallenge,
 } from '../../../../api/ChallengeAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
 import ChallengeLeaderboard from './ChallengeLeaderboard';
 
 /** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS) */
-const MAX_SNAPSHOT_REVIEW_INVITES = 20;
+const MAX_SNAPSHOT_REVIEW_INVITES = 2;
 
 function formatDateTime(dt) {
   if (!dt) return '-';
@@ -59,7 +59,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const [editScheduleIssues, setEditScheduleIssues] = useState([]);
   const [reviewerPick, setReviewerPick] = useState('');
 
-  const { data: detail, isLoading } = useQuery({
+  const { data: detail, isLoading, error: detailError } = useQuery({
     queryKey: ['challenge-detail', workspaceId, eventId],
     queryFn: async () => {
       const res = await getChallengeDetail(workspaceId, eventId);
@@ -133,6 +133,9 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     setCancelDialogOpen(false);
     handleAction(() => cancelChallenge(workspaceId, eventId), 'cancel');
   };
+
+  const handlePublishChallenge = () => handleAction(
+    () => publishChallenge(workspaceId, eventId), 'publish');
 
   const openEditDialog = useCallback(() => {
     setEditTitle(detail?.title || '');
@@ -215,11 +218,15 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     const qid = detail?.snapshotQuizId;
     const id = Number(reviewerPick);
     if (!qid || !Number.isInteger(id) || id <= 0) return;
+    const hasPrimaryReviewer = (detail?.reviewContributors || []).some((c) => Boolean(c.primaryReviewer));
     handleAction(async () => {
-      await addQuizReviewContributor(workspaceId, qid, { userId: id });
+      await addQuizReviewContributor(workspaceId, qid, {
+        userId: id,
+        primaryReviewer: !hasPrimaryReviewer,
+      });
       setReviewerPick('');
     }, 'addReviewer');
-  }, [handleAction, workspaceId, detail?.snapshotQuizId, reviewerPick]);
+  }, [handleAction, workspaceId, detail?.snapshotQuizId, detail?.reviewContributors, reviewerPick]);
 
   const handleRemoveReviewer = useCallback((userId) => {
     const qid = detail?.snapshotQuizId;
@@ -240,7 +247,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     });
   }, [detail?.snapshotQuizId, detail?.snapshotQuizDuration, detail?.sourceMode]);
 
-  if (isLoading || !detail) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -248,15 +255,49 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     );
   }
 
+  if (detailError || !detail) {
+    const detailErrorMessage = getErrorMessage(t, detailError) || 'Không thể tải chi tiết challenge';
+    return (
+      <div className={`rounded-2xl border p-6 ${
+        isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'
+      }`}>
+        <div className="flex flex-col gap-4">
+          <div>
+            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              Không mở được challenge
+            </h3>
+            <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+              {detailErrorMessage}
+            </p>
+          </div>
+          <div>
+            <Button type="button" variant="outline" onClick={onBack}>
+              Quay lại
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isChallengeCreator = Number(currentUserId) > 0 && Number(detail.creatorId) === Number(currentUserId);
+  const isPublished = Boolean(detail.published);
+  const reviewContributors = Array.isArray(detail.reviewContributors) ? detail.reviewContributors : [];
+  const hasAssignedReviewers = reviewContributors.length > 0;
+  const hasPrimaryReviewer = reviewContributors.some((c) => Boolean(c.primaryReviewer));
+  const hasAssistantReviewer = reviewContributors.some((c) => !c.primaryReviewer);
+  const everyoneConfirmedReviewOk = hasAssignedReviewers
+    && reviewContributors.every((c) => Boolean(c.reviewCompleteOkAt));
 
   const canRegister = detail.status === 'SCHEDULED'
+    && isPublished
     && !detail.myParticipantStatus
     && !isChallengeCreator
     && !detail.myReviewContributorForSnapshot
     && (detail.registrationMode === 'PUBLIC_GROUP' || detail.myInvitationStatus === 'PENDING');
 
   const canAcceptInvite = detail.status === 'SCHEDULED'
+    && isPublished
     && detail.myInvitationStatus === 'PENDING'
     && !detail.myParticipantStatus;
 
@@ -267,23 +308,32 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const canCancel = isLeader && detail.status === 'SCHEDULED';
 
   const snapshotStatusKeyRaw = String(detail.snapshotQuizStatus || '').toUpperCase();
-  const hasAssignedReviewers = (detail.reviewContributors || []).length > 0;
-  const reviewNotReadyForLive = detail.challengeReviewReadyForLive === false;
+  const challengePublishReady = typeof detail.challengePublishReady === 'boolean'
+    ? detail.challengePublishReady
+    : (detail.sourceMode !== 'NEW_CHALLENGE_QUIZ'
+      ? snapshotStatusKeyRaw === 'ACTIVE'
+      : (Boolean(detail.leaderPublishBypass) || (
+        reviewContributors.length === MAX_SNAPSHOT_REVIEW_INVITES
+        && hasPrimaryReviewer
+        && hasAssistantReviewer
+        && everyoneConfirmedReviewOk
+      )));
   /** Quiz đã ACTIVE trên server nhưng chưa đủ xác nhận reviewer → không hiển thị «Sẵn sàng» */
   const snapshotAwaitingReviewerConfirm =
     detail.status === 'SCHEDULED'
-    && hasAssignedReviewers
-    && reviewNotReadyForLive
-    && snapshotStatusKeyRaw === 'ACTIVE';
+    && detail.sourceMode === 'NEW_CHALLENGE_QUIZ'
+    && snapshotStatusKeyRaw === 'ACTIVE'
+    && !challengePublishReady;
 
   const snapshotStatusKey = snapshotAwaitingReviewerConfirm ? 'REVIEW_PENDING' : snapshotStatusKeyRaw;
   const snapshotStatusLabel = snapshotStatusKeyRaw
     ? (snapshotAwaitingReviewerConfirm
-      ? t('groupWorkspace.challenge.quizStatus.REVIEW_PENDING')
+      ? 'Chờ reviewer xác nhận'
       : t(`groupWorkspace.challenge.quizStatus.${snapshotStatusKeyRaw}`, snapshotStatusKeyRaw))
     : null;
 
   const hasSnapshotQuiz = Number(detail.snapshotQuizId) > 0;
+  const hasSnapshotQuizContent = Number(detail.snapshotQuizTotalQuestion) > 0;
   /** Sau khi xuất bản (ACTIVE), chỉ leader có tham gia thi mới bị chặn xem trước đề — reviewer vẫn xem được để góp ý */
   const leaderFairPlayBlind = Boolean(detail.leaderParticipates)
     && snapshotStatusKeyRaw === 'ACTIVE'
@@ -303,6 +353,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     && !leaderFairPlayBlind;
 
   const canPreviewSnapshotQuiz = hasSnapshotQuiz
+    && hasSnapshotQuizContent
     && !leaderFairPlayBlind
     && (isLeader || isChallengeCreator || canReviewerPreviewSnapshotQuiz);
 
@@ -314,6 +365,30 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const canEditChallengeSchedule =
     isLeader && detail.status === 'SCHEDULED'
     && new Date(detail.startTime).getTime() > Date.now() + 60 * 60 * 1000;
+  const showPublishChallengeAction =
+    isLeader && detail.status === 'SCHEDULED' && hasSnapshotQuiz && !isPublished;
+  const canPublishChallenge =
+    showPublishChallengeAction
+    && snapshotStatusKeyRaw === 'ACTIVE'
+    && challengePublishReady
+    && new Date(detail.startTime).getTime() > Date.now();
+  const publishRequirementHint = !showPublishChallengeAction
+    ? ''
+    : !hasSnapshotQuizContent
+      ? 'Leader phải soạn nội dung quiz trước.'
+      : snapshotStatusKeyRaw !== 'ACTIVE'
+        ? 'Quiz challenge phải được chuyển từ draft sang active trước khi xuất bản challenge.'
+        : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && reviewContributors.length < MAX_SNAPSHOT_REVIEW_INVITES
+          ? 'Cần đủ reviewer chính và reviewer phụ trước khi xuất bản challenge.'
+          : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !hasPrimaryReviewer
+            ? 'Cần có reviewer chính cho quiz challenge trước khi xuất bản.'
+            : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !hasAssistantReviewer
+              ? 'Cần có reviewer phụ cho quiz challenge trước khi xuất bản.'
+              : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !everyoneConfirmedReviewOk && !detail.leaderPublishBypass
+                ? 'Reviewer chính/phụ phải xác nhận đề ổn trước khi leader xuất bản challenge.'
+                : new Date(detail.startTime).getTime() <= Date.now()
+                  ? 'Challenge đã tới giờ bắt đầu nên không thể xuất bản.'
+                  : 'Sau khi xuất bản, member mới thấy challenge và được đăng ký tham gia.';
 
   const cardCls = `rounded-2xl border p-6 ${
     isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'
@@ -352,6 +427,13 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               >
                 {t(`groupWorkspace.challenge.phase.${detail.status}`, detail.status)}
               </span>
+              {!isPublished && (
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                  isDarkMode ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-100 text-amber-900'
+                }`}>
+                  Chưa publish
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -446,20 +528,22 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               {Number(detail.snapshotQuizTotalQuestion) || 0} câu hỏi
             </div>
 
-            {canPreviewSnapshotQuiz && (
+            {(canPreviewSnapshotQuiz || showDraftQuizCta) && (
               <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleViewSnapshotQuiz}
-                  className={`inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors sm:flex-none ${
-                    isDarkMode
-                      ? 'border border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700/80'
-                      : 'border border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <Eye className="h-4 w-4" />
-                  {t('groupWorkspace.challenge.viewSnapshotQuiz')}
-                </button>
+                {canPreviewSnapshotQuiz && (
+                  <button
+                    type="button"
+                    onClick={handleViewSnapshotQuiz}
+                    className={`inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors sm:flex-none ${
+                      isDarkMode
+                        ? 'border border-slate-500 bg-slate-800 text-slate-100 hover:bg-slate-700/80'
+                        : 'border border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Eye className="h-4 w-4" />
+                    {t('groupWorkspace.challenge.viewSnapshotQuiz')}
+                  </button>
+                )}
                 {showDraftQuizCta && (
                   <button
                     type="button"
@@ -481,9 +565,21 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                 {t('groupWorkspace.challenge.snapshotQuizHint')}
               </p>
             )}
+            {!canPreviewSnapshotQuiz && showDraftQuizCta && (
+              <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                Tạo nội dung quiz trước, sau đó mới xem lại được đề challenge.
+              </p>
+            )}
             {Boolean(detail.leaderParticipates) && snapshotStatusKeyRaw !== 'ACTIVE' && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-800'}`}>
                 {t('groupWorkspace.challenge.leaderFairPlayQuizHint')}
+              </p>
+            )}
+            {isLeader && !isPublished && detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && (
+              <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                Flow challenge: leader tạo challenge và soạn quiz, reviewer chính/phụ kiểm tra đề,
+                khi đề ổn thì chuyển quiz sang ACTIVE, sau đó leader mới xuất bản challenge.
+                Chỉ sau khi xuất bản thì member mới thấy challenge và đăng ký tham gia.
               </p>
             )}
           </div>
@@ -498,6 +594,9 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
             </div>
             <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
               {t('groupWorkspace.challenge.reviewContributorsHint')}
+            </p>
+            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+              Người đầu tiên được thêm sẽ là reviewer chính. Người thứ hai là reviewer phụ.
             </p>
             {(detail.reviewContributors || []).length > 0 && (
               <ul className="mt-3 flex flex-col gap-2">
@@ -523,9 +622,19 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                         <span className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                           {c.fullName || c.username || `#${c.userId}`}
                         </span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          c.primaryReviewer
+                            ? (isDarkMode ? 'bg-orange-500/15 text-orange-200' : 'bg-orange-100 text-orange-800')
+                            : (isDarkMode ? 'bg-cyan-500/15 text-cyan-200' : 'bg-cyan-100 text-cyan-800')
+                        }`}>
+                          {c.primaryReviewer ? 'Reviewer chính' : 'Reviewer phụ'}
+                        </span>
                       </div>
                       <p className={`mt-1 pl-9 text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
                         {c.lastViewedAt ? `Đã mở xem đề: ${formatDateTime(c.lastViewedAt)}` : 'Chưa ghi nhận mở xem đề'}
+                      </p>
+                      <p className={`mt-1 pl-9 text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
+                        {c.reviewCompleteOkAt ? `Đã xác nhận đề ổn: ${formatDateTime(c.reviewCompleteOkAt)}` : 'Chưa xác nhận đề ổn'}
                       </p>
                     </div>
                     <button
@@ -590,6 +699,11 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                 {t('groupWorkspace.challenge.reviewContributorAdd')}
               </button>
             </div>
+            {detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && (
+              <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                Cần đủ 2 reviewer để leader có thể xuất bản challenge sau khi quiz đã ACTIVE.
+              </p>
+            )}
           </div>
         )}
 
@@ -630,6 +744,22 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
 
         {/* Actions */}
         <div className="mt-5 flex flex-wrap gap-2">
+          {showPublishChallengeAction && (
+            <button
+              type="button"
+              onClick={handlePublishChallenge}
+              disabled={!canPublishChallenge || !!actionLoading}
+              className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                isDarkMode
+                  ? 'bg-orange-500/20 text-orange-200 hover:bg-orange-500/30'
+                  : 'bg-orange-500 text-white hover:bg-orange-600'
+              }`}
+            >
+              {actionLoading === 'publish' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+              Xuất bản challenge
+            </button>
+          )}
+
           {canRegister && !canAcceptInvite && (
             <button
               onClick={handleRegister}
@@ -679,6 +809,11 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
             </button>
           )}
         </div>
+        {showPublishChallengeAction && publishRequirementHint && (
+          <p className={`mt-3 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
+            {publishRequirementHint}
+          </p>
+        )}
       </div>
 
       {/* Leaderboard — chỉ sau khi challenge bắt đầu (LIVE) hoặc đã kết thúc */}

@@ -20,26 +20,8 @@ const hoisted = vi.hoisted(() => {
   };
 });
 
-const sourcesPanelSpy = vi.fn();
-const studioPanelSpy = vi.fn();
+const sidebarSpy = vi.fn();
 const chatPanelSpy = vi.fn();
-
-class ResizeObserverMock {
-  static latest = null;
-
-  constructor(callback) {
-    this.callback = callback;
-    ResizeObserverMock.latest = this;
-  }
-
-  observe() {}
-
-  disconnect() {}
-
-  trigger(width) {
-    this.callback([{ contentRect: { width } }]);
-  }
-}
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -67,7 +49,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/hooks/useDarkMode', () => ({
   useDarkMode: () => ({
-    isDarkMode: false,
+    isDarkMode: true,
     toggleDarkMode: vi.fn(),
   }),
 }));
@@ -78,6 +60,7 @@ vi.mock('@/hooks/useWorkspace', () => ({
       workspaceId: 42,
       title: 'Workspace A',
       description: 'Desc',
+      topic: { title: 'Math' },
     },
     fetchWorkspaceDetail: vi.fn().mockResolvedValue(undefined),
     editWorkspace: vi.fn().mockResolvedValue(undefined),
@@ -118,6 +101,7 @@ vi.mock('@/api/WorkspaceAPI', () => ({
         workspaceSetupStatus: 'DONE',
         onboardingCompleted: true,
         workspacePurpose: 'STUDY_NEW',
+        roadmapEnabled: true,
       },
     },
   }),
@@ -134,7 +118,7 @@ vi.mock('@/api/RoadmapAPI', () => ({
   createRoadmapForWorkspace: vi.fn(),
   deleteRoadmapKnowledgeById: vi.fn(),
   deleteRoadmapPhaseById: vi.fn(),
-  getRoadmapStructureById: vi.fn(),
+  getRoadmapStructureById: vi.fn().mockResolvedValue(null),
   updateRoadmapConfig: vi.fn(),
 }));
 
@@ -144,6 +128,7 @@ vi.mock('@/api/MaterialAPI', () => ({
   ]),
   deleteMaterial: vi.fn(),
   uploadMaterial: vi.fn(),
+  renameMaterial: vi.fn(),
 }));
 
 vi.mock('@/api/QuizAPI', () => ({
@@ -181,20 +166,14 @@ vi.mock('@/Pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager', (
     quizGenerationTaskByQuizId: {},
     quizGenerationProgressByQuizId: {},
     trackQuizGenerationStart: vi.fn(),
-    phaseGenerateDialogOpen: false,
-    setPhaseGenerateDialogOpen: vi.fn(),
-    phaseGenerateDialogDefaultIds: [],
     isGeneratingRoadmapPhases: false,
     effectiveRoadmapPhaseGenerationProgress: 0,
-    isSubmittingRoadmapPhaseRequest: false,
     generatingKnowledgePhaseIds: [],
     generatingKnowledgeQuizPhaseIds: [],
     generatingKnowledgeQuizKnowledgeKeys: [],
     knowledgeQuizRefreshByKey: {},
     generatingPreLearningPhaseIds: [],
     skipPreLearningPhaseIds: [],
-    handleOpenRoadmapPhaseDialog: vi.fn(),
-    handleSubmitRoadmapPhaseDialog: vi.fn(),
     handleCreatePhaseKnowledge: vi.fn(),
     handleCreateKnowledgeQuizForKnowledge: vi.fn(),
     handleCreatePhasePreLearning: vi.fn(),
@@ -202,14 +181,17 @@ vi.mock('@/Pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager', (
   }),
 }));
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader', () => ({
-  default: ({ settingsMenu }) => <div data-testid="workspace-header">{settingsMenu}</div>,
-}));
-
-vi.mock('@/Pages/Users/Individual/Workspace/Components/SourcesPanel', () => ({
+vi.mock('@/Pages/Users/Individual/Workspace/Components/PersonalWorkspaceSidebar', () => ({
   default: (props) => {
-    sourcesPanelSpy(props);
-    return <div data-testid="sources-panel">sources:{String(props.isCollapsed)}</div>;
+    sidebarSpy(props);
+    return (
+      <div data-testid="personal-workspace-sidebar">
+        mobile:{String(props.isMobile)}|open:{String(props.mobileOpen)}|active:{props.activeView}
+        <button type="button" onClick={() => props.onNavigate?.('overview')}>go-overview</button>
+        <button type="button" onClick={() => props.onNavigate?.('sources')}>go-sources</button>
+        <button type="button" onClick={() => props.onOpenProfile?.()}>open-profile-sidebar</button>
+      </div>
+    );
   },
 }));
 
@@ -218,16 +200,9 @@ vi.mock('@/Pages/Users/Individual/Workspace/Components/ChatPanel', () => ({
     chatPanelSpy(props);
     return (
       <div data-testid="chat-panel-state">
-        {props.activeView || 'none'}|{props.selectedQuiz?.quizId || 'none'}|{props.selectedRoadmapPhaseId || 'none'}
+        {props.activeView || 'none'}|{props.selectedQuiz?.quizId || 'none'}|{props.selectedRoadmapPhaseId || 'none'}|{props.accessHistory?.length || 0}
       </div>
     );
-  },
-}));
-
-vi.mock('@/Pages/Users/Individual/Workspace/Components/StudioPanel', () => ({
-  default: (props) => {
-    studioPanelSpy(props);
-    return <div data-testid="studio-panel">studio:{String(props.isCollapsed)}</div>;
   },
 }));
 
@@ -258,16 +233,45 @@ vi.mock('@/Components/ui/ListSpinner', () => ({
 describe('WorkspacePage', () => {
   beforeEach(() => {
     hoisted.mockNavigate.mockClear();
-    sourcesPanelSpy.mockClear();
-    studioPanelSpy.mockClear();
+    sidebarSpy.mockClear();
     chatPanelSpy.mockClear();
     window.localStorage.clear();
     window.sessionStorage.clear();
-    globalThis.ResizeObserver = ResizeObserverMock;
-    ResizeObserverMock.latest = null;
+    window.innerWidth = 1440;
   });
 
-  it('hydrates edit view state from deep-link route', async () => {
+  it('hydrates the bare workspace route into the default shell view and tracks sidebar navigation', async () => {
+    hoisted.setLocation({
+      pathname: '/workspaces/42',
+      search: '',
+      state: {},
+    });
+
+    render(<WorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('sources|none|none|0');
+    });
+
+    expect(sidebarSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ isDarkMode: true }),
+    );
+    expect(chatPanelSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ isDarkMode: false }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'go-sources' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('sources|none|none|1');
+    });
+
+    expect(sidebarSpy).toHaveBeenLastCalledWith(expect.objectContaining({
+      activeView: 'sources',
+    }));
+  });
+
+  it('hydrates edit quiz state from the preserved roadmap deep-link route', async () => {
     hoisted.setLocation({
       pathname: '/workspaces/42/roadmaps/77/phases/11/quizzes/5/edit',
       search: '',
@@ -277,13 +281,13 @@ describe('WorkspacePage', () => {
     render(<WorkspacePage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('editQuiz|5|11');
+      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('editQuiz|5|11|0');
     });
   });
 
-  it('forces studio collapse when layout width drops below hard threshold', async () => {
+  it('does not render the old shared home button in the workspace shell', async () => {
     hoisted.setLocation({
-      pathname: '/workspaces/42',
+      pathname: '/workspaces/42/quizzes',
       search: '',
       state: {},
     });
@@ -291,24 +295,43 @@ describe('WorkspacePage', () => {
     render(<WorkspacePage />);
 
     await waitFor(() => {
-      expect(ResizeObserverMock.latest).not.toBeNull();
+      expect(screen.getByTestId('chat-panel-state')).toHaveTextContent('quiz|none|none|0');
+    });
+
+    expect(screen.queryByTestId('workspace-home-button')).not.toBeInTheDocument();
+  });
+
+  it('switches the new sidebar into mobile drawer mode under 1024px and opens it from the menu button', async () => {
+    hoisted.setLocation({
+      pathname: '/workspaces/42',
+      search: '',
+      state: {},
+    });
+    window.innerWidth = 900;
+
+    render(<WorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:true|open:false|active:sources');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open sidebar' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:true|open:true|active:sources');
     });
 
     act(() => {
-      ResizeObserverMock.latest?.trigger(1300);
+      window.innerWidth = 1440;
+      window.dispatchEvent(new Event('resize'));
     });
 
     await waitFor(() => {
-      expect(studioPanelSpy).toHaveBeenLastCalledWith(expect.objectContaining({
-        isCollapsed: true,
-      }));
-      expect(sourcesPanelSpy).toHaveBeenLastCalledWith(expect.objectContaining({
-        isCollapsed: false,
-      }));
+      expect(screen.getByTestId('personal-workspace-sidebar')).toHaveTextContent('mobile:false|open:false|active:sources');
     });
   });
 
-  it('opens onboarding update guard when profile edit is requested with existing materials', async () => {
+  it('opens the onboarding update guard when profile edit is requested with existing materials', async () => {
     hoisted.setLocation({
       pathname: '/workspaces/42',
       search: '',
@@ -317,8 +340,13 @@ describe('WorkspacePage', () => {
 
     render(<WorkspacePage />);
 
-    const profileButton = await screen.findByRole('button', { name: 'workspace.settingsMenu.workspaceProfile' });
-    fireEvent.click(profileButton);
+    await waitFor(() => {
+      expect(chatPanelSpy).toHaveBeenLastCalledWith(
+        expect.objectContaining({ workspacePurpose: 'STUDY_NEW' }),
+      );
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'open-profile-sidebar' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('profile-overview-dialog')).toBeInTheDocument();

@@ -228,16 +228,16 @@ function CreateQuizAiFormContent({
   };
 
   return (
-    <div className="space-y-3 pb-2">
+    <div className="space-y-4 pb-2">
       {metadataLoading && (
-        <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-gray-100 text-gray-700"}`}>
+        <div className={`flex items-center gap-2 border-b pb-2 text-xs ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-gray-500"}`}>
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           {t("workspace.quiz.aiConfig.loadingMetadata")}
         </div>
       )}
 
       {metadataError && (
-        <div className={`rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-700"}`}>
+        <div className={`border-b pb-2 text-xs ${isDarkMode ? "border-red-500/30 text-red-400" : "border-red-200 text-red-700"}`}>
           {metadataError}
         </div>
       )}
@@ -286,8 +286,8 @@ function CreateQuizAiFormContent({
           </p>
         ) : (
           <div
-            className={`max-h-48 overflow-y-auto rounded-lg border ${
-              isDarkMode ? "divide-slate-800 border-slate-700/80 divide-y" : "divide-gray-100 border-gray-200/90 divide-y"
+            className={`max-h-48 overflow-y-auto border-y ${
+              isDarkMode ? "divide-slate-800 border-slate-800 divide-y" : "divide-slate-100 border-slate-200 divide-y"
             }`}
           >
             {workspaceSources.map((item, index) => {
@@ -396,30 +396,28 @@ function CreateQuizAiFormContent({
 
         <div className="mt-2">
           <label className={labelCls}>{t("workspace.quiz.aiConfig.examType")}</label>
-          <div className="grid grid-cols-1 gap-2">
+          <div className={`inline-flex flex-wrap gap-2 rounded-full p-1 ${isDarkMode ? "bg-slate-900/60" : "bg-slate-100"}`}>
             <button
               type="button"
               onClick={() => setAiTimerMode(true)}
-              className={`rounded-lg border px-3 py-2 text-left transition-all ${
+              className={`rounded-full px-3 py-2 text-left transition-all ${
                 aiTimerMode
-                  ? (isDarkMode ? "border-blue-500 bg-blue-950/30 text-blue-300" : "border-blue-400 bg-blue-50 text-blue-700")
-                  : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
+                  ? (isDarkMode ? "bg-blue-500/20 text-blue-200" : "bg-white text-blue-700 shadow-sm")
+                  : (isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-600 hover:text-gray-900")
               }`}
             >
               <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeTimed")}</p>
-              <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintTimed")}</p>
             </button>
             <button
               type="button"
               onClick={() => setAiTimerMode(false)}
-              className={`rounded-lg border px-3 py-2 text-left transition-all ${
+              className={`rounded-full px-3 py-2 text-left transition-all ${
                 !aiTimerMode
-                  ? (isDarkMode ? "border-emerald-500 bg-emerald-950/25 text-emerald-300" : "border-emerald-400 bg-emerald-50 text-emerald-700")
-                  : (isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-500" : "border-gray-200 bg-white text-gray-700 hover:border-gray-300")
+                  ? (isDarkMode ? "bg-emerald-500/20 text-emerald-200" : "bg-white text-emerald-700 shadow-sm")
+                  : (isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-600 hover:text-gray-900")
               }`}
             >
               <p className="text-xs font-medium">{t("workspace.quiz.aiConfig.examTypeSequential")}</p>
-              <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.aiConfig.examTypeHintSequential")}</p>
             </button>
           </div>
 
@@ -524,7 +522,7 @@ function CreateQuizAiFormContent({
           </div>
         )}
 
-        <div className={`mt-4 rounded-lg border p-3 ${isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-gray-200 bg-gray-50"}`}>
+        <div className={`mt-4 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className={`text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
               {t("workspace.quiz.aiConfig.difficultyPreviewTitle")}
@@ -646,13 +644,13 @@ function CreateQuizAiFormContent({
               const detail = qTypes.find((questionType) => questionType.questionTypeId === item.questionTypeId);
 
               return (
-                <div key={item.questionTypeId} className={`flex items-center gap-2 rounded-md border p-2 text-xs ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
+                <div key={item.questionTypeId} className={`flex items-center gap-2 border-b py-2 text-xs ${isDarkMode ? "border-slate-800 text-slate-300" : "border-gray-200 text-gray-700"}`}>
                   <span className="flex-1 truncate" title={detail?.description}>
                     {detail?.questionType ? getQuestionTypeLabel(detail.questionType) : t("workspace.quiz.aiConfig.questionTypeFallback", { id: item.questionTypeId })}
                   </span>
                   <input
                     type="number"
-                    className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}
+                    className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}
                     value={item.ratio}
                     onChange={(event) => handleQTypeRatioChange(item.questionTypeId, event.target.value)}
                   />
@@ -738,13 +736,13 @@ function CreateQuizAiFormContent({
               const detail = bloomSkills.find((skill) => skill.bloomId === item.bloomId);
 
               return (
-                <div key={item.bloomId} className={`flex items-center gap-2 rounded-md border p-2 text-xs ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
+                <div key={item.bloomId} className={`flex items-center gap-2 border-b py-2 text-xs ${isDarkMode ? "border-slate-800 text-slate-300" : "border-gray-200 text-gray-700"}`}>
                   <span className="flex-1 truncate" title={detail?.description}>
                     {detail?.bloomName || t("workspace.quiz.aiConfig.bloomFallback", { id: item.bloomId })}
                   </span>
                   <input
                     type="number"
-                    className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-800" : "border-gray-200 bg-white"}`}
+                    className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}
                     value={item.ratio}
                     onChange={(event) => handleBloomRatioChange(item.bloomId, event.target.value)}
                   />
@@ -785,9 +783,9 @@ function CreateQuizAiFormContent({
         )}
       </div>
 
-      <div className={`relative overflow-hidden rounded-2xl border transition-all ${isDarkMode ? "border-cyan-900/40 bg-slate-900/60 shadow-2xl shadow-blue-950/20" : "border-cyan-100 bg-white shadow-2xl shadow-slate-900/5"}`}>
+      <div className={`relative overflow-hidden border-t transition-all ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
         <div className={`${showStructureOutdatedOverlay ? "opacity-20 pointer-events-none select-none" : ""}`}>
-        <div className={`border-b px-4 py-3 ${isDarkMode ? "border-cyan-900/30 bg-gradient-to-r from-cyan-950/20 to-transparent" : "border-cyan-100 bg-gradient-to-r from-cyan-50/80 to-transparent"}`}>
+        <div className={`border-b px-4 py-3 ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2">

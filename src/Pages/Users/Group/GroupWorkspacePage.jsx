@@ -27,8 +27,8 @@ import {
   Users,
 } from 'lucide-react';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
-import WorkspaceHeader from '@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader';
-import StudioPanel from '@/Pages/Users/Individual/Workspace/Components/StudioPanel';
+import GroupWorkspaceHeader from './Components/GroupWorkspaceHeader';
+import StudioPanel from './Components/StudioPanel';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -2554,7 +2554,6 @@ function GroupWorkspacePage() {
     { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'notifications'] },
     { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'wallet', 'settings'] },
   ];
-
   const renderActivityFeed = (compact = false) => (
     <section className={`rounded-[28px] border p-5 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
       <div className="flex items-center gap-2">
@@ -3238,15 +3237,13 @@ function GroupWorkspacePage() {
   return (
     <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${pageShellClass}`}>
       {/* Header */}
-      <WorkspaceHeader
+      <GroupWorkspaceHeader
           workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? Number(workspaceId) : null)}
-          workspaceTitle={currentGroupName}
-          workspaceName={currentGroupName}
-          workspaceSubtitle={groupHeaderSubtitle}
+          groupName={currentGroupName}
           settingsMenu={settingsMenu}
           wsConnected={wsConnected}
           isDarkMode={isDarkMode}
-          showWalletSummary={false}
+          subtitle={groupHeaderSubtitle}
       />
 
       {/* Main Workspace Area */}
