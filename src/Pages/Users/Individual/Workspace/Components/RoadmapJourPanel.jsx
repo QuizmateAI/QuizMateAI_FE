@@ -9,9 +9,11 @@ import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
 function RoadmapJourPanel({
   isDarkMode = false,
   workspaceId = null,
+  isStudyNewRoadmap = false,
   isCollapsed = false,
   onToggleCollapse,
   selectedPhaseId: selectedPhaseIdProp = null,
+  selectedKnowledgeId: selectedKnowledgeIdProp = null,
   onSelectPhase,
   reloadToken = 0,
   isGeneratingRoadmapPhases = false,
@@ -19,6 +21,7 @@ function RoadmapJourPanel({
   progressTracking = null,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
+  generatingKnowledgeQuizKnowledgeKeys = [],
   generatingPreLearningPhaseIds = [],
 }) {
   const { t, i18n } = useTranslation();
@@ -28,6 +31,7 @@ function RoadmapJourPanel({
   const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
   const [isPhaseOpen, setIsPhaseOpen] = useState(true);
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
+  const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(null);
   const selectedPhaseRef = useRef(null);
   const selectPhaseDebounceRef = useRef(null);
 
@@ -45,6 +49,17 @@ function RoadmapJourPanel({
   useEffect(() => {
     selectedPhaseRef.current = selectedPhaseIdProp ?? selectedPhaseId;
   }, [selectedPhaseId, selectedPhaseIdProp]);
+
+  useEffect(() => {
+    const normalizedKnowledgeId = Number(selectedKnowledgeIdProp);
+    if (Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0) {
+      setSelectedKnowledgeId(normalizedKnowledgeId);
+      return;
+    }
+    if (selectedKnowledgeIdProp === null) {
+      setSelectedKnowledgeId(null);
+    }
+  }, [selectedKnowledgeIdProp]);
 
   const loadRoadmap = useCallback(async () => {
     if (!workspaceId) {
@@ -118,14 +133,34 @@ function RoadmapJourPanel({
     }
     const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
 
+    if (isStudyNewRoadmap) {
+      const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
+        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
+        const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
+        const isFinished = isPhaseFinishedStatus(phase?.status);
+
+        if (hasPreLearning || hasKnowledge || hasPostLearning || isFinished) {
+          return Math.max(maxIndex, index);
+        }
+
+        return maxIndex;
+      }, 0);
+
+      return Math.max(0, unlockedByManualProgressIndex);
+    }
+
     return Math.max(0, globalCurrentIndex, unlockedByStatusIndex);
-  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, phases]);
+  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, isStudyNewRoadmap, phases]);
 
   const isCurrentPayloadFinished = useMemo(() => {
     return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
   }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
-  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+    ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+    : -1;
 
   const isPhaseVisuallyCompleted = useCallback((phase, phaseIndex) => {
     if (!phase) return false;
@@ -285,20 +320,8 @@ function RoadmapJourPanel({
                           return previousFromPhaseList || previousFromCurrentPayloadById || previousFromCurrentPayloadByIndex;
                         })()
                         : true;
-                      const isUnlockable = isLockedPhase
-                        && index === (maxUnlockedPhaseIndex + 1)
-                        && previousPhaseCompleted;
                       const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
                       const isCompletedPhase = isPhaseVisuallyCompleted(phase, index);
-                      const phaseKnowledgePercent = progressTracking?.getKnowledgeProgress(normalizedPhaseId) ?? 0;
-                      const phasePreLearningPercent = progressTracking?.getPreLearningProgress(normalizedPhaseId) ?? 0;
-                      const phasePostLearningPercent = progressTracking?.getPostLearningProgress(normalizedPhaseId) ?? 0;
-                      const phaseProcessingPercent = Math.max(
-                        Number(phaseKnowledgePercent) || 0,
-                        Number(phasePreLearningPercent) || 0,
-                        Number(phasePostLearningPercent) || 0,
-                        0
-                      );
                       const isGeneratingByClientState = generatingKnowledgePhaseIds.includes(normalizedPhaseId)
                         || generatingKnowledgeQuizPhaseIds.includes(normalizedPhaseId)
                         || generatingPreLearningPhaseIds.includes(normalizedPhaseId);
@@ -306,48 +329,189 @@ function RoadmapJourPanel({
                         normalizedPhaseStatus === "PROCESSING"
                         || isGeneratingByClientState
                       );
+                      const isInProgressPhase = !isCompletedPhase && !isProcessingPhase && !isLockedPhase && (
+                        normalizedPhaseStatus === "IN_PROGRESS"
+                        || normalizedPhaseStatus === "INPROGRESS"
+                        || normalizedPhaseStatus === "STARTED"
+                        || normalizedPhaseStatus === "ONGOING"
+                      );
+
+                      // Determine specific status string
+                      let statusText = t("workspace.quiz.statusLabels.ACTIVE", "Đang hoạt động");
+                      let statusColorClass = "text-blue-600 dark:text-blue-400";
+                      
+                      if (isCompletedPhase) {
+                        statusText = t("workspace.quiz.statusLabels.COMPLETED", "Hoàn thành");
+                        statusColorClass = "text-green-600";
+                      } else if (isProcessingPhase) {
+                        statusText = t("workspace.quiz.statusLabels.PROCESSING", "Đang xử lý");
+                        statusColorClass = "text-yellow-500";
+                      } else if (isInProgressPhase) {
+                        statusText = t("workspace.quiz.statusLabels.IN_PROGRESS", "Đang học");
+                        statusColorClass = "text-blue-600 dark:text-blue-400";
+                      } else if (isLockedPhase) {
+                        statusText = t("workspace.quiz.statusLabels.LOCKED", "Đã khóa");
+                        statusColorClass = "text-slate-500 dark:text-slate-400";
+                      }
+
                       return (
-                        <button
-                          key={phase.phaseId}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPhaseId(phase.phaseId);
-                            queueSelectPhase(phase.phaseId, { preserveActiveView: false });
-                          }}
-                          className={`w-full rounded-lg px-3 py-2.5 text-left flex items-center gap-2 border-l-4 transition-all ${active
-                            ? isDarkMode
-                              ? "border-l-blue-500 bg-slate-800/50"
-                              : "border-l-blue-500 bg-blue-50 text-blue-900"
-                            : isDarkMode
-                              ? "border-l-transparent bg-transparent hover:bg-slate-800/30"
-                              : "border-l-transparent bg-transparent hover:bg-slate-50"}`}
-                        >
-                          {isLockedPhase ? (
-                            <Lock className={`w-4 h-4 shrink-0 ${
-                              isUnlockable
-                                ? (isDarkMode ? "text-blue-400" : "text-blue-600")
-                                : (isDarkMode ? "text-slate-500" : "text-slate-400")
-                            }`} />
-                          ) : isCompletedPhase ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-                          ) : isProcessingPhase ? (
-                            <Loader2 className="w-4 h-4 text-yellow-500 animate-spin shrink-0" />
-                          ) : (
-                            <div className={`w-4 h-4 shrink-0 rounded-full border-2 ${isDarkMode ? "border-slate-500" : "border-slate-300"}`} />
+                        <div key={phase.phaseId} className="relative w-full">
+                          {/* Main line connecting phases */}
+                          {index < phases.length - 1 && (
+                            <div className={`absolute left-[26px] top-[42px] bottom-[-24px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-slate-200"} z-0`} />
                           )}
-                          <HoverMarqueeText
-                            text={phase.title || `${t("workspace.roadmap.canvas.phase", "Phase")} ${index + 1}`}
-                            containerClassName="flex-1"
-                            className={`text-sm ${
-                              isLockedPhase 
-                                ? (isUnlockable
-                                  ? (isDarkMode ? "text-blue-300" : "text-blue-700")
-                                  : (isDarkMode ? "text-slate-500" : "text-slate-400"))
-                                : (isDarkMode ? "text-slate-200" : "text-gray-900")
-                            } ${fontClass}`}
-                            alwaysRun={active}
-                          />
-                        </button>
+
+                          <div className="relative z-10 w-full pt-1 pb-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPhaseId(phase.phaseId);
+                                setSelectedKnowledgeId(null);
+                                queueSelectPhase(phase.phaseId, { preserveActiveView: false });
+                              }}
+                              className={`w-full rounded-xl px-4 py-3 text-left flex items-center gap-4 transition-all ${
+                                active
+                                  ? isDarkMode
+                                    ? "bg-slate-800"
+                                    : "bg-[#E5F0FF]"
+                                  : isDarkMode
+                                    ? "bg-transparent hover:bg-slate-800/30"
+                                    : "bg-transparent hover:bg-slate-50"
+                              }`}
+                            >
+                              {/* Phase Icon */}
+                              <div className="shrink-0 flex items-center justify-center">
+                                {isCompletedPhase ? (
+                                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                                  </div>
+                                ) : isProcessingPhase ? (
+                                  <div className={`w-6 h-6 rounded-full border ${isDarkMode ? "border-slate-600 bg-slate-800" : "border-slate-300 bg-white"} flex items-center justify-center`}>
+                                    <Loader2 className="w-3.5 h-3.5 text-yellow-500 animate-spin" />
+                                  </div>
+                                ) : (
+                                  <div className={`relative w-6 h-6 rounded-full border-2 flex items-center justify-center ${active
+                                    ? "border-blue-200 bg-white dark:bg-slate-900"
+                                    : isLockedPhase
+                                      ? isDarkMode ? "border-slate-600 bg-slate-800" : "border-slate-300 bg-slate-100"
+                                      : isDarkMode ? "border-slate-500 bg-slate-900" : "border-slate-300 bg-white"}`}>
+                                    <span className={`text-[10px] font-semibold leading-none ${active
+                                      ? "text-blue-600 dark:text-blue-300"
+                                      : isLockedPhase
+                                        ? isDarkMode ? "text-slate-400" : "text-slate-500"
+                                        : isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
+                                      {index + 1}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Phase Meta */}
+                              <div className="flex-1 flex flex-col justify-center min-w-0 overflow-hidden">
+                                <HoverMarqueeText
+                                  text={phase.title || `${t("workspace.roadmap.canvas.phase", "Phase")} ${index + 1}`}
+                                  containerClassName="flex-1 w-full"
+                                  className={`text-sm ${
+                                    isLockedPhase
+                                      ? (isDarkMode ? "text-slate-500" : "text-slate-400")
+                                      : (isDarkMode ? "text-slate-200" : "text-slate-900")
+                                  } ${fontClass}`}
+                                  alwaysRun={active}
+                                />
+                                <span className={`text-xs mt-0.5 ${statusColorClass} ${fontClass}`}>
+                                  {statusText}
+                                </span>
+                              </div>
+                            </button>
+                            
+                            {/* Knowledges Section (Only if Active) */}
+                            {active && phase.knowledges?.length > 0 && (
+                              <div className="mt-3 relative pl-[44px] pr-2 space-y-2 pb-2 z-10 w-full overflow-hidden">
+                                {phase.knowledges.map((knowledge) => {
+                                  const normalizedKnowledgeStatus = String(knowledge?.status || "").toUpperCase();
+                                  const isKnowledgeCompleted = normalizedKnowledgeStatus === "COMPLETED";
+                                  const normalizedKnowledgeId = Number(knowledge?.knowledgeId);
+                                  const knowledgeQuizRequestKey = `${normalizedPhaseId}:${normalizedKnowledgeId}`;
+                                  const isKnowledgeLocked = normalizedKnowledgeStatus === "LOCKED";
+                                  const isKnowledgeProcessing = !isKnowledgeCompleted && (
+                                    normalizedKnowledgeStatus === "PROCESSING"
+                                    || normalizedKnowledgeStatus === "GENERATING"
+                                    || generatingKnowledgeQuizKnowledgeKeys.includes(knowledgeQuizRequestKey)
+                                  );
+                                  const isKnowledgeActive = Number(selectedKnowledgeId) === normalizedKnowledgeId;
+                                  const knowledgeIndex = phase.knowledges.findIndex(
+                                    (item) => Number(item?.knowledgeId) === normalizedKnowledgeId,
+                                  );
+                                  const knowledgeOrder = knowledgeIndex >= 0 ? knowledgeIndex + 1 : null;
+                                  
+                                  return (
+                                    <button
+                                      key={knowledge.knowledgeId}
+                                      type="button"
+                                      onClick={() => {
+                                        if (isKnowledgeLocked) return;
+                                        if (!Number.isInteger(normalizedKnowledgeId) || normalizedKnowledgeId <= 0) return;
+                                        setSelectedPhaseId(phase.phaseId);
+                                        setSelectedKnowledgeId(normalizedKnowledgeId);
+                                        queueSelectPhase(phase.phaseId, {
+                                          preserveActiveView: false,
+                                          knowledgeId: normalizedKnowledgeId,
+                                        });
+                                      }}
+                                      className={`w-full rounded-lg px-2 py-1.5 flex items-center gap-2 text-left transition-all ${isKnowledgeActive
+                                        ? isDarkMode
+                                          ? "bg-slate-800 border border-blue-500/50"
+                                          : "bg-blue-50 border border-blue-200"
+                                        : isKnowledgeLocked
+                                          ? isDarkMode
+                                            ? "bg-slate-900/60 border border-slate-700"
+                                            : "bg-slate-100 border border-slate-200"
+                                        : isDarkMode
+                                          ? "hover:bg-slate-800/50 border border-transparent"
+                                          : "hover:bg-slate-100 border border-transparent"}`}
+                                    >
+                                      {/* Small icons for knowledges */}
+                                      {isKnowledgeCompleted ? (
+                                        <div className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-green-500">
+                                          <CheckCircle2 className="w-3 h-3 text-white" />
+                                        </div>
+                                      ) : isKnowledgeLocked ? (
+                                        <div className={`shrink-0 w-5 h-5 rounded-full border ${isDarkMode ? "border-slate-600 bg-slate-800" : "border-slate-300 bg-slate-100"} flex items-center justify-center`}>
+                                          <Lock className={`w-3 h-3 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
+                                        </div>
+                                      ) : isKnowledgeProcessing ? (
+                                        <div className={`shrink-0 w-5 h-5 rounded-full border ${isDarkMode ? "border-slate-600 bg-slate-800" : "border-slate-300 bg-white"} flex items-center justify-center`}>
+                                          <Loader2 className="w-3 h-3 text-yellow-500 animate-spin" />
+                                        </div>
+                                      ) : (
+                                        <div className={`shrink-0 w-5 h-5 rounded-full border ${isKnowledgeActive
+                                          ? "border-blue-400"
+                                          : isDarkMode ? "border-slate-500" : "border-slate-300"} flex items-center justify-center`}>
+                                          <span className={`text-[10px] leading-none ${isKnowledgeActive
+                                            ? isDarkMode ? "text-blue-300" : "text-blue-700"
+                                            : isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                                            {knowledgeOrder}
+                                          </span>
+                                        </div>
+                                      )}
+                                      
+                                      <HoverMarqueeText
+                                        text={knowledge.title}
+                                        containerClassName="flex-1 min-w-0"
+                                        className={`text-sm ${isKnowledgeActive
+                                          ? isDarkMode ? "text-blue-200" : "text-blue-800"
+                                          : isKnowledgeLocked
+                                            ? isDarkMode ? "text-slate-500" : "text-slate-400"
+                                          : isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}
+                                        alwaysRun={isKnowledgeActive}
+                                      />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>

@@ -943,6 +943,9 @@ export function useWorkspaceRoadmapManager({
 		const recoveredKnowledgePhaseIds = new Set();
 		const recoveredKnowledgeQuizPhaseIds = new Set();
 		const recoveredKnowledgeQuizKeys = new Set();
+		let hasRoadmapPreLearningTask = false;
+		let hasRoadmapKnowledgeTask = false;
+		let hasRoadmapKnowledgeQuizTask = false;
 
 		tasks.forEach((task) => {
 			const signal = normalizeRuntimeTaskSignal(task, { source: "active-task" });
@@ -994,6 +997,17 @@ export function useWorkspaceRoadmapManager({
 			const isKnowledgeByStatus = signal.isKnowledgeSignal;
 			const isPostLearningByStatus = signal.isPostLearningSignal;
 
+				if (isPreLearningRecovered) {
+					hasRoadmapPreLearningTask = true;
+				}
+				if (isPhaseContent || isKnowledgeByStatus || isPostLearningByStatus) {
+					hasRoadmapKnowledgeTask = true;
+				}
+				if (isKnowledgeQuiz) {
+					hasRoadmapKnowledgeQuizTask = true;
+					hasRoadmapKnowledgeTask = true;
+				}
+
 			if (isPreLearningRecovered && Number.isInteger(progressPhaseId) && progressPhaseId > 0 && percent > 0) {
 				updatePreLearningProgress?.(progressPhaseId, percent);
 			}
@@ -1031,10 +1045,16 @@ export function useWorkspaceRoadmapManager({
 			}
 		});
 
-		setGeneratingPreLearningPhaseIds(normalizePositiveIds(Array.from(recoveredPreLearningPhaseIds)));
-		setGeneratingKnowledgePhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgePhaseIds)));
-		setGeneratingKnowledgeQuizPhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgeQuizPhaseIds)));
-		setGeneratingKnowledgeQuizKnowledgeKeys(Array.from(recoveredKnowledgeQuizKeys));
+		if (hasRoadmapPreLearningTask) {
+			setGeneratingPreLearningPhaseIds(normalizePositiveIds(Array.from(recoveredPreLearningPhaseIds)));
+		}
+		if (hasRoadmapKnowledgeTask) {
+			setGeneratingKnowledgePhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgePhaseIds)));
+		}
+		if (hasRoadmapKnowledgeQuizTask) {
+			setGeneratingKnowledgeQuizPhaseIds(normalizePositiveIds(Array.from(recoveredKnowledgeQuizPhaseIds)));
+			setGeneratingKnowledgeQuizKnowledgeKeys(Array.from(recoveredKnowledgeQuizKeys));
+		}
 	}, [
 		bumpRoadmapReloadToken,
 		clearPreLearningRequestGuard,
@@ -1056,6 +1076,7 @@ export function useWorkspaceRoadmapManager({
 	const handleWebSocketProgress = useCallback((progress) => {
 		const signal = normalizeRuntimeTaskSignal(progress, { source: "websocket" });
 		const status = String(signal.status || "").toUpperCase();
+		const normalizedTaskType = String(signal.taskType || "").toUpperCase();
 		const progressPhaseId = Number(signal.phaseId ?? 0);
 		const progressRoadmapId = Number(signal.roadmapId ?? 0);
 		const progressPercent = clampPercent(signal.percent ?? 0);
@@ -1063,6 +1084,19 @@ export function useWorkspaceRoadmapManager({
 		const materialId = Number(signal.materialId ?? 0);
 		const progressQuizId = Number(signal.quizId ?? 0);
 		const isQuizSignal = signal.isQuizSignal;
+		const isRoadmapTaskSignal = Boolean(
+			status.startsWith("ROADMAP_")
+			|| normalizedTaskType.includes("ROADMAP")
+			|| signal.hasExplicitRoadmapPhaseSignal
+			|| signal.hasGenericRoadmapPhaseSignal
+			|| signal.isPreLearningSignal
+			|| signal.isPhaseContentSignal
+			|| signal.isKnowledgeSignal
+			|| signal.isKnowledgeQuizSignal
+			|| signal.isPostLearningSignal
+			|| (Number.isInteger(progressPhaseId) && progressPhaseId > 0)
+			|| (Number.isInteger(progressRoadmapId) && progressRoadmapId > 0)
+		);
 
 		if (websocketTaskId) updateTaskProgress?.(websocketTaskId, progressPercent);
 		if (materialId > 0) updateMaterialProgress?.(materialId, progressPercent);
@@ -1084,7 +1118,7 @@ export function useWorkspaceRoadmapManager({
 			});
 		}
 
-		if (progressPercent > 0) {
+		if (progressPercent > 0 && isRoadmapTaskSignal) {
 			const isPreLearningSignal = signal.isPreLearningSignal;
 			const isKnowledgeSignal = signal.isKnowledgeSignal;
 			const isKnowledgeQuizSignal = signal.isKnowledgeQuizSignal;

@@ -2418,7 +2418,7 @@ function GroupWorkspacePage() {
   const handleViewMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('mockTestDetail'); }, []);
   const handleEditMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('editMockTest'); }, []);
   const handleSaveMockTest = useCallback((updatedMt) => { setSelectedMockTest((p) => ({ ...p, ...updatedMt })); setActiveView('mockTestDetail'); }, []);
-  const handleSelectRoadmapPhase = useCallback((phaseId) => {
+  const handleSelectRoadmapPhase = useCallback((phaseId, _options = {}) => {
     const normalizedPhaseId = Number(phaseId);
     if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
     setSelectedRoadmapPhaseId(normalizedPhaseId);

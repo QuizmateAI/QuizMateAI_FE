@@ -1,8 +1,10 @@
 import React from "react";
-import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3 } from "lucide-react";
+import { UploadCloud, BookOpen, Sparkles, Mic, Play, PenLine, Map, Rows3, Eye } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
+import { getRoadmapReview } from "@/api/RoadmapAPI";
+import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 import CreateQuizForm from "./CreateQuizForm";
 
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
@@ -32,26 +34,43 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
+  const [activeRoadmapId, setActiveRoadmapId] = React.useState(null);
+  const [roadmapReview, setRoadmapReview] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!activeRoadmapId) return;
+    let cancelled = false;
+    getRoadmapReview(activeRoadmapId)
+      .then((res) => {
+        if (cancelled) return;
+        const data = res?.data?.data ?? res?.data ?? null;
+        setRoadmapReview(data && data.assessmentId ? data : null);
+      })
+      .catch(() => {
+        if (!cancelled) setRoadmapReview(null);
+      });
+    return () => { cancelled = true; };
+  }, [activeRoadmapId]);
   const documentsHubLabel = i18n.language === "en" ? "Open documents hub" : "Mở trung tâm tài liệu";
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
-    if (!workspaceId) return null;
+    if (!workspaceId) return "view2";
     const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    return saved === "view1" || saved === "view2" ? saved : null;
+    return saved === "view1" || saved === "view2" || saved === "overview" ? saved : "view2";
   });
 
   React.useEffect(() => {
     if (!workspaceId) {
-      setRoadmapCanvasView(null);
+      setRoadmapCanvasView("view2");
       return;
     }
 
     const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
-    setRoadmapCanvasView(saved === "view1" || saved === "view2" ? saved : null);
+    setRoadmapCanvasView(saved === "view1" || saved === "view2" || saved === "overview" ? saved : "view2");
   }, [workspaceId]);
 
   const handleSwitchRoadmapView = React.useCallback((canvasView) => {
-    if (canvasView !== "view1" && canvasView !== "view2") return;
+    if (canvasView !== "view1" && canvasView !== "view2" && canvasView !== "overview") return;
     setRoadmapCanvasView(canvasView);
     if (roadmapCanvasStorageKey) {
       localStorage.setItem(roadmapCanvasStorageKey, canvasView);
@@ -156,7 +175,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
     switch (activeView) {
       case "roadmap":
-        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} />;
+        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={setActiveRoadmapId} />;
       case "quiz":
         return (
           <LazyQuizListView
@@ -209,26 +228,39 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
                 <Button
                   type="button"
                   size="sm"
-                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view1")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-                >
-                  <Rows3 className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>View 1</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
                   variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
                   onClick={() => handleSwitchRoadmapView("view2")}
                   className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
                 >
+                  <Eye className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
+                  onClick={() => handleSwitchRoadmapView("overview")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "overview" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Rows3 className="w-4 h-4 mr-1.5" />
+                  <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                  onClick={() => handleSwitchRoadmapView("view1")}
+                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+                >
                   <Map className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>View 2</span>
+                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
                 </Button>
               </div>
             </div>
           </div>
+        ) : null}
+        {activeView === "roadmap" ? (
+          <RoadmapReviewPanel review={roadmapReview} isDarkMode={isDarkMode} />
         ) : null}
         <DeferredPanel>{listContent}</DeferredPanel>
       </section>
