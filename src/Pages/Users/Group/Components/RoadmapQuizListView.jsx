@@ -1001,7 +1001,7 @@ function QuizListView({
               const specialStatusLabel = ["PROCESSING", "DRAFT", "ERROR"].includes(normalizedStatus)
                 ? t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus)
                 : null;
-              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz;
+              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz && myAttempted;
               const showExamAction = normalizedStatus === "ACTIVE";
               const showFeedbackAction = myAttempted
                 && !hasSubmittedFeedback
