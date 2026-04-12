@@ -1,70 +1,63 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft, CreditCard, Plus, Trash2, Edit3, Save, X, Loader2, ToggleLeft, ToggleRight, Users
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  Edit3,
+  Loader2,
+  Plus,
+  Save,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
-import { FlashcardArray } from "react-quizlet-flashcard";
-import "react-quizlet-flashcard/dist/index.css";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import {
-  getFlashcardDetail, updateFlashcardSetName, updateFlashcardSetStatus,
-  addFlashcardItem, updateFlashcardItem, deleteFlashcardItem
+  addFlashcardItem,
+  deleteFlashcardItem,
+  getFlashcardDetail,
+  updateFlashcardItem,
+  updateFlashcardSetName,
+  updateFlashcardSetStatus,
 } from "@/api/FlashcardAPI";
 
-// Cấu hình màu badge trạng thái
-const STATUS_STYLES = {
-  ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
-  DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
-};
-
-// Component hiển thị chi tiết flashcard set — quản lý items, đổi tên, đổi trạng thái
-function FlashcardDetailView({ isDarkMode, flashcard, onBack, hideEditButton, contextType }) {
+function FlashcardDetailView({ flashcard, onBack, hideEditButton, contextType }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
-
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
   const [items, setItems] = useState([]);
-
-  // State đổi tên
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
   const [renameSaving, setRenameSaving] = useState(false);
-
-  // State thêm item mới
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFront, setNewFront] = useState("");
   const [newBack, setNewBack] = useState("");
   const [addingSaving, setAddingSaving] = useState(false);
-
-  // State chỉnh sửa item
   const [editingItemId, setEditingItemId] = useState(null);
   const [editFront, setEditFront] = useState("");
   const [editBack, setEditBack] = useState("");
   const [editSaving, setEditSaving] = useState(false);
-
-  // State xác nhận xóa
   const [deletingItemId, setDeletingItemId] = useState(null);
-
-  // State đổi trạng thái
   const [statusSaving, setStatusSaving] = useState(false);
 
-  // State lật thẻ (flip card preview)
-  const [flippedCards, setFlippedCards] = useState({});
-
-  // Lấy chi tiết flashcard set từ API
   const fetchDetail = useCallback(async () => {
     if (!flashcard?.flashcardSetId) return;
     setLoading(true);
     try {
       const res = await getFlashcardDetail(flashcard.flashcardSetId);
-      const data = res.data || {};
+      const data = res?.data || {};
       setDetail(data);
       setItems(data.items || []);
-    } catch (err) {
-      console.error("Lỗi khi tải chi tiết flashcard:", err);
+      setActiveIndex(0);
+      setFlipped(false);
     } finally {
       setLoading(false);
     }
@@ -74,360 +67,313 @@ function FlashcardDetailView({ isDarkMode, flashcard, onBack, hideEditButton, co
     fetchDetail();
   }, [fetchDetail]);
 
-  // Đổi tên flashcard set
+  const activeItem = useMemo(() => items[activeIndex] || null, [activeIndex, items]);
+  const inputCls = "w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-400";
+
   const handleRename = async () => {
-    if (!newName.trim() || !detail) return;
+    if (!detail || !newName.trim()) return;
     setRenameSaving(true);
     try {
-      const res = await updateFlashcardSetName(detail.flashcardSetId, newName.trim());
-      const updated = res.data || {};
-      setDetail((prev) => ({ ...prev, flashcardSetName: updated.flashcardSetName || newName.trim() }));
+      const response = await updateFlashcardSetName(detail.flashcardSetId, newName.trim());
+      const updatedName = response?.data?.flashcardSetName || newName.trim();
+      setDetail((prev) => ({ ...prev, flashcardSetName: updatedName }));
       setIsRenaming(false);
-    } catch (err) {
-      console.error("Lỗi đổi tên flashcard:", err);
     } finally {
       setRenameSaving(false);
     }
   };
 
-  // Đổi trạng thái flashcard set
   const handleToggleStatus = async () => {
     if (!detail) return;
-    const newStatus = detail.status === "ACTIVE" ? "DRAFT" : "ACTIVE";
     setStatusSaving(true);
+    const nextStatus = detail.status === "ACTIVE" ? "DRAFT" : "ACTIVE";
     try {
-      const res = await updateFlashcardSetStatus(detail.flashcardSetId, newStatus);
-      const updated = res.data || {};
-      setDetail((prev) => ({ ...prev, status: updated.status || newStatus }));
-      if (updated.items) setItems(updated.items);
-    } catch (err) {
-      console.error("Lỗi đổi trạng thái flashcard:", err);
+      const response = await updateFlashcardSetStatus(detail.flashcardSetId, nextStatus);
+      setDetail((prev) => ({ ...prev, status: response?.data?.status || nextStatus }));
     } finally {
       setStatusSaving(false);
     }
   };
 
-  // Thêm flashcard item
   const handleAddItem = async () => {
-    if (!newFront.trim() || !newBack.trim() || !detail) return;
+    if (!detail || !newFront.trim() || !newBack.trim()) return;
     setAddingSaving(true);
     try {
-      const res = await addFlashcardItem(detail.flashcardSetId, {
+      const response = await addFlashcardItem(detail.flashcardSetId, {
         frontContent: newFront.trim(),
         backContent: newBack.trim(),
       });
-      const newItem = res.data || {};
-      setItems((prev) => [...prev, newItem]);
+      const item = response?.data || {};
+      setItems((prev) => [...prev, item]);
+      setActiveIndex(items.length);
+      setFlipped(false);
       setNewFront("");
       setNewBack("");
       setShowAddForm(false);
-    } catch (err) {
-      console.error("Lỗi thêm flashcard item:", err);
     } finally {
       setAddingSaving(false);
     }
   };
 
-  // Cập nhật flashcard item
   const handleUpdateItem = async (itemId) => {
     if (!editFront.trim() || !editBack.trim()) return;
     setEditSaving(true);
     try {
-      const res = await updateFlashcardItem(itemId, {
+      const response = await updateFlashcardItem(itemId, {
         frontContent: editFront.trim(),
         backContent: editBack.trim(),
       });
-      const updated = res.data || {};
+      const updated = response?.data || {};
       setItems((prev) =>
         prev.map((item) =>
           item.flashcardItemId === itemId
-            ? { ...item, frontContent: updated.frontContent || editFront.trim(), backContent: updated.backContent || editBack.trim() }
-            : item
-        )
+            ? {
+                ...item,
+                frontContent: updated.frontContent || editFront.trim(),
+                backContent: updated.backContent || editBack.trim(),
+              }
+            : item,
+        ),
       );
       setEditingItemId(null);
-    } catch (err) {
-      console.error("Lỗi cập nhật flashcard item:", err);
     } finally {
       setEditSaving(false);
     }
   };
 
-  // Xóa flashcard item
   const handleDeleteItem = async (itemId) => {
     setDeletingItemId(itemId);
     try {
       await deleteFlashcardItem(itemId);
       setItems((prev) => prev.filter((item) => item.flashcardItemId !== itemId));
-    } catch (err) {
-      console.error("Lỗi xóa flashcard item:", err);
+      setActiveIndex((prev) => Math.max(0, Math.min(prev, items.length - 2)));
     } finally {
       setDeletingItemId(null);
     }
   };
 
-  // Bắt đầu chỉnh sửa item
-  const startEdit = (item) => {
-    setEditingItemId(item.flashcardItemId);
-    setEditFront(item.frontContent || "");
-    setEditBack(item.backContent || "");
-  };
-
-  // Lật thẻ
-  const toggleFlip = (itemId) => {
-    setFlippedCards((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
-  };
-
-  const inputCls = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
-    isDarkMode ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
-              : "bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400"
-  }`;
-
-  if (loading) {
-    return <ListSpinner variant="section" />;
-  }
+  if (loading) return <ListSpinner variant="section" />;
 
   if (!detail) {
     return (
-      <div className="flex flex-col h-full items-center justify-center">
-        <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.flashcard.error")}</p>
+      <div className="flex h-full items-center justify-center">
+        <p className="text-sm text-slate-500">{t("workspace.flashcard.error")}</p>
       </div>
     );
   }
 
-  const ss = STATUS_STYLES[detail.status] || STATUS_STYLES.DRAFT;
-
   return (
-    <div className={`flex flex-col h-full ${fontClass}`}>
-      {/* Header */}
-      <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <CreditCard className="w-5 h-5 text-amber-500 shrink-0" />
-          {isRenaming ? (
-            <div className="flex items-center gap-2 flex-1">
-              <input value={newName} onChange={(e) => setNewName(e.target.value)} className={`${inputCls} !py-1 flex-1`}
-                placeholder={t("workspace.flashcard.renamePlaceholder")} autoFocus onKeyDown={(e) => e.key === "Enter" && handleRename()} />
-              <button onClick={handleRename} disabled={renameSaving} className="p-1 text-emerald-500 hover:text-emerald-600">
-                {renameSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              </button>
-              <button onClick={() => setIsRenaming(false)} className={`p-1 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}>
-                <X className="w-4 h-4" />
-              </button>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden px-4 py-5 sm:px-5 lg:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <button type="button" onClick={onBack} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <CreditCard className="h-5 w-5 shrink-0 text-amber-600" />
+              {isRenaming ? (
+                <div className="flex min-w-0 items-center gap-2">
+                  <input value={newName} onChange={(event) => setNewName(event.target.value)} className={`${inputCls} !py-2`} autoFocus />
+                  <button type="button" onClick={handleRename} className="text-emerald-600">
+                    {renameSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  </button>
+                  <button type="button" onClick={() => setIsRenaming(false)} className="text-slate-400">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className={`truncate text-lg font-semibold text-slate-950 ${fontClass}`}>{detail.flashcardSetName}</p>
+                  {!hideEditButton ? (
+                    <button type="button" onClick={() => { setIsRenaming(true); setNewName(detail.flashcardSetName || ""); }} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                      <Edit3 className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <p className={`text-base font-medium truncate ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>
-                {detail.flashcardSetName}
-              </p>
-              <button onClick={() => { setIsRenaming(true); setNewName(detail.flashcardSetName || ""); }}
-                className={`p-1 rounded transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-400" : "hover:bg-gray-100 text-gray-400"}`}>
-                <Edit3 className="w-3.5 h-3.5" />
-              </button>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <span>{items.length} {t("workspace.flashcard.items")}</span>
+              <span>{t("workspace.flashcard.createVia")}: {detail.createVia}</span>
+              <span>{t(`workspace.flashcard.status${detail.status}`)}</span>
             </div>
-          )}
+          </div>
         </div>
-      </div>
 
-      {/* Thông tin meta + nút hành động */}
-      <div className={`px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
-            {t(`workspace.flashcard.status${detail.status}`)}
-          </span>
-          <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-            {items.length} {t("workspace.flashcard.items")} · {t("workspace.flashcard.createVia")}: {detail.createVia}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <DirectFeedbackButton
             targetType="FLASHCARD"
             targetId={detail.flashcardSetId}
             label={t("sidebar.feedback")}
-            isDarkMode={isDarkMode}
-            className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
+            isDarkMode={false}
+            className="h-9 text-xs"
           />
-          {!hideEditButton && (
+          {!hideEditButton ? (
             <>
-              {/* Đổi trạng thái */}
-              <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={statusSaving}
-                className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-                {statusSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> :
-                  detail.status === "ACTIVE" ? <ToggleRight className="w-3.5 h-3.5 mr-1 text-emerald-500" /> : <ToggleLeft className="w-3.5 h-3.5 mr-1" />}
+              <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={statusSaving} className="rounded-full">
+                {statusSaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : detail.status === "ACTIVE" ? (
+                  <ToggleRight className="mr-2 h-4 w-4 text-emerald-600" />
+                ) : (
+                  <ToggleLeft className="mr-2 h-4 w-4" />
+                )}
                 {detail.status === "ACTIVE" ? t("workspace.flashcard.deactivate") : t("workspace.flashcard.activate")}
               </Button>
-              {/* Thêm item */}
-              <Button size="sm" onClick={() => setShowAddForm(true)}
-                className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs h-8">
-                <Plus className="w-3.5 h-3.5 mr-1" /> {t("workspace.flashcard.addItem")}
+              <Button size="sm" onClick={() => setShowAddForm(true)} className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
+                <Plus className="mr-2 h-4 w-4" />
+                {t("workspace.flashcard.addItem")}
               </Button>
             </>
-          )}
-
-          {!hideEditButton && contextType === "GROUP" && (
-            <Button
-              className="bg-violet-600 hover:bg-violet-700 text-white text-xs h-8 px-3 ml-2"
-              onClick={() => alert(t("workspace.flashcard.assignComingSoon"))}
-            >
-              <Users className="w-3.5 h-3.5 mr-1" /> {t("workspace.flashcard.assign")}
-            </Button>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {/* Nội dung có thể cuộn */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Form thêm item mới */}
-        {showAddForm && (
-          <div className={`px-4 py-3 border-b space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                  {t("workspace.flashcard.frontContent")}
-                </label>
-                <textarea value={newFront} onChange={(e) => setNewFront(e.target.value)} className={`${inputCls} min-h-[60px] resize-none`}
-                  placeholder={t("workspace.flashcard.frontContentPlaceholder")} />
+      <div className="mt-5 grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_400px]">
+        <div className="min-h-0 overflow-y-auto">
+          {showAddForm ? (
+            <div className="mb-4 border-b border-slate-200 pb-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <textarea value={newFront} onChange={(event) => setNewFront(event.target.value)} className={`${inputCls} min-h-[92px] resize-none`} placeholder={t("workspace.flashcard.frontContentPlaceholder")} />
+                <textarea value={newBack} onChange={(event) => setNewBack(event.target.value)} className={`${inputCls} min-h-[92px] resize-none`} placeholder={t("workspace.flashcard.backContentPlaceholder")} />
               </div>
-              <div>
-                <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                  {t("workspace.flashcard.backContent")}
-                </label>
-                <textarea value={newBack} onChange={(e) => setNewBack(e.target.value)} className={`${inputCls} min-h-[60px] resize-none`}
-                  placeholder={t("workspace.flashcard.backContentPlaceholder")} />
+              <div className="mt-3 flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowAddForm(false)} className="rounded-full">
+                  {t("workspace.flashcard.cancel")}
+                </Button>
+                <Button size="sm" onClick={handleAddItem} disabled={addingSaving || !newFront.trim() || !newBack.trim()} className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
+                  {addingSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                  {t("workspace.flashcard.addItem")}
+                </Button>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setShowAddForm(false); setNewFront(""); setNewBack(""); }}
-                className={`text-xs h-8 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-                {t("workspace.flashcard.cancel")}
-              </Button>
-              <Button size="sm" onClick={handleAddItem} disabled={addingSaving || !newFront.trim() || !newBack.trim()}
-                className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs h-8">
-                {addingSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
-                {t("workspace.flashcard.addItem")}
-              </Button>
+          ) : null}
+
+          {!items.length ? (
+            <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+              <CreditCard className="mb-4 h-10 w-10 text-slate-300" />
+              <p className="text-sm text-slate-500">{t("workspace.flashcard.noItems")}</p>
             </div>
-          </div>
-        )}
-
-        {/* Flip card preview */}
-        {items.length > 0 && (
-          <div className={`px-4 py-8 border-b flex flex-col items-center ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-            <p className={`text-xs font-semibold mb-6 self-start w-full ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {t("workspace.flashcard.flipPreview")}
-            </p>
-            <div className="w-full flex justify-center pb-2">
-              <FlashcardArray 
-                deck={items.map((item, idx) => ({
-                  id: item.flashcardItemId || idx,
-                  front: { html: <div className={`flex items-center justify-center p-6 h-full text-center text-lg ${isDarkMode ? "text-slate-100" : "text-slate-800"}`}>{item.frontContent}</div> },
-                  back: { html: <div className={`flex items-center justify-center p-6 h-full text-center text-lg ${isDarkMode ? "text-slate-100" : "text-slate-800"}`}>{item.backContent}</div> },
-                }))} 
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Danh sách items */}
-        <div className="px-4 py-4">
-        {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <CreditCard className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.flashcard.noItems")}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {items.map((item, idx) => {
-              const isEditing = editingItemId === item.flashcardItemId;
-              const isFlipped = flippedCards[item.flashcardItemId];
-              const isDeleting = deletingItemId === item.flashcardItemId;
-
-              return (
-                <div key={item.flashcardItemId}
-                  className={`rounded-xl border overflow-hidden transition-all ${isDarkMode ? "border-slate-800 bg-slate-800/50" : "border-gray-200 bg-gray-50"}`}>
-                  {/* Header item */}
-                  <div className={`px-4 py-2 flex items-center justify-between ${isDarkMode ? "bg-slate-800/80" : "bg-gray-100"}`}>
-                    <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      {t("workspace.flashcard.itemNumber", { number: idx + 1 })}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {!isEditing && (
-                        <>
-                          <button onClick={() => startEdit(item)}
-                            className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-400"}`}>
-                            <Edit3 className="w-3.5 h-3.5" />
+          ) : (
+            <div className="divide-y divide-slate-200">
+              {items.map((item, index) => {
+                const isEditing = editingItemId === item.flashcardItemId;
+                return (
+                  <div key={item.flashcardItemId} className="py-4" style={{ contentVisibility: "auto" }}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        {t("workspace.flashcard.itemNumber", { number: index + 1 })}
+                      </span>
+                      {!hideEditButton && !isEditing ? (
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => { setEditingItemId(item.flashcardItemId); setEditFront(item.frontContent || ""); setEditBack(item.backContent || ""); }} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                            <Edit3 className="h-4 w-4" />
                           </button>
-                          <button onClick={() => handleDeleteItem(item.flashcardItemId)} disabled={isDeleting}
-                            className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? "hover:bg-red-950/30 text-red-400" : "hover:bg-red-100 text-red-500"}`}>
-                            {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                          <button type="button" onClick={() => handleDeleteItem(item.flashcardItemId)} className="rounded-xl p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600">
+                            {deletingItemId === item.flashcardItemId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                           </button>
-                        </>
-                      )}
+                        </div>
+                      ) : null}
                     </div>
-                  </div>
 
-                  {isEditing ? (
-                    // Form chỉnh sửa inline
-                    <div className="px-4 py-3 space-y-2">
-                      <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                          {t("workspace.flashcard.frontContent")}
-                        </label>
-                        <textarea value={editFront} onChange={(e) => setEditFront(e.target.value)} className={`${inputCls} min-h-[50px] resize-none`} />
+                    {isEditing ? (
+                      <div className="mt-3 space-y-3">
+                        <textarea value={editFront} onChange={(event) => setEditFront(event.target.value)} className={`${inputCls} min-h-[84px] resize-none`} />
+                        <textarea value={editBack} onChange={(event) => setEditBack(event.target.value)} className={`${inputCls} min-h-[84px] resize-none`} />
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setEditingItemId(null)} className="rounded-full">
+                            {t("workspace.flashcard.cancel")}
+                          </Button>
+                          <Button size="sm" onClick={() => handleUpdateItem(item.flashcardItemId)} disabled={editSaving} className="rounded-full bg-emerald-600 text-white hover:bg-emerald-700">
+                            {editSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            {t("workspace.flashcard.save")}
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <label className={`block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>
-                          {t("workspace.flashcard.backContent")}
-                        </label>
-                        <textarea value={editBack} onChange={(e) => setEditBack(e.target.value)} className={`${inputCls} min-h-[50px] resize-none`} />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setEditingItemId(null)}
-                          className={`text-xs h-7 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-                          {t("workspace.flashcard.cancel")}
-                        </Button>
-                        <Button size="sm" onClick={() => handleUpdateItem(item.flashcardItemId)} disabled={editSaving}
-                          className="bg-[#2563EB] hover:bg-blue-700 text-white text-xs h-7">
-                          {editSaving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
-                          {t("workspace.flashcard.save")}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    // Hiển thị thẻ — nhấn để lật
-                    <div className="px-4 py-3 cursor-pointer" onClick={() => toggleFlip(item.flashcardItemId)}>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    ) : (
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
                         <div>
-                          <p className={`text-[10px] font-medium uppercase tracking-wider mb-1 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                             {t("workspace.flashcard.frontContent")}
                           </p>
-                          <p className={`text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                            {item.frontContent || "—"}
-                          </p>
+                          <p className="mt-2 text-sm text-slate-700">{item.frontContent || "—"}</p>
                         </div>
-                        <div className={`transition-all ${isFlipped ? "opacity-100" : "opacity-30 blur-sm"}`}>
-                          <p className={`text-[10px] font-medium uppercase tracking-wider mb-1 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                             {t("workspace.flashcard.backContent")}
                           </p>
-                          <p className={`text-sm ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                            {item.backContent || "—"}
-                          </p>
+                          <p className="mt-2 text-sm text-slate-700">{item.backContent || "—"}</p>
                         </div>
                       </div>
-                      {!isFlipped && (
-                        <p className={`text-[10px] text-center mt-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                          {t("workspace.flashcard.flipCard")}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex min-h-0 flex-col border-t border-slate-200 pt-5 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className={`text-base font-semibold text-slate-950 ${fontClass}`}>
+                {t("workspace.flashcard.flipPreview", "Deck preview")}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                {activeItem
+                  ? `${activeIndex + 1}/${items.length}`
+                  : t("workspace.flashcard.noItems")}
+              </p>
+            </div>
+            {items.length ? (
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => { setActiveIndex((prev) => Math.max(0, prev - 1)); setFlipped(false); }} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" disabled={activeIndex === 0}>
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button type="button" onClick={() => { setActiveIndex((prev) => Math.min(items.length - 1, prev + 1)); setFlipped(false); }} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" disabled={activeIndex >= items.length - 1}>
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
           </div>
-        )}
+
+          <div className="mt-5 flex min-h-[300px] flex-1 items-center justify-center">
+            {activeItem ? (
+              <button
+                type="button"
+                onClick={() => setFlipped((prev) => !prev)}
+                className={`w-full rounded-[28px] border px-6 py-8 text-left transition-all ${
+                  flipped
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                  {flipped
+                    ? t("workspace.flashcard.backContent")
+                    : t("workspace.flashcard.frontContent")}
+                </p>
+                <p className={`mt-5 text-xl font-semibold leading-9 text-slate-950 ${fontClass}`}>
+                  {flipped ? activeItem.backContent : activeItem.frontContent}
+                </p>
+                <p className="mt-6 text-sm text-slate-500">
+                  {t("workspace.flashcard.tapToFlip", "Click to flip this card")}
+                </p>
+              </button>
+            ) : (
+              <div className="text-center">
+                <CreditCard className="mx-auto h-10 w-10 text-slate-300" />
+                <p className="mt-3 text-sm text-slate-500">{t("workspace.flashcard.noItems")}</p>
+              </div>
+            )}
+          </div>
+
+          {contextType === "GROUP" ? (
+            <p className="mt-4 text-xs text-slate-400">
+              {t("workspace.flashcard.assignComingSoon")}
+            </p>
+          ) : null}
         </div>
       </div>
     </div>
