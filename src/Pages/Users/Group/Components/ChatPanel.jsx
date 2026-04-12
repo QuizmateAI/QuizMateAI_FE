@@ -278,7 +278,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
         );
       }
       case "createFlashcard":
-        return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} />;
+        return <LazyCreateFlashcardForm isDarkMode={isDarkMode} onCreateFlashcard={onCreateFlashcard} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "flashcardDetail":
         return selectedFlashcard ? <LazyFlashcardDetailView isDarkMode={isDarkMode} flashcard={selectedFlashcard} onBack={onBack} hideEditButton={readOnly} contextType="GROUP" /> : null;
       case "quizDetail":
@@ -296,9 +296,9 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
           />
         ) : null;
       case "createMockTest":
-        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
+        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "createPostLearning":
-        return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
+        return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "mockTestDetail":
         return selectedMockTest ? <LazyMockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={readOnly ? undefined : onEditMockTest} hideEditButton={readOnly} contextType="GROUP" /> : null;
       case "editMockTest":

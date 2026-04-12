@@ -9,6 +9,7 @@ import CreateQuizAiRecommendationsPanel from "./CreateQuizAiRecommendationsPanel
 import { useCreateQuizAiForm } from "./useCreateQuizAiForm";
 import { useInlineQuizRecommendations } from "./useInlineQuizRecommendations";
 import { getBloomSkillLabel, getQuizDifficultyLabel, getQuizQuestionTypeLabel } from "@/lib/quizQuestionTypes";
+import useWorkspaceMaterialSelection from "../useWorkspaceMaterialSelection";
 
 function resolvePersonalizationFocusTopic(preset) {
   const reviewTopic = String(preset?.reviewTopic || "").trim();
@@ -44,8 +45,8 @@ function CreateQuizForm({
   onCreateQuiz,
   onBack,
   contextId: defaultContextId,
-  selectedSourceIds = [],
-  sources = [],
+  selectedSourceIds,
+  sources,
   planEntitlements = null,
   /** Gợi ý từ pending assessment — chỉ hỗ trợ workspace cá nhân; group nên tắt. */
   showInlineRecommendations = true,
@@ -64,15 +65,27 @@ function CreateQuizForm({
   const prevSubmittingRef = useRef(false);
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
 
-  const selectedMaterialIds = useMemo(
-    () => (Array.isArray(selectedSourceIds) ? selectedSourceIds : []),
-    [selectedSourceIds]
-  );
+  const {
+    allSelected: areAllWorkspaceMaterialsSelected,
+    clearSelectedSources,
+    materialsError: workspaceMaterialsError,
+    materialsLoading: workspaceMaterialsLoading,
+    normalizedSources: workspaceSources,
+    selectAllSources,
+    selectedIds: selectedMaterialIds,
+    toggleSourceSelection,
+  } = useWorkspaceMaterialSelection({
+    contextId: defaultContextId,
+    onToggleMaterialSelection,
+    selectedSourceIds,
+    sources,
+    t,
+  });
 
-  const selectedSourceItems = useMemo(() => {
-    const sourceItems = Array.isArray(sources) ? sources : [];
-    return sourceItems.filter((source) => selectedMaterialIds.includes(source.id));
-  }, [selectedMaterialIds, sources]);
+  const selectedSourceItems = useMemo(
+    () => workspaceSources.filter((source) => selectedMaterialIds.includes(source.id)),
+    [selectedMaterialIds, workspaceSources],
+  );
 
   const hasImageMaterials = useMemo(
     () => selectedSourceItems.some((item) => item?.hasImage === true),
@@ -317,10 +330,13 @@ function CreateQuizForm({
           refsMap={refsMap}
           state={{
             ...state,
+            areAllWorkspaceMaterialsSelected,
             selectedMaterialIds,
             selectedQTypes: state.selectedQTypes,
             selectedBloomSkills: state.selectedBloomSkills,
-            workspaceSources: Array.isArray(sources) ? sources : [],
+            workspaceMaterialsError,
+            workspaceMaterialsLoading,
+            workspaceSources,
           }}
           ui={{
             fontClass,
@@ -331,7 +347,9 @@ function CreateQuizForm({
             isDarkMode,
             t,
             hasAdvanceQuizConfig: planEntitlements?.hasAdvanceQuizConfig ?? false,
-            onToggleMaterialSelection,
+            onClearSelectedMaterials: clearSelectedSources,
+            onSelectAllMaterials: selectAllSources,
+            onToggleMaterialSelection: toggleSourceSelection,
             readOnly,
           }}
         />

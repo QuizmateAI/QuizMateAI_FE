@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical, UserPlus } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import HomeButton from "@/Components/ui/HomeButton";
-import { getQuizzesByScope, deleteQuiz, getQuizById } from "@/api/QuizAPI";
+import { getQuizzesByScope, deleteQuiz, getQuizById, setGroupQuizAudience } from "@/api/QuizAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
 import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
@@ -291,6 +292,12 @@ function QuizListView({
   /** all | ALL_MEMBERS | SELECTED_MEMBERS */
   const [groupAudienceFilter, setGroupAudienceFilter] = useState("all");
   const [groupMemberUserId, setGroupMemberUserId] = useState(null);
+  const [selectedQuizIds, setSelectedQuizIds] = useState([]);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkAssignSaving, setBulkAssignSaving] = useState(false);
+  const [bulkAudienceMode, setBulkAudienceMode] = useState("ALL_MEMBERS");
+  const [bulkSelectedAudienceUserIds, setBulkSelectedAudienceUserIds] = useState([]);
   const fetchGuardRef = useRef({
     inFlight: false,
     lastKey: "",
@@ -655,6 +662,137 @@ function QuizListView({
     }
     return items;
   }, [quizzes, deferredSearchQuery, isGroupQuizList, groupAudienceFilter, groupMemberUserId]);
+
+  const filteredQuizIds = useMemo(
+    () => filtered
+      .map((quiz) => Number(resolveQuizNavigationId(quiz)))
+      .filter((quizId) => Number.isInteger(quizId) && quizId > 0),
+    [filtered],
+  );
+
+  const selectedQuizIdSet = useMemo(() => new Set(selectedQuizIds), [selectedQuizIds]);
+
+  const allFilteredSelected = filteredQuizIds.length > 0 && filteredQuizIds.every((quizId) => selectedQuizIdSet.has(quizId));
+
+  useEffect(() => {
+    if (selectedQuizIds.length === 0) return;
+    const availableIds = new Set(quizzes.map((quiz) => Number(resolveQuizNavigationId(quiz))).filter((quizId) => Number.isInteger(quizId) && quizId > 0));
+    setSelectedQuizIds((current) => {
+      const next = current.filter((quizId) => availableIds.has(quizId));
+      return next.length === current.length ? current : next;
+    });
+  }, [quizzes, selectedQuizIds.length]);
+
+  const toggleQuizSelection = useCallback((quizId, checked) => {
+    const normalizedId = Number(quizId);
+    if (!Number.isInteger(normalizedId) || normalizedId <= 0) return;
+
+    setSelectedQuizIds((current) => {
+      if (checked) {
+        return current.includes(normalizedId) ? current : [...current, normalizedId];
+      }
+      return current.filter((id) => id !== normalizedId);
+    });
+  }, []);
+
+  const handleToggleSelectAllFiltered = useCallback(() => {
+    if (filteredQuizIds.length === 0) return;
+    setSelectedQuizIds((current) => {
+      if (allFilteredSelected) {
+        const filteredSet = new Set(filteredQuizIds);
+        return current.filter((id) => !filteredSet.has(id));
+      }
+
+      const next = new Set(current);
+      filteredQuizIds.forEach((id) => next.add(id));
+      return [...next];
+    });
+  }, [allFilteredSelected, filteredQuizIds]);
+
+  const handleBulkDeleteSelected = useCallback(async () => {
+    const targets = [...selectedQuizIds];
+    if (targets.length === 0 || bulkDeleteLoading) return;
+
+    const confirmed = window.confirm(
+      t("workspace.quiz.bulkActions.deleteConfirm", "Bạn có chắc muốn xóa {{count}} quiz đã chọn?", { count: targets.length }),
+    );
+    if (!confirmed) return;
+
+    setBulkDeleteLoading(true);
+    try {
+      const results = await Promise.allSettled(targets.map((quizId) => deleteQuiz(quizId)));
+      const successIds = targets.filter((_, index) => results[index]?.status === "fulfilled");
+      const failedCount = targets.length - successIds.length;
+
+      if (successIds.length > 0) {
+        setQuizzes((current) => current.filter((quiz) => !successIds.includes(Number(resolveQuizNavigationId(quiz)))));
+        setSelectedQuizIds((current) => current.filter((quizId) => !successIds.includes(quizId)));
+      }
+
+      if (failedCount > 0) {
+        showError(t("workspace.quiz.bulkActions.deletePartialFail", "Không thể xóa {{count}} quiz.", { count: failedCount }));
+      }
+    } catch (error) {
+      showError(error?.message || t("workspace.quiz.deleteFail", "Không thể xóa quiz lúc này."));
+    } finally {
+      setBulkDeleteLoading(false);
+    }
+  }, [bulkDeleteLoading, selectedQuizIds, showError, t]);
+
+  const toggleBulkAudienceMember = useCallback((userId) => {
+    setBulkSelectedAudienceUserIds((current) => (
+      current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
+    ));
+  }, []);
+
+  const handleOpenBulkAssign = useCallback(() => {
+    if (selectedQuizIds.length === 0 || !isGroupQuizList) return;
+    setBulkAudienceMode("ALL_MEMBERS");
+    setBulkSelectedAudienceUserIds([]);
+    setBulkAssignOpen(true);
+  }, [isGroupQuizList, selectedQuizIds.length]);
+
+  const handleBulkAssign = useCallback(async () => {
+    if (!isGroupQuizList || selectedQuizIds.length === 0 || bulkAssignSaving) return;
+    if (bulkAudienceMode === "SELECTED_MEMBERS" && bulkSelectedAudienceUserIds.length === 0) {
+      showError(t("workspace.quiz.audience.selectMemberRequired", "Select at least one member."));
+      return;
+    }
+
+    setBulkAssignSaving(true);
+    try {
+      const body = bulkAudienceMode === "ALL_MEMBERS"
+        ? { mode: "ALL_MEMBERS" }
+        : { mode: "SELECTED_MEMBERS", assigneeUserIds: bulkSelectedAudienceUserIds };
+
+      const results = await Promise.allSettled(selectedQuizIds.map((quizId) => setGroupQuizAudience(quizId, body)));
+      const failedCount = results.filter((item) => item.status === "rejected").length;
+
+      await fetchQuizzes({ silent: true, scopeId: contextId });
+
+      if (failedCount > 0) {
+        showError(t("workspace.quiz.bulkActions.assignPartialFail", "Không thể giao {{count}} quiz.", { count: failedCount }));
+      } else {
+        setBulkAssignOpen(false);
+      }
+    } catch (error) {
+      showError(error?.message || t("workspace.quiz.audience.saveFailed", "Could not save distribution."));
+    } finally {
+      setBulkAssignSaving(false);
+    }
+  }, [
+    bulkAssignSaving,
+    bulkAudienceMode,
+    bulkSelectedAudienceUserIds,
+    contextId,
+    fetchQuizzes,
+    isGroupQuizList,
+    selectedQuizIds,
+    showError,
+    t,
+  ]);
+
+  const hasSelectedQuiz = selectedQuizIds.length > 0;
   const useLegacyRoadmapCards = false;
 
   const renderQuizFeedbackAction = (quizId, className = "") => (
@@ -930,120 +1068,166 @@ function QuizListView({
     <div className={`${embedded ? "" : "flex h-full flex-col px-2 py-3 sm:px-3 sm:py-4"} ${fontClass}`}>
       {!embedded ? (
         <div className={`mb-4 border-b px-2 pb-4 ${isDarkMode ? "border-slate-800" : "border-slate-200/90"}`}>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              {typeof onNavigateHome === "function" ? (
-                <HomeButton onClick={onNavigateHome} />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                {typeof onNavigateHome === "function" ? (
+                  <HomeButton onClick={onNavigateHome} />
+                ) : null}
+                <div className="min-w-0 flex-1 sm:max-w-[420px] md:max-w-[460px] lg:max-w-[520px]">
+                  <div className="relative">
+                    <Search className={`pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
+                      placeholder={t("workspace.listView.searchPlaceholder")}
+                      className={`h-11 w-full rounded-full border py-2 pl-10 pr-10 text-sm outline-none transition-colors ${
+                        isDarkMode
+                          ? "border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30"
+                          : "border-slate-200 bg-[#f8fafc] text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                      }`}
+                    />
+                    {searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 ${isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-white hover:text-slate-600"}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              {isGroupQuizList ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { key: "all", label: t("workspace.quiz.groupAudience.all", "Tất cả") },
+                    { key: "ALL_MEMBERS", label: t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm") },
+                    { key: "SELECTED_MEMBERS", label: t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng") },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setGroupAudienceFilter(key)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                        groupAudienceFilter === key
+                          ? isDarkMode
+                            ? "bg-violet-600/25 text-violet-200 ring-1 ring-violet-500/35"
+                            : "bg-slate-900 text-white"
+                          : isDarkMode
+                            ? "bg-slate-900 text-slate-300 hover:bg-slate-800"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  {groupAudienceFilter === "SELECTED_MEMBERS" ? (
+                    <select
+                      value={groupMemberUserId ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setGroupMemberUserId(v === "" ? null : Number(v));
+                      }}
+                      disabled={groupMembersLoading}
+                      title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
+                      className={`h-9 max-w-[min(220px,100%)] rounded-full border px-3 text-xs outline-none transition-colors ${
+                        isDarkMode
+                          ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
+                          : "border-slate-200 bg-[#f8fafc] text-slate-900 disabled:opacity-50"
+                      }`}
+                    >
+                      <option value="">{t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}</option>
+                      {groupMembers.map((m) => {
+                        const uid = Number(m.userId ?? m.id);
+                        if (!Number.isInteger(uid) || uid <= 0) return null;
+                        const optLabel = m.fullName || m.username || `User ${uid}`;
+                        return <option key={uid} value={uid}>{optLabel}</option>;
+                      })}
+                    </select>
+                  ) : null}
+                </div>
               ) : null}
-              <div className="min-w-0 flex-1 sm:max-w-[420px] md:max-w-[460px] lg:max-w-[520px]">
-              <div className="relative">
-                <Search className={`pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
-                  placeholder={t("workspace.listView.searchPlaceholder")}
-                  className={`h-11 w-full rounded-full border py-2 pl-10 pr-10 text-sm outline-none transition-colors ${
-                    isDarkMode
-                      ? "border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30"
-                      : "border-slate-200 bg-[#f8fafc] text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                  }`}
-                />
-                {searchQuery ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 ${isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-white hover:text-slate-600"}`}
+
+              <div className="flex shrink-0 flex-wrap items-center gap-2 xl:ml-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchQuizzes({ silent: true, scopeId: contextId })}
+                  disabled={loading}
+                  className={`h-11 rounded-full border px-3 ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                </Button>
+                {String(contextType || "").toUpperCase() === "WORKSPACE" && typeof onOpenCommunityQuiz === "function" ? (
+                  <Button
+                    variant="outline"
+                    onClick={onOpenCommunityQuiz}
+                    className={`h-11 rounded-full border px-4 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}
                   >
-                    <X className="h-4 w-4" />
-                  </button>
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span className="text-sm">{t("workspace.quiz.communityExplorer.title", "Community Quiz")}</span>
+                  </Button>
+                ) : null}
+                {!hideCreateButton ? (
+                  <Button
+                    disabled={disableCreate}
+                    onClick={onCreateQuiz}
+                    className="h-11 rounded-full bg-[#2563EB] px-4 text-white transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    <span className="text-sm">{t("workspace.listView.create")}</span>
+                  </Button>
                 ) : null}
               </div>
             </div>
-            </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2 md:ml-auto">
-              <Button
-                variant="outline"
-                onClick={() => fetchQuizzes({ silent: true, scopeId: contextId })}
-                disabled={loading}
-                className={`h-11 rounded-full border px-3 ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              </Button>
-              {String(contextType || "").toUpperCase() === "WORKSPACE" && typeof onOpenCommunityQuiz === "function" ? (
+            <div className={`mt-1 flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-3 py-2 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-slate-50/70"}`}>
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
+                  type="button"
                   variant="outline"
-                  onClick={onOpenCommunityQuiz}
-                  className={`h-11 rounded-full border px-4 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}
+                  className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                  onClick={handleToggleSelectAllFiltered}
+                  disabled={filteredQuizIds.length === 0}
                 >
-                  <Globe className="mr-2 h-4 w-4" />
-                  <span className="text-sm">{t("workspace.quiz.communityExplorer.title", "Community Quiz")}</span>
+                  {allFilteredSelected
+                    ? t("workspace.sources.deselectAll")
+                    : t("workspace.sources.selectAll")}
                 </Button>
-              ) : null}
-              {!hideCreateButton ? (
+                <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                  {t("workspace.sources.selected", "Đã chọn {{count}}", { count: selectedQuizIds.length })}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {isGroupQuizList ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                    onClick={handleOpenBulkAssign}
+                    disabled={!hasSelectedQuiz || bulkAssignSaving}
+                  >
+                    <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                    {t("workspace.quiz.detail.assign", "Assign")}
+                  </Button>
+                ) : null}
                 <Button
-                  disabled={disableCreate}
-                  onClick={onCreateQuiz}
-                  className="h-11 rounded-full bg-[#2563EB] px-4 text-white transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
+                  type="button"
+                  variant="outline"
+                  className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-red-800 text-red-300 hover:bg-red-950/40" : "border-red-300 bg-white text-red-600 hover:bg-red-50"}`}
+                  onClick={handleBulkDeleteSelected}
+                  disabled={!hasSelectedQuiz || bulkDeleteLoading}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span className="text-sm">{t("workspace.listView.create")}</span>
+                  {bulkDeleteLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+                  {t("workspace.quiz.actionButtons.delete", "Xóa")}
                 </Button>
-              ) : null}
+              </div>
             </div>
           </div>
-
-          {isGroupQuizList ? (
-            <div className={`mt-3 flex flex-wrap items-center gap-2 pt-1 ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
-              {[
-                { key: "all", label: t("workspace.quiz.groupAudience.all", "Tất cả") },
-                { key: "ALL_MEMBERS", label: t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm") },
-                { key: "SELECTED_MEMBERS", label: t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng") },
-              ].map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setGroupAudienceFilter(key)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                    groupAudienceFilter === key
-                      ? isDarkMode
-                        ? "bg-violet-600/25 text-violet-200 ring-1 ring-violet-500/35"
-                        : "bg-slate-900 text-white"
-                      : isDarkMode
-                        ? "bg-slate-900 text-slate-300 hover:bg-slate-800"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-              {groupAudienceFilter === "SELECTED_MEMBERS" ? (
-                <select
-                  value={groupMemberUserId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setGroupMemberUserId(v === "" ? null : Number(v));
-                  }}
-                  disabled={groupMembersLoading}
-                  title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
-                  className={`h-9 max-w-[min(240px,100%)] rounded-full border px-3 text-xs outline-none transition-colors ${
-                    isDarkMode
-                      ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
-                      : "border-slate-200 bg-[#f8fafc] text-slate-900 disabled:opacity-50"
-                  }`}
-                >
-                  <option value="">{t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}</option>
-                  {groupMembers.map((m) => {
-                    const uid = Number(m.userId ?? m.id);
-                    if (!Number.isInteger(uid) || uid <= 0) return null;
-                    const optLabel = m.fullName || m.username || `User ${uid}`;
-                    return <option key={uid} value={uid}>{optLabel}</option>;
-                  })}
-                </select>
-              ) : null}
-            </div>
-          ) : null}
         </div>
       ) : null}
 
@@ -1183,6 +1367,12 @@ function QuizListView({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedQuizIdSet.has(Number(resolvedQuizId))}
+                        onCheckedChange={(checked) => toggleQuizSelection(resolvedQuizId, checked === true)}
+                        className={isDarkMode ? "border-slate-500" : "border-slate-300"}
+                        aria-label={t("workspace.sources.selectSource", "Chọn nguồn")}
+                      />
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -1367,6 +1557,74 @@ function QuizListView({
               {deletingId
                 ? t("workspace.quiz.actionButtons.deleting", "Deleting...")
                 : t("workspace.quiz.actionButtons.delete", "Delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("workspace.quiz.detail.assign", "Assign")}</DialogTitle>
+            <DialogDescription>
+              {t("workspace.quiz.bulkActions.assignDescription", "Giao {{count}} quiz đã chọn cho nhóm hoặc thành viên cụ thể.", { count: selectedQuizIds.length })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setBulkAudienceMode("ALL_MEMBERS")}
+                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
+                  bulkAudienceMode === "ALL_MEMBERS"
+                    ? (isDarkMode ? "border-blue-500 bg-blue-950/30 text-blue-200" : "border-blue-400 bg-blue-50 text-blue-700")
+                    : (isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300" : "border-slate-200 bg-white text-slate-700")
+                }`}
+              >
+                {t("workspace.quiz.audience.allMembersTitle", "All members")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBulkAudienceMode("SELECTED_MEMBERS")}
+                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
+                  bulkAudienceMode === "SELECTED_MEMBERS"
+                    ? (isDarkMode ? "border-violet-500 bg-violet-950/30 text-violet-200" : "border-violet-400 bg-violet-50 text-violet-700")
+                    : (isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300" : "border-slate-200 bg-white text-slate-700")
+                }`}
+              >
+                {t("workspace.quiz.audience.selectedMembersTitle", "Specific members only")}
+              </button>
+            </div>
+
+            {bulkAudienceMode === "SELECTED_MEMBERS" ? (
+              <div className={`max-h-56 overflow-y-auto rounded-xl border p-2 space-y-1 ${isDarkMode ? "border-slate-700 bg-slate-950/40" : "border-slate-200 bg-slate-50/80"}`}>
+                {groupMembers.map((member) => {
+                  const memberId = Number(member.userId ?? member.id);
+                  if (!Number.isInteger(memberId) || memberId <= 0) return null;
+                  return (
+                    <label key={memberId} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${isDarkMode ? "hover:bg-slate-800" : "hover:bg-white"}`}>
+                      <Checkbox
+                        checked={bulkSelectedAudienceUserIds.includes(memberId)}
+                        onCheckedChange={() => toggleBulkAudienceMember(memberId)}
+                      />
+                      <span className={isDarkMode ? "text-slate-200" : "text-slate-700"}>
+                        {member.fullName || member.username || `User ${memberId}`}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkAssignOpen(false)} disabled={bulkAssignSaving}>
+              {t("workspace.quiz.close", "Đóng")}
+            </Button>
+            <Button onClick={handleBulkAssign} disabled={bulkAssignSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {bulkAssignSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {t("workspace.quiz.header.confirm", "Confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

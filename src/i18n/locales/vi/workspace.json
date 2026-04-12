@@ -1615,6 +1615,11 @@
       "noResults": "Không tìm thấy kết quả",
       "createdAt": "Tạo lúc",
       "updatedAt": "Cập nhật",
+      "pagination": {
+        "prev": "Trang trước",
+        "next": "Trang sau",
+        "pageInfo": "Trang {{page}} / {{totalPages}} · {{count}} mục"
+      },
       "levels": {
         "roadmap": "Tất cả Lộ trình Học tập",
         "phase": "Giai đoạn",
