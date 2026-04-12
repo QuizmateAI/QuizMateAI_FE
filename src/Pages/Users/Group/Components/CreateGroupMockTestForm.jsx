@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
-import { generateMockTest } from "@/api/AIAPI";
+import { generateGroupMockTestPreview } from "@/api/AIAPI";
 import { createFullQuiz } from "@/api/QuizAPI";
 
 const DIFFICULTY_LEVELS = [
@@ -141,7 +141,7 @@ export default function CreateGroupMockTestForm({
         totalQuestions: Number(totalQuestions),
         duration: Number(duration),
       };
-      const res = await generateMockTest(payload);
+      const res = await generateGroupMockTestPreview(payload);
       const data = res?.data?.data ?? res?.data ?? res;
       setTemplate(data);
       setGenPhase("preview");

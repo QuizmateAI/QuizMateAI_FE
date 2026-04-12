@@ -148,6 +148,14 @@ function buildPendingRoadmapGraph(payload = {}, { workspaceId = null, roadmapId 
   };
 }
 
+const TRANSIENT_ROADMAP_STATUSES = new Set([
+  'PROCESSING',
+  'PENDING',
+  'QUEUED',
+  'IN_PROGRESS',
+]);
+const STORED_ROADMAP_MAX_AGE_MS = 1000 * 60 * 20;
+
 function mergeRoadmapQuizzes(mappedRoadmap, roadmapQuizzes = []) {
   if (!mappedRoadmap) return mappedRoadmap;
 
@@ -291,13 +299,15 @@ export const getRoadmapGraph = async ({ workspaceId = null } = {}) => {
     return buildMockResponse(null);
   }
 
+  const scope = { workspaceId: normalizedWorkspaceId };
+
   try {
     const workspaceResponse = await api.get(`/workspace/${normalizedWorkspaceId}`);
     const workspacePayload = extractApiPayload(workspaceResponse);
     const roadmapId = extractRoadmapIdFromWorkspacePayload(workspacePayload);
 
     if (!roadmapId) {
-      return buildMockResponse(getStoredRoadmap({ workspaceId: normalizedWorkspaceId }));
+      return buildMockResponse(getStoredRoadmapFallback(scope));
     }
 
     const structureResponse = await api.get(`/roadmaps/${roadmapId}/structure`);
@@ -310,7 +320,7 @@ export const getRoadmapGraph = async ({ workspaceId = null } = {}) => {
     return buildMockResponse(enrichedRoadmap);
   } catch (error) {
     console.error('Failed to fetch roadmap structure:', error);
-    return buildMockResponse(getStoredRoadmap({ workspaceId: normalizedWorkspaceId }));
+    return buildMockResponse(getStoredRoadmapFallback(scope));
   }
 };
 
@@ -322,7 +332,8 @@ export const getRoadmapStructureById = async (roadmapId) => {
     return null;
   }
 
-  return api.get(`/roadmaps/${normalizedRoadmapId}/structure`);
+  const response = await api.get(`/roadmaps/${normalizedRoadmapId}/structure`);
+  return extractApiPayload(response);
 };
 
 // Lấy knowledge hiện tại của user theo roadmap.
@@ -892,6 +903,31 @@ function getStoredRoadmap(scope) {
 function setStoredRoadmap(scope, roadmap) {
   MOCK_ROADMAP_STORE.set(getScopeKey(scope), roadmap);
   return roadmap;
+}
+
+function clearStoredRoadmap(scope) {
+  MOCK_ROADMAP_STORE.delete(getScopeKey(scope));
+}
+
+function isFreshPendingStoredRoadmap(roadmap) {
+  if (!roadmap || !TRANSIENT_ROADMAP_STATUSES.has(String(roadmap?.status || '').toUpperCase())) {
+    return false;
+  }
+
+  const generatedAt = roadmap?.generatedAt ? new Date(roadmap.generatedAt).getTime() : NaN;
+  if (Number.isNaN(generatedAt)) {
+    return true;
+  }
+
+  return Date.now() - generatedAt <= STORED_ROADMAP_MAX_AGE_MS;
+}
+
+function getStoredRoadmapFallback(scope) {
+  const roadmap = getStoredRoadmap(scope);
+  if (!roadmap) return null;
+  if (isFreshPendingStoredRoadmap(roadmap)) return roadmap;
+  clearStoredRoadmap(scope);
+  return null;
 }
 
 function mapGraphToRoadmapListItem(graph) {

@@ -1,13 +1,14 @@
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock, MoreVertical, Users, UserPlus, ChevronDown, ChevronLeft, ChevronRight, Check, Eye, MessageSquareText } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical, UserPlus, Check, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/Components/ui/button";
+import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
-import FeedbackSubmitDialog from "@/Components/feedback/FeedbackSubmitDialog";
-import { getQuizzesByScope, deleteQuiz, getQuizById, updateQuiz, setGroupQuizAudience } from "@/api/QuizAPI";
+import HomeButton from "@/Components/ui/HomeButton";
+import { getQuizzesByScope, deleteQuiz, getQuizById, setGroupQuizAudience } from "@/api/QuizAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
 import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
@@ -108,29 +109,7 @@ const QUIZ_CARD_THEMES = {
   },
 };
 
-// Bộ lọc theo trạng thái
-const STATUS_FILTER_OPTIONS = ["all", "ACTIVE", "DRAFT", "COMPLETED"];
-const GROUP_FILTER_OPTIONS = ["all", "ALL_MEMBERS", "SELECTED_MEMBERS"];
-const QUIZ_PAGE_SIZE = 8;
-
-function toggleMultiFilterOption(currentOptions, option) {
-  const normalized = String(option || "");
-  const currentSet = new Set((currentOptions || []).map((value) => String(value || "")));
-
-  if (normalized === "all") {
-    return ["all"];
-  }
-
-  if (currentSet.has(normalized)) {
-    currentSet.delete(normalized);
-  } else {
-    currentSet.add(normalized);
-  }
-  currentSet.delete("all");
-
-  const next = Array.from(currentSet);
-  return next.length > 0 ? next : ["all"];
-}
+const QUIZ_PAGE_SIZE = 6;
 
 function hasQuizListChanged(prevList, nextList) {
   if (!Array.isArray(prevList) || !Array.isArray(nextList)) return true;
@@ -316,14 +295,14 @@ function QuizListView({
   refreshToken = 0,
   disableCreate = false,
   title = null,
+  onNavigateHome,
   onShareQuiz,
   onOpenCommunityQuiz,
+  groupRole = null,
+  groupCurrentUserId = null,
   progressTracking = null,
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
-  legacyRoadmapUI = false,
-  groupRole = "MEMBER",
-  groupCurrentUserId = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -331,9 +310,7 @@ function QuizListView({
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [searchQuery, setSearchQuery] = useState("");
-  const [appliedStatusFilters, setAppliedStatusFilters] = useState(["all"]);
-  const [pendingStatusFilters, setPendingStatusFilters] = useState(["all"]);
-  const [statusFilterMenuOpen, setStatusFilterMenuOpen] = useState(false);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -341,20 +318,19 @@ function QuizListView({
   const [sharingQuizId, setSharingQuizId] = useState(null);
   const [examStartQuiz, setExamStartQuiz] = useState(null);
   const [feedbackStatusByQuizId, setFeedbackStatusByQuizId] = useState({});
+  const [hasResolvedInitialFetch, setHasResolvedInitialFetch] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [groupMembers, setGroupMembers] = useState([]);
   const [groupMembersLoading, setGroupMembersLoading] = useState(false);
   const [selectedQuizIds, setSelectedQuizIds] = useState([]);
-  const [bulkActionDialog, setBulkActionDialog] = useState(null);
-  const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  const [bulkStatusValue, setBulkStatusValue] = useState("DRAFT");
-  const [bulkAssignMode, setBulkAssignMode] = useState("ALL_MEMBERS");
-  const [bulkAssignMemberUserId, setBulkAssignMemberUserId] = useState(null);
   const [appliedGroupFilters, setAppliedGroupFilters] = useState(["all"]);
-  const [pendingGroupFilters, setPendingGroupFilters] = useState(["all"]);
-  const [groupFilterMenuOpen, setGroupFilterMenuOpen] = useState(false);
   const [groupMemberUserId, setGroupMemberUserId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [feedbackDialogQuizId, setFeedbackDialogQuizId] = useState(null);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkAssignSaving, setBulkAssignSaving] = useState(false);
+  const [bulkAudienceMode, setBulkAudienceMode] = useState("ALL_MEMBERS");
+  const [bulkSelectedAudienceUserIds, setBulkSelectedAudienceUserIds] = useState([]);
   const fetchGuardRef = useRef({
     inFlight: false,
     lastKey: "",
@@ -372,10 +348,39 @@ function QuizListView({
 
   const isGroupQuizList = String(contextType || "").toUpperCase() === "GROUP";
   const normalizedGroupRole = String(groupRole || "").toUpperCase();
-  const canFilterGroupAssignees = normalizedGroupRole === "LEADER" || normalizedGroupRole === "CONTRIBUTOR";
   const isLeaderGroupQuizList = isGroupQuizList && normalizedGroupRole === "LEADER";
-  const showResultColumn = !isLeaderGroupQuizList;
-  const currentGroupUserId = Number(groupCurrentUserId);
+  const canFilterGroupAssignees = isLeaderGroupQuizList;
+  const currentGroupUserId = Number.isInteger(Number(groupCurrentUserId)) && Number(groupCurrentUserId) > 0
+    ? Number(groupCurrentUserId)
+    : null;
+  const groupAudienceFilter = useMemo(() => {
+    const active = appliedGroupFilters.filter((value) => value !== "all");
+    return active.length === 1 ? active[0] : "all";
+  }, [appliedGroupFilters]);
+  const setGroupAudienceFilter = useCallback((nextFilter) => {
+    const normalized = String(nextFilter || "all").toUpperCase();
+    if (normalized === "ALL_MEMBERS" || normalized === "SELECTED_MEMBERS") {
+      setAppliedGroupFilters([normalized]);
+      if (normalized !== "SELECTED_MEMBERS") {
+        setGroupMemberUserId(null);
+      }
+      return;
+    }
+    setAppliedGroupFilters(["all"]);
+    setGroupMemberUserId(null);
+  }, []);
+  const intentFilterKey = useMemo(
+    () =>
+      Array.isArray(intentFilter) && intentFilter.length > 0
+        ? intentFilter.join(",")
+        : "ALL",
+    [intentFilter],
+  );
+
+  useEffect(() => {
+    setHasResolvedInitialFetch(false);
+    setFetchError(null);
+  }, [contextId, contextType, intentFilterKey]);
 
   useEffect(() => {
     if (!isGroupQuizList || !contextId) {
@@ -415,133 +420,12 @@ function QuizListView({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, appliedStatusFilters, appliedGroupFilters, groupMemberUserId]);
+  }, [deferredSearchQuery, appliedGroupFilters, groupMemberUserId]);
 
   const selectedGroupAudienceMember = useMemo(() => {
     if (groupMemberUserId == null) return null;
     return resolveGroupMember(groupMemberUserId, groupMembers);
   }, [groupMemberUserId, groupMembers]);
-
-  const selectedQuizIdSet = useMemo(() => new Set(selectedQuizIds), [selectedQuizIds]);
-
-  useEffect(() => {
-    setSelectedQuizIds((current) => {
-      if (!current.length) return current;
-      const existing = new Set(
-        quizzes
-          .map((quiz) => Number(resolveQuizNavigationId(quiz)))
-          .filter((id) => Number.isInteger(id) && id > 0),
-      );
-      const next = current.filter((id) => existing.has(id));
-      return next.length === current.length ? current : next;
-    });
-  }, [quizzes]);
-
-  useEffect(() => {
-    if (!isLeaderGroupQuizList) {
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    }
-  }, [isLeaderGroupQuizList]);
-
-  const toggleQuizSelection = useCallback((quizId, checked) => {
-    if (!isLeaderGroupQuizList) return;
-    const normalized = Number(quizId);
-    if (!Number.isInteger(normalized) || normalized <= 0) return;
-    setSelectedQuizIds((current) => {
-      if (checked) {
-        if (current.includes(normalized)) return current;
-        return [...current, normalized];
-      }
-      return current.filter((id) => id !== normalized);
-    });
-  }, [isLeaderGroupQuizList]);
-
-  const openBulkActionDialog = useCallback((mode) => {
-    if (!isLeaderGroupQuizList || selectedQuizIds.length === 0) return;
-    setBulkActionDialog(mode);
-  }, [isLeaderGroupQuizList, selectedQuizIds.length]);
-
-  const handleBulkAssign = useCallback(async () => {
-    if (!selectedQuizIds.length) return;
-    if (bulkAssignMode === "SELECTED_MEMBERS") {
-      const memberId = Number(bulkAssignMemberUserId);
-      if (!Number.isInteger(memberId) || memberId <= 0) {
-        showError(t("workspace.quiz.bulk.memberRequired", "Vui lòng chọn thành viên để giao quiz."));
-        return;
-      }
-    }
-
-    const payload = bulkAssignMode === "ALL_MEMBERS"
-      ? { mode: "ALL_MEMBERS" }
-      : { mode: "SELECTED_MEMBERS", assigneeUserIds: [Number(bulkAssignMemberUserId)] };
-
-    setBulkActionLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedQuizIds.map((quizId) => setGroupQuizAudience(quizId, payload)),
-      );
-      const successCount = results.filter((result) => result.status === "fulfilled").length;
-      if (successCount !== selectedQuizIds.length) {
-        showError(
-          t("workspace.quiz.bulk.failed", { success: successCount, total: selectedQuizIds.length }),
-        );
-      }
-      if (fetchQuizzesRef.current) {
-        await fetchQuizzesRef.current({ silent: true });
-      }
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  }, [bulkAssignMemberUserId, bulkAssignMode, selectedQuizIds, showError, t]);
-
-  const handleBulkStatusChange = useCallback(async () => {
-    if (!selectedQuizIds.length) return;
-    setBulkActionLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedQuizIds.map((quizId) => updateQuiz(quizId, { status: bulkStatusValue })),
-      );
-      const successCount = results.filter((result) => result.status === "fulfilled").length;
-      if (successCount !== selectedQuizIds.length) {
-        showError(
-          t("workspace.quiz.bulk.failed", { success: successCount, total: selectedQuizIds.length }),
-        );
-      }
-      if (fetchQuizzesRef.current) {
-        await fetchQuizzesRef.current({ silent: true });
-      }
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  }, [bulkStatusValue, selectedQuizIds, showError, t]);
-
-  const handleBulkDelete = useCallback(async () => {
-    if (!selectedQuizIds.length) return;
-    setBulkActionLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedQuizIds.map((quizId) => deleteQuiz(quizId)),
-      );
-      const successCount = results.filter((result) => result.status === "fulfilled").length;
-      if (successCount !== selectedQuizIds.length) {
-        showError(
-          t("workspace.quiz.bulk.failed", { success: successCount, total: selectedQuizIds.length }),
-        );
-      }
-      if (fetchQuizzesRef.current) {
-        await fetchQuizzesRef.current({ silent: true });
-      }
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  }, [selectedQuizIds, showError, t]);
 
   const quizNavigationSourceState = useMemo(() => {
     const normalizedContextType = String(contextType || "").toUpperCase();
@@ -605,10 +489,12 @@ function QuizListView({
   const fetchQuizzes = useCallback(async ({ silent = false, scopeId = contextId } = {}) => {
     if (!scopeId) {
       setQuizzes([]);
+      setFetchError(null);
+      setHasResolvedInitialFetch(true);
       return;
     }
 
-    const requestKey = `${String(contextType || "").toUpperCase()}:${Number(scopeId) || scopeId}:${Array.isArray(intentFilter) ? intentFilter.join(",") : "ALL"}`;
+    const requestKey = `${String(contextType || "").toUpperCase()}:${Number(scopeId) || scopeId}:${intentFilterKey}`;
     const now = Date.now();
     const isDuplicateBurst = silent
       && fetchGuardRef.current.lastKey === requestKey
@@ -643,16 +529,22 @@ function QuizListView({
       }
       
       setQuizzes((prev) => (hasQuizListChanged(prev, incoming) ? incoming : prev));
+      setFetchError(null);
 
     } catch (err) {
       console.error("Lỗi khi lấy danh sách quiz:", err);
-      if (!silent) setQuizzes([]);
+      if (!silent) {
+        setFetchError(err);
+      }
     } finally {
       fetchGuardRef.current.inFlight = false;
       fetchGuardRef.current.lastFetchedAt = Date.now();
-      if (!silent) setLoading(false);
+      if (!silent) {
+        setLoading(false);
+        setHasResolvedInitialFetch(true);
+      }
     }
-  }, [contextId, contextType, intentFilter]);
+  }, [contextId, contextType, intentFilter, intentFilterKey]);
 
   fetchQuizzesRef.current = fetchQuizzes;
 
@@ -825,19 +717,8 @@ function QuizListView({
   // Lọc quiz theo trạng thái và tìm kiếm
   const filtered = useMemo(() => {
     let items = quizzes;
-    const activeStatusFilters = appliedStatusFilters.includes("all")
-      ? []
-      : appliedStatusFilters.filter((value) => value !== "all");
-    if (activeStatusFilters.length > 0) {
-      items = items.filter((q) => activeStatusFilters.some((statusKey) => {
-        if (statusKey === "COMPLETED") {
-          return q?.myAttempted === true || q?.status === "COMPLETED";
-        }
-        return q?.status === statusKey;
-      }));
-    }
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (deferredSearchQuery.trim()) {
+      const query = deferredSearchQuery.toLowerCase();
       items = items.filter((q) => q.title?.toLowerCase().includes(query));
     }
     if (isGroupQuizList) {
@@ -876,47 +757,162 @@ function QuizListView({
     return items;
   }, [
     quizzes,
-    searchQuery,
-    appliedStatusFilters,
+    deferredSearchQuery,
     isGroupQuizList,
     appliedGroupFilters,
-    groupMemberUserId,
     canFilterGroupAssignees,
     currentGroupUserId,
+    groupMemberUserId,
   ]);
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(filtered.length / QUIZ_PAGE_SIZE)),
-    [filtered.length],
-  );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / QUIZ_PAGE_SIZE));
+  const currentPageClamped = Math.min(currentPage, totalPages);
+  const paginatedQuizzes = useMemo(() => {
+    const start = (currentPageClamped - 1) * QUIZ_PAGE_SIZE;
+    return filtered.slice(start, start + QUIZ_PAGE_SIZE);
+  }, [currentPageClamped, filtered]);
+  const paginationStartIndex = filtered.length === 0 ? 0 : ((currentPageClamped - 1) * QUIZ_PAGE_SIZE) + 1;
+  const paginationEndIndex = filtered.length === 0
+    ? 0
+    : Math.min(filtered.length, currentPageClamped * QUIZ_PAGE_SIZE);
 
   useEffect(() => {
-    setCurrentPage((previous) => (previous > totalPages ? totalPages : previous));
-  }, [totalPages]);
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
-  const paginatedFiltered = useMemo(() => {
-    const safePage = Math.min(currentPage, totalPages);
-    const startIndex = (safePage - 1) * QUIZ_PAGE_SIZE;
-    return filtered.slice(startIndex, startIndex + QUIZ_PAGE_SIZE);
-  }, [filtered, currentPage, totalPages]);
-
-  const paginationStartIndex = filtered.length === 0
-    ? 0
-    : ((Math.min(currentPage, totalPages) - 1) * QUIZ_PAGE_SIZE) + 1;
-  const paginationEndIndex = Math.min(filtered.length, Math.min(currentPage, totalPages) * QUIZ_PAGE_SIZE);
-
-  const visibleFilteredQuizIds = useMemo(
-    () => paginatedFiltered
+  const filteredQuizIds = useMemo(
+    () => filtered
       .map((quiz) => Number(resolveQuizNavigationId(quiz)))
-      .filter((id) => Number.isInteger(id) && id > 0),
-    [paginatedFiltered],
+      .filter((quizId) => Number.isInteger(quizId) && quizId > 0),
+    [filtered],
   );
-  const allVisibleSelected = visibleFilteredQuizIds.length > 0
-    && visibleFilteredQuizIds.every((id) => selectedQuizIdSet.has(id));
-  const desktopGridColumns = isLeaderGroupQuizList
-    ? "grid-cols-[44px_minmax(180px,2.2fr)_120px_minmax(190px,1.7fr)_110px_100px_64px]"
-    : "grid-cols-[minmax(180px,2.2fr)_120px_minmax(190px,1.7fr)_110px_100px_120px_64px]";
-  const useLegacyRoadmapCards = legacyRoadmapUI;
+
+  const selectedQuizIdSet = useMemo(() => new Set(selectedQuizIds), [selectedQuizIds]);
+
+  const allFilteredSelected = filteredQuizIds.length > 0 && filteredQuizIds.every((quizId) => selectedQuizIdSet.has(quizId));
+
+  useEffect(() => {
+    if (selectedQuizIds.length === 0) return;
+    const availableIds = new Set(quizzes.map((quiz) => Number(resolveQuizNavigationId(quiz))).filter((quizId) => Number.isInteger(quizId) && quizId > 0));
+    setSelectedQuizIds((current) => {
+      const next = current.filter((quizId) => availableIds.has(quizId));
+      return next.length === current.length ? current : next;
+    });
+  }, [quizzes, selectedQuizIds.length]);
+
+  const toggleQuizSelection = useCallback((quizId, checked) => {
+    const normalizedId = Number(quizId);
+    if (!Number.isInteger(normalizedId) || normalizedId <= 0) return;
+
+    setSelectedQuizIds((current) => {
+      if (checked) {
+        return current.includes(normalizedId) ? current : [...current, normalizedId];
+      }
+      return current.filter((id) => id !== normalizedId);
+    });
+  }, []);
+
+  const handleToggleSelectAllFiltered = useCallback(() => {
+    if (filteredQuizIds.length === 0) return;
+    setSelectedQuizIds((current) => {
+      if (allFilteredSelected) {
+        const filteredSet = new Set(filteredQuizIds);
+        return current.filter((id) => !filteredSet.has(id));
+      }
+
+      const next = new Set(current);
+      filteredQuizIds.forEach((id) => next.add(id));
+      return [...next];
+    });
+  }, [allFilteredSelected, filteredQuizIds]);
+
+  const handleBulkDeleteSelected = useCallback(async () => {
+    const targets = [...selectedQuizIds];
+    if (targets.length === 0 || bulkDeleteLoading) return;
+
+    const confirmed = window.confirm(
+      t("workspace.quiz.bulkActions.deleteConfirm", "Bạn có chắc muốn xóa {{count}} quiz đã chọn?", { count: targets.length }),
+    );
+    if (!confirmed) return;
+
+    setBulkDeleteLoading(true);
+    try {
+      const results = await Promise.allSettled(targets.map((quizId) => deleteQuiz(quizId)));
+      const successIds = targets.filter((_, index) => results[index]?.status === "fulfilled");
+      const failedCount = targets.length - successIds.length;
+
+      if (successIds.length > 0) {
+        setQuizzes((current) => current.filter((quiz) => !successIds.includes(Number(resolveQuizNavigationId(quiz)))));
+        setSelectedQuizIds((current) => current.filter((quizId) => !successIds.includes(quizId)));
+      }
+
+      if (failedCount > 0) {
+        showError(t("workspace.quiz.bulkActions.deletePartialFail", "Không thể xóa {{count}} quiz.", { count: failedCount }));
+      }
+    } catch (error) {
+      showError(error?.message || t("workspace.quiz.deleteFail", "Không thể xóa quiz lúc này."));
+    } finally {
+      setBulkDeleteLoading(false);
+    }
+  }, [bulkDeleteLoading, selectedQuizIds, showError, t]);
+
+  const toggleBulkAudienceMember = useCallback((userId) => {
+    setBulkSelectedAudienceUserIds((current) => (
+      current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
+    ));
+  }, []);
+
+  const handleOpenBulkAssign = useCallback(() => {
+    if (selectedQuizIds.length === 0 || !isGroupQuizList) return;
+    setBulkAudienceMode("ALL_MEMBERS");
+    setBulkSelectedAudienceUserIds([]);
+    setBulkAssignOpen(true);
+  }, [isGroupQuizList, selectedQuizIds.length]);
+
+  const handleBulkAssign = useCallback(async () => {
+    if (!isGroupQuizList || selectedQuizIds.length === 0 || bulkAssignSaving) return;
+    if (bulkAudienceMode === "SELECTED_MEMBERS" && bulkSelectedAudienceUserIds.length === 0) {
+      showError(t("workspace.quiz.audience.selectMemberRequired", "Select at least one member."));
+      return;
+    }
+
+    setBulkAssignSaving(true);
+    try {
+      const body = bulkAudienceMode === "ALL_MEMBERS"
+        ? { mode: "ALL_MEMBERS" }
+        : { mode: "SELECTED_MEMBERS", assigneeUserIds: bulkSelectedAudienceUserIds };
+
+      const results = await Promise.allSettled(selectedQuizIds.map((quizId) => setGroupQuizAudience(quizId, body)));
+      const failedCount = results.filter((item) => item.status === "rejected").length;
+
+      await fetchQuizzes({ silent: true, scopeId: contextId });
+
+      if (failedCount > 0) {
+        showError(t("workspace.quiz.bulkActions.assignPartialFail", "Không thể giao {{count}} quiz.", { count: failedCount }));
+      } else {
+        setBulkAssignOpen(false);
+      }
+    } catch (error) {
+      showError(error?.message || t("workspace.quiz.audience.saveFailed", "Could not save distribution."));
+    } finally {
+      setBulkAssignSaving(false);
+    }
+  }, [
+    bulkAssignSaving,
+    bulkAudienceMode,
+    bulkSelectedAudienceUserIds,
+    contextId,
+    fetchQuizzes,
+    isGroupQuizList,
+    selectedQuizIds,
+    showError,
+    t,
+  ]);
+
+  const hasSelectedQuiz = selectedQuizIds.length > 0;
+  const useLegacyRoadmapCards = false;
 
   const renderQuizFeedbackAction = (quizId, className = "") => (
     <div onClick={(e) => e.stopPropagation()}>
@@ -1188,259 +1184,169 @@ function QuizListView({
   };
 
   return (
-    <div className={`${embedded ? "" : "h-full flex flex-col"} ${fontClass}`}>
-      {/* Header */}
+    <div className={`${embedded ? "" : "flex h-full flex-col px-2 py-3 sm:px-3 sm:py-4"} ${fontClass}`}>
       {!embedded ? (
-      <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div className="flex items-center gap-2">
-          <BadgeCheck className="w-5 h-5 text-blue-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{title || t("workspace.studio.actions.quiz")}</p>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
-            {quizzes.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => fetchQuizzes({ scopeId: contextId })} disabled={loading}
-            className={`rounded-full h-9 w-9 p-0 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          {String(contextType || "").toUpperCase() === "WORKSPACE" && typeof onOpenCommunityQuiz === "function" ? (
-          <Button
-            variant="outline"
-            onClick={onOpenCommunityQuiz}
-            className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : ""}`}
-          >
-            <Globe className="w-4 h-4" />
-            <span className="text-sm">{t("workspace.quiz.communityExplorer.title", "Community Quiz")}</span>
-          </Button>
-          ) : null}
-          {!hideCreateButton ? (
-          <Button disabled={disableCreate} onClick={onCreateQuiz} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
-            <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
-          </Button>
-          ) : null}
-        </div>
-      </div>
-      ) : null}
-
-      {/* Tìm kiếm + bộ lọc */}
-      {!embedded ? (
-      <div className="px-4 py-2">
-        <div
-          className={`rounded-2xl border p-2.5 shadow-sm transition-all ${
-            isLeaderGroupQuizList && selectedQuizIds.length > 0
-              ? (isDarkMode
-                ? "border-blue-700/60 bg-blue-950/20 ring-1 ring-blue-500/30"
-                : "border-blue-200 bg-blue-50/80 ring-1 ring-blue-200")
-              : (isDarkMode ? "border-slate-700/90 bg-slate-900/45" : "border-slate-200/90 bg-slate-50/90")
-          }`}
-        >
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative min-w-0 flex-1">
-              <Search className={`pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("workspace.listView.searchPlaceholder")}
-                className={`h-9 w-full rounded-xl border py-1.5 pl-10 pr-9 text-sm outline-none transition-colors ${
-                  isDarkMode
-                    ? "border-slate-700 bg-slate-950/50 text-white placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30"
-                    : "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                }`}
-              />
-              {searchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 ${isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"}`}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              ) : null}
-            </div>
-
-            <div className="flex items-center gap-2 sm:shrink-0">
-              <DropdownMenu open={statusFilterMenuOpen} onOpenChange={(open) => {
-                setStatusFilterMenuOpen(open);
-                if (open) setPendingStatusFilters(appliedStatusFilters);
-              }}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium",
-                      isDarkMode
-                        ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                    )}
-                  >
-                    <span>{t("workspace.quiz.filterBar.statusSection", "Trạng thái")}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>
-                      {pendingStatusFilters.includes("all") ? t("workspace.quiz.statusFilter.all", "Tất cả") : pendingStatusFilters.length}
-                    </span>
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className={`w-56 p-2 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}>
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide opacity-70">
-                    {t("workspace.quiz.filterBar.statusSection", "Trạng thái")}
-                  </p>
-                  <div className="space-y-1">
-                    {STATUS_FILTER_OPTIONS.map((opt) => {
-                      const checked = pendingStatusFilters.includes(opt);
-                      return (
-                        <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100/10">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => setPendingStatusFilters((current) => toggleMultiFilterOption(current, opt))}
-                          />
-                          <span>{t(`workspace.quiz.statusFilter.${opt}`)}</span>
-                        </label>
-                      );
-                    })}
+        <div className={`mb-4 border-b px-2 pb-4 ${isDarkMode ? "border-slate-800" : "border-slate-200/90"}`}>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                {typeof onNavigateHome === "function" ? (
+                  <HomeButton onClick={onNavigateHome} />
+                ) : null}
+                <div className="min-w-0 flex-1 sm:max-w-[420px] md:max-w-[460px] lg:max-w-[520px]">
+                  <div className="relative">
+                    <Search className={`pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 ${isDarkMode ? "text-slate-500" : "text-slate-400"}`} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => startTransition(() => setSearchQuery(e.target.value))}
+                      placeholder={t("workspace.listView.searchPlaceholder")}
+                      className={`h-11 w-full rounded-full border py-2 pl-10 pr-10 text-sm outline-none transition-colors ${
+                        isDarkMode
+                          ? "border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500 focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30"
+                          : "border-slate-200 bg-[#f8fafc] text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                      }`}
+                    />
+                    {searchQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className={`absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1.5 ${isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-slate-300" : "text-slate-400 hover:bg-white hover:text-slate-600"}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : null}
                   </div>
-                  <div className="mt-2 flex items-center justify-end gap-2 border-t pt-2">
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setPendingStatusFilters(["all"])}>
-                      {t("workspace.quiz.bulk.clear", "Bỏ chọn")}
-                    </Button>
-                    <Button type="button" size="sm" onClick={() => {
-                      setAppliedStatusFilters(pendingStatusFilters);
-                      setStatusFilterMenuOpen(false);
-                    }}>
-                      {t("workspace.quiz.bulk.apply", "Áp dụng")}
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+              </div>
 
               {isGroupQuizList ? (
-                <DropdownMenu open={groupFilterMenuOpen} onOpenChange={(open) => {
-                  setGroupFilterMenuOpen(open);
-                  if (open) setPendingGroupFilters(appliedGroupFilters);
-                }}>
-                  <DropdownMenuTrigger asChild>
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    { key: "all", label: t("workspace.quiz.groupAudience.all", "Tất cả") },
+                    { key: "ALL_MEMBERS", label: t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm") },
+                    { key: "SELECTED_MEMBERS", label: t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng") },
+                  ].map(({ key, label }) => (
                     <button
+                      key={key}
                       type="button"
-                      className={cn(
-                        "inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium",
-                        isDarkMode
-                          ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                      )}
+                      onClick={() => setGroupAudienceFilter(key)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                        groupAudienceFilter === key
+                          ? isDarkMode
+                            ? "bg-violet-600/25 text-violet-200 ring-1 ring-violet-500/35"
+                            : "bg-slate-900 text-white"
+                          : isDarkMode
+                            ? "bg-slate-900 text-slate-300 hover:bg-slate-800"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
                     >
-                      <span>{t("workspace.quiz.filterBar.groupSection", "Nhóm")}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>
-                        {pendingGroupFilters.includes("all") ? t("workspace.quiz.groupAudience.all", "Tất cả") : pendingGroupFilters.length}
-                      </span>
-                      <ChevronDown className="h-3.5 w-3.5" />
+                      {label}
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className={`w-64 p-2 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}>
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide opacity-70">
-                      {t("workspace.quiz.filterBar.groupSection", "Nhóm")}
-                    </p>
-                    <div className="space-y-1">
-                      {GROUP_FILTER_OPTIONS.map((opt) => {
-                        const checked = pendingGroupFilters.includes(opt);
-                        const label = opt === "all"
-                          ? t("workspace.quiz.groupAudience.all", "Tất cả")
-                          : opt === "ALL_MEMBERS"
-                            ? t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm")
-                            : (canFilterGroupAssignees
-                              ? t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng")
-                              : t("workspace.quiz.groupAudience.assignedToMe", "Được giao"));
-                        return (
-                          <label key={opt} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100/10">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => setPendingGroupFilters((current) => toggleMultiFilterOption(current, opt))}
-                            />
-                            <span>{label}</span>
-                          </label>
-                        );
+                  ))}
+                  {groupAudienceFilter === "SELECTED_MEMBERS" ? (
+                    <select
+                      value={groupMemberUserId ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setGroupMemberUserId(v === "" ? null : Number(v));
+                      }}
+                      disabled={groupMembersLoading}
+                      title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
+                      className={`h-9 max-w-[min(220px,100%)] rounded-full border px-3 text-xs outline-none transition-colors ${
+                        isDarkMode
+                          ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
+                          : "border-slate-200 bg-[#f8fafc] text-slate-900 disabled:opacity-50"
+                      }`}
+                    >
+                      <option value="">{t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}</option>
+                      {groupMembers.map((m) => {
+                        const uid = Number(m.userId ?? m.id);
+                        if (!Number.isInteger(uid) || uid <= 0) return null;
+                        const optLabel = m.fullName || m.username || `User ${uid}`;
+                        return <option key={uid} value={uid}>{optLabel}</option>;
                       })}
-                    </div>
-                    <div className="mt-2 flex items-center justify-end gap-2 border-t pt-2">
-                      <Button type="button" size="sm" variant="ghost" onClick={() => setPendingGroupFilters(["all"])}>
-                        {t("workspace.quiz.bulk.clear", "Bỏ chọn")}
-                      </Button>
-                      <Button type="button" size="sm" onClick={() => {
-                        setAppliedGroupFilters(pendingGroupFilters);
-                        setGroupFilterMenuOpen(false);
-                      }}>
-                        {t("workspace.quiz.bulk.apply", "Áp dụng")}
-                      </Button>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </select>
+                  ) : null}
+                </div>
               ) : null}
-            </div>
-          </div>
 
-          {isLeaderGroupQuizList && !useLegacyRoadmapCards ? (
-            <div className={`mt-2 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between ${isDarkMode ? "border-slate-700/80" : "border-slate-200/90"}`}>
-              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-700"}`}>
-                {t("workspace.quiz.bulk.selectedCount", { count: selectedQuizIds.length })}
-              </p>
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 xl:ml-auto">
                 <Button
-                  type="button"
-                  size="sm"
                   variant="outline"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => openBulkActionDialog("assign")}
-                  className={`h-8 rounded-full px-3 text-sm transition-all ${
-                    isDarkMode
-                      ? "border-blue-700/70 bg-blue-900/30 text-blue-200 hover:bg-blue-900/45"
-                      : "border-blue-200 bg-blue-100/80 text-blue-700 hover:bg-blue-200/80"
-                  }`}
+                  onClick={() => fetchQuizzes({ silent: true, scopeId: contextId })}
+                  disabled={loading}
+                  className={`h-11 rounded-full border px-3 ${isDarkMode ? "border-slate-700 text-slate-300 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
                 >
-                  {t("workspace.quiz.bulk.assign", "Giao")}
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </Button>
+                {String(contextType || "").toUpperCase() === "WORKSPACE" && typeof onOpenCommunityQuiz === "function" ? (
+                  <Button
+                    variant="outline"
+                    onClick={onOpenCommunityQuiz}
+                    className={`h-11 rounded-full border px-4 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}
+                  >
+                    <Globe className="mr-2 h-4 w-4" />
+                    <span className="text-sm">{t("workspace.quiz.communityExplorer.title", "Community Quiz")}</span>
+                  </Button>
+                ) : null}
+                {!hideCreateButton ? (
+                  <Button
+                    disabled={disableCreate}
+                    onClick={onCreateQuiz}
+                    className="h-11 rounded-full bg-[#2563EB] px-4 text-white transition-all hover:bg-blue-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    <span className="text-sm">{t("workspace.listView.create")}</span>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+
+            <div className={`mt-1 flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-3 py-2 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-slate-50/70"}`}>
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => openBulkActionDialog("status")}
-                  className={`h-8 rounded-full px-3 text-sm transition-all ${
-                    isDarkMode
-                      ? "border-amber-700/70 bg-amber-900/25 text-amber-200 hover:bg-amber-900/40"
-                      : "border-amber-200 bg-amber-100/80 text-amber-700 hover:bg-amber-200/80"
-                  }`}
+                  className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                  onClick={handleToggleSelectAllFiltered}
+                  disabled={filteredQuizIds.length === 0}
                 >
-                  {t("workspace.quiz.bulk.changeStatus", "Đổi trạng thái")}
+                  {allFilteredSelected
+                    ? t("workspace.sources.deselectAll")
+                    : t("workspace.sources.selectAll")}
                 </Button>
+                <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                  {t("workspace.sources.selected", "Đã chọn {{count}}", { count: selectedQuizIds.length })}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {isGroupQuizList ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                    onClick={handleOpenBulkAssign}
+                    disabled={!hasSelectedQuiz || bulkAssignSaving}
+                  >
+                    <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                    {t("workspace.quiz.detail.assign", "Assign")}
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => openBulkActionDialog("delete")}
-                  className={`h-8 rounded-full px-3 text-sm transition-all ${
-                    isDarkMode
-                      ? "border-rose-700/70 bg-rose-900/25 text-rose-200 hover:bg-rose-900/40"
-                      : "border-rose-200 bg-rose-100/80 text-rose-700 hover:bg-rose-200/80"
-                  }`}
+                  className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-red-800 text-red-300 hover:bg-red-950/40" : "border-red-300 bg-white text-red-600 hover:bg-red-50"}`}
+                  onClick={handleBulkDeleteSelected}
+                  disabled={!hasSelectedQuiz || bulkDeleteLoading}
                 >
-                  {t("workspace.quiz.bulk.delete", "Xóa")}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => setSelectedQuizIds([])}
-                  className={`h-8 rounded-full px-2 text-sm ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-slate-600 hover:bg-white"}`}
-                >
-                  {t("workspace.quiz.bulk.clear", "Bỏ chọn")}
+                  {bulkDeleteLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+                  {t("workspace.quiz.actionButtons.delete", "Xóa")}
                 </Button>
               </div>
             </div>
-          ) : null}
+          </div>
 
           {isGroupQuizList && hasAppliedSelectedMembersFilter && canFilterGroupAssignees ? (
             <div className={`mt-2 border-t pt-2 ${isDarkMode ? "border-slate-700/80" : "border-slate-200/90"}`}>
@@ -1536,93 +1442,71 @@ function QuizListView({
             </div>
           ) : null}
         </div>
-      </div>
       ) : null}
 
       {/* Danh sách quiz */}
-      <div className={`${embedded ? "px-0" : "flex-1 overflow-y-auto px-4 pb-4"}`}>
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+      <div className={`${embedded ? "px-0" : "min-h-0 flex-1 overflow-y-auto"}`}>
+        {fetchError && quizzes.length > 0 ? (
+          <div
+            className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${
+              isDarkMode
+                ? "border-amber-500/20 bg-amber-500/10 text-amber-200"
+                : "border-amber-200 bg-amber-50 text-amber-700"
+            }`}
+          >
+            {t(
+              "workspace.quiz.loadErrorInline",
+              "Không thể làm mới danh sách quiz lúc này. Nội dung cũ vẫn được giữ lại để tránh giật giao diện.",
+            )}
+          </div>
+        ) : null}
+        {loading && !hasResolvedInitialFetch && quizzes.length === 0 ? (
+          <div className="flex min-h-[300px] flex-col items-center justify-center py-16">
+            <Loader2 className={`mb-2 h-8 w-8 animate-spin ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.loading")}</p>
           </div>
         ) : quizzes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
+          <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
+            <FolderOpen className={`mb-3 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {t("workspace.roadmap.noQuizYet")}
+              {fetchError
+                ? t(
+                    "workspace.quiz.loadErrorSoft",
+                    "Không tải được danh sách quiz lúc này. Giao diện vẫn được giữ ổn định, hãy thử lại sau ít phút.",
+                  )
+                : t("workspace.roadmap.noQuizYet")}
             </p>
             {!hideCreateButton ? (
-            <Button
-              disabled={disableCreate}
-              onClick={onCreateQuiz}
-              className="mt-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.studio.actions.createQuiz")}</span>
-            </Button>
+              <Button
+                disabled={disableCreate}
+                onClick={onCreateQuiz}
+                className="mt-4 h-10 rounded-full bg-[#2563EB] px-4 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-[#2563EB]"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span className="text-sm">{t("workspace.studio.actions.createQuiz")}</span>
+              </Button>
             ) : null}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
+          <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16">
+            <FolderOpen className={`mb-3 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
           <>
-            <div className={useLegacyRoadmapCards ? "space-y-2" : "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900/60"}>
-            {!useLegacyRoadmapCards ? (
-              <div
-                className={`hidden min-h-11 ${desktopGridColumns} items-center gap-3 border-b px-4 text-xs font-semibold uppercase tracking-wide md:grid ${
-                  isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-600"
-                }`}
-              >
-                {isLeaderGroupQuizList ? (
-                  <label className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 cursor-pointer rounded border-slate-300"
-                      checked={allVisibleSelected}
-                      onChange={(event) => {
-                        const { checked } = event.target;
-                        setSelectedQuizIds((current) => {
-                          if (!checked) {
-                            return current.filter((id) => !visibleFilteredQuizIds.includes(id));
-                          }
-                          const next = new Set(current);
-                          visibleFilteredQuizIds.forEach((id) => next.add(id));
-                          return Array.from(next);
-                        });
-                      }}
-                    />
-                  </label>
-                ) : null}
-                <span>{t("workspace.quiz.list.columns.quiz", "Quiz")}</span>
-                <span>{t("workspace.quiz.list.columns.status", "Trạng thái")}</span>
-                <span>{t("workspace.quiz.list.columns.details", "Thông tin làm bài")}</span>
-                <span>{t("workspace.quiz.list.columns.difficulty", "Độ khó")}</span>
-                <span>{t("workspace.quiz.list.columns.duration", "Thời lượng")}</span>
-                {showResultColumn ? <span>{t("workspace.quiz.list.columns.result", "Kết quả")}</span> : null}
-                <span className="text-right">{t("workspace.quiz.list.columns.actions", "Thao tác")}</span>
-              </div>
-            ) : null}
-
-            {paginatedFiltered.map((quiz) => {
+          <div className={useLegacyRoadmapCards ? "space-y-2" : "mx-auto grid max-w-[1080px] grid-cols-1 gap-4 md:grid-cols-2"}>
+            {paginatedQuizzes.map((quiz) => {
               if (useLegacyRoadmapCards) {
                 return renderLegacyRoadmapCard(quiz);
               }
 
               const resolvedQuizId = resolveQuizNavigationId(quiz);
-              const resolvedQuizIdNumber = Number(resolvedQuizId);
-              const rowKey = resolvedQuizId ?? `${quiz?.title || "quiz"}-${quiz?.createdAt || ""}`;
               const isCommunityShared = quiz?.communityShared === true;
               const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
               const shouldHideRoadmapVisibility = isRoadmapContextQuiz;
               const durationInMinutes = getDurationInMinutes(quiz);
               const normalizedStatus = String(quiz?.status || "").toUpperCase();
               const isProcessing = normalizedStatus === "PROCESSING";
-              const statusMeta = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
-              const statusLabel = t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus || "DRAFT");
               const processingPercent = resolveQuizProcessingPercent(
                 quiz,
                 progressTracking,
@@ -1631,8 +1515,6 @@ function QuizListView({
               );
               const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
               const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
-              const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
-              const updatedLabel = formatShortDate(quiz.updatedAt || quiz.createdAt);
               const myAttempted = quiz?.myAttempted === true;
               const myPassed = quiz?.myPassed === true;
               const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
@@ -1644,321 +1526,197 @@ function QuizListView({
                   ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
                   : t("workspace.quiz.examModeType2Short", "Theo từng câu"))
                 : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
-              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz;
+              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz && myAttempted;
               const showExamAction = normalizedStatus === "ACTIVE";
               const showFeedbackAction = myAttempted && !hasSubmittedFeedback && resolvedQuizId != null && resolvedQuizId !== "";
               const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
-              const resultLabel = myAttempted
-                ? (myPassed ? t("workspace.quiz.myPassedTrue", "Đã đậu") : t("workspace.quiz.myPassedFalse", "Chưa đậu"))
-                : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
-              const groupAudienceMode = isGroupQuizList ? normalizeGroupAudienceMode(quiz) : null;
-              const assignedNames = isGroupQuizList ? formatAssignedNames(quiz, groupMembers) : "";
-              const audienceText = isGroupQuizList
-                ? (
-                  groupAudienceMode === "ALL_MEMBERS"
-                    ? t("workspace.quiz.groupAudience.badgeWholeGroup", "Chung nhóm")
-                    : `${t("workspace.quiz.groupAudience.badgeAssigned", "Giao riêng")}${assignedNames ? `: ${assignedNames}` : ""}`
-                )
-                : (
-                  isCommunityShared
-                    ? t("workspace.quiz.communityPublic", "Công khai")
-                    : t("workspace.quiz.privateShort", "Riêng tư")
-                );
-              const VisibilityIcon = isCommunityShared ? Globe : Lock;
-              const isRowSelected = isLeaderGroupQuizList && selectedQuizIdSet.has(resolvedQuizIdNumber);
-              const canSelectRow = isLeaderGroupQuizList && Number.isInteger(resolvedQuizIdNumber) && resolvedQuizIdNumber > 0;
-
-              const renderActionMenu = () => (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => e.stopPropagation()}
-                      className={`h-8 w-8 rounded-full ${
-                        isDarkMode
-                          ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-                          : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                      }`}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className={cn(
-                      "w-56 p-1.5",
-                      isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900",
-                    )}
-                  >
-                    <DropdownMenuItem
-                      onSelect={(e) => {
-                        e?.stopPropagation?.();
-                        onViewQuiz?.(quiz);
-                      }}
-                      className={cn(
-                        "cursor-pointer rounded-md px-2.5 py-2 text-[13px] font-medium",
-                        isDarkMode ? "text-sky-200 focus:bg-sky-950/40 focus:text-sky-100" : "text-sky-700 focus:bg-sky-50 focus:text-sky-700",
-                      )}
-                    >
-                      <Eye className="h-4 w-4 text-sky-500" />
-                      <span>{t("workspace.quiz.list.actions.open", "Xem chi tiết")}</span>
-                    </DropdownMenuItem>
-                    {showPracticeAction ? (
-                      <DropdownMenuItem
-                        onSelect={(e) => {
-                          e?.stopPropagation?.();
-                          handleStartQuiz('practice', quiz.quizId);
-                        }}
-                        className={cn(
-                          "cursor-pointer rounded-md px-2.5 py-2 text-[13px] font-medium",
-                          isDarkMode ? "text-blue-200 focus:bg-blue-950/35 focus:text-blue-100" : "text-blue-700 focus:bg-blue-50 focus:text-blue-700",
-                        )}
-                      >
-                        <Play className="h-4 w-4 text-blue-500" />
-                        <span>{t("workspace.quiz.practice", "Luyện tập")}</span>
-                      </DropdownMenuItem>
-                    ) : null}
-                    {showExamAction ? (
-                      <DropdownMenuItem
-                        onSelect={(e) => {
-                          e?.stopPropagation?.();
-                          setExamStartQuiz(quiz);
-                        }}
-                        className={cn(
-                          "cursor-pointer rounded-md px-2.5 py-2 text-[13px] font-medium",
-                          isDarkMode ? "text-emerald-200 focus:bg-emerald-950/35 focus:text-emerald-100" : "text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700",
-                        )}
-                      >
-                        <ClipboardCheck className="h-4 w-4 text-emerald-500" />
-                        <span>{t("workspace.quiz.exam", "Kiểm tra")}</span>
-                      </DropdownMenuItem>
-                    ) : null}
-                    {showFeedbackAction ? (
-                      <DropdownMenuItem
-                        onSelect={(e) => {
-                          e?.stopPropagation?.();
-                          const normalizedQuizId = Number(resolvedQuizId);
-                          if (Number.isInteger(normalizedQuizId) && normalizedQuizId > 0) {
-                            setFeedbackDialogQuizId(normalizedQuizId);
-                          }
-                        }}
-                        className={cn(
-                          "cursor-pointer rounded-md px-2.5 py-2 text-[13px] font-medium",
-                          isDarkMode ? "text-violet-200 focus:bg-violet-950/35 focus:text-violet-100" : "text-violet-700 focus:bg-violet-50 focus:text-violet-700",
-                        )}
-                      >
-                        <MessageSquareText className="h-4 w-4 text-violet-500" />
-                        <span>{t("feedback", "Feedback")}</span>
-                      </DropdownMenuItem>
-                    ) : null}
-                    {showShareAction ? (
-                      <DropdownMenuItem
-                        disabled={sharingQuizId === quiz.quizId}
-                        onSelect={async (e) => {
-                          e?.stopPropagation?.();
-                          if (sharingQuizId === quiz.quizId) return;
-                          setSharingQuizId(quiz.quizId);
-                          try {
-                            await onShareQuiz(quiz);
-                            await fetchQuizzes({ silent: true });
-                          } catch (error) {
-                            showError(error?.message || t("home.actions.share", "Share"));
-                          } finally {
-                            setSharingQuizId(null);
-                          }
-                        }}
-                        className={cn(
-                          "cursor-pointer rounded-md px-2.5 py-2 text-[13px] font-medium",
-                          isDarkMode ? "text-cyan-200 focus:bg-cyan-950/35 focus:text-cyan-100" : "text-cyan-700 focus:bg-cyan-50 focus:text-cyan-700",
-                        )}
-                      >
-                        {sharingQuizId === quiz.quizId ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : isCommunityShared ? (
-                          <Lock className="h-4 w-4" />
-                        ) : (
-                          <Globe className="h-4 w-4" />
-                        )}
-                        <span>
-                          {isCommunityShared
-                            ? t("workspace.quiz.makePrivateShort", "Riêng tư")
-                            : t("workspace.quiz.makePublicShort", "Công khai")}
-                        </span>
-                      </DropdownMenuItem>
-                    ) : null}
-                    <DropdownMenuItem
-                      disabled={deletingId === quiz.quizId}
-                      onSelect={() => handleRequestDeleteQuiz({ stopPropagation: () => {} }, quiz)}
-                      className={cn(
-                        "cursor-pointer rounded-md px-2.5 py-2 text-[13px] font-medium",
-                        isDarkMode ? "text-rose-300 focus:bg-rose-950/35 focus:text-rose-200" : "text-rose-600 focus:bg-rose-50 focus:text-rose-600",
-                      )}
-                    >
-                      {deletingId === quiz.quizId ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                      <span>{t("workspace.quiz.deleteQuiz")}</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
+              const questionCount = Number(quiz?.questionCount ?? quiz?.totalQuestion ?? quiz?.totalQuestions ?? 0) || 0;
+              const scoreValue = Number(quiz?.latestScore ?? quiz?.score ?? quiz?.myScore ?? quiz?.marksScored ?? quiz?.markScored);
+              const resolvedScoreValue = Number.isFinite(scoreValue) && scoreValue >= 0 ? scoreValue : null;
+              const maxScore = Number(quiz?.maxScore);
+              const resultLabel = isProcessing
+                ? t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")
+                : myAttempted
+                  ? (myPassed ? t("workspace.quiz.myPassedTrue", "Đã đậu") : t("workspace.quiz.myPassedFalse", "Chưa đậu"))
+                  : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
+              const resultToneClassName = isProcessing
+                ? (isDarkMode ? "text-sky-300" : "text-sky-700")
+                : myAttempted
+                  ? (myPassed ? (isDarkMode ? "text-emerald-300" : "text-emerald-700") : (isDarkMode ? "text-amber-300" : "text-amber-700"))
+                  : (isDarkMode ? "text-slate-300" : "text-slate-700");
+              const difficultyLabel = difficultyKey === "CUSTOM"
+                ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
+                : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`);
+              const resultDisplay = resolvedScoreValue != null
+                ? (maxScore > 0 ? `${resolvedScoreValue}/${maxScore}` : `${resolvedScoreValue}`)
+                : resultLabel;
+              const durationLabel = durationInMinutes > 0
+                ? `${durationInMinutes} ${t("workspace.quiz.minutesShort", "phút")}`
+                : null;
+              const createdAtLabel = formatShortDate(quiz.createdAt || quiz.updatedAt);
+              const difficultyTextClassName = difficultyKey === "HARD"
+                ? (isDarkMode ? "text-rose-300" : "text-rose-600")
+                : difficultyKey === "MEDIUM"
+                  ? (isDarkMode ? "text-amber-300" : "text-amber-600")
+                  : difficultyKey === "EASY"
+                    ? (isDarkMode ? "text-emerald-300" : "text-emerald-600")
+                    : (isDarkMode ? "text-slate-300" : "text-slate-600");
 
               return (
                 <article
-                  key={rowKey}
+                  key={resolvedQuizId}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onViewQuiz?.(quiz)}
-                  className={`cursor-pointer border-t transition-colors first:border-t-0 ${
-                    isRowSelected
-                      ? (isDarkMode ? "border-blue-800/70 bg-blue-950/20" : "border-blue-200 bg-blue-50/70")
-                      : (isDarkMode
-                        ? "border-slate-700 hover:bg-slate-800/35"
-                        : "border-slate-200 hover:bg-slate-50")
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onViewQuiz?.(quiz);
+                    }
+                  }}
+                  className={`h-full cursor-pointer rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                    isDarkMode
+                      ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
+                      : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"
                   }`}
                 >
-                  <div className={`hidden ${desktopGridColumns} items-center gap-3 px-4 py-3 md:grid`}>
-                    {isLeaderGroupQuizList ? (
-                      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 cursor-pointer rounded border-slate-300"
-                          checked={canSelectRow ? selectedQuizIdSet.has(resolvedQuizIdNumber) : false}
-                          disabled={!canSelectRow}
-                          onChange={(event) => toggleQuizSelection(resolvedQuizIdNumber, event.target.checked)}
-                        />
-                      </div>
-                    ) : null}
-                    <div className="min-w-0">
-                      <p className={`truncate text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                        {quiz.title || "-"}
-                      </p>
-                      <div className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                        {isGroupQuizList ? (
-                          <span className="inline-flex items-center gap-1">
-                            {groupAudienceMode === "ALL_MEMBERS" ? <Users className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
-                            <span className="truncate">{audienceText}</span>
-                          </span>
-                        ) : (
-                          shouldHideRoadmapVisibility ? null : (
-                            <span className="inline-flex items-center gap-1">
-                              <VisibilityIcon className="h-3.5 w-3.5" />
-                              {audienceText}
-                            </span>
-                          )
-                        )}
-                      </div>
-                      <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
-                        {t("workspace.quiz.list.labels.updatedAt", "Cập nhật")}: {updatedLabel || "-"}
-                      </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className={`line-clamp-2 text-[21px] font-semibold leading-snug tracking-[-0.02em] ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
+                        {quiz.title || "—"}
+                      </h3>
                     </div>
 
-                    <div>
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${isDarkMode ? statusMeta.dark : statusMeta.light}`}>
-                        {statusLabel}
-                      </span>
-                    </div>
-
-                    <div className={`space-y-1 text-xs ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
-                      <p><span className="font-semibold">{t("workspace.quiz.list.labels.intent", "Mục đích")}:</span> {intentValue}</p>
-                      <p><span className="font-semibold">{t("workspace.quiz.list.labels.timerMode", "Kiểu thời gian")}:</span> {timerValue}</p>
-                      {isProcessing ? (
-                        <div className="pt-1">
-                          <div className={`h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
-                            <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div>
-                      <span className={`inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
-                        <BarChart3 className="h-3.5 w-3.5" />
-                        <span>
-                          {difficultyKey === "CUSTOM"
-                            ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
-                            : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`)}
-                        </span>
-                      </span>
-                    </div>
-
-                    <div className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
-                      {durationInMinutes > 0 ? `${durationInMinutes} ${t("workspace.quiz.minutes", "phút")}` : "-"}
-                    </div>
-
-                    {showResultColumn ? (
-                      <div className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
-                        {resultLabel}
-                      </div>
-                    ) : null}
-
-                    <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-                      {renderActionMenu()}
+                    <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedQuizIdSet.has(Number(resolvedQuizId))}
+                        onCheckedChange={(checked) => toggleQuizSelection(resolvedQuizId, checked === true)}
+                        className={isDarkMode ? "border-slate-500" : "border-slate-300"}
+                        aria-label={t("workspace.sources.selectSource", "Chọn nguồn")}
+                      />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`h-8 w-8 rounded-full ${
+                              isDarkMode
+                                ? "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                                : "text-slate-500 hover:bg-white hover:text-slate-900"
+                            }`}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className={`w-52 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}`}
+                        >
+                          {showShareAction ? (
+                            <DropdownMenuItem
+                              disabled={sharingQuizId === quiz.quizId}
+                              onSelect={async (e) => {
+                                e?.stopPropagation?.();
+                                if (sharingQuizId === quiz.quizId) return;
+                                setSharingQuizId(quiz.quizId);
+                                try {
+                                  await onShareQuiz(quiz);
+                                  await fetchQuizzes({ silent: true });
+                                } catch (error) {
+                                  showError(error?.message || t("home.actions.share", "Share"));
+                                } finally {
+                                  setSharingQuizId(null);
+                                }
+                              }}
+                              className="cursor-pointer"
+                            >
+                              {sharingQuizId === quiz.quizId ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : isCommunityShared ? (
+                                <Lock className="h-4 w-4" />
+                              ) : (
+                                <Globe className="h-4 w-4" />
+                              )}
+                              <span>
+                                {isCommunityShared
+                                  ? t("workspace.quiz.makePrivateShort", "Riêng tư")
+                                  : t("workspace.quiz.makePublicShort", "Công khai")}
+                              </span>
+                            </DropdownMenuItem>
+                          ) : null}
+                          <DropdownMenuItem
+                            disabled={deletingId === quiz.quizId}
+                            onSelect={() => handleRequestDeleteQuiz({ stopPropagation: () => {} }, quiz)}
+                            className={`cursor-pointer ${isDarkMode ? "text-red-300 focus:text-red-200" : "text-red-600 focus:text-red-600"}`}
+                          >
+                            {deletingId === quiz.quizId ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                            <span>{t("workspace.quiz.deleteQuiz")}</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
 
-                  <div className="space-y-3 px-4 py-3 md:hidden">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className={`line-clamp-2 text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                          {quiz.title || "-"}
+                  {isProcessing ? (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                          {t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}
                         </p>
-                        <div className={`mt-1 flex flex-wrap items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                          {isGroupQuizList ? (
-                            <span className="inline-flex items-center gap-1">
-                              {groupAudienceMode === "ALL_MEMBERS" ? <Users className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
-                              <span className="truncate">{audienceText}</span>
-                            </span>
-                          ) : (
-                            shouldHideRoadmapVisibility ? null : (
-                              <span className="inline-flex items-center gap-1">
-                                <VisibilityIcon className="h-3.5 w-3.5" />
-                                {audienceText}
-                              </span>
-                            )
-                          )}
-                        </div>
+                        <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
                       </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        {isLeaderGroupQuizList ? (
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 cursor-pointer rounded border-slate-300"
-                            checked={canSelectRow ? selectedQuizIdSet.has(resolvedQuizIdNumber) : false}
-                            disabled={!canSelectRow}
-                            onChange={(event) => toggleQuizSelection(resolvedQuizIdNumber, event.target.checked)}
-                          />
-                        ) : null}
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? statusMeta.dark : statusMeta.light}`}>
-                          {statusLabel}
-                        </span>
-                        {renderActionMenu()}
+                      <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
+                        <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
                       </div>
                     </div>
+                  ) : null}
 
-                    <div className={`grid grid-cols-2 gap-2 rounded-xl border p-3 text-xs ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                      <p><span className="font-semibold">{t("workspace.quiz.list.labels.intent", "Mục đích")}:</span> {intentValue}</p>
-                      <p><span className="font-semibold">{t("workspace.quiz.list.labels.timerMode", "Kiểu thời gian")}:</span> {timerValue}</p>
-                      <p><span className="font-semibold">{t("workspace.quiz.list.labels.difficulty", "Độ khó")}:</span> {difficultyKey === "CUSTOM" ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh") : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`)}</p>
-                      <p><span className="font-semibold">{t("workspace.quiz.list.labels.duration", "Thời lượng")}:</span> {durationInMinutes > 0 ? `${durationInMinutes} ${t("workspace.quiz.minutes", "phút")}` : "-"}</p>
-                      {showResultColumn ? <p><span className="font-semibold">{t("workspace.quiz.list.labels.result", "Kết quả")}:</span> {resultLabel}</p> : null}
-                      <p><span className="font-semibold">{t("workspace.quiz.list.labels.updatedAt", "Cập nhật")}:</span> {updatedLabel || "-"}</p>
-                    </div>
-
-                    {isProcessing ? (
-                      <div className={`rounded-xl border px-3 py-3 ${isDarkMode ? "border-sky-900/60 bg-sky-950/20" : "border-sky-200 bg-sky-50/80"}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className={`text-xs font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}</span>
-                          <span className={`text-xs font-semibold tabular-nums ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>{processingPercent}%</span>
-                        </div>
-                        <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-white"}`}>
-                          <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
-                        </div>
+                  <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                    {myAttempted ? (
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>Kết quả</span>
+                        <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
                       </div>
                     ) : null}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("workspace.quiz.roadmapOverview.questions", "Câu hỏi")}</span>
+                      <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
+                    </div>
+                  </div>
 
+                  <div className={`mt-4 flex items-end justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
+                        <BarChart3 className="h-3.5 w-3.5" />
+                        <span>{difficultyLabel}</span>
+                      </div>
+                      {durationLabel ? (
+                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                          <Timer className="h-3.5 w-3.5" />
+                          <span>{durationLabel}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className={`flex flex-wrap items-center justify-end gap-2 text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                      {!shouldHideRoadmapVisibility ? (
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                          {isCommunityShared ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                          <span>{isCommunityShared ? t("workspace.quiz.communityPublic", "Công khai") : t("workspace.quiz.privateShort", "Riêng tư")}</span>
+                        </span>
+                      ) : null}
+                      {createdAtLabel ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{createdAtLabel}</span>
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 </article>
               );
@@ -2013,160 +1771,6 @@ function QuizListView({
         )}
       </div>
 
-      <FeedbackSubmitDialog
-        open={feedbackDialogQuizId != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setFeedbackDialogQuizId(null);
-          }
-        }}
-        targetType="QUIZ"
-        targetId={feedbackDialogQuizId}
-        isDarkMode={isDarkMode}
-        onSubmitted={() => {
-          if (feedbackDialogQuizId != null) {
-            handleQuizFeedbackSubmitted(feedbackDialogQuizId);
-          }
-        }}
-        title={t("feedback", "Feedback")}
-      />
-
-      <Dialog
-        open={bulkActionDialog === "assign"}
-        onOpenChange={(open) => {
-          if (!open && !bulkActionLoading) setBulkActionDialog(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.bulk.confirmAssignTitle", "Giao quiz đã chọn")}</DialogTitle>
-            <DialogDescription>
-              {t("workspace.quiz.bulk.confirmAssignDescription", { count: selectedQuizIds.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="bulk-assign-mode"
-                value="ALL_MEMBERS"
-                checked={bulkAssignMode === "ALL_MEMBERS"}
-                onChange={() => setBulkAssignMode("ALL_MEMBERS")}
-              />
-              <span>{t("workspace.quiz.bulk.assignModeAll", "Chung cả nhóm")}</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="bulk-assign-mode"
-                value="SELECTED_MEMBERS"
-                checked={bulkAssignMode === "SELECTED_MEMBERS"}
-                onChange={() => setBulkAssignMode("SELECTED_MEMBERS")}
-              />
-              <span>{t("workspace.quiz.bulk.assignModeMember", "Giao cho thành viên cụ thể")}</span>
-            </label>
-            {bulkAssignMode === "SELECTED_MEMBERS" ? (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-500">{t("workspace.quiz.bulk.pickMember", "Chọn thành viên")}</p>
-                <select
-                  value={bulkAssignMemberUserId ?? ""}
-                  onChange={(event) => setBulkAssignMemberUserId(Number(event.target.value) || null)}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
-                >
-                  <option value="">{t("workspace.quiz.bulk.pickMemberPlaceholder", "Chọn thành viên")}</option>
-                  {groupMembers.map((member) => {
-                    const memberUserId = Number(member.userId ?? member.id);
-                    if (!Number.isInteger(memberUserId) || memberUserId <= 0) return null;
-                    return (
-                      <option key={memberUserId} value={memberUserId}>
-                        {getUserDisplayLabel(member, `User ${memberUserId}`)}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            ) : null}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" disabled={bulkActionLoading} onClick={() => setBulkActionDialog(null)}>
-              {t("workspace.quiz.bulk.cancel", "Hủy")}
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled={bulkActionLoading} onClick={handleBulkAssign}>
-              {bulkActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("workspace.quiz.bulk.apply", "Áp dụng")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={bulkActionDialog === "status"}
-        onOpenChange={(open) => {
-          if (!open && !bulkActionLoading) setBulkActionDialog(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.bulk.confirmStatusTitle", "Đổi trạng thái quiz")}</DialogTitle>
-            <DialogDescription>
-              {t("workspace.quiz.bulk.confirmStatusDescription", { count: selectedQuizIds.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            {[
-              { value: "DRAFT", label: t("workspace.quiz.bulk.statusDraft", "Bản nháp") },
-              { value: "ACTIVE", label: t("workspace.quiz.bulk.statusActive", "Đang hoạt động") },
-              { value: "INACTIVE", label: t("workspace.quiz.bulk.statusInactive", "Không hoạt động") },
-            ].map((statusItem) => (
-              <label key={statusItem.value} className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="bulk-status"
-                  value={statusItem.value}
-                  checked={bulkStatusValue === statusItem.value}
-                  onChange={() => setBulkStatusValue(statusItem.value)}
-                />
-                <span>{statusItem.label}</span>
-              </label>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" disabled={bulkActionLoading} onClick={() => setBulkActionDialog(null)}>
-              {t("workspace.quiz.bulk.cancel", "Hủy")}
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled={bulkActionLoading} onClick={handleBulkStatusChange}>
-              {bulkActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("workspace.quiz.bulk.apply", "Áp dụng")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={bulkActionDialog === "delete"}
-        onOpenChange={(open) => {
-          if (!open && !bulkActionLoading) setBulkActionDialog(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.bulk.confirmDeleteTitle", "Xóa quiz đã chọn")}</DialogTitle>
-            <DialogDescription>
-              {t("workspace.quiz.bulk.confirmDeleteDescription", { count: selectedQuizIds.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" disabled={bulkActionLoading} onClick={() => setBulkActionDialog(null)}>
-              {t("workspace.quiz.bulk.cancel", "Hủy")}
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={bulkActionLoading} onClick={handleBulkDelete}>
-              {bulkActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("workspace.quiz.bulk.delete", "Xóa")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={Boolean(examStartQuiz)} onOpenChange={(open) => { if (!open) setExamStartQuiz(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -2220,6 +1824,74 @@ function QuizListView({
               {deletingId
                 ? t("workspace.quiz.actionButtons.deleting", "Deleting...")
                 : t("workspace.quiz.actionButtons.delete", "Delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("workspace.quiz.detail.assign", "Assign")}</DialogTitle>
+            <DialogDescription>
+              {t("workspace.quiz.bulkActions.assignDescription", "Giao {{count}} quiz đã chọn cho nhóm hoặc thành viên cụ thể.", { count: selectedQuizIds.length })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setBulkAudienceMode("ALL_MEMBERS")}
+                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
+                  bulkAudienceMode === "ALL_MEMBERS"
+                    ? (isDarkMode ? "border-blue-500 bg-blue-950/30 text-blue-200" : "border-blue-400 bg-blue-50 text-blue-700")
+                    : (isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300" : "border-slate-200 bg-white text-slate-700")
+                }`}
+              >
+                {t("workspace.quiz.audience.allMembersTitle", "All members")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setBulkAudienceMode("SELECTED_MEMBERS")}
+                className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors ${
+                  bulkAudienceMode === "SELECTED_MEMBERS"
+                    ? (isDarkMode ? "border-violet-500 bg-violet-950/30 text-violet-200" : "border-violet-400 bg-violet-50 text-violet-700")
+                    : (isDarkMode ? "border-slate-700 bg-slate-900 text-slate-300" : "border-slate-200 bg-white text-slate-700")
+                }`}
+              >
+                {t("workspace.quiz.audience.selectedMembersTitle", "Specific members only")}
+              </button>
+            </div>
+
+            {bulkAudienceMode === "SELECTED_MEMBERS" ? (
+              <div className={`max-h-56 overflow-y-auto rounded-xl border p-2 space-y-1 ${isDarkMode ? "border-slate-700 bg-slate-950/40" : "border-slate-200 bg-slate-50/80"}`}>
+                {groupMembers.map((member) => {
+                  const memberId = Number(member.userId ?? member.id);
+                  if (!Number.isInteger(memberId) || memberId <= 0) return null;
+                  return (
+                    <label key={memberId} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${isDarkMode ? "hover:bg-slate-800" : "hover:bg-white"}`}>
+                      <Checkbox
+                        checked={bulkSelectedAudienceUserIds.includes(memberId)}
+                        onCheckedChange={() => toggleBulkAudienceMember(memberId)}
+                      />
+                      <span className={isDarkMode ? "text-slate-200" : "text-slate-700"}>
+                        {member.fullName || member.username || `User ${memberId}`}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkAssignOpen(false)} disabled={bulkAssignSaving}>
+              {t("workspace.quiz.close", "Đóng")}
+            </Button>
+            <Button onClick={handleBulkAssign} disabled={bulkAssignSaving} className="bg-blue-600 hover:bg-blue-700 text-white">
+              {bulkAssignSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {t("workspace.quiz.header.confirm", "Confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import QuizListView from '@/Pages/Users/Individual/Workspace/Components/QuizListView';
 import QuizDetailView from '@/Pages/Users/Individual/Workspace/Components/QuizDetailView';
@@ -65,6 +66,16 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('Quiz entry navigation', () => {
+  const renderWithQueryClient = (ui) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    );
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     getQuizzesByScope.mockResolvedValue({
@@ -93,7 +104,7 @@ describe('Quiz entry navigation', () => {
   });
 
   it('opens the exam popup from the workspace quiz list before navigating into the exam', async () => {
-    render(
+    renderWithQueryClient(
       <QuizListView
         isDarkMode={false}
         onCreateQuiz={vi.fn()}
@@ -140,7 +151,7 @@ describe('Quiz entry navigation', () => {
       ],
     });
 
-    render(
+    renderWithQueryClient(
       <QuizListView
         isDarkMode={false}
         onCreateQuiz={vi.fn()}
@@ -166,7 +177,7 @@ describe('Quiz entry navigation', () => {
   });
 
   it('navigates straight into practice mode from the workspace quiz list with auto start enabled', async () => {
-    render(
+    renderWithQueryClient(
       <QuizListView
         isDarkMode={false}
         onCreateQuiz={vi.fn()}
@@ -190,54 +201,8 @@ describe('Quiz entry navigation', () => {
     );
   });
 
-  it('uses the legacy roadmap card UI when legacyRoadmapUI is enabled', async () => {
-    getQuizzesByScope.mockResolvedValueOnce({
-      data: [
-        {
-          quizId: 777,
-          title: 'Roadmap legacy quiz',
-          status: 'ACTIVE',
-          quizIntent: 'POST_LEARNING',
-          createdAt: '2026-03-25T10:00:00',
-          updatedAt: '2026-03-26T10:00:00',
-          overallDifficulty: 'MEDIUM',
-          timerMode: true,
-          communityShared: false,
-          myAttempted: false,
-          myPassed: false,
-          createVia: 'AI',
-          questionCount: 10,
-          maxAttempt: 2,
-          passScore: 7,
-          maxScore: 10,
-        },
-      ],
-    });
-
-    render(
-      <QuizListView
-        isDarkMode={false}
-        onCreateQuiz={vi.fn()}
-        onViewQuiz={vi.fn()}
-        contextType="PHASE"
-        contextId={7}
-        embedded
-        hideCreateButton
-        legacyRoadmapUI
-      />
-    );
-
-    expect(await screen.findByText('Roadmap legacy quiz')).toBeInTheDocument();
-    expect(screen.queryByText('QUIZMATE AI')).not.toBeInTheDocument();
-    expect(screen.queryByRole('article')).not.toBeInTheDocument();
-    expect(screen.queryByText('Quiz overview')).not.toBeInTheDocument();
-    expect(screen.getByText('Câu hỏi')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: examButtonName })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: deleteButtonName })).not.toBeInTheDocument();
-  });
-
   it('opens the exam popup from the quiz detail view before navigating into the exam', async () => {
-    render(
+    renderWithQueryClient(
       <QuizDetailView
         isDarkMode={false}
         quiz={{
@@ -273,7 +238,7 @@ describe('Quiz entry navigation', () => {
   });
 
   it('navigates straight into practice mode from the quiz detail view with auto start enabled', async () => {
-    render(
+    renderWithQueryClient(
       <QuizDetailView
         isDarkMode={false}
         quiz={{
@@ -319,7 +284,7 @@ describe('Quiz entry navigation', () => {
       message: 'Matching answer content phai la JSON hop le',
     });
 
-    render(
+    renderWithQueryClient(
       <QuizDetailView
         isDarkMode={false}
         quiz={{
