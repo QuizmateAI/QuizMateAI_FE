@@ -1526,6 +1526,7 @@
       "save": "Lưu",
       "descriptionLabel": "Mô tả",
       "createPhaseButton": "Tạo giai đoạn",
+      "createRoadmapButton": "Tạo roadmap",
       "emptyRoadmapTitle": "Chào mừng đến với lộ trình",
       "emptyRoadmapDescription": "Tạo giai đoạn bằng AI để bắt đầu lộ trình học từ các tài liệu đã chọn.",
       "loading": {

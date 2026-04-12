@@ -427,7 +427,7 @@ function useSettingsMenu({ fontClass, isDarkMode, toggleDarkMode, toggleLanguage
   const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [settingsRef, setSettingsRef] = useState(null);
-  const currentLang = i18n.language;
+  const currentLang = i18n?.language || "vi";
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -510,8 +510,8 @@ export default function PlanPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
-  const currentLang = i18n.language;
+  const currentLang = i18n?.language || "vi";
+  const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
   const locale = currentLang === "vi" ? "vi-VN" : "en-US";
   const scopedWorkspaceId = normalizeWorkspaceId(searchParams.get("workspaceId"));
   const requestedPlanType = String(searchParams.get("planType") || "").toUpperCase();
@@ -519,6 +519,7 @@ export default function PlanPage() {
   const planType = isGroupScopedPage ? "GROUP" : "INDIVIDUAL";
 
   const toggleLanguage = () => {
+    if (!i18n?.changeLanguage) return;
     const newLang = currentLang === "vi" ? "en" : "vi";
     i18n.changeLanguage(newLang);
   };

@@ -224,6 +224,16 @@
       "title": "Preparing your group workspace",
       "description": "The setup wizard will open as soon as the draft workspace is ready."
     },
+    "header": {
+      "groupPlan": {
+        "viewOrChange": "View or change group plan",
+        "choose": "Choose a group plan",
+        "upgrade": "Upgrade group plan"
+      },
+      "planNames": {
+        "GROUP_BASE": "Group Base"
+      }
+    },
     "studio": {
       "systemDashboard": "Overview",
       "personalDashboard": "My overview",
