@@ -702,34 +702,34 @@ function QuizDetailView({
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
   const sourceTypeLabel = String(effectiveQuiz?.createVia || "").toUpperCase() === "AI"
     ? t("workspace.quiz.cardAiLabel", "QUIZMATE AI")
-    : t("workspace.quiz.cardManualLabel", "Quiz thủ công");
+    : t("workspace.quiz.cardManualLabel", "Manual Quiz");
   const overviewIntentLabel = effectiveQuiz?.quizIntent
     ? t(`workspace.quiz.intentLabels.${effectiveQuiz.quizIntent}`, effectiveQuiz.quizIntent)
-    : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
+    : t("quizDetailView.overview.notAvailable", "N/A");
   const overviewTimerModeLabel = typeof effectiveQuiz?.timerMode === "boolean"
     ? (
       effectiveQuiz.timerMode
-        ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
-        : t("workspace.quiz.examModeType2Short", "Theo từng câu")
+        ? t("workspace.quiz.examModeType1Short", "Timed total")
+        : t("workspace.quiz.examModeType2Short", "Per question")
     )
-    : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
+    : t("quizDetailView.overview.notAvailable", "N/A");
   const attemptedLabel = hasCurrentUserCompletedQuiz
     ? (effectiveQuiz?.myPassed === true
-      ? t("workspace.quiz.myPassedTrue", "Đã đậu")
+      ? t("workspace.quiz.myPassedTrue", "Passed")
       : effectiveQuiz?.myPassed === false
-        ? t("workspace.quiz.myPassedFalse", "Chưa đậu")
-        : t("workspace.quiz.myAttemptedTrue", "Đã làm"))
-    : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
+        ? t("workspace.quiz.myPassedFalse", "Not passed")
+        : t("workspace.quiz.myAttemptedTrue", "Attempted"))
+    : t("workspace.quiz.myAttemptedFalse", "Not attempted");
   const overviewAudienceLabel = _contextType === "GROUP"
     ? (
       String(effectiveQuiz?.groupAudienceMode || "").toUpperCase() === "SELECTED_MEMBERS"
-        ? t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng")
-        : t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm")
+        ? t("workspace.quiz.groupAudience.assignedMembers", "Assigned only")
+        : t("workspace.quiz.groupAudience.wholeGroup", "Whole group")
     )
     : (
       effectiveQuiz?.communityShared === true
-        ? t("workspace.quiz.communityPublic", "Công khai")
-        : t("workspace.quiz.privateShort", "Riêng tư")
+        ? t("workspace.quiz.communityPublic", "Public")
+        : t("workspace.quiz.privateShort", "Private")
     );
   /** Nhóm + leader: tab Kiểm tra. Snapshot challenge (mở từ «Xem quiz»): cả reviewer (member) cũng cần tab Kiểm tra để xem đủ đáp án. */
   // "Kiểm tra" tab: leader sees it only while quiz is DRAFT (to review before publishing).
@@ -851,14 +851,12 @@ function QuizDetailView({
               <div className="min-w-0 flex-1 space-y-2">
                 <p className={`text-[13px] font-semibold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
                   {isChallengeSnapshotReview
-                    ? t("groupWorkspace.challenge.quizSnapshotReviewDraftTitle", "Đề challenge (chỉ xem & chỉnh sửa)")
+                    ? t("groupWorkspace.challenge.quizSnapshotReviewDraftTitle", "Challenge exam (review & edit only)")
                     : t("workspace.quiz.detail.readyToPublish", "Ready to publish?")}
                 </p>
                 <p className={`text-[13px] leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                   {isChallengeSnapshotReview ? (
-                    t(
-                      "groupWorkspace.challenge.quizSnapshotReviewDraftBody",
-                      "Đây là bài thi gắn với challenge, không phải quiz chung của nhóm. Thành viên chỉ làm bài khi challenge bắt đầu. Dùng tab Kiểm tra để duyệt nội dung, chỉnh sửa qua màn Soạn đề, rồi Xuất bản khi sẵn sàng — không phân phối như quiz nhóm."
+                    t("groupWorkspace.challenge.quizSnapshotReviewDraftBody", "This exam belongs to a challenge, not the shared group quiz list. Members only take it when the challenge starts. Use the Check tab to review content, edit via Compose, then Publish when ready — there is no group-wide distribution like normal group quizzes."
                     )
                   ) : (
                     t(
@@ -913,7 +911,7 @@ function QuizDetailView({
               : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
           }`}
         >
-          <Info className="w-4 h-4" /> {t("workspace.quiz.tabs.overview", "Tổng quan")}
+          <Info className="w-4 h-4" /> {t("workspace.quiz.tabs.overview", "Overview")}
         </button>
         {showGroupReviewTab && (
           <button
@@ -939,7 +937,7 @@ function QuizDetailView({
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
             }`}
           >
-            <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Câu hỏi")}
+            <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Questions")}
           </button>
         )}
         {!isChallengeSnapshotReview && (
@@ -952,7 +950,7 @@ function QuizDetailView({
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
             }`}
           >
-            <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
+            <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "History")}
           </button>
         )}
         {_contextType === "GROUP" && !isChallengeSnapshotReview && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
@@ -965,7 +963,7 @@ function QuizDetailView({
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
             }`}
           >
-            <MessageSquare className="w-4 h-4" /> Thảo luận
+            <MessageSquare className="w-4 h-4" /> {t("quizDetailView.tabs.discussion", "Discussion")}
           </button>
         )}
         {showRankingTab && (
@@ -978,7 +976,7 @@ function QuizDetailView({
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
             }`}
           >
-            <Trophy className="w-4 h-4" /> Xếp hạng
+            <Trophy className="w-4 h-4" /> {t("quizDetailView.tabs.ranking", "Ranking")}
           </button>
         )}
         </div>
@@ -1053,8 +1051,8 @@ function QuizDetailView({
                       : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
                     }`}>
                       {effectiveQuiz.timerMode
-                        ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
-                        : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                        ? t("workspace.quiz.examModeType1", "Timed Test")
+                        : t("workspace.quiz.examModeType2", "Sequential Timed Test")}
                     </span>
                   )}
                 </div>
@@ -1068,10 +1066,10 @@ function QuizDetailView({
 
               {/* Thẻ thông tin dạng grid */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 mb-4">
-                <InfoChip icon={Sparkles} label={t("workspace.quiz.list.labels.sourceType", "Nguồn") } value={sourceTypeLabel} isDarkMode={isDarkMode} />
-                <InfoChip icon={Users} label={t("workspace.quiz.groupAudience.filterLabelShort", "Nhóm") } value={overviewAudienceLabel} isDarkMode={isDarkMode} />
-                <InfoChip icon={BadgeCheck} label={t("workspace.quiz.list.labels.intent", "Mục đích") } value={overviewIntentLabel} isDarkMode={isDarkMode} />
-                <InfoChip icon={Clock} label={t("workspace.quiz.list.labels.timerMode", "Kiểu thời gian") } value={overviewTimerModeLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={Sparkles} label={t("quizDetailView.overview.sourceLabel", "Source") } value={sourceTypeLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={Users} label={t("workspace.quiz.groupAudience.filterLabelShort", "Group") } value={overviewAudienceLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={BadgeCheck} label={t("quizDetailView.overview.intentLabel", "Intent") } value={overviewIntentLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={Clock} label={t("quizDetailView.overview.timerModeLabel", "Timer mode") } value={overviewTimerModeLabel} isDarkMode={isDarkMode} />
                 {durationInMinutes > 0 && (
                   <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${durationInMinutes} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
                 )}
@@ -1084,9 +1082,9 @@ function QuizDetailView({
                 {effectiveQuiz?.maxAttempt != null && (
                   <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={effectiveQuiz.maxAttempt} isDarkMode={isDarkMode} />
                 )}
-                <InfoChip icon={CheckCircle2} label={t("workspace.quiz.list.labels.result", "Kết quả") } value={attemptedLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={CheckCircle2} label={t("quizDetailView.overview.resultLabel", "Result") } value={attemptedLabel} isDarkMode={isDarkMode} />
                 {sections.length > 0 && (
-                  <InfoChip icon={BookOpen} label={t("workspace.quiz.tabs.questions", "Câu hỏi")} value={sections.reduce((acc, s) => acc + (questionsMap[s.sectionId]?.length || 0), 0)} isDarkMode={isDarkMode} />
+                  <InfoChip icon={BookOpen} label={t("workspace.quiz.tabs.questions", "Questions")} value={sections.reduce((acc, s) => acc + (questionsMap[s.sectionId]?.length || 0), 0)} isDarkMode={isDarkMode} />
                 )}
               </div>
 
@@ -1106,11 +1104,11 @@ function QuizDetailView({
                         }`}
                       >
                         <Play className="w-4 h-4" />
-                        <span className="font-medium">{t("workspace.quiz.practice", "Luyện tập")}</span>
+                        <span className="font-medium">{t("workspace.quiz.practice", "Practice")}</span>
                       </Button>
                       {!hasCompletedOfficialAttempt && (
                         <p className={`text-center text-[11px] leading-snug ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                          {t("workspace.quiz.practiceRequiresAttempt", "Hoàn thành 1 lần kiểm tra để mở")}
+                          {t("quizDetailView.overview.practiceRequiresAttempt", "Complete 1 test attempt to unlock")}
                         </p>
                       )}
                     </div>
@@ -1123,9 +1121,7 @@ function QuizDetailView({
               )}
               {isActiveQuiz && isChallengeSnapshotReview && (
                 <p className={`mt-4 pt-4 border-t text-sm leading-relaxed ${isDarkMode ? "border-slate-800 text-slate-400" : "border-gray-200 text-gray-600"}`}>
-                  {t(
-                    "groupWorkspace.challenge.quizSnapshotReviewNoTakeHint",
-                    "Bài thi này chỉ mở khi challenge bắt đầu (theo lịch hoặc khi leader điều khiển). Xếp hạng theo từng challenge — không làm bài từ màn hình này."
+                  {t("groupWorkspace.challenge.quizSnapshotReviewNoTakeHint", "This exam only opens when the challenge starts (on schedule or when the leader runs it). Rankings are per challenge — you cannot start the exam from this screen."
                   )}
                 </p>
               )}
@@ -1133,11 +1129,11 @@ function QuizDetailView({
               {/* Ngày tạo */}
               <div className={`flex items-center gap-2 mt-3 text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                 <Clock className="w-3 h-3" />
-                <span>{t("workspace.quiz.detail.createdAt", "Ngày tạo")}: {formatDate(effectiveQuiz?.createdAt)}</span>
+                <span>{t("workspace.quiz.detail.createdAt", "Created")}: {formatDate(effectiveQuiz?.createdAt)}</span>
                 {effectiveQuiz?.updatedAt && (
                   <>
                     <span>•</span>
-                    <span>{t("workspace.quiz.detail.updatedAt", "Cập nhật")}: {formatDate(effectiveQuiz.updatedAt)}</span>
+                    <span>{t("workspace.quiz.detail.updatedAt", "Updated")}: {formatDate(effectiveQuiz.updatedAt)}</span>
                   </>
                 )}
               </div>
@@ -1152,11 +1148,11 @@ function QuizDetailView({
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-                <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail", "Đang tải dữ liệu...")}</p>
+                <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail", "Loading quiz details...")}</p>
               </div>
             ) : sections.length === 0 ? (
               <div className={`text-center py-8 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {t("workspace.quiz.detail.noSections", "Không có section nào")}
+                {t("workspace.quiz.detail.noSections", "No sections found.")}
               </div>
             ) : (
               sections.map((section, sIdx) => {
@@ -1254,7 +1250,7 @@ function QuizDetailView({
                                   <div className="mt-3 space-y-1.5">
                                     {!canViewAnswers ? (
                                       <div className={`px-3 py-2 rounded-lg text-xs ${isDarkMode ? "bg-slate-800/60 text-slate-400" : "bg-gray-100 text-gray-600"}`}>
-                                        {t("workspace.quiz.answerLocked", "Hoàn thành bài quiz để xem đáp án và giải thích.")}
+                                        {t("workspace.quiz.answerLocked", "Finish the quiz to view answers and explanations.")}
                                       </div>
                                     ) : (
                                       <>
@@ -1265,7 +1261,7 @@ function QuizDetailView({
                                             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold shrink-0 ${
                                               isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700"
                                             }`}>
-                                              {t("workspace.quiz.correctAnswerLabel", "Đáp án đúng")}
+                                              {t("workspace.quiz.correctAnswerLabel", "Correct answer")}
                                             </span>
                                             <span className={`flex-1 ${isDarkMode ? "text-emerald-300" : "text-emerald-700"}`}>
                                               {textAnswersToDisplay.length ? (
@@ -1369,7 +1365,7 @@ function QuizDetailView({
                                       )}
                                     >
                                       {canViewAnswers ? <Eye className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                                      <span>{isQExpanded ? "Ẩn đáp án" : canViewAnswers ? "Đáp án" : "Khóa đáp án"}</span>
+                                      <span>{isQExpanded ? t("quizDetailView.actions.hideAnswer", "Hide answer") : canViewAnswers ? t("quizDetailView.actions.showAnswer", "Answer") : t("quizDetailView.actions.answerLocked", "Answer locked")}</span>
                                     </button>
 
                                     <button
@@ -1383,7 +1379,7 @@ function QuizDetailView({
                                       )}
                                     >
                                       <MessageSquare className="h-3.5 w-3.5" />
-                                      <span>Chat câu hỏi</span>
+                                      <span>{t("quizDetailView.actions.chatQuestion", "Chat")}</span>
                                       {(qCommentCounts[String(question.questionId)] ?? 0) > 0 && (
                                         <span
                                           className={cn(
@@ -1412,7 +1408,7 @@ function QuizDetailView({
                                       )}
                                     >
                                       <Star className={`h-3.5 w-3.5 ${question.isStarred ? "fill-current" : ""}`} />
-                                      <span>{question.isStarred ? "Đã lưu" : "Lưu"}</span>
+                                      <span>{question.isStarred ? t("quizDetailView.actions.saved", "Saved") : t("quizDetailView.actions.save", "Save")}</span>
                                     </button>
                                   </div>
                                 )}
@@ -1437,12 +1433,12 @@ function QuizDetailView({
             {loadingHistory ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-                <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.history.loading", "Đang tải lịch sử...")}</p>
+                <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.history.loading", "Loading history...")}</p>
               </div>
             ) : history.length === 0 ? (
               <div className={`text-center py-12 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 <History className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                {t("workspace.quiz.history.empty", "Chưa có lịch sử làm bài nào.")}
+                {t("workspace.quiz.history.empty", "No attempt history yet.")}
               </div>
             ) : (
               <div className="grid gap-4">
@@ -1479,7 +1475,7 @@ function QuizDetailView({
                           <UserDisplayName user={user} fallback={name} isDarkMode={isDarkMode} />
                         </span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
-                          {memberAttempts.length} lần
+                          {t("quizDetailView.history.attemptCount", "{{count}} attempts", { count: memberAttempts.length })}
                         </span>
                       </div>
                       {/* Member's attempts */}
@@ -1493,7 +1489,7 @@ function QuizDetailView({
                               </div>
                               <div>
                                 <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                                  {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
+                                  {t("workspace.quiz.history.attempt", "Attempt")} #{attempt.attemptId}
                                 </p>
                                 <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatDate(attempt.startedAt)}</p>
                               </div>
@@ -1519,7 +1515,7 @@ function QuizDetailView({
                           </div>
                           <div>
                             <h4 className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                              {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
+                              {t("workspace.quiz.history.attempt", "Attempt")} #{attempt.attemptId}
                             </h4>
                             <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                               {formatDate(attempt.startedAt)}
@@ -1802,27 +1798,27 @@ function QuizDetailView({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="text-xl">🏆</span>
-              Bạn có muốn tham gia ranking?
+              {t("quizDetailView.leaderParticipation.title", "Do you want to join the ranking?")}
             </DialogTitle>
             <DialogDescription className="space-y-3 pt-1">
               <p className="text-sm text-slate-600 dark:text-slate-300">
-                Chọn hình thức tham gia của leader trước khi xuất bản bài kiểm tra cho nhóm.
+                {t("quizDetailView.leaderParticipation.description", "Choose the leader's participation mode before publishing the quiz to the group.")}
               </p>
               <div className="space-y-2">
                 <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-[#BFDBFE] bg-[#EFF6FF]/60"}`}>
                   <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-100" : "text-[#0455BF]"}`}>
-                    ✅ Tham gia ranking
+                    ✅ {t("quizDetailView.leaderParticipation.joinTitle", "Join ranking")}
                   </p>
                   <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    Leader làm bài trước. Sau khi hoàn thành, bài sẽ được kích hoạt cho các thành viên. Điểm của leader sẽ được tính vào bảng xếp hạng.
+                    {t("quizDetailView.leaderParticipation.joinDescription", "The leader takes the quiz first. Once completed, the quiz will be activated for members. The leader's score will count toward the ranking.")}
                   </p>
                 </div>
                 <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40" : "border-gray-200 bg-gray-50"}`}>
                   <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
-                    ⏭️ Không tham gia
+                    ⏭️ {t("quizDetailView.leaderParticipation.skipTitle", "Do not join")}
                   </p>
                   <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    Xuất bản ngay cho các thành viên. Leader vẫn có thể làm bài nhưng kết quả không vào ranking.
+                    {t("quizDetailView.leaderParticipation.skipDescription", "Publish immediately to members. The leader can still take the quiz, but the result will not count toward the ranking.")}
                   </p>
                 </div>
               </div>
@@ -1835,7 +1831,7 @@ function QuizDetailView({
               disabled={publishing}
               className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
             >
-              Huỷ
+              {t("quizDetailView.leaderParticipation.cancel", "Cancel")}
             </Button>
             <Button
               variant="outline"
@@ -1843,7 +1839,7 @@ function QuizDetailView({
               disabled={publishing}
               className={isDarkMode ? "border-slate-600 text-slate-200" : "border-gray-300"}
             >
-              Không tham gia
+              {t("quizDetailView.leaderParticipation.skipButton", "Do not join")}
             </Button>
             <Button
               onClick={handlePublishWithRanking}
@@ -1851,7 +1847,7 @@ function QuizDetailView({
               className="bg-[#0455BF] hover:bg-blue-700 text-white"
             >
               {publishing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              Tham gia ranking &amp; làm bài
+              {t("quizDetailView.leaderParticipation.joinButton", "Join ranking & take quiz")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1860,19 +1856,19 @@ function QuizDetailView({
       <Dialog open={examStartOpen} onOpenChange={setExamStartOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.exam", "Thi")}</DialogTitle>
+            <DialogTitle>{t("workspace.quiz.exam", "Exam")}</DialogTitle>
             <DialogDescription className="space-y-2">
               <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
                 {effectiveQuiz?.title}
               </span>
               <span className="block">
-                {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ thi?")}
+                {t("workspace.quiz.startExamPrompt", "Start test mode for this quiz?")}
               </span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setExamStartOpen(false)}>
-              {t("workspace.quiz.close", "Đóng")}
+              {t("workspace.quiz.close", "Close")}
             </Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleConfirmExamStart}>
               {t("workspace.quiz.header.confirm", "Confirm")}

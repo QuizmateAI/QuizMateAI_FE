@@ -1,4 +1,5 @@
 import api from "./api";
+import i18n from "@/i18n";
 import { getCachedProfile, setCachedProfile, clearUserCache } from "@/Utils/userCache";
 import { getCurrentUser } from "@/api/Authentication";
 import { normalizeUserProfile } from "@/Utils/userProfile";
@@ -15,7 +16,7 @@ async function getUserProfile() {
   const token = getStoredToken();
 
   if (!token) {
-    throw new Error("Thiếu token đăng nhập");
+    throw new Error(i18n.t("error.missingAuthToken"));
   }
 
   // Cache trước - trả về ngay nếu còn valid
@@ -50,7 +51,7 @@ async function updateUserProfile(profileData) {
   const token = getStoredToken();
 
   if (!token) {
-    throw new Error("Thiếu token đăng nhập");
+    throw new Error(i18n.t("error.missingAuthToken"));
   }
 
   const response = await api.put("/user/profile", {
@@ -74,7 +75,7 @@ async function changePassword(passwordData) {
   const token = getStoredToken();
 
   if (!token) {
-    throw new Error("Thiếu token đăng nhập");
+    throw new Error(i18n.t("error.missingAuthToken"));
   }
 
   const response = await api.put("/user/password", {
@@ -95,7 +96,7 @@ async function uploadAvatar(file) {
   const token = getStoredToken();
 
   if (!token) {
-    throw new Error("Thiếu token đăng nhập");
+    throw new Error(i18n.t("error.missingAuthToken"));
   }
 
   const formData = new FormData();

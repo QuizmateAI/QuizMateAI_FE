@@ -32,6 +32,7 @@ import {
 } from 'recharts';
 import { useGroup } from '@/hooks/useGroup';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
+import i18n from '@/i18n';
 import { Button } from '@/Components/ui/button';
 import {
   Dialog,
@@ -75,7 +76,7 @@ const startOfDayMs = (value) => {
 
 function formatDateTime(value, lang, withTime = false) {
   const date = toSafeDate(value);
-  if (!date) return lang === 'en' ? 'No date' : 'Chưa có ngày';
+  if (!date) return i18n.t('groupDashboard.dateHelpers.noDate', 'No date');
   return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -86,28 +87,28 @@ function formatDateTime(value, lang, withTime = false) {
 
 function relTime(value, lang) {
   const diff = daysAgo(value);
-  if (!Number.isFinite(diff)) return lang === 'en' ? 'Unknown time' : 'Không rõ thời gian';
-  if (diff === 0) return lang === 'en' ? 'Today' : 'Hôm nay';
-  if (diff === 1) return lang === 'en' ? '1 day ago' : '1 ngày trước';
-  if (diff < 7) return lang === 'en' ? `${diff} days ago` : `${diff} ngày trước`;
-  return lang === 'en' ? `On ${formatDateTime(value, lang)}` : `Vào ${formatDateTime(value, lang)}`;
+  if (!Number.isFinite(diff)) return i18n.t('groupDashboard.dateHelpers.unknownTime', 'Unknown time');
+  if (diff === 0) return i18n.t('groupDashboard.dateHelpers.today', 'Today');
+  if (diff === 1) return i18n.t('groupDashboard.dateHelpers.oneDayAgo', '1 day ago');
+  if (diff < 7) return i18n.t('groupDashboard.dateHelpers.daysAgo', { count: diff, defaultValue: '{{count}} days ago' });
+  return i18n.t('groupDashboard.dateHelpers.onDate', { date: formatDateTime(value, lang), defaultValue: 'On {{date}}' });
 }
 
 function joinLabel(value, lang) {
   const diff = daysAgo(value);
-  if (!Number.isFinite(diff)) return lang === 'en' ? 'Missing join date' : 'Thiếu ngày vào nhóm';
-  if (diff === 0) return lang === 'en' ? 'Joined today' : 'Vào nhóm hôm nay';
-  if (diff === 1) return lang === 'en' ? 'Joined 1 day ago' : 'Vào nhóm 1 ngày trước';
-  if (diff < 7) return lang === 'en' ? `Joined ${diff} days ago` : `Vào nhóm ${diff} ngày trước`;
-  return lang === 'en' ? `Joined on ${formatDateTime(value, lang)}` : `Vào nhóm ngày ${formatDateTime(value, lang)}`;
+  if (!Number.isFinite(diff)) return i18n.t('groupDashboard.dateHelpers.missingJoinDate', 'Missing join date');
+  if (diff === 0) return i18n.t('groupDashboard.dateHelpers.joinedToday', 'Joined today');
+  if (diff === 1) return i18n.t('groupDashboard.dateHelpers.joinedOneDayAgo', 'Joined 1 day ago');
+  if (diff < 7) return i18n.t('groupDashboard.dateHelpers.joinedDaysAgo', { count: diff, defaultValue: 'Joined {{count}} days ago' });
+  return i18n.t('groupDashboard.dateHelpers.joinedOnDate', { date: formatDateTime(value, lang), defaultValue: 'Joined on {{date}}' });
 }
 
-function invitationExpiry(value, lang) {
+function invitationExpiry(value) {
   const diff = daysUntil(value);
-  if (!Number.isFinite(diff)) return lang === 'en' ? 'No expiry' : 'Không rõ hạn';
-  if (diff === 0) return lang === 'en' ? 'Expires today' : 'Hết hạn hôm nay';
-  if (diff === 1) return lang === 'en' ? 'Expires in 1 day' : 'Hết hạn sau 1 ngày';
-  return lang === 'en' ? `Expires in ${diff} days` : `Hết hạn sau ${diff} ngày`;
+  if (!Number.isFinite(diff)) return i18n.t('groupDashboard.dateHelpers.noExpiry', 'No expiry');
+  if (diff === 0) return i18n.t('groupDashboard.dateHelpers.expiresToday', 'Expires today');
+  if (diff === 1) return i18n.t('groupDashboard.dateHelpers.expiresInOneDay', 'Expires in 1 day');
+  return i18n.t('groupDashboard.dateHelpers.expiresInDays', { count: diff, defaultValue: 'Expires in {{count}} days' });
 }
 
 function logMeta(action, isDarkMode) {
@@ -118,29 +119,29 @@ function logMeta(action, isDarkMode) {
   return { icon: Activity, tone: isDarkMode ? 'bg-white/[0.08] text-slate-200' : 'bg-slate-100 text-slate-700' };
 }
 
-function logLabel(action, lang) {
+function logLabel(action) {
   const labels = {
-    GROUP_CREATED: lang === 'en' ? 'Group created' : 'Tạo nhóm',
-    INVITATION_SENT: lang === 'en' ? 'Invitation sent' : 'Gửi lời mời',
-    INVITATION_PENDING: lang === 'en' ? 'Invitation active' : 'Lời mời đang mở',
-    INVITATION_ACCEPTED: lang === 'en' ? 'Invitation accepted' : 'Lời mời đã nhận',
-    INVITATION_EXPIRED: lang === 'en' ? 'Invitation expired' : 'Lời mời hết hạn',
-    MEMBER_JOINED: lang === 'en' ? 'Member joined' : 'Thành viên vào nhóm',
-    QUIZ_CREATED_IN_GROUP: lang === 'en' ? 'Quiz created' : 'Tạo quiz',
-    QUIZ_PUBLISHED_IN_GROUP: lang === 'en' ? 'Quiz published' : 'Xuất bản quiz',
-    QUIZ_AUDIENCE_UPDATED_IN_GROUP: lang === 'en' ? 'Quiz assignment' : 'Giao quiz',
-    QUIZ_SUBMITTED_IN_GROUP: lang === 'en' ? 'Quiz submitted' : 'Nộp quiz',
+    GROUP_CREATED: i18n.t('groupDashboard.logLabels.groupCreated', 'Group created'),
+    INVITATION_SENT: i18n.t('groupDashboard.logLabels.invitationSent', 'Invitation sent'),
+    INVITATION_PENDING: i18n.t('groupDashboard.logLabels.invitationPending', 'Invitation active'),
+    INVITATION_ACCEPTED: i18n.t('groupDashboard.logLabels.invitationAccepted', 'Invitation accepted'),
+    INVITATION_EXPIRED: i18n.t('groupDashboard.logLabels.invitationExpired', 'Invitation expired'),
+    MEMBER_JOINED: i18n.t('groupDashboard.logLabels.memberJoined', 'Member joined'),
+    QUIZ_CREATED_IN_GROUP: i18n.t('groupDashboard.logLabels.quizCreated', 'Quiz created'),
+    QUIZ_PUBLISHED_IN_GROUP: i18n.t('groupDashboard.logLabels.quizPublished', 'Quiz published'),
+    QUIZ_AUDIENCE_UPDATED_IN_GROUP: i18n.t('groupDashboard.logLabels.quizAudienceUpdated', 'Quiz assignment'),
+    QUIZ_SUBMITTED_IN_GROUP: i18n.t('groupDashboard.logLabels.quizSubmitted', 'Quiz submitted'),
   };
-  return labels[action] || (lang === 'en' ? 'Activity' : 'Hoạt động');
+  return labels[action] || i18n.t('groupDashboard.logLabels.activity', 'Activity');
 }
 
-function classificationLabel(code, lang) {
+function classificationLabel(code) {
   const c = String(code || '').toUpperCase();
   const map = {
-    STRONG: lang === 'en' ? 'Strong' : 'Tốt',
-    AVERAGE: lang === 'en' ? 'Average' : 'Trung bình',
-    WEAK: lang === 'en' ? 'Needs support' : 'Cần hỗ trợ',
-    AT_RISK: lang === 'en' ? 'At risk' : 'Rủi ro',
+    STRONG: i18n.t('groupDashboard.classification.strong', 'Strong'),
+    AVERAGE: i18n.t('groupDashboard.classification.average', 'Average'),
+    WEAK: i18n.t('groupDashboard.classification.weak', 'Needs support'),
+    AT_RISK: i18n.t('groupDashboard.classification.atRisk', 'At risk'),
   };
   return map[c] || c || '—';
 }
@@ -177,7 +178,7 @@ function GroupDashboardTab({
   const lang = i18n.language;
   const fontClass = lang === 'en' ? 'font-poppins' : 'font-sans';
   const workspaceId = group?.workspaceId;
-  const dashboardTitle = group?.groupName || group?.displayTitle || group?.name || 'Group';
+  const dashboardTitle = group?.groupName || group?.displayTitle || group?.name || t('groupDashboard.common.group', 'Group');
 
   const { data: pending = { count: 0, invitations: [] }, isLoading: pendingLoading } = useQuery({
     queryKey: ['group-pending-invitations', workspaceId],
@@ -240,7 +241,7 @@ function GroupDashboardTab({
     const src = learningSummary?.aiClassificationCounts;
     if (!src || typeof src !== 'object') return [];
     return Object.entries(src).map(([key, value]) => ({
-      name: classificationLabel(key, lang),
+      name: classificationLabel(key),
       value: Number(value) || 0,
       key,
     })).filter((d) => d.value > 0);
@@ -271,31 +272,31 @@ function GroupDashboardTab({
     id: 'open-invitations',
     icon: Mail,
     tone: isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700',
-    title: lang === 'en' ? `${openInvitations} invitation(s) still open` : `${openInvitations} lời mời đang mở`,
+    title: t('groupDashboard.attention.openInvitationsTitle', { count: openInvitations, defaultValue: '{{count}} invitation(s) still open' }),
     note: expiringSoon.length > 0
-      ? (lang === 'en' ? `${expiringSoon.length} invitation(s) expire soon.` : `${expiringSoon.length} lời mời sắp hết hạn.`)
-      : (lang === 'en' ? 'Keep the queue short and current.' : 'Nên giữ hàng đợi lời mời gọn và luôn cập nhật.'),
+      ? t('groupDashboard.attention.expiringSoonNote', { count: expiringSoon.length, defaultValue: '{{count}} invitation(s) expire soon.' })
+      : t('groupDashboard.attention.keepQueueShort', 'Keep the queue short and current.'),
   });
   if (totalMembers > 1 && contributors === 0) attentionItems.push({
     id: 'missing-contributor',
     icon: AlertCircle,
     tone: isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700',
-    title: lang === 'en' ? 'No contributor assigned' : 'Chưa có cộng tác viên',
-    note: lang === 'en' ? 'Add at least one contributor to share content ownership.' : 'Nên có ít nhất 1 cộng tác viên để chia sẻ việc chuẩn bị nội dung.',
+    title: t('groupDashboard.attention.missingContributorTitle', 'No contributor assigned'),
+    note: t('groupDashboard.attention.missingContributorNote', 'Add at least one contributor to share content ownership.'),
   });
   contributorNoUpload.slice(0, 2).forEach((member) => attentionItems.push({
     id: `upload-${member.groupMemberId ?? member.userId}`,
     icon: Upload,
     tone: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
-    title: lang === 'en' ? `${member.fullName || member.username} needs upload review` : `${member.fullName || member.username} cần xem lại quyền tải lên`,
-    note: lang === 'en' ? 'Contributor lane is set but source upload is still blocked.' : 'Đã là cộng tác viên nhưng vẫn chưa thể thêm tài liệu.',
+    title: t('groupDashboard.attention.uploadReviewTitle', { name: member.fullName || member.username, defaultValue: '{{name}} needs upload review' }),
+    note: t('groupDashboard.attention.uploadReviewNote', 'Contributor lane is set but source upload is still blocked.'),
   }));
   onboardingMembers.slice(0, 2).forEach((member) => attentionItems.push({
     id: `onboarding-${member.groupMemberId ?? member.userId}`,
     icon: UserPlus,
     tone: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
-    title: lang === 'en' ? `${member.fullName || member.username} just joined` : `${member.fullName || member.username} vừa vào nhóm`,
-    note: lang === 'en' ? 'Assign a first task early.' : 'Nên giao nhiệm vụ đầu tiên sớm.',
+    title: t('groupDashboard.attention.justJoinedTitle', { name: member.fullName || member.username, defaultValue: '{{name}} just joined' }),
+    note: t('groupDashboard.attention.justJoinedNote', 'Assign a first task early.'),
   }));
 
   const watchlist = [];
@@ -319,23 +320,23 @@ function GroupDashboardTab({
   };
 
   const watchStatus = (member) => {
-    if (member.role === 'CONTRIBUTOR' && !member.canUpload) return { label: lang === 'en' ? 'Needs upload review' : 'Cần xem lại quyền tải lên', className: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700' };
-    if (member.canUpload) return { label: lang === 'en' ? 'Ready to contribute' : 'Sẵn sàng đóng góp', className: isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700' };
-    if (withinDays(member.joinedAt, ONBOARDING_WINDOW_DAYS)) return { label: lang === 'en' ? 'Onboarding window' : 'Đang làm quen', className: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700' };
-    return { label: lang === 'en' ? 'Observe participation' : 'Theo dõi mức độ tham gia', className: isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700' };
+    if (member.role === 'CONTRIBUTOR' && !member.canUpload) return { label: t('groupDashboard.watchStatus.needsUploadReview', 'Needs upload review'), className: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700' };
+    if (member.canUpload) return { label: t('groupDashboard.watchStatus.readyToContribute', 'Ready to contribute'), className: isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700' };
+    if (withinDays(member.joinedAt, ONBOARDING_WINDOW_DAYS)) return { label: t('groupDashboard.watchStatus.onboardingWindow', 'Onboarding window'), className: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700' };
+    return { label: t('groupDashboard.watchStatus.observeParticipation', 'Observe participation'), className: isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700' };
   };
 
   const stats = [
-    { label: lang === 'en' ? 'Total members' : 'Tổng thành viên', value: totalMembers, note: lang === 'en' ? 'full roster' : 'toàn bộ thành viên', icon: Users, tone: isDarkMode ? 'bg-cyan-400/10 text-cyan-200' : 'bg-cyan-50 text-cyan-700' },
-    { label: lang === 'en' ? 'New this week' : 'Mới tuần này', value: newThisWeek, note: lang === 'en' ? 'recent joiners' : 'thành viên mới', icon: UserPlus, tone: isDarkMode ? 'bg-emerald-400/10 text-emerald-200' : 'bg-emerald-50 text-emerald-700' },
-    { label: lang === 'en' ? 'Coordination lanes' : 'Vai trò điều phối', value: leaders + contributors, note: lang === 'en' ? `${coordinatorCoverage}% of roster` : `${coordinatorCoverage}% thành viên đang giữ vai trò điều phối`, icon: Shield, tone: isDarkMode ? 'bg-violet-400/10 text-violet-200' : 'bg-violet-50 text-violet-700' },
-    { label: lang === 'en' ? 'Upload ready' : 'Sẵn sàng tải lên', value: canUpload, note: lang === 'en' ? `${uploadCoverage}% can add sources` : `${uploadCoverage}% có thể thêm tài liệu`, icon: Upload, tone: isDarkMode ? 'bg-amber-400/10 text-amber-200' : 'bg-amber-50 text-amber-700' },
+    { label: t('groupDashboard.stats.totalMembersLabel', 'Total members'), value: totalMembers, note: t('groupDashboard.stats.totalMembersNote', 'full roster'), icon: Users, tone: isDarkMode ? 'bg-cyan-400/10 text-cyan-200' : 'bg-cyan-50 text-cyan-700' },
+    { label: t('groupDashboard.stats.newThisWeekLabel', 'New this week'), value: newThisWeek, note: t('groupDashboard.stats.newThisWeekNote', 'recent joiners'), icon: UserPlus, tone: isDarkMode ? 'bg-emerald-400/10 text-emerald-200' : 'bg-emerald-50 text-emerald-700' },
+    { label: t('groupDashboard.stats.coordinationLanesLabel', 'Coordination lanes'), value: leaders + contributors, note: t('groupDashboard.stats.coordinationLanesNote', { percent: coordinatorCoverage, defaultValue: '{{percent}}% of roster' }), icon: Shield, tone: isDarkMode ? 'bg-violet-400/10 text-violet-200' : 'bg-violet-50 text-violet-700' },
+    { label: t('groupDashboard.stats.uploadReadyLabel', 'Upload ready'), value: canUpload, note: t('groupDashboard.stats.uploadReadyNote', { percent: uploadCoverage, defaultValue: '{{percent}}% can add sources' }), icon: Upload, tone: isDarkMode ? 'bg-amber-400/10 text-amber-200' : 'bg-amber-50 text-amber-700' },
   ];
 
   const roleChartData = [
-    { key: 'leader', label: lang === 'en' ? 'Leader' : t('home.group.leader'), value: leaders, color: 'bg-amber-500' },
-    { key: 'contributor', label: lang === 'en' ? 'Contributor' : t('home.group.contributor'), value: contributors, color: 'bg-cyan-500' },
-    { key: 'member', label: lang === 'en' ? 'Member' : t('home.group.member'), value: Math.max(0, totalMembers - leaders - contributors), color: 'bg-emerald-500' },
+    { key: 'leader', label: t('home.group.leader'), value: leaders, color: 'bg-amber-500' },
+    { key: 'contributor', label: t('home.group.contributor'), value: contributors, color: 'bg-cyan-500' },
+    { key: 'member', label: t('home.group.member'), value: Math.max(0, totalMembers - leaders - contributors), color: 'bg-emerald-500' },
   ];
 
   const maxRoleCount = Math.max(1, ...roleChartData.map((item) => item.value));
@@ -377,30 +378,30 @@ function GroupDashboardTab({
   if (compactMode) {
     const learningKpis = [
       {
-        label: lang === 'en' ? 'Quiz attempts' : 'Lượt làm quiz',
+        label: t('groupDashboard.compact.kpiQuizAttemptsLabel', 'Quiz attempts'),
         value: summaryLoading ? '…' : String(learningSummary?.totalQuizAttempts ?? 0),
-        note: lang === 'en' ? 'all members' : 'toàn nhóm',
+        note: t('groupDashboard.compact.kpiQuizAttemptsNote', 'all members'),
         icon: BarChart3,
         tone: isDarkMode ? 'bg-cyan-400/15 text-cyan-200' : 'bg-cyan-50 text-cyan-700',
       },
       {
-        label: lang === 'en' ? 'Completed' : 'Đã hoàn thành',
+        label: t('groupDashboard.compact.kpiCompletedLabel', 'Completed'),
         value: summaryLoading ? '…' : String(learningSummary?.totalQuizCompleted ?? 0),
-        note: lang === 'en' ? 'submitted sets' : 'bài đã nộp',
+        note: t('groupDashboard.compact.kpiCompletedNote', 'submitted sets'),
         icon: CheckCircle2,
         tone: isDarkMode ? 'bg-emerald-400/15 text-emerald-200' : 'bg-emerald-50 text-emerald-700',
       },
       {
-        label: lang === 'en' ? 'Avg score' : 'Điểm TB',
+        label: t('groupDashboard.compact.kpiAvgScoreLabel', 'Avg score'),
         value: summaryLoading ? '…' : `${Math.round((Number(learningSummary?.groupAverageScore) || 0) * 10) / 10}`,
-        note: lang === 'en' ? 'per member w/ completions' : 'theo thành viên đã hoàn thành quiz',
+        note: t('groupDashboard.compact.kpiAvgScoreNote', 'per member w/ completions'),
         icon: TrendingUp,
         tone: isDarkMode ? 'bg-violet-400/15 text-violet-200' : 'bg-violet-50 text-violet-700',
       },
       {
-        label: lang === 'en' ? 'Avg accuracy' : 'Độ chính xác TB',
+        label: t('groupDashboard.compact.kpiAvgAccuracyLabel', 'Avg accuracy'),
         value: summaryLoading ? '…' : formatPctRatio(learningSummary?.groupAverageAccuracy),
-        note: lang === 'en' ? 'graded answers' : 'câu đã chấm',
+        note: t('groupDashboard.compact.kpiAvgAccuracyNote', 'graded answers'),
         icon: Target,
         tone: isDarkMode ? 'bg-amber-400/15 text-amber-200' : 'bg-amber-50 text-amber-700',
       },
@@ -416,9 +417,9 @@ function GroupDashboardTab({
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
         <section className={`${cardClass} p-5`}>
-          <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>{lang === 'en' ? 'System dashboard' : 'Dashboard hệ thống'}</p>
+          <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>{t('groupDashboard.compact.systemDashboardEyebrow', 'System dashboard')}</p>
           <h2 className={`mt-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardTitle}</h2>
-          <p className={`mt-2 text-sm ${subtleTextClass}`}>{lang === 'en' ? 'High-level health and activity signals for the group.' : 'Tổng quan sức khỏe và tín hiệu hoạt động của nhóm.'}</p>
+          <p className={`mt-2 text-sm ${subtleTextClass}`}>{t('groupDashboard.compact.headlineSummary', 'High-level health and activity signals for the group.')}</p>
         </section>
 
         {isLeader && workspaceId && hasWorkspaceAnalytics ? (
@@ -449,12 +450,10 @@ function GroupDashboardTab({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>
-                    {lang === 'en' ? 'Learning intelligence' : 'Trí tuệ học tập'}
+                    {t('groupDashboard.compact.learningIntelligenceEyebrow', 'Learning intelligence')}
                   </p>
                   <p className={`mt-1 text-sm leading-relaxed ${subtleTextClass}`}>
-                    {lang === 'en'
-                      ? 'Live aggregates from quiz attempts, scores, and AI classification — tap any card to inspect a member.'
-                      : 'Số liệu thời gian thực từ quiz, điểm và phân loại AI — chạm vào từng thẻ để xem chi tiết thành viên.'}
+                    {t('groupDashboard.compact.learningIntelligenceSummary', 'Live aggregates from quiz attempts, scores, and AI classification — tap any card to inspect a member.')}
                   </p>
                 </div>
               </div>
@@ -463,7 +462,7 @@ function GroupDashboardTab({
             <div className="space-y-5 p-5">
               {summaryError ? (
                 <p className={`rounded-2xl border px-4 py-3 text-sm ${isDarkMode ? 'border-rose-400/30 bg-rose-400/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
-                  {lang === 'en' ? 'Could not load learning summary. Try again later.' : 'Không tải được thống kê học tập. Thử lại sau.'}
+                  {t('groupDashboard.compact.summaryLoadError', 'Could not load learning summary. Try again later.')}
                 </p>
               ) : null}
 
@@ -490,20 +489,18 @@ function GroupDashboardTab({
                   <div className="mb-1 flex items-center gap-2">
                     <TrendingUp className={cn('h-4 w-4', isDarkMode ? 'text-cyan-300' : 'text-cyan-600')} />
                     <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {lang === 'en' ? 'Score spotlight' : 'Điểm nổi bật'}
+                      {t('groupDashboard.compact.scoreSpotlightTitle', 'Score spotlight')}
                     </h3>
                   </div>
                   <p className={`text-xs ${subtleTextClass}`}>
-                    {lang === 'en'
-                      ? `On this page (${MEMBER_CARD_PAGE_SIZE} members / page) — ranked by score.`
-                      : `Trên trang hiện tại (${MEMBER_CARD_PAGE_SIZE} thành viên/trang) — xếp theo điểm.`}
+                    {t('groupDashboard.compact.scoreSpotlightSubtitle', { pageSize: MEMBER_CARD_PAGE_SIZE, defaultValue: 'On this page ({{pageSize}} members / page) — ranked by score.' })}
                   </p>
                   <div className="mt-4 h-52 w-full min-h-[13rem]">
                     {cardsLoading ? (
                       <div className={`flex h-full items-center justify-center text-sm ${subtleTextClass}`}>…</div>
                     ) : scoreLeaderboard.length === 0 ? (
                       <div className={`flex h-full items-center justify-center rounded-xl border border-dashed px-4 text-center text-sm ${subtleTextClass}`}>
-                        {lang === 'en' ? 'No completed quiz data yet.' : 'Chưa có dữ liệu quiz hoàn thành.'}
+                        {t('groupDashboard.compact.noCompletedQuizData', 'No completed quiz data yet.')}
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
@@ -527,18 +524,18 @@ function GroupDashboardTab({
                   <div className="mb-1 flex items-center gap-2">
                     <Brain className={cn('h-4 w-4', isDarkMode ? 'text-violet-300' : 'text-violet-600')} />
                     <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {lang === 'en' ? 'AI classification mix' : 'Phân loại AI'}
+                      {t('groupDashboard.compact.aiClassificationTitle', 'AI classification mix')}
                     </h3>
                   </div>
                   <p className={`text-xs ${subtleTextClass}`}>
-                    {lang === 'en' ? 'From member learning profiles when available.' : 'Theo hồ sơ học tập khi đã có dữ liệu.'}
+                    {t('groupDashboard.compact.aiClassificationSubtitle', 'From member learning profiles when available.')}
                   </p>
                   <div className="mt-4 flex h-52 items-center justify-center">
                     {summaryLoading ? (
                       <span className={`text-sm ${subtleTextClass}`}>…</span>
                     ) : classificationPieData.length === 0 ? (
                       <div className={`rounded-xl border border-dashed px-4 py-6 text-center text-sm ${subtleTextClass}`}>
-                        {lang === 'en' ? 'No AI labels yet.' : 'Chưa có nhãn AI.'}
+                        {t('groupDashboard.compact.noAiLabels', 'No AI labels yet.')}
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height="100%">
@@ -567,14 +564,14 @@ function GroupDashboardTab({
 
               <div>
                 <p className={`mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
-                  {lang === 'en' ? 'Member intelligence cards' : 'Thẻ thông minh thành viên'}
+                  {t('groupDashboard.compact.memberCardsEyebrow', 'Member intelligence cards')}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {cardsLoading ? (
                     <div className={`col-span-full rounded-[22px] border px-4 py-8 text-center text-sm ${innerCardClass} ${subtleTextClass}`}>…</div>
                   ) : memberLearningCards.length === 0 ? (
                     <div className={`col-span-full rounded-[22px] border px-4 py-8 text-center text-sm ${innerCardClass} ${subtleTextClass}`}>
-                      {lang === 'en' ? 'No active members to analyze.' : 'Không có thành viên hoạt động.'}
+                      {t('groupDashboard.compact.noActiveMembers', 'No active members to analyze.')}
                     </div>
                   ) : (
                     memberLearningCards.map((m) => (
@@ -601,23 +598,23 @@ function GroupDashboardTab({
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className={cn('truncate font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                              <UserDisplayName user={m} fallback={lang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
+                              <UserDisplayName user={m} fallback={t('groupDashboard.common.memberFallback', 'Member')} isDarkMode={isDarkMode} />
                             </p>
                             <p className={`mt-0.5 text-xs ${eyebrowClass}`}>{m.email || (m.username ? `@${m.username}` : '')}</p>
                             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                               <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
                                 <p className={cn('text-sm font-bold', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')}>{m.quizCompletedCount ?? 0}</p>
-                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'done' : 'xong'}</p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{t('groupDashboard.compact.memberCardDone', 'done')}</p>
                               </div>
                               <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
                                 <p className={cn('text-sm font-bold', isDarkMode ? 'text-violet-200' : 'text-violet-700')}>
                                   {m.averageScore != null ? Math.round(Number(m.averageScore) * 10) / 10 : '—'}
                                 </p>
-                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'avg' : 'TB'}</p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{t('groupDashboard.compact.memberCardAvg', 'avg')}</p>
                               </div>
                               <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
                                 <p className={cn('text-sm font-bold', isDarkMode ? 'text-amber-200' : 'text-amber-700')}>{formatPctRatio(m.accuracy)}</p>
-                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'acc' : 'đúng'}</p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{t('groupDashboard.compact.memberCardAcc', 'acc')}</p>
                               </div>
                             </div>
                           </div>
@@ -635,9 +632,12 @@ function GroupDashboardTab({
                     )}
                   >
                     <p className={`text-xs ${subtleTextClass}`}>
-                      {lang === 'en'
-                        ? `Page ${memberCardPage + 1} of ${memberCardTotalPages} · ${memberCardTotalElements} members`
-                        : `Trang ${memberCardPage + 1} / ${memberCardTotalPages} · ${memberCardTotalElements} thành viên`}
+                      {t('groupDashboard.compact.pageSummary', {
+                        page: memberCardPage + 1,
+                        totalPages: memberCardTotalPages,
+                        total: memberCardTotalElements,
+                        defaultValue: 'Page {{page}} of {{totalPages}} · {{total}} members',
+                      })}
                     </p>
                     <Button
                       type="button"
@@ -648,7 +648,7 @@ function GroupDashboardTab({
                         }
                       }}
                     >
-                      {lang === 'en' ? 'Open member stats' : 'Mở thống kê thành viên'}
+                      {t('groupDashboard.compact.openMemberStats', 'Open member stats')}
                     </Button>
                   </div>
                 ) : null}
@@ -668,12 +668,10 @@ function GroupDashboardTab({
               </span>
               <div className="min-w-0 flex-1">
                 <h3 className={cn('text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                  {lang === 'en' ? 'Workspace analytics' : 'Thống kê không gian học tập'}
+                  {t('groupDashboard.analyticsUpgrade.title', 'Workspace analytics')}
                 </h3>
                 <p className={`mt-2 text-sm leading-relaxed ${subtleTextClass}`}>
-                  {lang === 'en'
-                    ? 'Group learning dashboards use the same Workspace analytics entitlement as individual stats. Upgrade your plan to unlock member cards, charts, and drill-down views.'
-                    : 'Bảng thống kê học tập nhóm dùng cùng quyền thống kê với không gian cá nhân. Nâng gói để mở thẻ thành viên, biểu đồ và phần xem chi tiết.'}
+                  {t('groupDashboard.analyticsUpgrade.description', 'Group learning dashboards use the same Workspace analytics entitlement as individual stats. Upgrade your plan to unlock member cards, charts, and drill-down views.')}
                 </p>
                 {typeof onRequestAnalyticsUpgrade === 'function' ? (
                   <Button
@@ -681,7 +679,7 @@ function GroupDashboardTab({
                     className={cn('mt-4 rounded-full font-semibold', isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : '')}
                     onClick={onRequestAnalyticsUpgrade}
                   >
-                    {lang === 'en' ? 'View plans' : 'Xem gói'}
+                    {t('groupDashboard.analyticsUpgrade.viewPlans', 'View plans')}
                   </Button>
                 ) : null}
               </div>
@@ -708,7 +706,7 @@ function GroupDashboardTab({
         <div className="grid gap-3 lg:grid-cols-2">
           <section className={`${cardClass} p-4`}>
             <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {lang === 'en' ? 'Role distribution' : 'Phân bố vai trò'}
+              {t('groupDashboard.charts.roleDistributionCompact', 'Role distribution')}
             </h3>
             <div className="mt-3 space-y-3">
               {roleChartData.map((item) => (
@@ -730,11 +728,11 @@ function GroupDashboardTab({
 
           <section className={`${cardClass} p-4`}>
             <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {lang === 'en' ? '7-day activity trend' : 'Xu hướng hoạt động 7 ngày'}
+              {t('groupDashboard.charts.weeklyTrendCompact', '7-day activity trend')}
             </h3>
             {activityChartData.length === 0 ? (
               <div className={`mt-3 rounded-[20px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>
-                {lang === 'en' ? 'No activity log data yet.' : 'Chưa có dữ liệu nhật ký hoạt động.'}
+                {t('groupDashboard.charts.noActivityLogData', 'No activity log data yet.')}
               </div>
             ) : (
               <div className="mt-3 flex items-end gap-2 h-28">
@@ -771,11 +769,11 @@ function GroupDashboardTab({
             <DialogHeader className={cn('space-y-1 border-b px-6 pb-4 pt-6 text-left sm:px-7', isDarkMode ? 'border-white/10' : 'border-slate-200')}>
               <DialogTitle className={cn('text-xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
                 {detailLoading && !memberDetail
-                  ? (lang === 'en' ? 'Loading member…' : 'Đang tải thành viên…')
+                  ? t('groupDashboard.detail.loading', 'Loading member…')
                   : (
                     <UserDisplayName
                       user={memberDetail}
-                      fallback={lang === 'en' ? 'Member' : 'Thành viên'}
+                      fallback={t('groupDashboard.common.memberFallback', 'Member')}
                       isDarkMode={isDarkMode}
                     />
                   )}
@@ -803,23 +801,23 @@ function GroupDashboardTab({
                     onClick={() => setDetailAttemptMode(mode)}
                   >
                     {mode === 'ALL'
-                      ? (lang === 'en' ? 'All attempts' : 'Tất cả')
+                      ? t('groupDashboard.detail.tabAll', 'All attempts')
                       : mode === 'OFFICIAL'
-                        ? (lang === 'en' ? 'Official' : 'Chính thức')
-                        : (lang === 'en' ? 'Practice' : 'Luyện tập')}
+                        ? t('groupDashboard.detail.tabOfficial', 'Official')
+                        : t('groupDashboard.detail.tabPractice', 'Practice')}
                   </Button>
                 ))}
               </div>
 
               {detailLoading && !memberDetail ? (
-                <p className={`text-sm ${subtleTextClass}`}>{lang === 'en' ? 'Fetching learning signals…' : 'Đang lấy dữ liệu học…'}</p>
+                <p className={`text-sm ${subtleTextClass}`}>{t('groupDashboard.detail.fetchingSignals', 'Fetching learning signals…')}</p>
               ) : memberDetail ? (
                 <>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {[
-                      { k: 'materialUploadCount', label: lang === 'en' ? 'Uploads' : 'Tài liệu' },
-                      { k: 'quizAttemptCount', label: lang === 'en' ? 'Attempts' : 'Lượt làm' },
-                      { k: 'quizCompletedCount', label: lang === 'en' ? 'Completed' : 'Hoàn thành' },
+                      { k: 'materialUploadCount', label: t('groupDashboard.detail.uploads', 'Uploads') },
+                      { k: 'quizAttemptCount', label: t('groupDashboard.detail.attempts', 'Attempts') },
+                      { k: 'quizCompletedCount', label: t('groupDashboard.detail.completed', 'Completed') },
                     ].map(({ k, label }) => (
                       <div key={k} className={cn('rounded-2xl border px-3 py-3', innerCardClass)}>
                         <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{label}</p>
@@ -827,13 +825,13 @@ function GroupDashboardTab({
                       </div>
                     ))}
                     <div className={cn('rounded-2xl border px-3 py-3', innerCardClass)}>
-                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Avg score' : 'Điểm TB'}</p>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{t('groupDashboard.detail.avgScore', 'Avg score')}</p>
                       <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>
                         {memberDetail.averageScore != null ? Math.round(Number(memberDetail.averageScore) * 10) / 10 : '—'}
                       </p>
                     </div>
                     <div className={cn('rounded-2xl border px-3 py-3', innerCardClass)}>
-                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Accuracy' : 'Chính xác'}</p>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{t('groupDashboard.detail.accuracy', 'Accuracy')}</p>
                       <p className={cn('mt-1 text-lg font-bold', isDarkMode ? 'text-white' : 'text-slate-900')}>{formatPctRatio(memberDetail.accuracy)}</p>
                     </div>
                   </div>
@@ -848,7 +846,7 @@ function GroupDashboardTab({
                     <div className="space-y-3">
                       {memberDetail.strongAreas?.length > 0 ? (
                         <div>
-                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Strong' : 'Điểm mạnh'}</p>
+                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{t('groupDashboard.detail.strongAreas', 'Strong')}</p>
                           <div className="flex flex-wrap gap-2">
                             {memberDetail.strongAreas.map((a) => (
                               <span key={a} className={cn('rounded-full px-3 py-1 text-xs font-medium', isDarkMode ? 'bg-emerald-400/15 text-emerald-100' : 'bg-emerald-50 text-emerald-800')}>{a}</span>
@@ -858,7 +856,7 @@ function GroupDashboardTab({
                       ) : null}
                       {memberDetail.weakAreas?.length > 0 ? (
                         <div>
-                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Growth areas' : 'Cần cải thiện'}</p>
+                          <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{t('groupDashboard.detail.growthAreas', 'Growth areas')}</p>
                           <div className="flex flex-wrap gap-2">
                             {memberDetail.weakAreas.map((a) => (
                               <span key={a} className={cn('rounded-full px-3 py-1 text-xs font-medium', isDarkMode ? 'bg-amber-400/15 text-amber-100' : 'bg-amber-50 text-amber-900')}>{a}</span>
@@ -871,11 +869,11 @@ function GroupDashboardTab({
 
                   {memberDetail.recentActivities?.length > 0 ? (
                     <div>
-                      <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{lang === 'en' ? 'Recent moves' : 'Hoạt động gần đây'}</p>
+                      <p className={`mb-2 text-[11px] font-semibold uppercase tracking-wide ${eyebrowClass}`}>{t('groupDashboard.detail.recentMoves', 'Recent moves')}</p>
                       <ul className="space-y-2">
                         {memberDetail.recentActivities.slice(0, 5).map((log) => (
                           <li key={`${log.logId}-${log.logTime}`} className={cn('rounded-xl border px-3 py-2 text-sm', innerCardClass)}>
-                            <span className={cn('font-medium', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>{logLabel(log.action, lang)}</span>
+                            <span className={cn('font-medium', isDarkMode ? 'text-slate-100' : 'text-slate-800')}>{logLabel(log.action)}</span>
                             <p className={`mt-1 text-xs ${subtleTextClass}`}>{formatGroupLogDescription(log, currentUserId, lang)}</p>
                             <p className={`mt-1 text-[10px] ${eyebrowClass}`}>{formatDateTime(log.logTime, lang, true)}</p>
                           </li>
@@ -885,7 +883,7 @@ function GroupDashboardTab({
                   ) : null}
                 </>
               ) : (
-                <p className={`text-sm ${subtleTextClass}`}>{lang === 'en' ? 'No data.' : 'Không có dữ liệu.'}</p>
+                <p className={`text-sm ${subtleTextClass}`}>{t('groupDashboard.detail.noData', 'No data.')}</p>
               )}
             </div>
           </DialogContent>
@@ -899,21 +897,21 @@ function GroupDashboardTab({
       <section className={`${cardClass} p-6 lg:p-7`}>
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${eyebrowClass}`}>{lang === 'en' ? 'Group dashboard' : 'Bảng điều hành nhóm'}</p>
+            <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${eyebrowClass}`}>{t('groupDashboard.hero.eyebrow', 'Group dashboard')}</p>
             <h2 className={`mt-2 truncate text-2xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{dashboardTitle}</h2>
-            <p className={`mt-3 max-w-3xl text-sm leading-6 ${subtleTextClass}`}>{lang === 'en' ? 'Focus on who needs follow-up, which invitations are still open, and what changed most recently.' : 'Tập trung vào những ai cần theo dõi thêm, lời mời nào còn mở và thay đổi mới nhất trong nhóm.'}</p>
+            <p className={`mt-3 max-w-3xl text-sm leading-6 ${subtleTextClass}`}>{t('groupDashboard.hero.description', 'Focus on who needs follow-up, which invitations are still open, and what changed most recently.')}</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className={`rounded-[22px] border px-4 py-4 ${innerCardClass}`}>
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{lang === 'en' ? 'Invitation queue' : 'Hàng đợi lời mời'}</p>
+              <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{t('groupDashboard.hero.invitationQueueLabel', 'Invitation queue')}</p>
               <p className={`mt-3 text-xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{!isLeader ? '—' : pendingLoading ? '...' : openInvitations}</p>
-              <p className={`mt-2 text-sm ${subtleTextClass}`}>{!isLeader ? (lang === 'en' ? 'leaders only' : 'chỉ trưởng nhóm xem') : expiringSoon.length > 0 ? `${expiringSoon.length} ${lang === 'en' ? 'expiring soon' : 'sắp hết hạn'}` : (lang === 'en' ? 'currently open' : 'đang mở')}</p>
+              <p className={`mt-2 text-sm ${subtleTextClass}`}>{!isLeader ? t('groupDashboard.hero.leadersOnly', 'leaders only') : expiringSoon.length > 0 ? `${expiringSoon.length} ${t('groupDashboard.hero.expiringSoon', 'expiring soon')}` : t('groupDashboard.hero.currentlyOpen', 'currently open')}</p>
             </div>
             <div className={`rounded-[22px] border px-4 py-4 ${innerCardClass}`}>
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{lang === 'en' ? 'Activity this week' : 'Hoạt động tuần này'}</p>
+              <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{t('groupDashboard.hero.activityThisWeekLabel', 'Activity this week')}</p>
               <p className={`mt-3 text-xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{logsLoading ? '...' : activityThisWeek}</p>
-              <p className={`mt-2 text-sm ${subtleTextClass}`}>{lang === 'en' ? 'recent events on log' : 'sự kiện mới trong nhật ký'}</p>
+              <p className={`mt-2 text-sm ${subtleTextClass}`}>{t('groupDashboard.hero.recentEventsOnLog', 'recent events on log')}</p>
             </div>
           </div>
         </div>
@@ -926,7 +924,7 @@ function GroupDashboardTab({
             <div key={stat.label} className={`${cardClass} p-5`}>
               <div className="mb-4 flex items-center justify-between">
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${stat.tone}`}><Icon className="h-5 w-5" /></div>
-                <span className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{lang === 'en' ? 'Tracking' : 'Theo dõi'}</span>
+                <span className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>{t('groupDashboard.hero.trackingBadge', 'Tracking')}</span>
               </div>
               <p className={`text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{membersLoading ? '...' : stat.value}</p>
               <p className={`mt-2 text-sm ${subtleTextClass}`}>{stat.label}</p>
@@ -939,10 +937,10 @@ function GroupDashboardTab({
       <div className="grid gap-6 xl:grid-cols-2">
         <section className={`${cardClass} p-6`}>
           <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {lang === 'en' ? 'Role distribution chart' : 'Biểu đồ phân bố vai trò'}
+            {t('groupDashboard.charts.roleDistributionTitle', 'Role distribution chart')}
           </h3>
           <p className={`mt-1 text-sm ${subtleTextClass}`}>
-            {lang === 'en' ? 'Compare role load across leader, contributor, and member lanes.' : 'So sánh tỷ trọng vai trò giữa trưởng nhóm, cộng tác viên và thành viên.'}
+            {t('groupDashboard.charts.roleDistributionSubtitle', 'Compare role load across leader, contributor, and member lanes.')}
           </p>
           <div className="mt-5 space-y-4">
             {roleChartData.map((item) => (
@@ -964,14 +962,14 @@ function GroupDashboardTab({
 
         <section className={`${cardClass} p-6`}>
           <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {lang === 'en' ? 'Weekly activity chart' : 'Biểu đồ hoạt động theo tuần'}
+            {t('groupDashboard.charts.weeklyChartTitle', 'Weekly activity chart')}
           </h3>
           <p className={`mt-1 text-sm ${subtleTextClass}`}>
-            {lang === 'en' ? 'Track event volume from activity logs by day.' : 'Theo dõi số lượng sự kiện theo từng ngày từ nhật ký hoạt động.'}
+            {t('groupDashboard.charts.weeklyChartSubtitle', 'Track event volume from activity logs by day.')}
           </p>
           {activityChartData.length === 0 ? (
             <div className={`mt-5 rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>
-              {lang === 'en' ? 'No activity log data yet.' : 'Chưa có dữ liệu nhật ký hoạt động.'}
+              {t('groupDashboard.charts.noActivityLogData', 'No activity log data yet.')}
             </div>
           ) : (
             <div className="mt-5 flex items-end gap-3 h-44">
@@ -995,14 +993,14 @@ function GroupDashboardTab({
         <section className={`${cardClass} p-6`}>
           <div className="flex items-center gap-2">
             <Clock3 className={`h-5 w-5 ${isDarkMode ? 'text-cyan-200' : 'text-cyan-600'}`} />
-            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{lang === 'en' ? 'What needs attention' : 'Điều cần chú ý'}</h3>
+            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('groupDashboard.attentionPanel.title', 'What needs attention')}</h3>
           </div>
           <div className="mt-5 space-y-3">
             {attentionItems.length === 0 ? (
               <div className={`rounded-[22px] border px-4 py-5 ${innerCardClass}`}>
                 <div className="flex items-start gap-3">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-emerald-400/10 text-emerald-200' : 'bg-emerald-50 text-emerald-700'}`}><CheckCircle2 className="h-4 w-4" /></div>
-                  <div><p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{lang === 'en' ? 'No urgent gap right now' : 'Hiện chưa có điểm nghẽn khẩn cấp'}</p><p className={`mt-1 text-sm leading-6 ${subtleTextClass}`}>{lang === 'en' ? 'The roster looks stable. Keep watching the log and invitation queue.' : 'Nhóm đang khá ổn định. Tiếp tục theo dõi nhật ký và hàng đợi lời mời.'}</p></div>
+                  <div><p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('groupDashboard.attentionPanel.allGoodTitle', 'No urgent gap right now')}</p><p className={`mt-1 text-sm leading-6 ${subtleTextClass}`}>{t('groupDashboard.attentionPanel.allGoodNote', 'The roster looks stable. Keep watching the log and invitation queue.')}</p></div>
                 </div>
               </div>
             ) : attentionItems.map((item) => {
@@ -1022,16 +1020,16 @@ function GroupDashboardTab({
         <section className={`${cardClass} p-6`}>
           <div className="flex items-center gap-2">
             <Mail className={`h-5 w-5 ${isDarkMode ? 'text-violet-200' : 'text-violet-600'}`} />
-            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{lang === 'en' ? 'Current invitations' : 'Lời mời hiện có'}</h3>
+            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('groupDashboard.invitationsPanel.title', 'Current invitations')}</h3>
           </div>
-          <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>{lang === 'en' ? 'See who was invited, when the invitation was sent, and which requests are close to expiry.' : 'Xem ai đã được mời, được gửi lúc nào và lời mời nào sắp hết hạn.'}</p>
+          <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>{t('groupDashboard.invitationsPanel.description', 'See who was invited, when the invitation was sent, and which requests are close to expiry.')}</p>
           <div className="mt-5 space-y-3">
             {!isLeader ? (
-              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Only leaders can review this queue.' : 'Chỉ trưởng nhóm mới theo dõi được hàng đợi này.'}</div>
+              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{t('groupDashboard.invitationsPanel.leadersOnlyNote', 'Only leaders can review this queue.')}</div>
             ) : pendingLoading ? (
-              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Loading invitations...' : 'Đang tải lời mời...'}</div>
+              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{t('groupDashboard.invitationsPanel.loading', 'Loading invitations...')}</div>
             ) : pending.invitations.length === 0 ? (
-              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'No invitations waiting right now.' : 'Hiện chưa có lời mời nào đang chờ.'}</div>
+              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{t('groupDashboard.invitationsPanel.empty', 'No invitations waiting right now.')}</div>
             ) : pending.invitations.slice(0, 5).map((item) => {
               const expiring = daysUntil(item.expiredDate) <= INVITATION_ALERT_DAYS;
               const badgeClass = expiring ? (isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700') : (isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700');
@@ -1040,13 +1038,13 @@ function GroupDashboardTab({
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className={`break-all text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.invitedEmail}</p>
-                      <p className={`mt-1 text-xs ${eyebrowClass}`}>{lang === 'en' ? 'Invited by' : 'Người mời'} {item.invitedByFullName || item.invitedByUsername || 'Leader'}</p>
+                      <p className={`mt-1 text-xs ${eyebrowClass}`}>{t('groupDashboard.invitationsPanel.invitedBy', 'Invited by')} {item.invitedByFullName || item.invitedByUsername || t('groupDashboard.common.leaderDefault', 'Leader')}</p>
                     </div>
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>{invitationExpiry(item.expiredDate, lang)}</span>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>{invitationExpiry(item.expiredDate)}</span>
                   </div>
                   <div className={`mt-3 flex flex-wrap items-center gap-3 text-xs ${subtleTextClass}`}>
-                    <span>{lang === 'en' ? 'Sent' : 'Gửi'} {formatDateTime(item.invitedDate, lang, true)}</span>
-                    <span>{lang === 'en' ? 'Status: pending' : 'Trạng thái: đang chờ'}</span>
+                    <span>{t('groupDashboard.invitationsPanel.sent', 'Sent')} {formatDateTime(item.invitedDate, lang, true)}</span>
+                    <span>{t('groupDashboard.invitationsPanel.statusPending', 'Status: pending')}</span>
                   </div>
                 </div>
               );
@@ -1059,20 +1057,20 @@ function GroupDashboardTab({
         <section className={`${cardClass} p-6`}>
           <div className="flex items-center gap-2">
             <Shield className={`h-5 w-5 ${isDarkMode ? 'text-cyan-200' : 'text-cyan-600'}`} />
-            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{lang === 'en' ? 'Member watchlist' : 'Danh sách theo dõi thành viên'}</h3>
+            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('groupDashboard.watchlist.title', 'Member watchlist')}</h3>
           </div>
           <div className="mt-5 grid gap-3">
             {membersLoading ? (
-              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Preparing watchlist...' : 'Đang chuẩn bị danh sách theo dõi...'}</div>
+              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{t('groupDashboard.watchlist.preparing', 'Preparing watchlist...')}</div>
             ) : watchlist.length === 0 ? (
-              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'No members to watch yet.' : 'Chưa có thành viên cần theo dõi.'}</div>
+              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{t('groupDashboard.watchlist.empty', 'No members to watch yet.')}</div>
             ) : watchlist.map((member) => {
               const status = watchStatus(member);
               return (
                 <div key={member.groupMemberId ?? member.userId ?? member.username} className={`grid gap-3 rounded-[24px] border px-4 py-4 md:grid-cols-[minmax(0,1.1fr)_auto_auto] md:items-center ${innerCardClass}`}>
                   <div className="min-w-0">
                     <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      <UserDisplayName user={member} fallback={lang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
+                      <UserDisplayName user={member} fallback={t('groupDashboard.common.memberFallback', 'Member')} isDarkMode={isDarkMode} />
                     </p>
                     <p className={`mt-1 text-xs ${eyebrowClass}`}>{member.email || (member.username ? `@${member.username}` : 'unknown')} · {joinLabel(member.joinedAt, lang)}</p>
                   </div>
@@ -1087,14 +1085,14 @@ function GroupDashboardTab({
         <section className={`${cardClass} p-6`}>
           <div className="flex items-center gap-2">
             <Activity className={`h-5 w-5 ${isDarkMode ? 'text-emerald-200' : 'text-emerald-600'}`} />
-            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{lang === 'en' ? 'Group activity log' : 'Nhật ký hoạt động nhóm'}</h3>
+            <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('groupDashboard.activityLog.title', 'Group activity log')}</h3>
           </div>
-          <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>{lang === 'en' ? 'A compact timeline of the most recent changes in the group.' : 'Dòng thời gian rút gọn của những thay đổi gần nhất trong nhóm.'}</p>
+          <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>{t('groupDashboard.activityLog.description', 'A compact timeline of the most recent changes in the group.')}</p>
           <div className="mt-5 space-y-3">
             {logsLoading ? (
-              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'Loading activity log...' : 'Đang tải nhật ký hoạt động...'}</div>
+              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{t('groupDashboard.activityLog.loading', 'Loading activity log...')}</div>
             ) : logs.length === 0 ? (
-              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{lang === 'en' ? 'No group activity recorded yet.' : 'Chưa có hoạt động nào được ghi lại.'}</div>
+              <div className={`rounded-[22px] border px-4 py-5 text-sm ${innerCardClass} ${subtleTextClass}`}>{t('groupDashboard.activityLog.empty', 'No group activity recorded yet.')}</div>
             ) : logs.slice(0, 8).map((log) => {
               const { icon: Icon, tone } = logMeta(log.action, isDarkMode);
               return (
@@ -1103,11 +1101,11 @@ function GroupDashboardTab({
                     <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${tone}`}><Icon className="h-4 w-4" /></div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700'}`}>{logLabel(log.action, lang)}</span>
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700'}`}>{logLabel(log.action)}</span>
                         <span className={`text-xs ${eyebrowClass}`}>{relTime(log.logTime, lang)}</span>
                       </div>
                       <p className={`mt-2 text-sm font-semibold leading-6 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatGroupLogDescription(log, currentUserId, lang)}</p>
-                      <p className={`mt-1 text-xs leading-5 ${subtleTextClass}`}>{log.actorEmail || (lang === 'en' ? 'System' : 'Hệ thống')} · {formatDateTime(log.logTime, lang, true)}</p>
+                      <p className={`mt-1 text-xs leading-5 ${subtleTextClass}`}>{log.actorEmail || t('groupDashboard.common.system', 'System')} · {formatDateTime(log.logTime, lang, true)}</p>
                     </div>
                   </div>
                 </div>

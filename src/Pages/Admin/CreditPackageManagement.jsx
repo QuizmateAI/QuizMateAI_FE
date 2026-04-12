@@ -82,7 +82,7 @@ function CreditPackageManagement() {
       const data = res?.data ?? res;
       setPackages(Array.isArray(data) ? data : []);
     } catch (err) {
-      showError(getFriendlyError(err, 'creditPackage.fetchError'));
+      showError(getFriendlyError(err, 'creditPackageManagement.fetchError'));
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +114,7 @@ function CreditPackageManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      showError(t('creditPackage.nameRequired'));
+      showError(t('creditPackageManagement.nameRequired', 'Please enter a package name.'));
       return;
     }
     setIsSubmitting(true);
@@ -132,15 +132,15 @@ function CreditPackageManagement() {
       };
       if (editingPackage) {
         await updateCreditPackage(editingPackage.creditPackageId ?? editingPackage.id, payload);
-        showSuccess(t('creditPackage.updateSuccess'));
+        showSuccess(t('creditPackageManagement.updateSuccess', 'Credit package updated successfully.'));
       } else {
         await createCreditPackage(payload);
-        showSuccess(t('creditPackage.createSuccess'));
+        showSuccess(t('creditPackageManagement.createSuccess', 'Credit package created successfully.'));
       }
       setIsFormOpen(false);
       fetchPackages();
     } catch (err) {
-      showError(getFriendlyError(err, 'creditPackage.submitError'));
+      showError(getFriendlyError(err, 'creditPackageManagement.submitError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -150,10 +150,10 @@ function CreditPackageManagement() {
     try {
       const nextStatus = (pkg.status || '').toUpperCase() === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
       await updateCreditPackageStatus(pkg.creditPackageId ?? pkg.id, { status: nextStatus });
-      showSuccess(t('creditPackage.updateStatusSuccess'));
+      showSuccess(t('creditPackageManagement.updateStatusSuccess', 'Credit package status updated successfully.'));
       fetchPackages();
     } catch (err) {
-      showError(getFriendlyError(err, 'creditPackage.submitError'));
+      showError(getFriendlyError(err, 'creditPackageManagement.submitError'));
     }
   };
 
@@ -167,10 +167,10 @@ function CreditPackageManagement() {
     setIsSubmitting(true);
     try {
       await deleteCreditPackage(deletingPackage.creditPackageId ?? deletingPackage.id);
-      showSuccess(t('creditPackage.deleteSuccess'));
+      showSuccess(t('creditPackageManagement.deleteSuccess', 'Credit package deleted successfully.'));
       fetchPackages();
     } catch (err) {
-      showError(getFriendlyError(err, 'creditPackage.deleteError'));
+      showError(getFriendlyError(err, 'creditPackageManagement.deleteError'));
     } finally {
       setIsDeleteOpen(false);
       setDeletingPackage(null);
@@ -210,10 +210,10 @@ function CreditPackageManagement() {
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
         <div>
           <h1 className={`text-3xl font-black tracking-tight ${dk ? 'text-white' : 'text-slate-900'}`}>
-            {t('creditPackage.title', 'Credit Packages')}
+            {t('creditPackageManagement.title', 'Credit Packages')}
           </h1>
           <p className={`${dk ? 'text-slate-400' : 'text-slate-500'} font-medium`}>
-            {t('creditPackage.desc', 'Quản lý các gói Credit cho hệ thống thanh toán.')}
+            {t('creditPackageManagement.desc', 'Manage the portfolio of credit packages used within the system.')}
           </p>
         </div>
         {canWrite && (
@@ -222,7 +222,7 @@ function CreditPackageManagement() {
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-11 px-5 rounded-xl shadow-lg shadow-blue-600/25 transition-all active:scale-[0.97] cursor-pointer"
           >
             <Plus className="w-4 h-4 mr-2" />
-            {t('creditPackage.add', 'Thêm gói Credit')}
+            {t('creditPackageManagement.add', 'Add package')}
           </Button>
         )}
       </div>
@@ -231,19 +231,19 @@ function CreditPackageManagement() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            label: t('creditPackage.stats.total', 'Tổng số gói'),
+            label: t('creditPackageManagement.stats.total', 'Total'),
             value: packages.length,
             from: 'from-blue-500',
             to: 'to-indigo-600',
           },
           {
-            label: t('creditPackage.stats.active', 'Đang ACTIVE'),
+            label: t('creditPackageManagement.stats.active', 'Active'),
             value: packages.filter((p) => (p.status || '').toUpperCase() === 'ACTIVE').length,
             from: 'from-emerald-500',
             to: 'to-teal-600',
           },
           {
-            label: t('creditPackage.stats.minPrice', 'Giá thấp nhất'),
+            label: t('creditPackageManagement.stats.minPrice', 'Min Price'),
             value:
               packages.length === 0
                 ? '—'
@@ -252,7 +252,7 @@ function CreditPackageManagement() {
             to: 'to-orange-600',
           },
           {
-            label: t('creditPackage.stats.maxCredit', 'Credit cao nhất'),
+            label: t('creditPackageManagement.stats.maxCredit', 'Max Credit'),
             value:
               packages.length === 0
                 ? '—'
@@ -297,7 +297,7 @@ function CreditPackageManagement() {
           }`}
         >
           <h2 className={`text-lg font-bold ${dk ? 'text-white' : 'text-slate-800'}`}>
-            {t('creditPackage.tableTitle', 'Danh sách gói Credit')}{' '}
+            {t('creditPackageManagement.tableTitle', 'List of credit packages')}{' '}
             <span className={`font-normal text-sm ${dk ? 'text-slate-500' : 'text-slate-400'}`}>
               ({filteredPackages.length})
             </span>
@@ -306,7 +306,7 @@ function CreditPackageManagement() {
             <div className="relative flex-1 md:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder={t('creditPackage.search', 'Tìm kiếm theo tên gói')}
+                placeholder={t('creditPackageManagement.search', 'Search packages')}
                 className={`pl-10 h-10 rounded-xl ${
                   dk ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30' : 'border-slate-200'
                 }`}
@@ -335,22 +335,22 @@ function CreditPackageManagement() {
                 }
               >
                 <TableHead className="w-[220px] font-semibold text-xs uppercase tracking-wider text-slate-400">
-                  {t('creditPackage.table.name', 'Tên gói')}
+                  {t('creditPackageManagement.table.name', 'Name')}
                 </TableHead>
                 <TableHead className="w-[120px] font-semibold text-xs uppercase tracking-wider text-slate-400">
-                  {t('creditPackage.table.credit', 'Số Credit')}
+                  {t('creditPackageManagement.table.credit', 'Credit')}
                 </TableHead>
                 <TableHead className="w-[130px] font-semibold text-xs uppercase tracking-wider text-slate-400">
-                  {t('creditPackage.table.price', 'Giá')}
+                  {t('creditPackageManagement.table.price', 'Price')}
                 </TableHead>
                 <TableHead className="w-[110px] font-semibold text-xs uppercase tracking-wider text-slate-400">
-                  {t('creditPackage.table.bonus', 'Credits per package')}
+                  {t('creditPackageManagement.table.bonus', 'Credits per package')}
                 </TableHead>
                 <TableHead className="w-[110px] text-center font-semibold text-xs uppercase tracking-wider text-slate-400">
-                  {t('creditPackage.table.status', 'Trạng thái')}
+                  {t('creditPackageManagement.table.status', 'Status')}
                 </TableHead>
                 <TableHead className="w-[140px] text-right font-semibold text-xs uppercase tracking-wider text-slate-400">
-                  {t('creditPackage.table.actions', 'Thao tác')}
+                  {t('creditPackageManagement.table.actions', 'Actions')}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -412,7 +412,7 @@ function CreditPackageManagement() {
                           <button
                             type="button"
                             onClick={() => openEditForm(pkg)}
-                            title={t('creditPackage.edit', 'Chỉnh sửa')}
+                            title={t('creditPackageManagement.edit', 'Edit')}
                             className={`h-8 w-8 rounded-lg inline-flex items-center justify-center transition-colors cursor-pointer ${
                               dk ? 'text-amber-300 hover:bg-amber-500/10' : 'text-amber-500 hover:bg-amber-50'
                             }`}
@@ -424,7 +424,7 @@ function CreditPackageManagement() {
                               <button
                                 type="button"
                                 onClick={() => handleToggleStatus(pkg)}
-                                title={t('creditPackage.toggleStatus', 'Bật/Tắt')}
+                                title={t('creditPackageManagement.toggleStatus', 'Toggle status')}
                                 className={`h-8 w-8 rounded-lg inline-flex items-center justify-center transition-colors cursor-pointer ${
                                   (pkg.status || '').toUpperCase() === 'ACTIVE'
                                     ? dk
@@ -444,7 +444,7 @@ function CreditPackageManagement() {
                               <button
                                 type="button"
                                 onClick={() => openEditForm(pkg)}
-                                title={t('creditPackage.edit', 'Chỉnh sửa')}
+                                title={t('creditPackageManagement.edit', 'Edit')}
                                 className={`h-8 w-8 rounded-lg inline-flex items-center justify-center transition-colors cursor-pointer ${
                                   dk ? 'text-blue-300 hover:bg-blue-500/10' : 'text-blue-500 hover:bg-blue-50'
                                 }`}
@@ -454,7 +454,7 @@ function CreditPackageManagement() {
                               <button
                                 type="button"
                                 onClick={() => confirmDelete(pkg)}
-                                title={t('creditPackage.delete', 'Xoá')}
+                                title={t('creditPackageManagement.delete', 'Delete')}
                                 className={`h-8 w-8 rounded-lg inline-flex items-center justify-center transition-colors cursor-pointer ${
                                   dk ? 'text-rose-300 hover:bg-rose-500/10' : 'text-rose-500 hover:bg-rose-50'
                                 }`}
@@ -474,7 +474,7 @@ function CreditPackageManagement() {
                     colSpan={6}
                     className="text-center py-16 text-slate-400 text-sm italic"
                   >
-                    {t('creditPackage.empty', 'Chưa có gói Credit nào.')}
+                    {t('creditPackageManagement.empty', 'No credit packages found.')}
                   </TableCell>
                 </TableRow>
               )}
@@ -499,13 +499,11 @@ function CreditPackageManagement() {
             <DialogHeader className="p-0 space-y-1">
               <DialogTitle className={`text-xl font-bold ${dk ? 'text-white' : 'text-slate-900'}`}>
                 {editingPackage
-                  ? t('creditPackage.editTitle', 'Chỉnh sửa gói Credit')
-                  : t('creditPackage.addTitle', 'Thêm gói Credit')}
+                  ? t('creditPackageManagement.editTitle', 'Edit credit package')
+                  : t('creditPackageManagement.addTitle', 'Add credit package')}
               </DialogTitle>
               <DialogDescription className={dk ? 'text-slate-400' : 'text-slate-500'}>
-                {t(
-                  'creditPackage.formDesc',
-                  'Nhập thông tin gói Credit, số Credit và giá bán.',
+                {t('creditPackageManagement.formDesc', 'Enter the package details. The price and bonus credits are calculated automatically based on the credit amount.',
                 )}
               </DialogDescription>
             </DialogHeader>
@@ -514,36 +512,36 @@ function CreditPackageManagement() {
           <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
             <div className={sectionCls}>
               <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-blue-400' : 'text-blue-600'}`}>
-                {t('creditPackage.basicInfo', 'Thông tin cơ bản')}
+                {t('creditPackageManagement.basicInfo', 'Basic information')}
               </p>
               <div className="space-y-4">
                         <div>
                   <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {t('creditPackage.form.name', 'Tên gói')} *
+                    {t('creditPackageManagement.form.name', 'Name')} *
                   </Label>
                   <Input
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder={t('creditPackage.form.namePlaceholder', 'VD: Starter, Pro, Enterprise...')}
+                    placeholder={t('creditPackageManagement.form.namePlaceholder', 'e.g. Starter, Pro, Enterprise...')}
                     className={inputCls}
                   />
                 </div>
                 <div>
                   <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {t('creditPackage.form.description', 'Mô tả')}
+                    {t('creditPackageManagement.form.description', 'Description')}
                   </Label>
                   <Input
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('creditPackage.form.descriptionPlaceholder', 'Mô tả ngắn về gói...')}
+                    placeholder={t('creditPackageManagement.form.descriptionPlaceholder', 'Short description of what this package offers')}
                     className={inputCls}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {t('creditPackage.form.creditAmount', 'Số Credit')}
+                      {t('creditPackageManagement.form.creditAmount', 'Credit amount')}
                     </Label>
                     <Input
                       type="number"
@@ -575,7 +573,7 @@ function CreditPackageManagement() {
                   </div>
                   <div>
                     <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {t('creditPackage.form.price', 'Giá (VND)')}
+                      {t('creditPackageManagement.form.price', 'Price (VND)')}
                     </Label>
                     <Input
                       type="text"
@@ -587,7 +585,7 @@ function CreditPackageManagement() {
                 </div>
                 <div>
                   <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {t('creditPackage.form.bonusCredit', 'Bonus Credit (10% số credit, tự tính)')}
+                    {t('creditPackageManagement.form.bonusCredit', 'Bonus credits')}
                   </Label>
                   <Input
                     type="number"
@@ -613,7 +611,7 @@ function CreditPackageManagement() {
                   dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''
                 }`}
               >
-                {t('auth.cancel', 'Huỷ')}
+                {t('auth.cancel', 'Cancel')}
               </Button>
               <Button
                 type="submit"
@@ -621,10 +619,10 @@ function CreditPackageManagement() {
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-lg shadow-blue-600/25 cursor-pointer"
               >
                 {isSubmitting
-                  ? t('creditPackage.submitting', 'Đang lưu...')
+                  ? t('creditPackageManagement.submitting', 'Saving...')
                   : editingPackage
-                    ? t('creditPackage.save', 'Lưu thay đổi')
-                    : t('creditPackage.create', 'Tạo gói')}
+                    ? t('creditPackageManagement.save', 'Save changes')
+                    : t('creditPackageManagement.create', 'Create package')}
               </Button>
             </div>
           </form>
@@ -646,12 +644,10 @@ function CreditPackageManagement() {
         >
           <DialogHeader>
             <DialogTitle className={dk ? 'text-white' : ''}>
-              {t('creditPackage.confirmDelete', 'Xoá gói Credit')}
+              {t('creditPackageManagement.confirmDelete', 'Delete credit package?')}
             </DialogTitle>
             <DialogDescription>
-              {t(
-                'creditPackage.confirmDeleteDesc',
-                'Bạn có chắc chắn muốn xoá gói này? Hành động này không thể hoàn tác.',
+              {t('creditPackageManagement.confirmDeleteDesc', 'This action cannot be undone. The selected credit package will be permanently removed.',
               )}
             </DialogDescription>
           </DialogHeader>
@@ -664,7 +660,7 @@ function CreditPackageManagement() {
                 dk ? 'border-white/10 text-slate-300 hover:bg-white/5' : ''
               }`}
             >
-              {t('auth.cancel', 'Huỷ')}
+              {t('auth.cancel', 'Cancel')}
             </Button>
             <Button
               type="button"
@@ -674,8 +670,8 @@ function CreditPackageManagement() {
               className="cursor-pointer"
             >
               {isSubmitting
-                ? t('creditPackage.deleting', 'Đang xoá...')
-                : t('creditPackage.delete', 'Xoá')}
+                ? t('creditPackageManagement.deleting', 'Deleting...')
+                : t('creditPackageManagement.delete', 'Delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

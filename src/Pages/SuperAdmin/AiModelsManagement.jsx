@@ -321,7 +321,7 @@ function AiModelsManagement() {
       }
 
       if (!silent && !data?.supported) {
-        showError(data?.notes || t('aiModels.pricing.officialUnsupported', 'Model này chưa hỗ trợ lấy giá tự động.'));
+        showError(data?.notes || t('aiModels.pricing.officialUnsupported', 'This model does not currently support official auto pricing.'));
       }
 
       return data;
@@ -658,8 +658,8 @@ function AiModelsManagement() {
                                 variant="ghost"
                                 size="icon"
                                 className={isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'}
-                                aria-label={t('aiModels.actions.menu', 'Mở menu thao tác')}
-                                title={t('aiModels.actions.menu', 'Mở menu thao tác')}
+                                aria-label={t('aiModels.actions.menu', 'Open action menu')}
+                                title={t('aiModels.actions.menu', 'Open action menu')}
                               >
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
@@ -787,7 +787,7 @@ function AiModelsManagement() {
                     <div className={`rounded-3xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50'}`}>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.exchangeRate.title', 'Tỷ giá USD/VND')}</p>
+                          <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.exchangeRate.title', 'Current USD/VND rate')}</p>
                           <p className={`mt-2 font-mono text-[32px] font-black leading-none tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{formatExchangeRate(exchangeRate?.rate)}</p>
                           <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             {(exchangeRate?.source || t('aiModels.exchangeRate.unknown'))}
@@ -812,8 +812,8 @@ function AiModelsManagement() {
                     <div className={`rounded-3xl border p-4 ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50'}`}>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-1">
-                          <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.officialTitle', 'Giá chính thức')}</p>
-                          <p className={`max-w-[420px] text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{t('aiModels.pricing.officialDescription', 'Tự động lấy giá input và output từ trang chính thức của OpenAI hoặc Gemini khi model được hỗ trợ.')}</p>
+                          <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.officialTitle', 'Official pricing')}</p>
+                          <p className={`max-w-[420px] text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{t('aiModels.pricing.officialDescription', 'Auto-fetch input and output pricing from official OpenAI or Gemini pages when the model is supported.')}</p>
                         </div>
                         <Button
                           type="button"
@@ -823,7 +823,7 @@ function AiModelsManagement() {
                           className={`shrink-0 ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}`}
                         >
                           <RefreshCw className={`mr-2 h-4 w-4 ${officialPricingLoading ? 'animate-spin' : ''}`} />
-                          {t('aiModels.pricing.officialSync', 'Lấy giá chính thức')}
+                          {t('aiModels.pricing.officialSync', 'Fetch official pricing')}
                         </Button>
                       </div>
 
@@ -831,7 +831,7 @@ function AiModelsManagement() {
                         <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-700'}`}>
                           <div className="flex flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.source', 'Nguồn')}</span>
+                              <span className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.source', 'Source')}</span>
                               <span className="font-semibold">{officialPricing.sourceLabel || '-'}</span>
                               {officialPricing.pricingTier ? (
                                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${isDarkMode ? 'bg-sky-500/10 text-sky-300' : 'bg-sky-50 text-sky-700'}`}>
@@ -840,7 +840,7 @@ function AiModelsManagement() {
                               ) : null}
                             </div>
                             <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {officialPricing.fetchedAt ? `${t('aiModels.pricing.updatedAt', 'Cập nhật')}: ${formatDateTime(officialPricing.fetchedAt, locale)}` : null}
+                              {officialPricing.fetchedAt ? `${t('aiModels.pricing.updatedAt', 'Updated')}: ${formatDateTime(officialPricing.fetchedAt, locale)}` : null}
                               {officialPricing.notes ? ` • ${officialPricing.notes}` : ''}
                             </div>
                             {officialPricing.sourceUrl ? (
@@ -850,14 +850,14 @@ function AiModelsManagement() {
                                 rel="noreferrer"
                                 className={`text-xs font-medium underline underline-offset-4 ${isDarkMode ? 'text-sky-300' : 'text-sky-700'}`}
                               >
-                                {t('aiModels.pricing.officialSource', 'Mở nguồn chính thức')}
+                                {t('aiModels.pricing.officialSource', 'Open official source')}
                               </a>
                             ) : null}
                           </div>
                         </div>
                       ) : (
                         <div className={`mt-4 rounded-2xl border border-dashed px-4 py-5 text-sm ${isDarkMode ? 'border-slate-700 text-slate-400' : 'border-slate-200 text-slate-500'}`}>
-                          {t('aiModels.pricing.officialDescription', 'Tự động lấy giá input và output từ trang chính thức của OpenAI hoặc Gemini khi model được hỗ trợ.')}
+                          {t('aiModels.pricing.officialDescription', 'Auto-fetch input and output pricing from official OpenAI or Gemini pages when the model is supported.')}
                         </div>
                       )}
                     </div>
@@ -868,7 +868,7 @@ function AiModelsManagement() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className={`text-sm font-bold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('aiModels.pricing.addVersion')}</h3>
-                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.formDescription', 'Giá official sẽ tự điền vào 2 ô này. Super admin có thể chỉnh lại ngay trước khi lưu.')}</p>
+                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.formDescription', 'Enter source pricing in USD or pull it from the official source, and the system will convert it to VND.')}</p>
                     </div>
                     {officialPricing?.supported ? (
                       <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${isDarkMode ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
@@ -882,14 +882,14 @@ function AiModelsManagement() {
                       <Label>{t('aiModels.pricing.inputUsd', 'Giá input (USD / 1M token)')}</Label>
                       <Input required type="number" min="0" step="0.000001" value={priceForm.inputPriceUsdPer1M} onChange={(event) => setPriceForm((prev) => ({ ...prev, inputPriceUsdPer1M: event.target.value }))} className={isDarkMode ? 'border-slate-700 bg-slate-900 text-white' : 'bg-white'} />
                       <div className={`rounded-xl border px-3 py-2 text-xs ${isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                        {t('aiModels.pricing.previewVnd', 'Quy đổi')}: <span className="font-semibold">{inputPreviewVnd !== null ? formatMoney(inputPreviewVnd) : '-'}</span>
+                        {t('aiModels.pricing.previewVnd', 'Converted')}: <span className="font-semibold">{inputPreviewVnd !== null ? formatMoney(inputPreviewVnd) : '-'}</span>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label>{t('aiModels.pricing.outputUsd', 'Giá output (USD / 1M token)')}</Label>
                       <Input required type="number" min="0" step="0.000001" value={priceForm.outputPriceUsdPer1M} onChange={(event) => setPriceForm((prev) => ({ ...prev, outputPriceUsdPer1M: event.target.value }))} className={isDarkMode ? 'border-slate-700 bg-slate-900 text-white' : 'bg-white'} />
                       <div className={`rounded-xl border px-3 py-2 text-xs ${isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-                        {t('aiModels.pricing.previewVnd', 'Quy đổi')}: <span className="font-semibold">{outputPreviewVnd !== null ? formatMoney(outputPreviewVnd) : '-'}</span>
+                        {t('aiModels.pricing.previewVnd', 'Converted')}: <span className="font-semibold">{outputPreviewVnd !== null ? formatMoney(outputPreviewVnd) : '-'}</span>
                       </div>
                     </div>
                     <div className="flex lg:justify-end">
@@ -911,11 +911,11 @@ function AiModelsManagement() {
                 <div className={`border-b px-4 py-3 sm:px-5 sm:py-4 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50/80'}`}>
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.historyTitle', 'Lịch sử version giá')}</p>
-                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.historyDescription', 'Theo dõi version đang áp dụng và các mốc giá đã lưu của model này.')}</p>
+                      <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.historyTitle', 'Pricing version history')}</p>
+                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.historyDescription', 'Track the active version and the pricing milestones stored for this model.')}</p>
                     </div>
                     <div className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${isDarkMode ? 'border-slate-700 bg-slate-950 text-slate-200' : 'border-slate-200 bg-white text-slate-700'}`}>
-                      {t('aiModels.pricing.totalVersions', 'Số version')}: {pricingVersions.length}
+                      {t('aiModels.pricing.totalVersions', 'Versions')}: {pricingVersions.length}
                     </div>
                   </div>
                   <div className="grid grid-cols-[1.1fr_1.1fr_0.8fr_1fr_0.9fr_0.8fr] gap-3">
@@ -932,12 +932,12 @@ function AiModelsManagement() {
                       <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>USD/VND</p>
                     </div>
                     <div>
-                      <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.source', 'Nguồn')}</p>
-                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.sourceHint', 'Tỷ giá / provider')}</p>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.source', 'Source')}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.sourceHint', 'Rate / provider')}</p>
                     </div>
                     <div>
-                      <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.updatedAt', 'Cập nhật')}</p>
-                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.historyHint', 'Mốc đã lưu')}</p>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.updatedAt', 'Updated')}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('aiModels.pricing.historyHint', 'Saved point')}</p>
                     </div>
                     <div>
                       <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{t('aiModels.pricing.state')}</p>

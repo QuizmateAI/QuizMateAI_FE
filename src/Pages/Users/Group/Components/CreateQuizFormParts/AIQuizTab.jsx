@@ -161,7 +161,7 @@ function AIQuizTab({
           </div>
 
           <div>
-            <label className={labelCls}>{t("workspace.quiz.aiConfig.customPromptLabel", "Vui lòng nhập yêu cầu của bạn")}</label>
+            <label className={labelCls}>{t("workspace.quiz.aiConfig.customPromptLabel", "Please enter your request")}</label>
             <textarea
               className={`${inputCls} min-h-[72px] resize-none ${fieldErrors.aiPrompt ? "border-red-400" : ""}`}
               placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")}
@@ -521,7 +521,7 @@ function AIQuizTab({
                 <PlanGatedFeature
                   key={qt.questionTypeId}
                   allowed={false}
-                  featureName={t("workspace.quiz.aiConfig.advancedConfig", "Loại quiz nâng cao")}
+                  featureName={t("workspace.quiz.aiConfig.advancedConfig", "Advanced quiz types")}
                   isDarkMode={isDarkMode}
                   className="block w-full"
                 >
@@ -599,10 +599,10 @@ function AIQuizTab({
                 </span>
                 <div>
                   <h3 className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                    {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+                    {t("workspace.quiz.aiConfig.structureLabel", "Quiz structure")}
                   </h3>
                   <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                    {t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}
+                    {t("workspace.quiz.aiConfig.structurePreviewHint", "Click Detailed configuration to preview how AI will distribute the quiz.")}
                   </p>
                 </div>
               </div>
@@ -620,8 +620,8 @@ function AIQuizTab({
             >
               {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {structurePreviewLoading
-                ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Đang tạo cấu trúc...")
-                : t("workspace.quiz.aiConfig.structurePreviewAction", "Cấu hình chi tiết")}
+                ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Generating structure...")
+                : t("workspace.quiz.aiConfig.structurePreviewAction", "Detailed configuration")}
             </button>
           </div>
         </div>
@@ -644,7 +644,7 @@ function AIQuizTab({
             </div>
             <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white"}`}>
               <p className={`text-[11px] uppercase tracking-[0.22em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+                {t("workspace.quiz.aiConfig.structureLabel", "Quiz structure")}
               </p>
               <p className={`mt-1 text-2xl font-semibold leading-none ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
                 {Array.isArray(structurePreview?.items) ? structurePreview.items.length : 0}
@@ -680,7 +680,7 @@ function AIQuizTab({
                           </p>
                         </div>
                         <p className={`mt-0.5 text-[11px] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                          {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")} #{index + 1}
+                          {t("workspace.quiz.aiConfig.structureLabel", "Quiz structure")} #{index + 1}
                         </p>
                       </div>
                     </div>
@@ -688,10 +688,10 @@ function AIQuizTab({
                     <div className="flex flex-wrap items-center gap-2 text-xs md:justify-end">
                       <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                         <span className={`h-2 w-2 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
-                        {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{getDifficultyLabel(item.difficulty)}</strong>
+                        {t("workspace.quiz.aiConfig.structureDifficulty", "Difficulty")} <strong>{getDifficultyLabel(item.difficulty)}</strong>
                       </span>
                       <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                        {t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
+                        {t("workspace.quiz.aiConfig.structureQuestionType", "Question type")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
                       </span>
                       <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                         {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{getBloomLabel(item.bloomSkill)}</strong>
@@ -704,7 +704,7 @@ function AIQuizTab({
           ) : (
             <div className={`rounded-2xl border px-4 py-8 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-400" : "border-slate-200 bg-white text-slate-600"}`}>
               <div className="flex flex-col items-center justify-center gap-3 text-center">
-                <p>{t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}</p>
+                <p>{t("workspace.quiz.aiConfig.structurePreviewHint", "Click Detailed configuration to preview how AI will distribute the quiz.")}</p>
                 <button
                   type="button"
                   onClick={onPreviewStructure}
@@ -716,7 +716,7 @@ function AIQuizTab({
                   }`}
                 >
                   {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                  {t("workspace.quiz.aiConfig.structureFetchAction", "Lấy cấu hình chi tiết")}
+                  {t("workspace.quiz.aiConfig.structureFetchAction", "Fetch detailed configuration")}
                 </button>
               </div>
             </div>

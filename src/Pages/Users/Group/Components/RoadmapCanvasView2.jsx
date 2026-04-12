@@ -54,7 +54,7 @@ function RoadmapCanvasView2({
   onViewRoadmapConfig,
   onEditRoadmapConfig,
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { showError, showSuccess } = useToast();
   const [openPhaseId, setOpenPhaseId] = useState(null);
   const [submittingRemedialDecision, setSubmittingRemedialDecision] = useState(false);
@@ -146,13 +146,13 @@ function RoadmapCanvasView2({
         roadmapId: normalizedRoadmapId,
         totalQuestion,
       });
-      showSuccess(t("workspace.roadmap.groupPreLearningCreateSuccess", "Đã gửi yêu cầu tạo pre-learning cho roadmap nhóm."));
+      showSuccess(t("roadmapCanvasView2.groupPreLearningCreateSuccess", "Pre-learning creation request for the group roadmap has been submitted."));
       setGroupPreLearningRefreshToken((current) => current + 1);
       await onReloadRoadmap?.();
       await loadGlobalCurrentPhaseProgress();
     } catch (error) {
       console.error("Failed to create group roadmap pre-learning:", error);
-      showError(error?.message || t("workspace.roadmap.groupPreLearningCreateFail", "Không thể tạo pre-learning cho roadmap nhóm."));
+      showError(error?.message || t("roadmapCanvasView2.groupPreLearningCreateFail", "Unable to create pre-learning for the group roadmap."));
     } finally {
       setIsCreatingGroupPreLearning(false);
     }
@@ -920,10 +920,10 @@ function RoadmapCanvasView2({
                 <DirectFeedbackButton
                   targetType="ROADMAP"
                   targetId={roadmap.roadmapId}
-                  label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
+                  label={t("roadmapCanvasView2.feedbackLabel", "Feedback")}
                   isDarkMode={isDarkMode}
                   className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
-                  title={i18n.language === "en" ? "Roadmap feedback" : "Phản hồi lộ trình"}
+                  title={t("roadmapCanvasView2.roadmapFeedbackTitle", "Roadmap feedback")}
                 />
               ) : null}
               {onViewRoadmapConfig ? (
@@ -967,7 +967,7 @@ function RoadmapCanvasView2({
           <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-emerald-800/70 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50"}`}>
             <div className="flex items-center justify-between gap-3">
               <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
-                {t("workspace.roadmap.phaseReviewTitle", "Đánh giá AI cho phase hiện tại")}
+                {t("roadmapCanvasView2.phaseReviewTitle", "AI review for the current phase")}
               </p>
             </div>
             <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
@@ -977,7 +977,7 @@ function RoadmapCanvasView2({
             {phaseReviewAssessedAtLabel ? (
               <div className="mt-3 text-right">
                 <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
-                  {t("workspace.roadmap.phaseReviewAssessedAt", "Đánh giá lúc")}: {phaseReviewAssessedAtLabel}
+                  {t("roadmapCanvasView2.phaseReviewAssessedAt", "Assessed at")}: {phaseReviewAssessedAtLabel}
                 </span>
               </div>
             ) : null}
@@ -1152,10 +1152,10 @@ function RoadmapCanvasView2({
                           <Lock className={`w-6 h-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
                         </div>
                         <h4 className={`text-base font-semibold mb-1 ${fontClass} ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                          {t("workspace.roadmap.canvas.phaseLockedTitle", "Phase này đang bị khóa")}
+                          {t("roadmapCanvasView2.phaseLockedTitle", "This phase is locked")}
                         </h4>
                         <p className={`text-sm mb-4 ${fontClass} ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                          {t("workspace.roadmap.canvas.phaseLockedDesc", "Vui lòng mở khóa")}
+                          {t("roadmapCanvasView2.phaseLockedDesc", "Please unlock to continue")}
                         </p>
                         <Button 
                           type="button"
@@ -1182,7 +1182,7 @@ function RoadmapCanvasView2({
                               void loadGlobalCurrentPhaseProgress();
                             } catch (error) {
                               setOptimisticUnlockedPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
-                              showError(error?.message || t("workspace.roadmap.phaseUnlockFailed", "Không thể mở khóa phase này."));
+                              showError(error?.message || t("roadmapCanvasView2.phaseUnlockFailed", "Unable to unlock this phase."));
                             } finally {
                               setUnlockingPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
                             }
@@ -1196,8 +1196,8 @@ function RoadmapCanvasView2({
                         >
                           {isUnlockingPhase ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}
                           {isUnlockingPhase
-                            ? t("workspace.roadmap.canvas.unlockingPhaseBtn", "Đang mở khóa...")
-                            : t("workspace.roadmap.canvas.unlockPhaseBtn", "Mở khóa Phase")}
+                            ? t("roadmapCanvasView2.unlockingPhaseBtn", "Unlocking...")
+                            : t("roadmapCanvasView2.unlockPhaseBtn", "Unlock Phase")}
                         </Button>
                       </div>
                     </div>
@@ -1206,10 +1206,10 @@ function RoadmapCanvasView2({
                     <DirectFeedbackButton
                       targetType="PHASE"
                       targetId={phase.phaseId}
-                      label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
+                      label={t("roadmapCanvasView2.feedbackLabel", "Feedback")}
                       isDarkMode={isDarkMode}
                       className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-slate-50 text-gray-700 hover:bg-slate-100"}`}
-                      title={i18n.language === "en" ? "Phase feedback" : "Phản hồi phase"}
+                      title={t("roadmapCanvasView2.phaseFeedbackTitle", "Phase feedback")}
                     />
                   </div>
                   <div className={`px-4 py-3 space-y-4 ${isLockedPhase ? "opacity-30 pointer-events-none select-none blur-sm" : ""}`}>
@@ -1218,7 +1218,7 @@ function RoadmapCanvasView2({
                         <summary className="list-none cursor-pointer">
                           <div className="flex items-center justify-between gap-2">
                             <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"} ${fontClass}`}>
-                              {t("workspace.roadmap.phaseDescriptionDropdown", "Mô tả phase")}
+                              {t("workspace.roadmap.phaseDescriptionDropdown", "Phase Description Dropdown")}
                             </p>
                             <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
                           </div>
@@ -1249,7 +1249,7 @@ function RoadmapCanvasView2({
                       {shouldShowGroupPreLearningCreate ? (
                         <div className={`mb-3 rounded-lg border p-3 ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-200 bg-slate-50"}`}>
                           <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
-                            {t("workspace.roadmap.groupPreLearningQuestionCountLabel", "Số câu pre-learning (20-25)")}
+                            {t("roadmapCanvasView2.groupPreLearningQuestionCountLabel", "Number of pre-learning questions (20-25)")}
                           </p>
                           <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                             <input
@@ -1267,7 +1267,7 @@ function RoadmapCanvasView2({
                               className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-95"
                             >
                               {isCreatingGroupPreLearning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                              {t("workspace.roadmap.groupPreLearningCreateButton", "Tạo pre-learning")}
+                              {t("roadmapCanvasView2.groupPreLearningCreateButton", "Create pre-learning")}
                             </Button>
                           </div>
                         </div>
@@ -1305,7 +1305,7 @@ function RoadmapCanvasView2({
                             embedded
                             legacyRoadmapUI
                             hideCreateButton
-                            title={t("workspace.roadmap.groupPreLearningTitle", "Pre-learning toàn roadmap")}
+                            title={t("roadmapCanvasView2.groupPreLearningTitle", "Roadmap-wide pre-learning")}
                             intentFilter={["PRE_LEARNING"]}
                             refreshToken={(Number(quizRefreshToken) || 0) + groupPreLearningRefreshToken}
                             returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
@@ -1416,7 +1416,7 @@ function RoadmapCanvasView2({
                           {shouldShowGroupPreLearningCreate ? (
                           <div className={`rounded-lg border p-3 ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-200 bg-slate-50"}`}>
                             <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
-                              {t("workspace.roadmap.groupPreLearningQuestionCountLabel", "Số câu pre-learning (20-25)")}
+                              {t("roadmapCanvasView2.groupPreLearningQuestionCountLabel", "Number of pre-learning questions (20-25)")}
                             </p>
                             <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                               <input
@@ -1434,11 +1434,11 @@ function RoadmapCanvasView2({
                                 className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-95"
                               >
                                 {isCreatingGroupPreLearning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                {t("workspace.roadmap.groupPreLearningCreateButton", "Tạo pre-learning")}
+                                {t("roadmapCanvasView2.groupPreLearningCreateButton", "Create pre-learning")}
                               </Button>
                             </div>
                             <p className={`mt-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                              {t("workspace.roadmap.groupPreLearningEmptyHint", "Tạo bài pre-learning tổng cho roadmap nhóm theo mục tiêu học tập chung.")}
+                              {t("roadmapCanvasView2.groupPreLearningEmptyHint", "Create an overall pre-learning quiz for the group roadmap aligned with the shared learning goal.")}
                             </p>
                           </div>
                         ) : null}
@@ -1454,7 +1454,7 @@ function RoadmapCanvasView2({
                               embedded
                               legacyRoadmapUI
                               hideCreateButton
-                              title={t("workspace.roadmap.groupPreLearningTitle", "Pre-learning toàn roadmap")}
+                              title={t("roadmapCanvasView2.groupPreLearningTitle", "Roadmap-wide pre-learning")}
                               intentFilter={["PRE_LEARNING"]}
                               refreshToken={(Number(quizRefreshToken) || 0) + groupPreLearningRefreshToken}
                               returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}

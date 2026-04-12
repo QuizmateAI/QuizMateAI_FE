@@ -139,7 +139,7 @@ export function validateRoadmapConfigValues(values = {}, t) {
     errors.knowledgeLoad = translateOrFallback(
       t,
       'workspace.profileConfig.validation.knowledgeLoadRequired',
-      'Vui lòng chọn lượng kiến thức cần học.'
+      'Please choose the amount of knowledge to cover.'
     );
   }
 
@@ -147,7 +147,7 @@ export function validateRoadmapConfigValues(values = {}, t) {
     errors.adaptationMode = translateOrFallback(
       t,
       'workspace.profileConfig.validation.adaptationModeRequired',
-      'Vui lòng chọn loại lộ trình.'
+      'Please choose an adaptation mode.'
     );
   }
 
@@ -155,7 +155,7 @@ export function validateRoadmapConfigValues(values = {}, t) {
     errors.roadmapSpeedMode = translateOrFallback(
       t,
       'workspace.profileConfig.validation.roadmapSpeedModeRequired',
-      'Vui lòng chọn tốc độ Lộ trình.'
+      'Please choose a roadmap speed mode.'
     );
   }
 
@@ -163,7 +163,7 @@ export function validateRoadmapConfigValues(values = {}, t) {
     errors.estimatedTotalDays = translateOrFallback(
       t,
       'workspace.profileConfig.validation.estimatedTotalDaysRequired',
-      'Vui lòng nhập số ngày dự kiến lớn hơn 0.'
+      'Please enter a total number of days greater than 0.'
     );
   }
 
@@ -171,7 +171,7 @@ export function validateRoadmapConfigValues(values = {}, t) {
     errors.recommendedMinutesPerDay = translateOrFallback(
       t,
       'workspace.profileConfig.validation.recommendedMinutesRequired',
-      'Vui lòng nhập số phút học mỗi ngày lớn hơn 0.'
+      'Please enter a daily study time greater than 0.'
     );
   }
 

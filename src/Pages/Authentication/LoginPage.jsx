@@ -49,10 +49,10 @@ const LoginPageContent = () => {
           <button
             type="button"
             onClick={() => navigate('/')}
-            aria-label="Go to landing page"
+            aria-label={t('loginPage.goToLandingPageAria', 'Go to landing page')}
             className="flex h-[120px] w-[150px] items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
           >
-            <img src={isDarkMode ? LogoDark : LogoLight} alt="QuizMate AI Logo" className="w-full h-full object-contain" />
+            <img src={isDarkMode ? LogoDark : LogoLight} alt={t('loginPage.logoAlt', 'QuizMate AI Logo')} className="w-full h-full object-contain" />
           </button>
         </div>
 
@@ -61,12 +61,12 @@ const LoginPageContent = () => {
           <button
             type="button"
             onClick={toggleDarkMode}
-            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={isDarkMode ? t('loginPage.switchToLightModeAria', 'Switch to light mode') : t('loginPage.switchToDarkModeAria', 'Switch to dark mode')}
             className={`p-2 rounded-lg border transition-all duration-300 ${isDarkMode
               ? 'border-slate-700 hover:bg-slate-800 text-yellow-400'
               : 'border-gray-200 hover:bg-gray-50 text-gray-600'
               }`}
-            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            title={isDarkMode ? t('loginPage.switchToLightModeTitle', 'Switch to Light Mode') : t('loginPage.switchToDarkModeTitle', 'Switch to Dark Mode')}
           >
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -75,11 +75,11 @@ const LoginPageContent = () => {
           <button
             type="button"
             onClick={toggleLanguage}
-            aria-label="Switch language"
+            aria-label={t('loginPage.switchLanguageAria', 'Switch language')}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors text-sm font-medium text-gray-600 dark:text-slate-400"
           >
             <Globe className="w-4 h-4" />
-            <span>{currentLang === 'vi' ? 'VI' : 'EN'}</span>
+            <span>{currentLang === 'vi' ? t('loginPage.langShortVi', 'VI') : t('loginPage.langShortEn', 'EN')}</span>
           </button>
         </div>
       </header>
@@ -118,7 +118,7 @@ const LoginPageContent = () => {
                 <FloatingInput
                   id="username"
                   type="text"
-                  label={t('auth.username') || 'Username'}
+                  label={t('auth.username', 'Username')}
                   value={loginHook.loginData.username}
                   onChange={loginHook.handleLoginChange('username')}
                   error={Boolean(loginHook.fieldErrors?.username)}
@@ -192,7 +192,7 @@ const LoginPageContent = () => {
                     <div className="w-full flex justify-center">
                       <GoogleLogin
                         onSuccess={loginHook.handleGoogleSubmit}
-                        onError={() => loginHook.setError(t('auth.loginGoogleFailed') || 'Dang nhap Google that bai')}
+                        onError={() => loginHook.setError(t('auth.loginGoogleFailed', 'Google login failed. Please try again.'))}
                         useOneTap
                         theme={isDarkMode ? 'filled_black' : 'outline'}
                         shape="pill"
@@ -223,9 +223,9 @@ const LoginPageContent = () => {
               <div className="mb-8">
                 <h1 className="text-4xl font-semibold text-[#313131] dark:text-white mb-4">{t('auth.forgotPasswordTitle')}</h1>
                 <p className="text-gray-500 dark:text-slate-400 leading-relaxed">
-                  {forgotPasswordHook.forgotPasswordStep === 'email' && (t('auth.forgotPasswordSubtitle') || 'Nhập email để nhận mã OTP')}
-                  {forgotPasswordHook.forgotPasswordStep === 'otp' && (t('auth.enterOTPSubtitle') || 'Nhập mã OTP đã được gửi đến email của bạn')}
-                  {forgotPasswordHook.forgotPasswordStep === 'newPassword' && (t('auth.newPasswordSubtitle') || 'Nhập mật khẩu mới')}
+                  {forgotPasswordHook.forgotPasswordStep === 'email' && t('auth.forgotPasswordSubtitle', "Don't worry, happens to all of us. Enter your email below to recover your password")}
+                  {forgotPasswordHook.forgotPasswordStep === 'otp' && t('auth.enterOTPSubtitle', 'Enter the OTP code sent to your email')}
+                  {forgotPasswordHook.forgotPasswordStep === 'newPassword' && t('auth.newPasswordSubtitle', 'Enter your new password')}
                 </p>
               </div>
 
@@ -266,7 +266,7 @@ const LoginPageContent = () => {
                     disabled={forgotPasswordHook.isLoading}
                     className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
                   >
-                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (t('auth.sendOTP') || 'Gửi mã OTP')}
+                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.sendOTP', 'Send OTP')}
                   </Button>
                 </form>
               )}
@@ -278,7 +278,7 @@ const LoginPageContent = () => {
                     <FloatingInput
                       id="otp-code"
                       type="text"
-                      label={t('auth.otpCode') || 'Mã OTP'}
+                      label={t('auth.otpCode', 'OTP Code')}
                       value={forgotPasswordHook.forgotPasswordData.otp}
                       onChange={forgotPasswordHook.handleForgotPasswordChange('otp')}
                       error={Boolean(forgotPasswordHook.fieldErrors?.otp)}
@@ -293,7 +293,7 @@ const LoginPageContent = () => {
                     disabled={forgotPasswordHook.isLoading}
                     className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
                   >
-                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (t('auth.verifyOTP') || 'Xác thực OTP')}
+                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.verifyOTP', 'Verify OTP')}
                   </Button>
 
                   <button
@@ -301,7 +301,7 @@ const LoginPageContent = () => {
                     onClick={() => { forgotPasswordHook.setForgotPasswordStep('email'); forgotPasswordHook.setError(''); forgotPasswordHook.setSuccessMessage(''); }}
                     className="w-full text-center text-sm text-gray-500 dark:text-slate-400 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
                   >
-                    {t('auth.resendOTP') || 'Gửi lại mã OTP'}
+                    {t('auth.resendOTP', 'Resend OTP')}
                   </button>
                 </form>
               )}
@@ -312,7 +312,7 @@ const LoginPageContent = () => {
                   <div>
                     <FloatingPasswordInput
                       id="new-password"
-                      label={t('auth.newPassword') || 'Mật khẩu mới'}
+                      label={t('auth.newPassword', 'New Password')}
                       value={forgotPasswordHook.forgotPasswordData.newPassword}
                       onChange={forgotPasswordHook.handleForgotPasswordChange('newPassword')}
                       showPassword={forgotPasswordHook.showPassword}
@@ -327,7 +327,7 @@ const LoginPageContent = () => {
                   <div>
                     <FloatingPasswordInput
                       id="confirm-new-password"
-                      label={t('auth.confirmNewPassword') || 'Xác nhận mật khẩu mới'}
+                      label={t('auth.confirmNewPassword', 'Confirm New Password')}
                       value={forgotPasswordHook.forgotPasswordData.confirmNewPassword}
                       onChange={forgotPasswordHook.handleForgotPasswordChange('confirmNewPassword')}
                       showPassword={forgotPasswordHook.showConfirmPassword}
@@ -344,7 +344,7 @@ const LoginPageContent = () => {
                     disabled={forgotPasswordHook.isLoading}
                     className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
                   >
-                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (t('auth.resetPassword') || 'Đặt lại mật khẩu')}
+                    {forgotPasswordHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.resetPassword', 'Reset Password')}
                   </Button>
                 </form>
               )}
@@ -377,16 +377,16 @@ const LoginPageContent = () => {
                 }}
                 className="flex items-center gap-1 text-sm font-medium text-[#313131] dark:text-slate-300 mb-6 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" /> {registerHook.registerStep === 'otp' ? (t('auth.backToRegisterForm') || 'Quay lại') : t('auth.backToLogin')}
+                <ChevronLeft className="w-4 h-4" /> {registerHook.registerStep === 'otp' ? t('auth.backToRegisterForm', 'Go back') : t('auth.backToLogin')}
               </button>
 
               <div className="mb-6">
                 <h1 className="text-4xl font-semibold text-[#313131] dark:text-white mb-4">
-                  {registerHook.registerStep === 'otp' ? (t('auth.verifyEmailTitle') || 'Xác thực Email') : t('auth.signUpTitle')}
+                  {registerHook.registerStep === 'otp' ? t('auth.verifyEmailTitle', 'Verify Email') : t('auth.signUpTitle')}
                 </h1>
                 <p className="text-gray-500 dark:text-slate-400">
                   {registerHook.registerStep === 'otp'
-                    ? (t('auth.registerOtpSubtitle') || `Nhập mã OTP đã được gửi đến ${registerHook.formData.email}`)
+                    ? t('loginPage.registerOtpSubtitleWithEmail', 'Enter the OTP code sent to {{email}}', { email: registerHook.formData.email })
                     : t('auth.signUpSubtitle')}
                 </p>
               </div>
@@ -413,7 +413,7 @@ const LoginPageContent = () => {
                     <FloatingInput
                       id="fullname"
                       type="text"
-                      label={t('auth.fullname') || 'Họ và tên'}
+                      label={t('auth.fullname', 'Full Name')}
                       value={registerHook.formData.fullname}
                       onChange={registerHook.handleChange('fullname')}
                       error={Boolean(registerHook.fieldErrors?.fullname)}
@@ -428,7 +428,7 @@ const LoginPageContent = () => {
                     <FloatingInput
                       id="register-username"
                       type="text"
-                      label={t('auth.username') || 'Username'}
+                      label={t('auth.username', 'Username')}
                       value={registerHook.formData.username}
                       onChange={registerHook.handleChange('username')}
                       onBlur={registerHook.handleAvailabilityBlur('username')}
@@ -561,7 +561,7 @@ const LoginPageContent = () => {
                       <div className="w-full flex justify-center">
                         <GoogleLogin
                           onSuccess={loginHook.handleGoogleSubmit}
-                          onError={() => loginHook.setError(t('auth.loginGoogleFailed') || 'Dang nhap Google that bai')}
+                          onError={() => loginHook.setError(t('auth.loginGoogleFailed', 'Google login failed. Please try again.'))}
                           useOneTap
                           theme={isDarkMode ? 'filled_black' : 'outline'}
                           shape="pill"
@@ -581,7 +581,7 @@ const LoginPageContent = () => {
                   <FloatingInput
                     id="register-otp-code"
                     type="text"
-                    label={t('auth.otpCode') || 'Mã OTP'}
+                    label={t('auth.otpCode', 'OTP Code')}
                     value={registerHook.otp}
                     onChange={registerHook.handleOtpChange}
                     error={Boolean(registerHook.fieldErrors?.otp)}
@@ -595,7 +595,7 @@ const LoginPageContent = () => {
                     disabled={registerHook.isLoading}
                     className="w-full h-12 bg-[#0455BF] hover:bg-[#03449a] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-base font-semibold transition-all shadow-lg dark:shadow-blue-900/30 disabled:opacity-50"
                   >
-                    {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (t('auth.verifyAndRegister') || 'Xác thực & Đăng ký')}
+                    {registerHook.isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('auth.verifyAndRegister', 'Verify & Register')}
                   </Button>
 
                   <button
@@ -604,7 +604,7 @@ const LoginPageContent = () => {
                     disabled={registerHook.isLoading}
                     className="w-full text-center text-sm text-gray-500 dark:text-slate-400 hover:text-[#0455BF] dark:hover:text-blue-400 transition-colors disabled:opacity-50"
                   >
-                    {t('auth.resendOTP') || 'Gửi lại mã OTP'}
+                    {t('auth.resendOTP', 'Resend OTP')}
                   </button>
 
                   {/* Progress Indicator */}

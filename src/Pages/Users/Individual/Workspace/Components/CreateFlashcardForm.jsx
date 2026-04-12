@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { ArrowLeft, CheckSquare, CreditCard, Loader2, Lock, Sparkles, Unlock } from "lucide-react";
-import { Checkbox } from "@/Components/ui/checkbox";
 import { useTranslation } from "react-i18next";
 import { generateAIFlashcardSet } from "@/api/FlashcardAPI";
 import useWorkspaceMaterialSelection from "./useWorkspaceMaterialSelection";

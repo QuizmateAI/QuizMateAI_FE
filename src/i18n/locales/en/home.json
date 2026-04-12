@@ -486,5 +486,216 @@
     "time": "Time",
     "backToPlans": "Back to plans",
     "goHome": "Go to Home"
+  },
+  "walletPage": {
+    "logoAlt": "QuizMate AI Logo",
+    "goHome": "Go to Home",
+    "back": "Back",
+    "summary": {
+      "title": "Your Credit Wallet",
+      "subtitle": "Track your balance and manage credits used for AI features",
+      "badge": "Personal wallet",
+      "totalAvailable": "Total available credits",
+      "creditsUnit": "credits",
+      "hint": "Credits are used to run AI tasks like quiz generation, flashcards, study roadmaps...",
+      "regularCredits": "Regular credits",
+      "planCredits": "Plan credits",
+      "expiresAt": "Expires at",
+      "pricingGuide": "View detailed pricing"
+    },
+    "buy": {
+      "title": "Buy more credits",
+      "subtitle": "Pick a credit package to keep using AI features",
+      "cannotBuyCredit": "Your current plan does not support buying extra credits.",
+      "loading": "Loading...",
+      "packageFallback": "Credit package {{id}}",
+      "baseCredits": "{{count}} base credits",
+      "bonusCredits": "+{{count}} bonus credits"
+    },
+    "history": {
+      "title": "Transaction history",
+      "subtitle": "The 20 most recent transactions on your wallet",
+      "loading": "Loading...",
+      "noHistory": "No transactions yet.",
+      "emptyWorkspace": "—",
+      "table": {
+        "time": "Time",
+        "activity": "Activity",
+        "workspace": "Workspace",
+        "amount": "Credits",
+        "source": "Source"
+      }
+    },
+    "fallback": {
+      "other": "Other",
+      "emDash": "—"
+    },
+    "transactionType": {
+      "WELCOME": "Welcome credits",
+      "TOPUP": "Credit top-up",
+      "CONSUME": "AI credit usage",
+      "RESERVE": "Credit reserved",
+      "RESERVE_CANCELLED": "Reserve released",
+      "REFUND": "Credit refund",
+      "ADJUST": "Credit adjustment",
+      "PLAN_BONUS": "Plan credits",
+      "PLAN_EXPIRE_RESET": "Plan reset"
+    },
+    "transactionSource": {
+      "SYSTEM": "System",
+      "PAYMENT": "Payment",
+      "AI_USAGE": "AI usage",
+      "USER_PLAN": "Your plan",
+      "WORKSPACE_PLAN": "Group plan",
+      "ADMIN": "Admin"
+    },
+    "aiActivity": {
+      "default": "You used an AI feature",
+      "PROCESS_PDF": "You uploaded a PDF",
+      "PROCESS_IMAGE": "You uploaded an image",
+      "PROCESS_TEXT": "You sent text for AI processing",
+      "PROCESS_DOCX": "You uploaded a Word document",
+      "PROCESS_XLSX": "You uploaded an Excel file",
+      "PROCESS_PPTX": "You uploaded a PowerPoint deck",
+      "PROCESS_AUDIO": "You uploaded an audio file",
+      "PROCESS_VIDEO": "You uploaded a video",
+      "GENERATE_QUIZ": "You generated a quiz",
+      "PREVIEW_QUIZ_STRUCTURE": "You previewed a quiz structure",
+      "GENERATE_FLASHCARDS": "You generated flashcards",
+      "GENERATE_MOCK_TEST": "You generated a mock test",
+      "GENERATE_ROADMAP": "You generated a study roadmap",
+      "GENERATE_ROADMAP_PHASES": "You generated roadmap phases",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "You generated study content",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "You generated a knowledge quiz",
+      "SUGGEST_LEARNING_RESOURCES": "You requested learning resources",
+      "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "You analyzed a study profile",
+      "SUGGEST_STUDY_PROFILE_FIELDS": "You requested study profile suggestions",
+      "SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES": "You requested exam template suggestions",
+      "VALIDATE_STUDY_PROFILE_CONSISTENCY": "You validated a study profile"
+    },
+    "uiActivity": {
+      "default": "Used AI for: {{target}}",
+      "PROCESS_PDF": "Uploaded PDF: {{target}}",
+      "PROCESS_DOCX": "Uploaded Word file: {{target}}",
+      "PROCESS_PPTX": "Uploaded slides: {{target}}",
+      "PROCESS_XLSX": "Uploaded Excel file: {{target}}",
+      "PROCESS_IMAGE": "Uploaded image: {{target}}",
+      "PROCESS_AUDIO": "Uploaded audio: {{target}}",
+      "PROCESS_VIDEO": "Uploaded video: {{target}}",
+      "PROCESS_TEXT": "Processed text: {{target}}",
+      "GENERATE_QUIZ": "Generated quiz: {{target}}",
+      "GENERATE_FLASHCARDS": "Generated flashcards from: {{target}}",
+      "GENERATE_MOCK_TEST": "Generated mock test: {{target}}",
+      "GENERATE_ROADMAP": "Generated roadmap: {{target}}",
+      "GENERATE_ROADMAP_PHASES": "Generated phases for: {{target}}",
+      "GENERATE_ROADMAP_PHASE_CONTENT": "Generated content for: {{target}}",
+      "GENERATE_ROADMAP_KNOWLEDGE_QUIZ": "Generated knowledge quiz: {{target}}"
+    },
+    "txActivity": {
+      "welcomeTitle": "You received welcome credits",
+      "welcomeSubtitle": "A welcome bonus for your new account",
+      "planBonusTitle": "You received plan credits",
+      "planBonusSubtitle": "Included plan credits were added to your wallet",
+      "topupTitle": "You topped up credits",
+      "topupSubtitle": "Credits were added to your wallet",
+      "refundTitle": "You received a credit refund",
+      "refundSubtitle": "Unused credits were returned to your wallet",
+      "reserveCancelledTitle": "A reserved amount was released",
+      "reserveCancelledSubtitle": "Reserved credits were returned to your wallet",
+      "planExpireResetTitle": "Plan credits were reset",
+      "planExpireResetSubtitle": "The system reset your plan credits for the next cycle"
+    }
+  },
+  "feedbackCenterPage": {
+    "summary": {
+      "pendingSurveysTitle": "Pending surveys",
+      "pendingSurveysHelper": "Requests that still need your answers",
+      "productTicketsTitle": "Product tickets",
+      "productTicketsHelper": "Bug reports, support requests, product blockers",
+      "systemTicketsTitle": "System tickets",
+      "systemTicketsHelper": "Platform incidents and infrastructure issues",
+      "openTicketsTitle": "Open tickets",
+      "openTicketsHelper": "Open or in-progress product/system tickets"
+    },
+    "createSection": {
+      "title": "Create a new ticket",
+      "description": "Choose the correct channel so super admin can pick up the issue in the right queue.",
+      "productTitle": "Product feedback",
+      "productDescription": "Bugs, missing flows, support requests, or anything blocking normal product usage.",
+      "sendProductTicket": "Send product ticket",
+      "openProductQueue": "Open product queue",
+      "systemTitle": "System feedback",
+      "systemDescription": "Platform incidents, unstable service, infrastructure errors, or operational issues.",
+      "sendSystemTicket": "Send system ticket",
+      "openSystemQueue": "Open system queue"
+    },
+    "recentTickets": {
+      "title": "Recent tickets",
+      "description": "The latest feedback handled inside the dedicated product and system queues.",
+      "loading": "Loading tickets...",
+      "emptyTitle": "No ticket yet",
+      "emptyDescription": "Create a product or system ticket to start the feedback flow.",
+      "openQueues": "Open ticket queues"
+    },
+    "pendingSurveys": {
+      "title": "Pending surveys",
+      "description": "Scheduled feedback requests are separated into their own survey queue.",
+      "emptyTitle": "No pending survey right now",
+      "emptyDescription": "When the system creates a scheduled survey, it will appear here.",
+      "openQueue": "Open survey queue"
+    }
+  },
+  "feedbackChannelPages": {
+    "common": {
+      "totalTickets": "Total tickets",
+      "openInProgress": "Open / In progress",
+      "resolvedClosed": "Resolved / Closed"
+    },
+    "product": {
+      "heroTitle": "Product queue",
+      "heroDescription": "Report bugs, ask for support, or request missing product flows here.",
+      "sendTicket": "Send product ticket",
+      "totalHelper": "All product-related requests from your account",
+      "openHelper": "Issues still being handled by super admin",
+      "resolvedHelper": "Requests that already reached a final state",
+      "listTitle": "Product tickets list",
+      "listDescription": "Track replies and handling progress without mixing in system incidents or surveys.",
+      "loading": "Loading product tickets...",
+      "emptyTitle": "No product ticket yet",
+      "emptyDescription": "Open a ticket when product issues block your work."
+    },
+    "system": {
+      "heroTitle": "System queue",
+      "heroDescription": "Use this queue for outages, service instability, infrastructure issues, and other platform incidents.",
+      "sendTicket": "Send system ticket",
+      "totalHelper": "All system-related requests from your account",
+      "openHelper": "Incidents still under handling",
+      "resolvedHelper": "Incidents that already have a final status",
+      "listTitle": "System tickets list",
+      "listDescription": "Keep infrastructure and service incidents in a separate list from product requests.",
+      "loading": "Loading system tickets...",
+      "emptyTitle": "No system ticket yet",
+      "emptyDescription": "Report platform incidents here when the issue is not limited to a single product flow."
+    }
+  },
+  "feedbackSurveyPage": {
+    "header": {
+      "title": "Survey queue",
+      "description": "Scheduled feedback forms are separated from support tickets so they can be managed independently."
+    },
+    "summary": {
+      "pendingTitle": "Pending surveys",
+      "pendingHelper": "Requests that still need your answers",
+      "flowTitle": "Survey flow",
+      "flowValue": "Separate",
+      "flowHelper": "Survey forms stay out of the product/system ticket queues"
+    },
+    "list": {
+      "title": "Pending survey requests",
+      "description": "Answer these structured forms separately from support conversations.",
+      "loading": "Loading surveys...",
+      "emptyTitle": "No pending survey right now",
+      "emptyDescription": "When a survey is created for you, it will appear in this dedicated queue."
+    }
   }
 }

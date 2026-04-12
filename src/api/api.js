@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '@/i18n';
 import { clearUserCache } from '@/Utils/userCache';
 
 function readEnvString(value) {
@@ -98,7 +99,7 @@ api.interceptors.response.use(
       return Promise.reject({
         statusCode: 408,
         code: 'REQUEST_TIMEOUT',
-        message: 'Yêu cầu đang xử lý lâu hơn dự kiến. Vui lòng đợi thêm một chút rồi kiểm tra lại.',
+        message: i18n.t('error.requestTimeout'),
         data: error?.response?.data,
       });
     }
@@ -108,7 +109,7 @@ api.interceptors.response.use(
     const validationErrors = data?.data;
     const errorMessage = data?.message || (validationErrors && typeof validationErrors === 'object'
       ? Object.values(validationErrors).join(', ')
-      : null) || 'Có lỗi xảy ra, vui lòng thử lại';
+      : null) || i18n.t('error.unknown');
 
     // Phát sự kiện toàn cục khi BE trả về lỗi giới hạn gói (safety net cho UI guards)
     const businessCode = data?.code;

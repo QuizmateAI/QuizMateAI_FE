@@ -13,24 +13,24 @@ import {
 import { cn } from '@/lib/utils';
 import { formatGroupLearningMode } from '../utils/groupDisplay';
 
-function formatToggleState(value, lang, enabledLabel, disabledLabel) {
-  if (value == null) return lang === 'en' ? 'Not configured' : 'Chưa cấu hình';
+function formatToggleState(value, t, enabledLabel, disabledLabel) {
+  if (value == null) return t('groupProfileOverviewPanel.toggle.notConfigured', 'Not configured');
   return value ? enabledLabel : disabledLabel;
 }
 
-function formatSeatLimit(value, lang) {
+function formatSeatLimit(value, t) {
   const safeValue = Number(value);
   if (Number.isFinite(safeValue) && safeValue > 0) {
-    return lang === 'en' ? `${safeValue} members` : `${safeValue} thành viên`;
+    return t('groupProfileOverviewPanel.seatLimit.members', '{{count}} members', { count: safeValue });
   }
-  return lang === 'en' ? 'Based on active group plan' : 'Theo gói group hiện tại';
+  return t('groupProfileOverviewPanel.seatLimit.basedOnPlan', 'Based on active group plan');
 }
 
-function formatCompletionState(value, lang) {
-  if (value == null) return lang === 'en' ? 'In progress' : 'Đang hoàn thiện';
+function formatCompletionState(value, t) {
+  if (value == null) return t('groupProfileOverviewPanel.completion.inProgress', 'In progress');
   return value
-    ? (lang === 'en' ? 'Completed' : 'Đã hoàn tất')
-    : (lang === 'en' ? 'In progress' : 'Đang hoàn thiện');
+    ? t('groupProfileOverviewPanel.completion.completed', 'Completed')
+    : t('groupProfileOverviewPanel.completion.inProgress', 'In progress');
 }
 
 function MetricCard({ icon: Icon, label, value, description, toneClass, isDarkMode }) {
@@ -115,26 +115,26 @@ function GroupProfileOverviewPanel({
   compact = false,
   onOpenProfileConfig,
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
-  const emptyLabel = currentLang === 'en' ? 'Not configured yet' : 'Chưa cập nhật';
+  const emptyLabel = t('groupProfileOverviewPanel.emptyLabel', 'Not configured yet');
 
   const learningModeLabel = formatGroupLearningMode(group?.learningMode, currentLang) || emptyLabel;
-  const completionLabel = formatCompletionState(group?.onboardingCompleted, currentLang);
+  const completionLabel = formatCompletionState(group?.onboardingCompleted, t);
   const roadmapLabel = formatToggleState(
     group?.roadmapEnabled,
-    currentLang,
-    currentLang === 'en' ? 'Enabled' : 'Đang bật',
-    currentLang === 'en' ? 'Disabled' : 'Đang tắt',
+    t,
+    t('groupProfileOverviewPanel.toggle.enabled', 'Enabled'),
+    t('groupProfileOverviewPanel.toggle.disabled', 'Disabled'),
   );
-  const roadmapBadgeLabel = currentLang === 'en'
-    ? (group?.roadmapEnabled ? 'Shared roadmap on' : 'Shared roadmap off')
-    : (group?.roadmapEnabled ? 'Có lộ trình chung' : 'Không có lộ trình chung');
+  const roadmapBadgeLabel = group?.roadmapEnabled
+    ? t('groupProfileOverviewPanel.roadmapBadge.on', 'Shared roadmap on')
+    : t('groupProfileOverviewPanel.roadmapBadge.off', 'Shared roadmap off');
   const preLearningLabel = formatToggleState(
     group?.preLearningRequired,
-    currentLang,
-    currentLang === 'en' ? 'Required' : 'Yêu cầu',
-    currentLang === 'en' ? 'Not required' : 'Không yêu cầu',
+    t,
+    t('groupProfileOverviewPanel.toggle.required', 'Required'),
+    t('groupProfileOverviewPanel.toggle.notRequired', 'Not required'),
   );
   const profileProgressLabel = Number.isFinite(Number(group?.currentStep)) && Number.isFinite(Number(group?.totalSteps))
     ? `${group.currentStep}/${group.totalSteps}`
@@ -143,47 +143,47 @@ function GroupProfileOverviewPanel({
   const knowledgeScope = group?.knowledge || emptyLabel;
   const groupRules = group?.rules || emptyLabel;
 
-  const heroTitle = currentLang === 'en'
-    ? 'A quick read of the group baseline before expanding the workspace'
-    : 'Tóm tắt mặt bằng nhóm trước khi mở rộng workspace';
-  const heroDescription = currentLang === 'en'
-    ? 'Everything here reflects the live profile already saved for this group: direction, baseline rules, and the shared learning setup that the team is following.'
-    : 'Toàn bộ khu này phản ánh profile đang được lưu cho nhóm: hướng học, nội quy cốt lõi và cấu hình học tập chung mà cả nhóm đang đi theo.';
-  const actionButtonLabel = currentLang === 'en'
-    ? 'Edit'
-    : 'Chỉnh sửa';
+  const heroTitle = t(
+    'groupProfileOverviewPanel.hero.title',
+    'A quick read of the group baseline before expanding the workspace',
+  );
+  const heroDescription = t(
+    'groupProfileOverviewPanel.hero.description',
+    'Everything here reflects the live profile already saved for this group: direction, baseline rules, and the shared learning setup that the team is following.',
+  );
+  const actionButtonLabel = t('groupProfileOverviewPanel.actionButton', 'Edit');
 
   const metricCards = useMemo(() => ([
     {
-      label: currentLang === 'en' ? 'Setup status' : 'Trạng thái setup',
+      label: t('groupProfileOverviewPanel.metrics.setupStatus.label', 'Setup status'),
       value: completionLabel,
-      description: currentLang === 'en' ? 'Whether the baseline is ready for the team' : 'Cho biết profile nền tảng của nhóm đã sẵn sàng hay chưa',
+      description: t('groupProfileOverviewPanel.metrics.setupStatus.description', 'Whether the baseline is ready for the team'),
       icon: Sparkles,
       toneClass: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
     },
     {
-      label: currentLang === 'en' ? 'Learning mode' : 'Chế độ học',
+      label: t('groupProfileOverviewPanel.metrics.learningMode.label', 'Learning mode'),
       value: learningModeLabel,
-      description: currentLang === 'en' ? 'Defines the default rhythm for roadmap and content' : 'Định nghĩa nhịp học mặc định của roadmap và nội dung',
+      description: t('groupProfileOverviewPanel.metrics.learningMode.description', 'Defines the default rhythm for roadmap and content'),
       icon: BrainCircuit,
       toneClass: isDarkMode ? 'bg-violet-400/10 text-violet-100' : 'bg-violet-50 text-violet-700',
     },
     {
-      label: currentLang === 'en' ? 'Seat limit' : 'Sức chứa',
-      value: formatSeatLimit(group?.maxMemberOverride, currentLang),
-      description: currentLang === 'en' ? 'Current capacity available for this group setup' : 'Sức chứa hiện tại dành cho mô hình nhóm này',
+      label: t('groupProfileOverviewPanel.metrics.seatLimit.label', 'Seat limit'),
+      value: formatSeatLimit(group?.maxMemberOverride, t),
+      description: t('groupProfileOverviewPanel.metrics.seatLimit.description', 'Current capacity available for this group setup'),
       icon: Users,
       toneClass: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
     },
-  ]), [completionLabel, currentLang, group?.maxMemberOverride, isDarkMode, learningModeLabel]);
+  ]), [completionLabel, t, group?.maxMemberOverride, isDarkMode, learningModeLabel]);
 
   const primaryFields = [
-    { label: currentLang === 'en' ? 'Group name' : 'Tên nhóm', value: group?.groupName || emptyLabel },
-    { label: currentLang === 'en' ? 'Domain' : 'Lĩnh vực', value: group?.domain || emptyLabel },
-    { label: currentLang === 'en' ? 'Exam name' : 'Kỳ thi', value: group?.examName || emptyLabel },
-    { label: currentLang === 'en' ? 'Profile progress' : 'Tiến độ profile', value: profileProgressLabel },
-    { label: currentLang === 'en' ? 'Shared roadmap' : 'Roadmap chung', value: roadmapLabel },
-    { label: currentLang === 'en' ? 'Entry assessment' : 'Đánh giá đầu vào', value: preLearningLabel },
+    { label: t('groupProfileOverviewPanel.fields.groupName', 'Group name'), value: group?.groupName || emptyLabel },
+    { label: t('groupProfileOverviewPanel.fields.domain', 'Domain'), value: group?.domain || emptyLabel },
+    { label: t('groupProfileOverviewPanel.fields.examName', 'Exam name'), value: group?.examName || emptyLabel },
+    { label: t('groupProfileOverviewPanel.fields.profileProgress', 'Profile progress'), value: profileProgressLabel },
+    { label: t('groupProfileOverviewPanel.fields.sharedRoadmap', 'Shared roadmap'), value: roadmapLabel },
+    { label: t('groupProfileOverviewPanel.fields.entryAssessment', 'Entry assessment'), value: preLearningLabel },
   ];
 
   return (
@@ -209,7 +209,7 @@ function GroupProfileOverviewPanel({
                   'text-[11px] font-semibold uppercase tracking-[0.24em]',
                   isDarkMode ? 'text-slate-500' : 'text-slate-500'
                 )}>
-                  {currentLang === 'en' ? 'Group profile snapshot' : 'Profile nhóm đã setup'}
+                  {t('groupProfileOverviewPanel.hero.eyebrow', 'Group profile snapshot')}
                 </p>
                 <h3 className={cn('mt-2 text-xl font-bold leading-tight sm:text-2xl', isDarkMode ? 'text-white' : 'text-slate-900')}>
                   {heroTitle}
@@ -287,13 +287,14 @@ function GroupProfileOverviewPanel({
                   'text-[11px] font-semibold uppercase tracking-[0.18em]',
                   isDarkMode ? 'text-slate-500' : 'text-slate-500'
                 )}>
-                  {currentLang === 'en' ? 'Core setup' : 'Thiết lập cốt lõi'}
+                  {t('groupProfileOverviewPanel.coreSetup.label', 'Core setup')}
                 </p>
               </div>
               <p className={cn('mt-3 text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                {currentLang === 'en'
-                  ? 'These values define how the room identifies itself and the shared baseline the team is following.'
-                  : 'Đây là những giá trị định nghĩa nhóm này là ai và baseline học tập chung mà cả nhóm đang theo.'}
+                {t(
+                  'groupProfileOverviewPanel.coreSetup.description',
+                  'These values define how the room identifies itself and the shared baseline the team is following.',
+                )}
               </p>
 
               <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -304,8 +305,8 @@ function GroupProfileOverviewPanel({
             </div>
 
             <NarrativeCard
-              eyebrow={currentLang === 'en' ? 'Knowledge scope' : 'Nội dung kiến thức'}
-              title={currentLang === 'en' ? 'What this group is learning together' : 'Những gì nhóm đang học cùng nhau'}
+              eyebrow={t('groupProfileOverviewPanel.knowledge.eyebrow', 'Knowledge scope')}
+              title={t('groupProfileOverviewPanel.knowledge.title', 'What this group is learning together')}
               content={knowledgeScope}
               icon={Compass}
               toneClass={isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}
@@ -315,8 +316,8 @@ function GroupProfileOverviewPanel({
 
           <div className="space-y-4">
             <NarrativeCard
-              eyebrow={currentLang === 'en' ? 'Learning goal' : 'Mục tiêu học tập'}
-              title={currentLang === 'en' ? 'What success should look like for the group' : 'Đích đến mà nhóm đang hướng tới'}
+              eyebrow={t('groupProfileOverviewPanel.learningGoal.eyebrow', 'Learning goal')}
+              title={t('groupProfileOverviewPanel.learningGoal.title', 'What success should look like for the group')}
               content={groupGoal}
               icon={Target}
               toneClass={isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700'}
@@ -324,8 +325,8 @@ function GroupProfileOverviewPanel({
             />
 
             <NarrativeCard
-              eyebrow={currentLang === 'en' ? 'Group rules' : 'Nội quy nhóm'}
-              title={currentLang === 'en' ? 'Shared operating rules for new and current members' : 'Quy ước chung cho cả thành viên mới và hiện tại'}
+              eyebrow={t('groupProfileOverviewPanel.groupRules.eyebrow', 'Group rules')}
+              title={t('groupProfileOverviewPanel.groupRules.title', 'Shared operating rules for new and current members')}
               content={groupRules}
               icon={Users}
               toneClass={isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700'}
