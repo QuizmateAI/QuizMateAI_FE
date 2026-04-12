@@ -643,18 +643,19 @@
       "timerMode": "Total time mode",
       "timerModeHintOn": "All questions share the overall quiz duration",
       "timerModeHintOff": "Each question has its own time limit",
-      "examModeLabel": "Exam Type",
-      "examModeType1": "Timed Exam",
-      "examModeType2": "Sequential Timed Exam",
+      "examModeLabel": "Test Type",
+      "examModeType1": "Timed Test",
+      "examModeType2": "Sequential Timed Test",
       "examModeType1Short": "Timed total",
       "examModeType2Short": "Per question",
       "minutes": "min",
       "practice": "Practice",
-      "exam": "Exam",
+      "exam": "Test",
+      "practiceLockedHint": "Complete 1 test attempt to unlock practice mode",
       "chooseMode": "Choose a quiz mode",
       "chooseModeDescription": "How do you want to start this quiz?",
       "confirmPractice": "Start this quiz in practice mode?",
-      "confirmExam": "Start this quiz in exam mode?",
+      "confirmExam": "Start this quiz in test mode?",
       "addQuestion": "Add question",
       "totalQuestions": "Total questions",
       "maxScore": "Max score",
@@ -764,7 +765,8 @@
         "PENDING": "Pending",
         "INACTIVE": "Inactive",
         "PROCESSING": "Processing",
-        "ERROR": "Error"
+        "ERROR": "Error",
+        "PENDING_LEADER": "Awaiting leader attempt"
       },
       "activeReadyLabel": "Ready to take",
       "statusFilter": {
@@ -1325,7 +1327,7 @@
         "empty": "No attempt history yet.",
         "loading": "Loading history..."
       },
-      "startExamPrompt": "Start exam mode for this quiz?",
+      "startExamPrompt": "Start test mode for this quiz?",
       "tabs": {
         "history": "History",
         "overview": "Overview",

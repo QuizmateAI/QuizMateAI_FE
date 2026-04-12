@@ -98,3 +98,9 @@ export const toggleVisibility = async (workspaceId) => {
   const response = await api.put(`/group/${workspaceId}/visibility`);
   return response;
 };
+
+/** Xếp hạng tổng hợp nhóm — aggregate 1 API thay vì N+1 */
+export const getGroupOverallRanking = async (workspaceId) => {
+  const response = await api.get(`/group/${workspaceId}/ranking/overall`);
+  return response;
+};
