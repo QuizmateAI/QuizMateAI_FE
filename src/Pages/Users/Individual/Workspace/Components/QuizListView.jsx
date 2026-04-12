@@ -1495,7 +1495,11 @@ function QuizListView({
           </div>
         ) : (
           <>
-          <div className={useLegacyRoadmapCards ? "space-y-2" : "mx-auto grid max-w-[1080px] grid-cols-1 gap-4 md:grid-cols-2"}>
+          <div className={useLegacyRoadmapCards
+            ? "space-y-2"
+            : embedded
+              ? "grid grid-cols-1 gap-3"
+              : "mx-auto grid max-w-[1080px] grid-cols-1 gap-4 md:grid-cols-2"}>
             {paginatedQuizzes.map((quiz) => {
               if (useLegacyRoadmapCards) {
                 return renderLegacyRoadmapCard(quiz);
