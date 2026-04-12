@@ -1,16 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { BookOpen, BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, Compass, Eye, FileText, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Pencil, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/Components/ui/button";
-import { Checkbox } from "@/Components/ui/checkbox";
-import HomeButton from "@/Components/ui/HomeButton";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
-import RoadmapCanvasView2 from "./RoadmapCanvasView2";
+import RoadmapCanvasView2 from "@/Pages/Users/Group/Components/RoadmapCanvasView2";
+import RoadmapCanvasViewStage from "./RoadmapCanvasViewStage";
 
 const CANVAS_WIDTH = 1800;
 const CANVAS_HEIGHT = 1220;
@@ -222,6 +219,7 @@ function RoadmapCanvasView({
   selectedEmptyStateMaterialIds = [],
   onToggleEmptyStateMaterial,
   onToggleAllEmptyStateMaterials,
+  onRoadmapLoad,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -266,6 +264,36 @@ function RoadmapCanvasView({
   const shouldDisableEmptyStateAction = disableCreate
     || (hasEmptyStateMaterialPicker && normalizedEmptyStateMaterialIds.length === 0);
 
+  const canShowRoadmapLevelFeedback = useMemo(() => {
+    const phases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
+    if (phases.length === 0) return false;
+
+    const isPhaseFinishedStatus = (phaseStatus) => {
+      const normalizedStatus = String(phaseStatus || "").toUpperCase();
+      return normalizedStatus === "COMPLETED" || normalizedStatus === "SKIPPED";
+    };
+
+    const hasCompletedPostLearning = (phase) => {
+      const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+      return postLearningQuizzes.some((quiz) => {
+        const attempted = quiz?.myAttempted === true;
+        const passed = quiz?.myPassed === true;
+        const status = String(quiz?.status || "").toUpperCase();
+        return attempted || passed || status === "COMPLETED";
+      });
+    };
+
+    const allPhasesFinished = phases.every((phase) => isPhaseFinishedStatus(phase?.status));
+
+    const postLearningSatisfied = phases.every((phase) => {
+      const pl = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+      if (pl.length === 0) return true;
+      return hasCompletedPostLearning(phase);
+    });
+
+    return allPhasesFinished && postLearningSatisfied;
+  }, [roadmap?.phases]);
+
   useEffect(() => {
     roadmapRef.current = roadmap;
   }, [roadmap]);
@@ -289,7 +317,7 @@ function RoadmapCanvasView({
         : null;
       const resolvedCanvasView = forcedCanvasView
         || nextRoadmap?.canvasView
-        || (storedCanvasView === "view1" || storedCanvasView === "view2" ? storedCanvasView : null)
+        || (storedCanvasView === "view1" || storedCanvasView === "view2" || storedCanvasView === "overview" ? storedCanvasView : null)
         || "view1";
       const mergedRoadmap = nextRoadmap
         ? { ...nextRoadmap, canvasView: resolvedCanvasView }
@@ -297,6 +325,9 @@ function RoadmapCanvasView({
       setRoadmap(mergedRoadmap);
       if (mergedRoadmap?.canvasView) {
         onCanvasViewChange?.(mergedRoadmap.canvasView);
+      }
+      if (mergedRoadmap?.roadmapId) {
+        onRoadmapLoad?.(mergedRoadmap.roadmapId);
       }
 
       if (!shouldKeepViewportState) {
@@ -344,507 +375,432 @@ function RoadmapCanvasView({
     const rect = viewportElement.getBoundingClientRect();
     const fitScale = getFitScaleForBounds(bounds, rect, FIT_EDGE_PADDING);
     return {
-      phaseGap: FS_PHASE_GAP,
-      amplitude: FS_WAVE_AMPLITUDE,
-      centerY: FS_WAVE_CENTER_Y,
-      svgHeight: FS_SVG_HEIGHT,
-      cardWidth: FS_CARD_WIDTH,
-      padLeft: FS_PAD_LEFT,
-      padRight: FS_PAD_RIGHT,
-      boneLength: FS_BONE_LENGTH,
-      minFitZoom: 0.82,
+      minScale: clamp(fitScale, 0.05, 1),
+      maxScale: clamp(fitScale * 3.2, 1.2, 4),
     };
-  }
-
-  if (width < 1024) {
-    return {
-      phaseGap: 208,
-      amplitude: 42,
-      centerY: 216,
-      svgHeight: 512,
-      cardWidth: 196,
-      padLeft: 96,
-      padRight: 96,
-      boneLength: 40,
-      minFitZoom: 0.68,
-    };
-  }
-
-  if (width < 1400) {
-    return {
-      phaseGap: 232,
-      amplitude: 50,
-      centerY: 238,
-      svgHeight: 564,
-      cardWidth: 216,
-      padLeft: 112,
-      padRight: 112,
-      boneLength: 44,
-      minFitZoom: 0.74,
-    };
-  }
-
-  if (width < 1680) {
-    return {
-      phaseGap: 256,
-      amplitude: 54,
-      centerY: 252,
-      svgHeight: 606,
-      cardWidth: 228,
-      padLeft: 128,
-      padRight: 128,
-      boneLength: 46,
-      minFitZoom: 0.8,
-    };
-  }
-
-  return {
-    phaseGap: PHASE_GAP,
-    amplitude: WAVE_AMPLITUDE,
-    centerY: WAVE_CENTER_Y,
-    svgHeight: SVG_HEIGHT,
-    cardWidth: CARD_WIDTH,
-    padLeft: PAD_LEFT,
-    padRight: PAD_RIGHT,
-    boneLength: BONE_LENGTH,
-      minFitZoom: 0.84,
   };
-}
 
-const NODE_COLORS = {
-  done: "#10b981",
-  current: "#0ea5e9",
-  next: "#f59e0b",
-  locked: "#94a3b8",
-};
+  const getOverviewTransform = (bounds) => {
+    const viewportElement = viewportRef.current;
+    if (!viewportElement) {
+      return { x: -CENTER_X + 520, y: -CENTER_Y + 390, scale: 1 };
+    }
 
-const NODE_GLOW = {
-  done: "rgba(16,185,129,0.35)",
-  current: "rgba(14,165,233,0.4)",
-  next: "rgba(245,158,11,0.3)",
-  locked: "transparent",
-};
+    const rect = viewportElement.getBoundingClientRect();
+    const scale = clamp(getFitScaleForBounds(bounds, rect, FIT_EDGE_PADDING), 0.05, 1.5);
 
-const STATUS_BADGE_STYLES = {
-  done: "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]",
-  current: "bg-sky-100 text-sky-800 border border-sky-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]",
-  next: "bg-amber-100 text-amber-800 border border-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]",
-  locked: "bg-slate-200 text-slate-600 border border-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]",
-};
+    return {
+      x: rect.width / 2 - bounds.centerX * scale,
+      y: rect.height / 2 - bounds.centerY * scale,
+      scale,
+    };
+  };
 
-const STATUS_ICONS = {
-  done: CheckCircle2,
-  current: CircleDot,
-  next: Clock,
-  locked: Lock,
-};
+  const clampTransformToViewport = (nextTransform, bounds) => {
+    const viewportElement = viewportRef.current;
+    if (!viewportElement) {
+      return nextTransform;
+    }
 
-const STATUS_LABELS = {
-  done: "workspace.shell.phaseCompleted",
-  current: "workspace.shell.phaseCurrent",
-  next: "workspace.timeline.phaseNext",
-  locked: "workspace.shell.phaseLocked",
-};
+    const rect = viewportElement.getBoundingClientRect();
+    const scaledWidth = bounds.width * nextTransform.scale;
+    const scaledHeight = bounds.height * nextTransform.scale;
+    const margin = PAN_MARGIN;
 
-/* ─── Geometry helpers (accept constants as params for fullscreen) ─── */
-function getPhaseX(index, padLeft = PAD_LEFT, phaseGap = PHASE_GAP) {
-  return padLeft + index * phaseGap;
-}
-function getPhaseY(index, centerY = WAVE_CENTER_Y, amplitude = WAVE_AMPLITUDE) {
-  return centerY + (index % 2 === 0 ? -amplitude : amplitude);
-}
-function isCardAbove(index) {
-  return index % 2 === 0;
-}
+    let minX;
+    let maxX;
+    if (scaledWidth + margin * 2 <= rect.width) {
+      const centeredX = rect.width / 2 - bounds.centerX * nextTransform.scale;
+      minX = centeredX - margin;
+      maxX = centeredX + margin;
+    } else {
+      minX = rect.width - bounds.maxX * nextTransform.scale - margin;
+      maxX = -bounds.minX * nextTransform.scale + margin;
+    }
 
-function computeWavePath(count, padLeft = PAD_LEFT, phaseGap = PHASE_GAP, centerY = WAVE_CENTER_Y, amplitude = WAVE_AMPLITUDE) {
-  if (count < 1) return "";
-  const gX = (i) => getPhaseX(i, padLeft, phaseGap);
-  const gY = (i) => getPhaseY(i, centerY, amplitude);
+    let minY;
+    let maxY;
+    if (scaledHeight + margin * 2 <= rect.height) {
+      const centeredY = rect.height / 2 - bounds.centerY * nextTransform.scale;
+      minY = centeredY - margin;
+      maxY = centeredY + margin;
+    } else {
+      minY = rect.height - bounds.maxY * nextTransform.scale - margin;
+      maxY = -bounds.minY * nextTransform.scale + margin;
+    }
 
-  if (count === 1) {
-    const x = gX(0);
-    const y = gY(0);
-    return `M ${x - 40},${centerY} Q ${x - 20},${y} ${x},${y} Q ${x + 20},${y} ${x + 40},${centerY}`;
-  }
-  const pts = Array.from({ length: count }, (_, i) => ({ x: gX(i), y: gY(i) }));
-  let d = `M ${pts[0].x - 60},${centerY} Q ${pts[0].x - 30},${pts[0].y} ${pts[0].x},${pts[0].y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const cur = pts[i];
-    const nxt = pts[i + 1];
-    const cpx = (cur.x + nxt.x) / 2;
-    d += ` C ${cpx},${cur.y} ${cpx},${nxt.y} ${nxt.x},${nxt.y}`;
-  }
-  const last = pts[pts.length - 1];
-  d += ` Q ${last.x + 30},${last.y} ${last.x + 60},${centerY}`;
-  return d;
-}
+    return {
+      ...nextTransform,
+      x: clamp(nextTransform.x, minX, maxX),
+      y: clamp(nextTransform.y, minY, maxY),
+    };
+  };
 
-function computeTotalWidth(count, padLeft = PAD_LEFT, padRight = PAD_RIGHT, phaseGap = PHASE_GAP) {
-  return padLeft + Math.max(0, count - 1) * phaseGap + padRight;
-}
+  useEffect(() => {
+    loadRoadmap({ soft: hasLoadedRoadmapRef.current });
+  }, [loadRoadmap, reloadToken]);
 
-function getLocalizedConfigOptionTitle(t, optionGroup, value, fallback = "—") {
-  if (!value) return fallback;
-  const normalizedValue = String(value).trim().toUpperCase();
-  const optionKey = `workspace.profileConfig.options.${optionGroup}.${normalizedValue}.title`;
-  const translated = t(optionKey);
-  return translated === optionKey ? normalizedValue : translated;
-}
+  const layout = useMemo(() => buildLayout(roadmap?.phases ?? [], phaseOffsets, knowledgeOffsets), [knowledgeOffsets, phaseOffsets, roadmap]);
+  const layoutBounds = useMemo(() => buildLayoutBounds(layout, expandedKnowledges), [expandedKnowledges, layout]);
+  const labels = useMemo(() => ({
+    resetView: t("workspace.roadmap.canvas.resetView"),
+    dragHint: t("workspace.roadmap.canvas.dragHint"),
+    centralRoadmap: t("workspace.roadmap.canvas.centralRoadmap"),
+    estimatedDuration: t("workspace.roadmap.canvas.estimatedDuration"),
+    phases: t("workspace.roadmap.canvas.phases"),
+    knowledges: t("workspace.roadmap.canvas.knowledges"),
+    quizzes: t("workspace.roadmap.canvas.quizzes"),
+    questions: t("workspace.roadmap.canvas.questions"),
+    cards: t("workspace.roadmap.canvas.cards"),
+    postLearning: t("workspace.roadmap.canvas.postLearning"),
+    phase: t("workspace.roadmap.canvas.phase"),
+    movePhase: t("workspace.roadmap.canvas.movePhase"),
+    moveKnowledge: t("workspace.roadmap.canvas.moveKnowledge"),
+    expand: t("workspace.roadmap.canvas.expand"),
+    collapse: t("workspace.roadmap.canvas.collapse"),
+    hideTopBar: t("workspace.roadmap.canvas.hideTopBar"),
+    showTopBar: t("workspace.roadmap.canvas.showTopBar"),
+    zoomIn: t("workspace.roadmap.canvas.zoomIn"),
+    zoomOut: t("workspace.roadmap.canvas.zoomOut"),
+    emptyTitle: t("workspace.roadmap.canvas.emptyTitle"),
+    emptyDescription: t("workspace.roadmap.canvas.emptyDescription"),
+    selectorTitle: t("workspace.roadmap.canvas.selectorTitle"),
+    selectorDescription: t("workspace.roadmap.canvas.selectorDescription"),
+    canvasView1Title: t("workspace.roadmap.canvasView1Title"),
+    canvasView1Description: t("workspace.roadmap.canvasView1Description"),
+    canvasView2Title: t("workspace.roadmap.canvasView2Title"),
+    canvasView2Description: t("workspace.roadmap.canvasView2Description"),
+    quiz: t("workspace.roadmap.canvas.quiz"),
+    flashcard: t("workspace.roadmap.canvas.flashcard"),
+  }), [t]);
 
-function getFormattedRoadmapConfigValue(t, fieldKey, value) {
-  if (value == null || value === "") {
-    return t("workspace.shell.roadmapConfigMissing", "Chưa cấu hình");
-  }
-
-  if (fieldKey === "estimatedTotalDays") {
-    return t("workspace.onboarding.summary.values.estimatedTotalDays", {
-      value,
-      defaultValue: `${value} days`,
-    });
-  }
-
-  if (fieldKey === "recommendedMinutesPerDay") {
-    return t("workspace.onboarding.summary.values.recommendedMinutesPerDay", {
-      value,
-      defaultValue: `${value} minutes/day`,
-    });
-  }
-
-  if (fieldKey === "knowledgeLoad") {
-    return getLocalizedConfigOptionTitle(t, "knowledgeLoad", value);
-  }
-
-  if (fieldKey === "roadmapSpeedMode") {
-    return getLocalizedConfigOptionTitle(t, "roadmapSpeedMode", value);
-  }
-
-  if (fieldKey === "adaptationMode") {
-    return getLocalizedConfigOptionTitle(t, "adaptationMode", value);
-  }
-
-  return String(value);
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   FishboneSVG — The wave path + nodes + bone connectors
-   ═══════════════════════════════════════════════════════════════════ */
-function FishboneSVG({ phases, currentIndex, phaseStateMap, focusedPhaseId, onNodeClick, padLeft, padRight, phaseGap, centerY, amplitude, svgHeight, boneLength }) {
-  const count = phases.length;
-  if (count === 0) return null;
-  const totalWidth = computeTotalWidth(count, padLeft, padRight, phaseGap);
-  const wavePath = computeWavePath(count, padLeft, phaseGap, centerY, amplitude);
-
-  return (
-    <svg
-      className="fishbone-svg absolute inset-0 pointer-events-none"
-      width={totalWidth}
-      height={svgHeight}
-      viewBox={`0 0 ${totalWidth} ${svgHeight}`}
-      aria-hidden="true"
-    >
-      <defs>
-        {/* Wave gradient */}
-        <linearGradient id="wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#10b981" />
-          <stop offset="40%" stopColor="#14b8a6" />
-          <stop offset="70%" stopColor="#0ea5e9" />
-          <stop offset="100%" stopColor="#6366f1" />
-        </linearGradient>
-        <linearGradient id="wave-grad-dim" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
-          <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.12" />
-          <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.1" />
-        </linearGradient>
-        {/* Node glows */}
-        {Object.entries(NODE_COLORS).map(([key, color]) => (
-          <filter key={key} id={`glow-${key}`} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation={key === "current" ? 6 : 4} />
-            <feColorMatrix type="matrix" values={`0 0 0 0 ${parseInt(color.slice(1, 3), 16) / 255} 0 0 0 0 ${parseInt(color.slice(3, 5), 16) / 255} 0 0 0 0 ${parseInt(color.slice(5, 7), 16) / 255} 0 0 0 0.5 0`} />
-          </filter>
-        ))}
-      </defs>
-
-      {/* Glow layer (wide, blurred) */}
-      <path d={wavePath} fill="none" stroke="url(#wave-grad-dim)" strokeWidth="32" strokeLinecap="round" />
-
-      {/* Main wave ribbon */}
-      <path d={wavePath} fill="none" stroke="url(#wave-grad)" strokeWidth="5" strokeLinecap="round" />
-
-      {/* Highlight line */}
-      <path d={wavePath} fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" strokeDasharray="8 12" />
-
-      {/* Bone connectors + Nodes */}
-      {phases.map((phase, index) => {
-        const x = getPhaseX(index, padLeft, phaseGap);
-        const y = getPhaseY(index, centerY, amplitude);
-        const state = getVisualState(phase, index, currentIndex, phaseStateMap);
-        const isLocked = state === "locked";
-        const above = isCardAbove(index);
-        const boneEndY = above ? y - boneLength : y + boneLength;
-        const isFocused = Number(phase?.phaseId) === Number(focusedPhaseId);
-        const nodeR = state === "current" ? 14 : isFocused ? 13 : 10;
-
-        return (
-          <g key={phase?.phaseId || index}>
-            {/* Bone line */}
-            <line
-              x1={x}
-              y1={y + (above ? -nodeR - 4 : nodeR + 4)}
-              x2={x}
-              y2={boneEndY}
-              stroke={NODE_COLORS[state]}
-              strokeWidth="2"
-              strokeDasharray={state === "locked" ? "4 4" : "none"}
-              opacity={state === "locked" ? 0.4 : 0.7}
-            />
-            {/* Small dot at bone end */}
-            <circle cx={x} cy={boneEndY} r="3" fill={NODE_COLORS[state]} opacity={state === "locked" ? 0.4 : 0.6} />
-
-            {/* Node glow */}
-            <circle cx={x} cy={y} r={nodeR + 8} fill={NODE_GLOW[state]} filter={state !== "locked" ? `url(#glow-${state})` : undefined} />
-
-            {/* Node outer ring */}
-            <circle cx={x} cy={y} r={nodeR + 3} fill="white" />
-
-            {/* Node inner fill */}
-            <circle
-              cx={x}
-              cy={y}
-              r={nodeR}
-              fill={NODE_COLORS[state]}
-              className={isLocked ? "pointer-events-none opacity-70" : "pointer-events-auto cursor-pointer"}
-              onClick={isLocked ? undefined : () => onNodeClick?.(phase)}
-            />
-
-            {/* Phase number */}
-            <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="central" fill="white" fontSize="10" fontWeight="700" className="pointer-events-none select-none">
-              {index + 1}
-            </text>
-
-            {/* Current phase pulse ring */}
-            {state === "current" && (
-              <circle cx={x} cy={y} r={nodeR + 3} fill="none" stroke={NODE_COLORS.current} strokeWidth="2" opacity="0.6">
-                <animate attributeName="r" from={nodeR + 3} to={nodeR + 18} dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" from="0.6" to="0" dur="2s" repeatCount="indefinite" />
-              </circle>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   CompactPhaseCard — Summary card on the fishbone
-   ═══════════════════════════════════════════════════════════════════ */
-function CompactPhaseCard({ phase, index, currentIndex, phaseStateMap, isFocused, onClick, fontClass, t, cardWidth, padLeft, phaseGap, centerY, amplitude, svgHeight, boneLength }) {
-  const x = getPhaseX(index, padLeft, phaseGap);
-  const y = getPhaseY(index, centerY, amplitude);
-  const above = isCardAbove(index);
-  const state = getVisualState(phase, index, currentIndex, phaseStateMap);
-  const isLocked = state === "locked";
-  const StatusIcon = STATUS_ICONS[state];
-  const knowledgeCount = phase?.knowledges?.length || 0;
-
-  const cardLeft = x - cardWidth / 2;
-  const cardTop = above ? y - boneLength + 8 : y + boneLength + 8;
-
-  const borderColor = {
-    done: "border-emerald-400",
-    current: "border-sky-400",
-    next: "border-amber-400",
-    locked: "border-slate-300",
-  }[state];
-
-  const accentBar = {
-    done: "bg-emerald-500",
-    current: "bg-sky-500",
-    next: "bg-amber-500",
-    locked: "bg-slate-400",
-  }[state];
-
-  const cardSurface = {
-    done: "bg-emerald-50/90",
-    current: "bg-sky-50/90",
-    next: "bg-amber-50/90",
-    locked: "bg-slate-100/95",
-  }[state];
-
-  const titleColor = {
-    done: "text-slate-900",
-    current: "text-slate-900",
-    next: "text-slate-900",
-    locked: "text-slate-500",
-  }[state];
-
-  const labelColor = {
-    done: "text-emerald-700",
-    current: "text-sky-700",
-    next: "text-amber-700",
-    locked: "text-slate-400",
-  }[state];
-
-  const metaTone = {
-    done: "text-emerald-700",
-    current: "text-sky-700",
-    next: "text-amber-700",
-    locked: "text-slate-400",
-  }[state];
-
-  return (
-    <div
-      role="button"
-      tabIndex={isLocked ? -1 : 0}
-      aria-disabled={isLocked || undefined}
-      aria-label={`${t("workspace.roadmap.canvas.phase", "Phase")} ${index + 1}: ${phase?.title}`}
-      className={`compact-phase-card absolute transition-all duration-300 ${isLocked ? "cursor-not-allowed" : "cursor-pointer"} ${above ? "origin-bottom" : "origin-top"}`}
-      style={{
-        left: cardLeft,
-        [above ? "bottom" : "top"]: above ? svgHeight - cardTop : cardTop,
-        width: cardWidth,
-      }}
-      onClick={isLocked ? undefined : () => onClick?.(phase)}
-      onKeyDown={(e) => {
-        if (isLocked) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.(phase);
-        }
-      }}
-    >
-      <div
-        className={`relative rounded-xl border-2 shadow-sm overflow-hidden transition-all duration-300 ${borderColor} ${cardSurface} ${
-          isLocked
-            ? "opacity-82 shadow-none saturate-0"
-            : isFocused
-            ? "shadow-lg scale-[1.03] ring-2 ring-offset-1 ring-sky-300"
-            : "hover:shadow-md hover:scale-[1.01]"
-        }`}
-      >
-        {/* Accent bar */}
-        <div className={`h-1 w-full ${accentBar}`} />
-
-          <div className="p-3">
-            {/* Header row */}
-            <div className="flex items-center gap-1.5 mb-1">
-            <span className={`text-[9.5px] uppercase tracking-[0.15em] font-semibold ${labelColor}`}>
-              {t("workspace.roadmap.canvas.phase", "Phase")} {index + 1}
-            </span>
-            <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-px text-[8.5px] font-bold ${STATUS_BADGE_STYLES[state]}`}>
-              <StatusIcon className="h-2.5 w-2.5" />
-              {t(STATUS_LABELS[state], state)}
-            </span>
-          </div>
-
-          {/* Title */}
-          <h4 className={`text-[14px] font-semibold leading-snug line-clamp-2 ${titleColor} ${fontClass}`}>
-            {phase?.title}
-          </h4>
-
-          {/* Description - hidden in compact to save space */}
-          <p className={`mt-1 text-[10.5px] leading-relaxed line-clamp-1 ${isLocked ? "text-slate-400" : "text-slate-600"}`}>
-            {phase?.description || t("workspace.shell.phaseDescriptionFallback", "Phase này sẵn sàng cho knowledge và quiz.")}
-          </p>
-
-          {/* Footer metadata */}
-          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-            {phase?.durationLabel && (
-              <span className={`rounded-full border px-1.5 py-px text-[9.5px] ${isLocked ? "border-slate-300 bg-slate-200 text-slate-400" : `border-white/80 bg-white/85 ${metaTone}`}`}>
-                {phase.durationLabel}
-              </span>
-            )}
-            {knowledgeCount > 0 && (
-              <span className={`rounded-full border px-1.5 py-px text-[9.5px] ${isLocked ? "border-slate-300 bg-slate-200 text-slate-400" : "border-indigo-200 bg-white/90 text-indigo-700"}`}>
-                {knowledgeCount} {t("workspace.shell.phaseKnowledge", "knowledge")}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   KnowledgeDetailCard — Inside the detail panel (Coursera-style)
-   ═══════════════════════════════════════════════════════════════════ */
-function KnowledgeDetailCard({ knowledge, phaseId, stepNumber, totalSteps, onCreateQuiz, onViewQuiz, onEditQuiz, onShareQuiz, isGeneratingQuiz, isLocked = false, fontClass, t }) {
-  const quizItems = knowledge?.quizzes || [];
-  const flashcards = knowledge?.flashcards || [];
-  const hasQuiz = quizItems.length > 0;
-
-  return (
-    <div className={workspaceSurfaceAlt("knowledge-card rounded-xl p-3.5 mb-2.5 border-l-4 transition-all")} style={{ borderLeftColor: hasQuiz ? "#10b981" : "#e2e8f0" }}>
-      {/* Step indicator row */}
-      <div className="flex items-center gap-2.5 mb-2">
-        <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white shrink-0 ${hasQuiz ? "bg-emerald-500" : "bg-slate-400"}`}>
-          {hasQuiz ? <CheckCircle2 className="h-3.5 w-3.5" /> : stepNumber}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className={`text-sm font-bold text-slate-800 ${fontClass}`}>{knowledge.title}</p>
-          <p className="text-[11px] text-slate-400 font-medium">
-            {t("workspace.roadmap.canvas.stepOf", "Bước {{step}} / {{total}}", { step: stepNumber, total: totalSteps })}
-          </p>
-        </div>
-        {flashcards.length ? (
-          <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 font-medium">
-            {flashcards.length} {t("workspace.roadmap.canvas.flashcard", "flashcard")}
-          </span>
-        ) : null}
-      </div>
-
-      {/* Description */}
-      <p className="text-xs leading-5 text-slate-500 mb-2">
-        {knowledge.description || t("workspace.shell.knowledgeDescriptionFallback", "Use this knowledge node to review core concepts, quizzes, and flashcards.")}
-      </p>
-
-      {quizItems.length ? (
-        <div className="space-y-2">
-          {quizItems.map((quiz) => (
-            <div key={getQuizId(quiz) || quiz.title} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-              <p className={`text-xs font-bold text-slate-700 ${fontClass}`}>{quiz.title}</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                <Button type="button" size="sm" className="rounded-lg h-7 text-xs px-3" disabled={isLocked} onClick={() => onViewQuiz?.(quiz)}>{t("workspace.shell.openQuiz", "Open quiz")}</Button>
-                {onEditQuiz && <Button type="button" size="sm" variant="outline" className="rounded-lg h-7 text-xs px-3" disabled={isLocked} onClick={() => onEditQuiz?.(quiz)}>{t("workspace.shell.editQuiz", "Edit quiz")}</Button>}
-                {onShareQuiz && <Button type="button" size="sm" variant="outline" className="rounded-lg h-7 text-xs px-3" disabled={isLocked} onClick={() => onShareQuiz(quiz)}>{t("workspace.roadmap.share", "Chia sẻ")}</Button>}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <Button type="button" size="sm" className="mt-1 rounded-lg h-7 text-xs" disabled={isLocked || isGeneratingQuiz} onClick={() => onCreateQuiz?.(phaseId, knowledge.knowledgeId)}>
-          {isGeneratingQuiz ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
-          {t("workspace.shell.generateKnowledgeQuiz", "Generate quiz")}
+  const renderRoadmapConfigActionButtons = useCallback((buttonClassName = "") => (
+    <>
+      {onViewRoadmapConfig ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onViewRoadmapConfig}
+          className={buttonClassName || `rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+        >
+          <Eye className="mr-2 h-4 w-4" />
+          <span className={fontClass}>{t("workspace.roadmap.viewConfig", "View config")}</span>
         </Button>
-      )}
-    </div>
-  );
-}
+      ) : null}
+      {onEditRoadmapConfig ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onEditRoadmapConfig}
+          className={buttonClassName || `rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
+        >
+          <Pencil className="mr-2 h-4 w-4" />
+          <span className={fontClass}>{t("workspace.roadmap.editConfigAction", "Edit")}</span>
+        </Button>
+      ) : null}
+    </>
+  ), [fontClass, isDarkMode, onEditRoadmapConfig, onViewRoadmapConfig, t]);
 
-/* ═══════════════════════════════════════════════════════════════════
-   StepConnectorArrow — Visual arrow between learning path steps
-   ═══════════════════════════════════════════════════════════════════ */
-function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
-  const color = isUnlocked ? "text-emerald-400" : "text-slate-300";
-  if (direction === "right") {
+  const handleSelectCanvasView = useCallback(async (canvasView) => {
+    if (!canvasView) return;
+
+    if (roadmap?.roadmapId) {
+      persistCanvasView(roadmap.roadmapId, canvasView);
+      setRoadmap((current) => (current ? { ...current, canvasView } : current));
+      onCanvasViewChange?.(canvasView);
+      return;
+    }
+
+    if (!onCreateRoadmap) return;
+
+    setIsCreatingRoadmap(true);
+    try {
+      await onCreateRoadmap({ mode: "ai", canvasView });
+      await loadRoadmap();
+    } finally {
+      setIsCreatingRoadmap(false);
+    }
+  }, [loadRoadmap, onCanvasViewChange, onCreateRoadmap, persistCanvasView, roadmap?.roadmapId]);
+
+  useEffect(() => {
+    transformRef.current = transform;
+  }, [transform]);
+
+  useEffect(() => {
+    if (!isExpanded) {
+      setIsExpandedHeaderHidden(false);
+    }
+  }, [isExpanded]);
+
+  const openExpandedView = () => {
+    setIsExpandedClosing(false);
+    setIsExpanded(true);
+  };
+
+  const closeExpandedView = () => {
+    setIsExpandedClosing(true);
+    window.setTimeout(() => {
+      setIsExpanded(false);
+      setIsExpandedClosing(false);
+    }, 180);
+  };
+
+  const isExpandedMode = isExpanded || isExpandedClosing;
+
+  useEffect(() => {
+    const viewportElement = viewportRef.current;
+    if (!viewportElement || loading) {
+      return undefined;
+    }
+
+    const handleWheel = (event) => {
+      event.preventDefault();
+      const viewportRect = viewportElement.getBoundingClientRect();
+      const currentTransform = transformRef.current;
+      const cursorX = event.clientX - viewportRect.left;
+      const cursorY = event.clientY - viewportRect.top;
+      const { minScale, maxScale } = getZoomLimits(layoutBounds);
+      const nextScale = clamp(currentTransform.scale + (event.deltaY > 0 ? -0.08 : 0.08), minScale, maxScale);
+      const worldX = (cursorX - currentTransform.x) / currentTransform.scale;
+      const worldY = (cursorY - currentTransform.y) / currentTransform.scale;
+
+      setTransform(clampTransformToViewport({
+        x: cursorX - worldX * nextScale,
+        y: cursorY - worldY * nextScale,
+        scale: nextScale,
+      }, layoutBounds));
+    };
+
+    viewportElement.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      viewportElement.removeEventListener("wheel", handleWheel);
+    };
+  }, [layoutBounds, loading]);
+
+  useEffect(() => {
+    if (loading || !roadmap || hasInitializedOverviewRef.current) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setTransform(clampTransformToViewport(getOverviewTransform(layoutBounds), layoutBounds));
+      hasInitializedOverviewRef.current = true;
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [layoutBounds, loading, roadmap]);
+
+  useEffect(() => {
+    if (loading || !roadmap) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setTransform(clampTransformToViewport(getOverviewTransform(layoutBounds), layoutBounds));
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isExpanded]);
+
+  useEffect(() => {
+    const viewportElement = viewportRef.current;
+    if (!viewportElement || loading) {
+      return undefined;
+    }
+
+    const preventNativeDrag = (event) => {
+      event.preventDefault();
+    };
+
+    viewportElement.addEventListener("dragstart", preventNativeDrag);
+    return () => {
+      viewportElement.removeEventListener("dragstart", preventNativeDrag);
+    };
+  }, [loading]);
+
+  const toggleKnowledge = (knowledgeId) => {
+    setExpandedKnowledges((current) => ({
+      ...current,
+      [knowledgeId]: !current[knowledgeId],
+    }));
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.target.closest("button") || event.target.closest("[data-no-pan='true']")) {
+      return;
+    }
+
+    event.preventDefault();
+
+    dragRef.current = {
+      type: "viewport",
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: transform.x,
+      originY: transform.y,
+    };
+    setDraggingMode("viewport");
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePhaseDragStart = (phaseId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current = {
+      type: "phase",
+      phaseId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originOffsetX: phaseOffsets[phaseId]?.x ?? 0,
+      originOffsetY: phaseOffsets[phaseId]?.y ?? 0,
+    };
+    setDraggingMode("phase");
+    viewportRef.current?.setPointerCapture(event.pointerId);
+  };
+
+  const handleKnowledgeDragStart = (phaseId, knowledgeId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragRef.current = {
+      type: "knowledge",
+      phaseId,
+      knowledgeId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originOffsetX: knowledgeOffsets[phaseId]?.[knowledgeId]?.x ?? 0,
+      originOffsetY: knowledgeOffsets[phaseId]?.[knowledgeId]?.y ?? 0,
+    };
+    setDraggingMode("knowledge");
+    viewportRef.current?.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event) => {
+    const dragState = dragRef.current;
+    if (!dragState) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+
+    if (dragState.type === "phase") {
+      setPhaseOffsets((current) => ({
+        ...current,
+        [dragState.phaseId]: {
+          x: dragState.originOffsetX + deltaX / transformRef.current.scale,
+          y: dragState.originOffsetY + deltaY / transformRef.current.scale,
+        },
+      }));
+      return;
+    }
+
+    if (dragState.type === "knowledge") {
+      setKnowledgeOffsets((current) => ({
+        ...current,
+        [dragState.phaseId]: {
+          ...(current[dragState.phaseId] ?? {}),
+          [dragState.knowledgeId]: {
+            x: dragState.originOffsetX + deltaX / transformRef.current.scale,
+            y: dragState.originOffsetY + deltaY / transformRef.current.scale,
+          },
+        },
+      }));
+      return;
+    }
+
+    setTransform((current) => clampTransformToViewport({
+      ...current,
+      x: dragState.originX + deltaX,
+      y: dragState.originY + deltaY,
+    }, layoutBounds));
+  };
+
+  const handlePointerUp = (event) => {
+    dragRef.current = null;
+    setDraggingMode(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const resetViewport = () => {
+    setTransform(clampTransformToViewport(getOverviewTransform(layoutBounds), layoutBounds));
+  };
+
+  const adjustZoom = (direction) => {
+    const viewportElement = viewportRef.current;
+    if (!viewportElement) {
+      return;
+    }
+
+    const rect = viewportElement.getBoundingClientRect();
+    const cursorX = rect.width / 2;
+    const cursorY = rect.height / 2;
+    const currentTransform = transformRef.current;
+    const zoomStep = direction === "in" ? 0.1 : -0.1;
+    const { minScale, maxScale } = getZoomLimits(layoutBounds);
+    const nextScale = clamp(currentTransform.scale + zoomStep, minScale, maxScale);
+    const worldX = (cursorX - currentTransform.x) / currentTransform.scale;
+    const worldY = (cursorY - currentTransform.y) / currentTransform.scale;
+
+    setTransform(clampTransformToViewport({
+      x: cursorX - worldX * nextScale,
+      y: cursorY - worldY * nextScale,
+      scale: nextScale,
+    }, layoutBounds));
+  };
+
+  if (loading) {
     return (
-      <div className={`hidden lg:flex items-center justify-center mx-1 ${color}`}>
-        <svg width="28" height="20" viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 10H22M22 10L16 4M22 10L16 16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+      <div className={`h-full flex items-center justify-center ${isDarkMode ? "bg-slate-900" : "bg-white"}`}>
+        <ListSpinner label={t("workspace.chat.aiThinking")} />
       </div>
     );
   }
-  return (
-    <div className={`flex lg:hidden items-center justify-center my-1 ${color}`}>
-      <svg width="20" height="28" viewBox="0 0 20 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 2V22M10 22L4 16M10 22L16 16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
+
+  const hasPhase = (roadmap?.phases?.length ?? 0) > 0;
+
+  if (loading && !roadmap) {
+    return (
+      <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-300" : "bg-white text-gray-700"}`}>
+        <div className="max-w-xl text-center">
+          <Loader2 className={`w-8 h-8 animate-spin mx-auto ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
+          <p className={`mt-4 text-lg font-semibold ${fontClass}`}>
+            {t("workspace.roadmap.loading.title", "Loading roadmap")}
+          </p>
+          <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+            {t("workspace.roadmap.loading.description", "Please wait while AI generates roadmap title, description, and structure")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGeneratingRoadmapPhases) {
+    return (
+      <div className={`h-full flex items-center justify-center p-8 ${isDarkMode ? "bg-slate-900 text-slate-300" : "bg-white text-gray-700"}`}>
+        <div className="max-w-xl text-center">
+          <CircularProgressLoader
+            percent={Math.max(0, Math.min(100, Number(roadmapPhaseGenerationProgress) || 0))}
+            size="lg"
+            color="blue"
+            className="mx-auto"
+          />
+          <p className={`mt-4 text-lg font-semibold ${fontClass}`}>
+            {t("workspace.roadmap.phaseGenerating.title", "Please wait while AI generates phases")}
+          </p>
+          <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+            {t("workspace.roadmap.phaseGenerating.description", "The system is generating phase list from selected materials.")}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!roadmap || !hasPhase) {
     return (
@@ -865,7 +821,7 @@ function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
               {emptyStateTitle || t("workspace.roadmap.emptyRoadmapTitle", "Welcome to roadmap")}
             </p>
             <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-              {emptyStateDescription || t("workspace.roadmap.emptyRoadmapDescription", "Generate phases with AI to start your learning roadmap from selected materials.")}
+              {emptyStateDescription || t("workspace.roadmap.emptyRoadmapDescription", "Generate your roadmap with AI to start learning from selected materials.")}
             </p>
             {!hideCreateButton && (
               <div className="mt-6 flex items-center justify-center">
@@ -875,7 +831,7 @@ function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
                   onClick={() => (onEmptyStateAction || onCreateRoadmapPhases)?.()}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
                 >
-                  {emptyStateActionLabel || t("workspace.roadmap.createPhaseButton", "Create phases")}
+                  {emptyStateActionLabel || t("workspace.roadmap.createRoadmapButton", "Create roadmap")}
                 </Button>
               </div>
             )}
@@ -885,10 +841,10 @@ function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
-                    {t("workspace.roadmap.materialPicker.title", "Materials for phase generation")}
+                    {t("workspace.roadmap.materialPicker.title", "Materials for roadmap generation")}
                   </p>
                   <p className={`mt-1 text-xs leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
-                    {t("workspace.roadmap.materialPicker.description", "Choose the documents AI should use when drafting roadmap phases for this group.")}
+                    {t("workspace.roadmap.materialPicker.description", "Choose the documents AI should use when generating this group roadmap.")}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -960,9 +916,13 @@ function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
     );
   }
 
-  // Swapped mapping by request:
-  // view1 -> canvas view 2, view2 -> canvas view 1
-  const effectiveCanvasView = roadmap?.canvasView === "view2" ? "view2" : "view1";
+  // Canvas mapping:
+  // view2 -> Stage (Chi tiet), overview -> Overview (Tong quan), view1 -> Kiem thu (RoadmapCanvasView2)
+  const effectiveCanvasView = roadmap?.canvasView === "overview"
+    ? "overview"
+    : roadmap?.canvasView === "view2"
+    ? "view2"
+    : "view1";
 
   if (effectiveCanvasView === "view1") {
     return (
@@ -995,6 +955,33 @@ function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
     );
   }
 
+  if (effectiveCanvasView === "view2") {
+    return (
+      <RoadmapCanvasViewStage
+        roadmap={roadmap}
+        isDarkMode={isDarkMode}
+        fontClass={fontClass}
+        sidebarSelectedPhaseId={selectedPhaseId}
+        onViewQuiz={onViewQuiz}
+        isStudyNewRoadmap={isStudyNewRoadmap}
+        adaptationMode={adaptationMode}
+        generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
+        generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
+        generatingKnowledgeQuizKnowledgeKeys={generatingKnowledgeQuizKnowledgeKeys}
+        knowledgeQuizRefreshByKnowledgeKey={knowledgeQuizRefreshByKey}
+        quizRefreshToken={reloadToken}
+        progressTracking={progressTracking}
+        generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
+        skipPreLearningPhaseIds={skipPreLearningPhaseIds}
+        onReloadRoadmap={onReloadRoadmap}
+        onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
+        onCreatePhasePreLearning={onCreatePhasePreLearning}
+        onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+      />
+    );
+  }
+
+  // Legacy view2 mindmap block kept as fallback.
   const content = (
     <div className={`${isExpandedMode
       ? `fixed inset-3 sm:inset-5 z-[140] rounded-2xl border shadow-2xl flex flex-col transition-all duration-200 ease-out ${isExpandedClosing ? "animate-[roadmapPopOut_180ms_ease-in_forwards]" : "animate-[roadmapPopIn_180ms_ease-out]"} ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`
@@ -1012,7 +999,7 @@ function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {roadmap?.roadmapId ? (
+          {roadmap?.roadmapId && canShowRoadmapLevelFeedback ? (
             <DirectFeedbackButton
               targetType="ROADMAP"
               targetId={roadmap.roadmapId}
@@ -1414,4 +1401,3 @@ function StepConnectorArrow({ isUnlocked = false, direction = "down" }) {
 }
 
 export default RoadmapCanvasView;
-

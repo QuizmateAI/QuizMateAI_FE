@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, startTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical, UserPlus } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, ClipboardCheck, Globe, Lock, MoreVertical, UserPlus, Check, Users, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
@@ -108,6 +108,8 @@ const QUIZ_CARD_THEMES = {
     iconColor: "text-slate-700",
   },
 };
+
+const QUIZ_PAGE_SIZE = 6;
 
 function hasQuizListChanged(prevList, nextList) {
   if (!Array.isArray(prevList) || !Array.isArray(nextList)) return true;
@@ -296,6 +298,8 @@ function QuizListView({
   onNavigateHome,
   onShareQuiz,
   onOpenCommunityQuiz,
+  groupRole = null,
+  groupCurrentUserId = null,
   progressTracking = null,
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
@@ -319,16 +323,9 @@ function QuizListView({
   const [groupMembers, setGroupMembers] = useState([]);
   const [groupMembersLoading, setGroupMembersLoading] = useState(false);
   const [selectedQuizIds, setSelectedQuizIds] = useState([]);
-  const [bulkActionDialog, setBulkActionDialog] = useState(null);
-  const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  const [bulkStatusValue, setBulkStatusValue] = useState("DRAFT");
-  const [bulkAssignMode, setBulkAssignMode] = useState("ALL_MEMBERS");
-  const [bulkAssignMemberUserId, setBulkAssignMemberUserId] = useState(null);
   const [appliedGroupFilters, setAppliedGroupFilters] = useState(["all"]);
-  const [pendingGroupFilters, setPendingGroupFilters] = useState(["all"]);
-  const [groupFilterMenuOpen, setGroupFilterMenuOpen] = useState(false);
   const [groupMemberUserId, setGroupMemberUserId] = useState(null);
-  const [selectedQuizIds, setSelectedQuizIds] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkAssignSaving, setBulkAssignSaving] = useState(false);
@@ -350,6 +347,28 @@ function QuizListView({
   }, [contextId, contextType, location.pathname, location.search, returnToPath]);
 
   const isGroupQuizList = String(contextType || "").toUpperCase() === "GROUP";
+  const normalizedGroupRole = String(groupRole || "").toUpperCase();
+  const isLeaderGroupQuizList = isGroupQuizList && normalizedGroupRole === "LEADER";
+  const canFilterGroupAssignees = isLeaderGroupQuizList;
+  const currentGroupUserId = Number.isInteger(Number(groupCurrentUserId)) && Number(groupCurrentUserId) > 0
+    ? Number(groupCurrentUserId)
+    : null;
+  const groupAudienceFilter = useMemo(() => {
+    const active = appliedGroupFilters.filter((value) => value !== "all");
+    return active.length === 1 ? active[0] : "all";
+  }, [appliedGroupFilters]);
+  const setGroupAudienceFilter = useCallback((nextFilter) => {
+    const normalized = String(nextFilter || "all").toUpperCase();
+    if (normalized === "ALL_MEMBERS" || normalized === "SELECTED_MEMBERS") {
+      setAppliedGroupFilters([normalized]);
+      if (normalized !== "SELECTED_MEMBERS") {
+        setGroupMemberUserId(null);
+      }
+      return;
+    }
+    setAppliedGroupFilters(["all"]);
+    setGroupMemberUserId(null);
+  }, []);
   const intentFilterKey = useMemo(
     () =>
       Array.isArray(intentFilter) && intentFilter.length > 0
@@ -401,133 +420,12 @@ function QuizListView({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, appliedStatusFilters, appliedGroupFilters, groupMemberUserId]);
+  }, [deferredSearchQuery, appliedGroupFilters, groupMemberUserId]);
 
   const selectedGroupAudienceMember = useMemo(() => {
     if (groupMemberUserId == null) return null;
     return resolveGroupMember(groupMemberUserId, groupMembers);
   }, [groupMemberUserId, groupMembers]);
-
-  const selectedQuizIdSet = useMemo(() => new Set(selectedQuizIds), [selectedQuizIds]);
-
-  useEffect(() => {
-    setSelectedQuizIds((current) => {
-      if (!current.length) return current;
-      const existing = new Set(
-        quizzes
-          .map((quiz) => Number(resolveQuizNavigationId(quiz)))
-          .filter((id) => Number.isInteger(id) && id > 0),
-      );
-      const next = current.filter((id) => existing.has(id));
-      return next.length === current.length ? current : next;
-    });
-  }, [quizzes]);
-
-  useEffect(() => {
-    if (!isLeaderGroupQuizList) {
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    }
-  }, [isLeaderGroupQuizList]);
-
-  const toggleQuizSelection = useCallback((quizId, checked) => {
-    if (!isLeaderGroupQuizList) return;
-    const normalized = Number(quizId);
-    if (!Number.isInteger(normalized) || normalized <= 0) return;
-    setSelectedQuizIds((current) => {
-      if (checked) {
-        if (current.includes(normalized)) return current;
-        return [...current, normalized];
-      }
-      return current.filter((id) => id !== normalized);
-    });
-  }, [isLeaderGroupQuizList]);
-
-  const openBulkActionDialog = useCallback((mode) => {
-    if (!isLeaderGroupQuizList || selectedQuizIds.length === 0) return;
-    setBulkActionDialog(mode);
-  }, [isLeaderGroupQuizList, selectedQuizIds.length]);
-
-  const handleBulkAssign = useCallback(async () => {
-    if (!selectedQuizIds.length) return;
-    if (bulkAssignMode === "SELECTED_MEMBERS") {
-      const memberId = Number(bulkAssignMemberUserId);
-      if (!Number.isInteger(memberId) || memberId <= 0) {
-        showError(t("workspace.quiz.bulk.memberRequired", "Vui lòng chọn thành viên để giao quiz."));
-        return;
-      }
-    }
-
-    const payload = bulkAssignMode === "ALL_MEMBERS"
-      ? { mode: "ALL_MEMBERS" }
-      : { mode: "SELECTED_MEMBERS", assigneeUserIds: [Number(bulkAssignMemberUserId)] };
-
-    setBulkActionLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedQuizIds.map((quizId) => setGroupQuizAudience(quizId, payload)),
-      );
-      const successCount = results.filter((result) => result.status === "fulfilled").length;
-      if (successCount !== selectedQuizIds.length) {
-        showError(
-          t("workspace.quiz.bulk.failed", { success: successCount, total: selectedQuizIds.length }),
-        );
-      }
-      if (fetchQuizzesRef.current) {
-        await fetchQuizzesRef.current({ silent: true });
-      }
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  }, [bulkAssignMemberUserId, bulkAssignMode, selectedQuizIds, showError, t]);
-
-  const handleBulkStatusChange = useCallback(async () => {
-    if (!selectedQuizIds.length) return;
-    setBulkActionLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedQuizIds.map((quizId) => updateQuiz(quizId, { status: bulkStatusValue })),
-      );
-      const successCount = results.filter((result) => result.status === "fulfilled").length;
-      if (successCount !== selectedQuizIds.length) {
-        showError(
-          t("workspace.quiz.bulk.failed", { success: successCount, total: selectedQuizIds.length }),
-        );
-      }
-      if (fetchQuizzesRef.current) {
-        await fetchQuizzesRef.current({ silent: true });
-      }
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  }, [bulkStatusValue, selectedQuizIds, showError, t]);
-
-  const handleBulkDelete = useCallback(async () => {
-    if (!selectedQuizIds.length) return;
-    setBulkActionLoading(true);
-    try {
-      const results = await Promise.allSettled(
-        selectedQuizIds.map((quizId) => deleteQuiz(quizId)),
-      );
-      const successCount = results.filter((result) => result.status === "fulfilled").length;
-      if (successCount !== selectedQuizIds.length) {
-        showError(
-          t("workspace.quiz.bulk.failed", { success: successCount, total: selectedQuizIds.length }),
-        );
-      }
-      if (fetchQuizzesRef.current) {
-        await fetchQuizzesRef.current({ silent: true });
-      }
-      setSelectedQuizIds([]);
-      setBulkActionDialog(null);
-    } finally {
-      setBulkActionLoading(false);
-    }
-  }, [selectedQuizIds, showError, t]);
 
   const quizNavigationSourceState = useMemo(() => {
     const normalizedContextType = String(contextType || "").toUpperCase();
@@ -857,7 +755,32 @@ function QuizListView({
       }
     }
     return items;
-  }, [quizzes, deferredSearchQuery, isGroupQuizList, groupAudienceFilter, groupMemberUserId]);
+  }, [
+    quizzes,
+    deferredSearchQuery,
+    isGroupQuizList,
+    appliedGroupFilters,
+    canFilterGroupAssignees,
+    currentGroupUserId,
+    groupMemberUserId,
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / QUIZ_PAGE_SIZE));
+  const currentPageClamped = Math.min(currentPage, totalPages);
+  const paginatedQuizzes = useMemo(() => {
+    const start = (currentPageClamped - 1) * QUIZ_PAGE_SIZE;
+    return filtered.slice(start, start + QUIZ_PAGE_SIZE);
+  }, [currentPageClamped, filtered]);
+  const paginationStartIndex = filtered.length === 0 ? 0 : ((currentPageClamped - 1) * QUIZ_PAGE_SIZE) + 1;
+  const paginationEndIndex = filtered.length === 0
+    ? 0
+    : Math.min(filtered.length, currentPageClamped * QUIZ_PAGE_SIZE);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const filteredQuizIds = useMemo(
     () => filtered
@@ -1425,68 +1348,6 @@ function QuizListView({
             </div>
           </div>
 
-          {isLeaderGroupQuizList && !useLegacyRoadmapCards ? (
-            <div className={`mt-2 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between ${isDarkMode ? "border-slate-700/80" : "border-slate-200/90"}`}>
-              <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-700"}`}>
-                {t("workspace.quiz.bulk.selectedCount", { count: selectedQuizIds.length })}
-              </p>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => openBulkActionDialog("assign")}
-                  className={`h-8 rounded-full px-3 text-sm transition-all ${
-                    isDarkMode
-                      ? "border-blue-700/70 bg-blue-900/30 text-blue-200 hover:bg-blue-900/45"
-                      : "border-blue-200 bg-blue-100/80 text-blue-700 hover:bg-blue-200/80"
-                  }`}
-                >
-                  {t("workspace.quiz.bulk.assign", "Giao")}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => openBulkActionDialog("status")}
-                  className={`h-8 rounded-full px-3 text-sm transition-all ${
-                    isDarkMode
-                      ? "border-amber-700/70 bg-amber-900/25 text-amber-200 hover:bg-amber-900/40"
-                      : "border-amber-200 bg-amber-100/80 text-amber-700 hover:bg-amber-200/80"
-                  }`}
-                >
-                  {t("workspace.quiz.bulk.changeStatus", "Đổi trạng thái")}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => openBulkActionDialog("delete")}
-                  className={`h-8 rounded-full px-3 text-sm transition-all ${
-                    isDarkMode
-                      ? "border-rose-700/70 bg-rose-900/25 text-rose-200 hover:bg-rose-900/40"
-                      : "border-rose-200 bg-rose-100/80 text-rose-700 hover:bg-rose-200/80"
-                  }`}
-                >
-                  {t("workspace.quiz.bulk.delete", "Xóa")}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={selectedQuizIds.length === 0}
-                  onClick={() => setSelectedQuizIds([])}
-                  className={`h-8 rounded-full px-2 text-sm ${isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-slate-600 hover:bg-white"}`}
-                >
-                  {t("workspace.quiz.bulk.clear", "Bỏ chọn")}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
           {isGroupQuizList && hasAppliedSelectedMembersFilter && canFilterGroupAssignees ? (
             <div className={`mt-2 border-t pt-2 ${isDarkMode ? "border-slate-700/80" : "border-slate-200/90"}`}>
               <DropdownMenu>
@@ -1632,15 +1493,14 @@ function QuizListView({
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
+          <>
           <div className={useLegacyRoadmapCards ? "space-y-2" : "mx-auto grid max-w-[1080px] grid-cols-1 gap-4 md:grid-cols-2"}>
-            {filtered.map((quiz) => {
+            {paginatedQuizzes.map((quiz) => {
               if (useLegacyRoadmapCards) {
                 return renderLegacyRoadmapCard(quiz);
               }
 
               const resolvedQuizId = resolveQuizNavigationId(quiz);
-              const resolvedQuizIdNumber = Number(resolvedQuizId);
-              const rowKey = resolvedQuizId ?? `${quiz?.title || "quiz"}-${quiz?.createdAt || ""}`;
               const isCommunityShared = quiz?.communityShared === true;
               const isRoadmapContextQuiz = isRoadmapQuiz(quiz);
               const shouldHideRoadmapVisibility = isRoadmapContextQuiz;
@@ -1655,13 +1515,9 @@ function QuizListView({
               );
               const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
               const difficultyKey = String(quiz?.overallDifficulty || "").toUpperCase();
-              const difficultyMeta = DIFFICULTY_STYLES[difficultyKey] || DIFFICULTY_STYLES.CUSTOM;
               const myAttempted = quiz?.myAttempted === true;
               const myPassed = quiz?.myPassed === true;
               const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
-              const intentValue = quiz?.quizIntent
-                ? t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)
-                : null;
               const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
               const questionCount = Number(quiz?.questionCount ?? quiz?.totalQuestion ?? quiz?.totalQuestions ?? 0) || 0;
               const scoreValue = Number(quiz?.latestScore ?? quiz?.score ?? quiz?.myScore ?? quiz?.marksScored ?? quiz?.markScored);
@@ -1903,160 +1759,6 @@ function QuizListView({
           </>
         )}
       </div>
-
-      <FeedbackSubmitDialog
-        open={feedbackDialogQuizId != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setFeedbackDialogQuizId(null);
-          }
-        }}
-        targetType="QUIZ"
-        targetId={feedbackDialogQuizId}
-        isDarkMode={isDarkMode}
-        onSubmitted={() => {
-          if (feedbackDialogQuizId != null) {
-            handleQuizFeedbackSubmitted(feedbackDialogQuizId);
-          }
-        }}
-        title={t("feedback", "Feedback")}
-      />
-
-      <Dialog
-        open={bulkActionDialog === "assign"}
-        onOpenChange={(open) => {
-          if (!open && !bulkActionLoading) setBulkActionDialog(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.bulk.confirmAssignTitle", "Giao quiz đã chọn")}</DialogTitle>
-            <DialogDescription>
-              {t("workspace.quiz.bulk.confirmAssignDescription", { count: selectedQuizIds.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="bulk-assign-mode"
-                value="ALL_MEMBERS"
-                checked={bulkAssignMode === "ALL_MEMBERS"}
-                onChange={() => setBulkAssignMode("ALL_MEMBERS")}
-              />
-              <span>{t("workspace.quiz.bulk.assignModeAll", "Chung cả nhóm")}</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="bulk-assign-mode"
-                value="SELECTED_MEMBERS"
-                checked={bulkAssignMode === "SELECTED_MEMBERS"}
-                onChange={() => setBulkAssignMode("SELECTED_MEMBERS")}
-              />
-              <span>{t("workspace.quiz.bulk.assignModeMember", "Giao cho thành viên cụ thể")}</span>
-            </label>
-            {bulkAssignMode === "SELECTED_MEMBERS" ? (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-slate-500">{t("workspace.quiz.bulk.pickMember", "Chọn thành viên")}</p>
-                <select
-                  value={bulkAssignMemberUserId ?? ""}
-                  onChange={(event) => setBulkAssignMemberUserId(Number(event.target.value) || null)}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}`}
-                >
-                  <option value="">{t("workspace.quiz.bulk.pickMemberPlaceholder", "Chọn thành viên")}</option>
-                  {groupMembers.map((member) => {
-                    const memberUserId = Number(member.userId ?? member.id);
-                    if (!Number.isInteger(memberUserId) || memberUserId <= 0) return null;
-                    return (
-                      <option key={memberUserId} value={memberUserId}>
-                        {getUserDisplayLabel(member, `User ${memberUserId}`)}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            ) : null}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" disabled={bulkActionLoading} onClick={() => setBulkActionDialog(null)}>
-              {t("workspace.quiz.bulk.cancel", "Hủy")}
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled={bulkActionLoading} onClick={handleBulkAssign}>
-              {bulkActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("workspace.quiz.bulk.apply", "Áp dụng")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={bulkActionDialog === "status"}
-        onOpenChange={(open) => {
-          if (!open && !bulkActionLoading) setBulkActionDialog(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.bulk.confirmStatusTitle", "Đổi trạng thái quiz")}</DialogTitle>
-            <DialogDescription>
-              {t("workspace.quiz.bulk.confirmStatusDescription", { count: selectedQuizIds.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            {[
-              { value: "DRAFT", label: t("workspace.quiz.bulk.statusDraft", "Bản nháp") },
-              { value: "ACTIVE", label: t("workspace.quiz.bulk.statusActive", "Đang hoạt động") },
-              { value: "INACTIVE", label: t("workspace.quiz.bulk.statusInactive", "Không hoạt động") },
-            ].map((statusItem) => (
-              <label key={statusItem.value} className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="bulk-status"
-                  value={statusItem.value}
-                  checked={bulkStatusValue === statusItem.value}
-                  onChange={() => setBulkStatusValue(statusItem.value)}
-                />
-                <span>{statusItem.label}</span>
-              </label>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" disabled={bulkActionLoading} onClick={() => setBulkActionDialog(null)}>
-              {t("workspace.quiz.bulk.cancel", "Hủy")}
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled={bulkActionLoading} onClick={handleBulkStatusChange}>
-              {bulkActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("workspace.quiz.bulk.apply", "Áp dụng")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={bulkActionDialog === "delete"}
-        onOpenChange={(open) => {
-          if (!open && !bulkActionLoading) setBulkActionDialog(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.bulk.confirmDeleteTitle", "Xóa quiz đã chọn")}</DialogTitle>
-            <DialogDescription>
-              {t("workspace.quiz.bulk.confirmDeleteDescription", { count: selectedQuizIds.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" disabled={bulkActionLoading} onClick={() => setBulkActionDialog(null)}>
-              {t("workspace.quiz.bulk.cancel", "Hủy")}
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={bulkActionLoading} onClick={handleBulkDelete}>
-              {bulkActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {t("workspace.quiz.bulk.delete", "Xóa")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={Boolean(examStartQuiz)} onOpenChange={(open) => { if (!open) setExamStartQuiz(null); }}>
         <DialogContent className="sm:max-w-md">
