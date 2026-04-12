@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { getExtractedText, getExtractedSummary, getModerationReportDetail, reviewGroupMaterial } from "@/api/MaterialAPI";
 import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
 
@@ -74,7 +75,7 @@ function buildContentBlocks(text) {
   if (isImageUrl(sanitized)) {
     return [{
       type: "image",
-      alt: "Hinh anh tai lieu",
+      alt: i18n.t("groupSourceDetailView.imageAlt", "Document image"),
       url: sanitized,
     }];
   }
@@ -92,7 +93,7 @@ function buildContentBlocks(text) {
 
     blocks.push({
       type: "image",
-      alt: match[1] || "Hinh anh tai lieu",
+      alt: match[1] || i18n.t("groupSourceDetailView.imageAlt", "Document image"),
       url: match[2],
     });
 
@@ -192,11 +193,11 @@ function getModerationNodeFindings(report) {
   if (!report || typeof report !== "object") return [];
 
   const nodeLabels = {
-    legal: "Pháp lý",
-    intent: "Ý định",
-    harmful: "Độc hại",
-    accuracy: "Độ chính xác",
-    community: "Cộng đồng",
+    legal: i18n.t("groupSourceDetailView.nodeLabels.legal", "Legal"),
+    intent: i18n.t("groupSourceDetailView.nodeLabels.intent", "Intent"),
+    harmful: i18n.t("groupSourceDetailView.nodeLabels.harmful", "Harmful"),
+    accuracy: i18n.t("groupSourceDetailView.nodeLabels.accuracy", "Accuracy"),
+    community: i18n.t("groupSourceDetailView.nodeLabels.community", "Community"),
   };
 
   return Object.entries(nodeLabels)
@@ -316,13 +317,15 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
       updatedSource.needReview = false;
       setCurrentSource(updatedSource);
       onSourceUpdated?.(updatedSource);
-      setReviewMessage(isApproved ? "Đã duyệt tài liệu này cho group." : "Đã từ chối tài liệu này khỏi group.");
+      setReviewMessage(isApproved
+        ? t("groupSourceDetailView.reviewApproved", "Approved this material for the group.")
+        : t("groupSourceDetailView.reviewRejected", "Rejected this material from the group."));
     } catch (error) {
-      setReviewError(error?.message || "Không thể duyệt tài liệu lúc này.");
+      setReviewError(error?.message || t("groupSourceDetailView.reviewError", "Unable to review this material right now."));
     } finally {
       setReviewLoading(false);
     }
-  }, [currentSource, onSourceUpdated, reviewLoading]);
+  }, [currentSource, onSourceUpdated, reviewLoading, t]);
 
   useEffect(() => {
     fetchContent();
@@ -420,7 +423,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                 <div className="flex items-center gap-2">
                   <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-slate-300" : "text-gray-500"}`} />
                   <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                    Đang tải báo cáo kiểm duyệt...
+                    {t("groupSourceDetailView.moderationLoading", "Loading moderation report...")}
                   </span>
                 </div>
               ) : null}
@@ -428,8 +431,8 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                 <div className="mt-1.5">
                   <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
                     {currentStatus === "ACTIVE"
-                      ? "AI đã xử lý xong tài liệu này. Leader cần xác nhận trước khi tài liệu xuất hiện trong nguồn học chung."
-                      : "Tài liệu này đang ở hàng chờ leader duyệt cho group."}
+                      ? t("groupSourceDetailView.leaderReviewActiveHint", "AI has finished processing this material. The leader needs to confirm before it appears in the shared sources.")
+                      : t("groupSourceDetailView.leaderReviewQueueHint", "This material is waiting in the leader's approval queue for the group.")}
                   </p>
                 </div>
               ) : null}
@@ -442,7 +445,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                       isDarkMode ? "text-slate-200 hover:bg-white/5" : "text-gray-700 hover:bg-black/5"
                     } ${fontClass}`}
                   >
-                    <span>Chi tiết kiểm duyệt</span>
+                    <span>{t("groupSourceDetailView.moderationDetailTitle", "Moderation details")}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${moderationDetailOpen ? "rotate-180" : ""}`} />
                   </button>
 
@@ -450,33 +453,33 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                     <div className="mt-1.5 space-y-1.5">
                       {moderationInfo?.reason && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                          <span className="font-semibold">Lý do: </span>
+                          <span className="font-semibold">{t("groupSourceDetailView.reasonLabel", "Reason: ")}</span>
                           {moderationInfo.reason}
                         </p>
                       )}
                       {moderationInfo?.type === "WARN" && moderationInfo?.suggestion && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Gợi ý: </span>
+                          <span className="font-semibold">{t("groupSourceDetailView.suggestionLabel", "Suggestion: ")}</span>
                           {moderationInfo.suggestion}
                         </p>
                       )}
                       {moderationInfo?.type === "REJECT" && moderationInfo?.detectedTopic && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Chủ đề phát hiện của tài liệu: </span>
+                          <span className="font-semibold">{t("groupSourceDetailView.detectedTopicLabel", "Detected topic of the material: ")}</span>
                           {moderationInfo.detectedTopic}
                         </p>
                       )}
                       {moderationInfo?.type === "WARN" && suitablePercentText && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Phần trăm nội dung phù hợp: </span>
+                          <span className="font-semibold">{t("groupSourceDetailView.suitablePercentLabel", "Suitable content percentage: ")}</span>
                           {suitablePercentText}
                         </p>
                       )}
                       {moderationInfo?.type === "WARN" && moderationInfo?.currentLevelDetected && moderationInfo?.targetLevelRequired && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Mức hiện tại của tài liệu: </span>
+                          <span className="font-semibold">{t("groupSourceDetailView.currentLevelLabel", "Current material level: ")}</span>
                           {moderationInfo.currentLevelDetected}
-                          <span className="font-semibold"> | Mức yêu cầu: </span>
+                          <span className="font-semibold">{t("groupSourceDetailView.requiredLevelLabel", " | Required level: ")}</span>
                           {moderationInfo.targetLevelRequired}
                         </p>
                       )}
@@ -497,7 +500,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
               {showLeaderReviewActions && (
                 <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10">
                   <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                    Leader có muốn duyệt tài liệu này cho group không?
+                    {t("groupSourceDetailView.leaderReviewPrompt", "Does the leader want to approve this material for the group?")}
                   </p>
                   <div className="flex items-center gap-2">
                     <button
@@ -510,7 +513,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                           : isDarkMode ? "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                       }`}
                     >
-                      Có
+                      {t("groupSourceDetailView.yes", "Yes")}
                     </button>
                     <button
                       type="button"
@@ -522,7 +525,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                           : isDarkMode ? "bg-red-500/20 text-red-300 hover:bg-red-500/30" : "bg-red-100 text-red-700 hover:bg-red-200"
                       }`}
                     >
-                      Không
+                      {t("groupSourceDetailView.no", "No")}
                     </button>
                     {reviewLoading && <Loader2 className={`w-4 h-4 animate-spin ${isDarkMode ? "text-slate-300" : "text-gray-500"}`} />}
                   </div>

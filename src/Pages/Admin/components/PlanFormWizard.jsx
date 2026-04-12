@@ -268,8 +268,8 @@ function PlanFormWizard({
   };
 
   const getValidationError = ({ forSubmit = false } = {}) => {
-    if ((currentStep === 0 || forSubmit) && !formData.code?.trim()) return 'Vui lòng nhập code gói.';
-    if ((currentStep === 0 || forSubmit) && !formData.displayName?.trim()) return 'Vui lòng nhập tên gói.';
+    if ((currentStep === 0 || forSubmit) && !formData.code?.trim()) return t('subscription.validation.codeRequired', 'Please enter a plan code.');
+    if ((currentStep === 0 || forSubmit) && !formData.displayName?.trim()) return t('subscription.validation.displayNameRequired', 'Please enter a plan name.');
     if (currentStep === 1 || forSubmit) {
       const leveledPlanFieldError = getIndividualPlanLimitError();
       if (leveledPlanFieldError) return leveledPlanFieldError;
@@ -465,9 +465,7 @@ function PlanFormWizard({
               </select>
               {!editingPlan ? (
                 <p className={cn('mt-2 text-xs leading-5', mutedCls)}>
-                  {t(
-                    'subscription.wizard.fields.levelHint',
-                    'Một level có thể chứa nhiều gói, bạn có thể chọn lại level phù hợp cho plan này.'
+                  {t('subscription.wizard.fields.levelHint', 'A level can contain multiple plans, so choose the level that best fits this plan.'
                   )}
                 </p>
               ) : null}

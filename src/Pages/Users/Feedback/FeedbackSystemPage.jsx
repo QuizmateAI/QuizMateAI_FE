@@ -1,4 +1,5 @@
 import { Cpu, Ticket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/Components/ui/button';
 import {
   FeedbackEmptyState,
@@ -10,10 +11,10 @@ import {
 import { cn } from '@/lib/utils';
 
 function FeedbackSystemPage() {
+  const { t } = useTranslation();
   const {
     currentLang,
     isDarkMode,
-    isEnglish,
     locale,
     loading,
     openTicketDialog,
@@ -33,11 +34,9 @@ function FeedbackSystemPage() {
                 <Cpu className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold">{isEnglish ? 'System queue' : 'Khu feedback system'}</h2>
+                <h2 className="text-lg font-semibold">{t('feedbackChannelPages.system.heroTitle', 'System queue')}</h2>
                 <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish
-                    ? 'Use this queue for outages, service instability, infrastructure issues, and other platform incidents.'
-                    : 'Dùng khu này cho các sự cố outage, dịch vụ không ổn định, lỗi hạ tầng và các vấn đề vận hành nền tảng.'}
+                  {t('feedbackChannelPages.system.heroDescription', 'Use this queue for outages, service instability, infrastructure issues, and other platform incidents.')}
                 </p>
               </div>
             </div>
@@ -45,28 +44,28 @@ function FeedbackSystemPage() {
 
           <Button type="button" onClick={() => openTicketDialog('SYSTEM')}>
             <Ticket className="h-4 w-4" />
-            <span>{isEnglish ? 'Send system ticket' : 'Gửi ticket system'}</span>
+            <span>{t('feedbackChannelPages.system.sendTicket', 'Send system ticket')}</span>
           </Button>
         </div>
       </FeedbackSectionCard>
 
       <div className="grid gap-4 md:grid-cols-3">
         <FeedbackSummaryCard
-          title={isEnglish ? 'Total tickets' : 'Tổng ticket'}
+          title={t('feedbackChannelPages.common.totalTickets', 'Total tickets')}
           value={systemTickets.length}
-          helper={isEnglish ? 'All system-related requests from your account' : 'Tất cả yêu cầu liên quan đến system từ tài khoản của bạn'}
+          helper={t('feedbackChannelPages.system.totalHelper', 'All system-related requests from your account')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'Open / In progress' : 'Mới / Đang xử lý'}
+          title={t('feedbackChannelPages.common.openInProgress', 'Open / In progress')}
           value={openCount}
-          helper={isEnglish ? 'Incidents still under handling' : 'Các sự cố vẫn đang trong quá trình xử lý'}
+          helper={t('feedbackChannelPages.system.openHelper', 'Incidents still under handling')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'Resolved / Closed' : 'Đã giải quyết / Đã đóng'}
+          title={t('feedbackChannelPages.common.resolvedClosed', 'Resolved / Closed')}
           value={resolvedCount}
-          helper={isEnglish ? 'Incidents that already have a final status' : 'Các sự cố đã có trạng thái cuối cùng'}
+          helper={t('feedbackChannelPages.system.resolvedHelper', 'Incidents that already have a final status')}
           isDarkMode={isDarkMode}
         />
       </div>
@@ -74,11 +73,9 @@ function FeedbackSystemPage() {
       <FeedbackSectionCard isDarkMode={isDarkMode}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{isEnglish ? 'System tickets list' : 'Danh sách ticket system'}</h2>
+            <h2 className="text-lg font-semibold">{t('feedbackChannelPages.system.listTitle', 'System tickets list')}</h2>
             <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-              {isEnglish
-                ? 'Keep infrastructure and service incidents in a separate list from product requests.'
-                : 'Tách riêng sự cố hạ tầng và dịch vụ khỏi các yêu cầu product để dễ theo dõi hơn.'}
+              {t('feedbackChannelPages.system.listDescription', 'Keep infrastructure and service incidents in a separate list from product requests.')}
             </p>
           </div>
         </div>
@@ -86,14 +83,14 @@ function FeedbackSystemPage() {
         <div className="mt-5 grid gap-4">
           {loading ? (
             <div className={cn('rounded-[24px] border px-6 py-10 text-center text-sm', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500')}>
-              {isEnglish ? 'Loading system tickets...' : 'Đang tải ticket system...'}
+              {t('feedbackChannelPages.system.loading', 'Loading system tickets...')}
             </div>
           ) : null}
 
           {!loading && systemTickets.length === 0 ? (
             <FeedbackEmptyState
-              title={isEnglish ? 'No system ticket yet' : 'Bạn chưa gửi ticket system nào'}
-              description={isEnglish ? 'Report platform incidents here when the issue is not limited to a single product flow.' : 'Báo ở đây khi sự cố thuộc về nền tảng hoặc vận hành hệ thống, không chỉ là một flow sản phẩm đơn lẻ.'}
+              title={t('feedbackChannelPages.system.emptyTitle', 'No system ticket yet')}
+              description={t('feedbackChannelPages.system.emptyDescription', 'Report platform incidents here when the issue is not limited to a single product flow.')}
               icon={Cpu}
               isDarkMode={isDarkMode}
             />

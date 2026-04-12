@@ -113,7 +113,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
       setQuestions(formattedQuestions);
     } catch (err) {
       console.error("Lỗi khi tải dữ liệu mock test:", err);
-      setError(t("workspace.mockTest.edit.loadFailed"));
+      setError(t("mockTestForms.edit.loadFailed", "Failed to load mock test data."));
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
     setSuccess("");
     try {
       if (!name.trim()) {
-        setError(t("workspace.quiz.validation.nameRequired"));
+        setError(t("mockTestForms.common.nameRequired", "Please enter a name."));
         setSubmitting(false);
         return;
       }
@@ -266,13 +266,13 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
         }
       }
 
-      setSuccess(t("workspace.mockTest.edit.saveSuccess"));
+      setSuccess(t("mockTestForms.edit.saveSuccess", "Mock test updated successfully!"));
       setDeletedQuestionIds([]);
       setDeletedAnswerIds([]);
       onSave?.({ quizId: quiz.quizId, title: name });
     } catch (err) {
       console.error("Lỗi khi lưu mock test:", err);
-      setError(err.message || t("workspace.mockTest.edit.saveFailed"));
+      setError(err.message || t("mockTestForms.edit.saveFailed", "Failed to save mock test. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -299,7 +299,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
         <div className="flex items-center gap-2">
           <ClipboardList className="w-5 h-5 text-purple-500" />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
-            {t("workspace.mockTest.edit.title")}
+            {t("mockTestForms.edit.title", "Edit Mock Test")}
           </p>
         </div>
       </div>
@@ -307,7 +307,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
       {/* Form chỉnh sửa */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-          {t("workspace.mockTest.edit.desc")}
+          {t("mockTestForms.edit.desc", "Update mock test information, questions and answers.")}
         </p>
 
         {/* Thông báo lỗi/thành công */}
@@ -324,23 +324,23 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
 
         {/* Tên Mock Test */}
         <div>
-          <label className={labelCls}>{t("workspace.mockTest.name")}</label>
-          <input className={inputCls} placeholder={t("workspace.mockTest.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
+          <label className={labelCls}>{t("mockTestForms.edit.name", "Mock Test Name")}</label>
+          <input className={inputCls} placeholder={t("mockTestForms.edit.namePlaceholder", "Enter mock test name...")} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
         {/* Difficulty + Status */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}</label>
+            <label className={labelCls}>{t("mockTestForms.common.overallDifficulty", "Overall difficulty")}</label>
             <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
-              {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+              {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
             </select>
           </div>
           <div>
-            <label className={labelCls}>{t("workspace.mockTest.edit.status")}</label>
+            <label className={labelCls}>{t("mockTestForms.edit.status", "Status")}</label>
             <select className={selectCls} value={status} onChange={(e) => setStatus(e.target.value)}>
               {["ACTIVE", "DRAFT"].map((s) => (
-                <option key={s} value={s}>{t(`workspace.quiz.statusLabels.${s}`)}</option>
+                <option key={s} value={s}>{t(`mockTestForms.common.status${s.charAt(0) + s.slice(1).toLowerCase()}`, s)}</option>
               ))}
             </select>
           </div>
@@ -351,10 +351,10 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
           <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
             <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
               className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-            <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.timerMode")}</span>
+            <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("mockTestForms.common.timerMode", "Timer mode")}</span>
           </label>
           <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-            {timerMode ? t("workspace.quiz.timerModeHintOn") : t("workspace.quiz.timerModeHintOff")}
+            {timerMode ? t("mockTestForms.common.timerModeHintOn", "Enabled: one overall duration for the test") : t("mockTestForms.common.timerModeHintOff", "Disabled: set duration per question")}
           </span>
         </div>
 
@@ -362,16 +362,16 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
         <div className={`grid ${timerMode ? "grid-cols-3" : "grid-cols-2"} gap-3`}>
           {timerMode && (
             <div>
-              <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
+              <label className={labelCls}>{t("mockTestForms.common.timeDuration", "Duration (minutes)")}</label>
               <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
             </div>
           )}
           <div>
-            <label className={labelCls}>{t("workspace.quiz.passingScore")}</label>
+            <label className={labelCls}>{t("mockTestForms.common.passingScore", "Passing score")}</label>
             <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
           </div>
           <div>
-            <label className={labelCls}>{t("workspace.quiz.maxAttempt")}</label>
+            <label className={labelCls}>{t("mockTestForms.common.maxAttempt", "Max attempts")}</label>
             <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
           </div>
         </div>
@@ -379,7 +379,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
         {/* Danh sách câu hỏi */}
         <div className="space-y-3">
           <h4 className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-            {t("workspace.mockTest.edit.questionsSection")} ({questions.length})
+            {t("mockTestForms.edit.questionsSection", "Questions")} ({questions.length})
           </h4>
 
           {questions.map((q, qIdx) => (
@@ -393,7 +393,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
                   <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>#{qIdx + 1}</span>
                   {q.isNew && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isDarkMode ? "bg-purple-900/50 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
-                      {t("workspace.mockTest.edit.newTag")}
+                      {t("mockTestForms.edit.newTag", "NEW")}
                     </span>
                   )}
                 </div>
@@ -405,30 +405,30 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
               {/* Loại câu hỏi + Độ khó + Bloom */}
               <div className="grid grid-cols-3 gap-2">
                 <select className={selectCls} value={q.type} onChange={(e) => updateQuestionField(qIdx, "type", e.target.value)}>
-                  {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`workspace.quiz.types.${qt}`)}</option>)}
+                  {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`mockTestForms.common.type${qt.charAt(0).toUpperCase() + qt.slice(1)}`, qt)}</option>)}
                 </select>
                 <select className={selectCls} value={q.difficulty} onChange={(e) => updateQuestionField(qIdx, "difficulty", e.target.value)}>
-                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
                 </select>
                 <select className={selectCls} value={q.bloomId} onChange={(e) => updateQuestionField(qIdx, "bloomId", Number(e.target.value))}>
-                  {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`workspace.quiz.bloomLevels.${b.key}`)}</option>)}
+                  {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`mockTestForms.common.bloom${b.key.charAt(0).toUpperCase() + b.key.slice(1)}`, b.key)}</option>)}
                 </select>
               </div>
 
               {/* Nội dung câu hỏi */}
-              <input className={inputCls} placeholder={t("workspace.quiz.questionText")} value={q.text} onChange={(e) => updateQuestionField(qIdx, "text", e.target.value)} />
+              <input className={inputCls} placeholder={t("mockTestForms.common.questionText", "Question text")} value={q.text} onChange={(e) => updateQuestionField(qIdx, "text", e.target.value)} />
 
               {/* Duration (chỉ khi timerMode=false) + Explanation */}
               <div className={`grid ${!timerMode ? "grid-cols-2" : ""} gap-2`}>
                 {!timerMode && (
                   <div>
-                    <label className={labelCls}>{t("workspace.quiz.questionDuration")}</label>
+                    <label className={labelCls}>{t("mockTestForms.common.questionDuration", "Question duration (s)")}</label>
                     <input type="number" className={inputCls} value={q.duration} onChange={(e) => updateQuestionField(qIdx, "duration", Number(e.target.value))} min={0} placeholder="0" />
                   </div>
                 )}
                 <div>
-                  <label className={labelCls}>{t("workspace.quiz.explanation")}</label>
-                  <input className={inputCls} placeholder={t("workspace.quiz.explanationPlaceholder")} value={q.explanation} onChange={(e) => updateQuestionField(qIdx, "explanation", e.target.value)} />
+                  <label className={labelCls}>{t("mockTestForms.common.explanation", "Explanation")}</label>
+                  <input className={inputCls} placeholder={t("mockTestForms.common.explanationPlaceholder", "Enter an explanation...")} value={q.explanation} onChange={(e) => updateQuestionField(qIdx, "explanation", e.target.value)} />
                 </div>
               </div>
 
@@ -446,7 +446,7 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
                           updateQuestionField(qIdx, "answers", newAnswers);
                         }}
                       />
-                      <input className={`${inputCls} flex-1`} placeholder={`${t("workspace.quiz.answers")} ${aIdx + 1}`} value={a.text}
+                      <input className={`${inputCls} flex-1`} placeholder={`${t("mockTestForms.common.answers", "Answer")} ${aIdx + 1}`} value={a.text}
                         onChange={(e) => {
                           const newAnswers = [...q.answers];
                           newAnswers[aIdx] = { ...newAnswers[aIdx], text: e.target.value };
@@ -459,26 +459,26 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
                     </div>
                   ))}
                   <button onClick={() => addAnswer(qIdx)} className="text-xs text-purple-500 hover:underline flex items-center gap-1 mt-1">
-                    <Plus className="w-3 h-3" /> {t("workspace.quiz.addAnswer")}
+                    <Plus className="w-3 h-3" /> {t("mockTestForms.common.addAnswer", "Add answer")}
                   </button>
                 </div>
               )}
               {q.type === "trueFalse" && (
                 <select className={selectCls} value={q.correctAnswer || "true"}
                   onChange={(e) => updateQuestionField(qIdx, "correctAnswer", e.target.value)}>
-                  <option value="true">{t("common.boolean.true")}</option>
-                  <option value="false">{t("common.boolean.false")}</option>
+                  <option value="true">{t("mockTestForms.common.booleanTrue", "True")}</option>
+                  <option value="false">{t("mockTestForms.common.booleanFalse", "False")}</option>
                 </select>
               )}
               {(q.type === "fillBlank" || q.type === "shortAnswer") && (
-                <input className={inputCls} placeholder={t("workspace.quiz.correctAnswer")} value={q.correctAnswer || ""}
+                <input className={inputCls} placeholder={t("mockTestForms.common.correctAnswer", "Correct answer")} value={q.correctAnswer || ""}
                   onChange={(e) => updateQuestionField(qIdx, "correctAnswer", e.target.value)} />
               )}
             </div>
           ))}
 
           <Button variant="outline" onClick={addQuestion} className={`w-full ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-            <Plus className="w-4 h-4 mr-2" /> {t("workspace.quiz.addQuestion")}
+            <Plus className="w-4 h-4 mr-2" /> {t("mockTestForms.common.addQuestion", "Add question")}
           </Button>
         </div>
       </div>
@@ -486,12 +486,12 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
       {/* Nút lưu cố định dưới cùng — nút tím */}
       <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-          {t("workspace.mockTest.edit.cancel")}
+          {t("mockTestForms.edit.cancel", "Cancel")}
         </Button>
         <Button onClick={handleSave} disabled={submitting} className="bg-purple-600 hover:bg-purple-700 text-white">
           {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
           <Save className="w-4 h-4 mr-1" />
-          {submitting ? t("workspace.mockTest.edit.saving") : t("workspace.mockTest.edit.save")}
+          {submitting ? t("mockTestForms.edit.saving", "Saving...") : t("mockTestForms.edit.save", "Save Changes")}
         </Button>
       </div>
     </div>

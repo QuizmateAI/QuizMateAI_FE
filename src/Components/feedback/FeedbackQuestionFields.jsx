@@ -16,7 +16,7 @@ function FeedbackQuestionFields({
   isDarkMode = false,
   disabled = false,
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
   const textareaClass = cn(
     'min-h-[110px] w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-colors',
@@ -196,7 +196,7 @@ function FeedbackQuestionFields({
                 value={typeof answerValue === 'string' ? answerValue : ''}
                 onChange={(event) => onAnswerChange?.(question.questionId, event.target.value)}
                 disabled={disabled}
-                placeholder={configValues.placeholder || (currentLang === 'en' ? 'Share your thoughts...' : 'Chia sẻ cảm nhận của bạn...')}
+                placeholder={configValues.placeholder || t('feedbackDialog.placeholders.share', 'Share your thoughts...')}
                 className={textareaClass}
               />
             ) : null}

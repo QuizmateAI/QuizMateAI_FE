@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   X, ChevronRight, ChevronLeft, Check, Clock, Users,
   FileText, Loader2, Search, Shield,
@@ -34,13 +35,13 @@ function isQuizEligibleForChallengeSource(quiz) {
 }
 
 const STEPS = [
-  { key: 'quiz', label: 'Chọn Quiz' },
-  { key: 'schedule', label: 'Lịch trình' },
-  { key: 'registration', label: 'Đăng ký' },
-  { key: 'review', label: 'Xác nhận' },
+  { key: 'quiz', labelKey: 'createChallengeWizard.steps.quiz', labelFallback: 'Select quiz' },
+  { key: 'schedule', labelKey: 'createChallengeWizard.steps.schedule', labelFallback: 'Schedule' },
+  { key: 'registration', labelKey: 'createChallengeWizard.steps.registration', labelFallback: 'Registration' },
+  { key: 'review', labelKey: 'createChallengeWizard.steps.review', labelFallback: 'Review' },
 ];
 
-function StepIndicator({ currentStep, isDarkMode }) {
+function StepIndicator({ currentStep, isDarkMode, t }) {
   return (
     <div className="flex items-center gap-2">
       {STEPS.map((step, idx) => (
@@ -59,7 +60,7 @@ function StepIndicator({ currentStep, isDarkMode }) {
               ? (isDarkMode ? 'text-white' : 'text-slate-900')
               : (isDarkMode ? 'text-slate-500' : 'text-gray-400')
           }`}>
-            {step.label}
+            {t(step.labelKey, step.labelFallback)}
           </span>
           {idx < STEPS.length - 1 && (
             <div className={`h-px w-6 ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'}`} />
@@ -70,14 +71,16 @@ function StepIndicator({ currentStep, isDarkMode }) {
   );
 }
 
-function formatDateTime(dt) {
+function formatDateTime(dt, language) {
   if (!dt) return '-';
   const d = new Date(dt);
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const locale = language === 'vi' ? 'vi-VN' : 'en-US';
+  return d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose, onCreated, currentUserId }) {
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -201,7 +204,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       });
       onCreated();
     } catch (err) {
-      setError(err?.message || 'Không thể tạo challenge');
+      setError(err?.message || t('createChallengeWizard.errors.createFailed', 'Unable to create challenge'));
       setSubmitting(false);
     }
   };
@@ -221,8 +224,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
             {/* Source mode selection */}
             <div className="grid gap-3 md:grid-cols-2">
               {[
-                { key: 'EXISTING_SNAPSHOT', label: 'Quiz có sẵn', desc: 'Tạo bản sao từ quiz đã có' },
-                { key: 'NEW_CHALLENGE_QUIZ', label: 'Quiz mới', desc: 'Soạn đề sau trong chi tiết challenge' },
+                { key: 'EXISTING_SNAPSHOT', label: t('createChallengeWizard.sourceMode.existingLabel', 'Existing quiz'), desc: t('createChallengeWizard.sourceMode.existingDesc', 'Create a snapshot from an existing quiz') },
+                { key: 'NEW_CHALLENGE_QUIZ', label: t('createChallengeWizard.sourceMode.newLabel', 'New quiz'), desc: t('createChallengeWizard.sourceMode.newDesc', 'Compose the quiz later in the challenge detail') },
               ].map((opt) => (
                 <button
                   key={opt.key}
@@ -245,13 +248,13 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   <div className="flex items-center gap-2">
                     <ListChecks className={`h-4 w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
                     <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      Quiz chung trong workspace
+                      {t('createChallengeWizard.quizList.sectionTitle', 'Shared workspace quizzes')}
                     </span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                         isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600'
                       }`}
-                      title="Chỉ quiz không giao riêng mới dùng được cho challenge"
+                      title={t('createChallengeWizard.quizList.countTitle', 'Only shared (non-assigned) quizzes can be used for a challenge')}
                     >
                       {quizzesLoading ? '…' : challengeEligibleQuizzes.length}
                     </span>
@@ -262,11 +265,11 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   <Search className={`pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
                   <input
                     type="text"
-                    placeholder="Tìm theo tên quiz..."
+                    placeholder={t('createChallengeWizard.quizList.searchPlaceholder', 'Search by quiz name...')}
                     value={quizSearch}
                     onChange={(e) => setQuizSearch(e.target.value)}
                     className={`${inputCls} pl-10 shadow-sm`}
-                    aria-label="Tìm quiz"
+                    aria-label={t('createChallengeWizard.quizList.searchAriaLabel', 'Search quizzes')}
                   />
                 </div>
 
@@ -278,24 +281,24 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   {quizzesLoading ? (
                     <div className="flex flex-col items-center justify-center gap-2 py-14">
                       <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-                      <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Đang tải danh sách…</span>
+                      <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('createChallengeWizard.quizList.loading', 'Loading list…')}</span>
                     </div>
                   ) : filteredQuizzes.length === 0 ? (
                     <div className={`flex flex-col items-center justify-center gap-2 px-4 py-14 text-center ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                       <FileText className={`h-10 w-10 opacity-40 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
                       <p className="text-sm font-medium">
                         {quizzes.length === 0
-                          ? 'Chưa có quiz nào trong workspace'
+                          ? t('createChallengeWizard.quizList.emptyNoQuizzes', 'No quizzes in this workspace yet')
                           : challengeEligibleQuizzes.length === 0
-                            ? 'Không có quiz chung để tạo challenge'
-                            : 'Không khớp từ khóa tìm kiếm'}
+                            ? t('createChallengeWizard.quizList.emptyNoEligible', 'No shared quizzes available for a challenge')
+                            : t('createChallengeWizard.quizList.emptyNoMatches', 'No matches for your search')}
                       </p>
                       <p className="max-w-xs text-xs opacity-90">
                         {quizzes.length === 0
-                          ? 'Tạo quiz trong workspace trước, hoặc chọn "Quiz mới" ở trên.'
+                          ? t('createChallengeWizard.quizList.emptyNoQuizzesHint', 'Create a quiz in the workspace first, or choose "New quiz" above.')
                           : challengeEligibleQuizzes.length === 0
-                            ? 'Quiz đã giao riêng thành viên không dùng được. Xuất bản quiz dạng chung cho cả nhóm hoặc bỏ giao riêng trước.'
-                            : 'Thử từ khóa khác hoặc xóa ô tìm kiếm.'}
+                            ? t('createChallengeWizard.quizList.emptyNoEligibleHint', 'Quizzes assigned to specific members cannot be used. Publish the quiz as shared for the whole group or remove the per-member assignment first.')
+                            : t('createChallengeWizard.quizList.emptyNoMatchesHint', 'Try a different keyword or clear the search box.')}
                       </p>
                     </div>
                   ) : (
@@ -350,7 +353,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                                     }`}
                                   >
                                     <ListChecks className="h-3 w-3 opacity-70" />
-                                    {questionCount} câu
+                                    {t('createChallengeWizard.quizList.questionCount', '{{count}} questions', { count: questionCount })}
                                   </span>
                                   <span
                                     className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium ${
@@ -358,7 +361,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                                     }`}
                                   >
                                     <Clock className="h-3 w-3 opacity-70" />
-                                    {durationMinutes} phút
+                                    {t('createChallengeWizard.quizList.durationMinutes', '{{minutes}} min', { minutes: durationMinutes })}
                                   </span>
                                 </div>
                               </div>
@@ -388,10 +391,12 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               <div className={`rounded-xl border p-6 text-center ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
                 <FileText className={`mx-auto mb-2 h-8 w-8 ${isDarkMode ? 'text-orange-300/60' : 'text-orange-400'}`} />
                 <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Sau khi tạo challenge, vào chi tiết challenge và bấm <strong className="font-medium">Soạn đề</strong> để mở trình soạn quiz (tab Quiz).
+                  {t('createChallengeWizard.newQuizNotice.leadBefore', 'After creating the challenge, open its detail page and click ')}
+                  <strong className="font-medium">{t('createChallengeWizard.newQuizNotice.composeLabel', 'Compose quiz')}</strong>
+                  {t('createChallengeWizard.newQuizNotice.leadAfter', ' to launch the quiz editor (Quiz tab).')}
                 </p>
                 <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Lịch bắt đầu phải cách hiện tại ít nhất 3 ngày; sau khi tạo, vào chi tiết challenge để soạn đề trước khi challenge diễn ra.
+                  {t('createChallengeWizard.newQuizNotice.hint', 'The start date must be at least 3 days from now; after creation, open the challenge detail to compose the quiz before the challenge starts.')}
                 </p>
               </div>
             )}
@@ -409,13 +414,13 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
           <div className="flex flex-col gap-4">
             <div>
               <label className={`mb-1.5 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                Tên Challenge *
+                {t('createChallengeWizard.schedule.titleLabel', 'Challenge name *')}
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="VD: Kiểm tra kiến thức Chương 3"
+                placeholder={t('createChallengeWizard.schedule.titlePlaceholder', 'e.g. Chapter 3 knowledge check')}
                 className={inputCls}
                 maxLength={200}
               />
@@ -423,12 +428,12 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
 
             <div>
               <label className={`mb-1.5 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                Mô tả
+                {t('createChallengeWizard.schedule.descriptionLabel', 'Description')}
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Mô tả ngắn về challenge..."
+                placeholder={t('createChallengeWizard.schedule.descriptionPlaceholder', 'A short description of the challenge...')}
                 rows={3}
                 className={inputCls}
                 style={{ resize: 'none' }}
@@ -467,10 +472,10 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               />
               <span>
                 <span className={`block text-sm font-medium ${isDarkMode ? 'text-slate-100' : 'text-gray-900'}`}>
-                  Tôi tham gia thi cùng mọi người
+                  {t('createChallengeWizard.schedule.leaderParticipatesLabel', 'I will take the test with everyone')}
                 </span>
                 <span className={`mt-1 block text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
-                  Bạn được giữ một suất trong danh sách thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi (công bằng với thành viên). Trong lúc đề còn nháp (DRAFT) bạn vẫn soạn và kiểm tra được.
+                  {t('createChallengeWizard.schedule.leaderParticipatesDesc', 'You get a slot in the participant list. After the quiz is published, you cannot preview questions (for fairness to members). While the quiz is still a draft (DRAFT), you can still author and test it.')}
                 </span>
               </span>
             </label>
@@ -482,8 +487,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
           <div className="flex flex-col gap-4">
             <div className="grid gap-3 md:grid-cols-2">
               {[
-                { key: 'PUBLIC_GROUP', label: 'Công khai', desc: 'Mọi thành viên nhóm có thể đăng ký', icon: Users },
-                { key: 'INVITE_ONLY', label: 'Mời riêng', desc: 'Chỉ người được mời mới tham gia', icon: Shield },
+                { key: 'PUBLIC_GROUP', label: t('createChallengeWizard.registration.publicLabel', 'Public'), desc: t('createChallengeWizard.registration.publicDesc', 'Any group member can register'), icon: Users },
+                { key: 'INVITE_ONLY', label: t('createChallengeWizard.registration.inviteLabel', 'Invite only'), desc: t('createChallengeWizard.registration.inviteDesc', 'Only invited members can join'), icon: Shield },
               ].map((opt) => {
                 const Icon = opt.icon;
                 return (
@@ -510,7 +515,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   <Search className={`absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? 'text-slate-400' : 'text-gray-400'}`} />
                   <input
                     type="text"
-                    placeholder="Tìm thành viên..."
+                    placeholder={t('createChallengeWizard.registration.memberSearchPlaceholder', 'Search members...')}
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     className={`${inputCls} pl-10`}
@@ -518,13 +523,13 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                 </div>
 
                 <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                  Đã chọn {sanitizedSelectedUserIds.length} thành viên
+                  {t('createChallengeWizard.registration.selectedCount', 'Selected {{count}} members', { count: sanitizedSelectedUserIds.length })}
                 </div>
 
                 <div className="min-h-[16rem] max-h-72 overflow-y-auto rounded-xl border p-1" style={{ borderColor: isDarkMode ? '#334155' : '#e5e7eb' }}>
                   {filteredMembers.length === 0 ? (
                     <div className={`py-6 text-center text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                      Không tìm thấy thành viên
+                      {t('createChallengeWizard.registration.noMembers', 'No members found')}
                     </div>
                   ) : (
                     filteredMembers.map((m) => {
@@ -551,7 +556,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                           )}
                           <div className="min-w-0 flex-1">
                             <div className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                              <UserDisplayName user={m} fallback="Thành viên" isDarkMode={isDarkMode} />
+                              <UserDisplayName user={m} fallback={t('createChallengeWizard.registration.memberFallback', 'Member')} isDarkMode={isDarkMode} />
                             </div>
                             {m.email && (
                               <div className={`truncate text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{m.email}</div>
@@ -579,54 +584,56 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
           <div className="grid gap-3 xl:grid-cols-2">
             <div className={`rounded-xl border p-4 xl:col-span-2 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
               <h4 className={`mb-2 text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                Thông tin Challenge
+                {t('createChallengeWizard.review.challengeInfo', 'Challenge info')}
               </h4>
               <dl className={`space-y-1.5 text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="opacity-60">Tên:</dt>
+                  <dt className="opacity-60">{t('createChallengeWizard.review.fieldName', 'Name:')}</dt>
                   <dd className="max-w-[70%] text-right font-medium break-words">{title}</dd>
                 </div>
                 {description && (
                   <div className="flex items-start justify-between gap-4">
-                    <dt className="opacity-60">Mô tả:</dt>
+                    <dt className="opacity-60">{t('createChallengeWizard.review.fieldDescription', 'Description:')}</dt>
                     <dd className="max-w-[70%] text-right break-words">{description}</dd>
                   </div>
                 )}
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="opacity-60">Bắt đầu:</dt>
-                  <dd className="text-right">{formatDateTime(combineToBackendPayload(startDate, startTime))}</dd>
+                  <dt className="opacity-60">{t('createChallengeWizard.review.fieldStart', 'Start:')}</dt>
+                  <dd className="text-right">{formatDateTime(combineToBackendPayload(startDate, startTime), i18n.language)}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="opacity-60">Kết thúc:</dt>
-                  <dd className="text-right">{formatDateTime(combineToBackendPayload(endDate, endTime))}</dd>
+                  <dt className="opacity-60">{t('createChallengeWizard.review.fieldEnd', 'End:')}</dt>
+                  <dd className="text-right">{formatDateTime(combineToBackendPayload(endDate, endTime), i18n.language)}</dd>
                 </div>
               </dl>
             </div>
 
             <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
               <h4 className={`mb-2 text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                Quiz
+                {t('createChallengeWizard.review.quizHeading', 'Quiz')}
               </h4>
               <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                 {sourceMode === 'EXISTING_SNAPSHOT'
-                  ? (selectedQuiz ? `${selectedQuiz.title} (bản sao quiz chung)` : 'Chưa chọn')
-                  : 'Quiz mới (soạn đề trong chi tiết challenge sau khi tạo)'}
+                  ? (selectedQuiz
+                      ? t('createChallengeWizard.review.quizExistingSelected', '{{title}} (shared quiz snapshot)', { title: selectedQuiz.title })
+                      : t('createChallengeWizard.review.quizNotChosen', 'Not selected'))
+                  : t('createChallengeWizard.review.quizNewNotice', 'New quiz (author the questions in the challenge detail after creation)')}
               </p>
               {sourceMode === 'EXISTING_SNAPSHOT' && selectedQuiz ? (
                 <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  Snapshot không giao riêng thành viên; toàn bộ người đăng ký challenge dùng chung nội dung này.
+                  {t('createChallengeWizard.review.snapshotNote', 'The snapshot is not assigned per member; all challenge participants share this same content.')}
                 </p>
               ) : null}
             </div>
 
             <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
               <h4 className={`mb-2 text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                Đăng ký
+                {t('createChallengeWizard.review.registrationHeading', 'Registration')}
               </h4>
               <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
                 {registrationMode === 'PUBLIC_GROUP'
-                  ? 'Công khai - mọi thành viên đều có thể đăng ký'
-                  : `Mời riêng - ${sanitizedSelectedUserIds.length} thành viên được mời`}
+                  ? t('createChallengeWizard.review.registrationPublic', 'Public — any member can register')
+                  : t('createChallengeWizard.review.registrationInvite', 'Invite only — {{count}} members invited', { count: sanitizedSelectedUserIds.length })}
               </p>
             </div>
           </div>
@@ -642,7 +649,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       <div className={`${cardCls} flex max-h-[92vh] w-full max-w-3xl flex-col shadow-2xl sm:min-h-[36rem] lg:max-w-4xl`}>
         {/* Header */}
         <div className={`flex items-center justify-between border-b px-5 py-4 sm:px-6 lg:px-8 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>
-          <StepIndicator currentStep={step} isDarkMode={isDarkMode} />
+          <StepIndicator currentStep={step} isDarkMode={isDarkMode} t={t} />
           <button
             onClick={onClose}
             className={`rounded-lg p-1.5 transition-colors ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
@@ -671,7 +678,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
             }`}
           >
             <ChevronLeft className="h-4 w-4" />
-            {step === 0 ? 'Huỷ' : 'Quay lại'}
+            {step === 0 ? t('createChallengeWizard.footer.cancel', 'Cancel') : t('createChallengeWizard.footer.back', 'Back')}
           </button>
 
           {step < STEPS.length - 1 ? (
@@ -680,7 +687,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               disabled={!canNext()}
               className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
             >
-              Tiếp theo
+              {t('createChallengeWizard.footer.next', 'Next')}
               <ChevronRight className="h-4 w-4" />
             </button>
           ) : (
@@ -690,7 +697,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              Tạo Challenge
+              {t('createChallengeWizard.footer.submit', 'Create challenge')}
             </button>
           )}
         </div>

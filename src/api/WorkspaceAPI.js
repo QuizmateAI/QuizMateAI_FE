@@ -1,4 +1,5 @@
 import api from './api';
+import i18n from '@/i18n';
 
 
 const QUESTION_TYPE_SINGLE_CHOICE_ID = 1;
@@ -254,7 +255,7 @@ async function waitForMockTestPersonalInfoDone(workspaceId) {
     await delay(MOCK_TEST_POLL_INTERVAL_MS);
   }
 
-  throw new Error('Mock test onboarding chưa hoàn tất ở bước 2. Vui lòng thử lại sau ít phút.');
+  throw new Error(i18n.t('workspace.mockTest.onboardingIncomplete', 'Mock test onboarding is not complete at step 2. Please try again in a few minutes.'));
 }
 
 // Lấy danh sách workspace theo user đang đăng nhập (có hỗ trợ phân trang)

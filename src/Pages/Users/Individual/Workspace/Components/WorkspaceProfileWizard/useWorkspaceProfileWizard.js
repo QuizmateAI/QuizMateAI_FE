@@ -850,7 +850,10 @@ function getLiveFieldErrorMessage(field, value, t) {
     return translateOrFallback(
       t,
       `workspace.profileConfig.validation.${field}InvalidCharacters`,
-      'Chỉ dùng chữ, số và các dấu câu cơ bản. Ký tự không hợp lệ sẽ không được gửi lên AI.'
+      t(
+        'useWorkspaceProfileWizard.validation.invalidCharacters',
+        'Only use letters, numbers, and basic punctuation. Invalid characters will not be sent to the AI.'
+      )
     );
   }
 
@@ -858,7 +861,10 @@ function getLiveFieldErrorMessage(field, value, t) {
     return translateOrFallback(
       t,
       `workspace.profileConfig.validation.${field}Noise`,
-      'Nội dung đang có quá nhiều ký tự lặp hoặc ký hiệu. Hãy nhập rõ hơn trước khi hệ thống gọi AI.'
+      t(
+        'useWorkspaceProfileWizard.validation.noise',
+        'The content has too many repeated characters or symbols. Please enter it more clearly before the system calls the AI.'
+      )
     );
   }
 
@@ -867,49 +873,73 @@ function getLiveFieldErrorMessage(field, value, t) {
       return translateOrFallback(
         t,
         'workspace.profileConfig.validation.knowledgeInputTooShort',
-        'Nhập ít nhất 3 ký tự có nghĩa để AI phân tích kiến thức.'
+        t(
+          'useWorkspaceProfileWizard.validation.knowledgeInputTooShort',
+          'Enter at least 3 meaningful characters so the AI can analyze your knowledge.'
+        )
       );
     case 'currentLevel':
       return translateOrFallback(
         t,
         'workspace.profileConfig.validation.currentLevelTooShort',
-        'Mô tả trình độ hiện tại tối thiểu 4 ký tự có nghĩa.'
+        t(
+          'useWorkspaceProfileWizard.validation.currentLevelTooShort',
+          'Describe your current level with at least 4 meaningful characters.'
+        )
       );
     case 'learningGoal':
       return translateOrFallback(
         t,
         'workspace.profileConfig.validation.learningGoalTooShort',
-        'Mục tiêu học tập nên có ít nhất 10 ký tự có nghĩa trước khi gửi AI.'
+        t(
+          'useWorkspaceProfileWizard.validation.learningGoalTooShort',
+          'Your learning goal should have at least 10 meaningful characters before being sent to the AI.'
+        )
       );
     case 'strongAreas':
       return translateOrFallback(
         t,
         'workspace.profileConfig.validation.strongAreasTooShort',
-        'Điểm mạnh nên có ít nhất 4 ký tự có nghĩa.'
+        t(
+          'useWorkspaceProfileWizard.validation.strongAreasTooShort',
+          'Strong areas should have at least 4 meaningful characters.'
+        )
       );
     case 'weakAreas':
       return translateOrFallback(
         t,
         'workspace.profileConfig.validation.weakAreasTooShort',
-        'Điểm yếu nên có ít nhất 4 ký tự có nghĩa.'
+        t(
+          'useWorkspaceProfileWizard.validation.weakAreasTooShort',
+          'Weak areas should have at least 4 meaningful characters.'
+        )
       );
     case 'mockExamName':
       return translateOrFallback(
         t,
         'workspace.profileConfig.validation.mockExamNameTooShort',
-        'Tên đề thi nên có ít nhất 3 ký tự có nghĩa.'
+        t(
+          'useWorkspaceProfileWizard.validation.mockExamNameTooShort',
+          'The exam name should have at least 3 meaningful characters.'
+        )
       );
     case 'inferredDomain':
       return translateOrFallback(
         t,
         'workspace.profileConfig.validation.inferredDomainTooShort',
-        'Lĩnh vực cần có ít nhất 2 ký tự có nghĩa.'
+        t(
+          'useWorkspaceProfileWizard.validation.inferredDomainTooShort',
+          'The domain needs at least 2 meaningful characters.'
+        )
       );
     default:
       return translateOrFallback(
         t,
         `workspace.profileConfig.validation.${field}TooShort`,
-        'Nội dung còn quá ngắn để gửi AI.'
+        t(
+          'useWorkspaceProfileWizard.validation.defaultTooShort',
+          'The content is still too short to be sent to the AI.'
+        )
       );
   }
 }
@@ -1558,26 +1588,38 @@ export function useWorkspaceProfileWizard({
         nextErrors.inferredDomain = translateOrFallback(
           t,
           'workspace.profileConfig.validation.waitForAi',
-          'Vui lòng đợi AI phân tích xong kiến thức.'
+          t(
+            'useWorkspaceProfileWizard.validation.waitForAi',
+            'Please wait for the AI to finish analyzing your knowledge.'
+          )
         );
       } else if (analysisStatus === 'error') {
         nextErrors.inferredDomain = translateOrFallback(
           t,
           'workspace.profileConfig.validation.aiAnalysisError',
-          'AI phân tích thất bại. Vui lòng thử lại.'
+          t(
+            'useWorkspaceProfileWizard.validation.aiAnalysisError',
+            'AI analysis failed. Please try again.'
+          )
         );
       } else if (analysisStatus !== 'success') {
         nextErrors.inferredDomain = translateOrFallback(
           t,
           'workspace.profileConfig.validation.waitForAi',
-          'Vui lòng đợi AI phân tích xong kiến thức.'
+          t(
+            'useWorkspaceProfileWizard.validation.waitForAi',
+            'Please wait for the AI to finish analyzing your knowledge.'
+          )
         );
       }
       if (!values.inferredDomain) {
         nextErrors.inferredDomain = translateOrFallback(
           t,
           'workspace.profileConfig.validation.domainRequired',
-          'Vui lòng chọn lĩnh vực do AI đề xuất.'
+          t(
+            'useWorkspaceProfileWizard.validation.domainRequired',
+            'Please select a domain suggested by the AI.'
+          )
         );
       }
     }
@@ -1694,7 +1736,13 @@ export function useWorkspaceProfileWizard({
 
         // Block save if redFlag
         if (result.redFlag) {
-          setSaveError(result.message || 'Nội dung vi phạm chính sách.');
+          setSaveError(
+            result.message
+              || t(
+                'useWorkspaceProfileWizard.validation.policyViolation',
+                'The content violates our policy.'
+              )
+          );
           return { ok: false };
         }
       } catch (error) {
@@ -1718,7 +1766,10 @@ export function useWorkspaceProfileWizard({
           || translateOrFallback(
             t,
             'workspace.profileConfig.validation.saveFailed',
-            'Không thể lưu bước hiện tại. Vui lòng thử lại.'
+            t(
+              'useWorkspaceProfileWizard.validation.saveFailed',
+              'Could not save the current step. Please try again.'
+            )
           )
       );
       return { ok: false };
@@ -1865,7 +1916,10 @@ export function useWorkspaceProfileWizard({
         ? translateOrFallback(
           t,
           'workspace.profileConfig.stepTwo.overallReviewLoadingTitle',
-          'Quizmate AI dang danh gia tong quan'
+          t(
+            'useWorkspaceProfileWizard.overallReviewLoadingTitle',
+            'QuizMate AI is performing an overall review'
+          )
         )
         : values.workspacePurpose === 'MOCK_TEST'
         ? mockTestGenerationMessage

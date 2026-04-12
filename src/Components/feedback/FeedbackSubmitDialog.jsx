@@ -141,7 +141,7 @@ function FeedbackSubmitDialog({
     }
 
     if (missingRequiredQuestions.length > 0) {
-      setInlineError(isEnglish ? 'Please answer all required questions.' : 'Vui lòng trả lời các câu hỏi bắt buộc.');
+      setInlineError(t('feedbackDialog.errors.requiredQuestions', 'Please answer all required questions.'));
       return;
     }
 

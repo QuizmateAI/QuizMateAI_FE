@@ -15,6 +15,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   MessageSquare,
   Send,
@@ -29,6 +30,7 @@ import {
   Info,
   Lock,
 } from 'lucide-react';
+import i18n from '@/i18n';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
@@ -44,9 +46,15 @@ import {
 function relativeTime(iso) {
   if (!iso) return '';
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return 'vừa xong';
-  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  if (diff < 60) return i18n.t('groupDiscussionPanel.relative.justNow', 'just now');
+  if (diff < 3600) {
+    const count = Math.floor(diff / 60);
+    return i18n.t('groupDiscussionPanel.relative.minutesAgo', { count, defaultValue: '{{count}} minute(s) ago' });
+  }
+  if (diff < 86400) {
+    const count = Math.floor(diff / 3600);
+    return i18n.t('groupDiscussionPanel.relative.hoursAgo', { count, defaultValue: '{{count}} hour(s) ago' });
+  }
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
@@ -90,6 +98,7 @@ function encodeDraftTags(draft, draftTags) {
 
 /** A clickable question chip rendered inside a message. */
 function QuestionChip({ questionId, questionIndex, questionsById, onNavigate, isDarkMode }) {
+  const { t } = useTranslation();
   const q = questionsById[String(questionId)];
   const label = q
     ? `#${questionIndex} · ${truncateText(q.content || q.questionText || '', 38)}`
@@ -99,7 +108,7 @@ function QuestionChip({ questionId, questionIndex, questionsById, onNavigate, is
     <button
       type="button"
       onClick={() => onNavigate?.(Number(questionId), Number(questionIndex))}
-      title="Xem câu hỏi này"
+      title={t('groupDiscussionPanel.viewQuestionTooltip', 'View this question')}
       className={cn(
         'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium mx-0.5 transition-colors',
         isDarkMode
@@ -168,12 +177,13 @@ function UserAvatar({ src, name, role, userId, sizeClass = 'w-8 h-8', textClass 
 
 /** Single message row. */
 function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDarkMode }) {
+  const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState(false);
   const cancelRef = useRef(null);
   const authorDisplay = getUserDisplayParts({
     fullName: msg.authorName,
     username: msg.authorUserName,
-  }, msg.authorName || 'Người dùng');
+  }, msg.authorName || t('groupDiscussionPanel.defaultUserName', 'User'));
 
   const handleDeleteClick = () => {
     if (pendingDelete) {
@@ -252,7 +262,7 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
               className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
             >
               <Trash2 className="w-3 h-3" />
-              Xác nhận
+              {t('groupDiscussionPanel.confirmDelete', 'Confirm')}
             </button>
           ) : (
             <button
@@ -263,7 +273,7 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
                   ? 'text-slate-500 hover:text-red-400 hover:bg-red-950/30'
                   : 'text-gray-400 hover:text-red-500 hover:bg-red-50',
               )}
-              title="Xóa bình luận"
+              title={t('groupDiscussionPanel.deleteCommentTooltip', 'Delete comment')}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -276,6 +286,7 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
 
 /** Empty thread state */
 function EmptyThread({ isDarkMode }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-16 px-6 select-none">
       <div className={cn(
@@ -286,13 +297,21 @@ function EmptyThread({ isDarkMode }) {
       </div>
       <div>
         <p className={cn('text-sm font-medium', isDarkMode ? 'text-slate-300' : 'text-gray-700')}>
-          Chưa có bình luận nào
+          {t('groupDiscussionPanel.empty.title', 'No comments yet')}
         </p>
         <p className={cn('text-xs mt-1 max-w-[240px]', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
-          Hãy bắt đầu thảo luận! Dùng <kbd className={cn(
-            'px-1 py-0.5 rounded text-[10px] font-mono',
-            isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600',
-          )}>/</kbd> để tag câu hỏi cụ thể.
+          <Trans
+            i18nKey="groupDiscussionPanel.empty.description"
+            ns="group"
+            defaults="Start the discussion! Use <1>/</1> to tag a specific question."
+            components={[
+              <span key="text" />,
+              <kbd key="kbd" className={cn(
+                'px-1 py-0.5 rounded text-[10px] font-mono',
+                isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600',
+              )} />,
+            ]}
+          />
         </p>
       </div>
     </div>
@@ -300,6 +319,7 @@ function EmptyThread({ isDarkMode }) {
 }
 
 function LockedState({ isDarkMode }) {
+  const { t } = useTranslation();
   return (
     <div className={cn('h-full flex flex-col overflow-hidden rounded-xl', isDarkMode ? 'bg-slate-900' : 'bg-white')}>
       <div className={cn(
@@ -308,7 +328,7 @@ function LockedState({ isDarkMode }) {
       )}>
         <MessageSquare className={cn('w-4 h-4', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
         <p className={cn('text-sm font-semibold', isDarkMode ? 'text-slate-200' : 'text-gray-800')}>
-          Thảo luận chung
+          {t('groupDiscussionPanel.header.title', 'General discussion')}
         </p>
       </div>
 
@@ -325,10 +345,10 @@ function LockedState({ isDarkMode }) {
           </div>
           <div>
             <p className={cn('text-xs font-medium', isDarkMode ? 'text-slate-300' : 'text-gray-600')}>
-              Hoàn thành quiz để tham gia thảo luận
+              {t('groupDiscussionPanel.locked.title', 'Complete the quiz to join the discussion')}
             </p>
             <p className={cn('text-[11px] mt-0.5', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
-              Làm bài trước để trao đổi với các thành viên trong nhóm.
+              {t('groupDiscussionPanel.locked.description', 'Finish the attempt first to exchange with other group members.')}
             </p>
           </div>
         </div>
@@ -367,6 +387,7 @@ const GUIDE_KEY = 'qm_general_discussion_guide_dismissed';
 
 /** Dismissible guideline card for general discussion */
 function GuidelineCard({ isDarkMode }) {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem(GUIDE_KEY) === '1'; } catch { return false; }
   });
@@ -388,14 +409,14 @@ function GuidelineCard({ isDarkMode }) {
       <Info className="w-4 h-4 mt-0.5 shrink-0 opacity-80" />
       <div className="flex-1 min-w-0">
         <p className={cn('text-[11px] font-semibold mb-1', isDarkMode ? 'text-blue-200' : 'text-blue-700')}>
-          Hướng dẫn thảo luận chung
+          {t('groupDiscussionPanel.guideline.title', 'General discussion guide')}
         </p>
         <ul className={cn('text-[11px] space-y-0.5 leading-snug', isDarkMode ? 'text-blue-300/80' : 'text-blue-600')}>
-          <li><kbd className={cn('px-1 rounded font-mono text-[10px] mr-1', isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-white border border-blue-300 text-blue-700')}>Enter</kbd>gửi tin nhắn</li>
-          <li><kbd className={cn('px-1 rounded font-mono text-[10px] mr-1', isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-white border border-blue-300 text-blue-700')}>Shift+Enter</kbd>xuống hàng</li>
-          <li>Gõ <kbd className={cn('px-1 rounded font-mono text-[10px] mx-0.5', isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-white border border-blue-300 text-blue-700')}>/</kbd> để tag câu hỏi — thành viên click vào chip sẽ được chuyển tới câu hỏi đó</li>
+          <li><kbd className={cn('px-1 rounded font-mono text-[10px] mr-1', isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-white border border-blue-300 text-blue-700')}>Enter</kbd>{t('groupDiscussionPanel.guideline.enterHint', 'send message')}</li>
+          <li><kbd className={cn('px-1 rounded font-mono text-[10px] mr-1', isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-white border border-blue-300 text-blue-700')}>Shift+Enter</kbd>{t('groupDiscussionPanel.guideline.shiftEnterHint', 'new line')}</li>
+          <li>{t('groupDiscussionPanel.guideline.slashHintPrefix', 'Type')} <kbd className={cn('px-1 rounded font-mono text-[10px] mx-0.5', isDarkMode ? 'bg-blue-900 text-blue-200' : 'bg-white border border-blue-300 text-blue-700')}>/</kbd> {t('groupDiscussionPanel.guideline.slashHintSuffix', 'to tag a question — members clicking the chip will jump to that question')}</li>
           {/* Leader tip */}
-          <li className="opacity-70">Leader có thể xóa bất kỳ bình luận nào</li>
+          <li className="opacity-70">{t('groupDiscussionPanel.guideline.leaderHint', 'Leader can delete any comment')}</li>
         </ul>
       </div>
       <button
@@ -405,7 +426,7 @@ function GuidelineCard({ isDarkMode }) {
           'shrink-0 p-0.5 rounded hover:bg-blue-200/40 transition-colors',
           isDarkMode ? 'text-blue-400 hover:bg-blue-900/40' : 'text-blue-400 hover:bg-blue-200',
         )}
-        title="Đóng hướng dẫn"
+        title={t('groupDiscussionPanel.guideline.closeTooltip', 'Close guide')}
       >
         <X className="w-3.5 h-3.5" />
       </button>
@@ -438,6 +459,7 @@ export default function GroupDiscussionPanel({
   questionsById = {},
   onNavigateToQuestion,
 }) {
+  const { t } = useTranslation();
   const { profile } = useUserProfile();
 
   const [messages, setMessages] = useState([]);
@@ -557,7 +579,7 @@ export default function GroupDiscussionPanel({
 
     const encodedBody = encodeDraftTags(rawBody, draftTags);
     const authorId = profile?.userId ?? profile?.id ?? 0;
-    const authorName = profile?.fullName ?? profile?.name ?? 'Người dùng';
+    const authorName = profile?.fullName ?? profile?.name ?? t('groupDiscussionPanel.defaultUserName', 'User');
     const authorRole = isLeader ? 'LEADER' : 'MEMBER';
 
     setPosting(true);
@@ -576,7 +598,7 @@ export default function GroupDiscussionPanel({
     } finally {
       setPosting(false);
     }
-  }, [draft, draftTags, posting, canAccess, profile, isLeader, workspaceId, quizId]);
+  }, [draft, draftTags, posting, canAccess, profile, isLeader, workspaceId, quizId, t]);
 
   // ── Keyboard navigation in suggestions + send
   const handleKeyDown = useCallback((e) => {
@@ -639,7 +661,7 @@ export default function GroupDiscussionPanel({
         <div className="flex items-center gap-2">
           <MessageSquare className={cn('w-4 h-4', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
           <p className={cn('text-sm font-semibold', isDarkMode ? 'text-slate-200' : 'text-gray-800')}>
-            Thảo luận chung
+            {t('groupDiscussionPanel.header.title', 'General discussion')}
           </p>
           <span className={cn(
             'text-xs px-2 py-0.5 rounded-full',
@@ -655,10 +677,10 @@ export default function GroupDiscussionPanel({
           isDarkMode ? 'text-slate-500' : 'text-gray-400',
         )}>
           <AtSign className="w-3 h-3" />
-          <span>Gõ <kbd className={cn(
+          <span>{t('groupDiscussionPanel.header.hintPrefix', 'Press')} <kbd className={cn(
             'px-1.5 py-0.5 rounded text-[10px] font-mono border',
             isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-gray-200 text-gray-600',
-          )}>/</kbd> để tag câu hỏi</span>
+          )}>/</kbd> {t('groupDiscussionPanel.header.hintSuffix', 'to tag a question')}</span>
         </div>
       </div>
 
@@ -703,10 +725,12 @@ export default function GroupDiscussionPanel({
           )}>
             <span className={cn('text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
               <BookOpen className="w-3 h-3" />
-              Câu hỏi{slashQuery ? ` · "${slashQuery}"` : ''}
+              {slashQuery
+                ? t('groupDiscussionPanel.suggestions.questionsWithQuery', { query: slashQuery, defaultValue: 'Questions · "{{query}}"' })
+                : t('groupDiscussionPanel.suggestions.questions', 'Questions')}
             </span>
             <span className={cn('text-[10px]', isDarkMode ? 'text-slate-600' : 'text-gray-400')}>
-              ↑↓ chọn · Enter xác nhận · Esc đóng
+              {t('groupDiscussionPanel.suggestions.shortcuts', '↑↓ navigate · Enter confirm · Esc close')}
             </span>
           </div>
 
@@ -727,7 +751,9 @@ export default function GroupDiscussionPanel({
               'px-3 py-1.5 text-[10px] text-center',
               isDarkMode ? 'text-slate-600 bg-slate-900/30' : 'text-gray-400 bg-gray-50/50',
             )}>
-              {filteredSuggestions.length < allQuestions.length ? `${filteredSuggestions.length} / ${allQuestions.length} câu hỏi` : `${allQuestions.length} câu hỏi`}
+              {filteredSuggestions.length < allQuestions.length
+                ? t('groupDiscussionPanel.suggestions.countFiltered', { shown: filteredSuggestions.length, total: allQuestions.length, defaultValue: '{{shown}} / {{total}} questions' })
+                : t('groupDiscussionPanel.suggestions.countTotal', { total: allQuestions.length, defaultValue: '{{total}} questions' })}
             </div>
           )}
         </div>
@@ -740,7 +766,7 @@ export default function GroupDiscussionPanel({
           isDarkMode ? 'bg-blue-900/20 border border-blue-800/40' : 'bg-blue-50 border border-blue-200',
         )}>
           <span className={cn('text-[10px] font-medium shrink-0', isDarkMode ? 'text-blue-400' : 'text-blue-600')}>
-            Tag đã chèn:
+            {t('groupDiscussionPanel.tagsPreview.label', 'Inserted tags:')}
           </span>
           {Object.entries(draftTags).map(([marker, tag]) =>
             draft.includes(marker) ? (
@@ -788,7 +814,7 @@ export default function GroupDiscussionPanel({
             value={draft}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Viết bình luận… Dùng / để tag câu hỏi · Enter để gửi"
+            placeholder={t('groupDiscussionPanel.input.placeholder', 'Write a comment… Use / to tag a question · Enter to send')}
             rows={1}
             className={cn(
               'flex-1 bg-transparent resize-none text-sm leading-relaxed outline-none min-h-[36px] max-h-[100px]',
@@ -818,7 +844,9 @@ export default function GroupDiscussionPanel({
         </div>
 
         <p className={cn('text-[10px] mt-1 text-right', isDarkMode ? 'text-slate-600' : 'text-gray-400')}>
-          Enter gửi · Shift+Enter xuống hàng · {isLeader ? 'Leader có thể xóa mọi bình luận' : 'Chỉ có thể xóa bình luận của bạn'}
+          {t('groupDiscussionPanel.input.footerPrefix', 'Enter to send · Shift+Enter for new line ·')} {isLeader
+            ? t('groupDiscussionPanel.input.leaderCanDelete', 'Leader can delete any comment')
+            : t('groupDiscussionPanel.input.memberCanDelete', 'You can only delete your own comments')}
         </p>
       </div>
     </div>

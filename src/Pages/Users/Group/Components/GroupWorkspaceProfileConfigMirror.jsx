@@ -25,6 +25,7 @@ import {
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
+import i18nInstance from '@/i18n';
 import { analyzeKnowledge } from '@/api/StudyProfileAPI';
 import {
   confirmGroupWorkspaceProfile,
@@ -35,9 +36,9 @@ import {
 } from '@/api/WorkspaceAPI';
 
 const LEARNING_MODES = [
-  { value: 'STUDY_NEW', labelVi: 'Học kiến thức mới', labelEn: 'Study New', icon: BrainCircuit },
-  { value: 'REVIEW', labelVi: 'Ôn tập theo nhóm', labelEn: 'Group Review', icon: Sparkles },
-  { value: 'MOCK_TEST', labelVi: 'Thi thử cùng nhóm', labelEn: 'Group Mock Test', icon: ScrollText },
+  { value: 'STUDY_NEW', labelKey: 'groupWorkspaceProfileConfigMirror.learningModes.studyNew', labelFallback: 'Study New', icon: BrainCircuit },
+  { value: 'REVIEW', labelKey: 'groupWorkspaceProfileConfigMirror.learningModes.review', labelFallback: 'Group Review', icon: Sparkles },
+  { value: 'MOCK_TEST', labelKey: 'groupWorkspaceProfileConfigMirror.learningModes.mockTest', labelFallback: 'Group Mock Test', icon: ScrollText },
 ];
 
 const GROUP_NAME_PLACEHOLDERS = new Set(['group name null']);
@@ -52,12 +53,12 @@ function getErrorMessage(error, fallback) {
   return error?.message || error?.response?.data?.message || fallback;
 }
 
-function formatSeatLimit(value, isVi) {
+function formatSeatLimit(value) {
   const safeValue = Number(value);
   if (Number.isFinite(safeValue) && safeValue > 0) {
-    return isVi ? `${safeValue} thành viên` : `${safeValue} members`;
+    return i18nInstance.t('groupWorkspaceProfileConfigMirror.seatLimit.members', '{{count}} members', { count: safeValue });
   }
-  return isVi ? 'Theo gói group hiện tại' : 'Managed by the active group plan';
+  return i18nInstance.t('groupWorkspaceProfileConfigMirror.seatLimit.managed', 'Managed by the active group plan');
 }
 
 function normalizeGroupNameValue(value) {
@@ -122,42 +123,41 @@ function normalizeDomainSuggestionDetail(detail) {
   };
 }
 
-function buildFallbackDomainReason(label, knowledge, index, isVi) {
+function buildFallbackDomainReason(label, knowledge, index) {
   const normalizedLabel = normalizeReasonText(label);
 
   if (normalizedLabel.includes('dich')) {
-    return isVi
-      ? 'Phù hợp với hướng học dịch, chuyển nghĩa và đối chiếu ngữ cảnh mà nhóm mô tả.'
-      : 'Matches the translation-focused direction your group described.';
+    return i18nInstance.t(
+      'groupWorkspaceProfileConfigMirror.domainReason.translation',
+      'Matches the translation-focused direction your group described.'
+    );
   }
 
   if (normalizedLabel.includes('bang')) {
-    return isVi
-      ? 'Phù hợp nếu nhóm đang học theo hướng so sánh hoặc bắc cầu giữa hai hệ kiến thức.'
-      : 'Fits a comparison or bridge-style learning scope across two knowledge systems.';
+    return i18nInstance.t(
+      'groupWorkspaceProfileConfigMirror.domainReason.comparison',
+      'Fits a comparison or bridge-style learning scope across two knowledge systems.'
+    );
   }
 
   if (isEnglishVietnamesePairSignal(knowledge)) {
-    return isVi
-      ? 'Phù hợp với phạm vi học chung xoay quanh cặp ngôn ngữ Anh - Việt.'
-      : 'Fits a shared learning scope centered on the English-Vietnamese language pair.';
+    return i18nInstance.t(
+      'groupWorkspaceProfileConfigMirror.domainReason.englishVietnamesePair',
+      'Fits a shared learning scope centered on the English-Vietnamese language pair.'
+    );
   }
 
-  const viReasons = [
-    'Đây là hướng khớp gần nhất với phạm vi kiến thức nhóm đang chia sẻ.',
-    'Đây là mảng liên quan mà AI nhận thấy từ nội dung kiến thức bạn nhập.',
-    'Đây là ngữ cảnh mở rộng có thể phù hợp với mục tiêu học chung của nhóm.',
-  ];
-  const enReasons = [
-    'This is the closest match to the knowledge scope your group described.',
-    'This is a related area the AI inferred from the knowledge you entered.',
-    'This is a broader context that may still fit your group learning goal.',
+  const fallbackKeys = [
+    { key: 'groupWorkspaceProfileConfigMirror.domainReason.fallback1', fallback: 'This is the closest match to the knowledge scope your group described.' },
+    { key: 'groupWorkspaceProfileConfigMirror.domainReason.fallback2', fallback: 'This is a related area the AI inferred from the knowledge you entered.' },
+    { key: 'groupWorkspaceProfileConfigMirror.domainReason.fallback3', fallback: 'This is a broader context that may still fit your group learning goal.' },
   ];
 
-  return (isVi ? viReasons : enReasons)[index] || (isVi ? viReasons[0] : enReasons[0]);
+  const entry = fallbackKeys[index] || fallbackKeys[0];
+  return i18nInstance.t(entry.key, entry.fallback);
 }
 
-function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails, knowledge, isVi }) {
+function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails, knowledge }) {
   const normalizedDetails = (Array.isArray(domainSuggestionDetails) ? domainSuggestionDetails : [])
     .map(normalizeDomainSuggestionDetail)
     .filter(Boolean);
@@ -165,7 +165,7 @@ function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails,
   if (normalizedDetails.length > 0) {
     return normalizedDetails.slice(0, 5).map((item, index) => ({
       label: item.label,
-      reason: item.reason || buildFallbackDomainReason(item.label, knowledge, index, isVi),
+      reason: item.reason || buildFallbackDomainReason(item.label, knowledge, index),
     }));
   }
 
@@ -175,7 +175,7 @@ function buildDomainOptionsFromApi({ domainSuggestions, domainSuggestionDetails,
 
   return domainSuggestions.slice(0, 5).map((label, index) => ({
     label,
-    reason: buildFallbackDomainReason(label, knowledge, index, isVi),
+    reason: buildFallbackDomainReason(label, knowledge, index),
   }));
 }
 
@@ -280,7 +280,6 @@ function GroupWorkspaceProfileConfigMirror({
   onTemporaryClose,
 }) {
   const { t, i18n } = useTranslation();
-  const isVi = i18n.language === 'vi';
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
   const canTemporarilyClose = !canClose && typeof onTemporaryClose === 'function';
   const inputClass = cn(
@@ -346,9 +345,11 @@ function GroupWorkspaceProfileConfigMirror({
   const summary = useMemo(() => {
     const mode = LEARNING_MODES.find((item) => item.value === learningMode);
     return {
-      mode: mode ? (isVi ? mode.labelVi : mode.labelEn) : (isVi ? 'Chưa chọn' : 'Not set'),
+      mode: mode
+        ? t(mode.labelKey, mode.labelFallback)
+        : t('groupWorkspaceProfileConfigMirror.summary.modeNotSet', 'Not set'),
     };
-  }, [learningMode, isVi]);
+  }, [learningMode, t]);
 
   const stepTabs = useMemo(() => ([
     {
@@ -408,48 +409,48 @@ function GroupWorkspaceProfileConfigMirror({
   const confirmMutedClass = isDarkMode ? 'text-slate-300' : 'text-slate-700';
   const confirmLabelClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const confirmationSummarySections = useMemo(() => {
-    const emptyLabel = isVi ? 'Chưa cập nhật' : 'Not configured';
-    const enabledLabel = isVi ? 'Đang bật' : 'Enabled';
-    const disabledLabel = isVi ? 'Đang tắt' : 'Disabled';
-    const requiredLabel = isVi ? 'Yêu cầu' : 'Required';
-    const notRequiredLabel = isVi ? 'Không yêu cầu' : 'Not required';
+    const emptyLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.empty', 'Not configured');
+    const enabledLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.enabled', 'Enabled');
+    const disabledLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.disabled', 'Disabled');
+    const requiredLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.required', 'Required');
+    const notRequiredLabel = t('groupWorkspaceProfileConfigMirror.confirmationSummary.notRequired', 'Not required');
 
     return [
       {
         id: 'identity',
-        title: isVi ? 'Nhận diện nhóm' : 'Group identity',
+        title: t('groupWorkspaceProfileConfigMirror.confirmationSummary.identityTitle', 'Group identity'),
         items: [
-          { id: 'groupName', label: isVi ? 'Tên nhóm' : 'Group name', value: groupName.trim() || emptyLabel },
+          { id: 'groupName', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.groupNameLabel', 'Group name'), value: groupName.trim() || emptyLabel },
         ],
       },
       {
         id: 'learning',
-        title: isVi ? 'Phạm vi học tập' : 'Learning scope',
+        title: t('groupWorkspaceProfileConfigMirror.confirmationSummary.learningScopeTitle', 'Learning scope'),
         items: [
-          { id: 'knowledge', label: isVi ? 'Kiến thức nhóm muốn học' : 'Shared knowledge scope', value: knowledge.trim() || emptyLabel },
-          { id: 'domain', label: isVi ? 'Lĩnh vực' : 'Domain', value: domain.trim() || emptyLabel },
-          { id: 'mode', label: isVi ? 'Chế độ học' : 'Learning mode', value: summary.mode || emptyLabel },
+          { id: 'knowledge', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.knowledgeLabel', 'Shared knowledge scope'), value: knowledge.trim() || emptyLabel },
+          { id: 'domain', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.domainLabel', 'Domain'), value: domain.trim() || emptyLabel },
+          { id: 'mode', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.modeLabel', 'Learning mode'), value: summary.mode || emptyLabel },
           ...(learningMode === 'MOCK_TEST'
-            ? [{ id: 'exam', label: isVi ? 'Kỳ thi' : 'Exam name', value: examName.trim() || emptyLabel }]
+            ? [{ id: 'exam', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.examLabel', 'Exam name'), value: examName.trim() || emptyLabel }]
             : []),
         ],
       },
       {
         id: 'config',
-        title: isVi ? 'Cấu hình nhóm' : 'Group setup',
+        title: t('groupWorkspaceProfileConfigMirror.confirmationSummary.groupSetupTitle', 'Group setup'),
         items: [
-          { id: 'roadmap', label: isVi ? 'Roadmap chung' : 'Shared roadmap', value: roadmapEnabled ? enabledLabel : disabledLabel },
-          { id: 'entry', label: isVi ? 'Đánh giá đầu vào' : 'Entry assessment', value: preLearningRequired ? requiredLabel : notRequiredLabel },
+          { id: 'roadmap', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.roadmapLabel', 'Shared roadmap'), value: roadmapEnabled ? enabledLabel : disabledLabel },
+          { id: 'entry', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.entryLabel', 'Entry assessment'), value: preLearningRequired ? requiredLabel : notRequiredLabel },
         ],
       },
       {
         id: 'notes',
-        title: isVi ? 'Ghi chú vận hành' : 'Operating notes',
+        title: t('groupWorkspaceProfileConfigMirror.confirmationSummary.operatingNotesTitle', 'Operating notes'),
         spanClass: 'lg:col-span-2',
         itemsGridClass: 'space-y-3',
         items: [
-          { id: 'goal', label: isVi ? 'Mục tiêu học tập chung' : 'Shared learning goal', value: groupLearningGoal.trim() || emptyLabel },
-          { id: 'rules', label: isVi ? 'Nội quy nhóm' : 'Group rules', value: rules.trim() || emptyLabel },
+          { id: 'goal', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.goalLabel', 'Shared learning goal'), value: groupLearningGoal.trim() || emptyLabel },
+          { id: 'rules', label: t('groupWorkspaceProfileConfigMirror.confirmationSummary.rulesLabel', 'Group rules'), value: rules.trim() || emptyLabel },
         ],
       },
     ];
@@ -458,13 +459,13 @@ function GroupWorkspaceProfileConfigMirror({
     examName,
     groupLearningGoal,
     groupName,
-    isVi,
     knowledge,
     learningMode,
     preLearningRequired,
     roadmapEnabled,
     rules,
     summary.mode,
+    t,
   ]);
 
   useEffect(() => {
@@ -565,7 +566,6 @@ function GroupWorkspaceProfileConfigMirror({
           domainSuggestions: result?.domainSuggestions || [],
           domainSuggestionDetails: extractDomainSuggestionDetails(result),
           knowledge: trimmedKnowledge,
-          isVi,
         });
 
         setKnowledgeAnalysis(result);
@@ -591,7 +591,7 @@ function GroupWorkspaceProfileConfigMirror({
       clearTimeout(analysisTimerRef.current);
       analysisAbortRef.current?.abort();
     };
-  }, [open, knowledge, analysisRetryTick, isVi]);
+  }, [open, knowledge, analysisRetryTick]);
 
   const validateStepOne = () => {
     const nextErrors = {};
@@ -624,9 +624,10 @@ function GroupWorkspaceProfileConfigMirror({
     setErrors((prev) => ({ ...prev, ...nextErrors }));
     if (Object.keys(nextErrors).length > 0) {
       setSaveError(
-        isVi
-          ? 'Vui lòng hoàn thành các mục bắt buộc trước khi kiểm tra lại để hoàn tất.'
-          : 'Please complete the required fields before reviewing the final setup.'
+        t(
+          'groupWorkspaceProfileConfigMirror.validation.completeRequired',
+          'Please complete the required fields before reviewing the final setup.'
+        )
       );
 
       requestAnimationFrame(() => {
@@ -739,15 +740,16 @@ function GroupWorkspaceProfileConfigMirror({
                     isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   )}>
                     <Check className="h-3.5 w-3.5" />
-                    {isVi ? 'XÁC NHẬN HỒ SƠ' : 'PROFILE CONFIRMATION'}
+                    {t('groupWorkspaceProfileConfigMirror.confirm.badge', 'PROFILE CONFIRMATION')}
                   </div>
                   <DialogTitle className="text-[24px] font-bold">
-                    {isVi ? 'Xác nhận sử dụng hồ sơ nhóm này' : 'Confirm this group profile'}
+                    {t('groupWorkspaceProfileConfigMirror.confirm.title', 'Confirm this group profile')}
                   </DialogTitle>
                   <DialogDescription className={cn('mt-2 max-w-4xl text-sm leading-6', confirmMutedClass)}>
-                    {isVi
-                      ? 'Kiểm tra nhanh bản tóm tắt trước khi áp dụng. Sau khi xác nhận, cấu hình này sẽ trở thành hồ sơ đang dùng cho workspace nhóm.'
-                      : 'Review the summary once more. After confirmation, this setup becomes the active profile for the group workspace.'}
+                    {t(
+                      'groupWorkspaceProfileConfigMirror.confirm.description',
+                      'Review the summary once more. After confirmation, this setup becomes the active profile for the group workspace.'
+                    )}
                   </DialogDescription>
                 </>
               ) : (
@@ -806,12 +808,13 @@ function GroupWorkspaceProfileConfigMirror({
                   </div>
                   <div>
                     <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                      {isVi ? 'Rà soát lần cuối trước khi áp dụng cho nhóm' : 'Final review before applying to the group'}
+                      {t('groupWorkspaceProfileConfigMirror.confirm.finalReviewTitle', 'Final review before applying to the group')}
                     </p>
                     <p className={cn('mt-1 text-sm leading-6', confirmMutedClass)}>
-                      {isVi
-                        ? 'Bạn vẫn có thể quay lại form để chỉnh sửa lại mục tiêu, nội quy hoặc phạm vi kiến thức trước khi lưu chính thức.'
-                        : 'You can still return to the wizard to revise the goal, rules, or learning scope before saving.'}
+                      {t(
+                        'groupWorkspaceProfileConfigMirror.confirm.finalReviewDescription',
+                        'You can still return to the wizard to revise the goal, rules, or learning scope before saving.'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -878,9 +881,10 @@ function GroupWorkspaceProfileConfigMirror({
                 isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)]'
               )}>
                 <p className={cn('text-sm leading-6', confirmMutedClass)}>
-                  {isVi
-                    ? 'Bạn có thể quay lại để chỉnh sửa trước khi áp dụng.'
-                    : 'You can still go back and edit before applying.'}
+                  {t(
+                    'groupWorkspaceProfileConfigMirror.confirm.editHint',
+                    'You can still go back and edit before applying.'
+                  )}
                 </p>
               </div>
 
@@ -892,12 +896,13 @@ function GroupWorkspaceProfileConfigMirror({
               )}>
                 <div className="border-b border-inherit pb-4">
                   <p className={cn('text-xs font-semibold uppercase tracking-[0.08em]', confirmLabelClass)}>
-                    {isVi ? 'Hồ sơ nhóm sẽ được áp dụng' : 'This group profile will be applied'}
+                    {t('groupWorkspaceProfileConfigMirror.confirm.applyEyebrow', 'This group profile will be applied')}
                   </p>
                   <p className={cn('mt-2 text-sm leading-6', confirmMutedClass)}>
-                    {isVi
-                      ? 'Các mục bên dưới sẽ được lưu thành cấu hình học tập hiện tại của workspace nhóm.'
-                      : 'Everything below will be saved as the current learning setup for this group workspace.'}
+                    {t(
+                      'groupWorkspaceProfileConfigMirror.confirm.applyDescription',
+                      'Everything below will be saved as the current learning setup for this group workspace.'
+                    )}
                   </p>
                 </div>
 
@@ -1002,7 +1007,7 @@ function GroupWorkspaceProfileConfigMirror({
                             }
                           }}
                           icon={item.icon}
-                          title={isVi ? item.labelVi : item.labelEn}
+                          title={t(item.labelKey, item.labelFallback)}
                           description={item.value === 'STUDY_NEW'
                             ? t('groupProfileConfig.stepTwo.studyNewDescription')
                             : item.value === 'REVIEW'
@@ -1357,7 +1362,7 @@ function GroupWorkspaceProfileConfigMirror({
                     isDarkMode ? 'border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-900' : 'border-[color:var(--surface-border-soft)] bg-[color:var(--design-30)] text-slate-700 hover:bg-[color:var(--design-60)]'
                   )}
                 >
-                  {isVi ? 'Quay lại chỉnh sửa' : 'Back to edit'}
+                  {t('groupWorkspaceProfileConfigMirror.confirm.backToEdit', 'Back to edit')}
                 </Button>
                 <Button
                   type="button"
@@ -1366,7 +1371,7 @@ function GroupWorkspaceProfileConfigMirror({
                   className="rounded-[24px] bg-emerald-600 px-6 text-white transition-all duration-200 hover:bg-emerald-700"
                 >
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                  {isVi ? 'Xác nhận sử dụng hồ sơ này' : 'Confirm this profile'}
+                  {t('groupWorkspaceProfileConfigMirror.confirm.confirmButton', 'Confirm this profile')}
                 </Button>
               </>
             ) : step > 1 ? (

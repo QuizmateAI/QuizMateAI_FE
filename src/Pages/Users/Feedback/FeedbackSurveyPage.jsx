@@ -1,4 +1,5 @@
 import { ClipboardList } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   FeedbackEmptyState,
   FeedbackSectionCard,
@@ -9,10 +10,10 @@ import {
 import { cn } from '@/lib/utils';
 
 function FeedbackSurveyPage() {
+  const { t } = useTranslation();
   const {
     currentLang,
     isDarkMode,
-    isEnglish,
     locale,
     loading,
     openRequestDialog,
@@ -27,11 +28,9 @@ function FeedbackSurveyPage() {
             <ClipboardList className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">{isEnglish ? 'Survey queue' : 'Khu survey feedback'}</h2>
+            <h2 className="text-lg font-semibold">{t('feedbackSurveyPage.header.title', 'Survey queue')}</h2>
             <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-              {isEnglish
-                ? 'Scheduled feedback forms are separated from support tickets so they can be managed independently.'
-                : 'Các form survey theo lịch được tách riêng khỏi ticket hỗ trợ để quản lý độc lập và rõ ràng hơn.'}
+              {t('feedbackSurveyPage.header.description', 'Scheduled feedback forms are separated from support tickets so they can be managed independently.')}
             </p>
           </div>
         </div>
@@ -39,15 +38,15 @@ function FeedbackSurveyPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <FeedbackSummaryCard
-          title={isEnglish ? 'Pending surveys' : 'Survey đang chờ'}
+          title={t('feedbackSurveyPage.summary.pendingTitle', 'Pending surveys')}
           value={requests.length}
-          helper={isEnglish ? 'Requests that still need your answers' : 'Những yêu cầu vẫn đang chờ bạn trả lời'}
+          helper={t('feedbackSurveyPage.summary.pendingHelper', 'Requests that still need your answers')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'Survey flow' : 'Luồng survey'}
-          value={isEnglish ? 'Separate' : 'Tách riêng'}
-          helper={isEnglish ? 'Survey forms stay out of the product/system ticket queues' : 'Survey không còn bị trộn vào hàng đợi ticket product/system'}
+          title={t('feedbackSurveyPage.summary.flowTitle', 'Survey flow')}
+          value={t('feedbackSurveyPage.summary.flowValue', 'Separate')}
+          helper={t('feedbackSurveyPage.summary.flowHelper', 'Survey forms stay out of the product/system ticket queues')}
           isDarkMode={isDarkMode}
         />
       </div>
@@ -55,11 +54,9 @@ function FeedbackSurveyPage() {
       <FeedbackSectionCard isDarkMode={isDarkMode}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{isEnglish ? 'Pending survey requests' : 'Danh sách survey đang chờ'}</h2>
+            <h2 className="text-lg font-semibold">{t('feedbackSurveyPage.list.title', 'Pending survey requests')}</h2>
             <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-              {isEnglish
-                ? 'Answer these structured forms separately from support conversations.'
-                : 'Trả lời các form phản hồi có cấu trúc này ở một khu riêng, tách biệt với luồng support.'}
+              {t('feedbackSurveyPage.list.description', 'Answer these structured forms separately from support conversations.')}
             </p>
           </div>
         </div>
@@ -67,14 +64,14 @@ function FeedbackSurveyPage() {
         <div className="mt-5 grid gap-4">
           {loading ? (
             <div className={cn('rounded-[24px] border px-6 py-10 text-center text-sm', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500')}>
-              {isEnglish ? 'Loading surveys...' : 'Đang tải survey...'}
+              {t('feedbackSurveyPage.list.loading', 'Loading surveys...')}
             </div>
           ) : null}
 
           {!loading && requests.length === 0 ? (
             <FeedbackEmptyState
-              title={isEnglish ? 'No pending survey right now' : 'Hiện chưa có survey nào đang chờ'}
-              description={isEnglish ? 'When a survey is created for you, it will appear in this dedicated queue.' : 'Khi có survey mới dành cho bạn, nội dung sẽ xuất hiện trong khu riêng này.'}
+              title={t('feedbackSurveyPage.list.emptyTitle', 'No pending survey right now')}
+              description={t('feedbackSurveyPage.list.emptyDescription', 'When a survey is created for you, it will appear in this dedicated queue.')}
               icon={ClipboardList}
               isDarkMode={isDarkMode}
             />

@@ -84,17 +84,17 @@ function CreateRoadmapForm({
         </span>
         <div className="space-y-1.5">
           <p className={`text-sm font-semibold ${fontClass}`}>
-            {t("workspace.roadmap.aiOnlyTitle", "Roadmap được tạo bằng AI")}
+            {t("workspace.roadmap.aiOnlyTitle", "AI builds the roadmap for you")}
           </p>
           <p className={`text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-            {t("workspace.roadmap.aiOnlyDescription", "AI sẽ dùng mục tiêu học và nguồn đã chọn để dựng phase, knowledge và checkpoint cho roadmap này.")}
+            {t("workspace.roadmap.aiOnlyDescription", "Enter a roadmap name and learning goal. The system will generate phases, knowledge, quizzes, and flashcards from the AI mock flow.")}
           </p>
         </div>
       </div>
 
       {!hasPrelearning ? (
         <p className={`text-sm ${isDarkMode ? "text-amber-200" : "text-amber-700"}`}>
-          {t("workspace.roadmap.prelearningRequired", "Cần bật pre-learning trong hồ sơ workspace trước khi tạo roadmap này.")}
+          {t("workspace.roadmap.prelearningRequired", "Complete the Pre-learning test before AI generates a roadmap.")}
         </p>
       ) : null}
 
@@ -125,7 +125,7 @@ function CreateRoadmapForm({
       </div>
 
       <p className={`text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-        {t("workspace.roadmap.aiGenerateHint", "Roadmap sẽ được tạo theo mục tiêu hiện tại và các nguồn đang chọn trong workspace.")}
+        {t("workspace.roadmap.aiGenerateHint", "After generation, the roadmap opens directly in the canvas view so you can inspect and move through the flow.")}
       </p>
 
       <div className="flex justify-end">
@@ -141,8 +141,8 @@ function CreateRoadmapForm({
             <Sparkles className="mr-2 h-4 w-4" />
           )}
           {submitting
-            ? t("workspace.roadmap.generating", "Đang tạo roadmap")
-            : t("workspace.roadmap.generateButton", "Tạo roadmap")}
+            ? t("workspace.roadmap.generating", "AI is generating...")
+            : t("workspace.roadmap.generateButton", "Generate roadmap with AI")}
         </Button>
       </div>
     </div>

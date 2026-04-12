@@ -175,14 +175,14 @@ function CommunityQuizCard({
                 isDarkMode ? "bg-blue-950/40 text-blue-300" : "bg-blue-100 text-blue-700"
               }`}>
                 <Sparkles className="h-3.5 w-3.5" />
-                {t("workspace.quiz.communityExplorer.topMatch", "Phù hợp nhất")}
+                {t("workspace.quiz.communityExplorer.topMatch", "Top Match")}
               </span>
             ) : (
               <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                 isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
               }`}>
                 <Globe2 className="h-3.5 w-3.5" />
-                {t("workspace.quiz.communityExplorer.publicQuiz", "Quiz công khai")}
+                {t("workspace.quiz.communityExplorer.publicQuiz", "Public Quiz")}
               </span>
             )}
             {meta ? (
@@ -195,20 +195,20 @@ function CommunityQuizCard({
                 isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"
               }`}>
                 <Users className="h-3.5 w-3.5" />
-                {t("workspace.quiz.communityRecommendations.cloneCount", "{{count}} lượt clone", { count: cloneCount })}
+                {t("workspace.quiz.communityRecommendations.cloneCount", "{{count}} clones", { count: cloneCount })}
               </span>
             ) : null}
           </div>
 
           <p className={`mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
-            {item?.title || t("workspace.quiz.communityRecommendations.defaultQuizTitle", "Quiz cộng đồng")}
+            {item?.title || t("workspace.quiz.communityRecommendations.defaultQuizTitle", "Community quiz")}
           </p>
 
           <div className={`mt-2 flex flex-wrap items-center gap-2 text-xs ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
             {duration ? (
               <span className="inline-flex items-center gap-1">
                 <Clock3 className="h-3.5 w-3.5" />
-                {t("workspace.quiz.communityRecommendations.durationMinutes", "{{count}} phút", { count: duration })}
+                {t("workspace.quiz.communityRecommendations.durationMinutes", "{{count}} min", { count: duration })}
               </span>
             ) : null}
             {difficultyLabel ? (
@@ -266,7 +266,7 @@ function CommunityQuizCard({
         >
           {isCloning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           <span className={`ml-1 ${fontClass}`}>
-            {t("workspace.quiz.communityRecommendations.cloneAction", "Clone về workspace này")}
+            {t("workspace.quiz.communityRecommendations.cloneAction", "Clone to this workspace")}
           </span>
         </Button>
       </div>
@@ -307,7 +307,7 @@ export default function CommunityQuizExplorerView({
       setRecommendationData(extractApiData(recommendationResponse));
       setCommunityQuizzes(extractApiData(communityResponse) || []);
     } catch (error) {
-      showError(error?.message || t("workspace.quiz.communityExplorer.loadError", "Không tải được quiz cộng đồng."));
+      showError(error?.message || t("workspace.quiz.communityExplorer.loadError", "Load Error"));
       setRecommendationData(null);
       setCommunityQuizzes([]);
     } finally {
@@ -395,13 +395,13 @@ export default function CommunityQuizExplorerView({
         recommendationScore: item?.recommendationScore,
       } : {});
 
-      showSuccess(t("workspace.quiz.communityRecommendations.cloneSuccess", "Đã clone quiz vào workspace này."));
+      showSuccess(t("workspace.quiz.communityRecommendations.cloneSuccess", "Quiz cloned into this workspace."));
       await loadCommunityData();
       if (typeof onCloneSuccess === "function") {
         await onCloneSuccess(item);
       }
     } catch (error) {
-      showError(error?.message || t("workspace.quiz.communityRecommendations.cloneError", "Clone quiz thất bại."));
+      showError(error?.message || t("workspace.quiz.communityRecommendations.cloneError", "Unable to clone this quiz right now."));
     } finally {
       setCloningQuizId(null);
     }
@@ -422,9 +422,7 @@ export default function CommunityQuizExplorerView({
               </span>
             </div>
             <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
-              {t(
-                "workspace.quiz.communityExplorer.description",
-                "Các quiz phù hợp nhất với workspace này sẽ được đưa lên đầu, sau đó là toàn bộ quiz công khai còn lại."
+              {t("workspace.quiz.communityExplorer.description", "Description"
               )}
             </p>
           </div>
@@ -437,7 +435,7 @@ export default function CommunityQuizExplorerView({
               className={`rounded-full h-9 px-4 ${isDarkMode ? "border-slate-700 text-slate-200" : ""}`}
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
-              <span className="text-sm">{t("workspace.quiz.communityExplorer.backToQuiz", "Quay lại Quiz")}</span>
+              <span className="text-sm">{t("workspace.quiz.communityExplorer.backToQuiz", "Back To Quiz")}</span>
             </Button>
             <Button
               type="button"
@@ -459,7 +457,7 @@ export default function CommunityQuizExplorerView({
             type="text"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t("workspace.quiz.communityExplorer.searchPlaceholder", "Tìm quiz công khai...")}
+            placeholder={t("workspace.quiz.communityExplorer.searchPlaceholder", "Search Placeholder")}
             className={`w-full pl-9 pr-4 py-2 rounded-xl text-sm border outline-none transition-colors ${
               isDarkMode
                 ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500"
@@ -469,12 +467,12 @@ export default function CommunityQuizExplorerView({
         </div>
         <div className="flex flex-wrap gap-2">
           <span className={`rounded-full px-3 py-1.5 text-xs font-medium ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"}`}>
-            {t("workspace.quiz.communityExplorer.recommendedCount", "{{count}} quiz phù hợp ở đầu danh sách", {
+            {t("workspace.quiz.communityExplorer.recommendedCount", "Recommended Count", {
               count: mergedItems.filter((item) => item?.isRecommended).length,
             })}
           </span>
           <span className={`rounded-full px-3 py-1.5 text-xs font-medium ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-700"}`}>
-            {t("workspace.quiz.communityExplorer.publicCount", "{{count}} quiz công khai khả dụng", {
+            {t("workspace.quiz.communityExplorer.publicCount", "Public Count", {
               count: mergedItems.length,
             })}
           </span>
@@ -486,7 +484,7 @@ export default function CommunityQuizExplorerView({
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {t("workspace.quiz.loading", "Đang tải quiz...")}
+              {t("workspace.quiz.loading", "Loading quizzes...")}
             </p>
           </div>
         ) : filteredItems.length === 0 ? (
@@ -494,8 +492,8 @@ export default function CommunityQuizExplorerView({
             <Globe2 className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
               {mergedItems.length === 0
-                ? t("workspace.quiz.communityExplorer.empty", "Chưa có quiz công khai nào phù hợp để hiển thị.")
-                : t("workspace.listView.noResults", "Không tìm thấy kết quả phù hợp.")}
+                ? t("workspace.quiz.communityExplorer.empty", "Empty")
+                : t("workspace.listView.noResults", "No results found")}
             </p>
           </div>
         ) : (

@@ -127,18 +127,18 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
           {!hideEditButton && onEdit && (
             <Button onClick={() => onEdit?.(quiz)} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95">
               <Edit3 className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.mockTest.detail.edit")}</span>
+              <span className="text-sm">{t("mockTestForms.detail.edit", "Edit")}</span>
             </Button>
           )}
           {!hideEditButton && contextType === "GROUP" && (
             <Button
               className="bg-violet-600 hover:bg-violet-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95"
               onClick={() => {
-                alert(t("workspace.quiz.detail.assignComingSoon", "Group assignment will be available soon."));
+                alert(t("mockTestForms.detail.assignComingSoon", "Group assignment will be available soon."));
               }}
             >
               <Users className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.quiz.detail.assign", "Assign")}</span>
+              <span className="text-sm">{t("mockTestForms.detail.assign", "Assign")}</span>
             </Button>
           )}
         </div>
@@ -157,7 +157,7 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                 </span>
               )}
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? ss.dark : ss.light}`}>
-                {t(`workspace.quiz.statusLabels.${quiz?.status}`)}
+                {t(`mockTestForms.common.status${(quiz?.status || "").charAt(0) + (quiz?.status || "").slice(1).toLowerCase()}`, quiz?.status)}
               </span>
             </div>
           </div>
@@ -165,27 +165,27 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
           {/* Thẻ thông tin dạng grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {quiz?.duration > 0 && (
-              <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${quiz.duration} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} accent="purple" />
+              <InfoChip icon={Timer} label={t("mockTestForms.common.timeDuration", "Duration (minutes)")} value={`${quiz.duration} ${t("mockTestForms.detail.minutes", "min")}`} isDarkMode={isDarkMode} accent="purple" />
             )}
             {quiz?.overallDifficulty && (
-              <InfoChip icon={BarChart3} label={t("workspace.quiz.overallDifficulty")} value={t(`workspace.quiz.difficultyLevels.${quiz.overallDifficulty.toLowerCase()}`)} isDarkMode={isDarkMode} accent="purple" />
+              <InfoChip icon={BarChart3} label={t("mockTestForms.common.overallDifficulty", "Overall difficulty")} value={t(`mockTestForms.common.difficulty${quiz.overallDifficulty.charAt(0) + quiz.overallDifficulty.slice(1).toLowerCase()}`, quiz.overallDifficulty.toLowerCase())} isDarkMode={isDarkMode} accent="purple" />
             )}
             {quiz?.passScore != null && (
-              <InfoChip icon={Target} label={t("workspace.quiz.passingScore")} value={quiz.passScore} isDarkMode={isDarkMode} accent="purple" />
+              <InfoChip icon={Target} label={t("mockTestForms.common.passingScore", "Passing score")} value={quiz.passScore} isDarkMode={isDarkMode} accent="purple" />
             )}
             {quiz?.maxAttempt != null && (
-              <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={quiz.maxAttempt} isDarkMode={isDarkMode} accent="purple" />
+              <InfoChip icon={Hash} label={t("mockTestForms.common.maxAttempt", "Max attempts")} value={quiz.maxAttempt} isDarkMode={isDarkMode} accent="purple" />
             )}
           </div>
 
           {/* Ngày tạo */}
           <div className={`flex items-center gap-2 mt-3 text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
             <Clock className="w-3 h-3" />
-            <span>{t("workspace.quiz.detail.createdAt")}: {formatDate(quiz?.createdAt)}</span>
+            <span>{t("mockTestForms.detail.createdAt", "Created")}: {formatDate(quiz?.createdAt)}</span>
             {quiz?.updatedAt && (
               <>
                 <span>•</span>
-                <span>{t("workspace.quiz.detail.updatedAt")}: {formatDate(quiz.updatedAt)}</span>
+                <span>{t("mockTestForms.detail.updatedAt", "Updated")}: {formatDate(quiz.updatedAt)}</span>
               </>
             )}
           </div>
@@ -195,11 +195,11 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-purple-500" : "text-purple-400"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.detail.loadingDetail")}</p>
+            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("mockTestForms.detail.loadingDetail", "Loading details...")}</p>
           </div>
         ) : sections.length === 0 ? (
           <div className={`text-center py-8 text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.quiz.detail.noSections", "No sections available")}
+            {t("mockTestForms.detail.noSections", "No sections available")}
           </div>
         ) : (
           sections.map((section, sIdx) => {
@@ -217,10 +217,10 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     <BookOpen className={`w-4 h-4 ${isDarkMode ? "text-purple-400" : "text-purple-500"}`} />
                     <span className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
-                      {t("workspace.quiz.detail.section", "Section")} {sIdx + 1}
+                      {t("mockTestForms.detail.section", "Section")} {sIdx + 1}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-purple-900/50 text-purple-400" : "bg-purple-100 text-purple-600"}`}>
-                      {questions.length} {t("workspace.quiz.detail.questions")}
+                      {questions.length} {t("mockTestForms.detail.questions", "questions")}
                     </span>
                   </div>
                 </button>
@@ -230,7 +230,7 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                   <div className={`divide-y ${isDarkMode ? "divide-slate-800" : "divide-purple-100"}`}>
                     {questions.length === 0 ? (
                       <div className={`px-4 py-6 text-center text-sm ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                        {t("workspace.quiz.detail.noQuestions")}
+                        {t("mockTestForms.detail.noQuestions", "No questions in this section.")}
                       </div>
                     ) : (
                       questions.map((question, qIdx) => {
@@ -273,18 +273,21 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                                 {/* Meta info: type, difficulty, bloom, duration — badge tím */}
                                 <div className={`flex items-center gap-2 mt-1.5 flex-wrap text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
                                   <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? "bg-purple-950/40 text-purple-400" : "bg-purple-50 text-purple-600"}`}>
-                                    {t(`workspace.quiz.types.${typeName}`)}
+                                    {t(`mockTestForms.common.type${typeName.charAt(0).toUpperCase() + typeName.slice(1)}`, typeName)}
                                   </span>
                                   {question.difficulty && (
                                     <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
-                                      {t(`workspace.quiz.difficultyLevels.${question.difficulty.toLowerCase()}`)}
+                                      {t(`mockTestForms.common.difficulty${question.difficulty.charAt(0) + question.difficulty.slice(1).toLowerCase()}`, question.difficulty.toLowerCase())}
                                     </span>
                                   )}
-                                  {question.bloomId && (
-                                    <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
-                                      {t(`workspace.quiz.bloomLevels.${["remember","understand","apply","analyze","evaluate"][question.bloomId - 1] || "remember"}`)}
-                                    </span>
-                                  )}
+                                  {question.bloomId && (() => {
+                                    const bloomKey = ["remember","understand","apply","analyze","evaluate"][question.bloomId - 1] || "remember";
+                                    return (
+                                      <span className={`px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
+                                        {t(`mockTestForms.common.bloom${bloomKey.charAt(0).toUpperCase() + bloomKey.slice(1)}`, bloomKey)}
+                                      </span>
+                                    );
+                                  })()}
                                   {question.duration > 0 && (
                                     <span className="flex items-center gap-1">
                                       <Timer className="w-3 h-3" />{question.duration}s
@@ -304,7 +307,7 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                                       if (!Array.isArray(pairs) || pairs.length === 0) {
                                         return (
                                           <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                                            {t("workspace.quiz.detail.matchingNoData", "No matching data available")}
+                                            {t("mockTestForms.detail.matchingNoData", "No matching data available")}
                                           </span>
                                         );
                                       }
@@ -353,7 +356,7 @@ function MockTestDetailView({ isDarkMode, quiz, onBack, onEdit, hideEditButton =
                                     {/* Giải thích */}
                                     {question.explanation && (
                                       <div className={`mt-2 px-3 py-2 rounded-lg text-xs italic ${isDarkMode ? "bg-amber-950/20 text-amber-400 border border-amber-900/30" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                                        <span className="font-semibold not-italic">{t("workspace.quiz.explanation")}:</span>{" "}
+                                        <span className="font-semibold not-italic">{t("mockTestForms.common.explanation", "Explanation")}:</span>{" "}
                                         <MixedMathText className="not-italic">{question.explanation}</MixedMathText>
                                       </div>
                                     )}

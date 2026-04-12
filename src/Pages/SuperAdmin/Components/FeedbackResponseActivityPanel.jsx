@@ -179,13 +179,15 @@ function extractAnswerValue(answer) {
   return null;
 }
 
-function formatAnswerValue(value, questionType, language) {
+function formatAnswerValue(value, questionType, language, t) {
   if (Array.isArray(value)) {
-    return value.map((item) => formatAnswerValue(item, questionType, language)).join(', ');
+    return value.map((item) => formatAnswerValue(item, questionType, language, t)).join(', ');
   }
 
   if (typeof value === 'boolean') {
-    return language?.startsWith('en') ? (value ? 'Yes' : 'No') : (value ? 'Có' : 'Không');
+    return value
+      ? t('feedbackResponseActivityPanel.answerYes', 'Yes')
+      : t('feedbackResponseActivityPanel.answerNo', 'No');
   }
 
   if (value && typeof value === 'object') {
@@ -202,13 +204,15 @@ function formatAnswerValue(value, questionType, language) {
   }
 
   if (value == null || value === '') {
-    return language?.startsWith('en') ? 'No answer' : 'Chưa có câu trả lời';
+    return t('feedbackResponseActivityPanel.noAnswer', 'No answer');
   }
 
   if (String(questionType || '').toUpperCase() === 'YES_NO') {
     const normalizedValue = normalizeBoolean(value);
     if (normalizedValue != null) {
-      return language?.startsWith('en') ? (normalizedValue ? 'Yes' : 'No') : (normalizedValue ? 'Có' : 'Không');
+      return normalizedValue
+        ? t('feedbackResponseActivityPanel.answerYes', 'Yes')
+        : t('feedbackResponseActivityPanel.answerNo', 'No');
     }
   }
 
@@ -252,7 +256,7 @@ function normalizeFeedbackLogRecord(record, formsMap) {
   };
 }
 
-function normalizeAnswerEntries(record, language) {
+function normalizeAnswerEntries(record, language, t) {
   const questionsById = new Map(
     (record?.formQuestions || []).map((question) => [String(question.questionId), question]),
   );
@@ -265,9 +269,11 @@ function normalizeAnswerEntries(record, language) {
 
     return {
       key: `${questionId}-${index}`,
-      questionText: answer?.questionText ?? linkedQuestion?.questionText ?? `${language?.startsWith('en') ? 'Question' : 'Câu hỏi'} ${index + 1}`,
+      questionText: answer?.questionText
+        ?? linkedQuestion?.questionText
+        ?? t('feedbackResponseActivityPanel.questionFallback', 'Question {{index}}', { index: index + 1 }),
       questionType,
-      valueText: formatAnswerValue(answerValue, questionType, language),
+      valueText: formatAnswerValue(answerValue, questionType, language, t),
     };
   });
 }
@@ -381,7 +387,6 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
   const { i18n, t } = useTranslation();
   const { showError } = useToast();
   const currentLang = i18n.language || 'vi';
-  const isEnglish = currentLang.startsWith('en');
   const [loading, setLoading] = useState(true);
   const [responsesSupported, setResponsesSupported] = useState(true);
   const [unsupportedHint, setUnsupportedHint] = useState('');
@@ -420,9 +425,10 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
       if (error?.statusCode === 404) {
         setResponsesSupported(false);
         setUnsupportedHint(
-          isEnglish
-            ? 'No management feedback log endpoint was found. The UI is ready and will show submissions as soon as backend exposes the log API.'
-            : 'Backend chưa mở endpoint log feedback cho quản trị. UI đã sẵn sàng và sẽ hiển thị ngay khi API log phản hồi được trả về.',
+          t(
+            'feedbackResponseActivityPanel.unsupportedHint',
+            'No management feedback log endpoint was found. The UI is ready and will show submissions as soon as backend exposes the log API.',
+          ),
         );
         setRecords([]);
         setCollectionMeta({ totalCount: 0, page: 0, totalPages: 0 });
@@ -575,8 +581,8 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
 
   const resolvedSelectedResponse = detailCache[selectedResponseId] ?? selectedResponse;
   const selectedAnswerEntries = useMemo(
-    () => normalizeAnswerEntries(resolvedSelectedResponse, currentLang),
-    [currentLang, resolvedSelectedResponse],
+    () => normalizeAnswerEntries(resolvedSelectedResponse, currentLang, t),
+    [currentLang, resolvedSelectedResponse, t],
   );
   const detailTargetTitle = resolvedSelectedResponse
     ? buildTargetTitle(resolvedSelectedResponse, currentLang)
@@ -592,19 +598,20 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-2xl">
             <div className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-700">
-              {isEnglish ? 'Feedback observatory' : 'Trạm giám sát feedback'}
+              {t('feedbackResponseActivityPanel.observatoryBadge', 'Feedback observatory')}
             </div>
             <h2 className={cn(
               'mt-3 text-[28px] font-black tracking-[-0.06em]',
               isDarkMode ? 'text-white' : 'text-slate-950',
             )}
             >
-              {isEnglish ? 'Response activity' : 'Nhật ký phản hồi'}
+              {t('feedbackResponseActivityPanel.title', 'Response activity')}
             </h2>
             <p className={cn('mt-2 max-w-2xl text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-              {isEnglish
-                ? 'Review who submitted feedback, where it came from, and what they actually said without digging through raw payloads.'
-                : 'Xem nhanh ai đã gửi feedback, feedback đi từ form nào và nội dung người dùng thực sự đã trả lời mà không cần đọc payload thô.'}
+              {t(
+                'feedbackResponseActivityPanel.subtitle',
+                'Review who submitted feedback, where it came from, and what they actually said without digging through raw payloads.',
+              )}
             </p>
           </div>
 
@@ -628,33 +635,43 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <ActivityMetric
             icon={MessageSquareText}
-            label={isEnglish ? 'Loaded records' : 'Bản ghi đã tải'}
+            label={t('feedbackResponseActivityPanel.loadedRecordsLabel', 'Loaded records')}
             value={responsesSupported ? responseMetrics.totalLoaded : '--'}
             helper={responsesSupported
-              ? `${collectionMeta.totalCount || responseMetrics.totalLoaded} ${isEnglish ? 'total from endpoint' : 'tổng bản ghi từ endpoint'}`
-              : (isEnglish ? 'Waiting for backend log endpoint' : 'Đang chờ endpoint log từ backend')}
+              ? t(
+                  'feedbackResponseActivityPanel.totalFromEndpoint',
+                  '{{count}} total from endpoint',
+                  { count: collectionMeta.totalCount || responseMetrics.totalLoaded },
+                )
+              : t('feedbackResponseActivityPanel.waitingForBackend', 'Waiting for backend log endpoint')}
             accent="blue"
             isDarkMode={isDarkMode}
           />
           <ActivityMetric
             icon={CheckCheck}
-            label={isEnglish ? 'Submitted' : 'Đã gửi'}
+            label={t('feedbackResponseActivityPanel.submittedLabel', 'Submitted')}
             value={responsesSupported ? responseMetrics.submittedCount : '--'}
-            helper={responsesSupported ? `${responseMetrics.pendingCount} ${isEnglish ? 'still pending' : 'vẫn đang chờ'}` : null}
+            helper={responsesSupported
+              ? t(
+                  'feedbackResponseActivityPanel.stillPending',
+                  '{{count}} still pending',
+                  { count: responseMetrics.pendingCount },
+                )
+              : null}
             accent="emerald"
             isDarkMode={isDarkMode}
           />
           <ActivityMetric
             icon={UserRound}
-            label={isEnglish ? 'Respondents' : 'Người phản hồi'}
+            label={t('feedbackResponseActivityPanel.respondentsLabel', 'Respondents')}
             value={responsesSupported ? responseMetrics.uniqueRespondents : '--'}
-            helper={isEnglish ? 'Unique users with submitted feedback' : 'Số người dùng duy nhất đã gửi phản hồi'}
+            helper={t('feedbackResponseActivityPanel.respondentsHelper', 'Unique users with submitted feedback')}
             accent="amber"
             isDarkMode={isDarkMode}
           />
           <ActivityMetric
             icon={Star}
-            label={isEnglish ? 'Avg. score' : 'Điểm trung bình'}
+            label={t('feedbackResponseActivityPanel.averageScoreLabel', 'Avg. score')}
             value={responsesSupported ? responseMetrics.averageRating : '--'}
             helper={responsesSupported ? responseMetrics.satisfactionRate : null}
             accent="violet"
@@ -672,14 +689,14 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
                 <div className="relative">
                   <Search className={cn('pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2', isDarkMode ? 'text-slate-500' : 'text-slate-400')} />
-                  <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={isEnglish ? 'Search by user, email, form, target...' : 'Tìm theo user, email, form, target...'} className={cn('h-11 rounded-2xl pl-9', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500' : 'border-slate-200 bg-white')} />
+                  <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={t('feedbackResponseActivityPanel.searchPlaceholder', 'Search by user, email, form, target...')} className={cn('h-11 rounded-2xl pl-9', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500' : 'border-slate-200 bg-white')} />
                 </div>
                 <select value={formFilter} onChange={(event) => setFormFilter(event.target.value)} className={cn('h-11 rounded-2xl border px-3 text-sm outline-none transition-colors', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100' : 'border-slate-200 bg-white text-slate-900')}>
-                  <option value="ALL">{isEnglish ? 'All forms' : 'Tất cả form'}</option>
+                  <option value="ALL">{t('feedbackResponseActivityPanel.allForms', 'All forms')}</option>
                   {forms.map((form) => <option key={form.formId} value={String(form.formId)}>{form.code}</option>)}
                 </select>
                 <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={cn('h-11 rounded-2xl border px-3 text-sm outline-none transition-colors', isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-100' : 'border-slate-200 bg-white text-slate-900')}>
-                  {STATUS_FILTER_OPTIONS.map((status) => <option key={status} value={status}>{status === 'ALL' ? (isEnglish ? 'All statuses' : 'Tất cả trạng thái') : getFeedbackRequestStatusLabel(status, currentLang)}</option>)}
+                  {STATUS_FILTER_OPTIONS.map((status) => <option key={status} value={status}>{status === 'ALL' ? t('feedbackResponseActivityPanel.allStatuses', 'All statuses') : getFeedbackRequestStatusLabel(status, currentLang)}</option>)}
                 </select>
               </div>
             </div>
@@ -697,28 +714,36 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
                 <div className={cn('flex items-center justify-between border-b px-5 py-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50/80')}>
                   <div>
                     <p className={cn('text-[11px] font-semibold uppercase tracking-[0.24em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                      {isEnglish ? 'Response queue' : 'Hàng đợi phản hồi'}
+                      {t('feedbackResponseActivityPanel.responseQueueLabel', 'Response queue')}
                     </p>
                     <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
                       {loading
-                        ? (isEnglish ? 'Loading feedback activity...' : 'Đang tải dữ liệu feedback...')
-                        : `${filteredResponses.length} ${isEnglish ? 'records match the current view' : 'bản ghi khớp với bộ lọc hiện tại'}`}
+                        ? t('feedbackResponseActivityPanel.loadingFeedbackActivity', 'Loading feedback activity...')
+                        : t(
+                            'feedbackResponseActivityPanel.recordsMatchFilter',
+                            '{{count}} records match the current view',
+                            { count: filteredResponses.length },
+                          )}
                     </p>
                   </div>
                   <ResponseMetaChip className={cn(isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300' : 'border-slate-200 bg-white text-slate-600')}>
-                    {collectionMeta.totalCount || normalizedResponses.length} {isEnglish ? 'total' : 'tổng'}
+                    {t(
+                      'feedbackResponseActivityPanel.totalSuffix',
+                      '{{count}} total',
+                      { count: collectionMeta.totalCount || normalizedResponses.length },
+                    )}
                   </ResponseMetaChip>
                 </div>
 
                 {loading ? (
                   <div className="px-5 py-16 text-center text-sm text-slate-500">
-                    {isEnglish ? 'Loading feedback log...' : 'Đang tải nhật ký phản hồi...'}
+                    {t('feedbackResponseActivityPanel.loadingFeedbackLog', 'Loading feedback log...')}
                   </div>
                 ) : null}
 
                 {!loading && pagedResponses.length === 0 ? (
                   <div className="px-5 py-16 text-center text-sm text-slate-500">
-                    {isEnglish ? 'No feedback log matches the current filters.' : 'Không có phản hồi nào khớp với bộ lọc hiện tại.'}
+                    {t('feedbackResponseActivityPanel.noMatches', 'No feedback log matches the current filters.')}
                   </div>
                 ) : null}
 
@@ -752,7 +777,7 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
                                 <span className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                                  {record.userName || (isEnglish ? 'Unknown user' : 'Chưa rõ người dùng')}
+                                  {record.userName || t('feedbackResponseActivityPanel.unknownUser', 'Unknown user')}
                                 </span>
                                 <span className={cn('truncate text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-400')}>
                                   {record.userEmail || (record.userId != null ? `ID #${record.userId}` : '')}
@@ -790,7 +815,7 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
                 ) : null}
 
                 <div className={cn('flex items-center justify-between border-t px-4 py-3 text-sm', isDarkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-600')}>
-                  <span>{filteredResponses.length === 0 ? (isEnglish ? 'No records' : 'Không có bản ghi') : `${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(currentPage * PAGE_SIZE, filteredResponses.length)} / ${filteredResponses.length}`}</span>
+                  <span>{filteredResponses.length === 0 ? t('feedbackResponseActivityPanel.noRecords', 'No records') : `${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(currentPage * PAGE_SIZE, filteredResponses.length)} / ${filteredResponses.length}`}</span>
                   <div className="flex items-center gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={currentPage === 1} className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}>
                       <ChevronLeft className="h-4 w-4" />
@@ -812,11 +837,12 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
             )}
             >
               <DialogHeader className="sr-only">
-                <DialogTitle>{isEnglish ? 'Feedback response detail' : 'Chi tiết feedback'}</DialogTitle>
+                <DialogTitle>{t('feedbackResponseActivityPanel.responseDetailTitle', 'Feedback response detail')}</DialogTitle>
                 <DialogDescription>
-                  {isEnglish
-                    ? 'Inspect respondent identity, timing, rating, and submitted answers.'
-                    : 'Xem chi tiết người phản hồi, thời gian, điểm số và câu trả lời đã gửi.'}
+                  {t(
+                    'feedbackResponseActivityPanel.responseDetailDescription',
+                    'Inspect respondent identity, timing, rating, and submitted answers.',
+                  )}
                 </DialogDescription>
               </DialogHeader>
               <div className={cn(
@@ -827,15 +853,16 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className={cn('text-[11px] font-semibold uppercase tracking-[0.24em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                  {isEnglish ? 'Selected response' : 'Phản hồi đang chọn'}
+                  {t('feedbackResponseActivityPanel.selectedResponse', 'Selected response')}
                 </p>
                 <h3 className={cn('mt-2 text-xl font-black tracking-[-0.04em]', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                  {isEnglish ? 'Response profile' : 'Hồ sơ phản hồi'}
+                  {t('feedbackResponseActivityPanel.responseProfile', 'Response profile')}
                 </h3>
                 <p className={cn('mt-1 text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish
-                    ? 'Inspect respondent identity, timing, rating, and every submitted answer in one place.'
-                    : 'Tập trung xem danh tính người gửi, mốc thời gian, điểm đánh giá và từng câu trả lời trong cùng một khung.'}
+                  {t(
+                    'feedbackResponseActivityPanel.responseProfileDescription',
+                    'Inspect respondent identity, timing, rating, and every submitted answer in one place.',
+                  )}
                 </p>
               </div>
               {detailLoading ? <RefreshCw className="h-4 w-4 animate-spin text-blue-500" /> : null}
@@ -848,7 +875,7 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
                     <LocalAvatar label={resolvedSelectedResponse.userName || resolvedSelectedResponse.userEmail || 'Feedback user'} initials={getInitials(resolvedSelectedResponse.userName, resolvedSelectedResponse.userEmail)} tone={getAvatarTone(resolvedSelectedResponse.status)} className="h-14 w-14" textClassName="text-base" />
                     <div className="min-w-0 flex-1">
                       <p className={cn('truncate text-lg font-black tracking-[-0.04em]', isDarkMode ? 'text-white' : 'text-slate-950')}>
-                        {resolvedSelectedResponse.userName || (isEnglish ? 'Unknown user' : 'Chưa rõ người dùng')}
+                        {resolvedSelectedResponse.userName || t('feedbackResponseActivityPanel.unknownUser', 'Unknown user')}
                       </p>
                       <div className={cn('mt-1 flex items-center gap-2 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}><Mail className="h-4 w-4" /><span className="truncate">{resolvedSelectedResponse.userEmail || '-'}</span></div>
                       <div className={cn('mt-1 flex items-center gap-2 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}><UserRound className="h-4 w-4" /><span>{resolvedSelectedResponse.userId != null ? `ID #${resolvedSelectedResponse.userId}` : '-'}</span></div>
@@ -860,34 +887,34 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
                     <Badge variant="outline" className="rounded-full px-3 py-1">{getFeedbackTargetLabel(resolvedSelectedResponse.targetType, currentLang)}</Badge>
                     <Badge variant="outline" className={cn('rounded-full px-3 py-1', getFeedbackRequestStatusBadgeClass(resolvedSelectedResponse.status, isDarkMode))}>{getFeedbackRequestStatusLabel(resolvedSelectedResponse.status, currentLang)}</Badge>
                     {resolvedSelectedResponse.overallRating != null ? <Badge variant="outline" className={cn('rounded-full px-3 py-1', isDarkMode ? 'border-amber-500/30 bg-amber-500/10 text-amber-300' : 'border-amber-200 bg-amber-50 text-amber-700')}><Star className="mr-1.5 h-3.5 w-3.5" />{resolvedSelectedResponse.overallRating.toFixed(2)}</Badge> : null}
-                    {resolvedSelectedResponse.satisfied != null ? <Badge variant="outline" className={cn('rounded-full px-3 py-1', resolvedSelectedResponse.satisfied ? (isDarkMode ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700') : (isDarkMode ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-rose-200 bg-rose-50 text-rose-700'))}>{resolvedSelectedResponse.satisfied ? (isEnglish ? 'Satisfied' : 'Hài lòng') : (isEnglish ? 'Unsatisfied' : 'Chưa hài lòng')}</Badge> : null}
+                    {resolvedSelectedResponse.satisfied != null ? <Badge variant="outline" className={cn('rounded-full px-3 py-1', resolvedSelectedResponse.satisfied ? (isDarkMode ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-emerald-200 bg-emerald-50 text-emerald-700') : (isDarkMode ? 'border-rose-500/30 bg-rose-500/10 text-rose-300' : 'border-rose-200 bg-rose-50 text-rose-700'))}>{resolvedSelectedResponse.satisfied ? t('feedbackResponseActivityPanel.satisfied', 'Satisfied') : t('feedbackResponseActivityPanel.unsatisfied', 'Unsatisfied')}</Badge> : null}
                   </div>
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <DetailStatCard icon={Clock3} label={isEnglish ? 'Requested' : 'Tạo yêu cầu'} value={formatDateTime(resolvedSelectedResponse.requestedAt, currentLang)} isDarkMode={isDarkMode} />
-                  <DetailStatCard icon={CalendarClock} label={isEnglish ? 'Submitted' : 'Gửi phản hồi'} value={formatDateTime(resolvedSelectedResponse.submittedAt, currentLang)} isDarkMode={isDarkMode} />
+                  <DetailStatCard icon={Clock3} label={t('feedbackResponseActivityPanel.requested', 'Requested')} value={formatDateTime(resolvedSelectedResponse.requestedAt, currentLang)} isDarkMode={isDarkMode} />
+                  <DetailStatCard icon={CalendarClock} label={t('feedbackResponseActivityPanel.submittedAt', 'Submitted')} value={formatDateTime(resolvedSelectedResponse.submittedAt, currentLang)} isDarkMode={isDarkMode} />
                 </div>
 
                 <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
-                  <p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>{isEnglish ? 'Target' : 'Target'}</p>
+                  <p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>{t('feedbackResponseActivityPanel.target', 'Target')}</p>
                   <p className={cn('mt-2 text-base font-bold leading-7', isDarkMode ? 'text-slate-100' : 'text-slate-900')}>{detailTargetTitle || '-'}</p>
                   <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{resolvedSelectedResponse.targetId != null ? `${getFeedbackTargetLabel(resolvedSelectedResponse.targetType, currentLang)} #${resolvedSelectedResponse.targetId}` : getFeedbackTargetLabel(resolvedSelectedResponse.targetType, currentLang)}</p>
                 </div>
 
-                {resolvedSelectedResponse.comment ? <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}><p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>{isEnglish ? 'Comment highlight' : 'Nội dung nổi bật'}</p><p className={cn('mt-3 text-sm leading-7', isDarkMode ? 'text-slate-200' : 'text-slate-700')}>{resolvedSelectedResponse.comment}</p></div> : null}
+                {resolvedSelectedResponse.comment ? <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}><p className={cn('text-[11px] font-semibold uppercase tracking-[0.22em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>{t('feedbackResponseActivityPanel.commentHighlight', 'Comment highlight')}</p><p className={cn('mt-3 text-sm leading-7', isDarkMode ? 'text-slate-200' : 'text-slate-700')}>{resolvedSelectedResponse.comment}</p></div> : null}
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h4 className={cn('text-base font-bold', isDarkMode ? 'text-white' : 'text-slate-950')}>{isEnglish ? 'Answer details' : 'Chi tiết câu trả lời'}</h4>
-                      <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>{selectedAnswerEntries.length} {isEnglish ? 'answers returned from endpoint' : 'câu trả lời được trả về từ endpoint'}</p>
+                      <h4 className={cn('text-base font-bold', isDarkMode ? 'text-white' : 'text-slate-950')}>{t('feedbackResponseActivityPanel.answerDetails', 'Answer details')}</h4>
+                      <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>{t('feedbackResponseActivityPanel.answersReturned', '{{count}} answers returned from endpoint', { count: selectedAnswerEntries.length })}</p>
                     </div>
                   </div>
 
                   {selectedAnswerEntries.length === 0 ? (
                     <div className={cn('rounded-[24px] border border-dashed px-4 py-4 text-sm', isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-400' : 'border-slate-200 bg-white text-slate-600')}>
-                      {isEnglish ? 'No detailed answers were returned by the endpoint.' : 'Endpoint chưa trả về danh sách câu trả lời chi tiết.'}
+                      {t('feedbackResponseActivityPanel.noDetailedAnswers', 'No detailed answers were returned by the endpoint.')}
                     </div>
                   ) : selectedAnswerEntries.map((answer) => (
                     <div key={answer.key} className={cn('rounded-[24px] border p-4 shadow-[0_18px_40px_-36px_rgba(15,23,42,0.25)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
@@ -906,7 +933,7 @@ function FeedbackResponseActivityPanel({ forms = [], isDarkMode = false }) {
               </div>
             ) : (
               <div className={cn('mt-5 rounded-[24px] border border-dashed px-4 py-8 text-sm', isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-400' : 'border-slate-200 bg-white text-slate-600')}>
-                {isEnglish ? 'Select a response from the left list to inspect it.' : 'Chọn một phản hồi ở danh sách bên trái để xem chi tiết.'}
+                {t('feedbackResponseActivityPanel.selectResponseHint', 'Select a response from the left list to inspect it.')}
               </div>
             )}
               </div>

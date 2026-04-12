@@ -54,6 +54,9 @@
   },
   "error": {
     "unknown": "Có lỗi xảy ra. Vui lòng thử lại.",
+    "requestTimeout": "Yêu cầu đang xử lý lâu hơn dự kiến. Vui lòng đợi thêm một chút rồi kiểm tra lại.",
+    "missingAuthToken": "Thiếu token đăng nhập",
+    "missingFeedbackLogEndpoint": "Không tìm thấy endpoint feedback log",
     "internalServer": "Hệ thống đang bận hoặc gặp sự cố. Vui lòng thử lại sau.",
     "userNotExisted": "Người dùng không tồn tại.",
     "wrongPass": "Mật khẩu không đúng.",
@@ -487,5 +490,37 @@
     "selectGroup": "Chọn nhóm áp dụng",
     "noLeaderGroups": "Bạn chưa là trưởng nhóm của nhóm nào.",
     "upgradeBtn": "Nâng cấp"
+  },
+  "planUpgradeModal": {
+    "title": "Tính năng giới hạn",
+    "descriptionWithFeature": "Tính năng \"{{featureName}}\" không có trong gói hiện tại của bạn.",
+    "descriptionDefault": "Gói hiện tại của bạn không bao gồm tính năng này.",
+    "upgradeHint": "Vui lòng nâng cấp để sử dụng.",
+    "upgradeNow": "Nâng cấp ngay",
+    "later": "Để sau"
+  },
+  "feedbackDialog": {
+    "errors": {
+      "requiredQuestions": "Vui lòng trả lời các câu hỏi bắt buộc."
+    },
+    "placeholders": {
+      "share": "Chia sẻ cảm nhận của bạn..."
+    }
+  },
+  "feedbackTicket": {
+    "dialogTitle": "Gửi ticket feedback",
+    "dialogDescription": "Gửi phản hồi sản phẩm hoặc hệ thống và theo dõi trạng thái xử lý ngay trong trung tâm feedback.",
+    "category": "Phân loại",
+    "title": "Tiêu đề",
+    "details": "Nội dung chi tiết",
+    "placeholders": {
+      "systemDescription": "Mô tả sự cố, vị trí xảy ra và phần nào đang bị chặn.",
+      "productDescription": "Mô tả lỗi, nhu cầu hỗ trợ hoặc vấn đề sản phẩm bạn muốn team xử lý.",
+      "titleShort": "Tóm tắt ngắn gọn vấn đề"
+    },
+    "errors": {
+      "titleAndContentRequired": "Vui lòng nhập cả tiêu đề và nội dung."
+    },
+    "successSent": "Đã gửi ticket feedback."
   }
 }

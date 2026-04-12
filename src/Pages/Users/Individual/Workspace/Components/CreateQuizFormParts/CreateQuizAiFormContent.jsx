@@ -827,7 +827,7 @@ function CreateQuizAiFormContent({
                 <PlanGatedFeature
                   key={questionType.questionTypeId}
                   allowed={false}
-                  featureName={t("workspace.quiz.aiConfig.advancedConfig", "Loại quiz nâng cao")}
+                  featureName={t("workspace.quiz.aiConfig.advancedConfig", "Advanced quiz types")}
                   isDarkMode={isDarkMode}
                 >
                   {questionTypeChip}
@@ -1042,10 +1042,10 @@ function CreateQuizAiFormContent({
                 </span>
                 <div>
                   <h3 className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                    {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+                    {t("workspace.quiz.aiConfig.structureLabel", "Quiz structure")}
                   </h3>
                   <p className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                    {t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}
+                    {t("workspace.quiz.aiConfig.structurePreviewHint", "Click Detailed configuration to preview how AI will distribute the quiz.")}
                   </p>
                 </div>
               </div>
@@ -1066,8 +1066,8 @@ function CreateQuizAiFormContent({
                   >
                     {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
                     {structurePreviewLoading
-                      ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Đang tạo cấu trúc...")
-                      : t("workspace.quiz.aiConfig.structurePreviewAction", "Cấu hình chi tiết")}
+                      ? t("workspace.quiz.aiConfig.structurePreviewLoading", "Generating structure...")
+                      : t("workspace.quiz.aiConfig.structurePreviewAction", "Detailed configuration")}
                   </button>
                   <button
                     type="button"
@@ -1079,7 +1079,7 @@ function CreateQuizAiFormContent({
                         : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
                     }`}
                   >
-                    {t("workspace.quiz.aiConfig.structureEditAction", "Chỉnh sửa")}
+                    {t("workspace.quiz.aiConfig.structureEditAction", "Edit")}
                   </button>
                 </>
               )}
@@ -1096,7 +1096,7 @@ function CreateQuizAiFormContent({
                         : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
                     }`}
                   >
-                    {t("workspace.quiz.aiConfig.structureAddQuestionAction", "Thêm câu")}
+                    {t("workspace.quiz.aiConfig.structureAddQuestionAction", "Add question")}
                   </button>
                   <button
                     type="button"
@@ -1107,7 +1107,7 @@ function CreateQuizAiFormContent({
                         : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
                     }`}
                   >
-                    {t("workspace.quiz.aiConfig.structureCancelEditAction", "Hủy chỉnh sửa")}
+                    {t("workspace.quiz.aiConfig.structureCancelEditAction", "Cancel edit")}
                   </button>
                 </>
               )}
@@ -1145,7 +1145,7 @@ function CreateQuizAiFormContent({
               </div>
               <div className={`rounded-xl border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white"}`}>
                 <p className={`text-[11px] uppercase tracking-[0.22em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                  {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")}
+                  {t("workspace.quiz.aiConfig.structureLabel", "Quiz structure")}
                 </p>
                 <p className={`mt-1 text-2xl font-semibold leading-none ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
                   {Array.isArray(structurePreview?.items) ? structurePreview.items.length : 0}
@@ -1201,7 +1201,7 @@ function CreateQuizAiFormContent({
                               ? (isDarkMode ? "border-cyan-500/70 bg-cyan-500/20 text-cyan-200" : "border-cyan-300 bg-cyan-50 text-cyan-700")
                               : (isDarkMode ? "border-slate-700 bg-slate-950 text-slate-300 hover:border-cyan-700/50" : "border-slate-200 bg-slate-50 text-slate-600 hover:border-cyan-200 hover:text-cyan-700")
                           }`}
-                          title={t("workspace.quiz.aiConfig.structureDragHint", "Kéo để đổi vị trí")}
+                          title={t("workspace.quiz.aiConfig.structureDragHint", "Drag to reorder")}
                         >
                           <GripVertical className="h-4 w-4" />
                         </span>
@@ -1217,7 +1217,7 @@ function CreateQuizAiFormContent({
                           </p>
                         </div>
                         <p className={`mt-0.5 text-[11px] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
-                          {t("workspace.quiz.aiConfig.structureLabel", "Cấu trúc của quiz")} #{index + 1}
+                          {t("workspace.quiz.aiConfig.structureLabel", "Quiz structure")} #{index + 1}
                         </p>
                       </div>
                     </div>
@@ -1225,7 +1225,7 @@ function CreateQuizAiFormContent({
                     {isStructureEditing ? (
                       <div className="flex items-end gap-2 overflow-x-auto pb-1 text-xs md:overflow-visible">
                         <label className="flex min-w-[150px] flex-1 flex-col gap-1">
-                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")}</span>
+                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureDifficulty", "Difficulty")}</span>
                           <select
                             className={`rounded-lg border px-2 py-1.5 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200" : "border-slate-200 bg-white text-slate-700"}`}
                             value={String(item.difficulty || "").toUpperCase()}
@@ -1238,7 +1238,7 @@ function CreateQuizAiFormContent({
                         </label>
 
                         <label className="flex min-w-[180px] flex-[1.3] flex-col gap-1">
-                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")}</span>
+                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureQuestionType", "Question type")}</span>
                           <select
                             className={`rounded-lg border px-2 py-1.5 ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200" : "border-slate-200 bg-white text-slate-700"}`}
                             value={String(item.questionType || "").toUpperCase()}
@@ -1266,7 +1266,7 @@ function CreateQuizAiFormContent({
                         </label>
 
                         <label className="flex min-w-[88px] w-[88px] flex-col gap-1">
-                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureQuantity", "Số câu")}</span>
+                          <span className={isDarkMode ? "text-slate-400" : "text-slate-500"}>{t("workspace.quiz.aiConfig.structureQuantity", "Quantity")}</span>
                           <input
                             type="number"
                             min={1}
@@ -1285,8 +1285,8 @@ function CreateQuizAiFormContent({
                               ? "border-red-500/30 bg-red-500/10 text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                               : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                           }`}
-                          title={t("workspace.quiz.aiConfig.structureRemoveAction", "Xóa câu")}
-                          aria-label={t("workspace.quiz.aiConfig.structureRemoveAction", "Xóa câu")}
+                          title={t("workspace.quiz.aiConfig.structureRemoveAction", "Remove question")}
+                          aria-label={t("workspace.quiz.aiConfig.structureRemoveAction", "Remove question")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1295,10 +1295,10 @@ function CreateQuizAiFormContent({
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                           <span className={`h-2 w-2 rounded-full ${item.difficulty === "HARD" ? "bg-rose-500" : item.difficulty === "MEDIUM" ? "bg-amber-500" : "bg-emerald-500"}`} />
-                          {t("workspace.quiz.aiConfig.structureDifficulty", "Độ khó")} <strong>{getDifficultyLabel(item.difficulty)}</strong>
+                          {t("workspace.quiz.aiConfig.structureDifficulty", "Difficulty")} <strong>{getDifficultyLabel(item.difficulty)}</strong>
                         </span>
                         <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-                          {t("workspace.quiz.aiConfig.structureQuestionType", "Loại câu")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
+                          {t("workspace.quiz.aiConfig.structureQuestionType", "Question type")} <strong>{getQuestionTypeLabel(item.questionType)}</strong>
                         </span>
                         <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
                           {t("workspace.quiz.aiConfig.structureBloom", "Bloom")} <strong>{getBloomLabel(item.bloomSkill)}</strong>
@@ -1312,7 +1312,7 @@ function CreateQuizAiFormContent({
           ) : (
             <div className={`rounded-2xl border px-4 py-8 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40 text-slate-400" : "border-slate-200 bg-white text-slate-600"}`}>
               <div className="flex flex-col items-center justify-center gap-3 text-center">
-                <p>{t("workspace.quiz.aiConfig.structurePreviewHint", "Nhấn Cấu hình chi tiết để xem trước cấu trúc quiz AI.")}</p>
+                <p>{t("workspace.quiz.aiConfig.structurePreviewHint", "Click Detailed configuration to preview how AI will distribute the quiz.")}</p>
                 <button
                   type="button"
                   onClick={handlePreviewStructure}
@@ -1324,7 +1324,7 @@ function CreateQuizAiFormContent({
                   }`}
                 >
                   {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                  {t("workspace.quiz.aiConfig.structureFetchAction", "Lấy cấu hình chi tiết")}
+                  {t("workspace.quiz.aiConfig.structureFetchAction", "Fetch detailed configuration")}
                 </button>
               </div>
             </div>
@@ -1336,9 +1336,7 @@ function CreateQuizAiFormContent({
           <div className={`absolute inset-0 z-10 flex items-center justify-center p-4 ${isDarkMode ? "bg-slate-950/45" : "bg-white/45"}`}>
             <div className={`max-w-xl rounded-2xl border px-5 py-4 text-center shadow-2xl ${isDarkMode ? "border-amber-700/50 bg-slate-900/95 text-slate-100" : "border-amber-200 bg-white/95 text-slate-900"}`}>
               <p className={`text-sm font-medium ${isDarkMode ? "text-amber-200" : "text-amber-700"}`}>
-                {t(
-                  "workspace.quiz.aiConfig.structureOutdatedWarning",
-                  "Thiết lập ở trên đã khác với cấu trúc quiz hiện tại, vui lòng lấy lại cấu hình chi tiết"
+                {t("workspace.quiz.aiConfig.structureOutdatedWarning", "Your settings above no longer match the current quiz structure. Please fetch detailed configuration again."
                 )}
               </p>
               <div className="mt-4 flex justify-center">
@@ -1353,7 +1351,7 @@ function CreateQuizAiFormContent({
                   }`}
                 >
                   {structurePreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                  {t("workspace.quiz.aiConfig.structureFetchAction", "Lấy cấu hình chi tiết")}
+                  {t("workspace.quiz.aiConfig.structureFetchAction", "Fetch detailed configuration")}
                 </button>
               </div>
             </div>
@@ -1364,11 +1362,9 @@ function CreateQuizAiFormContent({
       <Dialog open={showStructureEditConfirm} onOpenChange={setShowStructureEditConfirm}>
         <DialogContent className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}>
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.aiConfig.structureEditAction", "Chỉnh sửa")}</DialogTitle>
+            <DialogTitle>{t("workspace.quiz.aiConfig.structureEditAction", "Edit")}</DialogTitle>
             <DialogDescription className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-              {t(
-                "workspace.quiz.aiConfig.structureEditConfirm",
-                "Nếu chỉnh sửa cấu trúc, các thông số cấu hình ở trên sẽ thay đổi. Bạn có muốn tiếp tục?"
+              {t("workspace.quiz.aiConfig.structureEditConfirm", "If you edit the structure, the configuration values above will change. Do you want to continue?"
               )}
             </DialogDescription>
           </DialogHeader>
@@ -1389,7 +1385,7 @@ function CreateQuizAiFormContent({
               }}
               className="bg-[#2563EB] text-white hover:bg-blue-700"
             >
-              {t("workspace.quiz.continue", "Tiếp tục")}
+              {t("workspace.quiz.continue", "Continue")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1398,9 +1394,9 @@ function CreateQuizAiFormContent({
       <Dialog open={showStructureCancelConfirm} onOpenChange={setShowStructureCancelConfirm}>
         <DialogContent className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : "border-slate-200 bg-white text-slate-900"}>
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.aiConfig.structureCancelEditAction", "Hủy chỉnh sửa")}</DialogTitle>
+            <DialogTitle>{t("workspace.quiz.aiConfig.structureCancelEditAction", "Cancel edit")}</DialogTitle>
             <DialogDescription className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-              {t("workspace.quiz.aiConfig.structureCancelConfirm", "Mọi thay đổi của bạn sẽ bị hủy.")}
+              {t("workspace.quiz.aiConfig.structureCancelConfirm", "All your changes will be discarded.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1420,7 +1416,7 @@ function CreateQuizAiFormContent({
               }}
               className="bg-red-600 text-white hover:bg-red-700"
             >
-              {t("workspace.quiz.confirm", "Xác nhận")}
+              {t("workspace.quiz.confirm", "Confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

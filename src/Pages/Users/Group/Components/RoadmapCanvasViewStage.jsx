@@ -906,7 +906,7 @@ function RoadmapCanvasViewStage({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
-                          {t("workspace.roadmap.canvas.knowledge", "Kiến thức")} {index + 1}
+                          {t("workspace.roadmap.canvas.knowledge", "Knowledge")} {index + 1}
                         </p>
                         <div className="flex items-center gap-1.5">
                           {isKnowledgeCompleted ? (
@@ -938,7 +938,7 @@ function RoadmapCanvasViewStage({
           ) : shouldShowKnowledgePlaceholder ? (
             <div>
               <p className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                {t("workspace.roadmap.canvas.knowledge", "Kiến thức")}
+                {t("workspace.roadmap.canvas.knowledge", "Knowledge")}
               </p>
               <div className="space-y-2">
                 {isGeneratingPhaseContent ? renderLoadingPlaceholder(
@@ -1267,7 +1267,7 @@ function RoadmapCanvasViewStage({
                             <div className={`absolute left-7 top-[-16px] h-[16px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
                             <div className="flex items-start justify-between gap-2">
                               <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
-                                {t("workspace.roadmap.canvas.knowledge", "Kiến thức")} {knowledgeIndex + 1}
+                                {t("workspace.roadmap.canvas.knowledge", "Knowledge")} {knowledgeIndex + 1}
                               </p>
                               <div className="flex items-center gap-1.5">
                                 {isKnowledgeCompleted ? (

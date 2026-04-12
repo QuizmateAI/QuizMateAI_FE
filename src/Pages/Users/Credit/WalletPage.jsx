@@ -79,8 +79,8 @@ function normalizeTransactions(page) {
   }));
 }
 
-function formatFallbackLabel(value, lang) {
-  if (!value) return lang === "vi" ? "Khác" : "Other";
+function formatFallbackLabel(value, t) {
+  if (!value) return t("walletPage.fallback.other", "Other");
 
   return String(value)
     .toLowerCase()
@@ -90,35 +90,41 @@ function formatFallbackLabel(value, lang) {
     .join(" ");
 }
 
-function getTransactionTypeLabel(type, lang) {
-  const normalized = String(type || "").toUpperCase();
-  const labels = {
-    WELCOME: lang === "vi" ? "Credit chào mừng" : "Welcome credits",
-    TOPUP: lang === "vi" ? "Nạp credit" : "Credit top-up",
-    CONSUME: lang === "vi" ? "Dùng credit AI" : "AI credit usage",
-    RESERVE: lang === "vi" ? "Tạm giữ credit" : "Credit reserved",
-    RESERVE_CANCELLED: lang === "vi" ? "Hoàn tạm giữ" : "Reserve released",
-    REFUND: lang === "vi" ? "Hoàn credit" : "Credit refund",
-    ADJUST: lang === "vi" ? "Điều chỉnh credit" : "Credit adjustment",
-    PLAN_BONUS: lang === "vi" ? "Credit từ gói" : "Plan credits",
-    PLAN_EXPIRE_RESET: lang === "vi" ? "Reset credit gói" : "Plan reset",
-  };
+const TRANSACTION_TYPE_FALLBACKS = {
+  WELCOME: "Welcome credits",
+  TOPUP: "Credit top-up",
+  CONSUME: "AI credit usage",
+  RESERVE: "Credit reserved",
+  RESERVE_CANCELLED: "Reserve released",
+  REFUND: "Credit refund",
+  ADJUST: "Credit adjustment",
+  PLAN_BONUS: "Plan credits",
+  PLAN_EXPIRE_RESET: "Plan reset",
+};
 
-  return labels[normalized] || formatFallbackLabel(type, lang);
+function getTransactionTypeLabel(type, t) {
+  const normalized = String(type || "").toUpperCase();
+  if (TRANSACTION_TYPE_FALLBACKS[normalized]) {
+    return t(`walletPage.transactionType.${normalized}`, TRANSACTION_TYPE_FALLBACKS[normalized]);
+  }
+  return formatFallbackLabel(type, t);
 }
 
-function getTransactionSourceLabel(source, lang) {
-  const normalized = String(source || "").toUpperCase();
-  const labels = {
-    SYSTEM: lang === "vi" ? "Hệ thống" : "System",
-    PAYMENT: lang === "vi" ? "Thanh toán" : "Payment",
-    AI_USAGE: lang === "vi" ? "AI sử dụng" : "AI usage",
-    USER_PLAN: lang === "vi" ? "Gói của bạn" : "Your plan",
-    WORKSPACE_PLAN: lang === "vi" ? "Gói nhóm" : "Group plan",
-    ADMIN: lang === "vi" ? "Quản trị viên" : "Admin",
-  };
+const TRANSACTION_SOURCE_FALLBACKS = {
+  SYSTEM: "System",
+  PAYMENT: "Payment",
+  AI_USAGE: "AI usage",
+  USER_PLAN: "Your plan",
+  WORKSPACE_PLAN: "Group plan",
+  ADMIN: "Admin",
+};
 
-  return labels[normalized] || (source ? formatFallbackLabel(source, lang) : "—");
+function getTransactionSourceLabel(source, t) {
+  const normalized = String(source || "").toUpperCase();
+  if (TRANSACTION_SOURCE_FALLBACKS[normalized]) {
+    return t(`walletPage.transactionSource.${normalized}`, TRANSACTION_SOURCE_FALLBACKS[normalized]);
+  }
+  return source ? formatFallbackLabel(source, t) : t("walletPage.fallback.emDash", "—");
 }
 
 function getTransactionSourceBadgeClass(source, isDarkMode) {
@@ -197,103 +203,71 @@ function parseUiActivityNote(note) {
   };
 }
 
-function getAiActionActivity(actionKey, lang) {
+const AI_ACTION_TITLE_FALLBACKS = {
+  PROCESS_PDF: "You uploaded a PDF",
+  PROCESS_IMAGE: "You uploaded an image",
+  PROCESS_TEXT: "You sent text for AI processing",
+  PROCESS_DOCX: "You uploaded a Word document",
+  PROCESS_XLSX: "You uploaded an Excel file",
+  PROCESS_PPTX: "You uploaded a PowerPoint deck",
+  PROCESS_AUDIO: "You uploaded an audio file",
+  PROCESS_VIDEO: "You uploaded a video",
+  GENERATE_QUIZ: "You generated a quiz",
+  PREVIEW_QUIZ_STRUCTURE: "You previewed a quiz structure",
+  GENERATE_FLASHCARDS: "You generated flashcards",
+  GENERATE_MOCK_TEST: "You generated a mock test",
+  GENERATE_ROADMAP: "You generated a study roadmap",
+  GENERATE_ROADMAP_PHASES: "You generated roadmap phases",
+  GENERATE_ROADMAP_PHASE_CONTENT: "You generated study content",
+  GENERATE_ROADMAP_KNOWLEDGE_QUIZ: "You generated a knowledge quiz",
+  SUGGEST_LEARNING_RESOURCES: "You requested learning resources",
+  ANALYZE_STUDY_PROFILE_KNOWLEDGE: "You analyzed a study profile",
+  SUGGEST_STUDY_PROFILE_FIELDS: "You requested study profile suggestions",
+  SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES: "You requested exam template suggestions",
+  VALIDATE_STUDY_PROFILE_CONSISTENCY: "You validated a study profile",
+};
 
-  const activityMap = {
-    PROCESS_PDF: {
-      title: lang === "vi" ? "Bạn đã tải lên tài liệu PDF" : "You uploaded a PDF",
-    },
-    PROCESS_IMAGE: {
-      title: lang === "vi" ? "Bạn đã tải lên hình ảnh" : "You uploaded an image",
-    },
-    PROCESS_TEXT: {
-      title: lang === "vi" ? "Bạn đã gửi văn bản để AI xử lý" : "You sent text for AI processing",
-    },
-    PROCESS_DOCX: {
-      title: lang === "vi" ? "Bạn đã tải lên tài liệu Word" : "You uploaded a Word document",
-    },
-    PROCESS_XLSX: {
-      title: lang === "vi" ? "Bạn đã tải lên file Excel" : "You uploaded an Excel file",
-    },
-    PROCESS_PPTX: {
-      title: lang === "vi" ? "Bạn đã tải lên slide PowerPoint" : "You uploaded a PowerPoint deck",
-    },
-    PROCESS_AUDIO: {
-      title: lang === "vi" ? "Bạn đã tải lên tệp âm thanh" : "You uploaded an audio file",
-    },
-    PROCESS_VIDEO: {
-      title: lang === "vi" ? "Bạn đã tải lên video" : "You uploaded a video",
-    },
-    GENERATE_QUIZ: {
-      title: lang === "vi" ? "Bạn đã tạo bài quiz" : "You generated a quiz",
-    },
-    PREVIEW_QUIZ_STRUCTURE: {
-      title: lang === "vi" ? "Bạn đã xem trước cấu trúc quiz" : "You previewed a quiz structure",
-    },
-    GENERATE_FLASHCARDS: {
-      title: lang === "vi" ? "Bạn đã tạo flashcard" : "You generated flashcards",
-    },
-    GENERATE_MOCK_TEST: {
-      title: lang === "vi" ? "Bạn đã tạo đề luyện tập" : "You generated a mock test",
-    },
-    GENERATE_ROADMAP: {
-      title: lang === "vi" ? "Bạn đã tạo lộ trình học" : "You generated a study roadmap",
-    },
-    GENERATE_ROADMAP_PHASES: {
-      title: lang === "vi" ? "Bạn đã tạo các giai đoạn học" : "You generated roadmap phases",
-    },
-    GENERATE_ROADMAP_PHASE_CONTENT: {
-      title: lang === "vi" ? "Bạn đã tạo nội dung học tập" : "You generated study content",
-    },
-    GENERATE_ROADMAP_KNOWLEDGE_QUIZ: {
-      title: lang === "vi" ? "Bạn đã tạo quiz kiến thức" : "You generated a knowledge quiz",
-    },
-    SUGGEST_LEARNING_RESOURCES: {
-      title: lang === "vi" ? "Bạn đã gợi ý tài liệu học" : "You requested learning resources",
-    },
-    ANALYZE_STUDY_PROFILE_KNOWLEDGE: {
-      title: lang === "vi" ? "Bạn đã phân tích hồ sơ học tập" : "You analyzed a study profile",
-    },
-    SUGGEST_STUDY_PROFILE_FIELDS: {
-      title: lang === "vi" ? "Bạn đã gợi ý thông tin hồ sơ học tập" : "You requested study profile suggestions",
-    },
-    SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES: {
-      title: lang === "vi" ? "Bạn đã gợi ý mẫu đề phù hợp" : "You requested exam template suggestions",
-    },
-    VALIDATE_STUDY_PROFILE_CONSISTENCY: {
-      title: lang === "vi" ? "Bạn đã kiểm tra hồ sơ học tập" : "You validated a study profile",
-    },
-  };
+function getAiActionActivity(actionKey, t) {
+  if (AI_ACTION_TITLE_FALLBACKS[actionKey]) {
+    return {
+      title: t(`walletPage.aiActivity.${actionKey}`, AI_ACTION_TITLE_FALLBACKS[actionKey]),
+    };
+  }
 
-  return activityMap[actionKey] || {
-    title: lang === "vi" ? "Bạn đã dùng một tính năng AI" : "You used an AI feature",
+  return {
+    title: t("walletPage.aiActivity.default", "You used an AI feature"),
   };
 }
 
-function formatUiActivityTitle(actionKey, target, lang) {
+const UI_ACTIVITY_TITLE_FALLBACKS = {
+  PROCESS_PDF: "Uploaded PDF: {{target}}",
+  PROCESS_DOCX: "Uploaded Word file: {{target}}",
+  PROCESS_PPTX: "Uploaded slides: {{target}}",
+  PROCESS_XLSX: "Uploaded Excel file: {{target}}",
+  PROCESS_IMAGE: "Uploaded image: {{target}}",
+  PROCESS_AUDIO: "Uploaded audio: {{target}}",
+  PROCESS_VIDEO: "Uploaded video: {{target}}",
+  PROCESS_TEXT: "Processed text: {{target}}",
+  GENERATE_QUIZ: "Generated quiz: {{target}}",
+  GENERATE_FLASHCARDS: "Generated flashcards from: {{target}}",
+  GENERATE_MOCK_TEST: "Generated mock test: {{target}}",
+  GENERATE_ROADMAP: "Generated roadmap: {{target}}",
+  GENERATE_ROADMAP_PHASES: "Generated phases for: {{target}}",
+  GENERATE_ROADMAP_PHASE_CONTENT: "Generated content for: {{target}}",
+  GENERATE_ROADMAP_KNOWLEDGE_QUIZ: "Generated knowledge quiz: {{target}}",
+};
+
+function formatUiActivityTitle(actionKey, target, t) {
   const safeTarget = String(target || "").trim();
-  const withTarget = (viPrefix, enPrefix) =>
-    safeTarget ? `${lang === "vi" ? viPrefix : enPrefix}${safeTarget}` : getAiActionActivity(actionKey, lang).title;
+  if (!safeTarget) {
+    return getAiActionActivity(actionKey, t).title;
+  }
 
-  const titleMap = {
-    PROCESS_PDF: withTarget("Đã tải lên PDF: ", "Uploaded PDF: "),
-    PROCESS_DOCX: withTarget("Đã tải lên file Word: ", "Uploaded Word file: "),
-    PROCESS_PPTX: withTarget("Đã tải lên slide: ", "Uploaded slides: "),
-    PROCESS_XLSX: withTarget("Đã tải lên file Excel: ", "Uploaded Excel file: "),
-    PROCESS_IMAGE: withTarget("Đã tải lên ảnh: ", "Uploaded image: "),
-    PROCESS_AUDIO: withTarget("Đã tải lên audio: ", "Uploaded audio: "),
-    PROCESS_VIDEO: withTarget("Đã tải lên video: ", "Uploaded video: "),
-    PROCESS_TEXT: withTarget("Đã gửi văn bản: ", "Processed text: "),
-    GENERATE_QUIZ: withTarget("Đã tạo quiz: ", "Generated quiz: "),
-    GENERATE_FLASHCARDS: withTarget("Đã tạo flashcard từ: ", "Generated flashcards from: "),
-    GENERATE_MOCK_TEST: withTarget("Đã tạo mock test: ", "Generated mock test: "),
-    GENERATE_ROADMAP: withTarget("Đã tạo roadmap: ", "Generated roadmap: "),
-    GENERATE_ROADMAP_PHASES: withTarget("Đã tạo phase cho: ", "Generated phases for: "),
-    GENERATE_ROADMAP_PHASE_CONTENT: withTarget("Đã tạo nội dung cho: ", "Generated content for: "),
-    GENERATE_ROADMAP_KNOWLEDGE_QUIZ: withTarget("Đã tạo quiz kiến thức: ", "Generated knowledge quiz: "),
-  };
+  if (UI_ACTIVITY_TITLE_FALLBACKS[actionKey]) {
+    return t(`walletPage.uiActivity.${actionKey}`, UI_ACTIVITY_TITLE_FALLBACKS[actionKey], { target: safeTarget });
+  }
 
-  return titleMap[actionKey] || withTarget("Đã dùng AI cho: ", "Used AI for: ");
+  return t("walletPage.uiActivity.default", "Used AI for: {{target}}", { target: safeTarget });
 }
 
 function getReadableNote(note) {
@@ -304,11 +278,11 @@ function getReadableNote(note) {
   return normalizedNote;
 }
 
-function getAiUsageActivity(tx, lang) {
+function getAiUsageActivity(tx, t) {
   const uiActivity = parseUiActivityNote(tx?.note);
   if (uiActivity) {
     return {
-      title: formatUiActivityTitle(uiActivity.actionKey, uiActivity.target, lang),
+      title: formatUiActivityTitle(uiActivity.actionKey, uiActivity.target, t),
       subtitle: "",
       workspaceName: String(uiActivity.workspaceName || "").trim(),
     };
@@ -326,76 +300,76 @@ function getAiUsageActivity(tx, lang) {
   const aiUsageMeta = parseAiUsageNote(tx?.note);
   if (aiUsageMeta) {
     return {
-      title: getAiActionActivity(aiUsageMeta.actionKey, lang).title,
+      title: getAiActionActivity(aiUsageMeta.actionKey, t).title,
       subtitle: "",
       workspaceName: "",
     };
   }
 
   return {
-    title: lang === "vi" ? "Bạn đã dùng một tính năng AI" : "You used an AI feature",
+    title: t("walletPage.aiActivity.default", "You used an AI feature"),
     subtitle: "",
     workspaceName: "",
   };
 }
 
-function getTransactionActivity(tx, lang) {
+function getTransactionActivity(tx, t) {
   const normalizedType = String(tx?.type || "").toUpperCase();
   const normalizedSource = String(tx?.source || "").toUpperCase();
   if (normalizedSource === "AI_USAGE") {
-    return getAiUsageActivity(tx, lang);
+    return getAiUsageActivity(tx, t);
   }
 
   if (normalizedType === "WELCOME") {
     return {
-      title: lang === "vi" ? "Bạn đã nhận credit chào mừng" : "You received welcome credits",
-      subtitle: lang === "vi" ? "Quà tặng dành cho tài khoản mới" : "A welcome bonus for your new account",
+      title: t("walletPage.txActivity.welcomeTitle", "You received welcome credits"),
+      subtitle: t("walletPage.txActivity.welcomeSubtitle", "A welcome bonus for your new account"),
       workspaceName: "",
     };
   }
 
   if (normalizedType === "PLAN_BONUS") {
     return {
-      title: lang === "vi" ? "Bạn đã nhận credit từ gói" : "You received plan credits",
-      subtitle: lang === "vi" ? "Credit đi kèm gói đã được cộng vào ví" : "Included plan credits were added to your wallet",
+      title: t("walletPage.txActivity.planBonusTitle", "You received plan credits"),
+      subtitle: t("walletPage.txActivity.planBonusSubtitle", "Included plan credits were added to your wallet"),
       workspaceName: "",
     };
   }
 
   if (normalizedType === "TOPUP") {
     return {
-      title: lang === "vi" ? "Bạn đã nạp thêm credit" : "You topped up credits",
-      subtitle: lang === "vi" ? "Credit đã được cộng vào ví của bạn" : "Credits were added to your wallet",
+      title: t("walletPage.txActivity.topupTitle", "You topped up credits"),
+      subtitle: t("walletPage.txActivity.topupSubtitle", "Credits were added to your wallet"),
       workspaceName: "",
     };
   }
 
   if (normalizedType === "REFUND") {
     return {
-      title: lang === "vi" ? "Bạn đã được hoàn lại credit" : "You received a credit refund",
-      subtitle: lang === "vi" ? "Số credit chưa dùng đã được hoàn về ví" : "Unused credits were returned to your wallet",
+      title: t("walletPage.txActivity.refundTitle", "You received a credit refund"),
+      subtitle: t("walletPage.txActivity.refundSubtitle", "Unused credits were returned to your wallet"),
       workspaceName: "",
     };
   }
 
   if (normalizedType === "RESERVE_CANCELLED") {
     return {
-      title: lang === "vi" ? "Một khoản tạm giữ đã được hoàn" : "A reserved amount was released",
-      subtitle: lang === "vi" ? "Credit tạm giữ đã được trả lại vào ví" : "Reserved credits were returned to your wallet",
+      title: t("walletPage.txActivity.reserveCancelledTitle", "A reserved amount was released"),
+      subtitle: t("walletPage.txActivity.reserveCancelledSubtitle", "Reserved credits were returned to your wallet"),
       workspaceName: "",
     };
   }
 
   if (normalizedType === "PLAN_EXPIRE_RESET") {
     return {
-      title: lang === "vi" ? "Credit gói đã được làm mới" : "Plan credits were reset",
-      subtitle: lang === "vi" ? "Hệ thống đã reset credit theo chu kỳ gói" : "The system reset your plan credits for the next cycle",
+      title: t("walletPage.txActivity.planExpireResetTitle", "Plan credits were reset"),
+      subtitle: t("walletPage.txActivity.planExpireResetSubtitle", "The system reset your plan credits for the next cycle"),
       workspaceName: "",
     };
   }
 
   return {
-    title: getTransactionTypeLabel(tx?.type, lang),
+    title: getTransactionTypeLabel(tx?.type, t),
     subtitle: tx?.note && !/task:|order\s+/i.test(String(tx.note))
       ? String(tx.note)
       : "",
@@ -534,11 +508,11 @@ export default function WalletPage() {
               type="button"
               onClick={() => navigate("/home")}
               className="w-[110px] md:w-[130px] flex items-center cursor-pointer"
-              aria-label="Go to Home"
+              aria-label={t("walletPage.goHome", "Go to Home")}
             >
               <img
                 src={isDarkMode ? LogoDark : LogoLight}
-                alt="QuizMate AI Logo"
+                alt={t("walletPage.logoAlt", "QuizMate AI Logo")}
                 className="w-full h-auto object-contain"
               />
             </button>
@@ -612,7 +586,7 @@ export default function WalletPage() {
             }`}
           >
             <ArrowLeft className="w-4 h-4" />
-            {t("wallet.back")}
+            {t("walletPage.back", "Back")}
           </button>
         </div>
 
@@ -632,16 +606,16 @@ export default function WalletPage() {
                     }`}>
                       <CreditIconImage alt="Quizmate Credit" className="w-9 h-9 rounded-2xl animate-floaty" />
                     </span>
-                    {t("wallet.title")}
+                    {t("walletPage.summary.title", "Your Credit Wallet")}
                   </CardTitle>
                   <CardDescription className={isDarkMode ? "text-slate-400" : ""}>
-                    {t("wallet.subtitle")}
+                    {t("walletPage.summary.subtitle", "Track your balance and manage credits used for AI features")}
                   </CardDescription>
                 </div>
                 <Badge className={`rounded-full px-3 py-1 ${
                   isDarkMode ? "bg-slate-800 text-slate-100" : "bg-slate-100 text-slate-700"
                 }`}>
-                  {t("wallet.badge")}
+                  {t("walletPage.summary.badge", "Personal wallet")}
                 </Badge>
               </div>
             </CardHeader>
@@ -649,25 +623,25 @@ export default function WalletPage() {
               <div className={`rounded-2xl p-5 ring-1 ring-inset ${
                 isDarkMode ? "bg-slate-950/40 ring-slate-700/60" : "bg-white ring-slate-200"
               }`}>
-                <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{t("wallet.totalAvailable")}</p>
+                <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{t("walletPage.summary.totalAvailable", "Total available credits")}</p>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className={`text-4xl font-extrabold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
                     {formatNumber(walletSummary.totalAvailableCredits, numberLocale)}
                   </span>
                   <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
-                    {t("wallet.creditsUnit")}
+                    {t("walletPage.summary.creditsUnit", "credits")}
                   </span>
                 </div>
                 <div className={`mt-3 inline-flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
                   <Sparkles className={`w-4 h-4 ${isDarkMode ? "text-slate-300" : "text-slate-500"}`} />
-                  {t("wallet.hint")}
+                  {t("walletPage.summary.hint", "Credits are used to run AI tasks like quiz generation, flashcards, study roadmaps...")}
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <div className={`rounded-2xl px-4 py-3 ring-1 ring-inset ${
                     isDarkMode ? "bg-slate-900/60 ring-slate-700/60" : "bg-white/80 ring-slate-200"
                   }`}>
                     <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                      {t("wallet.regularCredits")}
+                      {t("walletPage.summary.regularCredits", "Regular credits")}
                     </p>
                     <p className={`mt-2 text-2xl font-bold tabular-nums ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
                       {formatNumber(walletSummary.regularCreditBalance, numberLocale)}
@@ -678,14 +652,14 @@ export default function WalletPage() {
                       isDarkMode ? "bg-slate-900/60 ring-slate-700/60" : "bg-white ring-slate-200"
                     }`}>
                       <p className={`text-[11px] font-semibold uppercase tracking-wide ${isDarkMode ? "text-slate-300" : "text-slate-500"}`}>
-                        {t("wallet.planCredits")}
+                        {t("walletPage.summary.planCredits", "Plan credits")}
                       </p>
                       <p className={`mt-2 text-2xl font-bold tabular-nums ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
                         {formatNumber(walletSummary.planCreditBalance, numberLocale)}
                       </p>
                       {walletSummary.planCreditExpiresAt && (
                         <p className={`mt-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                          {t("wallet.expiresAt")}: {formatTime(walletSummary.planCreditExpiresAt, currentLang)}
+                          {t("walletPage.summary.expiresAt", "Expires at")}: {formatTime(walletSummary.planCreditExpiresAt, currentLang)}
                         </p>
                       )}
                     </div>
@@ -699,7 +673,7 @@ export default function WalletPage() {
                       isDarkMode ? "border-slate-600 bg-slate-900 text-slate-100 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
                     }`}
                   >
-                    {t("wallet.pricingGuide")}
+                    {t("walletPage.summary.pricingGuide", "View detailed pricing")}
                   </Button>
                 </div>
               </div>
@@ -712,35 +686,39 @@ export default function WalletPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5 text-emerald-500" />
-                {t("wallet.buyTitle")}
+                {t("walletPage.buy.title", "Buy more credits")}
               </CardTitle>
               <CardDescription className={isDarkMode ? "text-slate-400" : ""}>
-                {t("wallet.buySubtitle")}
+                {t("walletPage.buy.subtitle", "Pick a credit package to keep using AI features")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {!canBuyCredit && (
                 <p className={`text-sm py-2 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                  {t("wallet.cannotBuyCredit")}
+                  {t("walletPage.buy.cannotBuyCredit", "Your current plan does not support buying extra credits.")}
                 </p>
               )}
 
               {isLoadingPackages && packages.length === 0 && (
                 <p className={isDarkMode ? "text-slate-400 text-sm" : "text-slate-600 text-sm"}>
-                  ...
+                  {t("walletPage.buy.loading", "Loading...")}
                 </p>
               )}
               {canBuyCredit && packages.map((pkg) => {
                 const base = pkg.baseCredit ?? 0;
                 const bonus = pkg.bonusCredit ?? 0;
                 const packageName = String(pkg.displayName || pkg.code || "").trim()
-                  || `${currentLang === "vi" ? "Gói credit" : "Credit package"} ${pkg.creditPackageId ?? ""}`.trim();
-                const baseCreditsLabel = currentLang === "vi"
-                  ? `${formatNumber(base, "vi-VN")} credit gốc`
-                  : `${formatNumber(base, "en-US")} base credits`;
-                const bonusCreditsLabel = currentLang === "vi"
-                  ? `+${formatNumber(bonus, "vi-VN")} bonus credit`
-                  : `+${formatNumber(bonus, "en-US")} bonus credits`;
+                  || t("walletPage.buy.packageFallback", "Credit package {{id}}", { id: pkg.creditPackageId ?? "" }).trim();
+                const baseCreditsLabel = t(
+                  "walletPage.buy.baseCredits",
+                  "{{count}} base credits",
+                  { count: formatNumber(base, numberLocale) }
+                );
+                const bonusCreditsLabel = t(
+                  "walletPage.buy.bonusCredits",
+                  "+{{count}} bonus credits",
+                  { count: formatNumber(bonus, numberLocale) }
+                );
                 return (
                 <button
                   key={pkg.creditPackageId ?? `${packageName}-${base}-${bonus}`}
@@ -791,10 +769,10 @@ export default function WalletPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Receipt className="w-5 h-5 text-indigo-500" />
-              {t("wallet.historyTitle")}
+              {t("walletPage.history.title", "Transaction history")}
             </CardTitle>
             <CardDescription className={isDarkMode ? "text-slate-400" : ""}>
-              {t("wallet.historySubtitle")}
+              {t("walletPage.history.subtitle", "The 20 most recent transactions on your wallet")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -802,16 +780,16 @@ export default function WalletPage() {
               <Table className={isDarkMode ? "text-slate-100" : "text-slate-900"}>
                 <TableHeader className={isDarkMode ? "bg-slate-950/40" : "bg-slate-50"}>
                   <TableRow className={isDarkMode ? "border-slate-800" : "border-slate-200"}>
-                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.time")}</TableHead>
+                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("walletPage.history.table.time", "Time")}</TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-                      {t("wallet.table.activity")}
+                      {t("walletPage.history.table.activity", "Activity")}
                     </TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-                      {t("wallet.table.workspace")}
+                      {t("walletPage.history.table.workspace", "Workspace")}
                     </TableHead>
-                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.amount")}</TableHead>
+                    <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("walletPage.history.table.amount", "Credits")}</TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-                      {t("wallet.table.source")}
+                      {t("walletPage.history.table.source", "Source")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -819,19 +797,19 @@ export default function WalletPage() {
                   {isLoadingTransactions && (
                     <TableRow>
                       <TableCell colSpan={5} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                        ...
+                        {t("walletPage.history.loading", "Loading...")}
                       </TableCell>
                     </TableRow>
                   )}
                   {!isLoadingTransactions && transactions.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className={`py-10 text-center text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                        {t("wallet.noHistory")}
+                        {t("walletPage.history.noHistory", "No transactions yet.")}
                       </TableCell>
                     </TableRow>
                   ) : (
                     transactions.map((tx) => {
-                      const activity = getTransactionActivity(tx, currentLang);
+                      const activity = getTransactionActivity(tx, t);
 
                       return (
                       <TableRow key={tx.id ?? `${tx.time}-${tx.type}-${tx.amount}`} className={isDarkMode ? "border-slate-800" : "border-slate-200"}>
@@ -861,7 +839,7 @@ export default function WalletPage() {
                             className={`max-w-[240px] truncate text-sm ${activity.workspaceName ? (isDarkMode ? "text-slate-200" : "text-slate-700") : (isDarkMode ? "text-slate-500" : "text-slate-400")}`}
                             title={activity.workspaceName || undefined}
                           >
-                            {activity.workspaceName || "—"}
+                            {activity.workspaceName || t("walletPage.history.emptyWorkspace", "—")}
                           </p>
                         </TableCell>
                         <TableCell className={`font-bold tabular-nums ${tx.amount >= 0 ? (isDarkMode ? "text-emerald-400" : "text-emerald-700") : (isDarkMode ? "text-amber-400" : "text-amber-700")}`}>
@@ -869,7 +847,7 @@ export default function WalletPage() {
                         </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getTransactionSourceBadgeClass(tx.source, isDarkMode)}`}>
-                            {getTransactionSourceLabel(tx.source, currentLang)}
+                            {getTransactionSourceLabel(tx.source, t)}
                           </span>
                         </TableCell>
                       </TableRow>

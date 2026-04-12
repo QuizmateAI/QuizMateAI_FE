@@ -539,8 +539,8 @@ export default function ExamQuizPage() {
               <DialogDescription>
                 <span className="mt-1 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
                   {isTimedExam
-                    ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
-                    : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
+                    ? t('workspace.quiz.examModeType1', 'Timed Test')
+                    : t('workspace.quiz.examModeType2', 'Sequential Timed Test')}
                 </span>
                 <span className="mt-3 block text-sm text-slate-500 dark:text-slate-400">
                   {info} • Exam Mode
@@ -621,13 +621,13 @@ export default function ExamQuizPage() {
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-800/70 dark:bg-blue-950/30 dark:text-blue-300">
                   {quiz.timerMode === 'TOTAL'
-                    ? t('workspace.quiz.examModeType1', 'Exam giới hạn thời gian tổng')
-                    : t('workspace.quiz.examModeType2', 'Exam theo từng câu')}
+                    ? t('workspace.quiz.examModeType1', 'Timed Test')
+                    : t('workspace.quiz.examModeType2', 'Sequential Timed Test')}
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">{quiz.title}</h1>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    {t('workspace.quiz.examActions.headerHint', 'Hoàn thành từng câu, dùng dấu sao để đánh dấu các câu bạn muốn quay lại kiểm tra trước khi nộp bài.')}
+                    {t('workspace.quiz.examActions.headerHint', 'Finish each question and use the star to mark anything you want to revisit before submitting.')}
                   </p>
                 </div>
               </div>

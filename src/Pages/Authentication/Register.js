@@ -81,7 +81,7 @@ export const useRegister = (setView, t) => {
       checking: true,
       available: null,
       checkedValue: value,
-      message: t('auth.checkingAvailability') || 'Đang kiểm tra...',
+      message: t('auth.checkingAvailability') || 'Checking...',
     });
 
     try {
@@ -95,11 +95,11 @@ export const useRegister = (setView, t) => {
 
       const isAvailable = response?.data === true;
       const successMessageByField = field === 'username'
-        ? (t('auth.usernameAvailable') || 'Username khả dụng')
-        : (t('auth.emailAvailable') || 'Email khả dụng');
+        ? (t('auth.usernameAvailable') || 'Username is available')
+        : (t('auth.emailAvailable') || 'Email is available');
       const errorMessageByField = field === 'username'
-        ? (t('auth.usernameExists') || 'Username đã được sử dụng')
-        : (t('auth.emailExists') || 'Email đã được sử dụng');
+        ? (t('auth.usernameExists') || 'Username is already in use')
+        : (t('auth.emailExists') || 'Email is already in use');
 
       setAvailabilityFieldState(field, {
         checking: false,
@@ -121,8 +121,8 @@ export const useRegister = (setView, t) => {
       }
 
       const errorMessageByField = field === 'username'
-        ? (t('auth.usernameExists') || 'Username đã được sử dụng')
-        : (t('auth.emailExists') || 'Email đã được sử dụng');
+        ? (t('auth.usernameExists') || 'Username is already in use')
+        : (t('auth.emailExists') || 'Email is already in use');
 
       if (err?.statusCode === 400) {
         setAvailabilityFieldState(field, {
@@ -150,7 +150,7 @@ export const useRegister = (setView, t) => {
     const otpStatus = await waitForOtpStatus(email, () => sendOTP(email));
 
     if (!otpStatus?.success) {
-      throw new Error(otpStatus?.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
+      throw new Error(otpStatus?.message || t('auth.sendOTPFailed') || 'Failed to send OTP, please try again');
     }
 
     setSuccessMessage(t(successKey) || fallbackSuccessMessage);
@@ -293,11 +293,11 @@ export const useRegister = (setView, t) => {
     const nextErrors = {};
 
     if (usernameAvailable === false) {
-      nextErrors.username = t('auth.usernameExists') || 'Username đã được sử dụng';
+      nextErrors.username = t('auth.usernameExists') || 'Username is already in use';
     }
 
     if (emailAvailable === false) {
-      nextErrors.email = t('auth.emailExists') || 'Email đã được sử dụng';
+      nextErrors.email = t('auth.emailExists') || 'Email is already in use';
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -306,7 +306,7 @@ export const useRegister = (setView, t) => {
     }
 
     if (usernameAvailable === null || emailAvailable === null) {
-      setError(t('auth.checkAvailabilityFailed') || 'Không thể kiểm tra tính khả dụng, vui lòng thử lại');
+      setError(t('auth.checkAvailabilityFailed') || 'Unable to check availability, please try again');
       return false;
     }
 
@@ -336,7 +336,7 @@ export const useRegister = (setView, t) => {
     }
     
     if (!trimmedData.agreeToTerms) {
-      setFieldErrors({ agreeToTerms: t('auth.agreeToTermsRequired') || 'Vui lòng đồng ý với điều khoản sử dụng' });
+      setFieldErrors({ agreeToTerms: t('auth.agreeToTermsRequired') || 'Please agree to the terms of use' });
       return;
     }
     
@@ -351,12 +351,12 @@ export const useRegister = (setView, t) => {
       await requestOtpWithSocket(
         trimmedData.email,
         'auth.registerOtpSent',
-        'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra.'
+        'An OTP code has been sent to your email. Please check your inbox.'
       );
       setFieldErrors({});
       setRegisterStep('otp');
     } catch (err) {
-      setError(err.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
+      setError(err.message || t('auth.sendOTPFailed') || 'Failed to send OTP, please try again');
     } finally {
       setIsLoading(false);
     }
@@ -370,7 +370,7 @@ export const useRegister = (setView, t) => {
 
     const trimmedOtp = otp.trim();
     if (!trimmedOtp) {
-      setFieldErrors(prev => ({ ...prev, otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Vui lòng nhập mã OTP' }));
+      setFieldErrors(prev => ({ ...prev, otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Please enter the OTP code' }));
       return;
     }
 
@@ -390,7 +390,7 @@ export const useRegister = (setView, t) => {
         });
         
         if (registerResponse.statusCode === 200 || registerResponse.statusCode === 0) {
-          setSuccessMessage(t('auth.registerSuccess') || 'Đăng ký thành công! Vui lòng đăng nhập.');
+          setSuccessMessage(t('auth.registerSuccess') || 'Registration successful! Please login.');
           setTimeout(() => {
             setView('login');
             setSuccessMessage('');
@@ -402,9 +402,9 @@ export const useRegister = (setView, t) => {
       // Xử lý lỗi validation từ server (statusCode 400)
       if (err.statusCode === 400 && err.data?.data) {
         setFieldErrors(err.data.data);
-        setError(err.message || t('auth.validationFailed') || 'Dữ liệu nhập không hợp lệ');
+        setError(err.message || t('auth.validationFailed') || 'Input data is invalid');
       } else {
-        setError(err.message || t('auth.verifyOTPFailed') || 'Xác thực OTP thất bại, mã không đúng hoặc đã hết hạn');
+        setError(err.message || t('auth.verifyOTPFailed') || 'OTP verification failed, code is invalid or expired');
       }
     } finally {
       setIsLoading(false);
@@ -421,10 +421,10 @@ export const useRegister = (setView, t) => {
       await requestOtpWithSocket(
         formData.email.trim(),
         'auth.otpSent',
-        'Mã OTP đã được gửi lại đến email của bạn'
+        'OTP code has been resent to your email'
       );
     } catch (err) {
-      setError(err.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
+      setError(err.message || t('auth.sendOTPFailed') || 'Failed to send OTP, please try again');
     } finally {
       setIsLoading(false);
     }

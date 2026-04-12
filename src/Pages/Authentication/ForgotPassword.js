@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import i18n from '@/i18n';
 import { checkEmail, sendOTP, verifyOTP, resetPassword } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { getEmailViolationKey, isEmailValid } from '@/Utils/emailValidation';
@@ -27,7 +28,7 @@ export const useForgotPassword = (setView, t) => {
     const otpStatus = await waitForOtpStatus(email, () => sendOTP(email));
 
     if (!otpStatus?.success) {
-      throw new Error(otpStatus?.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
+      throw new Error(otpStatus?.message || t('auth.sendOTPFailed') || 'Failed to send OTP, please try again');
     }
 
     setSuccessMessage(t(successKey) || fallbackSuccessMessage);
@@ -102,14 +103,14 @@ export const useForgotPassword = (setView, t) => {
     try {
       const emailExists = await isEmailRegistered(trimmedEmail);
       if (!emailExists) {
-        setFieldErrors({ email: t('auth.accountNotFound') || 'Tài khoản không tồn tại' });
+        setFieldErrors({ email: t('auth.accountNotFound') || 'Account does not exist' });
         return;
       }
 
-      await requestOtpWithSocket(trimmedEmail, 'auth.otpSent', 'Mã OTP đã được gửi đến email của bạn');
+      await requestOtpWithSocket(trimmedEmail, 'auth.otpSent', 'OTP code has been sent to your email');
       setForgotPasswordStep('otp');
     } catch (err) {
-      setError(err.message || t('auth.sendOTPFailed') || 'Gửi OTP thất bại, vui lòng thử lại');
+      setError(err.message || t('auth.sendOTPFailed') || 'Failed to send OTP, please try again');
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +126,7 @@ export const useForgotPassword = (setView, t) => {
     setForgotPasswordData(prev => ({ ...prev, otp: trimmedOtp }));
 
     if (!trimmedOtp) {
-      setFieldErrors({ otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Vui lòng nhập mã OTP' });
+      setFieldErrors({ otp: t('validation.otpRequired') || t('auth.otpRequired') || 'Please enter the OTP code' });
       return;
     }
     
@@ -134,11 +135,11 @@ export const useForgotPassword = (setView, t) => {
     try {
       const response = await verifyOTP(forgotPasswordData.email.trim(), trimmedOtp);
       if (response.statusCode === 200 || response.statusCode === 0) {
-        setSuccessMessage(t('auth.otpVerified') || 'Xác thực OTP thành công');
+        setSuccessMessage(t('auth.otpVerified') || 'OTP verified successfully');
         setForgotPasswordStep('newPassword');
       }
     } catch (err) {
-      setError(err.message || t('auth.verifyOTPFailed') || 'Xác thực OTP thất bại, mã không đúng hoặc đã hết hạn');
+      setError(err.message || t('auth.verifyOTPFailed') || 'OTP verification failed, code is invalid or expired');
     } finally {
       setIsLoading(false);
     }
@@ -153,18 +154,18 @@ export const useForgotPassword = (setView, t) => {
     const trimmedConfirmNewPassword = forgotPasswordData.confirmNewPassword;
     
     if (trimmedNewPassword !== trimmedConfirmNewPassword) {
-      setFieldErrors({ confirmNewPassword: t('auth.passwordMismatch') || 'Mật khẩu xác nhận không khớp' });
+      setFieldErrors({ confirmNewPassword: t('auth.passwordMismatch') || 'Password confirmation does not match' });
       return;
     }
     
     // Validate mật khẩu mới theo quy tắc BE
     if (trimmedNewPassword.length < 8) {
-      setFieldErrors({ newPassword: t('validation.passwordLength') || 'Mật khẩu phải nhiều hơn 8 ký tự' });
+      setFieldErrors({ newPassword: t('validation.passwordLength') || 'Password must be more than 8 characters' });
       return;
     }
     
     if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(trimmedNewPassword)) {
-      setFieldErrors({ newPassword: t('validation.passwordFormat') || 'Mật khẩu phải chứa cả chữ và số' });
+      setFieldErrors({ newPassword: t('validation.passwordFormat') || 'Password must contain both letters and numbers' });
       return;
     }
     
@@ -177,7 +178,7 @@ export const useForgotPassword = (setView, t) => {
       );
       
       if (response.statusCode === 200 || response.statusCode === 0) {
-        setSuccessMessage(t('auth.resetPasswordSuccess') || 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập.');
+        setSuccessMessage(t('auth.resetPasswordSuccess') || 'Password reset successful, please login');
         setTimeout(() => {
           setView('login');
           setForgotPasswordStep('email');
@@ -186,7 +187,7 @@ export const useForgotPassword = (setView, t) => {
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || t('auth.resetPasswordFailed') || 'Đặt lại mật khẩu thất bại');
+      setError(err.message || t('auth.resetPasswordFailed') || 'Failed to reset password');
     } finally {
       setIsLoading(false);
     }
@@ -236,15 +237,15 @@ export const validateForgotPasswordForm = (email, t) => {
   const emailViolationKey = getEmailViolationKey(email);
   if (emailViolationKey) {
     const fallbackMessages = {
-      emailRequired: 'Email là bắt buộc',
-      emailLength: 'Email không được vượt quá 100 ký tự',
-      emailNoSpaces: 'Email không được chứa khoảng trắng',
-      emailAtSymbol: 'Email phải chứa đúng một ký tự @',
-      emailLocalPartLength: 'Phần trước @ không được vượt quá 64 ký tự',
-      emailConsecutiveDots: 'Email không được chứa hai dấu chấm liên tiếp',
-      emailDotPosition: 'Email không được bắt đầu hoặc kết thúc bằng dấu chấm',
-      emailDomainFormat: 'Tên miền email không hợp lệ',
-      emailInvalid: 'Vui lòng nhập email hợp lệ (ví dụ: user@domain.com)',
+      emailRequired: 'Email is required',
+      emailLength: 'Email must not exceed 100 characters',
+      emailNoSpaces: 'Email must not contain whitespace',
+      emailAtSymbol: 'Email must contain exactly one @ symbol',
+      emailLocalPartLength: 'The part before @ must not exceed 64 characters',
+      emailConsecutiveDots: 'Email must not contain consecutive dots',
+      emailDotPosition: 'Email must not start or end with a dot',
+      emailDomainFormat: 'Email domain format is invalid',
+      emailInvalid: 'Please enter a valid email (e.g. user@domain.com)',
     };
     errors.email = t?.(`validation.${emailViolationKey}`) || fallbackMessages[emailViolationKey] || fallbackMessages.emailInvalid;
   }
@@ -267,14 +268,14 @@ export const submitForgotPasswordRequest = async (email) => {
       setTimeout(() => {
         resolve({
           success: true,
-          message: 'Email xác nhận được gửi. Vui lòng kiểm tra hộp thư của bạn.'
+          message: i18n.t('auth.otpSent')
         });
       }, 1000);
     });
   } catch (error) {
     throw {
       success: false,
-      message: error.response?.data?.message || 'Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.'
+      message: error.response?.data?.message || i18n.t('error.unknown')
     };
   }
 };

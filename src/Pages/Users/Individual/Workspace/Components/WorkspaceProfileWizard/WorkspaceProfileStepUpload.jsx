@@ -12,129 +12,63 @@ import {
 import { cn } from '@/lib/utils';
 import { evaluateMaterialFit } from './mockProfileWizardData';
 
-function translateOrFallback(t, key, fallback) {
-  const translated = t(key);
-  return translated === key ? fallback : translated;
-}
-
-function createCopy(t, language) {
-  const isEnglish = language === 'en';
-
+function createCopy(t) {
   return {
-    title: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.title',
-      isEnglish ? 'Upload materials and review their fit' : 'Tải tài liệu và kiểm tra độ phù hợp'
+    title: t('workspaceProfileStepUpload.title', 'Upload materials and review their fit'),
+    description: t(
+      'workspaceProfileStepUpload.description',
+      'Upload the materials you want to study. The UI will review how closely each document matches your knowledge, domain, level, goals, strengths, weaknesses, and exam setup.'
     ),
-    description: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.description',
-      isEnglish
-        ? 'Upload the materials you want to study. The UI will review how closely each document matches your knowledge, domain, level, goals, strengths, weaknesses, and exam setup.'
-        : 'Tải những tài liệu bạn sẽ dùng trong workspace. Giao diện sẽ đối chiếu từng tài liệu với knowledge, lĩnh vực, trình độ, mục tiêu, điểm mạnh, điểm yếu và kỳ thi bạn đã chọn.'
+    contextTitle: t('workspaceProfileStepUpload.contextTitle', 'Current profile context'),
+    contextDescription: t(
+      'workspaceProfileStepUpload.contextDescription',
+      'These are the signals used to review whether a material belongs in this workspace.'
     ),
-    contextTitle: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.contextTitle',
-      isEnglish ? 'Current profile context' : 'Ngữ cảnh hồ sơ cá nhân'
+    dropTitle: t('workspaceProfileStepUpload.dropTitle', 'Drop files here or browse from your device'),
+    dropDescription: t(
+      'workspaceProfileStepUpload.dropDescription',
+      'You can upload PDF, DOCX, PPTX, XLSX, TXT, image, audio, or video files.'
     ),
-    contextDescription: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.contextDescription',
-      isEnglish ? 'These are the signals used to review whether a material belongs in this workspace.' : 'Đây là các tín hiệu được dùng để kiểm tra tài liệu có thực sự khớp với workspace này hay không.'
+    browse: t('workspaceProfileStepUpload.browse', 'Choose materials'),
+    queueTitle: t('workspaceProfileStepUpload.queueTitle', 'Ready to upload'),
+    queueEmpty: t('workspaceProfileStepUpload.queueEmpty', 'No files selected yet.'),
+    reviewTitle: t('workspaceProfileStepUpload.reviewTitle', 'Material-fit review'),
+    reviewDescription: t(
+      'workspaceProfileStepUpload.reviewDescription',
+      'Each row explains why a document matches or does not match the profile above.'
     ),
-    dropTitle: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.dropTitle',
-      isEnglish ? 'Drop files here or browse from your device' : 'Kéo thả tài liệu vào đây hoặc chọn từ thiết bị'
+    statusTitle: t('workspaceProfileStepUpload.statusTitle', 'Validation and upload status'),
+    statusDescription: t(
+      'workspaceProfileStepUpload.statusDescription',
+      'Only materials that pass the profile check will be added to the workspace and unlock step 4.'
     ),
-    dropDescription: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.dropDescription',
-      isEnglish ? 'You can upload PDF, DOCX, PPTX, XLSX, TXT, image, audio, or video files.' : 'Bạn có thể tải lên PDF, DOCX, PPTX, XLSX, TXT, ảnh, âm thanh hoặc video.'
+    summaryValid: t('workspaceProfileStepUpload.summaryValid', 'Valid in workspace'),
+    summaryReady: t('workspaceProfileStepUpload.summaryReady', 'Ready to upload'),
+    summaryReplace: t('workspaceProfileStepUpload.summaryReplace', 'Needs replacement'),
+    emptyTitle: t('workspaceProfileStepUpload.emptyTitle', 'Upload at least one material to continue'),
+    emptyDescription: t(
+      'workspaceProfileStepUpload.emptyDescription',
+      'The next step only makes sense when the workspace already has materials to study from.'
     ),
-    browse: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.browse',
-      isEnglish ? 'Choose materials' : 'Chọn tài liệu'
-    ),
-    queueTitle: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.queueTitle',
-      isEnglish ? 'Ready to upload' : 'Tệp sẵn sàng tải lên'
-    ),
-    queueEmpty: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.queueEmpty',
-      isEnglish ? 'No files selected yet.' : 'Bạn chưa chọn tệp nào.'
-    ),
-    reviewTitle: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.reviewTitle',
-      isEnglish ? 'Material-fit review' : 'Đánh giá mức độ phù hợp của tài liệu'
-    ),
-    reviewDescription: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.reviewDescription',
-      isEnglish ? 'Each row explains why a document matches or does not match the profile above.' : 'Mỗi dòng sẽ giải thích vì sao tài liệu khớp hoặc chưa khớp với hồ sơ ở trên.'
-    ),
-    statusTitle: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.statusTitle',
-      isEnglish ? 'Validation and upload status' : 'Trạng thái kiểm tra và tải tài liệu'
-    ),
-    statusDescription: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.statusDescription',
-      isEnglish ? 'Only materials that pass the profile check will be added to the workspace and unlock step 4.' : 'Chỉ các tài liệu vượt qua bước kiểm tra hồ sơ mới được thêm vào workspace và mở bước 4.'
-    ),
-    summaryValid: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.summaryValid',
-      isEnglish ? 'Valid in workspace' : 'Đã hợp lệ trong workspace'
-    ),
-    summaryReady: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.summaryReady',
-      isEnglish ? 'Ready to upload' : 'Đạt để tải lên'
-    ),
-    summaryReplace: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.summaryReplace',
-      isEnglish ? 'Needs replacement' : 'Cần thay thế'
-    ),
-    emptyTitle: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.emptyTitle',
-      isEnglish ? 'Upload at least one material to continue' : 'Tải lên ít nhất một tài liệu để tiếp tục'
-    ),
-    emptyDescription: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.emptyDescription',
-      isEnglish ? 'The next step only makes sense when the workspace already has materials to study from.' : 'Bước tiếp theo chỉ có ý nghĩa khi workspace đã có tài liệu để hệ thống bám vào.'
-    ),
-    fileInputAria: translateOrFallback(
-      t,
-      'workspace.profileConfig.stepUpload.fileInputAria',
-      isEnglish ? 'Choose materials to upload' : 'Chọn tài liệu để tải lên'
-    ),
-    pendingBadge: isEnglish ? 'Pending upload' : 'Chờ tải lên',
-    uploadedBadge: isEnglish ? 'Uploaded' : 'Đã có trong workspace',
+    fileInputAria: t('workspaceProfileStepUpload.fileInputAria', 'Choose materials to upload'),
+    pendingBadge: t('workspaceProfileStepUpload.pendingBadge', 'Pending upload'),
+    uploadedBadge: t('workspaceProfileStepUpload.uploadedBadge', 'Uploaded'),
+    awaitingValidation: t('workspaceProfileStepUpload.awaitingValidation', 'Awaiting validation'),
     tone: {
-      strong: isEnglish ? 'Strong match' : 'Khớp tốt',
-      partial: isEnglish ? 'Partial match' : 'Khớp một phần',
-      weak: isEnglish ? 'Needs review' : 'Cần xem lại',
-      processing: isEnglish ? 'Processing' : 'Đang xử lý',
-      critical: isEnglish ? 'Flagged' : 'Có cảnh báo',
+      strong: t('workspaceProfileStepUpload.tone.strong', 'Strong match'),
+      partial: t('workspaceProfileStepUpload.tone.partial', 'Partial match'),
+      weak: t('workspaceProfileStepUpload.tone.weak', 'Needs review'),
+      processing: t('workspaceProfileStepUpload.tone.processing', 'Processing'),
+      critical: t('workspaceProfileStepUpload.tone.critical', 'Flagged'),
     },
     labels: {
-      knowledge: translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeInput', isEnglish ? 'Knowledge' : 'Kiến thức'),
-      domain: translateOrFallback(t, 'workspace.profileConfig.fields.primaryDomain', isEnglish ? 'Domain' : 'Lĩnh vực'),
-      level: translateOrFallback(t, 'workspace.profileConfig.fields.currentLevel', isEnglish ? 'Current level' : 'Trình độ hiện tại'),
-      goal: translateOrFallback(t, 'workspace.profileConfig.fields.learningGoal', isEnglish ? 'Goal' : 'Mục tiêu'),
-      weakAreas: translateOrFallback(t, 'workspace.profileConfig.fields.weakAreas', isEnglish ? 'Weakness' : 'Điểm yếu'),
-      strongAreas: translateOrFallback(t, 'workspace.profileConfig.fields.strongAreas', isEnglish ? 'Strength' : 'Điểm mạnh'),
-      exam: isEnglish ? 'Exam' : 'Kỳ thi',
+      knowledge: t('workspaceProfileStepUpload.labels.knowledge', 'Knowledge'),
+      domain: t('workspaceProfileStepUpload.labels.domain', 'Domain'),
+      level: t('workspaceProfileStepUpload.labels.level', 'Current level'),
+      goal: t('workspaceProfileStepUpload.labels.goal', 'Goal'),
+      weakAreas: t('workspaceProfileStepUpload.labels.weakAreas', 'Weakness'),
+      strongAreas: t('workspaceProfileStepUpload.labels.strongAreas', 'Strength'),
+      exam: t('workspaceProfileStepUpload.labels.exam', 'Exam'),
     },
   };
 }
@@ -186,47 +120,67 @@ function toneStyles(tone, isDarkMode) {
   return toneMap[tone] || toneMap.weak;
 }
 
-function buildMaterialSummary(report, copy, isEnglish) {
+function buildMaterialSummary(report, copy, t) {
   const labels = report.matchedContexts.map((item) => copy.labels[item.key]).filter(Boolean);
   const backendReason = report.backendReason;
 
   if (report.isPendingUpload) {
-    return isEnglish
-      ? 'This file is still waiting to be checked and uploaded. It will only be added to the workspace if it matches the current learning profile.'
-      : 'Tệp này vẫn đang chờ được kiểm tra và tải lên. Hệ thống chỉ thêm vào workspace nếu nó khớp với hồ sơ học tập hiện tại.';
+    return t(
+      'workspaceProfileStepUpload.summary.pending',
+      'This file is still waiting to be checked and uploaded. It will only be added to the workspace if it matches the current learning profile.'
+    );
   }
 
   if (report.tone === 'processing') {
-    return isEnglish
-      ? 'The material has been uploaded and is waiting for deeper processing. The fit preview below is based on the profile signals currently available.'
-      : 'Tài liệu đã được tải lên và đang chờ xử lý sâu hơn. Phần đánh giá bên dưới đang bám theo các tín hiệu hồ sơ hiện có.';
+    return t(
+      'workspaceProfileStepUpload.summary.processing',
+      'The material has been uploaded and is waiting for deeper processing. The fit preview below is based on the profile signals currently available.'
+    );
   }
 
   if (report.tone === 'critical') {
-    const baseText = isEnglish
-      ? 'This material already has a warning from the system or does not yet show a clear connection to the workspace profile.'
-      : 'Tài liệu này đang có cảnh báo từ hệ thống hoặc chưa cho thấy liên hệ rõ ràng với hồ sơ của workspace.';
+    const baseText = t(
+      'workspaceProfileStepUpload.summary.criticalBase',
+      'This material already has a warning from the system or does not yet show a clear connection to the workspace profile.'
+    );
     if (backendReason) {
-      return `${baseText} ${isEnglish ? 'Reason:' : 'Lý do:'} ${backendReason}`;
+      const reasonPrefix = t('workspaceProfileStepUpload.summary.reasonPrefix', 'Reason:');
+      return `${baseText} ${reasonPrefix} ${backendReason}`;
     }
     return baseText;
   }
 
   if (labels.length === 0) {
-    return isEnglish
-      ? 'The file name does not yet show a clear connection to your knowledge, domain, level, or learning target.'
-      : 'Tên tài liệu hiện chưa cho thấy liên hệ rõ với kiến thức, lĩnh vực, trình độ hoặc mục tiêu học tập của bạn.';
+    return t(
+      'workspaceProfileStepUpload.summary.noConnection',
+      'The file name does not yet show a clear connection to your knowledge, domain, level, or learning target.'
+    );
   }
+
+  const joinedLabels = labels.join(', ');
 
   if (report.tone === 'strong') {
-    return isEnglish
-      ? `This material stays closely connected to ${labels.join(', ')}, so it fits the current workspace well.`
-      : `Tài liệu này bám khá sát ${labels.join(', ')}, nên phù hợp để đưa vào workspace hiện tại.`;
+    return t(
+      'workspaceProfileStepUpload.summary.strongMatch',
+      'This material stays closely connected to {{labels}}, so it fits the current workspace well.',
+      { labels: joinedLabels }
+    );
   }
 
-  return isEnglish
-    ? `This material already connects to ${labels.join(', ')}, but you should still review the content quality after upload.${backendReason ? ` Reason: ${backendReason}` : ''}`
-    : `Tài liệu này đã có liên hệ với ${labels.join(', ')}, nhưng bạn nên kiểm tra lại nội dung sau khi tải lên.${backendReason ? ` Lý do: ${backendReason}` : ''}`;
+  const partialText = t(
+    'workspaceProfileStepUpload.summary.partialMatch',
+    'This material already connects to {{labels}}, but you should still review the content quality after upload.',
+    { labels: joinedLabels }
+  );
+  if (backendReason) {
+    const reasonSuffix = t(
+      'workspaceProfileStepUpload.summary.reasonSuffix',
+      ' Reason: {{reason}}',
+      { reason: backendReason }
+    );
+    return `${partialText}${reasonSuffix}`;
+  }
+  return partialText;
 }
 
 function WorkspaceProfileStepUpload({
@@ -251,8 +205,7 @@ function WorkspaceProfileStepUpload({
 }) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
-  const copy = createCopy(t, language);
-  const isEnglish = language === 'en';
+  const copy = createCopy(t);
   const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
   const surfaceClass = isDarkMode
     ? 'border-white/10 bg-white/[0.04] text-white'
@@ -399,16 +352,20 @@ function WorkspaceProfileStepUpload({
                 {uploadCheckMessage
                   || (pendingFiles.length > 0
                     ? (uploadablePendingCount > 0
-                      ? (isEnglish
-                        ? `${uploadablePendingCount} selected file(s) passed the first check and can be uploaded.`
-                        : `Có ${uploadablePendingCount} tệp đang chọn đã vượt qua kiểm tra sơ bộ và có thể tải lên.`)
-                      : (isEnglish
-                        ? 'The selected files have not passed the first check yet.'
-                        : 'Các tệp đang chọn chưa vượt qua kiểm tra sơ bộ.'))
+                      ? t(
+                          'workspaceProfileStepUpload.progress.passedFirstCheck',
+                          '{{count}} selected file(s) passed the first check and can be uploaded.',
+                          { count: uploadablePendingCount }
+                        )
+                      : t(
+                          'workspaceProfileStepUpload.progress.notPassedFirstCheck',
+                          'The selected files have not passed the first check yet.'
+                        ))
                     : validUploadedMaterialCount > 0
-                      ? (isEnglish
-                        ? 'The workspace already has valid study materials for the roadmap.'
-                        : 'Workspace hiện đã có tài liệu hợp lệ để đi tiếp với lộ trình.')
+                      ? t(
+                          'workspaceProfileStepUpload.progress.alreadyHasValid',
+                          'The workspace already has valid study materials for the roadmap.'
+                        )
                       : '')}
               </p>
               {uploadCheckState === 'checking' || uploadCheckState === 'uploading' || uploadCheckState === 'processing' ? (
@@ -603,7 +560,7 @@ function WorkspaceProfileStepUpload({
                                   : isDarkMode ? 'bg-amber-950/70 text-amber-200' : 'bg-amber-100 text-amber-700'
                         )}
                       >
-                        {report.isPendingUpload ? (isEnglish ? 'Awaiting validation' : 'Chờ kiểm tra') : copy.tone[report.tone]}
+                        {report.isPendingUpload ? copy.awaitingValidation : copy.tone[report.tone]}
                       </span>
                       <span
                         className={cn(
@@ -614,7 +571,7 @@ function WorkspaceProfileStepUpload({
                         {item.isPendingUpload ? copy.pendingBadge : copy.uploadedBadge}
                       </span>
                     </div>
-                    <p className={cn('mt-2 text-sm leading-6', mutedClass)}>{buildMaterialSummary(report, copy, isEnglish)}</p>
+                    <p className={cn('mt-2 text-sm leading-6', mutedClass)}>{buildMaterialSummary(report, copy, t)}</p>
                   </div>
                   {report.tone === 'strong' ? (
                     <CheckCircle2 className={cn('mt-0.5 h-5 w-5 shrink-0', isDarkMode ? 'text-emerald-300' : 'text-emerald-600')} />

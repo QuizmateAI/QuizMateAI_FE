@@ -11,9 +11,11 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Send, Trash2, Loader2, Info, Lock, CheckCircle2, X, Smile, Camera, ImageIcon, Sparkles,
 } from 'lucide-react';
+import i18n from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
 import { getUserDisplayParts } from '@/Utils/userProfile';
@@ -31,9 +33,9 @@ const GUIDE_DISMISSED_KEY = 'qm_q_discussion_guide_dismissed';
 function relativeTime(iso) {
   if (!iso) return '';
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return 'vừa xong';
-  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  if (diff < 60) return i18n.t('questionDiscussion.shared.relativeTime.justNow', 'just now');
+  if (diff < 3600) return i18n.t('questionDiscussion.shared.relativeTime.minutesAgo', '{{count}} minutes ago', { count: Math.floor(diff / 60) });
+  if (diff < 86400) return i18n.t('questionDiscussion.shared.relativeTime.hoursAgo', '{{count}} hours ago', { count: Math.floor(diff / 3600) });
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
@@ -84,6 +86,7 @@ function UserAvatar({ src, name, role, userId, sizeClass = 'w-6 h-6', textClass 
 // ─── Guideline card ───────────────────────────────────────────────────────────
 
 function GuidelineCard({ isDarkMode, onDismiss }) {
+  const { t } = useTranslation();
   return (
     <div className={cn(
       'rounded-xl border p-3 mb-3',
@@ -95,7 +98,7 @@ function GuidelineCard({ isDarkMode, onDismiss }) {
         <div className="flex items-center gap-1.5">
           <Info className={cn('w-3.5 h-3.5 shrink-0', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
           <span className={cn('text-xs font-semibold', isDarkMode ? 'text-blue-300' : 'text-blue-700')}>
-            Hướng dẫn thảo luận câu hỏi
+            {t('questionDiscussion.inline.guide.title', 'Question discussion guide')}
           </span>
         </div>
         <button
@@ -105,7 +108,7 @@ function GuidelineCard({ isDarkMode, onDismiss }) {
             'p-0.5 rounded transition-colors shrink-0',
             isDarkMode ? 'text-blue-500 hover:text-blue-300 hover:bg-blue-900/40' : 'text-blue-400 hover:text-blue-600 hover:bg-blue-100',
           )}
-          title="Đóng hướng dẫn"
+          title={t('questionDiscussion.inline.guide.dismissTitle', 'Dismiss guide')}
         >
           <X className="w-3 h-3" />
         </button>
@@ -113,19 +116,27 @@ function GuidelineCard({ isDarkMode, onDismiss }) {
       <ul className={cn('space-y-1.5 text-[11px] leading-relaxed', isDarkMode ? 'text-blue-300/80' : 'text-blue-700/80')}>
         <li className="flex items-start gap-2">
           <span className={cn('mt-0.5 shrink-0 w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold', isDarkMode ? 'bg-blue-800/60' : 'bg-blue-200')}>↵</span>
-          <span><strong>Enter</strong> để gửi bình luận nhanh</span>
+          <span
+            dangerouslySetInnerHTML={{
+              __html: t('questionDiscussion.inline.guide.enterToSend', '<strong>Enter</strong> to send a quick comment'),
+            }}
+          />
         </li>
         <li className="flex items-start gap-2">
           <span className={cn('mt-0.5 shrink-0 w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold', isDarkMode ? 'bg-blue-800/60' : 'bg-blue-200')}>⇧</span>
-          <span><strong>Shift + Enter</strong> để xuống hàng</span>
+          <span
+            dangerouslySetInnerHTML={{
+              __html: t('questionDiscussion.inline.guide.shiftEnterNewLine', '<strong>Shift + Enter</strong> to start a new line'),
+            }}
+          />
         </li>
         <li className="flex items-start gap-2">
           <span className={cn('mt-0.5 shrink-0 w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold', isDarkMode ? 'bg-blue-800/60' : 'bg-blue-200')}>💡</span>
-          <span>Thảo luận về đáp án, cách giải, hoặc điểm chưa rõ của câu hỏi này</span>
+          <span>{t('questionDiscussion.inline.guide.discussTopic', 'Discuss the answers, solutions, or anything unclear about this question')}</span>
         </li>
         <li className="flex items-start gap-2">
           <span className={cn('mt-0.5 shrink-0 w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold', isDarkMode ? 'bg-blue-800/60' : 'bg-blue-200')}>🗑</span>
-          <span>Hover vào bình luận để xóa (chỉ bình luận của bạn)</span>
+          <span>{t('questionDiscussion.inline.guide.hoverToDelete', 'Hover over a comment to delete it (your comments only)')}</span>
         </li>
       </ul>
     </div>
@@ -135,6 +146,7 @@ function GuidelineCard({ isDarkMode, onDismiss }) {
 // ─── Locked state ─────────────────────────────────────────────────────────────
 
 function LockedState({ isDarkMode }) {
+  const { t } = useTranslation();
   return (
     <div className={cn(
       'rounded-xl border px-4 py-5 flex items-center gap-3',
@@ -148,10 +160,10 @@ function LockedState({ isDarkMode }) {
       </div>
       <div>
         <p className={cn('text-xs font-medium', isDarkMode ? 'text-slate-300' : 'text-gray-600')}>
-          Hoàn thành quiz để tham gia thảo luận
+          {t('questionDiscussion.inline.locked.title', 'Complete the quiz to join the discussion')}
         </p>
         <p className={cn('text-[11px] mt-0.5', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
-          Làm bài trước để trao đổi với các thành viên về câu hỏi này.
+          {t('questionDiscussion.inline.locked.subtitle', 'Finish the quiz first so you can exchange ideas with other members about this question.')}
         </p>
       </div>
     </div>
@@ -161,12 +173,13 @@ function LockedState({ isDarkMode }) {
 // ─── Message row ──────────────────────────────────────────────────────────────
 
 function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
+  const { t } = useTranslation();
   const [pending, setPending] = useState(false);
   const timer = useRef(null);
   const authorDisplay = getUserDisplayParts({
     fullName: msg.authorName,
     username: msg.authorUserName,
-  }, msg.authorName || 'Người dùng');
+  }, msg.authorName || t('questionDiscussion.shared.userFallback', 'User'));
 
   const handleDeleteClick = () => {
     if (pending) {
@@ -210,7 +223,7 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
               'text-[9px] font-semibold px-1.5 py-0.5 rounded-full',
               isDarkMode ? 'bg-blue-900/60 text-blue-300' : 'bg-blue-100 text-blue-700',
             )}>
-              Leader
+              {t('questionDiscussion.shared.roles.leader', 'Leader')}
             </span>
           )}
           {msg.authorRole === 'CONTRIBUTOR' && (
@@ -218,7 +231,7 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
               'text-[9px] font-semibold px-1.5 py-0.5 rounded-full',
               isDarkMode ? 'bg-violet-900/60 text-violet-300' : 'bg-violet-100 text-violet-700',
             )}>
-              Contributor
+              {t('questionDiscussion.shared.roles.contributor', 'Contributor')}
             </span>
           )}
           <span className={cn('text-[10px]', isDarkMode ? 'text-slate-600' : 'text-gray-400')}>
@@ -243,7 +256,7 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
               className="flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
             >
               <Trash2 className="w-2.5 h-2.5" />
-              Xóa
+              {t('questionDiscussion.shared.delete', 'Delete')}
             </button>
           ) : (
             <button
@@ -254,7 +267,7 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
                   ? 'text-slate-600 hover:text-red-400 hover:bg-red-950/30'
                   : 'text-gray-300 hover:text-red-400 hover:bg-red-50',
               )}
-              title="Xóa bình luận"
+              title={t('questionDiscussion.shared.deleteCommentTitle', 'Delete comment')}
             >
               <Trash2 className="w-3 h-3" />
             </button>
@@ -289,6 +302,7 @@ export default function QuestionInlineDiscussion({
   hideGuide = false,
   onMessagesChange,
 }) {
+  const { t } = useTranslation();
   const { profile } = useUserProfile();
 
   const [messages, setMessages] = useState([]);
@@ -303,13 +317,14 @@ export default function QuestionInlineDiscussion({
   const textareaRef = useRef(null);
   const onMessagesChangeRef = useRef(onMessagesChange);
   const currentUserId = profile?.userId ?? profile?.id ?? 0;
-  const composerDisplayName = String(profile?.fullName ?? profile?.name ?? 'bạn').trim() || 'bạn';
+  const composerNameFallback = t('questionDiscussion.shared.composerNameFallback', 'you');
+  const composerDisplayName = String(profile?.fullName ?? profile?.name ?? composerNameFallback).trim() || composerNameFallback;
   const composerTools = [
-    { key: 'emoji', icon: Smile, label: 'Biểu cảm' },
-    { key: 'camera', icon: Camera, label: 'Máy ảnh' },
-    { key: 'image', icon: ImageIcon, label: 'Ảnh' },
+    { key: 'emoji', icon: Smile, label: t('questionDiscussion.inline.composerTools.emoji', 'Emoji') },
+    { key: 'camera', icon: Camera, label: t('questionDiscussion.inline.composerTools.camera', 'Camera') },
+    { key: 'image', icon: ImageIcon, label: t('questionDiscussion.inline.composerTools.image', 'Image') },
     { key: 'gif', label: 'GIF', textOnly: true },
-    { key: 'sticker', icon: Sparkles, label: 'Sticker' },
+    { key: 'sticker', icon: Sparkles, label: t('questionDiscussion.inline.composerTools.sticker', 'Sticker') },
   ];
   const shouldShowMessageArea = loading || messages.length > 0 || !inDialog;
 
@@ -357,7 +372,7 @@ export default function QuestionInlineDiscussion({
     if (!body || posting || !canAccess) return;
 
     const authorId = profile?.userId ?? profile?.id ?? 0;
-    const authorName = profile?.fullName ?? profile?.name ?? 'Người dùng';
+    const authorName = profile?.fullName ?? profile?.name ?? t('questionDiscussion.shared.userFallback', 'User');
     const authorRole = isLeader ? 'LEADER' : 'MEMBER';
 
     setPosting(true);
@@ -377,7 +392,7 @@ export default function QuestionInlineDiscussion({
     } finally {
       setPosting(false);
     }
-  }, [draft, posting, canAccess, profile, isLeader, workspaceId, quizId, questionId]);
+  }, [draft, posting, canAccess, profile, isLeader, workspaceId, quizId, questionId, t]);
 
   // ── Delete
   const handleDelete = useCallback(async (messageId) => {
@@ -428,7 +443,7 @@ export default function QuestionInlineDiscussion({
           <div className="flex items-center gap-1.5">
             <div className={cn('w-1.5 h-1.5 rounded-full', isDarkMode ? 'bg-blue-400' : 'bg-blue-500')} />
             <span className={cn('text-[11px] font-semibold', isDarkMode ? 'text-blue-300' : 'text-blue-600')}>
-              Thảo luận câu {questionIndex}
+              {t('questionDiscussion.shared.threadTitle', 'Discussion for question {{index}}', { index: questionIndex })}
             </span>
             {messages.length > 0 && (
               <span className={cn(
@@ -443,7 +458,7 @@ export default function QuestionInlineDiscussion({
             <div className="flex items-center gap-1">
               <CheckCircle2 className={cn('w-3 h-3', isDarkMode ? 'text-emerald-400' : 'text-emerald-500')} />
               <span className={cn('text-[10px]', isDarkMode ? 'text-emerald-400' : 'text-emerald-600')}>
-                Đã làm bài
+                {t('questionDiscussion.inline.attempted', 'Attempted')}
               </span>
             </div>
           )}
@@ -485,7 +500,7 @@ export default function QuestionInlineDiscussion({
                     <Send className="h-4 w-4" />
                   </div>
                   <p className={cn('text-[11px] italic', isDarkMode ? 'text-slate-500' : 'text-gray-500')}>
-                    Chưa có bình luận nào. Mở đầu cuộc thảo luận cho câu này.
+                    {t('questionDiscussion.shared.emptyState', 'No comments yet. Start the discussion for this question.')}
                   </p>
                 </div>
               ) : (
@@ -534,7 +549,7 @@ export default function QuestionInlineDiscussion({
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
               onInput={handleInput}
-              placeholder={`Bình luận dưới tên ${composerDisplayName}`}
+              placeholder={t('questionDiscussion.shared.composerPlaceholder', 'Comment as {{name}}', { name: composerDisplayName })}
               rows={1}
               className={cn(
                 'w-full resize-none bg-transparent text-sm leading-6 outline-none min-h-[28px] max-h-24',
@@ -582,7 +597,7 @@ export default function QuestionInlineDiscussion({
                       ? 'bg-slate-700/70 text-slate-500 cursor-not-allowed'
                       : 'bg-slate-300/70 text-slate-500 cursor-not-allowed',
                 )}
-                title="Gửi (Enter)"
+                title={t('questionDiscussion.shared.sendTitle', 'Send (Enter)')}
               >
                 {posting
                   ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -596,7 +611,7 @@ export default function QuestionInlineDiscussion({
         {/* Shortcut hint */}
         {!inDialog && (
           <p className={cn('mt-1.5 text-right text-[10px]', isDarkMode ? 'text-slate-700' : 'text-gray-300')}>
-            Enter gửi · Shift+Enter xuống hàng
+            {t('questionDiscussion.inline.footerShortcut', 'Enter to send · Shift+Enter for new line')}
           </p>
         )}
       </div>

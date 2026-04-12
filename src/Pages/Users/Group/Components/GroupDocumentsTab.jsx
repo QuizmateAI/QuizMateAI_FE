@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   Ban,
@@ -17,6 +18,7 @@ import {
   XCircle,
 } from 'lucide-react';
 
+import i18n from '@/i18n';
 import GroupPendingReviewPanel from '@/Pages/Users/Group/Group_leader/GroupPendingReviewPanel';
 import SourceDetailView from './SourceDetailView';
 
@@ -28,9 +30,10 @@ function normalizeStatus(status) {
 }
 
 function formatDateTime(value, lang = 'vi') {
-  if (!value) return lang === 'en' ? 'No date' : 'Chưa cập nhật';
+  const noDateLabel = i18n.t('groupDocumentsTab.noDate', 'No date');
+  if (!value) return noDateLabel;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return lang === 'en' ? 'No date' : 'Chưa cập nhật';
+  if (Number.isNaN(date.getTime())) return noDateLabel;
   return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -40,17 +43,17 @@ function formatDateTime(value, lang = 'vi') {
   }).format(date);
 }
 
-function formatMaterialType(type, lang = 'vi') {
+function formatMaterialType(type) {
   const normalized = String(type || '').toLowerCase();
-  if (!normalized) return lang === 'en' ? 'File' : 'Tệp';
+  if (!normalized) return i18n.t('groupDocumentsTab.fileType', 'File');
   if (normalized.includes('pdf')) return 'PDF';
   if (normalized.includes('wordprocessingml') || normalized.includes('msword') || normalized.includes('doc')) return 'DOCX';
   if (normalized.includes('spreadsheetml') || normalized.includes('excel') || normalized.includes('xls')) return 'XLSX';
   if (normalized.includes('presentationml') || normalized.includes('powerpoint') || normalized.includes('ppt')) return 'PPTX';
-  if (normalized.includes('image')) return lang === 'en' ? 'Image' : 'Hình ảnh';
-  if (normalized.includes('video')) return lang === 'en' ? 'Video' : 'Video';
+  if (normalized.includes('image')) return i18n.t('groupDocumentsTab.imageLabel', 'Image');
+  if (normalized.includes('video')) return i18n.t('groupDocumentsTab.videoLabel', 'Video');
   if (normalized === 'url') return 'URL';
-  if (normalized.includes('audio')) return lang === 'en' ? 'Audio' : 'Âm thanh';
+  if (normalized.includes('audio')) return i18n.t('groupDocumentsTab.audioLabel', 'Audio');
   if (normalized.includes('text')) return 'TXT';
   return normalized.toUpperCase();
 }
@@ -138,12 +141,12 @@ function renderBusySlot(isBusy) {
   );
 }
 
-function getStatusMeta(status, isDarkMode, currentLang) {
+function getStatusMeta(status, isDarkMode) {
   const normalized = normalizeStatus(status);
 
   if (['UPLOADING', 'PROCESSING', 'PENDING', 'QUEUED'].includes(normalized)) {
     return {
-      label: currentLang === 'en' ? 'AI checking' : 'AI đang kiểm tra',
+      label: i18n.t('groupDocumentsTab.statusAiChecking', 'AI checking'),
       badgeClassName: isDarkMode
         ? 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100'
         : 'border-cyan-200 bg-cyan-50 text-cyan-700',
@@ -154,7 +157,7 @@ function getStatusMeta(status, isDarkMode, currentLang) {
 
   if (normalized === 'ACTIVE') {
     return {
-      label: currentLang === 'en' ? 'Shared' : 'Đang dùng chung',
+      label: i18n.t('groupDocumentsTab.statusShared', 'Shared'),
       badgeClassName: isDarkMode
         ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100'
         : 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -165,7 +168,7 @@ function getStatusMeta(status, isDarkMode, currentLang) {
 
   if (normalized === 'WARN') {
     return {
-      label: currentLang === 'en' ? 'Warning' : 'Warning',
+      label: i18n.t('groupDocumentsTab.statusWarning', 'Warning'),
       badgeClassName: isDarkMode
         ? 'border-amber-400/20 bg-amber-400/10 text-amber-100'
         : 'border-amber-200 bg-amber-50 text-amber-700',
@@ -176,7 +179,7 @@ function getStatusMeta(status, isDarkMode, currentLang) {
 
   if (normalized === 'ERROR') {
     return {
-      label: currentLang === 'en' ? 'Failed' : 'Thất bại',
+      label: i18n.t('groupDocumentsTab.statusFailed', 'Failed'),
       badgeClassName: isDarkMode
         ? 'border-rose-400/20 bg-rose-400/10 text-rose-100'
         : 'border-rose-200 bg-rose-50 text-rose-700',
@@ -187,7 +190,7 @@ function getStatusMeta(status, isDarkMode, currentLang) {
 
   if (normalized === 'REJECT') {
     return {
-      label: currentLang === 'en' ? 'Rejected' : 'Bị từ chối',
+      label: i18n.t('groupDocumentsTab.statusRejected', 'Rejected'),
       badgeClassName: isDarkMode
         ? 'border-rose-400/20 bg-rose-400/10 text-rose-100'
         : 'border-rose-200 bg-rose-50 text-rose-700',
@@ -197,7 +200,7 @@ function getStatusMeta(status, isDarkMode, currentLang) {
   }
 
   return {
-    label: currentLang === 'en' ? 'Pending' : 'Đang chờ',
+    label: i18n.t('groupDocumentsTab.statusPending', 'Pending'),
     badgeClassName: isDarkMode
       ? 'border-white/10 bg-white/[0.05] text-slate-200'
       : 'border-slate-200 bg-slate-50 text-slate-700',
@@ -242,6 +245,7 @@ export default function GroupDocumentsTab({
   onReject,
   onDeleteSource,
 }) {
+  const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState('');
   const [sharedFilter, setSharedFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('documents');
@@ -288,11 +292,11 @@ export default function GroupDocumentsTab({
   }, [searchValue, sharedFilter, sharedMaterials]);
 
   const filterOptions = [
-    { key: 'all', label: currentLang === 'en' ? 'All' : 'Tất cả' },
-    { key: 'shared', label: currentLang === 'en' ? 'Shared' : 'Đang dùng' },
-    { key: 'warning', label: 'Warning' },
-    { key: 'processing', label: currentLang === 'en' ? 'Processing' : 'Đang xử lý' },
-    { key: 'issues', label: currentLang === 'en' ? 'Issues' : 'Lỗi / từ chối' },
+    { key: 'all', label: t('groupDocumentsTab.filterAll', 'All') },
+    { key: 'shared', label: t('groupDocumentsTab.filterShared', 'Shared') },
+    { key: 'warning', label: t('groupDocumentsTab.statusWarning', 'Warning') },
+    { key: 'processing', label: t('groupDocumentsTab.filterProcessing', 'Processing') },
+    { key: 'issues', label: t('groupDocumentsTab.filterIssues', 'Issues') },
   ];
   const pendingTabCount = reviewQueueItems.length;
 
@@ -310,10 +314,11 @@ export default function GroupDocumentsTab({
     const materialId = Number(material?.materialId ?? material?.id ?? 0);
     if (!Number.isInteger(materialId) || materialId <= 0 || typeof onDeleteSource !== 'function') return;
 
+    const fallbackTitle = t('groupDocumentsTab.confirmDeleteFallbackTitle', 'this material');
     const confirmed = globalThis.confirm?.(
-      currentLang === 'en'
-        ? `Delete "${material?.title || material?.name || 'this material'}" from the group workspace?`
-        : `Xóa "${material?.title || material?.name || 'tài liệu này'}" khỏi group workspace?`,
+      t('groupDocumentsTab.confirmDeleteMaterial', 'Delete "{{title}}" from the group workspace?', {
+        title: material?.title || material?.name || fallbackTitle,
+      }),
     );
 
     if (!confirmed) return;
@@ -359,21 +364,19 @@ export default function GroupDocumentsTab({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}`}>
-                {currentLang === 'en' ? 'Documents hub' : 'Trung tâm tài liệu'}
+                {t('groupDocumentsTab.badgeDocumentsHub', 'Documents hub')}
               </span>
               <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
                 {isLeader
-                  ? (currentLang === 'en' ? 'Leader control' : 'Leader quản lý')
-                  : (currentLang === 'en' ? 'Member requests' : 'Member gửi yêu cầu')}
+                  ? t('groupDocumentsTab.badgeLeaderControl', 'Leader control')
+                  : t('groupDocumentsTab.badgeMemberRequests', 'Member requests')}
               </span>
             </div>
             <h2 className={`mt-3 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {currentLang === 'en' ? 'Manage group learning materials in one place' : 'Quản lý tài liệu học tập của group trong một nơi'}
+              {t('groupDocumentsTab.heroTitle', 'Manage group learning materials in one place')}
             </h2>
             <p className={`mt-2 max-w-3xl text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              {currentLang === 'en'
-                ? 'Upload shared documents, review member requests, and separate warning materials that still need a leader decision.'
-                : 'Tải tài liệu dùng chung, theo dõi yêu cầu member gửi lên, và tách riêng các tài liệu warning vẫn đang chờ leader quyết định.'}
+              {t('groupDocumentsTab.heroSubtitle', 'Upload shared documents, review member requests, and separate warning materials that still need a leader decision.')}
             </p>
           </div>
 
@@ -385,7 +388,7 @@ export default function GroupDocumentsTab({
               className={`inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition ${refreshing ? 'cursor-not-allowed opacity-70' : ''} ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.08]' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
             >
               {renderActionVisual(refreshing, RefreshCw)}
-              {currentLang === 'en' ? 'Refresh' : 'Làm mới'}
+              {t('groupDocumentsTab.refreshButton', 'Refresh')}
             </button>
             <button
               type="button"
@@ -394,7 +397,7 @@ export default function GroupDocumentsTab({
               className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition ${!canUploadSource ? 'cursor-not-allowed opacity-60' : ''} ${isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : 'bg-cyan-600 text-white hover:bg-cyan-700'}`}
             >
               <UploadCloud className="h-4 w-4" />
-              {currentLang === 'en' ? 'Upload materials' : 'Tải tài liệu'}
+              {t('groupDocumentsTab.uploadButton', 'Upload materials')}
             </button>
           </div>
         </div>
@@ -414,7 +417,7 @@ export default function GroupDocumentsTab({
             }`}
           >
             <FolderOpen className="h-4 w-4" />
-            <span>{currentLang === 'en' ? 'Documents' : 'Tài liệu'}</span>
+            <span>{t('groupDocumentsTab.tabDocuments', 'Documents')}</span>
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${activeTab === 'documents'
               ? (isDarkMode ? 'bg-slate-950/15 text-inherit' : 'bg-white/20 text-white')
               : (isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-white text-slate-700')
@@ -435,7 +438,7 @@ export default function GroupDocumentsTab({
             }`}
           >
             <ShieldCheck className="h-4 w-4" />
-            <span>{currentLang === 'en' ? 'Pending review' : 'Chờ duyệt'}</span>
+            <span>{t('groupDocumentsTab.tabPendingReview', 'Pending review')}</span>
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${activeTab === 'pending'
               ? 'bg-black/10 text-inherit'
               : (isDarkMode ? 'bg-white/[0.08] text-slate-100' : 'bg-white text-slate-700')
@@ -465,17 +468,15 @@ export default function GroupDocumentsTab({
               <div className="flex items-center gap-2">
                 <AlertTriangle className={`h-5 w-5 ${isDarkMode ? 'text-amber-100' : 'text-amber-700'}`} />
                 <h3 className={`text-base font-semibold ${isDarkMode ? 'text-amber-50' : 'text-amber-900'}`}>
-                  {currentLang === 'en' ? 'Warning materials waiting for review' : 'Tài liệu warning đang chờ duyệt'}
+                  {t('groupDocumentsTab.warningSectionTitle', 'Warning materials waiting for review')}
                 </h3>
               </div>
               <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-amber-100/85' : 'text-amber-800'}`}>
-                {currentLang === 'en'
-                  ? 'These materials were flagged by AI and should be reviewed first before they enter the shared library.'
-                  : 'Đây là các tài liệu bị AI gắn cờ warning. Nên xử lý trước khi đưa vào thư viện tài liệu chung.'}
+                {t('groupDocumentsTab.warningSectionSubtitle', 'These materials were flagged by AI and should be reviewed first before they enter the shared library.')}
               </p>
             </div>
             <span className={`inline-flex h-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-black/20 text-amber-100' : 'bg-white text-amber-700'}`}>
-              {warningItems.length} {currentLang === 'en' ? 'warning item(s)' : 'mục warning'}
+              {warningItems.length} {t('groupDocumentsTab.warningCountLabel', 'warning item(s)')}
             </span>
           </div>
 
@@ -493,10 +494,10 @@ export default function GroupDocumentsTab({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className={`text-sm font-semibold break-all ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        {item.title || item.name || (currentLang === 'en' ? 'Untitled material' : 'Tài liệu chưa có tên')}
+                        {item.title || item.name || t('groupDocumentsTab.untitledMaterial', 'Untitled material')}
                       </p>
                       <p className={`mt-2 text-xs ${isDarkMode ? 'text-amber-100/80' : 'text-amber-800'}`}>
-                        {item.ownerLabel || (currentLang === 'en' ? 'Submitted to the group review queue' : 'Được gửi vào hàng chờ duyệt của group')}
+                        {item.ownerLabel || t('groupDocumentsTab.submittedToQueue', 'Submitted to the group review queue')}
                       </p>
                       {item.uploadedAt ? (
                         <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -506,7 +507,7 @@ export default function GroupDocumentsTab({
                     </div>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-amber-500/15 text-amber-100' : 'bg-amber-100 text-amber-700'}`}>
                       <AlertTriangle className="h-3.5 w-3.5" />
-                      Warning
+                      {t('groupDocumentsTab.statusWarning', 'Warning')}
                     </span>
                   </div>
 
@@ -518,7 +519,7 @@ export default function GroupDocumentsTab({
 
                   {canOpenDetail ? (
                     <p className={`mt-3 text-xs font-medium ${isDarkMode ? 'text-amber-100' : 'text-amber-700'}`}>
-                      {currentLang === 'en' ? 'Open to inspect the AI moderation details before deciding.' : 'Mở tài liệu để xem chi tiết AI kiểm duyệt trước khi quyết định.'}
+                      {t('groupDocumentsTab.warningOpenHint', 'Open to inspect the AI moderation details before deciding.')}
                     </p>
                   ) : null}
 
@@ -526,7 +527,7 @@ export default function GroupDocumentsTab({
                     <div className="mt-4 space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-                          {currentLang === 'en' ? 'Processing progress' : 'Tiến độ xử lý'}
+                          {t('groupDocumentsTab.processingProgress', 'Processing progress')}
                         </span>
                         <span className={`font-semibold ${isDarkMode ? 'text-amber-100' : 'text-amber-700'}`}>{progress}%</span>
                       </div>
@@ -551,7 +552,7 @@ export default function GroupDocumentsTab({
                         className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${isReviewing ? 'cursor-not-allowed opacity-60' : ''} ${isDarkMode ? 'bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
                       >
                         {renderBusySlot(isReviewing)}
-                        {currentLang === 'en' ? 'Approve warning' : 'Duyệt warning'}
+                        {t('groupDocumentsTab.approveWarning', 'Approve warning')}
                       </button>
                       <button
                         type="button"
@@ -562,7 +563,7 @@ export default function GroupDocumentsTab({
                         disabled={isReviewing}
                         className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${isReviewing ? 'cursor-not-allowed opacity-60' : ''} ${isDarkMode ? 'bg-rose-500/15 text-rose-100 hover:bg-rose-500/25' : 'bg-rose-100 text-rose-700 hover:bg-rose-200'}`}
                       >
-                        {currentLang === 'en' ? 'Reject' : 'Từ chối'}
+                        {t('groupDocumentsTab.reject', 'Reject')}
                       </button>
                     </div>
                   ) : null}
@@ -582,13 +583,11 @@ export default function GroupDocumentsTab({
               <div className="flex items-center gap-2">
                 <FolderOpen className={`h-5 w-5 ${isDarkMode ? 'text-cyan-200' : 'text-cyan-600'}`} />
                 <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {currentLang === 'en' ? 'Shared material library' : 'Thư viện tài liệu chung'}
+                  {t('groupDocumentsTab.librarySectionTitle', 'Shared material library')}
                 </h3>
               </div>
               <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                {currentLang === 'en'
-                  ? 'Track every file already attached to the group workspace and quickly filter by current status.'
-                  : 'Theo dõi toàn bộ tài liệu đã gắn vào group workspace và lọc nhanh theo trạng thái hiện tại.'}
+                {t('groupDocumentsTab.librarySectionSubtitle', 'Track every file already attached to the group workspace and quickly filter by current status.')}
               </p>
             </div>
             <span className={`inline-flex h-fit items-center rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-white/[0.06] text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
@@ -602,7 +601,7 @@ export default function GroupDocumentsTab({
               <input
                 value={searchValue}
                 onChange={(event) => setSearchValue(event.target.value)}
-                placeholder={currentLang === 'en' ? 'Search documents...' : 'Tìm tài liệu...'}
+                placeholder={t('groupDocumentsTab.searchPlaceholder', 'Search documents...')}
                 className={`w-full min-w-[220px] bg-transparent text-sm outline-none ${isDarkMode ? 'text-white placeholder:text-slate-500' : 'text-slate-900 placeholder:text-slate-400'}`}
               />
             </div>
@@ -629,15 +628,13 @@ export default function GroupDocumentsTab({
           <div className="mt-5 space-y-3">
             {filteredSharedMaterials.length === 0 ? (
               <div className={`rounded-[22px] border px-4 py-8 text-sm text-center ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-400' : 'border-slate-200 bg-slate-50/70 text-slate-600'}`}>
-                {currentLang === 'en'
-                  ? 'No shared document matches the current filter.'
-                  : 'Chưa có tài liệu nào khớp với bộ lọc hiện tại.'}
+                {t('groupDocumentsTab.emptyFilteredMaterials', 'No shared document matches the current filter.')}
               </div>
             ) : (
               <div className="grid gap-3 xl:grid-cols-2">
                 {filteredSharedMaterials.map((material, index) => {
                   const Icon = getMaterialIcon(material?.type || material?.materialType);
-                  const meta = getStatusMeta(material?.status, isDarkMode, currentLang);
+                  const meta = getStatusMeta(material?.status, isDarkMode);
                   const StatusIcon = meta.icon;
                   const progress = Math.max(0, Math.min(100, Math.round(Number(material?.progress) || 0)));
                   const deleting = Number(deletingMaterialId) === Number(material?.id ?? material?.materialId);
@@ -661,11 +658,11 @@ export default function GroupDocumentsTab({
                               {meta.label}
                             </span>
                             <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? 'bg-white/[0.05] text-slate-300' : 'bg-white text-slate-600'}`}>
-                              {formatMaterialType(material?.type || material?.materialType, currentLang)}
+                              {formatMaterialType(material?.type || material?.materialType)}
                             </span>
                           </div>
                           <p className={`mt-3 break-all text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                            {material?.title || material?.name || (currentLang === 'en' ? 'Untitled material' : 'Tài liệu chưa có tên')}
+                            {material?.title || material?.name || t('groupDocumentsTab.untitledMaterial', 'Untitled material')}
                           </p>
                           <div className={`mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             {material?.uploadedAt ? <span>{formatDateTime(material.uploadedAt, currentLang)}</span> : null}
@@ -673,14 +670,14 @@ export default function GroupDocumentsTab({
                           </div>
                           {canOpenDetail ? (
                             <p className={`mt-3 text-xs font-medium ${isDarkMode ? 'text-cyan-200' : 'text-cyan-700'}`}>
-                              {currentLang === 'en' ? 'Click to open AI review and extracted content.' : 'Bấm để mở đánh giá AI và nội dung trích xuất.'}
+                              {t('groupDocumentsTab.materialOpenHint', 'Click to open AI review and extracted content.')}
                             </p>
                           ) : null}
                           {isProcessingStatus(material?.status) && progress > 0 ? (
                             <div className="mt-4 space-y-2">
                               <div className="flex items-center justify-between text-xs">
                                 <span className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>
-                                  {currentLang === 'en' ? 'Processing progress' : 'Tiến độ xử lý'}
+                                  {t('groupDocumentsTab.processingProgress', 'Processing progress')}
                                 </span>
                                 <span className={`font-semibold ${isDarkMode ? 'text-cyan-200' : 'text-cyan-700'}`}>{progress}%</span>
                               </div>
@@ -702,7 +699,7 @@ export default function GroupDocumentsTab({
                             }}
                             disabled={deleting}
                             className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition ${deleting ? 'cursor-not-allowed opacity-60' : ''} ${isDarkMode ? 'bg-rose-500/10 text-rose-200 hover:bg-rose-500/15' : 'bg-rose-50 text-rose-600 hover:bg-rose-100'}`}
-                            title={currentLang === 'en' ? 'Delete material' : 'Xóa tài liệu'}
+                            title={t('groupDocumentsTab.deleteMaterialTitle', 'Delete material')}
                           >
                             {renderActionVisual(deleting, Trash2)}
                           </button>
@@ -736,7 +733,7 @@ export default function GroupDocumentsTab({
               <div className="flex items-center gap-2">
                 <XCircle className={`h-5 w-5 ${isDarkMode ? 'text-rose-100' : 'text-rose-700'}`} />
                 <h3 className={`text-base font-semibold ${isDarkMode ? 'text-rose-50' : 'text-rose-900'}`}>
-                  {currentLang === 'en' ? 'Materials that need attention' : 'Tài liệu cần xử lý lại'}
+                  {t('groupDocumentsTab.issuesSectionTitle', 'Materials that need attention')}
                 </h3>
               </div>
               <div className="mt-4 space-y-3">
@@ -751,21 +748,21 @@ export default function GroupDocumentsTab({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className={`break-all text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {item.title || item.name || (currentLang === 'en' ? 'Untitled material' : 'Tài liệu chưa có tên')}
+                          {item.title || item.name || t('groupDocumentsTab.untitledMaterial', 'Untitled material')}
                         </p>
                         <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                          {item.message || (currentLang === 'en' ? 'This material could not enter the group library.' : 'Tài liệu này chưa thể vào thư viện của group.')}
+                          {item.message || t('groupDocumentsTab.issueDefaultMessage', 'This material could not enter the group library.')}
                         </p>
                         {canOpenDetail ? (
                           <p className={`mt-3 text-xs font-medium ${isDarkMode ? 'text-rose-100' : 'text-rose-700'}`}>
-                            {currentLang === 'en' ? 'Open the material to inspect the moderation outcome.' : 'Mở tài liệu để xem rõ lý do kiểm duyệt và trạng thái AI.'}
+                            {t('groupDocumentsTab.issueOpenHint', 'Open the material to inspect the moderation outcome.')}
                           </p>
                         ) : null}
                       </div>
                       <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-rose-500/15 text-rose-100' : 'bg-rose-100 text-rose-700'}`}>
                         {normalizeStatus(item?.status) === 'REJECT'
-                          ? (currentLang === 'en' ? 'Rejected' : 'Từ chối')
-                          : (currentLang === 'en' ? 'Failed' : 'Thất bại')}
+                          ? t('groupDocumentsTab.issuePillRejected', 'Rejected')
+                          : t('groupDocumentsTab.statusFailed', 'Failed')}
                       </span>
                     </div>
                   </article>

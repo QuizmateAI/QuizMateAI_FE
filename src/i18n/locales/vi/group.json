@@ -188,6 +188,9 @@
       "title": "Đang chuẩn bị không gian nhóm",
       "description": "Trình hướng dẫn thiết lập sẽ mở ngay khi không gian nháp sẵn sàng."
     },
+    "chatPanel": {
+      "openDocumentsHub": "Mở trung tâm tài liệu"
+    },
     "shell": {
       "defaultGroupName": "Không gian nhóm",
       "memberCount": "{{count}} thành viên",
@@ -197,11 +200,11 @@
         "dashboard": "Tổng quan",
         "personalDashboard": "Dashboard cá nhân",
         "documents": "Tài liệu",
-        "roadmap": "Roadmap",
-        "quiz": "Quiz",
-        "flashcard": "Flashcard",
-        "mockTest": "Mock test",
-        "challenge": "Challenge",
+        "roadmap": "Lộ trình",
+        "quiz": "Bài kiểm tra",
+        "flashcard": "Thẻ ghi nhớ",
+        "mockTest": "Bài thi thử",
+        "challenge": "Thử thách",
         "ranking": "Xếp hạng",
         "notifications": "Thông báo",
         "members": "Thành viên",
@@ -346,8 +349,1522 @@
         }
       }
     },
+    "quizRanking": {
+      "title": "Bảng xếp hạng · {{count}} thành viên",
+      "loading": "Đang tải…",
+      "error": "Không thể tải bảng xếp hạng.",
+      "retry": "Thử lại",
+      "refresh": "Làm mới",
+      "empty": "Chưa có thành viên nào hoàn thành bài này.",
+      "columns": {
+        "member": "Thành viên",
+        "accuracy": "Độ chính xác",
+        "time": "Thời gian",
+        "submittedAt": "Ngày nộp"
+      }
+    },
     "profile": {
       "noRules": "Chưa có nội quy bổ sung."
     }
+  },
+  "groupReview": {
+    "sections": {
+      "overview": "Tổng quan",
+      "materials": "Tài liệu",
+      "moderation": "Warning",
+      "quiz": "Quiz",
+      "members": "Thành viên",
+      "performance": "Hiệu suất",
+      "roadmap": "Roadmap",
+      "logs": "Logs"
+    },
+    "learningMode": {
+      "STUDY_NEW": "Học kiến thức mới",
+      "REVIEW": "Ôn tập theo nhóm",
+      "MOCK_TEST": "Thi thử cùng nhóm"
+    },
+    "role": {
+      "leader": "Leader",
+      "contributor": "Contributor",
+      "member": "Member"
+    },
+    "status": {
+      "approved": "Đã duyệt",
+      "needsRecheck": "Cần xem lại",
+      "rejected": "Bị từ chối",
+      "needsReupload": "Yêu cầu upload lại",
+      "processing": "Đang xử lý",
+      "uploading": "Đang upload"
+    },
+    "time": {
+      "notUpdated": "Chưa cập nhật",
+      "noActivity": "Chưa có hoạt động",
+      "justNow": "Vừa xong",
+      "hoursAgo": "{{count}} giờ trước",
+      "daysAgo": "{{count}} ngày trước"
+    },
+    "fallback": {
+      "groupName": "Nhóm học tập",
+      "description": "Không gian review UI cho học nhóm.",
+      "untitledMaterial": "Tài liệu chưa đặt tên",
+      "member": "Thành viên",
+      "reviewer": "Leader",
+      "contributorFallback": "Contributor",
+      "quizMateUser": "QuizMate User"
+    },
+    "toast": {
+      "bootstrapCreating": "Đang tạo group workspace...",
+      "bootstrapFailed": "Không thể tạo group workspace.",
+      "loadMaterialsFailed": "Không thể tải danh sách tài liệu.",
+      "loadMembersFailed": "Không thể tải thành viên nhóm.",
+      "inviteLeaderOnly": "Chỉ leader mới có thể mời thành viên.",
+      "inviteSent": "Đã gửi lời mời thành viên.",
+      "profileBeforeUpload": "Hoàn thành profile nhóm trước khi tải tài liệu.",
+      "noUploadPermission": "Bạn không có quyền tải tài liệu.",
+      "uploadSuccess": "Đã gửi {{count}} tài liệu để xử lý.",
+      "uploadFailed": "Tải tài liệu thất bại.",
+      "resetDataSuccess": "Đã xóa dữ liệu để cập nhật onboarding nhóm.",
+      "resetDataFailed": "Không thể xóa dữ liệu workspace.",
+      "grantUploadSuccess": "Đã cấp quyền upload cho {{name}}.",
+      "revokeUploadSuccess": "Đã thu hồi quyền upload của {{name}}.",
+      "updateUploadFailed": "Không thể cập nhật quyền upload.",
+      "updateRoleSuccess": "Đã cập nhật vai trò của {{name}}.",
+      "updateRoleFailed": "Không thể cập nhật vai trò.",
+      "removeConfirm": "Xóa {{name}} khỏi nhóm?",
+      "removeSuccess": "Đã xóa {{name}} khỏi nhóm.",
+      "removeFailed": "Không thể xóa thành viên khỏi nhóm.",
+      "moderationUpdated": "Đã cập nhật trạng thái moderation.",
+      "moderationFailed": "Không thể cập nhật moderation.",
+      "materialNameRequired": "Tên tài liệu không được để trống.",
+      "materialRenamed": "Đã cập nhật tên tài liệu.",
+      "materialRenameFailed": "Không thể đổi tên tài liệu.",
+      "materialDeleteConfirm": "Xóa tài liệu \"{{name}}\"?",
+      "materialDeleted": "Đã xóa tài liệu.",
+      "materialDeleteFailed": "Không thể xóa tài liệu.",
+      "quizNameRequired": "Hãy nhập tên quiz.",
+      "quizCreated": "Đã tạo quiz mock để review UI.",
+      "quizCreateFailed": "Không thể tạo quiz mới.",
+      "replySent": "Đã gửi phản hồi trong discussion.",
+      "replyFailed": "Không thể gửi phản hồi.",
+      "threadReopened": "Đã mở lại discussion.",
+      "threadResolved": "Đã đánh dấu discussion là resolved.",
+      "threadUpdateFailed": "Không thể cập nhật discussion.",
+      "profileUpdated": "Đã cập nhật profile nhóm.",
+      "downloadDemo": "Download demo cho clickable review UI."
+    },
+    "header": {
+      "refresh": "Làm mới",
+      "groupProfile": "Hồ sơ nhóm",
+      "upload": "Upload",
+      "inviteMember": "Mời member"
+    },
+    "metrics": {
+      "activeMembers": "Member hoạt động",
+      "activeMembersCaption": "Số member có tần suất tham gia ổn định trong tuần.",
+      "materialsInGroup": "Tài liệu trong group",
+      "materialsInGroupCaption": "{{count}} tài liệu đang nằm trong warning queue.",
+      "accuracy": "Độ chính xác",
+      "accuracyCaption": "Điểm trung bình hiện tại của toàn group.",
+      "roadmapProgress": "Roadmap progress",
+      "roadmapProgressCaption": "{{count}} mục đang bị block cần leader xử lý.",
+      "completionRate": "Completion rate",
+      "completionRateCaption": "Trung bình tiến độ roadmap của nhóm.",
+      "scoreTrend": "Score trend",
+      "scoreTrendCaption": "Điểm trung bình của các attempt đã hoàn thành.",
+      "activeMembersCountCaption": "Số member có ít nhất 5 ngày hoạt động.",
+      "pendingReview": "Pending review",
+      "pendingReviewCaption": "Tài liệu flagged đang chờ moderation.",
+      "accuracyShort": "Accuracy",
+      "accuracyShortCaption": "Điểm trung bình hiện tại.",
+      "roadmapLabel": "Roadmap",
+      "roadmapCaption": "Tiến độ roadmap cá nhân.",
+      "uploadOk": "Upload OK",
+      "uploadOkCaption": "{{warned}} warning • {{rejected}} reject",
+      "discussion": "Discussion",
+      "discussionCaption": "Active {{count}} ngày"
+    },
+    "overview": {
+      "hubTitle": "Hub quản trị và học nhóm",
+      "hubDescription": "Review end-to-end cho materials, moderation, quiz, discussion, dashboard hiệu suất và roadmap trong cùng một shell.",
+      "profileComplete": "Profile hoàn tất",
+      "profileIncomplete": "Profile cần cập nhật",
+      "reviewMaterials": "Review tài liệu",
+      "viewDashboard": "Xem dashboard",
+      "createQuiz": "Tạo quiz",
+      "hotspotsTitle": "Điểm nóng cần xử lý",
+      "moderationQueue": "Moderation queue",
+      "moderationQueueDetail": "{{count}} tài liệu cần leader hoặc contributor review.",
+      "openDiscussions": "Discussion đang mở",
+      "openDiscussionsDetail": "{{count}} thread chưa resolve, có thể mở từ quiz hoặc kết quả làm bài.",
+      "recentMaterialsTitle": "Tài liệu mới và warning queue",
+      "recentMaterialsDescription": "Lane quản lý tài liệu member upload và queue cần moderation.",
+      "quizDiscussionsTitle": "Discussion từng câu quiz",
+      "quizDiscussionsDescription": "Deep-link discussion mở từ quiz result hoặc từ studio quiz.",
+      "repliesCount": "{{count}} phản hồi",
+      "threadResolved": "Đã resolve",
+      "threadOpen": "Đang mở",
+      "newBadge": "{{count}} mới",
+      "trackingBadge": "Theo dõi"
+    },
+    "materials": {
+      "title": "Member materials",
+      "description": "Quản lý tài liệu được upload trong group, filter theo uploader, trạng thái và xem detail đã extract.",
+      "searchPlaceholder": "Tìm theo tên tài liệu hoặc summary",
+      "filterAllStatus": "Tất cả trạng thái",
+      "filterAllOwners": "Tất cả uploader",
+      "emptyTitle": "Chưa có tài liệu phù hợp bộ lọc",
+      "emptyDescription": "Thử đổi trạng thái, uploader hoặc upload thêm tài liệu để review.",
+      "uploadButton": "Upload tài liệu",
+      "noSummary": "Chưa có summary cho tài liệu này.",
+      "viewDetail": "Xem detail",
+      "openModeration": "Mở moderation",
+      "sourceLive": "Live",
+      "sourceMock": "Mock"
+    },
+    "moderation": {
+      "title": "Moderation queue",
+      "description": "Hàng đợi tài liệu bị warning, reject hoặc cần request upload lại. Mỗi action sẽ đẩy event vào logs mock.",
+      "emptyTitle": "Không có tài liệu cần review",
+      "emptyDescription": "Queue moderation hiện đang trống. Bạn có thể quay lại materials hub để xem toàn bộ tài liệu.",
+      "openMaterialsHub": "Mở materials hub",
+      "needsReview": "Tài liệu cần được review thêm trước khi dùng trong group.",
+      "approve": "Approve",
+      "requestReupload": "Request re-upload",
+      "reject": "Reject",
+      "viewDetail": "Xem detail"
+    },
+    "quiz": {
+      "studioTitle": "Quiz studio",
+      "studioDescription": "Tạo quiz mock để review luồng studio, practice, exam, result và discussion theo câu.",
+      "namePlaceholder": "Tên quiz",
+      "descriptionPlaceholder": "Mô tả quiz",
+      "questionCountPlaceholder": "Số câu hỏi",
+      "durationPlaceholder": "Thời lượng (phút)",
+      "passScorePlaceholder": "Điểm đạt",
+      "intentPreLearning": "Pre-learning",
+      "intentReview": "Review",
+      "intentPostLearning": "Post-learning",
+      "createMockQuiz": "Tạo quiz mock",
+      "questionCountLabel": "{{count}} câu",
+      "minutesLabel": "{{count}} phút",
+      "lastAttempt": "Lần làm gần nhất",
+      "attemptPassed": "Đạt",
+      "attemptFailed": "Chưa đạt",
+      "practice": "Làm practice",
+      "exam": "Làm exam",
+      "discussionQuestion1": "Discussion câu 1",
+      "recentAttemptsTitle": "Recent attempts",
+      "recentAttemptsDescription": "Lịch sử lượt làm quiz gần nhất trong group.",
+      "noAttempts": "Chưa có attempt nào trong mock review.",
+      "attemptModePractice": "Practice",
+      "attemptModeExam": "Exam",
+      "attemptOngoing": "Đang làm"
+    },
+    "members": {
+      "title": "UI member theo role",
+      "description": "Leader quản trị roster và quyền upload, contributor theo dõi lane nội dung, member xem tiến độ cá nhân.",
+      "uploadGranted": "Có quyền upload",
+      "uploadReadOnly": "Chỉ xem",
+      "accuracy": "Accuracy",
+      "roadmap": "Roadmap",
+      "discussion": "Discussion",
+      "revokeUpload": "Thu hồi upload",
+      "grantUpload": "Cấp upload",
+      "removeMember": "Xóa member",
+      "personalLane": "Lane cá nhân: {{focus}}",
+      "personalLaneDefault": "Theo dõi tiến độ, quiz được giao và discussion đang theo dõi.",
+      "streakLabel": "{{count}} ngày streak"
+    },
+    "performance": {
+      "title": "Đánh giá hiệu suất từng member",
+      "description": "Xem accuracy, streak, tiến độ roadmap, upload outcomes, logs gần đây và mức độ tham gia discussion.",
+      "scoreTrendTitle": "Xu hướng điểm số",
+      "recentFocusTitle": "Điểm nhấn gần đây",
+      "lastActivity": "Hoạt động gần nhất:",
+      "weekLabel": "T{{index}}"
+    },
+    "roadmap": {
+      "title": "Roadmap board",
+      "description": "Phase, knowledge, progress, owner, blocker và liên kết quiz-material để review toàn luồng trong group.",
+      "phases": "{{count}} phases",
+      "knowledges": "{{count}} knowledges",
+      "quizzes": "{{count}} quizzes",
+      "drillDown": "Drill-down roadmap",
+      "ownerUnassigned": "Chưa gán",
+      "ownerLine": "Owner: {{owner}} • Progress {{progress}}%",
+      "blocked": "Đang blocked",
+      "onTrack": "Đúng tiến độ",
+      "knowledgeLine": "Progress {{progress}}% • {{count}} quiz liên quan",
+      "practice": "Practice",
+      "material": "Tài liệu",
+      "detailEmptyTitle": "Không tìm thấy roadmap",
+      "detailEmptyDescription": "Roadmap detail có thể chưa được seed hoặc chưa đồng bộ.",
+      "backToRoadmap": "Quay lại roadmap",
+      "phaseProgressLine": "Progress {{progress}}% • {{count}} knowledge nodes",
+      "blockedBadge": "Blocked",
+      "healthyBadge": "Healthy",
+      "knowledgeDetailLine": "Progress {{progress}}% • {{materialCount}} material • {{quizCount}} quiz",
+      "viewMaterial": "Xem tài liệu",
+      "openQuiz": "Mở quiz"
+    },
+    "logs": {
+      "title": "Activity logs",
+      "description": "Log tổng hợp từ live activity và mock event phát sinh khi moderation, discussion hoặc quiz thay đổi."
+    },
+    "materialDetail": {
+      "emptyTitle": "Không tìm thấy tài liệu",
+      "emptyDescription": "Material detail có thể đã bị xóa hoặc chưa được đồng bộ.",
+      "backToMaterials": "Quay lại materials",
+      "liveMaterial": "Live material",
+      "mockMaterial": "Mock material",
+      "title": "Quản lý tài liệu upload",
+      "description": "Xem extracted text, summary, moderation report và thao tác rename / delete / review.",
+      "documentName": "Tên tài liệu",
+      "saveName": "Lưu tên",
+      "summary": "Tóm tắt",
+      "loadingExtract": "Đang tải thông tin extract...",
+      "noSummary": "Chưa có summary.",
+      "extractedText": "Extracted text / preview",
+      "noPreview": "Chưa có preview.",
+      "metadata": "Metadata",
+      "uploader": "Uploader: {{name}}",
+      "role": "Role: {{role}}",
+      "uploaded": "Uploaded: {{time}}",
+      "type": "Type: {{type}}",
+      "moderationReport": "Moderation report",
+      "noModerationDetail": "Chưa có moderation detail.",
+      "approve": "Approve",
+      "requestReupload": "Request re-upload",
+      "download": "Download",
+      "delete": "Xóa"
+    },
+    "discussionDetail": {
+      "emptyTitle": "Discussion chưa sẵn sàng",
+      "emptyDescription": "Thread có thể chưa được khởi tạo hoặc quiz/question không còn tồn tại.",
+      "backToQuizHub": "Quay lại quiz hub",
+      "resolved": "Đã resolve",
+      "open": "Đang mở",
+      "activityCount": "{{count}} activity",
+      "contextSubtitle": "{{title}} • Discussion async theo từng câu quiz để leader, contributor và member cùng review.",
+      "question": "Câu hỏi",
+      "sampleAnswer": "Sample answer",
+      "reopenThread": "Mở lại thread",
+      "markResolved": "Đánh dấu resolved",
+      "newReplyTitle": "Phản hồi mới",
+      "replyPlaceholder": "Viết ý kiến, phản biện hoặc note để cả nhóm cùng review...",
+      "sendReply": "Gửi phản hồi"
+    },
+    "sidebar": {
+      "flowTitle": "Group workspace flow",
+      "flowDescription": "Điều hướng section bằng `?section=` và giữ detail route riêng cho materials, discussion và roadmap.",
+      "snapshot": "Snapshot",
+      "moderationQueue": "Moderation queue",
+      "flaggedDocs": "{{count}} tài liệu flagged",
+      "discussion": "Discussion",
+      "unresolvedThreads": "{{count}} thread chưa resolve",
+      "logs": "Logs",
+      "logEntries": "{{count}} entries"
+    },
+    "shell": {
+      "bootstrapping": "Đang khởi tạo group workspace...",
+      "notFoundTitle": "Không tìm thấy group workspace",
+      "notFoundDescription": "Workspace có thể chưa được tạo hoặc bạn không còn quyền truy cập.",
+      "loadingData": "Đang tải dữ liệu group workspace...",
+      "refresh": "Làm mới",
+      "groupProfile": "Hồ sơ nhóm",
+      "upload": "Upload",
+      "inviteMember": "Mời member"
+    }
+  },
+  "groupWorkspacePage": {
+    "upload": {
+      "failedDefault": "Tải lên thất bại.",
+      "unknownFile": "Tệp không xác định",
+      "insufficientCredit": "Không đủ credit workspace: cần {{needed}} QMC, hiện có {{available}} QMC.",
+      "cannotUploadInvalidWorkspaceId": "Không thể upload: workspaceId không hợp lệ",
+      "completeProfileBeforeUpload": "Hoàn thành profile nhóm trước khi tải tài liệu.",
+      "noUploadPermission": "Bạn không có quyền tải tài liệu.",
+      "chooseAtLeastOneFile": "Vui lòng chọn ít nhất một tệp.",
+      "unsupportedOrEmpty": "Các tệp không hợp lệ hoặc rỗng: {{files}}.",
+      "unknownFileName": "không rõ",
+      "noValidFileLeft": "Không còn tệp hợp lệ để tải lên.",
+      "serverNoMaterialId": "Server không trả về materialId hợp lệ.",
+      "submittedCount": "Đã gửi {{count}} tệp vào hàng chờ duyệt của nhóm.",
+      "leaderApprovalRequired": "Tài liệu mới chỉ xuất hiện trong nguồn học chung sau khi leader duyệt.",
+      "waitingLeaderApproval": "Tài liệu bạn vừa gửi đang chờ leader duyệt trước khi cả nhóm dùng được.",
+      "insufficientQmcNeedPlan": "Nhóm không đủ QMC. Vui lòng mua gói để tiếp tục — sau đó bạn có thể mua credit trong ví nhóm.",
+      "insufficientQmcNeedCredits": "Nhóm không đủ QMC. Mở ví nhóm để mua thêm credit.",
+      "allUploadsFailed": "Toàn bộ upload đều thất bại.",
+      "filesFailedTitle": "{{count}} tệp chưa tải lên được",
+      "filesFailedTitlePlural": "{{count}} tệp chưa tải lên được",
+      "filesFailedDescription": "Xem nhanh các tệp lỗi bên dưới rồi thử lại.",
+      "moreFile": "+{{count}} tệp khác",
+      "moreFiles": "+{{count}} tệp khác"
+    },
+    "queue": {
+      "uploading": "Đang tải tệp lên máy chủ.",
+      "processing": "AI đang đối chiếu tài liệu này với profile nhóm.",
+      "activeLeaderNoReview": "AI đã xử lý xong. Tài liệu đã vào danh sách tài liệu chung.",
+      "activeLeaderReview": "AI đã xử lý xong. Bạn có thể duyệt ngay để đưa vào nguồn học chung.",
+      "activeMemberReview": "AI đã xử lý xong. Tài liệu đang chờ leader phê duyệt.",
+      "warnLeader": "AI đã gắn warning. Cần xem lại kỹ trước khi duyệt.",
+      "warnMember": "AI đã gắn warning cho tài liệu này. Tài liệu đang chờ leader xem lại.",
+      "error": "Hệ thống không thể xử lý xong tài liệu này.",
+      "reject": "Tài liệu đã bị loại khỏi không gian nhóm này.",
+      "waitingUpdate": "Tài liệu này đang chờ cập nhật mới.",
+      "officialQueue": "Hàng chờ duyệt chính thức của nhóm",
+      "sessionQueue": "Được gửi từ phiên hiện tại",
+      "materialFallback": "Tài liệu"
+    },
+    "realtime": {
+      "activeLeaderSuccess": "\"{{title}}\" đã qua bước AI và được đưa thẳng vào danh sách tài liệu chung.",
+      "activePending": "\"{{title}}\" đã qua bước AI và đang chờ leader duyệt.",
+      "warned": "\"{{title}}\" có warning và cần leader xem lại.",
+      "errorProcessing": "Hệ thống không thể xử lý xong \"{{title}}\".",
+      "rejected": "\"{{title}}\" đã bị loại khỏi không gian nhóm này."
+    },
+    "time": {
+      "noDate": "Chưa cập nhật",
+      "noRecentActivity": "Chưa có hoạt động",
+      "justNow": "Vừa xong",
+      "hoursAgo": "{{count}} giờ trước",
+      "daysAgo": "{{count}} ngày trước"
+    },
+    "log": {
+      "groupCreated": "Tạo nhóm",
+      "groupProfileUpdated": "Cập nhật cấu hình",
+      "invitationSent": "Gửi lời mời",
+      "invitationAccepted": "Đã xác nhận lời mời",
+      "memberJoined": "Thành viên vào nhóm",
+      "memberRemoved": "Xóa thành viên",
+      "memberRoleUpdated": "Cập nhật vai trò",
+      "quizCreated": "Tạo quiz",
+      "quizPublished": "Xuất bản quiz",
+      "quizAudienceUpdated": "Giao quiz",
+      "quizSubmitted": "Nộp quiz",
+      "groupActivity": "Hoạt động nhóm",
+      "system": "Hệ thống"
+    },
+    "planNames": {
+      "groupBase": "Gói nhóm cơ bản"
+    },
+    "bootstrap": {
+      "creating": "Đang tạo không gian nhóm...",
+      "unableToCreate": "Không thể tạo không gian nhóm."
+    },
+    "errors": {
+      "leaderOnlyInvite": "Chỉ leader mới có thể mời thành viên vào nhóm.",
+      "cannotOpenChallengeDraft": "Không mở được bản nháp quiz challenge. Kiểm tra quyền hoặc thử lại.",
+      "cannotOpenQuiz": "Không mở được quiz. Kiểm tra quyền hoặc thử lại.",
+      "noWorkspace": "Không tìm thấy workspace",
+      "noRoadmap": "Không tìm thấy roadmap",
+      "unableToDeleteData": "Không thể xóa dữ liệu workspace. Vui lòng thử lại."
+    },
+    "toast": {
+      "inviteSent": "Gửi lời mời thành công!",
+      "materialApproved": "Đã duyệt tài liệu vào nhóm.",
+      "materialRejected": "Đã từ chối tài liệu khỏi nhóm.",
+      "materialDeleted": "Đã xóa tài liệu.",
+      "materialsDeleted": "Đã xóa {{count}} tài liệu.",
+      "resetDataSuccess": "Đã xóa tài liệu. Bạn có thể cập nhật onboarding nhóm ngay bây giờ.",
+      "quizCreated": "Đã tạo quiz thành công.",
+      "memberCannotCreateQuiz": "Member không có quyền tạo quiz.",
+      "memberCannotCreateFlashcard": "Member không có quyền tạo thẻ ghi nhớ.",
+      "memberCannotCreateRoadmap": "Member không có quyền tạo roadmap.",
+      "memberCannotCreateRoadmapPhases": "Member không có quyền tạo phase roadmap.",
+      "memberCannotCreateMockTest": "Member không có quyền tạo mock test.",
+      "noRoadmapConfig": "Nhóm này chưa có cấu hình roadmap hợp lệ.",
+      "selectMaterialBeforeRoadmap": "Vui lòng chọn ít nhất 1 tài liệu trước khi tạo lộ trình.",
+      "roadmapGenerationStarted": "Đã gửi yêu cầu tạo lộ trình.",
+      "roadmapGenerationFailed": "Không thể tạo lộ trình.",
+      "completeProfileBeforeStudio": "Hoàn thành profile nhóm trước khi dùng các tab studio.",
+      "featureNotAvailableForRole": "Tính năng này chưa khả dụng cho vai trò của bạn."
+    },
+    "planUpgrade": {
+      "workspaceAnalytics": "Thống kê workspace",
+      "createRoadmap": "Tạo lộ trình học tập"
+    },
+    "activity": {
+      "title": "Hoạt động nhóm gần đây",
+      "description": "Dữ liệu thật từ nhật ký hoạt động của nhóm.",
+      "loading": "Đang tải hoạt động...",
+      "empty": "Chưa có hoạt động nào được ghi nhận."
+    },
+    "personalDashboard": {
+      "memberFallback": "Thành viên",
+      "roleLabel": "Vai trò hiện tại",
+      "teamMembers": "Thành viên trong nhóm",
+      "sharedSources": "Tài liệu dùng chung",
+      "joinedAt": "Tham gia từ",
+      "pendingConfirmation": "Mới xác nhận",
+      "welcomeBadge": "Chào mừng",
+      "memberSpaceBadge": "Không gian thành viên",
+      "welcomeTo": "Chào mừng bạn đến với",
+      "hello": "Xin chào,",
+      "descriptionFallback": "Bạn có thể đọc thông tin nhóm, xem thành viên và theo dõi các cập nhật mới nhất ngay tại đây.",
+      "openRoadmap": "Mở roadmap",
+      "viewActivity": "Xem hoạt động nhóm",
+      "hideWelcome": "Ẩn màn hình chào mừng",
+      "quickRead": "Đọc nhanh thông tin nhóm",
+      "domain": "Lĩnh vực",
+      "learningMode": "Chế độ học",
+      "examTarget": "Kỳ thi / mục tiêu",
+      "profileTitle": "Thông tin nhóm dành cho thành viên",
+      "profileRefreshing": "Đang tải cấu hình nhóm...",
+      "profileLoaded": "Tất cả thông tin bên dưới được lấy từ profile thật của nhóm.",
+      "knowledgeFocus": "Kiến thức trọng tâm",
+      "rulesAndNorms": "Nội quy và cách vận hành",
+      "groupLearningGoal": "Mục tiêu học tập của nhóm",
+      "preLearningRequirement": "Yêu cầu pre-learning",
+      "preLearningRequired": "Cần hoàn thành trước khi vào lộ trình học chung.",
+      "preLearningOptional": "Không bắt buộc, tùy theo mức độ hiện tại của bạn.",
+      "peopleTitle": "Những người trong nhóm này",
+      "peopleDescription": "Một cái nhìn nhanh để thành viên biết mình đang học cùng ai.",
+      "youBadge": "Bạn"
+    },
+    "profileGate": {
+      "checkingTitle": "Đang kiểm tra profile nhóm...",
+      "completeTitle": "Hoàn thành profile nhóm trước khi dùng không gian nhóm",
+      "checkingDescription": "QuizMate AI đang tải trạng thái setup hiện tại của nhóm này.",
+      "completeDescription": "Leader cần hoàn tất profile dùng chung của nhóm trước. Trước khi xong, việc mời thành viên, tải tài liệu và dùng các tab studio sẽ bị khóa.",
+      "continueSetup": "Tiếp tục điền form setup"
+    },
+    "roadmap": {
+      "setupPromptTitle": "Bạn hãy thiết lập lộ trình cho nhóm",
+      "setupPromptDescription": "Hãy thiết lập lượng kiến thức, nhịp học, số ngày dự kiến và số phút học mỗi ngày để roadmap bám đúng kế hoạch học của nhóm.",
+      "setupButton": "Thiết lập lộ trình",
+      "panelButton": "Panel lộ trình"
+    },
+    "setupComplete": "Cấu hình nhóm hoàn tất!"
+  },
+  "groupDashboard": {
+    "common": {
+      "memberFallback": "Thành viên",
+      "group": "Nhóm",
+      "system": "Hệ thống",
+      "leaderDefault": "Trưởng nhóm"
+    },
+    "dateHelpers": {
+      "noDate": "Chưa có ngày",
+      "unknownTime": "Không rõ thời gian",
+      "today": "Hôm nay",
+      "oneDayAgo": "1 ngày trước",
+      "daysAgo": "{{count}} ngày trước",
+      "onDate": "Vào {{date}}",
+      "missingJoinDate": "Thiếu ngày vào nhóm",
+      "joinedToday": "Vào nhóm hôm nay",
+      "joinedOneDayAgo": "Vào nhóm 1 ngày trước",
+      "joinedDaysAgo": "Vào nhóm {{count}} ngày trước",
+      "joinedOnDate": "Vào nhóm ngày {{date}}",
+      "noExpiry": "Không rõ hạn",
+      "expiresToday": "Hết hạn hôm nay",
+      "expiresInOneDay": "Hết hạn sau 1 ngày",
+      "expiresInDays": "Hết hạn sau {{count}} ngày"
+    },
+    "logLabels": {
+      "groupCreated": "Tạo nhóm",
+      "invitationSent": "Gửi lời mời",
+      "invitationPending": "Lời mời đang mở",
+      "invitationAccepted": "Lời mời đã nhận",
+      "invitationExpired": "Lời mời hết hạn",
+      "memberJoined": "Thành viên vào nhóm",
+      "quizCreated": "Tạo quiz",
+      "quizPublished": "Xuất bản quiz",
+      "quizAudienceUpdated": "Giao quiz",
+      "quizSubmitted": "Nộp quiz",
+      "activity": "Hoạt động"
+    },
+    "classification": {
+      "strong": "Tốt",
+      "average": "Trung bình",
+      "weak": "Cần hỗ trợ",
+      "atRisk": "Rủi ro"
+    },
+    "attention": {
+      "openInvitationsTitle": "{{count}} lời mời đang mở",
+      "expiringSoonNote": "{{count}} lời mời sắp hết hạn.",
+      "keepQueueShort": "Nên giữ hàng đợi lời mời gọn và luôn cập nhật.",
+      "missingContributorTitle": "Chưa có cộng tác viên",
+      "missingContributorNote": "Nên có ít nhất 1 cộng tác viên để chia sẻ việc chuẩn bị nội dung.",
+      "uploadReviewTitle": "{{name}} cần xem lại quyền tải lên",
+      "uploadReviewNote": "Đã là cộng tác viên nhưng vẫn chưa thể thêm tài liệu.",
+      "justJoinedTitle": "{{name}} vừa vào nhóm",
+      "justJoinedNote": "Nên giao nhiệm vụ đầu tiên sớm."
+    },
+    "watchStatus": {
+      "needsUploadReview": "Cần xem lại quyền tải lên",
+      "readyToContribute": "Sẵn sàng đóng góp",
+      "onboardingWindow": "Đang làm quen",
+      "observeParticipation": "Theo dõi mức độ tham gia"
+    },
+    "stats": {
+      "totalMembersLabel": "Tổng thành viên",
+      "totalMembersNote": "toàn bộ thành viên",
+      "newThisWeekLabel": "Mới tuần này",
+      "newThisWeekNote": "thành viên mới",
+      "coordinationLanesLabel": "Vai trò điều phối",
+      "coordinationLanesNote": "{{percent}}% thành viên đang giữ vai trò điều phối",
+      "uploadReadyLabel": "Sẵn sàng tải lên",
+      "uploadReadyNote": "{{percent}}% có thể thêm tài liệu"
+    },
+    "compact": {
+      "systemDashboardEyebrow": "Dashboard hệ thống",
+      "headlineSummary": "Tổng quan sức khỏe và tín hiệu hoạt động của nhóm.",
+      "learningIntelligenceEyebrow": "Trí tuệ học tập",
+      "learningIntelligenceSummary": "Số liệu thời gian thực từ quiz, điểm và phân loại AI — chạm vào từng thẻ để xem chi tiết thành viên.",
+      "summaryLoadError": "Không tải được thống kê học tập. Thử lại sau.",
+      "kpiQuizAttemptsLabel": "Lượt làm quiz",
+      "kpiQuizAttemptsNote": "toàn nhóm",
+      "kpiCompletedLabel": "Đã hoàn thành",
+      "kpiCompletedNote": "bài đã nộp",
+      "kpiAvgScoreLabel": "Điểm TB",
+      "kpiAvgScoreNote": "theo thành viên đã hoàn thành quiz",
+      "kpiAvgAccuracyLabel": "Độ chính xác TB",
+      "kpiAvgAccuracyNote": "câu đã chấm",
+      "scoreSpotlightTitle": "Điểm nổi bật",
+      "scoreSpotlightSubtitle": "Trên trang hiện tại ({{pageSize}} thành viên/trang) — xếp theo điểm.",
+      "noCompletedQuizData": "Chưa có dữ liệu quiz hoàn thành.",
+      "aiClassificationTitle": "Phân loại AI",
+      "aiClassificationSubtitle": "Theo hồ sơ học tập khi đã có dữ liệu.",
+      "noAiLabels": "Chưa có nhãn AI.",
+      "memberCardsEyebrow": "Thẻ thông minh thành viên",
+      "noActiveMembers": "Không có thành viên hoạt động.",
+      "memberCardDone": "xong",
+      "memberCardAvg": "TB",
+      "memberCardAcc": "đúng",
+      "pageSummary": "Trang {{page}} / {{totalPages}} · {{total}} thành viên",
+      "openMemberStats": "Mở thống kê thành viên"
+    },
+    "analyticsUpgrade": {
+      "title": "Thống kê không gian học tập",
+      "description": "Bảng thống kê học tập nhóm dùng cùng quyền thống kê với không gian cá nhân. Nâng gói để mở thẻ thành viên, biểu đồ và phần xem chi tiết.",
+      "viewPlans": "Xem gói"
+    },
+    "detail": {
+      "loading": "Đang tải thành viên…",
+      "tabAll": "Tất cả",
+      "tabOfficial": "Chính thức",
+      "tabPractice": "Luyện tập",
+      "fetchingSignals": "Đang lấy dữ liệu học…",
+      "uploads": "Tài liệu",
+      "attempts": "Lượt làm",
+      "completed": "Hoàn thành",
+      "avgScore": "Điểm TB",
+      "accuracy": "Chính xác",
+      "strongAreas": "Điểm mạnh",
+      "growthAreas": "Cần cải thiện",
+      "recentMoves": "Hoạt động gần đây",
+      "noData": "Không có dữ liệu."
+    },
+    "charts": {
+      "roleDistributionCompact": "Phân bố vai trò",
+      "weeklyTrendCompact": "Xu hướng hoạt động 7 ngày",
+      "noActivityLogData": "Chưa có dữ liệu nhật ký hoạt động.",
+      "roleDistributionTitle": "Biểu đồ phân bố vai trò",
+      "roleDistributionSubtitle": "So sánh tỷ trọng vai trò giữa trưởng nhóm, cộng tác viên và thành viên.",
+      "weeklyChartTitle": "Biểu đồ hoạt động theo tuần",
+      "weeklyChartSubtitle": "Theo dõi số lượng sự kiện theo từng ngày từ nhật ký hoạt động."
+    },
+    "hero": {
+      "eyebrow": "Bảng điều hành nhóm",
+      "description": "Tập trung vào những ai cần theo dõi thêm, lời mời nào còn mở và thay đổi mới nhất trong nhóm.",
+      "invitationQueueLabel": "Hàng đợi lời mời",
+      "leadersOnly": "chỉ trưởng nhóm xem",
+      "expiringSoon": "sắp hết hạn",
+      "currentlyOpen": "đang mở",
+      "activityThisWeekLabel": "Hoạt động tuần này",
+      "recentEventsOnLog": "sự kiện mới trong nhật ký",
+      "trackingBadge": "Theo dõi"
+    },
+    "attentionPanel": {
+      "title": "Điều cần chú ý",
+      "allGoodTitle": "Hiện chưa có điểm nghẽn khẩn cấp",
+      "allGoodNote": "Nhóm đang khá ổn định. Tiếp tục theo dõi nhật ký và hàng đợi lời mời."
+    },
+    "invitationsPanel": {
+      "title": "Lời mời hiện có",
+      "description": "Xem ai đã được mời, được gửi lúc nào và lời mời nào sắp hết hạn.",
+      "leadersOnlyNote": "Chỉ trưởng nhóm mới theo dõi được hàng đợi này.",
+      "loading": "Đang tải lời mời...",
+      "empty": "Hiện chưa có lời mời nào đang chờ.",
+      "invitedBy": "Người mời",
+      "sent": "Gửi",
+      "statusPending": "Trạng thái: đang chờ"
+    },
+    "watchlist": {
+      "title": "Danh sách theo dõi thành viên",
+      "preparing": "Đang chuẩn bị danh sách theo dõi...",
+      "empty": "Chưa có thành viên cần theo dõi."
+    },
+    "activityLog": {
+      "title": "Nhật ký hoạt động nhóm",
+      "description": "Dòng thời gian rút gọn của những thay đổi gần nhất trong nhóm.",
+      "loading": "Đang tải nhật ký hoạt động...",
+      "empty": "Chưa có hoạt động nào được ghi lại."
+    }
+  },
+  "groupWalletTab": {
+    "noDate": "Chưa có ngày",
+    "group": "Nhóm",
+    "paidPlanActive": "Gói trả phí đang hiệu lực",
+    "leaderOnlyEyebrow": "Ví nhóm",
+    "leaderOnlyTitle": "Chỉ trưởng nhóm quản lý",
+    "leaderOnlyDescription": "Chỉ trưởng nhóm mới quản lý được ví dùng chung, nạp thêm QMC và xem lịch sử thanh toán của workspace này.",
+    "groupWalletEyebrow": "Ví nhóm",
+    "qmcDescription": "QMC là QuizMate Credit — đơn vị QMC dùng chung để tạo quiz, flashcard, roadmap và các tác vụ AI khác trong nhóm.",
+    "qmcBadge": "QMC = QuizMate Credit",
+    "sharedByGroup": "Dùng chung cho cả nhóm",
+    "balanceEyebrow": "Số dư ví nhóm",
+    "balanceSubtitle": "Sẵn sàng dùng cho các thao tác AI chung.",
+    "noPaidPlan": "Chưa có gói trả phí",
+    "expires": "Hết hạn",
+    "managePlan": "Quản lý gói",
+    "choosePlan": "Chọn gói",
+    "dataError": "Một phần dữ liệu ví chưa tải được. Hãy tải lại để thử lại.",
+    "balanceBreakdown": "Chi tiết số dư",
+    "regularCredits": "QMC thường",
+    "planCredits": "QMC từ gói",
+    "walletUpdated": "Ví cập nhật",
+    "planCreditsExpire": "QMC gói hết hạn",
+    "topUpCredits": "Nạp thêm QMC",
+    "topUpDescription": "Bổ sung thêm QMC vào ví dùng chung của nhóm.",
+    "notAllowedBuyCredits": "Gói hiện tại chưa cho phép mua thêm QMC cho nhóm.",
+    "noCreditPackages": "Hiện chưa có gói QMC khả dụng.",
+    "bonusIncluded": "Bao gồm +{{amount}} QMC thưởng",
+    "topUpSharedWallet": "Nạp vào ví dùng chung",
+    "buyNow": "Mua ngay",
+    "purchaseHistory": "Lịch sử mua",
+    "purchaseHistoryDescription": "Các thanh toán gần đây cho gói và QMC dùng chung của không gian này.",
+    "noPurchaseRecords": "Chưa có lịch sử mua.",
+    "usageHistory": "Lịch sử sử dụng",
+    "usageHistoryDescription": "Các biến động gần đây của ví dùng chung do AI và các thao tác QMC tạo ra.",
+    "noUsageRecords": "Chưa có lịch sử sử dụng.",
+    "recent": "Gần đây",
+    "balanceAfter": "Số dư sau",
+    "creditLabels": {
+      "WELCOME": "QMC chào mừng",
+      "TOPUP": "Nạp QMC",
+      "CONSUME": "Tiêu hao",
+      "RESERVE": "Tạm giữ",
+      "RESERVE_CANCELLED": "Hoàn tạm giữ",
+      "REFUND": "Hoàn QMC",
+      "ADJUST": "Điều chỉnh",
+      "PLAN_BONUS": "QMC từ gói",
+      "PLAN_EXPIRE_RESET": "Đặt lại QMC gói"
+    },
+    "creditSources": {
+      "SYSTEM": "Hệ thống",
+      "PAYMENT": "Thanh toán",
+      "AI_USAGE": "Sử dụng AI",
+      "USER_PLAN": "Gói cá nhân",
+      "WORKSPACE_PLAN": "Gói nhóm",
+      "ADMIN": "Quản trị"
+    },
+    "paymentTargets": {
+      "WORKSPACE_PLAN": "Gói nhóm",
+      "WORKSPACE_CREDIT": "QMC nhóm",
+      "WORKSPACE_SLOT": "Slot thành viên",
+      "USER_PLAN": "Gói cá nhân",
+      "USER_CREDIT": "QMC cá nhân"
+    },
+    "paymentStatus": {
+      "completed": "Hoàn tất",
+      "pending": "Đang chờ",
+      "failed": "Thất bại",
+      "cancelled": "Đã hủy"
+    },
+    "uiActivity": {
+      "fallback": "Đã dùng một tính năng AI",
+      "defaultPrefix": "Đã dùng AI cho: ",
+      "inWorkspace": "Trong workspace: {{name}}",
+      "processPdfPrefix": "Đã tải lên PDF: ",
+      "processPdfFallback": "Đã tải lên PDF",
+      "processDocxPrefix": "Đã tải lên file Word: ",
+      "processDocxFallback": "Đã tải lên file Word",
+      "processPptxPrefix": "Đã tải lên slide: ",
+      "processPptxFallback": "Đã tải lên slide",
+      "processXlsxPrefix": "Đã tải lên file Excel: ",
+      "processXlsxFallback": "Đã tải lên file Excel",
+      "processImagePrefix": "Đã tải lên ảnh: ",
+      "processImageFallback": "Đã tải lên ảnh",
+      "processAudioPrefix": "Đã tải lên audio: ",
+      "processAudioFallback": "Đã tải lên audio",
+      "processVideoPrefix": "Đã tải lên video: ",
+      "processVideoFallback": "Đã tải lên video",
+      "generateQuizPrefix": "Đã tạo quiz: ",
+      "generateQuizFallback": "Đã tạo quiz",
+      "generateFlashcardsPrefix": "Đã tạo flashcard từ: ",
+      "generateFlashcardsFallback": "Đã tạo flashcard",
+      "generateMockTestPrefix": "Đã tạo mock test: ",
+      "generateMockTestFallback": "Đã tạo mock test"
+    }
+  },
+  "createChallengeWizard": {
+    "steps": {
+      "quiz": "Chọn Quiz",
+      "schedule": "Lịch trình",
+      "registration": "Đăng ký",
+      "review": "Xác nhận"
+    },
+    "errors": {
+      "createFailed": "Không thể tạo challenge"
+    },
+    "sourceMode": {
+      "existingLabel": "Quiz có sẵn",
+      "existingDesc": "Tạo bản sao từ quiz đã có",
+      "newLabel": "Quiz mới",
+      "newDesc": "Soạn đề sau trong chi tiết challenge"
+    },
+    "quizList": {
+      "sectionTitle": "Quiz chung trong workspace",
+      "countTitle": "Chỉ quiz không giao riêng mới dùng được cho challenge",
+      "searchPlaceholder": "Tìm theo tên quiz...",
+      "searchAriaLabel": "Tìm quiz",
+      "loading": "Đang tải danh sách…",
+      "emptyNoQuizzes": "Chưa có quiz nào trong workspace",
+      "emptyNoEligible": "Không có quiz chung để tạo challenge",
+      "emptyNoMatches": "Không khớp từ khóa tìm kiếm",
+      "emptyNoQuizzesHint": "Tạo quiz trong workspace trước, hoặc chọn \"Quiz mới\" ở trên.",
+      "emptyNoEligibleHint": "Quiz đã giao riêng thành viên không dùng được. Xuất bản quiz dạng chung cho cả nhóm hoặc bỏ giao riêng trước.",
+      "emptyNoMatchesHint": "Thử từ khóa khác hoặc xóa ô tìm kiếm.",
+      "questionCount": "{{count}} câu",
+      "durationMinutes": "{{minutes}} phút"
+    },
+    "newQuizNotice": {
+      "leadBefore": "Sau khi tạo challenge, vào chi tiết challenge và bấm ",
+      "composeLabel": "Soạn đề",
+      "leadAfter": " để mở trình soạn quiz (tab Quiz).",
+      "hint": "Lịch bắt đầu phải cách hiện tại ít nhất 3 ngày; sau khi tạo, vào chi tiết challenge để soạn đề trước khi challenge diễn ra."
+    },
+    "schedule": {
+      "titleLabel": "Tên Challenge *",
+      "titlePlaceholder": "VD: Kiểm tra kiến thức Chương 3",
+      "descriptionLabel": "Mô tả",
+      "descriptionPlaceholder": "Mô tả ngắn về challenge...",
+      "leaderParticipatesLabel": "Tôi tham gia thi cùng mọi người",
+      "leaderParticipatesDesc": "Bạn được giữ một suất trong danh sách thi. Sau khi xuất bản đề, bạn không xem trước câu hỏi (công bằng với thành viên). Trong lúc đề còn nháp (DRAFT) bạn vẫn soạn và kiểm tra được."
+    },
+    "registration": {
+      "publicLabel": "Công khai",
+      "publicDesc": "Mọi thành viên nhóm có thể đăng ký",
+      "inviteLabel": "Mời riêng",
+      "inviteDesc": "Chỉ người được mời mới tham gia",
+      "memberSearchPlaceholder": "Tìm thành viên...",
+      "selectedCount": "Đã chọn {{count}} thành viên",
+      "noMembers": "Không tìm thấy thành viên",
+      "memberFallback": "Thành viên"
+    },
+    "review": {
+      "challengeInfo": "Thông tin Challenge",
+      "fieldName": "Tên:",
+      "fieldDescription": "Mô tả:",
+      "fieldStart": "Bắt đầu:",
+      "fieldEnd": "Kết thúc:",
+      "quizHeading": "Quiz",
+      "quizExistingSelected": "{{title}} (bản sao quiz chung)",
+      "quizNotChosen": "Chưa chọn",
+      "quizNewNotice": "Quiz mới (soạn đề trong chi tiết challenge sau khi tạo)",
+      "snapshotNote": "Snapshot không giao riêng thành viên; toàn bộ người đăng ký challenge dùng chung nội dung này.",
+      "registrationHeading": "Đăng ký",
+      "registrationPublic": "Công khai - mọi thành viên đều có thể đăng ký",
+      "registrationInvite": "Mời riêng - {{count}} thành viên được mời"
+    },
+    "footer": {
+      "cancel": "Huỷ",
+      "back": "Quay lại",
+      "next": "Tiếp theo",
+      "submit": "Tạo Challenge"
+    }
+  },
+  "roadmapQuizListView": {
+    "visibility": {
+      "communityPublicShort": "Đã public",
+      "communityPublicLong": "Đã public lên cộng đồng",
+      "privateShort": "Riêng tư",
+      "privateLong": "Đang ở chế độ private"
+    },
+    "header": {
+      "communityExplorer": "Community Quiz",
+      "create": "Tạo mới"
+    },
+    "search": {
+      "placeholder": "Tìm kiếm quiz..."
+    },
+    "statusFilter": {
+      "all": "Tất cả",
+      "ACTIVE": "Đang hoạt động",
+      "DRAFT": "Bản nháp",
+      "COMPLETED": "Đã hoàn thành"
+    },
+    "statusLabels": {
+      "ACTIVE": "Đang hoạt động",
+      "DRAFT": "Bản nháp",
+      "COMPLETED": "Đã hoàn thành",
+      "INACTIVE": "Tạm dừng",
+      "PROCESSING": "Đang xử lý",
+      "ERROR": "Lỗi"
+    },
+    "intentLabels": {
+      "PRE_LEARNING": "Trước khi học",
+      "POST_LEARNING": "Sau khi học",
+      "PRACTICE": "Luyện tập",
+      "REVIEW": "Ôn tập"
+    },
+    "difficultyLevels": {
+      "easy": "Dễ",
+      "medium": "Trung bình",
+      "hard": "Khó",
+      "custom": "Tùy chỉnh"
+    },
+    "empty": {
+      "loading": "Đang tải quiz...",
+      "noQuizYet": "Chưa có quiz nào",
+      "noResults": "Không có quiz phù hợp",
+      "createQuiz": "Tạo quiz"
+    },
+    "feedback": {
+      "button": "Phản hồi"
+    },
+    "card": {
+      "aiLabel": "QUIZMATE AI",
+      "manualLabel": "Quiz thủ công",
+      "timeDuration": "Thời gian",
+      "overallDifficulty": "Độ khó",
+      "minutes": "phút",
+      "minutesShort": "phút"
+    },
+    "roadmapOverview": {
+      "questions": "Câu hỏi",
+      "questionsHint": "câu",
+      "attempts": "Số lần làm",
+      "duration": "Thời gian",
+      "score": "Điểm",
+      "passScore": "Ngưỡng đạt",
+      "updatedOn": "Cập nhật"
+    },
+    "examMode": {
+      "totalTimer": "Exam giới hạn thời gian tổng",
+      "perQuestion": "Exam theo từng câu",
+      "totalTimerShort": "Giới hạn thời gian tổng",
+      "perQuestionShort": "Theo từng câu"
+    },
+    "processing": {
+      "label": "Đang tạo quiz",
+      "hint": "Hệ thống đang sinh câu hỏi và cấu hình bài kiểm tra."
+    },
+    "result": {
+      "passed": "Đã đậu",
+      "notPassed": "Chưa đậu",
+      "notAttempted": "Chưa làm"
+    },
+    "actions": {
+      "practice": "Luyện tập",
+      "exam": "Kiểm tra",
+      "retakeExam": "Kiểm tra lại",
+      "makePublicShort": "Công khai",
+      "makePrivateShort": "Riêng tư",
+      "share": "Chia sẻ",
+      "deleteQuiz": "Xóa quiz",
+      "close": "Đóng",
+      "confirm": "Xác nhận",
+      "delete": "Xóa",
+      "deleting": "Đang xóa..."
+    },
+    "dialog": {
+      "examTitle": "Kiểm tra",
+      "startExamPrompt": "Xác nhận bắt đầu ở chế độ kiểm tra?",
+      "deleteTitle": "Xóa quiz",
+      "deleteConfirm": "Bạn có chắc chắn không?"
+    },
+    "errors": {
+      "deleteFail": "Xóa quiz thất bại"
+    }
+  },
+  "acceptInvitationPage": {
+    "empty": "Không có",
+    "invalidLink": "Liên kết mời không hợp lệ. Vui lòng kiểm tra lại email.",
+    "loadFail": "Không thể tải thông tin lời mời này.",
+    "acceptFail": "Không thể xác nhận lời mời này.",
+    "welcomeToast": "Chào mừng bạn đã vào nhóm!",
+    "loading": {
+      "title": "Đang tải lời mời nhóm",
+      "subtitle": "Thông tin nhóm sẽ hiện ra trước khi bạn xác nhận tham gia."
+    },
+    "errorState": {
+      "title": "Không thể mở lời mời",
+      "backHome": "Về trang chủ",
+      "registerAccount": "Đăng ký tài khoản"
+    },
+    "hero": {
+      "eyebrow": "Lời mời vào nhóm",
+      "fallbackTitle": "Lời mời tham gia nhóm",
+      "fallbackDescription": "Bạn đã được mời vào một workspace nhóm trên QuizMate AI. Xem thông tin bên dưới và xác nhận trước khi vào nhóm."
+    },
+    "infoLabels": {
+      "group": "Nhóm",
+      "description": "Mô tả",
+      "invitedBy": "Leader mời",
+      "invitedEmail": "Email được mời",
+      "domain": "Lĩnh vực",
+      "learningMode": "Chế độ học",
+      "exam": "Kỳ thi",
+      "groupGoal": "Mục tiêu nhóm",
+      "expiresAt": "Hạn xác nhận"
+    },
+    "detailLabels": {
+      "knowledge": "Nội dung kiến thức",
+      "rules": "Nội quy nhóm"
+    },
+    "sidebar": {
+      "eyebrow": "Luồng tham gia",
+      "title": "Xác nhận trước khi vào nhóm",
+      "step1Title": "1. Kiểm tra đúng email được mời",
+      "step1Description": "Tài khoản xác nhận phải trùng với email nhận lời mời để hệ thống đưa bạn vào đúng nhóm.",
+      "step2Title": "2. Bấm xác nhận trên web",
+      "step2Description": "Sau khi xác nhận, bạn sẽ vào thẳng workspace và nhìn thấy màn hình chào mừng cùng thông tin nhóm."
+    },
+    "expired": {
+      "title": "Lời mời đã hết hạn",
+      "description": "Leader cần gửi lại một lời mời mới nếu bạn vẫn cần tham gia nhóm này."
+    },
+    "guest": {
+      "title": "Đăng nhập để xác nhận",
+      "description": "Bạn cần đăng nhập tài khoản có email <1>{{email}}</1> để tiếp tục.",
+      "loginButton": "Đăng nhập để xác nhận",
+      "registerButton": "Tạo tài khoản mới"
+    },
+    "mismatch": {
+      "title": "Bạn đang đăng nhập sai tài khoản",
+      "description": "Hiện tại là <1>{{currentEmail}}</1>, trong khi lời mời này dành cho <3>{{invitedEmail}}</3>.",
+      "switchButton": "Đăng nhập lại đúng email"
+    },
+    "accepted": {
+      "title": "Bạn đã ở trong nhóm này",
+      "description": "Workspace sẵn sàng để bạn vào đọc thông tin nhóm và bắt đầu học.",
+      "openButton": "Mở workspace nhóm"
+    },
+    "ready": {
+      "title": "Tài khoản hợp lệ, sẵn sàng vào nhóm",
+      "description": "Sau khi bấm xác nhận, bạn sẽ vào thẳng trang chào mừng của nhóm này.",
+      "confirmButton": "Xác nhận vào nhóm",
+      "laterButton": "Để sau",
+      "laterToast": "Bạn có thể quay lại email này bất cứ lúc nào để mở lại liên kết mời."
+    }
+  },
+  "groupDocumentsTab": {
+    "noDate": "Chưa cập nhật",
+    "fileType": "Tệp",
+    "imageLabel": "Hình ảnh",
+    "videoLabel": "Video",
+    "audioLabel": "Âm thanh",
+    "statusAiChecking": "AI đang kiểm tra",
+    "statusShared": "Đang dùng chung",
+    "statusWarning": "Warning",
+    "statusFailed": "Thất bại",
+    "statusRejected": "Bị từ chối",
+    "statusPending": "Đang chờ",
+    "confirmDeleteMaterial": "Xóa \"{{title}}\" khỏi group workspace?",
+    "confirmDeleteFallbackTitle": "tài liệu này",
+    "badgeDocumentsHub": "Trung tâm tài liệu",
+    "badgeLeaderControl": "Leader quản lý",
+    "badgeMemberRequests": "Member gửi yêu cầu",
+    "heroTitle": "Quản lý tài liệu học tập của group trong một nơi",
+    "heroSubtitle": "Tải tài liệu dùng chung, theo dõi yêu cầu member gửi lên, và tách riêng các tài liệu warning vẫn đang chờ leader quyết định.",
+    "refreshButton": "Làm mới",
+    "uploadButton": "Tải tài liệu",
+    "tabDocuments": "Tài liệu",
+    "tabPendingReview": "Chờ duyệt",
+    "warningSectionTitle": "Tài liệu warning đang chờ duyệt",
+    "warningSectionSubtitle": "Đây là các tài liệu bị AI gắn cờ warning. Nên xử lý trước khi đưa vào thư viện tài liệu chung.",
+    "warningCountLabel": "mục warning",
+    "untitledMaterial": "Tài liệu chưa có tên",
+    "submittedToQueue": "Được gửi vào hàng chờ duyệt của group",
+    "warningOpenHint": "Mở tài liệu để xem chi tiết AI kiểm duyệt trước khi quyết định.",
+    "processingProgress": "Tiến độ xử lý",
+    "approveWarning": "Duyệt warning",
+    "reject": "Từ chối",
+    "librarySectionTitle": "Thư viện tài liệu chung",
+    "librarySectionSubtitle": "Theo dõi toàn bộ tài liệu đã gắn vào group workspace và lọc nhanh theo trạng thái hiện tại.",
+    "searchPlaceholder": "Tìm tài liệu...",
+    "filterAll": "Tất cả",
+    "filterShared": "Đang dùng",
+    "filterProcessing": "Đang xử lý",
+    "filterIssues": "Lỗi / từ chối",
+    "emptyFilteredMaterials": "Chưa có tài liệu nào khớp với bộ lọc hiện tại.",
+    "materialOpenHint": "Bấm để mở đánh giá AI và nội dung trích xuất.",
+    "deleteMaterialTitle": "Xóa tài liệu",
+    "issuesSectionTitle": "Tài liệu cần xử lý lại",
+    "issueDefaultMessage": "Tài liệu này chưa thể vào thư viện của group.",
+    "issueOpenHint": "Mở tài liệu để xem rõ lý do kiểm duyệt và trạng thái AI.",
+    "issuePillRejected": "Từ chối"
+  },
+  "groupWorkspaceProfileConfigMirror": {
+    "learningModes": {
+      "studyNew": "Học kiến thức mới",
+      "review": "Ôn tập theo nhóm",
+      "mockTest": "Thi thử cùng nhóm"
+    },
+    "seatLimit": {
+      "members": "{{count}} thành viên",
+      "managed": "Theo gói group hiện tại"
+    },
+    "domainReason": {
+      "translation": "Phù hợp với hướng học dịch, chuyển nghĩa và đối chiếu ngữ cảnh mà nhóm mô tả.",
+      "comparison": "Phù hợp nếu nhóm đang học theo hướng so sánh hoặc bắc cầu giữa hai hệ kiến thức.",
+      "englishVietnamesePair": "Phù hợp với phạm vi học chung xoay quanh cặp ngôn ngữ Anh - Việt.",
+      "fallback1": "Đây là hướng khớp gần nhất với phạm vi kiến thức nhóm đang chia sẻ.",
+      "fallback2": "Đây là mảng liên quan mà AI nhận thấy từ nội dung kiến thức bạn nhập.",
+      "fallback3": "Đây là ngữ cảnh mở rộng có thể phù hợp với mục tiêu học chung của nhóm."
+    },
+    "summary": {
+      "modeNotSet": "Chưa chọn"
+    },
+    "confirmationSummary": {
+      "empty": "Chưa cập nhật",
+      "enabled": "Đang bật",
+      "disabled": "Đang tắt",
+      "required": "Yêu cầu",
+      "notRequired": "Không yêu cầu",
+      "identityTitle": "Nhận diện nhóm",
+      "groupNameLabel": "Tên nhóm",
+      "learningScopeTitle": "Phạm vi học tập",
+      "knowledgeLabel": "Kiến thức nhóm muốn học",
+      "domainLabel": "Lĩnh vực",
+      "modeLabel": "Chế độ học",
+      "examLabel": "Kỳ thi",
+      "groupSetupTitle": "Cấu hình nhóm",
+      "roadmapLabel": "Roadmap chung",
+      "entryLabel": "Đánh giá đầu vào",
+      "operatingNotesTitle": "Ghi chú vận hành",
+      "goalLabel": "Mục tiêu học tập chung",
+      "rulesLabel": "Nội quy nhóm"
+    },
+    "validation": {
+      "completeRequired": "Vui lòng hoàn thành các mục bắt buộc trước khi kiểm tra lại để hoàn tất."
+    },
+    "confirm": {
+      "badge": "XÁC NHẬN HỒ SƠ",
+      "title": "Xác nhận sử dụng hồ sơ nhóm này",
+      "description": "Kiểm tra nhanh bản tóm tắt trước khi áp dụng. Sau khi xác nhận, cấu hình này sẽ trở thành hồ sơ đang dùng cho workspace nhóm.",
+      "finalReviewTitle": "Rà soát lần cuối trước khi áp dụng cho nhóm",
+      "finalReviewDescription": "Bạn vẫn có thể quay lại form để chỉnh sửa lại mục tiêu, nội quy hoặc phạm vi kiến thức trước khi lưu chính thức.",
+      "editHint": "Bạn có thể quay lại để chỉnh sửa trước khi áp dụng.",
+      "applyEyebrow": "Hồ sơ nhóm sẽ được áp dụng",
+      "applyDescription": "Các mục bên dưới sẽ được lưu thành cấu hình học tập hiện tại của workspace nhóm.",
+      "backToEdit": "Quay lại chỉnh sửa",
+      "confirmButton": "Xác nhận sử dụng hồ sơ này"
+    }
+  },
+  "challengeDetailView": {
+    "errors": {
+      "generic": "Có lỗi xảy ra",
+      "cannotStartAttempt": "Không thể bắt đầu làm bài",
+      "cannotLoadDetail": "Không thể tải chi tiết challenge"
+    },
+    "cannotOpenTitle": "Không mở được challenge",
+    "back": "Quay lại",
+    "waitingReviewerConfirm": "Chờ reviewer xác nhận",
+    "publishHints": {
+      "needDraftQuizContent": "Leader phải soạn nội dung quiz trước.",
+      "needActiveQuiz": "Quiz challenge phải được chuyển từ draft sang active trước khi xuất bản challenge.",
+      "needBothReviewers": "Cần đủ reviewer chính và reviewer phụ trước khi xuất bản challenge.",
+      "needPrimaryReviewer": "Cần có reviewer chính cho quiz challenge trước khi xuất bản.",
+      "needAssistantReviewer": "Cần có reviewer phụ cho quiz challenge trước khi xuất bản.",
+      "needReviewersConfirm": "Reviewer chính/phụ phải xác nhận đề ổn trước khi leader xuất bản challenge.",
+      "startTimePassed": "Challenge đã tới giờ bắt đầu nên không thể xuất bản.",
+      "afterPublishInfo": "Sau khi xuất bản, member mới thấy challenge và được đăng ký tham gia."
+    },
+    "notPublishedBadge": "Chưa publish",
+    "startLabel": "Bắt đầu",
+    "endLabel": "Kết thúc",
+    "participantCount": "{{count}} người tham gia",
+    "registrationMode": {
+      "inviteOnly": "Mời riêng",
+      "public": "Công khai"
+    },
+    "quizChallengeLabel": "Quiz challenge",
+    "minutesShort": "{{count}} phút",
+    "questionsShort": "câu hỏi",
+    "composeChallengeQuiz": "Soạn đề challenge",
+    "draftQuizHint": "Tạo nội dung quiz trước, sau đó mới xem lại được đề challenge.",
+    "leaderSetupFlowHint": "Flow challenge: leader tạo challenge và soạn quiz, reviewer chính/phụ kiểm tra đề, khi đề ổn thì chuyển quiz sang ACTIVE, sau đó leader mới xuất bản challenge. Chỉ sau khi xuất bản thì member mới thấy challenge và đăng ký tham gia.",
+    "reviewerPanel": {
+      "orderHint": "Người đầu tiên được thêm sẽ là reviewer chính. Người thứ hai là reviewer phụ.",
+      "primaryBadge": "Reviewer chính",
+      "assistantBadge": "Reviewer phụ",
+      "lastViewedAt": "Đã mở xem đề: {{time}}",
+      "lastViewedEmpty": "Chưa ghi nhận mở xem đề",
+      "confirmedOkAt": "Đã xác nhận đề ổn: {{time}}",
+      "confirmedOkEmpty": "Chưa xác nhận đề ổn",
+      "needTwoReviewersHint": "Cần đủ 2 reviewer để leader có thể xuất bản challenge sau khi quiz đã ACTIVE."
+    },
+    "actions": {
+      "publish": "Xuất bản challenge",
+      "register": "Đăng ký",
+      "acceptInvite": "Chấp nhận lời mời",
+      "continueAttempt": "Tiếp tục làm bài",
+      "startAttempt": "Bắt đầu làm bài",
+      "cancel": "Huỷ challenge"
+    },
+    "participantsTitle": "Người tham gia ({{count}})",
+    "memberFallback": "Thành viên",
+    "participantStatus": {
+      "finished": "Hoàn thành",
+      "playing": "Đang làm",
+      "waiting": "Chờ"
+    }
+  },
+  "groupSettingsTab": {
+    "identityState": "Trạng thái nhận diện",
+    "identityAligned": "Ổn định",
+    "identityNeedsSetup": "Cần thiết lập",
+    "identityNote": "tên nhóm là dấu hiệu nhận diện chính của không gian",
+    "governanceLane": "Làn quản trị",
+    "governanceLeader": "Quyền trưởng nhóm",
+    "governanceReadOnly": "Chỉ theo dõi",
+    "governanceNote": "ai đang có quyền thay đổi nhóm",
+    "subjectAxis": "Trục nội dung",
+    "subjectNote": "hướng nội dung chính của không gian này",
+    "visibilityPublic": "Nhóm đã chuyển sang Công khai",
+    "visibilityPrivate": "Nhóm đã chuyển sang Riêng tư",
+    "visibilityFailed": "Cập nhật thất bại",
+    "generalInfo": "Thông tin chung nhóm",
+    "groupVisibility": "Chế độ hiển thị nhóm",
+    "compactPublicHint": "Mọi người có thể tìm thấy nhóm này.",
+    "compactPrivateHint": "Chỉ thành viên được mời mới có thể tham gia.",
+    "governanceDeck": "Boong quản trị",
+    "identityAndGuardrails": "Nhận diện và quy chuẩn",
+    "heroTitle": "Tinh chỉnh không gian mà vẫn giữ đúng nhịp vận hành",
+    "heroDescription": "Đây là nơi định danh nhóm, làm rõ mục đích hoạt động và giữ các quyết định quan trọng của không gian học tập thật có kiểm soát.",
+    "controlNote": "Ghi chú điều phối",
+    "controlNoteLeader": "Chỉ thay đổi những gì giúp nhóm rõ ràng hơn. Một cấu hình tốt là khi mọi người hiểu không gian này gần như ngay lập tức.",
+    "controlNoteMember": "Bạn có thể theo dõi cấu hình nhóm tại đây, còn các thay đổi cấu trúc vẫn thuộc quyền của trưởng nhóm.",
+    "workspaceFingerprint": "Dấu vân tay không gian",
+    "publicHeading": "Công khai — mọi người có thể tìm thấy",
+    "privateHeading": "Riêng tư — chỉ được mời",
+    "publicDescription": "Mọi người có thể tìm thấy và yêu cầu tham gia nhóm này.",
+    "privateDescription": "Chỉ thành viên có lời mời trực tiếp mới có thể truy cập nhóm này.",
+    "publicBadge": "Công khai",
+    "privateBadge": "Riêng tư",
+    "nameIdentityMarkers": "Tên gọi và các dấu hiệu nhận diện",
+    "guardrails": "Hàng rào vận hành",
+    "guardrailsDescription": "Các dữ liệu ổn định định nghĩa cách mọi người hiểu về nhóm",
+    "changeAuthority": "Quyền thay đổi",
+    "leaderAuthorityNote": "Bạn có thể đổi tên, tinh chỉnh hoặc xóa nhóm này.",
+    "retireHeading": "Kết thúc nhóm này một cách có kiểm soát",
+    "confirmTypePrefix": "Nhập",
+    "confirmTypeSuffix": "để xác nhận xóa vĩnh viễn.",
+    "leaderOnlyControls": "Khu vực dành cho trưởng nhóm"
+  },
+  "createGroupMockTestForm": {
+    "difficulty": {
+      "easy": "Dễ",
+      "medium": "Trung bình",
+      "hard": "Khó"
+    },
+    "errors": {
+      "missingExamName": "Vui lòng nhập tên kỳ thi.",
+      "missingCustomPrompt": "Vui lòng nhập yêu cầu tuỳ chỉnh.",
+      "generateFailed": "Tạo template thất bại. Vui lòng thử lại.",
+      "createMockTestFailed": "Tạo mock test thất bại. Vui lòng thử lại.",
+      "genericGenerate": "Có lỗi xảy ra khi tạo template."
+    },
+    "header": {
+      "title": "Tạo Mock Test bằng AI"
+    },
+    "description": "AI sẽ tạo template đề thi phù hợp. Leader có thể xem trước rồi áp dụng để tạo bài mock test (DRAFT) cho nhóm.",
+    "tabs": {
+      "examName": "Tên kỳ thi",
+      "custom": "Yêu cầu tuỳ chỉnh"
+    },
+    "examName": {
+      "label": "Tên kỳ thi / đề thi",
+      "placeholder": "VD: TOEIC 900, Thi thử THPTQG Toán 2025, AWS SAA-C03...",
+      "hint": "AI sẽ tạo template phù hợp với cấu trúc và nội dung của kỳ thi này."
+    },
+    "custom": {
+      "label": "Yêu cầu tuỳ chỉnh",
+      "placeholder": "VD: Tạo bài kiểm tra 30 câu về Lập trình Python cơ bản, độ khó tăng dần, tập trung vào cú pháp và xử lý lỗi..."
+    },
+    "fields": {
+      "difficulty": "Độ khó",
+      "totalQuestions": "Số câu hỏi",
+      "duration": "Thời gian (phút)"
+    },
+    "generating": {
+      "title": "AI đang tạo template…",
+      "hint": "Quá trình có thể mất 15–40 giây tuỳ độ phức tạp…"
+    },
+    "preview": {
+      "ready": "Template AI đã sẵn sàng",
+      "regenerate": "Tạo lại",
+      "examTitle": "Tên bài thi",
+      "stats": {
+        "questionCount": "Số câu",
+        "duration": "Thời gian",
+        "difficulty": "Độ khó"
+      },
+      "durationValue": "{{value}} phút",
+      "structure": "Cấu trúc đề ({{count}} phần)",
+      "sectionFallback": "Phần {{index}}",
+      "questionCountSuffix": "câu"
+    },
+    "fallbackTitle": "Mock Test",
+    "buttons": {
+      "cancel": "Huỷ",
+      "generating": "Đang tạo…",
+      "generate": "Tạo template với AI",
+      "applying": "Đang tạo Draft…",
+      "apply": "Áp dụng & Tạo Draft"
+    }
+  },
+  "groupProfileOverviewPanel": {
+    "toggle": {
+      "notConfigured": "Chưa cấu hình",
+      "enabled": "Đang bật",
+      "disabled": "Đang tắt",
+      "required": "Yêu cầu",
+      "notRequired": "Không yêu cầu"
+    },
+    "seatLimit": {
+      "members": "{{count}} thành viên",
+      "basedOnPlan": "Theo gói group hiện tại"
+    },
+    "completion": {
+      "inProgress": "Đang hoàn thiện",
+      "completed": "Đã hoàn tất"
+    },
+    "roadmapBadge": {
+      "on": "Có lộ trình chung",
+      "off": "Không có lộ trình chung"
+    },
+    "emptyLabel": "Chưa cập nhật",
+    "hero": {
+      "eyebrow": "Profile nhóm đã setup",
+      "title": "Tóm tắt mặt bằng nhóm trước khi mở rộng workspace",
+      "description": "Toàn bộ khu này phản ánh profile đang được lưu cho nhóm: hướng học, nội quy cốt lõi và cấu hình học tập chung mà cả nhóm đang đi theo."
+    },
+    "actionButton": "Chỉnh sửa",
+    "metrics": {
+      "setupStatus": {
+        "label": "Trạng thái setup",
+        "description": "Cho biết profile nền tảng của nhóm đã sẵn sàng hay chưa"
+      },
+      "learningMode": {
+        "label": "Chế độ học",
+        "description": "Định nghĩa nhịp học mặc định của roadmap và nội dung"
+      },
+      "seatLimit": {
+        "label": "Sức chứa",
+        "description": "Sức chứa hiện tại dành cho mô hình nhóm này"
+      }
+    },
+    "fields": {
+      "groupName": "Tên nhóm",
+      "domain": "Lĩnh vực",
+      "examName": "Kỳ thi",
+      "profileProgress": "Tiến độ profile",
+      "sharedRoadmap": "Roadmap chung",
+      "entryAssessment": "Đánh giá đầu vào"
+    },
+    "coreSetup": {
+      "label": "Thiết lập cốt lõi",
+      "description": "Đây là những giá trị định nghĩa nhóm này là ai và baseline học tập chung mà cả nhóm đang theo."
+    },
+    "knowledge": {
+      "eyebrow": "Nội dung kiến thức",
+      "title": "Những gì nhóm đang học cùng nhau"
+    },
+    "learningGoal": {
+      "eyebrow": "Mục tiêu học tập",
+      "title": "Đích đến mà nhóm đang hướng tới"
+    },
+    "groupRules": {
+      "eyebrow": "Nội quy nhóm",
+      "title": "Quy ước chung cho cả thành viên mới và hiện tại"
+    }
+  },
+  "groupDiscussionPanel": {
+    "relative": {
+      "justNow": "vừa xong",
+      "minutesAgo": "{{count}} phút trước",
+      "hoursAgo": "{{count}} giờ trước"
+    },
+    "defaultUserName": "Người dùng",
+    "viewQuestionTooltip": "Xem câu hỏi này",
+    "confirmDelete": "Xác nhận",
+    "deleteCommentTooltip": "Xóa bình luận",
+    "empty": {
+      "title": "Chưa có bình luận nào",
+      "description": "Hãy bắt đầu thảo luận! Dùng <1>/</1> để tag câu hỏi cụ thể."
+    },
+    "header": {
+      "title": "Thảo luận chung",
+      "hintPrefix": "Gõ",
+      "hintSuffix": "để tag câu hỏi"
+    },
+    "locked": {
+      "title": "Hoàn thành quiz để tham gia thảo luận",
+      "description": "Làm bài trước để trao đổi với các thành viên trong nhóm."
+    },
+    "guideline": {
+      "title": "Hướng dẫn thảo luận chung",
+      "enterHint": "gửi tin nhắn",
+      "shiftEnterHint": "xuống hàng",
+      "slashHintPrefix": "Gõ",
+      "slashHintSuffix": "để tag câu hỏi — thành viên click vào chip sẽ được chuyển tới câu hỏi đó",
+      "leaderHint": "Leader có thể xóa bất kỳ bình luận nào",
+      "closeTooltip": "Đóng hướng dẫn"
+    },
+    "suggestions": {
+      "questions": "Câu hỏi",
+      "questionsWithQuery": "Câu hỏi · \"{{query}}\"",
+      "shortcuts": "↑↓ chọn · Enter xác nhận · Esc đóng",
+      "countFiltered": "{{shown}} / {{total}} câu hỏi",
+      "countTotal": "{{total}} câu hỏi"
+    },
+    "tagsPreview": {
+      "label": "Tag đã chèn:"
+    },
+    "input": {
+      "placeholder": "Viết bình luận… Dùng / để tag câu hỏi · Enter để gửi",
+      "footerPrefix": "Enter gửi · Shift+Enter xuống hàng ·",
+      "leaderCanDelete": "Leader có thể xóa mọi bình luận",
+      "memberCanDelete": "Chỉ có thể xóa bình luận của bạn"
+    }
+  },
+  "questionDiscussion": {
+    "shared": {
+      "relativeTime": {
+        "justNow": "vừa xong",
+        "minutesAgo": "{{count}} phút trước",
+        "hoursAgo": "{{count}} giờ trước"
+      },
+      "userFallback": "Người dùng",
+      "composerNameFallback": "bạn",
+      "delete": "Xóa",
+      "deleteCommentTitle": "Xóa bình luận",
+      "sendTitle": "Gửi (Enter)",
+      "composerPlaceholder": "Bình luận dưới tên {{name}}",
+      "threadTitle": "Thảo luận câu {{index}}",
+      "emptyState": "Chưa có bình luận nào. Mở đầu cuộc thảo luận cho câu này.",
+      "roles": {
+        "leader": "Leader",
+        "contributor": "Contributor"
+      }
+    },
+    "inline": {
+      "guide": {
+        "title": "Hướng dẫn thảo luận câu hỏi",
+        "dismissTitle": "Đóng hướng dẫn",
+        "enterToSend": "<strong>Enter</strong> để gửi bình luận nhanh",
+        "shiftEnterNewLine": "<strong>Shift + Enter</strong> để xuống hàng",
+        "discussTopic": "Thảo luận về đáp án, cách giải, hoặc điểm chưa rõ của câu hỏi này",
+        "hoverToDelete": "Hover vào bình luận để xóa (chỉ bình luận của bạn)"
+      },
+      "locked": {
+        "title": "Hoàn thành quiz để tham gia thảo luận",
+        "subtitle": "Làm bài trước để trao đổi với các thành viên về câu hỏi này."
+      },
+      "attempted": "Đã làm bài",
+      "footerShortcut": "Enter gửi · Shift+Enter xuống hàng",
+      "composerTools": {
+        "emoji": "Biểu cảm",
+        "camera": "Máy ảnh",
+        "image": "Ảnh",
+        "sticker": "Sticker"
+      }
+    },
+    "dialog": {
+      "lockedNotice": "Hoàn thành quiz để tham gia thảo luận cho câu hỏi này.",
+      "questionBadge": "Câu {{index}}",
+      "commentCount": "{{count}} bình luận",
+      "headerDescription": "Mở riêng thread cho câu hỏi này để member trao đổi đáp án, cách giải và những điểm chưa rõ.",
+      "answersAndExplanation": "Đáp án và lời giải",
+      "canViewNow": "Có thể xem ngay",
+      "lockedUntilFinish": "Khóa tới khi hoàn thành quiz",
+      "explanationLabel": "Giải thích:",
+      "commentsPerQuestion": "Bình luận theo câu hỏi",
+      "commentsPerQuestionSubtitle": "Câu hỏi và bình luận nằm chung một luồng thảo luận."
+    }
+  },
+  "groupSourceDetailView": {
+    "imageAlt": "Hình ảnh tài liệu",
+    "nodeLabels": {
+      "legal": "Pháp lý",
+      "intent": "Ý định",
+      "harmful": "Độc hại",
+      "accuracy": "Độ chính xác",
+      "community": "Cộng đồng"
+    },
+    "reviewApproved": "Đã duyệt tài liệu này cho group.",
+    "reviewRejected": "Đã từ chối tài liệu này khỏi group.",
+    "reviewError": "Không thể duyệt tài liệu lúc này.",
+    "moderationLoading": "Đang tải báo cáo kiểm duyệt...",
+    "leaderReviewActiveHint": "AI đã xử lý xong tài liệu này. Leader cần xác nhận trước khi tài liệu xuất hiện trong nguồn học chung.",
+    "leaderReviewQueueHint": "Tài liệu này đang ở hàng chờ leader duyệt cho group.",
+    "moderationDetailTitle": "Chi tiết kiểm duyệt",
+    "reasonLabel": "Lý do: ",
+    "suggestionLabel": "Gợi ý: ",
+    "detectedTopicLabel": "Chủ đề phát hiện của tài liệu: ",
+    "suitablePercentLabel": "Phần trăm nội dung phù hợp: ",
+    "currentLevelLabel": "Mức hiện tại của tài liệu: ",
+    "requiredLevelLabel": " | Mức yêu cầu: ",
+    "leaderReviewPrompt": "Leader có muốn duyệt tài liệu này cho group không?",
+    "yes": "Có",
+    "no": "Không"
+  },
+  "roadmapCanvasView2": {
+    "groupPreLearningCreateSuccess": "Đã gửi yêu cầu tạo pre-learning cho roadmap nhóm.",
+    "groupPreLearningCreateFail": "Không thể tạo pre-learning cho roadmap nhóm.",
+    "feedbackLabel": "Phản hồi",
+    "roadmapFeedbackTitle": "Phản hồi lộ trình",
+    "phaseFeedbackTitle": "Phản hồi phase",
+    "phaseReviewTitle": "Đánh giá AI cho phase hiện tại",
+    "phaseReviewAssessedAt": "Đánh giá lúc",
+    "phaseLockedTitle": "Phase này đang bị khóa",
+    "phaseLockedDesc": "Vui lòng mở khóa",
+    "phaseUnlockFailed": "Không thể mở khóa phase này.",
+    "unlockingPhaseBtn": "Đang mở khóa...",
+    "unlockPhaseBtn": "Mở khóa Phase",
+    "groupPreLearningQuestionCountLabel": "Số câu pre-learning (20-25)",
+    "groupPreLearningCreateButton": "Tạo pre-learning",
+    "groupPreLearningTitle": "Pre-learning toàn roadmap",
+    "groupPreLearningEmptyHint": "Tạo bài pre-learning tổng cho roadmap nhóm theo mục tiêu học tập chung."
+  },
+  "groupPendingReviewPanel": {
+    "noDate": "Chưa cập nhật",
+    "statusAiChecking": "AI đang kiểm tra",
+    "statusWarningNeedsReview": "Warning, chờ duyệt",
+    "statusWarning": "Warning",
+    "statusReadyForLeaderReview": "Sẵn sàng leader duyệt",
+    "statusProcessingFailed": "Xử lý thất bại",
+    "statusRejected": "Bị loại",
+    "statusPending": "Đang chờ",
+    "titleLeader": "Hàng chờ duyệt tài liệu",
+    "titleMember": "Các tài liệu bạn vừa gửi",
+    "descriptionLeader": "Tài liệu group sau khi AI kiểm tra sẽ vào đây trước khi xuất hiện ở danh sách tài liệu chung.",
+    "descriptionMember": "Theo dõi các tệp bạn vừa gửi trong lúc AI hoàn tất kiểm tra cho group.",
+    "itemsCountSuffix": "mục",
+    "loadingQueue": "Đang tải hàng chờ tài liệu...",
+    "emptyLeader": "Hiện chưa có tài liệu nào chờ leader duyệt.",
+    "emptyMember": "Hiện chưa có upload nào đang được theo dõi trong phiên này.",
+    "currentSessionTag": "Phiên hiện tại",
+    "untitledMaterial": "Tài liệu chưa có tên",
+    "uploadedInGroupWorkspace": "Tải lên trong group workspace",
+    "uploadProgressLabel": "Tiến độ xử lý",
+    "viewDetailsButton": "Xem chi tiết",
+    "approveButton": "Duyệt",
+    "rejectButton": "Từ chối"
+  },
+  "groupSourcesPanel": {
+    "sourceProcessingTooltip": "Tài liệu đang được xử lý, vui lòng đợi.",
+    "cannotSelectTooltip": "Không thể chọn tài liệu này",
+    "sourceIrrelevantTooltip": "Tài liệu không liên quan đến học tập",
+    "uploadErrorBadge": "Lỗi tải lên",
+    "warnContentBadge": "⚠ Nội dung cảnh báo",
+    "irrelevantBadge": "Không liên quan",
+    "uploadingBadge": "Đang tải lên...",
+    "optionsAriaLabel": "Tùy chọn"
   }
 }

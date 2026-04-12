@@ -65,7 +65,6 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
   const { i18n, t } = useTranslation();
   const { showSuccess, showError } = useToast();
   const currentLang = i18n.language || 'vi';
-  const isEnglish = currentLang.startsWith('en');
 
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState([]);
@@ -155,7 +154,7 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
       setTickets((currentTickets) => currentTickets.map((ticket) => (
         ticket.requestId === updatedTicket.requestId ? updatedTicket : ticket
       )));
-      showSuccess(isEnglish ? 'Ticket updated.' : 'Đã cập nhật ticket.');
+      showSuccess(t('feedbackTicketManagementPanel.toastUpdated', 'Ticket updated.'));
       await loadTickets(page);
     } catch (error) {
       showError(getErrorMessage(t, error));
@@ -196,11 +195,9 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">{isEnglish ? 'User feedback tickets' : 'Ticket feedback của user'}</h2>
+              <h2 className="text-lg font-semibold">{t('feedbackTicketManagementPanel.headerTitle', 'User feedback tickets')}</h2>
               <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                {isEnglish
-                  ? 'Reply to product and system tickets, then move them through the handling workflow.'
-                  : 'Phản hồi ticket sản phẩm và hệ thống, sau đó cập nhật chúng theo luồng xử lý.'}
+                {t('feedbackTicketManagementPanel.headerDescription', 'Reply to product and system tickets, then move them through the handling workflow.')}
               </p>
             </div>
           </div>
@@ -216,7 +213,7 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
             className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}
           >
             <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
-            <span>{isEnglish ? 'Refresh' : 'Làm mới'}</span>
+            <span>{t('feedbackTicketManagementPanel.refresh', 'Refresh')}</span>
           </Button>
         </div>
       </div>
@@ -224,19 +221,19 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         <div className={cn('rounded-2xl border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
           <p className={cn('text-xs uppercase tracking-[0.2em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-            {isEnglish ? 'Visible now' : 'Đang hiển thị'}
+            {t('feedbackTicketManagementPanel.summaryVisible', 'Visible now')}
           </p>
           <p className="mt-2 text-2xl font-black tracking-[-0.04em]">{summary.total}</p>
         </div>
         <div className={cn('rounded-2xl border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
           <p className={cn('text-xs uppercase tracking-[0.2em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-            {isEnglish ? 'Open / In progress' : 'Mới / Đang xử lý'}
+            {t('feedbackTicketManagementPanel.summaryOpenInProgress', 'Open / In progress')}
           </p>
           <p className="mt-2 text-2xl font-black tracking-[-0.04em]">{summary.open + summary.inProgress}</p>
         </div>
         <div className={cn('rounded-2xl border px-4 py-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
           <p className={cn('text-xs uppercase tracking-[0.2em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-            {isEnglish ? 'Resolved / Closed' : 'Đã giải quyết / Đã đóng'}
+            {t('feedbackTicketManagementPanel.summaryResolvedClosed', 'Resolved / Closed')}
           </p>
           <p className="mt-2 text-2xl font-black tracking-[-0.04em]">{summary.done}</p>
         </div>
@@ -254,7 +251,7 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
                   setSearchKeyword(searchInput.trim());
                 }
               }}
-              placeholder={isEnglish ? 'Search by title, reply, user, email...' : 'Tìm theo tiêu đề, phản hồi, user, email...'}
+              placeholder={t('feedbackTicketManagementPanel.searchPlaceholder', 'Search by title, reply, user, email...')}
               className={cn('h-11 rounded-2xl pl-9', fieldClass)}
             />
           </div>
@@ -266,7 +263,7 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
             {CHANNEL_FILTER_OPTIONS.map((option) => (
               <option key={option} value={option}>
                 {option === 'ALL'
-                  ? (isEnglish ? 'All categories' : 'Tất cả phân loại')
+                  ? t('feedbackTicketManagementPanel.allCategories', 'All categories')
                   : getFeedbackChannelLabel(option, currentLang)}
               </option>
             ))}
@@ -279,14 +276,14 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
             {RESOLUTION_FILTER_OPTIONS.map((option) => (
               <option key={option} value={option}>
                 {option === 'ALL'
-                  ? (isEnglish ? 'All handling states' : 'Tất cả trạng thái xử lý')
+                  ? t('feedbackTicketManagementPanel.allHandlingStates', 'All handling states')
                   : getFeedbackResolutionStatusLabel(option, currentLang)}
               </option>
             ))}
           </select>
           <Button type="button" onClick={() => setSearchKeyword(searchInput.trim())}>
             <Search className="h-4 w-4" />
-            <span>{isEnglish ? 'Search' : 'Tìm kiếm'}</span>
+            <span>{t('feedbackTicketManagementPanel.search', 'Search')}</span>
           </Button>
         </div>
       </div>
@@ -294,7 +291,7 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
       <div className="mt-5 space-y-3">
         {loading ? (
           <div className={cn('rounded-[24px] border px-5 py-10 text-center text-sm', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500')}>
-            {isEnglish ? 'Loading feedback tickets...' : 'Đang tải ticket feedback...'}
+            {t('feedbackTicketManagementPanel.loadingTickets', 'Loading feedback tickets...')}
           </div>
         ) : null}
 
@@ -303,7 +300,7 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
             <div className={cn('mx-auto mb-4 inline-flex rounded-2xl p-4', isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600')}>
               <Ticket className="h-6 w-6" />
             </div>
-            <h3 className="text-base font-semibold">{isEnglish ? 'No tickets match the current filters' : 'Không có ticket nào khớp bộ lọc hiện tại'}</h3>
+            <h3 className="text-base font-semibold">{t('feedbackTicketManagementPanel.noMatches', 'No tickets match the current filters')}</h3>
           </div>
         ) : null}
 
@@ -347,7 +344,7 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
       </div>
 
       <div className={cn('mt-4 flex items-center justify-between text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-        <span>{pageMeta.totalElements} {isEnglish ? 'tickets' : 'ticket'}</span>
+        <span>{pageMeta.totalElements} {t('feedbackTicketManagementPanel.ticketsSuffix', 'tickets')}</span>
         <div className="flex items-center gap-2">
           <Button
             type="button"
@@ -376,17 +373,15 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className={cn('max-h-[90vh] overflow-y-auto sm:max-w-4xl', isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : '')}>
           <DialogHeader>
-            <DialogTitle>{isEnglish ? 'Ticket detail' : 'Chi tiết ticket'}</DialogTitle>
+            <DialogTitle>{t('feedbackTicketManagementPanel.ticketDetail', 'Ticket detail')}</DialogTitle>
             <DialogDescription className={isDarkMode ? 'text-slate-400' : ''}>
-              {isEnglish
-                ? 'Reply to the user and keep the handling status in sync.'
-                : 'Phản hồi cho user và cập nhật trạng thái xử lý ngay tại đây.'}
+              {t('feedbackTicketManagementPanel.ticketDetailDescription', 'Reply to the user and keep the handling status in sync.')}
             </DialogDescription>
           </DialogHeader>
 
           {detailLoading ? (
             <div className="py-10 text-center text-sm text-slate-500">
-              {isEnglish ? 'Loading ticket detail...' : 'Đang tải chi tiết ticket...'}
+              {t('feedbackTicketManagementPanel.loadingDetail', 'Loading ticket detail...')}
             </div>
           ) : null}
 
@@ -408,27 +403,27 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
               <div className="grid gap-3 md:grid-cols-2">
                 <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
                   <p className={cn('text-xs uppercase tracking-[0.2em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                    {isEnglish ? 'Requester' : 'Người gửi'}
+                    {t('feedbackTicketManagementPanel.requester', 'Requester')}
                   </p>
                   <p className="mt-3 text-sm font-semibold">{selectedTicket.user?.fullName || selectedTicket.user?.username || '-'}</p>
                   <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>{selectedTicket.user?.email || '-'}</p>
                 </div>
                 <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
                   <p className={cn('text-xs uppercase tracking-[0.2em]', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                    {isEnglish ? 'Timeline' : 'Thời gian'}
+                    {t('feedbackTicketManagementPanel.timeline', 'Timeline')}
                   </p>
                   <p className="mt-3 text-sm font-semibold">{formatDateTime(selectedTicket.createdAt, currentLang)}</p>
                   <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
                     {selectedTicket.handledAt
-                      ? `${isEnglish ? 'Handled' : 'Cập nhật'}: ${formatDateTime(selectedTicket.handledAt, currentLang)}`
-                      : (isEnglish ? 'Not handled yet' : 'Chưa được xử lý')}
+                      ? `${t('feedbackTicketManagementPanel.handledLabel', 'Handled')}: ${formatDateTime(selectedTicket.handledAt, currentLang)}`
+                      : t('feedbackTicketManagementPanel.notHandledYet', 'Not handled yet')}
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{isEnglish ? 'Handling status' : 'Trạng thái xử lý'}</label>
+                  <label className="text-sm font-medium">{t('feedbackTicketManagementPanel.handlingStatus', 'Handling status')}</label>
                   <select
                     value={resolutionDraft}
                     onChange={(event) => setResolutionDraft(event.target.value)}
@@ -442,19 +437,19 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{isEnglish ? 'Reply to user' : 'Phản hồi cho user'}</label>
+                  <label className="text-sm font-medium">{t('feedbackTicketManagementPanel.replyToUser', 'Reply to user')}</label>
                   <textarea
                     value={replyDraft}
                     onChange={(event) => setReplyDraft(event.target.value)}
                     className={cn('min-h-[180px] w-full rounded-2xl border px-4 py-3 text-sm outline-none', fieldClass)}
-                    placeholder={isEnglish ? 'Write the response or handling note...' : 'Nhập nội dung phản hồi hoặc ghi chú xử lý...'}
+                    placeholder={t('feedbackTicketManagementPanel.replyPlaceholder', 'Write the response or handling note...')}
                   />
                 </div>
               </div>
 
               {selectedTicket.handledBy ? (
                 <div className={cn('rounded-[24px] border px-4 py-3 text-sm', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-700')}>
-                  {isEnglish ? 'Latest handled by' : 'Người xử lý gần nhất'}:{' '}
+                  {t('feedbackTicketManagementPanel.latestHandledBy', 'Latest handled by')}:{' '}
                   <span className="font-medium">
                     {selectedTicket.handledBy.fullName || selectedTicket.handledBy.username || selectedTicket.handledBy.email}
                   </span>
@@ -469,11 +464,11 @@ function FeedbackTicketManagementPanel({ isDarkMode = false }) {
                   disabled={saving}
                   className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}
                 >
-                  {isEnglish ? 'Close' : 'Đóng'}
+                  {t('feedbackTicketManagementPanel.close', 'Close')}
                 </Button>
                 <Button type="button" onClick={handleSave} disabled={saving}>
                   {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  <span>{saving ? (isEnglish ? 'Saving...' : 'Đang lưu...') : (isEnglish ? 'Save update' : 'Lưu cập nhật')}</span>
+                  <span>{saving ? t('feedbackTicketManagementPanel.saving', 'Saving...') : t('feedbackTicketManagementPanel.saveUpdate', 'Save update')}</span>
                 </Button>
               </div>
             </div>

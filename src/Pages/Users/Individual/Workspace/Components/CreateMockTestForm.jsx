@@ -138,15 +138,15 @@ function CreateMockTestForm({
     setError("");
     try {
       if (tab === "manual") {
-        if (!name.trim()) { setError(t("workspace.quiz.validation.nameRequired")); setSubmitting(false); return; }
-        if (!selectedRoadmapId) { setError(t("workspace.mockTest.validation.roadmapRequired")); setSubmitting(false); return; }
+        if (!name.trim()) { setError(t("mockTestForms.common.nameRequired", "Please enter a name.")); setSubmitting(false); return; }
+        if (!selectedRoadmapId) { setError(t("mockTestForms.create.roadmapRequired", "Please select a roadmap.")); setSubmitting(false); return; }
 
         // Kiểm tra giới hạn: mỗi roadmap chỉ được 1 mock test
         try {
           const existingRes = await getQuizzesByScope("ROADMAP", Number(selectedRoadmapId));
           const existing = existingRes.data || [];
           if (existing.length > 0) {
-            setError(t("workspace.mockTest.validation.mockTestLimit"));
+            setError(t("mockTestForms.create.mockTestLimit", "This roadmap already has a mock test. Only one is allowed per roadmap."));
             setSubmitting(false);
             return;
           }
@@ -184,7 +184,7 @@ function CreateMockTestForm({
       }
     } catch (err) {
       console.error("Lỗi khi tạo mock test:", err);
-      setError(err.message || t("workspace.quiz.validation.createFailed"));
+      setError(err.message || t("mockTestForms.common.createFailed", "Failed to create. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -212,7 +212,7 @@ function CreateMockTestForm({
         <div className="flex items-center gap-2">
           <ClipboardList className="w-5 h-5 text-purple-500" />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
-            {t("workspace.mockTest.createTitle")}
+            {t("mockTestForms.create.title", "Create Mock Test")}
           </p>
         </div>
       </div>
@@ -220,23 +220,23 @@ function CreateMockTestForm({
       {/* Nội dung form */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-          {t("workspace.mockTest.createDesc")}
+          {t("mockTestForms.create.desc", "Create a comprehensive test covering an entire roadmap.")}
         </p>
 
         {/* Tab */}
         <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
-          <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("workspace.quiz.tabManual")}</button>
-          <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("workspace.quiz.tabAI")}</button>
+          <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("mockTestForms.common.tabManual", "Manual")}</button>
+          <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("mockTestForms.common.tabAI", "AI")}</button>
         </div>
 
         <div className={`rounded-xl border p-3 space-y-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-gray-200 bg-white"}`}>
           <div className="flex items-start justify-between gap-2">
             <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-              {t("workspace.quiz.aiConfig.selectedMaterials")}
+              {t("mockTestForms.common.selectedMaterials", "Selected materials")}
             </p>
             {normalizedSources.length > 0 && (
               <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {t("workspace.quiz.aiConfig.materialsSelectedSummary", {
+                {t("mockTestForms.common.materialsSelectedSummary", "{{selected}}/{{total}} selected", {
                   selected: selectedSourceItems.length,
                   total: normalizedSources.length,
                 })}
@@ -247,7 +247,7 @@ function CreateMockTestForm({
           {materialsLoading && (
             <div className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              {t("workspace.quiz.aiConfig.materialsLoading", "Đang tải danh sách tài liệu...")}
+              {t("mockTestForms.common.materialsLoading", "Loading materials...")}
             </div>
           )}
 
@@ -268,7 +268,7 @@ function CreateMockTestForm({
                   onClick={selectAllSources}
                   disabled={allSelected}
                 >
-                  {t("workspace.sources.selectAll")}
+                  {t("mockTestForms.common.selectAll", "Select all")}
                 </Button>
                 <Button
                   type="button"
@@ -278,7 +278,7 @@ function CreateMockTestForm({
                   onClick={clearSelectedSources}
                   disabled={selectedSourceItems.length === 0}
                 >
-                  {t("workspace.sources.deselectAll")}
+                  {t("mockTestForms.common.deselectAll", "Deselect all")}
                 </Button>
               </div>
 
@@ -291,7 +291,7 @@ function CreateMockTestForm({
                       className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" : "border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"}`}
                     />
                     <span className={`min-w-0 flex-1 break-words ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                      {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: item.id })}
+                      {item.name || t("mockTestForms.common.materialFallback", "Material #{{id}}", { id: item.id })}
                     </span>
                   </label>
                 ))}
@@ -301,7 +301,7 @@ function CreateMockTestForm({
 
           {normalizedSources.length === 0 && !materialsLoading && (
             <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
+              {t("mockTestForms.common.workspaceMaterialsEmpty", "No materials available in this workspace.")}
             </p>
           )}
         </div>
@@ -310,8 +310,8 @@ function CreateMockTestForm({
           <div className="space-y-4">
             {/* Tên mock test */}
             <div>
-              <label className={labelCls}>{t("workspace.mockTest.name")}</label>
-              <input className={inputCls} placeholder={t("workspace.mockTest.namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
+              <label className={labelCls}>{t("mockTestForms.create.name", "Mock Test Name")}</label>
+              <input className={inputCls} placeholder={t("mockTestForms.create.namePlaceholder", "Enter mock test name...")} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             {/* Chọn roadmap */}
@@ -319,23 +319,23 @@ function CreateMockTestForm({
               <div className="flex items-center gap-2 mb-1">
                 <ClipboardList className={`w-4 h-4 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
                 <span className={`text-xs font-semibold ${isDarkMode ? "text-purple-300" : "text-purple-700"} ${fontClass}`}>
-                  {t("workspace.mockTest.selectRoadmap")}
+                  {t("mockTestForms.create.selectRoadmapTitle", "Select Roadmap")}
                 </span>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-                    {t("workspace.quiz.contextSelector.selectRoadmap")}
+                    {t("mockTestForms.common.contextSelectRoadmap", "Select a roadmap")}
                   </span>
                   <button type="button" onClick={loadRoadmaps} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`}>
                     <RefreshCw className={`w-3 h-3 ${roadmapLoading ? "animate-spin" : ""}`} />
                   </button>
                 </div>
                 <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={roadmapLoading}>
-                  <option value="">{roadmapLoading ? t("workspace.quiz.contextSelector.loading") : t("workspace.quiz.contextSelector.placeholder")}</option>
+                  <option value="">{roadmapLoading ? t("mockTestForms.common.contextLoading", "Loading...") : t("mockTestForms.common.contextPlaceholder", "-- Select --")}</option>
                   {roadmaps.map((rm) => (
                     <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
-                      {rm.title || rm.name || t("workspace.roadmap.fallbackName", { id: rm.roadmapId || rm.id })}
+                      {rm.title || rm.name || t("mockTestForms.common.roadmapFallback", "Roadmap #{{id}}", { id: rm.roadmapId || rm.id })}
                     </option>
                   ))}
                 </select>
@@ -345,31 +345,31 @@ function CreateMockTestForm({
               {checkingRoadmap && (
                 <div className="flex items-center gap-2 mt-1">
                   <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("common.checking")}</span>
+                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("mockTestForms.common.checking", "Checking...")}</span>
                 </div>
               )}
               {roadmapHasMockTest && !checkingRoadmap && (
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {t("workspace.mockTest.validation.roadmapAlreadyHas")}
+                  {t("mockTestForms.create.roadmapAlreadyHas", "This roadmap already has a mock test. Please choose another roadmap.")}
                 </div>
               )}
 
               <p className={`text-[10px] ${isDarkMode ? "text-purple-400/60" : "text-purple-500/70"} ${fontClass}`}>
-                {t("workspace.mockTest.onePerRoadmap")}
+                {t("mockTestForms.create.onePerRoadmap", "Each roadmap can have at most one mock test.")}
               </p>
             </div>
 
             {/* Cấu hình */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>{t("workspace.quiz.overallDifficulty")}</label>
+                <label className={labelCls}>{t("mockTestForms.common.overallDifficulty", "Overall difficulty")}</label>
                 <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
-                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>{t("workspace.quiz.maxAttempt")}</label>
+                <label className={labelCls}>{t("mockTestForms.common.maxAttempt", "Max attempts")}</label>
                 <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
               </div>
             </div>
@@ -379,22 +379,22 @@ function CreateMockTestForm({
               <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
                 <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("workspace.quiz.timerMode")}</span>
+                <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("mockTestForms.common.timerMode", "Timer mode")}</span>
               </label>
               <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-                {timerMode ? t("workspace.quiz.timerModeHintOn") : t("workspace.quiz.timerModeHintOff")}
+                {timerMode ? t("mockTestForms.common.timerModeHintOn", "Enabled: one overall duration for the test") : t("mockTestForms.common.timerModeHintOff", "Disabled: set duration per question")}
               </span>
             </div>
 
             <div className={`grid ${timerMode ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
               {timerMode && (
                 <div>
-                  <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
+                  <label className={labelCls}>{t("mockTestForms.common.timeDuration", "Duration (minutes)")}</label>
                   <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
                 </div>
               )}
               <div>
-                <label className={labelCls}>{t("workspace.quiz.passingScore")}</label>
+                <label className={labelCls}>{t("mockTestForms.common.passingScore", "Passing score")}</label>
                 <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
               </div>
             </div>
@@ -419,28 +419,28 @@ function CreateMockTestForm({
 
                   <div className="grid grid-cols-3 gap-2">
                     <select className={selectCls} value={q.type} onChange={(e) => updateQuestion(qIdx, "type", e.target.value)}>
-                      {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`workspace.quiz.types.${qt}`)}</option>)}
+                      {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`mockTestForms.common.type${qt.charAt(0).toUpperCase() + qt.slice(1)}`, qt)}</option>)}
                     </select>
                     <select className={selectCls} value={q.difficulty} onChange={(e) => updateQuestion(qIdx, "difficulty", e.target.value)}>
-                      {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+                      {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
                     </select>
                     <select className={selectCls} value={q.bloomId} onChange={(e) => updateQuestion(qIdx, "bloomId", Number(e.target.value))}>
-                      {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`workspace.quiz.bloomLevels.${b.key}`)}</option>)}
+                      {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`mockTestForms.common.bloom${b.key.charAt(0).toUpperCase() + b.key.slice(1)}`, b.key)}</option>)}
                     </select>
                   </div>
 
-                  <input className={inputCls} placeholder={t("workspace.quiz.questionText")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
+                  <input className={inputCls} placeholder={t("mockTestForms.common.questionText", "Question text")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
 
                   <div className={`grid ${!timerMode ? "grid-cols-2" : ""} gap-2`}>
                     {!timerMode && (
                       <div>
-                        <label className={labelCls}>{t("workspace.quiz.questionDuration")}</label>
+                        <label className={labelCls}>{t("mockTestForms.common.questionDuration", "Question duration (s)")}</label>
                         <input type="number" className={inputCls} value={q.duration} onChange={(e) => updateQuestion(qIdx, "duration", Number(e.target.value))} min={0} placeholder="0" />
                       </div>
                     )}
                     <div>
-                      <label className={labelCls}>{t("workspace.quiz.explanation")}</label>
-                      <input className={inputCls} placeholder={t("workspace.quiz.explanationPlaceholder")} value={q.explanation} onChange={(e) => updateQuestion(qIdx, "explanation", e.target.value)} />
+                      <label className={labelCls}>{t("mockTestForms.common.explanation", "Explanation")}</label>
+                      <input className={inputCls} placeholder={t("mockTestForms.common.explanationPlaceholder", "Enter an explanation...")} value={q.explanation} onChange={(e) => updateQuestion(qIdx, "explanation", e.target.value)} />
                     </div>
                   </div>
 
@@ -458,7 +458,7 @@ function CreateMockTestForm({
                               updateQuestion(qIdx, "answers", newAnswers);
                             }}
                           />
-                          <input className={`${inputCls} flex-1`} placeholder={`${t("workspace.quiz.answers")} ${aIdx + 1}`} value={a.text}
+                          <input className={`${inputCls} flex-1`} placeholder={`${t("mockTestForms.common.answers", "Answer")} ${aIdx + 1}`} value={a.text}
                             onChange={(e) => {
                               const newAnswers = [...q.answers];
                               newAnswers[aIdx] = { ...newAnswers[aIdx], text: e.target.value };
@@ -468,53 +468,53 @@ function CreateMockTestForm({
                         </div>
                       ))}
                       <button onClick={() => addAnswer(qIdx)} className="text-xs text-purple-500 hover:underline flex items-center gap-1 mt-1">
-                        <Plus className="w-3 h-3" /> {t("workspace.quiz.addAnswer")}
+                        <Plus className="w-3 h-3" /> {t("mockTestForms.common.addAnswer", "Add answer")}
                       </button>
                     </div>
                   )}
                   {q.type === "trueFalse" && (
                     <select className={selectCls} value={q.correctAnswer || "true"}
                       onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)}>
-                      <option value="true">{t("common.boolean.true")}</option>
-                      <option value="false">{t("common.boolean.false")}</option>
+                      <option value="true">{t("mockTestForms.common.booleanTrue", "True")}</option>
+                      <option value="false">{t("mockTestForms.common.booleanFalse", "False")}</option>
                     </select>
                   )}
                   {(q.type === "fillBlank" || q.type === "shortAnswer") && (
-                    <input className={inputCls} placeholder={t("workspace.quiz.correctAnswer")} value={q.correctAnswer || ""}
+                    <input className={inputCls} placeholder={t("mockTestForms.common.correctAnswer", "Correct answer")} value={q.correctAnswer || ""}
                       onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)} />
                   )}
                 </div>
               ))}
               <Button variant="outline" onClick={addQuestion} className={`w-full ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-                <Plus className="w-4 h-4 mr-2" /> {t("workspace.quiz.addQuestion")}
+                <Plus className="w-4 h-4 mr-2" /> {t("mockTestForms.common.addQuestion", "Add question")}
               </Button>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <label className={labelCls}>{t("workspace.mockTest.name")}</label>
-              <input className={inputCls} placeholder={t("workspace.mockTest.namePlaceholder")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
+              <label className={labelCls}>{t("mockTestForms.create.name", "Mock Test Name")}</label>
+              <input className={inputCls} placeholder={t("mockTestForms.create.namePlaceholder", "Enter mock test name...")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls}>{t("workspace.quiz.difficulty")}</label>
+                <label className={labelCls}>{t("mockTestForms.common.difficulty", "Difficulty")}</label>
                 <select className={selectCls} value={aiDifficulty} onChange={(e) => setAiDifficulty(e.target.value)}>
-                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`workspace.quiz.difficultyLevels.${d}`)}</option>)}
+                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>{t("workspace.quiz.aiConfig.totalQuestions")}</label>
+                <label className={labelCls}>{t("mockTestForms.common.totalQuestions", "Total questions")}</label>
                 <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
               </div>
             </div>
             <div>
-              <label className={labelCls}>{t("workspace.quiz.timeDuration")}</label>
+              <label className={labelCls}>{t("mockTestForms.common.timeDuration", "Duration (minutes)")}</label>
               <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
             </div>
             <div>
-              <label className={labelCls}>{t("workspace.quiz.aiConfig.additionalPrompt")}</label>
-              <textarea className={`${inputCls} min-h-[80px] resize-none`} placeholder={t("workspace.quiz.aiConfig.promptPlaceholder")} value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
+              <label className={labelCls}>{t("mockTestForms.common.additionalPrompt", "Additional prompt")}</label>
+              <textarea className={`${inputCls} min-h-[80px] resize-none`} placeholder={t("mockTestForms.common.promptPlaceholder", "Add extra instructions for the AI...")} value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
             </div>
           </div>
         )}
@@ -523,13 +523,13 @@ function CreateMockTestForm({
       {/* Footer */}
       <div className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
-          {t("workspace.quiz.cancel")}
+          {t("mockTestForms.common.cancel", "Cancel")}
         </Button>
         <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting || roadmapHasMockTest} className="bg-purple-600 hover:bg-purple-700 text-white">
           {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
           {tab === "manual"
-            ? (submitting ? t("workspace.quiz.creating") : t("workspace.quiz.createActive"))
-            : (submitting ? t("workspace.quiz.generating") : t("workspace.quiz.generateAI"))
+            ? (submitting ? t("mockTestForms.common.creating", "Creating...") : t("mockTestForms.common.createActive", "Create"))
+            : (submitting ? t("mockTestForms.common.generating", "Generating...") : t("mockTestForms.common.generateAI", "Generate with AI"))
           }
         </Button>
       </div>

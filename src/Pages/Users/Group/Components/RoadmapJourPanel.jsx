@@ -216,7 +216,7 @@ function RoadmapJourPanel({
           <div className="py-10 flex flex-col items-center justify-center gap-3">
             <Loader2 className={`w-6 h-6 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
             <p className={`text-sm text-center ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-              {t("workspace.roadmap.loading.title", "Đang tải roadmap")}
+              {t("workspace.roadmap.loading.title", "Loading roadmap")}
             </p>
           </div>
         ) : isGeneratingRoadmapPhases ? (
@@ -228,13 +228,13 @@ function RoadmapJourPanel({
                 color="blue"
               />
               <p className={`text-sm ${fontClass} ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi\n Quizmate AI tạo phase")}
+                {t("workspace.roadmap.phaseGenerating.title", "Please wait while AI generates phases")}
               </p>
             </div>
           </div>
         ) : !roadmap ? (
           <div className={`rounded-2xl border px-4 py-5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-400" : "border-slate-300 bg-slate-200 text-slate-600"}`}>
-            <p className={`text-sm ${fontClass}`}>{t("workspace.roadmap.noRoadmapYet", "Chưa có roadmap")}</p>
+            <p className={`text-sm ${fontClass}`}>{t("workspace.roadmap.noRoadmapYet", "No Roadmap Yet")}</p>
           </div>
         ) : (
           <>
@@ -325,20 +325,20 @@ function RoadmapJourPanel({
                       );
 
                       // Determine specific status string
-                      let statusText = t("workspace.quiz.statusLabels.ACTIVE", "Đang hoạt động");
+                      let statusText = t("workspace.quiz.statusLabels.ACTIVE", "Active");
                       let statusColorClass = "text-blue-600 dark:text-blue-400";
                       
                       if (isCompletedPhase) {
-                        statusText = t("workspace.quiz.statusLabels.COMPLETED", "Hoàn thành");
+                        statusText = t("workspace.quiz.statusLabels.COMPLETED", "Completed");
                         statusColorClass = "text-green-600";
                       } else if (isProcessingPhase) {
-                        statusText = t("workspace.quiz.statusLabels.PROCESSING", "Đang xử lý");
+                        statusText = t("workspace.quiz.statusLabels.PROCESSING", "Processing");
                         statusColorClass = "text-yellow-500";
                       } else if (isInProgressPhase) {
-                        statusText = t("workspace.quiz.statusLabels.IN_PROGRESS", "Đang học");
+                        statusText = t("workspace.quiz.statusLabels.IN_PROGRESS", "In progress");
                         statusColorClass = "text-blue-600 dark:text-blue-400";
                       } else if (isLockedPhase) {
-                        statusText = t("workspace.quiz.statusLabels.LOCKED", "Đã khóa");
+                        statusText = t("workspace.quiz.statusLabels.LOCKED", "Locked");
                         statusColorClass = "text-slate-500 dark:text-slate-400";
                       }
 

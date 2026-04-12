@@ -1,13 +1,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Clock, Medal, RefreshCw, Trophy } from "lucide-react";
 import { getGroupQuizHistory } from "@/api/QuizAPI";
+import { useTranslation } from "react-i18next";
 
 const MEDAL_COLORS = ["text-yellow-400", "text-slate-400", "text-amber-600"];
 
-function formatScore(score) {
-  if (score == null) return "-";
-  const n = Number(score);
-  return Number.isFinite(n) ? n.toFixed(1) : "-";
+function formatAccuracy(accuracyPercent) {
+  if (accuracyPercent == null) return "-";
+  const value = Number(accuracyPercent);
+  if (!Number.isFinite(value)) return "-";
+  return `${Math.round(value * 10) / 10}%`;
 }
 
 function formatTime(seconds) {
@@ -23,82 +25,105 @@ function formatDate(dateStr) {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
-/**
- * Converts raw history (array of attempts grouped by member) into ranking rows.
- * Takes best attempt per member (highest score, then fastest time).
- */
-function buildRanking(historyData) {
-  if (!historyData) return [];
+function parseDateValue(value) {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? time : null;
+}
 
-  // historyData may be: array of { member, attempts[] } or flat array of attempts
-  let memberGroups = [];
+function resolveAttemptDurationSeconds(attempt) {
+  const startedAt = parseDateValue(attempt?.startedAt);
+  const completedAt = parseDateValue(attempt?.completedAt ?? attempt?.submittedAt);
+  if (startedAt == null || completedAt == null || completedAt < startedAt) {
+    return null;
+  }
+  return Math.round((completedAt - startedAt) / 1000);
+}
 
-  if (Array.isArray(historyData)) {
-    const first = historyData[0];
-    if (first && (first.member || first.userId || first.memberId)) {
-      // Already grouped by member
-      memberGroups = historyData.map((group) => ({
-        member: group.member || { userId: group.userId || group.memberId, fullName: group.fullName || group.memberName, avatar: group.avatar },
-        attempts: Array.isArray(group.attempts) ? group.attempts : [group],
-      }));
-    } else {
-      // Flat attempt list — group by userId
-      const byUser = new Map();
-      historyData.forEach((attempt) => {
-        const uid = attempt.userId || attempt.memberId || "unknown";
-        if (!byUser.has(uid)) {
-          byUser.set(uid, {
-            member: {
-              userId: uid,
-              fullName: attempt.fullName || attempt.memberName || attempt.username || "Thành viên",
-              avatar: attempt.avatar,
-            },
-            attempts: [],
-          });
-        }
-        byUser.get(uid).attempts.push(attempt);
-      });
-      memberGroups = Array.from(byUser.values());
-    }
+function compareAttemptsByFirstSubmission(left, right) {
+  const leftCompleted = parseDateValue(left?.completedAt ?? left?.submittedAt);
+  const rightCompleted = parseDateValue(right?.completedAt ?? right?.submittedAt);
+  if (leftCompleted != null && rightCompleted != null && leftCompleted !== rightCompleted) {
+    return leftCompleted - rightCompleted;
   }
 
-  // Pick best attempt per member
-  const rows = memberGroups
-    .map(({ member, attempts }) => {
-      const completed = attempts.filter(
-        (a) => a.status === "SUBMITTED" || a.status === "COMPLETED" || a.score != null
-      );
-      if (completed.length === 0) return null;
+  const leftStarted = parseDateValue(left?.startedAt);
+  const rightStarted = parseDateValue(right?.startedAt);
+  if (leftStarted != null && rightStarted != null && leftStarted !== rightStarted) {
+    return leftStarted - rightStarted;
+  }
 
-      const best = completed.reduce((prev, cur) => {
-        const prevScore = Number(prev.score ?? 0);
-        const curScore = Number(cur.score ?? 0);
-        if (curScore > prevScore) return cur;
-        if (curScore === prevScore) {
-          const prevTime = Number(prev.completionTimeSeconds ?? Infinity);
-          const curTime = Number(cur.completionTimeSeconds ?? Infinity);
-          return curTime < prevTime ? cur : prev;
-        }
-        return prev;
-      });
+  return Number(left?.attemptId ?? Number.MAX_SAFE_INTEGER) - Number(right?.attemptId ?? Number.MAX_SAFE_INTEGER);
+}
+
+/**
+ * Converts raw history into ranking rows.
+ * Takes the first official completed attempt per member.
+ */
+function buildRanking(historyData) {
+  if (!Array.isArray(historyData) || historyData.length === 0) return [];
+
+  const byUser = new Map();
+  historyData.forEach((entry) => {
+    const attempts = Array.isArray(entry?.attempts) ? entry.attempts : [entry];
+    attempts.forEach((attempt) => {
+      const uid = attempt?.userId ?? attempt?.memberId ?? entry?.member?.userId ?? entry?.userId;
+      if (uid == null) return;
+      if (!byUser.has(uid)) {
+        byUser.set(uid, {
+          member: {
+            userId: uid,
+            fullName:
+              attempt?.userFullName
+              || attempt?.memberName
+              || attempt?.fullName
+              || attempt?.userName
+              || attempt?.username
+              || entry?.member?.fullName
+              || entry?.member?.userName
+              || "Thành viên",
+            avatar: attempt?.avatar ?? entry?.member?.avatar ?? null,
+          },
+          attempts: [],
+        });
+      }
+      byUser.get(uid).attempts.push(attempt);
+    });
+  });
+
+  const rows = Array.from(byUser.values())
+    .map(({ member, attempts }) => {
+      const officialCompletedAttempts = attempts
+        .filter((attempt) => !attempt?.isPracticeMode && attempt?.completedAt)
+        .sort(compareAttemptsByFirstSubmission);
+
+      const firstAttempt = officialCompletedAttempts[0];
+      if (!firstAttempt) return null;
 
       return {
         userId: member.userId,
-        fullName: member.fullName || member.username || "Thành viên",
+        fullName: member.fullName || "Thành viên",
         avatar: member.avatar,
-        score: best.score,
-        completionTimeSeconds: best.completionTimeSeconds,
-        attemptCount: completed.length,
-        submittedAt: best.submittedAt || best.endTime,
+        accuracyPercent: firstAttempt.accuracyPercent,
+        durationSeconds: resolveAttemptDurationSeconds(firstAttempt),
+        submittedAt: firstAttempt.submittedAt || firstAttempt.completedAt,
       };
     })
     .filter(Boolean);
 
-  // Sort: score desc, time asc
+  // Sort: accuracy desc, time asc, submit date asc
   rows.sort((a, b) => {
-    const sd = Number(b.score ?? 0) - Number(a.score ?? 0);
-    if (sd !== 0) return sd;
-    return (Number(a.completionTimeSeconds ?? Infinity)) - (Number(b.completionTimeSeconds ?? Infinity));
+    const accuracyDiff = Number(b.accuracyPercent ?? -1) - Number(a.accuracyPercent ?? -1);
+    if (accuracyDiff !== 0) return accuracyDiff;
+
+    const timeDiff = Number(a.durationSeconds ?? Number.POSITIVE_INFINITY) - Number(b.durationSeconds ?? Number.POSITIVE_INFINITY);
+    if (timeDiff !== 0) return timeDiff;
+
+    const submittedDiff = Number(parseDateValue(a.submittedAt) ?? Number.POSITIVE_INFINITY)
+      - Number(parseDateValue(b.submittedAt) ?? Number.POSITIVE_INFINITY);
+    if (submittedDiff !== 0) return submittedDiff;
+
+    return String(a.fullName || "").localeCompare(String(b.fullName || ""));
   });
 
   return rows.map((r, i) => ({ ...r, rank: i + 1 }));
@@ -109,6 +134,7 @@ function buildRanking(historyData) {
  * Shows per-quiz ranking for leader. Fetches group history and builds ranking.
  */
 export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode = false }) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -123,11 +149,11 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
       setRows(buildRanking(data));
     } catch (err) {
       console.error("GroupQuizRankingPanel load error:", err);
-      setError("Không thể tải bảng xếp hạng.");
+      setError(t("groupWorkspace.quizRanking.error"));
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, quizId]);
+  }, [t, workspaceId, quizId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -141,7 +167,7 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
     return (
       <div className="flex items-center justify-center py-12">
         <RefreshCw className={`w-5 h-5 animate-spin ${isDarkMode ? "text-slate-400" : "text-[#0455BF]"}`} />
-        <span className={`ml-2 text-sm ${textMuted}`}>Đang tải…</span>
+        <span className={`ml-2 text-sm ${textMuted}`}>{t("groupWorkspace.quizRanking.loading")}</span>
       </div>
     );
   }
@@ -150,7 +176,7 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
     return (
       <div className={`rounded-xl border p-6 text-center text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/50 text-red-400" : "border-red-100 bg-red-50 text-red-600"}`}>
         {error}
-        <button type="button" onClick={load} className="ml-2 underline">Thử lại</button>
+        <button type="button" onClick={load} className="ml-2 underline">{t("groupWorkspace.quizRanking.retry")}</button>
       </div>
     );
   }
@@ -159,7 +185,7 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
     return (
       <div className={`rounded-xl border p-8 text-center ${isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-[#BFDBFE] bg-[#EFF6FF]/40"}`}>
         <Trophy className={`mx-auto mb-2 w-8 h-8 opacity-30 ${isDarkMode ? "text-slate-400" : "text-[#0455BF]"}`} />
-        <p className={`text-sm ${textMuted}`}>Chưa có thành viên nào hoàn thành bài này.</p>
+        <p className={`text-sm ${textMuted}`}>{t("groupWorkspace.quizRanking.empty")}</p>
       </div>
     );
   }
@@ -171,14 +197,14 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
         <div className="flex items-center gap-1.5">
           <Trophy className={`w-4 h-4 ${isDarkMode ? "text-yellow-400" : "text-yellow-500"}`} />
           <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
-            Bảng xếp hạng · {rows.length} thành viên
+            {t("groupWorkspace.quizRanking.title", { count: rows.length })}
           </span>
         </div>
         <button
           type="button"
           onClick={load}
           className={`p-1 rounded transition-all ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-[#BFDBFE] text-gray-400"}`}
-          title="Làm mới"
+          title={t("groupWorkspace.quizRanking.refresh")}
         >
           <RefreshCw className="w-3.5 h-3.5" />
         </button>
@@ -188,11 +214,10 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
         <thead>
           <tr className={`border-b text-xs ${isDarkMode ? "border-slate-700 text-slate-400" : "border-[#BFDBFE] text-gray-500"}`}>
             <th className="px-4 py-2.5 text-left font-medium w-10">#</th>
-            <th className="px-4 py-2.5 text-left font-medium">Thành viên</th>
-            <th className="px-4 py-2.5 text-right font-medium">Điểm</th>
-            <th className="px-4 py-2.5 text-right font-medium">Thời gian</th>
-            <th className="px-4 py-2.5 text-right font-medium hidden sm:table-cell">Số lần</th>
-            <th className="px-4 py-2.5 text-right font-medium hidden md:table-cell">Ngày nộp</th>
+            <th className="px-4 py-2.5 text-left font-medium">{t("groupWorkspace.quizRanking.columns.member")}</th>
+            <th className="px-4 py-2.5 text-right font-medium">{t("groupWorkspace.quizRanking.columns.accuracy")}</th>
+            <th className="px-4 py-2.5 text-right font-medium">{t("groupWorkspace.quizRanking.columns.time")}</th>
+            <th className="px-4 py-2.5 text-right font-medium hidden md:table-cell">{t("groupWorkspace.quizRanking.columns.submittedAt")}</th>
           </tr>
         </thead>
         <tbody>
@@ -223,26 +248,21 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
                 </div>
               </td>
 
-              {/* Score */}
+              {/* Accuracy */}
               <td className={`px-4 py-3 text-right font-semibold ${
                 row.rank === 1
                   ? isDarkMode ? "text-yellow-300" : "text-yellow-600"
                   : isDarkMode ? "text-slate-200" : "text-[#0455BF]"
               }`}>
-                {formatScore(row.score)}
+                {formatAccuracy(row.accuracyPercent)}
               </td>
 
               {/* Time */}
               <td className={`px-4 py-3 text-right ${textMuted}`}>
                 <span className="inline-flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  {formatTime(row.completionTimeSeconds)}
+                  {formatTime(row.durationSeconds)}
                 </span>
-              </td>
-
-              {/* Attempt count */}
-              <td className={`px-4 py-3 text-right hidden sm:table-cell ${textMuted}`}>
-                {row.attemptCount}x
               </td>
 
               {/* Date */}
