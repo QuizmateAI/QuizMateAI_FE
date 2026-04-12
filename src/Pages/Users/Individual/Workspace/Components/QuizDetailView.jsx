@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare,
+  Share2, UserPlus, MessageSquare, Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
@@ -22,6 +22,7 @@ import { unwrapApiData } from "@/Utils/apiResponse";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
 import GroupDiscussionPanel from "@/Pages/Users/Group/Components/GroupDiscussionPanel";
 import QuestionInlineDiscussion from "@/Pages/Users/Group/Components/QuestionInlineDiscussion";
+import GroupQuizRankingPanel from "@/Pages/Users/Group/Components/GroupQuizRankingPanel";
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
@@ -132,6 +133,8 @@ function QuizDetailView({
   const [examStartOpen, setExamStartOpen] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  // Leader participation dialog (xuất bản → hỏi ranking)
+  const [leaderParticipationOpen, setLeaderParticipationOpen] = useState(false);
   // Per-question discussion popup
   const [discussionOpenQId, setDiscussionOpenQId] = useState(null);
   const [qCommentCounts, setQCommentCounts] = useState({});
@@ -470,11 +473,19 @@ function QuizDetailView({
     };
   }, [audienceOpen, _contextId, groupAudiencePickerExcludeUserId]);
 
-  const handlePublishGroupQuiz = useCallback(async () => {
+  // Bước 1: Leader nhấn Xuất bản → mở dialog hỏi có tham gia ranking không
+  const handlePublishGroupQuiz = useCallback(() => {
     if (!quiz?.quizId) return;
+    setLeaderParticipationOpen(true);
+  }, [quiz?.quizId]);
+
+  // Bước 2a: Leader KHÔNG tham gia ranking → xuất bản trực tiếp
+  const handlePublishDirect = useCallback(async () => {
+    if (!quiz?.quizId) return;
+    setLeaderParticipationOpen(false);
     setPublishing(true);
     try {
-      const res = await publishGroupQuiz(quiz.quizId);
+      const res = await publishGroupQuiz(quiz.quizId, { leaderJoinsRanking: false });
       const next = unwrapApiData(res);
       if (next?.status) setCurrentStatus(next.status);
       setQuizMeta((m) => ({ ...(m || {}), ...next }));
@@ -488,6 +499,38 @@ function QuizDetailView({
       setPublishing(false);
     }
   }, [quiz?.quizId, fetchFullDetail, onGroupQuizUpdated, t]);
+
+  // Bước 2b: Leader THAM GIA ranking → xuất bản với cờ leaderJoinsRanking=true
+  //          Backend giữ quiz ở trạng thái PENDING_LEADER (hoặc DRAFT) cho đến khi leader hoàn thành.
+  //          FE sau khi publish → điều hướng leader làm bài ngay.
+  const handlePublishWithRanking = useCallback(async () => {
+    if (!quiz?.quizId) return;
+    setLeaderParticipationOpen(false);
+    setPublishing(true);
+    try {
+      const res = await publishGroupQuiz(quiz.quizId, { leaderJoinsRanking: true });
+      const next = unwrapApiData(res);
+      if (next?.status) setCurrentStatus(next.status);
+      setQuizMeta((m) => ({ ...(m || {}), ...next }));
+      onGroupQuizUpdated?.(next);
+      quizDetailCache.clear();
+      await fetchFullDetail();
+      // Điều hướng leader vào làm bài — khi hoàn thành backend sẽ tự kích hoạt quiz
+      const attemptPath = buildQuizAttemptPath("exam", quiz.quizId);
+      navigate(attemptPath, {
+        state: {
+          returnToQuizPath: location.pathname + location.search,
+          workspaceId: _contextId,
+          leaderRankingAttempt: true,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      window.alert(err?.message || t("workspace.quiz.detail.publishFailed", "Could not publish quiz."));
+    } finally {
+      setPublishing(false);
+    }
+  }, [quiz?.quizId, _contextId, fetchFullDetail, location, navigate, onGroupQuizUpdated, t]);
 
   const handleSaveAudience = useCallback(async () => {
     if (!quiz?.quizId) return;
@@ -577,6 +620,8 @@ function QuizDetailView({
   // Leaders see both Check tab AND Questions tab (to access per-question discussion)
   // Only challenge-snapshot reviewers (non-leader members) skip the Questions tab
   const showQuestionsTab = !isChallengeSnapshotReview;
+  // Ranking tab: GROUP + ACTIVE + leader + not challenge snapshot
+  const showRankingTab = _contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview;
 
   const snapshotReviewPreferCheckTabRef = React.useRef(false);
   useEffect(() => {
@@ -601,7 +646,10 @@ function QuizDetailView({
     if (!showGroupReviewTab && activeTab === "review") {
       setActiveTab("overview");
     }
-  }, [showQuestionsTab, showGroupReviewTab, activeTab]);
+    if (!showRankingTab && activeTab === "ranking") {
+      setActiveTab("overview");
+    }
+  }, [showQuestionsTab, showGroupReviewTab, showRankingTab, activeTab]);
 
   useEffect(() => {
     if (isChallengeSnapshotReview && activeTab === "history") {
@@ -788,6 +836,19 @@ function QuizDetailView({
             <MessageSquare className="w-4 h-4" /> Thảo luận
           </button>
         )}
+        {showRankingTab && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("ranking")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "ranking"
+                ? "border-yellow-500 text-yellow-600 dark:text-yellow-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <Trophy className="w-4 h-4" /> Xếp hạng
+          </button>
+        )}
       </div>
 
       {/* Tab Thảo luận — full-height, không padding wrapper */}
@@ -801,6 +862,17 @@ function QuizDetailView({
             allQuestions={allQuestionsFlat}
             questionsById={questionsById}
             onNavigateToQuestion={handleNavigateToQuestion}
+          />
+        </div>
+      )}
+
+      {/* Tab Xếp hạng — per-quiz ranking */}
+      {activeTab === "ranking" && showRankingTab && (
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
+          <GroupQuizRankingPanel
+            workspaceId={_contextId}
+            quizId={quiz?.quizId}
+            isDarkMode={isDarkMode}
           />
         </div>
       )}
@@ -1534,6 +1606,67 @@ function QuizDetailView({
             >
               {audienceSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {t("workspace.quiz.save", "Save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leader Participation Dialog — xuất bản quiz: có tham gia ranking không? */}
+      <Dialog open={leaderParticipationOpen} onOpenChange={setLeaderParticipationOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">🏆</span>
+              Bạn có muốn tham gia ranking?
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-1">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Chọn hình thức tham gia của leader trước khi xuất bản bài kiểm tra cho nhóm.
+              </p>
+              <div className="space-y-2">
+                <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-[#BFDBFE] bg-[#EFF6FF]/60"}`}>
+                  <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-100" : "text-[#0455BF]"}`}>
+                    ✅ Tham gia ranking
+                  </p>
+                  <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                    Leader làm bài trước. Sau khi hoàn thành, bài sẽ được kích hoạt cho các thành viên. Điểm của leader sẽ được tính vào bảng xếp hạng.
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
+                    ⏭️ Không tham gia
+                  </p>
+                  <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                    Xuất bản ngay cho các thành viên. Leader vẫn có thể làm bài nhưng kết quả không vào ranking.
+                  </p>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setLeaderParticipationOpen(false)}
+              disabled={publishing}
+              className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+            >
+              Huỷ
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handlePublishDirect}
+              disabled={publishing}
+              className={isDarkMode ? "border-slate-600 text-slate-200" : "border-gray-300"}
+            >
+              Không tham gia
+            </Button>
+            <Button
+              onClick={handlePublishWithRanking}
+              disabled={publishing}
+              className="bg-[#0455BF] hover:bg-blue-700 text-white"
+            >
+              {publishing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+              Tham gia ranking &amp; làm bài
             </Button>
           </DialogFooter>
         </DialogContent>
