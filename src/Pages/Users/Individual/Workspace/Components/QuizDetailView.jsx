@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus, MessageSquare, Trophy,
+  Share2, UserPlus, MessageSquare, Trophy, Eye, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
@@ -23,7 +23,7 @@ import { getUserDisplayLabel } from "@/Utils/userProfile";
 import UserDisplayName from "@/Components/users/UserDisplayName";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
 import GroupDiscussionPanel from "@/Pages/Users/Group/Components/GroupDiscussionPanel";
-import QuestionInlineDiscussion from "@/Pages/Users/Group/Components/QuestionInlineDiscussion";
+import QuestionDiscussionDialog from "@/Pages/Users/Group/Components/QuestionDiscussionDialog";
 import GroupQuizRankingPanel from "@/Pages/Users/Group/Components/GroupQuizRankingPanel";
 import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
@@ -123,6 +123,38 @@ function getDurationInMinutes(quiz) {
   return rawDuration;
 }
 
+function isTruthyQuizFlag(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+  }
+  return false;
+}
+
+function hasCompletedAttemptRecord(attempt) {
+  if (!attempt || typeof attempt !== "object") return false;
+
+  const status = String(attempt.status || attempt.attemptStatus || attempt.state || "").toUpperCase();
+  if (["COMPLETED", "SUBMITTED", "GRADED", "PASSED", "FAILED"].includes(status)) {
+    return true;
+  }
+
+  return Boolean(
+    attempt.completedAt
+    || attempt.submittedAt
+    || attempt.finishedAt
+    || attempt.endedAt
+    || attempt.score != null
+    || attempt.totalScore != null
+    || attempt.correctCount != null,
+  );
+}
+
+function hasCompletedAttemptHistory(history) {
+  return Array.isArray(history) && history.some(hasCompletedAttemptRecord);
+}
+
 // Component hiển thị chi tiết quiz — bao gồm sessions, questions, answers
 function QuizDetailView({
   isDarkMode,
@@ -156,7 +188,7 @@ function QuizDetailView({
   const [quizMeta, setQuizMeta] = useState(null);
   
   // Tab states
-  const [activeTab, setActiveTab] = useState("overview"); // overview, review (group), questions, history
+  const [activeTab, setActiveTab] = useState(() => (_contextType === "GROUP" ? "overview" : "questions")); // overview, review (group), questions, history
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [examStartOpen, setExamStartOpen] = useState(false);
@@ -173,13 +205,23 @@ function QuizDetailView({
   const [groupMembers, setGroupMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const detailRequestRunRef = React.useRef(0);
+  const attemptHistoryProbeKeyRef = React.useRef(null);
+
+  const localQuizCompleted = hasQuizCompleted(quiz?.quizId);
+  const hasQuizPayloadAttempted =
+    isTruthyQuizFlag(quiz?.myAttempted)
+    || isTruthyQuizFlag(quizMeta?.myAttempted)
+    || isTruthyQuizFlag(quiz?.myPassed)
+    || isTruthyQuizFlag(quizMeta?.myPassed);
+  const hasHistoryCompleted = hasCompletedAttemptHistory(history);
+  const hasCurrentUserCompletedQuiz = localQuizCompleted || hasQuizPayloadAttempted || hasHistoryCompleted;
 
   /** Fair play: leader tham gia thi + quiz ACTIVE → không xem trước đáp án/tab Kiểm tra. */
   const fairPlayRestricts = Boolean(quiz?.challengeFairPlayRestrictsViewer);
 
   /** Cá nhân: chỉ xem đáp án sau khi làm xong (hoặc quiz nháp). Nhóm: leader / xem từ challenge cần đủ phương án cho tab Kiểm tra. */
   const canViewAnswers =
-    hasQuizCompleted(quiz?.quizId)
+    hasCurrentUserCompletedQuiz
     || currentStatus === "DRAFT"
     || (_contextType === "GROUP" && isGroupLeader && !fairPlayRestricts)
     || (challengeSnapshotReviewMode && !fairPlayRestricts);
@@ -187,6 +229,11 @@ function QuizDetailView({
   useEffect(() => {
     setCurrentStatus(quizMeta?.status || quiz?.status || "DRAFT");
   }, [quizMeta?.status, quiz?.status]);
+
+  useEffect(() => {
+    setHistory([]);
+    attemptHistoryProbeKeyRef.current = null;
+  }, [quiz?.quizId]);
 
   /** Reviewer challenge: ghi nhận đã mở xem snapshot (phục vụ nhắc mail & nghiệp vụ gỡ reviewer). */
   useEffect(() => {
@@ -381,6 +428,32 @@ function QuizDetailView({
       fetchHistoryData();
     }
   }, [activeTab, fetchHistoryData, history.length]);
+
+  useEffect(() => {
+    if (
+      _contextType !== "GROUP"
+      || isGroupLeader
+      || !quiz?.quizId
+      || hasCurrentUserCompletedQuiz
+    ) {
+      return;
+    }
+
+    const probeKey = `${_contextType}:${_contextId ?? ""}:${quiz.quizId}`;
+    if (attemptHistoryProbeKeyRef.current === probeKey) {
+      return;
+    }
+
+    attemptHistoryProbeKeyRef.current = probeKey;
+    void fetchHistoryData();
+  }, [
+    _contextType,
+    _contextId,
+    isGroupLeader,
+    quiz?.quizId,
+    hasCurrentUserCompletedQuiz,
+    fetchHistoryData,
+  ]);
 
   // Toggle mở rộng/thu gọn section
   const toggleSection = (sectionId) => {
@@ -633,6 +706,18 @@ function QuizDetailView({
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, [questionsById]);
+  const handleQuestionMessageCountChange = React.useCallback((questionId, nextCount) => {
+    const questionKey = String(questionId);
+    setQCommentCounts((prev) => {
+      if ((prev?.[questionKey] ?? 0) === nextCount) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [questionKey]: nextCount,
+      };
+    });
+  }, []);
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
   const sourceTypeLabel = String(effectiveQuiz?.createVia || "").toUpperCase() === "AI"
@@ -648,10 +733,12 @@ function QuizDetailView({
         : t("workspace.quiz.examModeType2Short", "Theo từng câu")
     )
     : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
-  const attemptedLabel = effectiveQuiz?.myAttempted === true
+  const attemptedLabel = hasCurrentUserCompletedQuiz
     ? (effectiveQuiz?.myPassed === true
       ? t("workspace.quiz.myPassedTrue", "Đã đậu")
-      : t("workspace.quiz.myPassedFalse", "Chưa đậu"))
+      : effectiveQuiz?.myPassed === false
+        ? t("workspace.quiz.myPassedFalse", "Chưa đậu")
+        : t("workspace.quiz.myAttemptedTrue", "Đã làm"))
     : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
   const overviewAudienceLabel = _contextType === "GROUP"
     ? (
@@ -675,9 +762,9 @@ function QuizDetailView({
       || challengeSnapshotReviewMode
     );
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
-  // Leaders see both Check tab AND Questions tab (to access per-question discussion)
-  // Only challenge-snapshot reviewers (non-leader members) skip the Questions tab
-  const showQuestionsTab = !isChallengeSnapshotReview;
+  const groupMemberCanOpenQuestions = _contextType !== "GROUP" || isGroupLeader || hasCurrentUserCompletedQuiz;
+  const showQuestionsTab = !isChallengeSnapshotReview && groupMemberCanOpenQuestions;
+  const isQuestionOnlyDetail = _contextType !== "GROUP";
   // Ranking tab: GROUP + ACTIVE + leader + not challenge snapshot
   const showRankingTab = _contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview;
 
@@ -714,6 +801,12 @@ function QuizDetailView({
       setActiveTab("overview");
     }
   }, [isChallengeSnapshotReview, activeTab]);
+
+  useEffect(() => {
+    if (isQuestionOnlyDetail && activeTab !== "questions") {
+      setActiveTab("questions");
+    }
+  }, [activeTab, isQuestionOnlyDetail]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -830,7 +923,8 @@ function QuizDetailView({
       )}
 
       {/* Tabs */}
-      <div className={`px-4 pt-3 flex items-center gap-4 border-b ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      {!isQuestionOnlyDetail && (
+        <div className={`px-4 pt-3 flex items-center gap-4 border-b ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button
           onClick={() => setActiveTab("overview")}
           className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -907,7 +1001,8 @@ function QuizDetailView({
             <Trophy className="w-4 h-4" /> Xếp hạng
           </button>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Tab Thảo luận — full-height, không padding wrapper */}
       {activeTab === "discussion" && _contextType === "GROUP" && (
@@ -917,7 +1012,7 @@ function QuizDetailView({
             workspaceId={_contextId}
             quizId={quiz?.quizId}
             isLeader={isGroupLeader}
-            hasAttempted={hasQuizCompleted(quiz?.quizId)}
+            hasAttempted={hasCurrentUserCompletedQuiz}
             allQuestions={allQuestionsFlat}
             questionsById={questionsById}
             onNavigateToQuestion={handleNavigateToQuestion}
@@ -1129,16 +1224,6 @@ function QuizDetailView({
                                   </p>
                                   <div className="flex items-center gap-1 shrink-0">
                                     <button
-                                      onClick={() => handleToggleStar(question.questionId, section.sectionId)}
-                                      disabled={starringId === question.questionId}
-                                      className={`p-1 rounded transition-all ${question.isStarred
-                                        ? "text-yellow-500"
-                                        : isDarkMode ? "text-slate-500 hover:text-yellow-400" : "text-gray-300 hover:text-yellow-500"
-                                      }`}
-                                    >
-                                      <Star className={`w-3.5 h-3.5 ${question.isStarred ? "fill-current" : ""}`} />
-                                    </button>
-                                    <button
                                       onClick={() => toggleQuestion(question.questionId)}
                                       className={`p-1 rounded transition-all ${isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-400 hover:text-gray-600"}`}
                                     >
@@ -1270,35 +1355,74 @@ function QuizDetailView({
                                     )}
                                   </div>
                                 )}
+
+                                {_contextType === "GROUP" && isActiveQuiz && !isChallengeSnapshotReview && (
+                                  <div
+                                    className={cn(
+                                      "mt-4 -ml-1 inline-flex w-fit max-w-full flex-wrap items-center gap-2 rounded-[20px] border px-2 py-2",
+                                      isDarkMode ? "border-slate-800 bg-slate-950/70" : "border-slate-200 bg-slate-50/80",
+                                    )}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleQuestion(question.questionId)}
+                                      className={cn(
+                                        "inline-flex min-w-[110px] items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-colors",
+                                        isDarkMode
+                                          ? "bg-slate-900 text-slate-200 hover:bg-slate-800"
+                                          : "bg-white text-slate-700 hover:bg-slate-100",
+                                      )}
+                                    >
+                                      {canViewAnswers ? <Eye className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                                      <span>{isQExpanded ? "Ẩn đáp án" : canViewAnswers ? "Đáp án" : "Khóa đáp án"}</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setDiscussionOpenQId(question.questionId)}
+                                      className={cn(
+                                        "inline-flex min-w-[110px] items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-colors",
+                                        isDarkMode
+                                          ? "bg-blue-500/15 text-blue-300 hover:bg-blue-500/25"
+                                          : "bg-blue-600 text-white hover:bg-blue-700",
+                                      )}
+                                    >
+                                      <MessageSquare className="h-3.5 w-3.5" />
+                                      <span>Chat câu hỏi</span>
+                                      {(qCommentCounts[String(question.questionId)] ?? 0) > 0 && (
+                                        <span
+                                          className={cn(
+                                            "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                                            isDarkMode ? "bg-blue-950 text-blue-300" : "bg-white/20 text-white",
+                                          )}
+                                        >
+                                          {qCommentCounts[String(question.questionId)]}
+                                        </span>
+                                      )}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleStar(question.questionId, section.sectionId)}
+                                      disabled={starringId === question.questionId}
+                                      className={cn(
+                                        "inline-flex min-w-[96px] items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-60",
+                                        question.isStarred
+                                          ? isDarkMode
+                                            ? "bg-amber-500/15 text-amber-300"
+                                            : "bg-amber-100 text-amber-700"
+                                          : isDarkMode
+                                            ? "bg-slate-900 text-slate-300 hover:bg-slate-800"
+                                            : "bg-white text-slate-700 hover:bg-slate-100",
+                                      )}
+                                    >
+                                      <Star className={`h-3.5 w-3.5 ${question.isStarred ? "fill-current" : ""}`} />
+                                      <span>{question.isStarred ? "Đã lưu" : "Lưu"}</span>
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
-
-                            {/* Per-question discussion trigger — GROUP + ACTIVE only */}
-                            {_contextType === "GROUP" && isActiveQuiz && !isChallengeSnapshotReview && (
-                              <div className="px-4 pb-3 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setDiscussionOpenQId(question.questionId)}
-                                  className={cn(
-                                    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium",
-                                    isDarkMode
-                                      ? "text-blue-400 hover:bg-blue-900/30 bg-slate-800/50 border border-blue-900/40"
-                                      : "text-blue-600 hover:bg-blue-100 bg-blue-50 border border-blue-200",
-                                  )}
-                                >
-                                  <MessageSquare className="w-3.5 h-3.5" />
-                                  <span>Thảo luận</span>
-                                  {(qCommentCounts[String(question.questionId)] ?? 0) > 0 && (
-                                    <span className={cn(
-                                      "px-1.5 py-0.5 rounded-full text-[10px] font-bold",
-                                      isDarkMode ? "bg-blue-900 text-blue-300" : "bg-blue-600 text-white",
-                                    )}>
-                                      {qCommentCounts[String(question.questionId)]}
-                                    </span>
-                                  )}
-                                </button>
-                              </div>
-                            )}
                           </div>
                         );
                       })
@@ -1429,43 +1553,28 @@ function QuizDetailView({
 
       {/* Per-question discussion popup */}
       {discussionOpenQId != null && (
-        <Dialog open onOpenChange={(open) => { if (!open) { setDiscussionOpenQId(null); // refresh counts after closing
-            if (_contextId && quiz?.quizId && allQuestionsFlat.length) {
-              const qIds = allQuestionsFlat.map((q) => q.questionId);
-              getThreadCounts(_contextId, quiz.quizId, qIds).then(({ questions }) => setQCommentCounts(questions)).catch(() => {});
-            }
+        <QuestionDiscussionDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setDiscussionOpenQId(null);
+          }}
+          isDarkMode={isDarkMode}
+          workspaceId={_contextId}
+          quizId={quiz?.quizId}
+          question={questionsById[String(discussionOpenQId)]}
+          questionIndex={questionsById[String(discussionOpenQId)]?.index ?? 1}
+          answers={answersMap[discussionOpenQId] || []}
+          isLeader={isGroupLeader}
+          hasAttempted={hasCurrentUserCompletedQuiz}
+          canViewAnswers={canViewAnswers}
+          commentCount={qCommentCounts[String(discussionOpenQId)] ?? 0}
+          onMessageCountChange={(nextCount) => handleQuestionMessageCountChange(discussionOpenQId, nextCount)}
+          sectionLabel={
+            questionsById[String(discussionOpenQId)]?.sectionId
+              ? `${t("workspace.quiz.detail.section", "Section")} ${sections.findIndex((section) => section.sectionId === questionsById[String(discussionOpenQId)]?.sectionId) + 1}`
+              : ""
           }
-        }}>
-          <DialogContent className={cn(
-            "sm:max-w-lg w-full p-0 gap-0 overflow-hidden rounded-2xl",
-            isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white",
-          )}>
-            <DialogHeader className={cn(
-              "px-4 pt-4 pb-3 border-b shrink-0 flex flex-row items-center gap-2",
-              isDarkMode ? "border-slate-700/60" : "border-blue-100",
-            )}>
-              <MessageSquare className={cn("w-4 h-4 shrink-0", isDarkMode ? "text-blue-400" : "text-blue-500")} />
-              <DialogTitle className={cn("text-sm font-semibold flex-1", isDarkMode ? "text-slate-100" : "text-gray-800")}>
-                Thảo luận — Câu {questionsById[String(discussionOpenQId)]?.index ?? ""}
-              </DialogTitle>
-              <DialogDescription className="sr-only">Thảo luận về câu hỏi này</DialogDescription>
-            </DialogHeader>
-            <div className="overflow-y-auto max-h-[70vh]">
-              <div className="p-3">
-                <QuestionInlineDiscussion
-                  questionId={discussionOpenQId}
-                  questionIndex={questionsById[String(discussionOpenQId)]?.index ?? 1}
-                  workspaceId={_contextId}
-                  quizId={quiz?.quizId}
-                  isLeader={isGroupLeader}
-                  hasAttempted={hasQuizCompleted(quiz?.quizId)}
-                  isDarkMode={isDarkMode}
-                  inDialog
-                />
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        />
       )}
 
       <Dialog open={audienceOpen} onOpenChange={setAudienceOpen}>
