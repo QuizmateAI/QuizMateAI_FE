@@ -188,6 +188,26 @@
       "title": "Đang chuẩn bị không gian nhóm",
       "description": "Trình hướng dẫn thiết lập sẽ mở ngay khi không gian nháp sẵn sàng."
     },
+    "shell": {
+      "defaultGroupName": "Không gian nhóm",
+      "memberCount": "{{count}} thành viên",
+      "openSidebar": "Mở sidebar",
+      "closeSidebar": "Đóng sidebar",
+      "nav": {
+        "dashboard": "Tổng quan",
+        "personalDashboard": "Dashboard cá nhân",
+        "documents": "Tài liệu",
+        "roadmap": "Roadmap",
+        "quiz": "Quiz",
+        "flashcard": "Flashcard",
+        "mockTest": "Mock test",
+        "challenge": "Challenge",
+        "notifications": "Thông báo",
+        "members": "Thành viên",
+        "wallet": "Ví",
+        "settings": "Cài đặt"
+      }
+    },
     "header": {
       "groupPlan": {
         "viewOrChange": "Xem / đổi gói nhóm",
@@ -195,7 +215,7 @@
         "upgrade": "Nâng cấp gói nhóm"
       },
       "planNames": {
-        "GROUP_BASE": "Gói cơ bản"
+        "GROUP_BASE": "Gói nhóm cơ bản"
       }
     },
     "studio": {

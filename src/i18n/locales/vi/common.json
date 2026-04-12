@@ -26,7 +26,10 @@
     "collapseSidebar": "Thu gọn sidebar",
     "paginationSummary": "Hiển thị {{start}} - {{end}} trên {{total}}",
     "pageSizeOption": "{{count}} / trang",
-    "close": "Đóng"
+    "close": "Đóng",
+    "home": "Trang chủ",
+    "goHome": "Về trang chủ",
+    "backToHome": "Quay về trang chủ"
   },
   "validation": {
     "fullnameRequired": "Họ và tên không được để trống",

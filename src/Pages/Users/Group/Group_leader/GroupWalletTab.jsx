@@ -318,8 +318,8 @@ export default function GroupWalletTab({
     });
   };
 
-  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-white/12 bg-[#08131a]/92' : 'border-slate-200/85 bg-white/86'}`;
-  const innerCardClass = isDarkMode ? 'border-white/12 bg-white/[0.045]' : 'border-slate-200/80 bg-white/92';
+  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-slate-700/70 bg-[#08131a]/92' : 'border-slate-200/80 bg-white/90'}`;
+  const innerCardClass = isDarkMode ? 'border-slate-700/60 bg-white/[0.04]' : 'border-slate-200/70 bg-white/85';
   const subtleTextClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const eyebrowClass = 'text-slate-500';
 

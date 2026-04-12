@@ -1,107 +1,176 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useMemo,
+  useState,
+} from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import {
+  AlertTriangle,
+  FolderOpen,
+  GraduationCap,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/Components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
-import { Search, X, GraduationCap, FolderOpen, Clock, RefreshCw, Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/Components/ui/dialog";
 import { deleteQuiz, getQuizzesByScope } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace, getPhasesByRoadmap } from "@/api/RoadmapAPI";
+import {
+  getPhasesByRoadmap,
+  getRoadmapsByWorkspace,
+} from "@/api/RoadmapAPI";
 import { useToast } from "@/context/ToastContext";
 
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  const hours = String(d.getHours()).padStart(2, "0");
-  const mins = String(d.getMinutes()).padStart(2, "0");
-  return `${day}/${month}/${year} ${hours}:${mins}`;
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
-const STATUS_STYLE = {
-  ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
-  DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
-};
+async function loadPostLearnings({ contextId, t }) {
+  if (!contextId) {
+    return { items: [], phaseIds: [] };
+  }
 
-function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLearning, contextType = "WORKSPACE", contextId }) {
+  const roadmapResponse = await getRoadmapsByWorkspace(contextId, 0, 100);
+  const rawRoadmaps = roadmapResponse?.data?.content ?? roadmapResponse?.data;
+  const roadmaps = Array.isArray(rawRoadmaps) ? rawRoadmaps : [];
+
+  const phaseResults = await Promise.all(
+    roadmaps.map(async (roadmap) => {
+      const roadmapId = Number(roadmap?.roadmapId ?? roadmap?.id);
+      if (!Number.isInteger(roadmapId) || roadmapId <= 0) return [];
+
+      try {
+        const response = await getPhasesByRoadmap(roadmapId, 0, 100);
+        const rawPhases =
+          response?.data?.data?.content
+          ?? response?.data?.content
+          ?? response?.data;
+        const phases = Array.isArray(rawPhases) ? rawPhases : [];
+
+        return phases.map((phase) => ({
+          phaseId: Number(phase?.phaseId ?? phase?.id),
+          phaseName:
+            phase?.title
+            || phase?.name
+            || t("workspace.phase.fallbackName", {
+              id: Number(phase?.phaseId ?? phase?.id),
+              defaultValue: `Phase ${Number(phase?.phaseId ?? phase?.id)}`,
+            }),
+          roadmapId,
+          roadmapName:
+            roadmap?.title
+            || roadmap?.name
+            || t("workspace.roadmap.fallbackName", {
+              id: roadmapId,
+              defaultValue: `Roadmap ${roadmapId}`,
+            }),
+        }));
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+  const phases = phaseResults.flat().filter((phase) =>
+    Number.isInteger(phase.phaseId) && phase.phaseId > 0,
+  );
+
+  const quizResults = await Promise.all(
+    phases.map(async (phase) => {
+      try {
+        const response = await getQuizzesByScope("PHASE", phase.phaseId);
+        const rawQuizzes = response?.data ?? [];
+        const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : [];
+
+        return quizzes.map((quiz) => ({
+          ...quiz,
+          phaseId: phase.phaseId,
+          phaseName: phase.phaseName,
+          roadmapId: phase.roadmapId,
+          roadmapName: phase.roadmapName,
+        }));
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+  return {
+    items: quizResults.flat(),
+    phaseIds: phases.map((phase) => phase.phaseId),
+  };
+}
+
+function PostLearningListView({
+  onCreatePostLearning,
+  onViewPostLearning,
+  contextType = "WORKSPACE",
+  contextId,
+}) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const normalizedContextId = Number(contextId) || 0;
   const [searchQuery, setSearchQuery] = useState("");
-  const [postLearnings, setPostLearnings] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
   const [deleteTargetQuiz, setDeleteTargetQuiz] = useState(null);
-  const [allPhaseIds, setAllPhaseIds] = useState([]);
+  const [deletingId, setDeletingId] = useState(null);
+  const deferredSearchQuery = useDeferredValue(searchQuery.trim().toLowerCase());
 
-  const fetchPostLearnings = useCallback(async () => {
-    if (!contextId) return;
-    setLoading(true);
-    try {
-      const roadmapRes = await getRoadmapsByWorkspace(contextId, 0, 100);
-      const roadmaps = roadmapRes.data?.content || roadmapRes.data || [];
+  const {
+    data: postLearningPayload = { items: [], phaseIds: [] },
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["workspace-post-learning", String(contextType || "").toUpperCase(), normalizedContextId],
+    enabled: normalizedContextId > 0,
+    queryFn: () => loadPostLearnings({ contextId: normalizedContextId, t }),
+  });
 
-      const allPhases = [];
-      for (const rm of roadmaps) {
-        const rmId = rm.roadmapId || rm.id;
-        try {
-          const phaseRes = await getPhasesByRoadmap(rmId, 0, 100);
-          const phases = phaseRes?.data?.data?.content || phaseRes?.data?.content || [];
-          phases.forEach((ph) => {
-            allPhases.push({
-              phaseId: ph.phaseId || ph.id,
-              phaseName: ph.title || ph.name || t("workspace.phase.fallbackName", { id: ph.phaseId || ph.id }),
-              roadmapName: rm.title || rm.name || t("workspace.roadmap.fallbackName", { id: rmId }),
-              roadmapId: rmId,
-            });
-          });
-        } catch {
-          // Bỏ qua roadmap không có phase
-        }
-      }
-      setAllPhaseIds(allPhases.map((p) => p.phaseId));
-
-      const allPostLearnings = [];
-      for (const ph of allPhases) {
-        try {
-          const quizRes = await getQuizzesByScope("PHASE", ph.phaseId);
-          const quizzes = quizRes.data || [];
-          quizzes.forEach((q) => {
-            allPostLearnings.push({
-              ...q,
-              phaseName: ph.phaseName,
-              phaseId: ph.phaseId,
-              roadmapName: ph.roadmapName,
-            });
-          });
-        } catch {
-          // Bỏ qua phase không có quiz
-        }
-      }
-      setPostLearnings(allPostLearnings);
-    } catch (err) {
-      console.error("Lỗi tải danh sách post-learning:", err);
-      setPostLearnings([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [contextId]);
-
-  useEffect(() => {
-    fetchPostLearnings();
-  }, [fetchPostLearnings]);
+  const postLearnings = postLearningPayload.items || [];
+  const phaseIds = postLearningPayload.phaseIds || [];
 
   const allPhasesCovered = useMemo(() => {
-    if (allPhaseIds.length === 0) return false;
-    const coveredIds = new Set(postLearnings.map((pl) => pl.phaseId || pl.contextId));
-    return allPhaseIds.every((id) => coveredIds.has(id));
-  }, [allPhaseIds, postLearnings]);
+    if (phaseIds.length === 0) return false;
+    const coveredIds = new Set(
+      postLearnings
+        .map((item) => Number(item?.phaseId ?? item?.contextId))
+        .filter((phaseId) => Number.isInteger(phaseId) && phaseId > 0),
+    );
+    return phaseIds.every((phaseId) => coveredIds.has(phaseId));
+  }, [phaseIds, postLearnings]);
 
-  const handleRequestDelete = useCallback((e, quiz) => {
-    e.stopPropagation();
-    if (deletingId) return;
-    setDeleteTargetQuiz(quiz);
-  }, [deletingId]);
+  const filteredPostLearnings = useMemo(
+    () =>
+      postLearnings.filter((item) => {
+        if (!deferredSearchQuery) return true;
+
+        return [item?.title, item?.phaseName, item?.roadmapName].some((value) =>
+          String(value || "").toLowerCase().includes(deferredSearchQuery),
+        );
+      }),
+    [deferredSearchQuery, postLearnings],
+  );
 
   const handleConfirmDelete = useCallback(async () => {
     const quizId = Number(deleteTargetQuiz?.quizId ?? deleteTargetQuiz?.id);
@@ -110,137 +179,155 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
     setDeletingId(quizId);
     try {
       await deleteQuiz(quizId);
-      setPostLearnings((prev) => prev.filter((q) => q.quizId !== quizId));
       setDeleteTargetQuiz(null);
-    } catch (err) {
-      console.error("Lỗi xóa post-learning:", err);
-      showError(err?.message || t("workspace.quiz.deleteFail"));
+      await refetch();
+    } catch (error) {
+      console.error("Failed to delete post-learning:", error);
+      showError(error?.message || t("workspace.quiz.deleteFail"));
     } finally {
       setDeletingId(null);
     }
-  }, [deleteTargetQuiz, deletingId, showError, t]);
-
-  const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return postLearnings;
-    const query = searchQuery.toLowerCase();
-    return postLearnings.filter((pl) =>
-      pl.title?.toLowerCase().includes(query)
-      || pl.phaseName?.toLowerCase().includes(query)
-      || pl.roadmapName?.toLowerCase().includes(query)
-    );
-  }, [postLearnings, searchQuery]);
+  }, [deleteTargetQuiz, deletingId, refetch, showError, t]);
 
   return (
-    <div className={`h-full flex flex-col ${fontClass}`}>
-      <div className={`px-4 py-3 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div className="flex items-center gap-2">
-          <GraduationCap className="w-5 h-5 text-orange-500" />
-          <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>{t("workspace.studio.actions.postLearning")}</p>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-800 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
+    <div className="flex h-full min-h-0 flex-col px-4 py-5 sm:px-5 lg:px-6">
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+            <GraduationCap className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className={`truncate text-lg font-semibold text-slate-950 ${fontClass}`}>
+              {t("workspace.studio.actions.postLearning")}
+            </p>
+          </div>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
             {postLearnings.length}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={fetchPostLearnings}
-            disabled={loading}
-            className={`rounded-full h-9 w-9 p-0 ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          {onCreatePostLearning && (
-            <Button
-              onClick={onCreatePostLearning}
-              disabled={allPhasesCovered}
-              className={`rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 ${
-                allPhasesCovered
-                  ? "bg-gray-400 cursor-not-allowed opacity-60"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.listView.create")}</span>
-            </Button>
-          )}
-        </div>
-      </div>
 
-      {allPhasesCovered && !loading && (
-        <div className={`mx-4 mt-3 px-3 py-2 rounded-lg flex items-center gap-2 text-xs ${isDarkMode ? "bg-amber-950/30 text-amber-400" : "bg-amber-50 text-amber-700"}`}>
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          {t("workspace.postLearning.allPhasesCovered")}
-        </div>
-      )}
-
-      <div className="px-4 py-3">
-        <div className="relative max-w-sm">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+        <div className="relative min-w-[220px] flex-1 sm:max-w-2xl">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(event) =>
+              startTransition(() => setSearchQuery(event.target.value))
+            }
             placeholder={t("workspace.listView.searchPlaceholder")}
-            className={`w-full pl-9 pr-9 py-2 rounded-xl text-sm border outline-none transition-colors ${isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500" : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500"}`}
+            className="h-12 w-full rounded-full border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-amber-400"
           />
-          {searchQuery && <button onClick={() => setSearchQuery("")} className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}><X className="w-4 h-4" /></button>}
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="h-12 rounded-full border-slate-200 px-4"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          </Button>
+          {onCreatePostLearning ? (
+            <Button
+              type="button"
+              onClick={onCreatePostLearning}
+              disabled={allPhasesCovered}
+              className="h-12 rounded-full bg-amber-500 px-5 text-white hover:bg-amber-600 disabled:opacity-50"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t("workspace.listView.create")}
+            </Button>
+          ) : null}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className={`w-6 h-6 animate-spin ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
+      {allPhasesCovered ? (
+        <div className="mt-3 inline-flex items-center gap-2 text-sm text-amber-700">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{t("workspace.postLearning.allPhasesCovered")}</span>
+        </div>
+      ) : null}
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {searchQuery ? t("workspace.listView.noResults") : t("workspace.postLearning.noItems")}
-            </p>
+        ) : postLearnings.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+            <GraduationCap className="mb-4 h-12 w-12 text-slate-300" />
+            <p className="text-sm text-slate-500">{t("workspace.postLearning.noItems")}</p>
+            {onCreatePostLearning ? (
+              <Button
+                type="button"
+                onClick={onCreatePostLearning}
+                disabled={allPhasesCovered}
+                className="mt-4 rounded-full bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t("workspace.listView.create")}
+              </Button>
+            ) : null}
+          </div>
+        ) : filteredPostLearnings.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+            <FolderOpen className="mb-4 h-10 w-10 text-slate-300" />
+            <p className="text-sm text-slate-500">{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((pl) => {
-              const statusStyle = STATUS_STYLE[pl.status] || STATUS_STYLE.DRAFT;
-              const currentQuizId = pl.quizId ?? pl.id;
+          <div className="divide-y divide-slate-200">
+            {filteredPostLearnings.map((postLearning) => {
+              const resolvedQuizId = Number(postLearning?.quizId ?? postLearning?.id);
 
               return (
-                <div
-                  key={pl.quizId}
-                  onClick={() => onViewPostLearning?.(pl)}
-                  className={`rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer transition-all ${isDarkMode ? "bg-slate-800/50 hover:bg-slate-800 border border-slate-800" : "bg-gray-50 hover:bg-gray-100 border border-gray-100"}`}
+                <article
+                  key={resolvedQuizId || postLearning?.title}
+                  onClick={() => onViewPostLearning?.(postLearning)}
+                  className="group flex cursor-pointer items-start gap-4 px-1 py-4 transition-colors hover:bg-slate-50/70"
+                  style={{ contentVisibility: "auto" }}
                 >
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isDarkMode ? "bg-orange-950/40" : "bg-orange-100"}`}>
-                    <GraduationCap className="w-4 h-4 text-orange-500" />
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                    <GraduationCap className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-white" : "text-gray-900"}`}>{pl.title}</p>
-                    <p className={`text-xs mt-0.5 flex items-center gap-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                      {pl.duration > 0 && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{pl.duration} {t("workspace.quiz.minutes")}</span>}
-                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${isDarkMode ? statusStyle.dark : statusStyle.light}`}>
-                        {t(`workspace.quiz.statusLabels.${pl.status}`)}
-                      </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm font-semibold text-slate-900 ${fontClass}`}>
+                      {postLearning?.title || "—"}
                     </p>
-                    <div className={`flex items-center gap-3 mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("workspace.listView.createdAt")}: {formatShortDate(pl.createdAt)}</span>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      {postLearning?.createdAt ? <span>{formatShortDate(postLearning.createdAt)}</span> : null}
+                      {postLearning?.phaseName ? <span>{postLearning.phaseName}</span> : null}
+                      {postLearning?.roadmapName ? <span>{postLearning.roadmapName}</span> : null}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDarkMode ? "bg-blue-950/50 text-blue-400" : "bg-blue-100 text-blue-700"}`}>
-                      {pl.phaseName}
-                    </span>
-                    <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      {pl.roadmapName}
-                    </span>
-                  </div>
+
                   <button
-                    onClick={(e) => handleRequestDelete(e, pl)}
-                    className={`p-1.5 rounded-lg transition-all active:scale-95 ${isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"}`}
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (deletingId) return;
+                      setDeleteTargetQuiz(postLearning);
+                    }}
+                    className="rounded-xl p-2 text-slate-400 transition-all hover:bg-rose-50 hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100"
+                    title={t("workspace.quiz.deleteQuiz")}
                   >
-                    {deletingId === currentQuizId ? <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" /> : <Trash2 className="w-3.5 h-3.5 text-red-400" />}
+                    {deletingId === resolvedQuizId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </button>
-                </div>
+                </article>
               );
             })}
           </div>
@@ -257,16 +344,15 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
           <DialogHeader>
             <DialogTitle>{t("workspace.quiz.deleteQuiz")}</DialogTitle>
             <DialogDescription className="space-y-2">
-              <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
+              <span className="block text-base font-semibold text-slate-900">
                 {deleteTargetQuiz?.title}
               </span>
-              <span className="block">
-                {t("workspace.quiz.deleteConfirm")}
-              </span>
+              <span className="block">{t("workspace.quiz.deleteConfirm")}</span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
+              type="button"
               variant="outline"
               onClick={() => setDeleteTargetQuiz(null)}
               disabled={Boolean(deletingId)}
@@ -274,7 +360,8 @@ function PostLearningListView({ isDarkMode, onCreatePostLearning, onViewPostLear
               {t("workspace.quiz.close")}
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
+              type="button"
+              className="bg-red-600 text-white hover:bg-red-700"
               onClick={handleConfirmDelete}
               disabled={Boolean(deletingId)}
             >

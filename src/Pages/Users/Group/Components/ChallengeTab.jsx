@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Swords } from 'lucide-react';
@@ -17,15 +17,15 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const challengeEventIdFromUrl = searchParams.get('challengeEventId');
+  const challengeEventIdFromRoute = (() => {
+    const raw = Number(challengeEventIdFromUrl);
+    return Number.isInteger(raw) && raw > 0 ? raw : null;
+  })();
 
   const [activeSubTab, setActiveSubTab] = useState('SCHEDULED');
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
-
-  const selectedEventIdFromUrl = useMemo(() => {
-    const raw = Number(challengeEventIdFromUrl);
-    return Number.isInteger(raw) && raw > 0 ? raw : null;
-  }, [challengeEventIdFromUrl]);
+  const activeEventId = challengeEventIdFromRoute ?? selectedEventId;
 
   const effectiveSelectedEventId = selectedEventId ?? selectedEventIdFromUrl;
 
@@ -35,7 +35,7 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
       const res = await listChallenges(workspaceId, activeSubTab);
       return res.data || [];
     },
-    enabled: Boolean(workspaceId) && !effectiveSelectedEventId,
+    enabled: Boolean(workspaceId) && !activeEventId,
     refetchInterval: 15000,
   });
 
@@ -58,11 +58,11 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
     queryClient.invalidateQueries({ queryKey: ['challenges', workspaceId] });
   }, [queryClient, workspaceId]);
 
-  if (effectiveSelectedEventId) {
+  if (activeEventId) {
     return (
       <ChallengeDetailView
         workspaceId={workspaceId}
-        eventId={effectiveSelectedEventId}
+        eventId={activeEventId}
         isDarkMode={isDarkMode}
         isLeader={isLeader}
         currentUserId={currentUserId}
