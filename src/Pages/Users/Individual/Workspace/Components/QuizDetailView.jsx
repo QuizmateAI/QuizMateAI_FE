@@ -19,6 +19,8 @@ import {
 import { recordQuizReviewView } from "@/api/ChallengeAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
+import { getUserDisplayLabel } from "@/Utils/userProfile";
+import UserDisplayName from "@/Components/users/UserDisplayName";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
 import GroupDiscussionPanel from "@/Pages/Users/Group/Components/GroupDiscussionPanel";
 import QuestionInlineDiscussion from "@/Pages/Users/Group/Components/QuestionInlineDiscussion";
@@ -34,6 +36,33 @@ import {
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
 const quizDetailCache = new Map();
+
+function HistoryMemberAvatar({ src, name, isDarkMode, sizeClass = "w-6 h-6", textClass = "text-[10px]" }) {
+  const [failed, setFailed] = useState(false);
+  const avatarSrc = typeof src === "string" ? src.trim() : "";
+  const showImage = avatarSrc && !failed;
+  const initial = String(name || "?").trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <div className={cn(
+      "rounded-full flex items-center justify-center text-white font-bold shrink-0 overflow-hidden",
+      sizeClass,
+      textClass,
+      showImage ? "bg-transparent" : isDarkMode ? "bg-blue-600" : "bg-blue-500",
+    )}>
+      {showImage ? (
+        <img
+          src={avatarSrc}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  );
+}
 const quizDetailInFlight = new Map();
 
 // Cấu hình màu badge trạng thái quiz
@@ -859,6 +888,7 @@ function QuizDetailView({
             workspaceId={_contextId}
             quizId={quiz?.quizId}
             isLeader={isGroupLeader}
+            hasAttempted={hasQuizCompleted(quiz?.quizId)}
             allQuestions={allQuestionsFlat}
             questionsById={questionsById}
             onNavigateToQuestion={handleNavigateToQuestion}
@@ -1269,17 +1299,32 @@ function QuizDetailView({
                   const byMember = {};
                   history.forEach((attempt) => {
                     const key = String(attempt.userId ?? attempt.memberId ?? attempt.attemptId);
-                    if (!byMember[key]) byMember[key] = { name: attempt.memberName ?? attempt.userName ?? attempt.userFullName ?? `User ${key}`, attempts: [] };
+                    if (!byMember[key]) {
+                      byMember[key] = {
+                        user: {
+                          fullName: attempt.memberName ?? attempt.userFullName,
+                          username: attempt.userName,
+                        },
+                        name: getUserDisplayLabel({
+                          fullName: attempt.memberName ?? attempt.userFullName,
+                          username: attempt.userName,
+                        }, `User ${key}`),
+                        avatar: attempt.avatar ?? attempt.authorAvatar ?? attempt.avatarUrl ?? "",
+                        attempts: [],
+                      };
+                    } else if (!byMember[key].avatar) {
+                      byMember[key].avatar = attempt.avatar ?? attempt.authorAvatar ?? attempt.avatarUrl ?? "";
+                    }
                     byMember[key].attempts.push(attempt);
                   });
-                  return Object.entries(byMember).map(([memberId, { name, attempts: memberAttempts }]) => (
+                  return Object.entries(byMember).map(([memberId, { name, user, avatar, attempts: memberAttempts }]) => (
                     <div key={memberId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-slate-200 bg-white"}`}>
                       {/* Member header */}
                       <div className={`px-4 py-2.5 flex items-center gap-2 border-b ${isDarkMode ? "bg-slate-800/60 border-slate-700/60" : "bg-slate-50 border-slate-100"}`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 bg-blue-500`}>
-                          {String(name).trim().charAt(0).toUpperCase()}
-                        </div>
-                        <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{name}</span>
+                        <HistoryMemberAvatar src={avatar} name={name} isDarkMode={isDarkMode} />
+                        <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                          <UserDisplayName user={user} fallback={name} isDarkMode={isDarkMode} />
+                        </span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
                           {memberAttempts.length} lần
                         </span>
@@ -1547,8 +1592,7 @@ function QuizDetailView({
                     groupMembers.map((m) => {
                       const uid = Number(m.userId ?? m.id);
                       if (!Number.isInteger(uid) || uid <= 0) return null;
-                      const label = m.fullName || m.username || t("workspace.quiz.audience.memberFallback", { id: uid });
-                      const initial = String(label).trim().charAt(0).toUpperCase() || "?";
+                      const label = getUserDisplayLabel(m, t("workspace.quiz.audience.memberFallback", { id: uid }));
                       const checked = selectedAudienceUserIds.includes(uid);
                       return (
                         <label
@@ -1562,18 +1606,21 @@ function QuizDetailView({
                               : isDarkMode
                                 ? "hover:bg-slate-800/60"
                                 : "hover:bg-white",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                              isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700",
                             )}
                           >
-                            {initial}
-                          </div>
+                          <HistoryMemberAvatar
+                            src={m.avatar ?? m.avatarUrl}
+                            name={label}
+                            isDarkMode={isDarkMode}
+                            sizeClass="h-9 w-9"
+                            textClass="text-xs"
+                          />
                           <span className={cn("min-w-0 flex-1 text-sm font-medium", isDarkMode ? "text-slate-100" : "text-slate-800")}>
-                            {label}
+                            <UserDisplayName
+                              user={m}
+                              fallback={t("workspace.quiz.audience.memberFallback", { id: uid })}
+                              isDarkMode={isDarkMode}
+                            />
                           </span>
                           <Checkbox
                             checked={checked}

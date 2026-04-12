@@ -43,6 +43,8 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { getUserDisplayLabel } from '@/Utils/userProfile';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RECENT_MEMBER_DAYS = 7;
@@ -225,7 +227,7 @@ function GroupDashboardTab({
       .sort((a, b) => (Number(b.averageScore) || 0) - (Number(a.averageScore) || 0))
       .slice(0, 10)
       .map((m) => {
-        const raw = String(m.fullName || m.username || '?');
+        const raw = getUserDisplayLabel(m, '?');
         const label = raw.length > 12 ? `${raw.slice(0, 12)}…` : raw;
         return {
           userId: m.userId,
@@ -286,14 +288,14 @@ function GroupDashboardTab({
     id: `upload-${member.groupMemberId ?? member.userId}`,
     icon: Upload,
     tone: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
-    title: lang === 'en' ? `${member.fullName || member.username} needs upload review` : `${member.fullName || member.username} can xem quyen upload`,
+    title: lang === 'en' ? `${getUserDisplayLabel(member, 'Member')} needs upload review` : `${getUserDisplayLabel(member, 'Thành viên')} can xem quyen upload`,
     note: lang === 'en' ? 'Contributor lane is set but source upload is still blocked.' : 'Da o lane contributor nhung van chua them duoc tai lieu.',
   }));
   onboardingMembers.slice(0, 2).forEach((member) => attentionItems.push({
     id: `onboarding-${member.groupMemberId ?? member.userId}`,
     icon: UserPlus,
     tone: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
-    title: lang === 'en' ? `${member.fullName || member.username} just joined` : `${member.fullName || member.username} vua vao nhom`,
+    title: lang === 'en' ? `${getUserDisplayLabel(member, 'Member')} just joined` : `${getUserDisplayLabel(member, 'Thành viên')} vua vao nhom`,
     note: lang === 'en' ? 'Assign a first task early.' : 'Nen giao nhiem vu dau tien som.',
   }));
 
@@ -599,8 +601,10 @@ function GroupDashboardTab({
                             {(m.fullName || m.username || '?').trim().slice(0, 1).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className={cn('truncate font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{m.fullName || m.username}</p>
-                            <p className={`mt-0.5 text-xs ${eyebrowClass}`}>@{m.username}</p>
+                            <p className={cn('truncate font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                              <UserDisplayName user={m} fallback={lang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
+                            </p>
+                            <p className={`mt-0.5 text-xs ${eyebrowClass}`}>{m.email || (m.username ? `@${m.username}` : '')}</p>
                             <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                               <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
                                 <p className={cn('text-sm font-bold', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')}>{m.quizCompletedCount ?? 0}</p>
@@ -782,7 +786,13 @@ function GroupDashboardTab({
               <DialogTitle className={cn('text-xl font-black tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
                 {detailLoading && !memberDetail
                   ? (lang === 'en' ? 'Loading member…' : 'Đang tải thành viên…')
-                  : (memberDetail?.fullName || memberDetail?.username || (lang === 'en' ? 'Member' : 'Thành viên'))}
+                  : (
+                    <UserDisplayName
+                      user={memberDetail}
+                      fallback={lang === 'en' ? 'Member' : 'Thành viên'}
+                      isDarkMode={isDarkMode}
+                    />
+                  )}
               </DialogTitle>
               <DialogDescription className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
                 {memberDetail?.username ? `@${memberDetail.username}` : null}
@@ -1075,8 +1085,10 @@ function GroupDashboardTab({
               return (
                 <div key={member.groupMemberId ?? member.userId ?? member.username} className={`grid gap-3 rounded-[24px] border px-4 py-4 md:grid-cols-[minmax(0,1.1fr)_auto_auto] md:items-center ${innerCardClass}`}>
                   <div className="min-w-0">
-                    <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{member.fullName || member.username}</p>
-                    <p className={`mt-1 text-xs ${eyebrowClass}`}>@{member.username || 'unknown'} · {joinLabel(member.joinedAt, lang)}</p>
+                    <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      <UserDisplayName user={member} fallback={lang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
+                    </p>
+                    <p className={`mt-1 text-xs ${eyebrowClass}`}>{member.email || (member.username ? `@${member.username}` : 'unknown')} · {joinLabel(member.joinedAt, lang)}</p>
                   </div>
                   <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${roleBadgeClass(member.role)}`}>{member.role === 'LEADER' ? t('home.group.leader') : member.role === 'CONTRIBUTOR' ? t('home.group.contributor') : t('home.group.member')}</span>
                   <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.className}`}>{status.label}</span>
