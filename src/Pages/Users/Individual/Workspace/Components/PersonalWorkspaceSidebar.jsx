@@ -10,6 +10,7 @@ import {
   Pencil,
   ScrollText,
   Sun,
+  UserCircle,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -130,7 +131,10 @@ function PersonalWorkspaceSidebar({
 
   const handleNavigate = (key) => {
     if (disabledMap[key]) return;
+    if (key === activeView) return;
+
     onNavigate?.(key);
+
     if (isMobile) {
       onCloseMobile?.();
     }
@@ -233,20 +237,40 @@ function PersonalWorkspaceSidebar({
       <aside className={asideClasses}>
         <div className={cn("border-b px-4 pb-3.5 pt-4", isDarkMode ? "border-slate-700/80" : "border-slate-200/80")}>
           <div className="mb-3 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={handleGoHome}
-              className={cn(
-                "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
-                isDarkMode
-                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
-                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
-              )}
-              aria-label={t("common.home", "Home")}
-              title={t("common.home", "Home")}
-            >
-              <Home className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleGoHome}
+                className={cn(
+                  "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
+                  isDarkMode
+                    ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
+                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                )}
+                aria-label={t("common.home", "Home")}
+                title={t("common.home", "Home")}
+              >
+                <Home className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border px-2.5 transition-colors duration-200 ease-out",
+                  isDarkMode
+                    ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
+                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                )}
+                aria-label={t("workspace.settingsMenu.workspaceProfile", "Workspace Profile")}
+                title={t("workspace.settingsMenu.workspaceProfile", "Workspace Profile")}
+              >
+                <UserCircle className="h-4 w-4" />
+                <span className={cn("text-xs font-semibold", fontClass)}>
+                  {i18n.language === "vi" ? "Hồ sơ" : "Profile"}
+                </span>
+              </button>
+            </div>
 
             {isMobile ? (
               <button

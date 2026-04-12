@@ -68,6 +68,12 @@ const LazyUploadSourceDialog = React.lazy(
   () =>
     import("@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog"),
 );
+const LazyRoadmapPhaseGenerateDialog = React.lazy(
+  () =>
+    import(
+      "@/Pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog"
+    ),
+);
 const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(
   () =>
     import(
@@ -845,6 +851,12 @@ function WorkspacePage() {
 
     trackQuizGenerationStart,
 
+    phaseGenerateDialogOpen,
+
+    setPhaseGenerateDialogOpen,
+
+    phaseGenerateDialogDefaultIds,
+
     isGeneratingRoadmapPhases,
 
     effectiveRoadmapPhaseGenerationProgress,
@@ -862,6 +874,8 @@ function WorkspacePage() {
     generatingPreLearningPhaseIds,
 
     skipPreLearningPhaseIds,
+
+    handleOpenRoadmapPhaseDialog,
 
     handleSubmitRoadmapPhaseDialog,
 
@@ -1564,6 +1578,10 @@ function WorkspacePage() {
     (actionKey) => {
       setIsMobileSidebarOpen(false);
 
+      if (actionKey === activeView) {
+        return;
+      }
+
       if (actionKey === "roadmap" && shouldDisableRoadmapForStudio) {
         return;
       }
@@ -1602,9 +1620,7 @@ function WorkspacePage() {
         );
       }
 
-      React.startTransition(() => {
-        setActiveView(actionKey);
-      });
+      setActiveView(actionKey);
 
       if (
         actionKey !== "quiz" &&
@@ -1620,6 +1636,7 @@ function WorkspacePage() {
       }
     },
     [
+      activeView,
       addAccessHistory,
       shouldDisableRoadmapForStudio,
       planEntitlements.hasWorkspaceAnalytics,
@@ -1627,6 +1644,18 @@ function WorkspacePage() {
   );
 
   const handleSelectRoadmapPhase = useCallback((phaseId, options = {}) => {
+    if (options?.focusRoadmapCenter) {
+      setSelectedRoadmapPhaseId(null);
+      setSelectedRoadmapKnowledgeId(null);
+
+      if (options?.preserveActiveView) return;
+
+      setSelectedQuiz(null);
+      setQuizBackTarget(null);
+      setActiveView("roadmap");
+      return;
+    }
+
     const normalizedPhaseId = Number(phaseId);
     const normalizedKnowledgeId = Number(options?.knowledgeId);
 
@@ -2040,27 +2069,6 @@ function WorkspacePage() {
     [sources],
   );
 
-  const handleGenerateRoadmapPhases = useCallback(async () => {
-    if (isSubmittingRoadmapPhaseRequest) return;
-
-    if (!planEntitlements.canCreateRoadmap) {
-      setPlanUpgradeFeatureName("Tạo lộ trình học tập");
-      setPlanUpgradeModalOpen(true);
-      return;
-    }
-
-    await handleSubmitRoadmapPhaseDialog({
-      materialIds:
-        selectedSourceIds.length > 0 ? selectedSourceIds : activeSourceIds,
-    });
-  }, [
-    activeSourceIds,
-    handleSubmitRoadmapPhaseDialog,
-    isSubmittingRoadmapPhaseRequest,
-    planEntitlements.canCreateRoadmap,
-    selectedSourceIds,
-  ]);
-
   const handleToggleMaterialSelection = useCallback((sourceId, isSelected) => {
     setSelectedSourceIds((prev) => {
       if (isSelected) {
@@ -2091,7 +2099,7 @@ function WorkspacePage() {
     onCreateQuiz: handleCreateQuiz,
     onCreateFlashcard: handleCreateFlashcard,
     onCreateRoadmap: handleCreateRoadmap,
-    onGenerateRoadmapPhases: handleGenerateRoadmapPhases,
+    onCreateRoadmapPhases: handleOpenRoadmapPhaseDialog,
     onNavigateHome: () => navigate("/home"),
     onRoadmapPhaseFocus: handleSelectRoadmapPhase,
     onCreatePhaseKnowledge: handleCreatePhaseKnowledge,
@@ -2332,6 +2340,20 @@ function WorkspacePage() {
             workspaceId={workspaceId}
             onSuggestedImported={fetchSources}
             planEntitlements={planEntitlements}
+          />
+        </DeferredWorkspaceDialog>
+      ) : null}
+
+      {phaseGenerateDialogOpen ? (
+        <DeferredWorkspaceDialog>
+          <LazyRoadmapPhaseGenerateDialog
+            open={phaseGenerateDialogOpen}
+            onOpenChange={setPhaseGenerateDialogOpen}
+            isDarkMode={personalWorkspaceIsDark}
+            materials={sources}
+            defaultSelectedMaterialIds={phaseGenerateDialogDefaultIds}
+            submitting={isSubmittingRoadmapPhaseRequest}
+            onSubmit={handleSubmitRoadmapPhaseDialog}
           />
         </DeferredWorkspaceDialog>
       ) : null}
