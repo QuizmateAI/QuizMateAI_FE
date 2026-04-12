@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Send, Trash2, Loader2, Info, Lock, CheckCircle2, X,
+  Send, Trash2, Loader2, Info, Lock, CheckCircle2, X, Smile, Camera, ImageIcon, Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
@@ -286,6 +286,8 @@ export default function QuestionInlineDiscussion({
   hasAttempted = false,
   isDarkMode = false,
   inDialog = false,
+  hideGuide = false,
+  onMessagesChange,
 }) {
   const { profile } = useUserProfile();
 
@@ -294,12 +296,22 @@ export default function QuestionInlineDiscussion({
   const [draft, setDraft] = useState('');
   const [posting, setPosting] = useState(false);
   const [showGuide, setShowGuide] = useState(
-    () => !localStorage.getItem(GUIDE_DISMISSED_KEY),
+    () => !hideGuide && !localStorage.getItem(GUIDE_DISMISSED_KEY),
   );
 
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const onMessagesChangeRef = useRef(onMessagesChange);
   const currentUserId = profile?.userId ?? profile?.id ?? 0;
+  const composerDisplayName = String(profile?.fullName ?? profile?.name ?? 'bạn').trim() || 'bạn';
+  const composerTools = [
+    { key: 'emoji', icon: Smile, label: 'Biểu cảm' },
+    { key: 'camera', icon: Camera, label: 'Máy ảnh' },
+    { key: 'image', icon: ImageIcon, label: 'Ảnh' },
+    { key: 'gif', label: 'GIF', textOnly: true },
+    { key: 'sticker', icon: Sparkles, label: 'Sticker' },
+  ];
+  const shouldShowMessageArea = loading || messages.length > 0 || !inDialog;
 
   // ── Access check
   const canAccess = isLeader || hasAttempted;
@@ -324,6 +336,14 @@ export default function QuestionInlineDiscussion({
       bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [loading, messages.length]);
+
+  useEffect(() => {
+    onMessagesChangeRef.current = onMessagesChange;
+  }, [onMessagesChange]);
+
+  useEffect(() => {
+    onMessagesChangeRef.current?.(messages.length);
+  }, [messages.length]);
 
   // ── Dismiss guideline (persisted)
   const handleDismissGuide = () => {
@@ -396,7 +416,7 @@ export default function QuestionInlineDiscussion({
   // ─── Render: Active chat ─────────────────────────────────────────────────────
   return (
     <div className={cn(
-      inDialog ? '' : 'mt-2 rounded-xl border overflow-hidden',
+      inDialog ? 'flex h-full min-h-0 flex-1 flex-col' : 'mt-2 overflow-hidden rounded-2xl border',
       !inDialog && (isDarkMode ? 'border-blue-900/40 bg-slate-800/30' : 'border-blue-100 bg-blue-50/30'),
     )}>
       {/* Chat header — hidden when rendered inside a dialog (dialog already has its own header) */}
@@ -430,97 +450,155 @@ export default function QuestionInlineDiscussion({
         </div>
       )}
 
-      <div className="px-3 pt-3 pb-2">
+      <div
+        className={cn(
+          'px-3 pt-3 pb-2',
+          inDialog && 'flex min-h-0 flex-1 flex-col gap-3 px-0 pt-0 pb-0',
+        )}
+      >
         {/* Guideline card */}
         {showGuide && (
           <GuidelineCard isDarkMode={isDarkMode} onDismiss={handleDismissGuide} />
         )}
 
         {/* Messages area */}
-        <div className="space-y-3 mb-3 max-h-52 overflow-y-auto pr-1">
-          {loading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className={cn('w-4 h-4 animate-spin', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
+        {shouldShowMessageArea && (
+          <div className={cn(
+            'rounded-[22px] border px-3 py-3',
+            inDialog && 'flex min-h-0 flex-1 flex-col',
+            isDarkMode ? 'border-slate-800 bg-slate-950/45' : 'border-slate-200 bg-slate-50/80',
+          )}>
+            <div className={cn(
+              'space-y-3 overflow-y-auto pr-1',
+              inDialog ? 'min-h-0 flex-1 max-h-none' : 'max-h-56',
+            )}>
+              {loading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className={cn('w-4 h-4 animate-spin', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-5 text-center">
+                  <div className={cn(
+                    'mb-2 flex h-10 w-10 items-center justify-center rounded-full',
+                    isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-white text-slate-400 shadow-sm',
+                  )}>
+                    <Send className="h-4 w-4" />
+                  </div>
+                  <p className={cn('text-[11px] italic', isDarkMode ? 'text-slate-500' : 'text-gray-500')}>
+                    Chưa có bình luận nào. Mở đầu cuộc thảo luận cho câu này.
+                  </p>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <MessageRow
+                    key={msg.id}
+                    msg={msg}
+                    canDelete={isLeader || Number(msg.authorId) === Number(currentUserId)}
+                    onDelete={handleDelete}
+                    isDarkMode={isDarkMode}
+                  />
+                ))
+              )}
+              <div ref={bottomRef} />
             </div>
-          ) : messages.length === 0 ? (
-            <p className={cn('text-[11px] text-center py-4 italic', isDarkMode ? 'text-slate-600' : 'text-gray-400')}>
-              Chưa có bình luận nào. Bắt đầu thảo luận về câu hỏi này!
-            </p>
-          ) : (
-            messages.map((msg) => (
-              <MessageRow
-                key={msg.id}
-                msg={msg}
-                canDelete={isLeader || Number(msg.authorId) === Number(currentUserId)}
-                onDelete={handleDelete}
-                isDarkMode={isDarkMode}
-              />
-            ))
-          )}
-          <div ref={bottomRef} />
-        </div>
+          </div>
+        )}
 
         {/* Input */}
-        <div className={cn(
-          'flex items-end gap-2 rounded-xl border px-2.5 py-2 transition-colors',
-          isDarkMode
-            ? 'border-slate-700 bg-slate-800/70 focus-within:border-blue-700/70'
-            : 'border-blue-200 bg-white focus-within:border-blue-400',
-        )}>
+        <div className={cn("flex shrink-0 items-end gap-3", inDialog && "mt-auto")}>
           <UserAvatar
             src={getProfileAvatar(profile)}
             name={profile?.fullName ?? profile?.name ?? '?'}
             role={isLeader ? 'LEADER' : 'MEMBER'}
             userId={currentUserId}
-            sizeClass="w-5 h-5"
-            textClass="text-[9px]"
-            className="mb-0.5"
+            sizeClass="w-9 h-9"
+            textClass="text-xs"
+            className={cn(
+              'mb-1 ring-2 shadow-sm',
+              isDarkMode ? 'ring-slate-700/70' : 'ring-white',
+            )}
           />
 
-          {/* Textarea */}
-          <textarea
-            ref={textareaRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onInput={handleInput}
-            placeholder="Nhập bình luận… Enter gửi · Shift+Enter xuống hàng"
-            rows={1}
+          <div
             className={cn(
-              'flex-1 bg-transparent resize-none text-xs leading-relaxed outline-none min-h-[22px] max-h-20',
-              isDarkMode ? 'text-slate-200 placeholder:text-slate-600' : 'text-gray-800 placeholder:text-gray-400',
+              'flex-1 overflow-hidden rounded-[26px] border px-4 py-3 transition-colors',
+              isDarkMode
+                ? 'border-slate-700/80 bg-[#303236] focus-within:border-slate-500'
+                : 'border-slate-200 bg-[#f1f2f4] focus-within:border-slate-300',
             )}
-            style={{ scrollbarWidth: 'none' }}
-          />
-
-          {/* Send */}
-          <button
-            type="button"
-            disabled={!draft.trim() || posting}
-            onClick={handlePost}
-            className={cn(
-              'p-1 rounded-lg transition-colors shrink-0 mb-0.5',
-              draft.trim()
-                ? isDarkMode
-                  ? 'text-blue-400 hover:bg-blue-900/30'
-                  : 'text-blue-600 hover:bg-blue-100'
-                : isDarkMode
-                  ? 'text-slate-700 cursor-not-allowed'
-                  : 'text-gray-300 cursor-not-allowed',
-            )}
-            title="Gửi (Enter)"
           >
-            {posting
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              : <Send className="w-3.5 h-3.5" />
-            }
-          </button>
+            {/* Textarea */}
+            <textarea
+              ref={textareaRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onInput={handleInput}
+              placeholder={`Bình luận dưới tên ${composerDisplayName}`}
+              rows={1}
+              className={cn(
+                'w-full resize-none bg-transparent text-sm leading-6 outline-none min-h-[28px] max-h-24',
+                isDarkMode ? 'text-slate-100 placeholder:text-slate-400' : 'text-slate-800 placeholder:text-slate-500',
+              )}
+              style={{ scrollbarWidth: 'none' }}
+            />
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                {composerTools.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <span
+                      key={tool.key}
+                      aria-hidden="true"
+                      title={tool.label}
+                      className={cn(
+                        'inline-flex h-7 min-w-7 items-center justify-center rounded-full px-1.5',
+                        isDarkMode ? 'text-slate-400' : 'text-slate-500',
+                      )}
+                    >
+                      {tool.textOnly ? (
+                        <span className="text-[11px] font-semibold tracking-wide">{tool.label}</span>
+                      ) : (
+                        <Icon className="h-4 w-4" />
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Send */}
+              <button
+                type="button"
+                disabled={!draft.trim() || posting}
+                onClick={handlePost}
+                className={cn(
+                  'shrink-0 rounded-full p-2.5 transition-all',
+                  draft.trim()
+                    ? isDarkMode
+                      ? 'bg-blue-500/15 text-blue-300 hover:bg-blue-500/25'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                    : isDarkMode
+                      ? 'bg-slate-700/70 text-slate-500 cursor-not-allowed'
+                      : 'bg-slate-300/70 text-slate-500 cursor-not-allowed',
+                )}
+                title="Gửi (Enter)"
+              >
+                {posting
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Send className="w-4 h-4" />
+                }
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Shortcut hint */}
-        <p className={cn('text-[10px] mt-1.5 text-right', isDarkMode ? 'text-slate-700' : 'text-gray-300')}>
-          Enter gửi · Shift+Enter xuống hàng
-        </p>
+        {!inDialog && (
+          <p className={cn('mt-1.5 text-right text-[10px]', isDarkMode ? 'text-slate-700' : 'text-gray-300')}>
+            Enter gửi · Shift+Enter xuống hàng
+          </p>
+        )}
       </div>
     </div>
   );
