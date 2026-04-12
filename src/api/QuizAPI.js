@@ -310,9 +310,15 @@ export const dismissRecommendation = async (assessmentId) => {
   return response;
 };
 
-// Lấy lịch sử làm bài của 1 quiz
+// Lấy lịch sử làm bài của 1 quiz (chỉ của user hiện tại)
 export const getQuizHistory = async (quizId) => {
   const response = await api.get(`/quiz-attempts/history?quizId=${quizId}`);
+  return response;
+};
+
+// Lấy lịch sử làm bài của tất cả members trong nhóm (dành cho leader)
+export const getGroupQuizHistory = async (workspaceId, quizId) => {
+  const response = await api.get(`/group/${workspaceId}/quiz-attempts/history?quizId=${quizId}`);
   return response;
 };
 
