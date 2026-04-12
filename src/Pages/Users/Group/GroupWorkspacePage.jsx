@@ -290,12 +290,48 @@ function canonicalPlanNameToken(value) {
   return normalizedValue;
 }
 
-function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t }) {
+function normalizePlanLookupText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_-]+/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function inferGroupPlanTokenFromDisplayName(planDisplayName) {
+  const normalized = normalizePlanLookupText(planDisplayName);
+  if (!normalized) return '';
+
+  if (
+    normalized.includes('group base')
+    || normalized.includes('goi nhom co ban')
+    || normalized === 'goi co ban'
+  ) {
+    return 'GROUP_BASE';
+  }
+
+  return '';
+}
+
+const GROUP_PLAN_NAME_FALLBACKS = {
+  GROUP_BASE: {
+    en: 'Group Base',
+    vi: 'Gói nhóm cơ bản',
+  },
+};
+
+function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t, lang = 'vi' }) {
+  const normalizedLang = String(lang || 'vi').toLowerCase().startsWith('en') ? 'en' : 'vi';
   const normalizedPlanCode = canonicalPlanNameToken(planCode);
   const normalizedDisplayName = canonicalPlanNameToken(planDisplayName);
   const normalizedDisplayNameCompact = normalizedDisplayName.replace(/_/g, '');
+  const inferredDisplayToken = inferGroupPlanTokenFromDisplayName(planDisplayName);
 
   const keyCandidates = [
+    inferredDisplayToken,
     normalizedPlanCode,
     normalizedDisplayName,
     canonicalPlanNameToken(normalizedDisplayNameCompact),
@@ -309,6 +345,11 @@ function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t }) {
     if (localized) {
       return localized;
     }
+  }
+
+  for (const candidate of keyCandidates) {
+    const fallbackLabel = GROUP_PLAN_NAME_FALLBACKS?.[candidate]?.[normalizedLang] || GROUP_PLAN_NAME_FALLBACKS?.[candidate]?.en;
+    if (fallbackLabel) return fallbackLabel;
   }
 
   return String(planDisplayName || planCode || '').trim();
@@ -600,6 +641,7 @@ function GroupWorkspacePage() {
   const [createdItems, setCreatedItems] = useState([]);
   const [groupProfile, setGroupProfile] = useState(null);
   const [groupSubscription, setGroupSubscription] = useState(null);
+  const [hasLoadedGroupSubscription, setHasLoadedGroupSubscription] = useState(isCreating);
   const [groupBuyCreditModalOpen, setGroupBuyCreditModalOpen] = useState(false);
   const [groupRoadmapConfig, setGroupRoadmapConfig] = useState(null);
   const [groupProfileLoading, setGroupProfileLoading] = useState(false);
@@ -839,11 +881,28 @@ function GroupWorkspacePage() {
       planDisplayName: rawGroupPlanDisplayName,
       planCode: rawGroupPlanCode,
       t,
+      lang: currentLang,
     }),
-    [rawGroupPlanCode, rawGroupPlanDisplayName, t]
+    [currentLang, rawGroupPlanCode, rawGroupPlanDisplayName, t]
   );
+  const defaultGroupPlanName = useMemo(() => {
+    const fallbackDefault = String(currentLang || '').toLowerCase().startsWith('en')
+      ? 'Group Base'
+      : 'Gói nhóm cơ bản';
+    const localized = String(
+      t('groupWorkspace.header.planNames.GROUP_BASE', { defaultValue: fallbackDefault })
+    ).trim();
+    return localized || fallbackDefault;
+  }, [currentLang, t]);
+  const displayedGroupPlanName = useMemo(() => {
+    if (currentGroupPlanName) return currentGroupPlanName;
+    if (isLeader && canManageGroup && !hasLoadedGroupSubscription) {
+      return defaultGroupPlanName;
+    }
+    return '';
+  }, [canManageGroup, currentGroupPlanName, defaultGroupPlanName, hasLoadedGroupSubscription, isLeader]);
   /** Subtitle tránh trùng với nút header đang hiển thị tên gói */
-  const groupHeaderSubtitle = currentGroupPlanName
+  const groupHeaderSubtitle = displayedGroupPlanName
     ? ''
     : (currentLang === 'en' ? 'Group workspace' : 'Không gian nhóm');
   const profileEditLocked = hasUploadedMaterials && hasCompletedGroupProfile;
@@ -1134,9 +1193,11 @@ function GroupWorkspacePage() {
   useEffect(() => {
     if (!resolvedWorkspaceId || isCreating) {
       setGroupSubscription(null);
+      setHasLoadedGroupSubscription(true);
       return undefined;
     }
 
+    setHasLoadedGroupSubscription(false);
     let cancelled = false;
 
     const loadGroupSubscription = async () => {
@@ -1148,6 +1209,10 @@ function GroupWorkspacePage() {
       } catch {
         if (!cancelled) {
           setGroupSubscription(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setHasLoadedGroupSubscription(true);
         }
       }
     };
@@ -2666,7 +2731,7 @@ function GroupWorkspacePage() {
   const groupStudioActionGroups = [
     { label: t('groupWorkspace.studio.groupStudy', 'Học tập'), keys: ['documents', 'roadmap', 'quiz', 'flashcard', 'mockTest'] },
     { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'ranking', 'notifications'] },
-    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'wallet', 'settings'] },
+    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'memberStats', 'wallet', 'settings'] },
   ];
 
   const renderActivityFeed = (compact = false) => (
@@ -3339,14 +3404,14 @@ function GroupWorkspacePage() {
           onClick={openGroupPlanUpgrade}
           className={headerPlanActionClass}
           title={
-            currentGroupPlanName
+            displayedGroupPlanName
               ? t('groupWorkspace.header.groupPlan.viewOrChange')
               : t('groupWorkspace.header.groupPlan.choose')
           }
         >
           <Sparkles className="h-4 w-4 shrink-0" />
           <span className={`${fontClass} max-w-[10rem] truncate sm:max-w-[14rem] md:max-w-[18rem]`}>
-            {currentGroupPlanName
+            {displayedGroupPlanName
               || t('groupWorkspace.header.groupPlan.upgrade')}
           </span>
         </Button>
