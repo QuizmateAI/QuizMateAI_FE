@@ -27,10 +27,12 @@ import {
   AtSign,
   X,
   Info,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
+import { getUserDisplayParts } from '@/Utils/userProfile';
 import {
   getThreadMessages,
   postMessage,
@@ -64,6 +66,10 @@ function getAvatarBg(role, id) {
   if (role === 'LEADER') return 'bg-blue-600';
   const palette = ['bg-emerald-500', 'bg-violet-500', 'bg-orange-500', 'bg-teal-500', 'bg-rose-500'];
   return palette[Number(id || 0) % palette.length];
+}
+
+function getProfileAvatar(profile) {
+  return profile?.avatarUrl || profile?.avatar || '';
 }
 
 /** Parse message body: split text and [[q:ID:INDEX]] tokens. */
@@ -133,10 +139,41 @@ function RoleBadge({ role, isDarkMode }) {
   return null;
 }
 
+function UserAvatar({ src, name, role, userId, sizeClass = 'w-8 h-8', textClass = 'text-xs', className = '' }) {
+  const [failed, setFailed] = useState(false);
+  const avatarSrc = typeof src === 'string' ? src.trim() : '';
+  const showImage = avatarSrc && !failed;
+
+  return (
+    <div className={cn(
+      sizeClass,
+      'rounded-full flex items-center justify-center text-white font-bold shrink-0 overflow-hidden select-none',
+      showImage ? 'bg-transparent' : getAvatarBg(role, userId),
+      textClass,
+      className,
+    )}>
+      {showImage ? (
+        <img
+          src={avatarSrc}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        getInitials(name)
+      )}
+    </div>
+  );
+}
+
 /** Single message row. */
 function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDarkMode }) {
   const [pendingDelete, setPendingDelete] = useState(false);
   const cancelRef = useRef(null);
+  const authorDisplay = getUserDisplayParts({
+    fullName: msg.authorName,
+    username: msg.authorUserName,
+  }, msg.authorName || 'Người dùng');
 
   const handleDeleteClick = () => {
     if (pendingDelete) {
@@ -155,20 +192,27 @@ function MessageItem({ msg, canDelete, onDelete, questionsById, onNavigate, isDa
 
   return (
     <div className="flex gap-3 group">
-      {/* Avatar */}
-      <div className={cn(
-        'w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5 select-none',
-        getAvatarBg(msg.authorRole, msg.authorId),
-      )}>
-        {getInitials(msg.authorName)}
-      </div>
+      <UserAvatar
+        src={msg.authorAvatar}
+        name={msg.authorName}
+        role={msg.authorRole}
+        userId={msg.authorId}
+        sizeClass="w-8 h-8"
+        textClass="text-xs"
+        className="mt-0.5"
+      />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap mb-1">
           <span className={cn('text-sm font-semibold', isDarkMode ? 'text-slate-100' : 'text-gray-900')}>
-            {msg.authorName}
+            {authorDisplay.name}
           </span>
+          {authorDisplay.hasUsernameSuffix && (
+            <span className={cn('text-[11px] font-normal', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
+              #{authorDisplay.username}
+            </span>
+          )}
           <RoleBadge role={msg.authorRole} isDarkMode={isDarkMode} />
           <span className={cn('text-[11px]', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
             {relativeTime(msg.createdAt)}
@@ -250,6 +294,44 @@ function EmptyThread({ isDarkMode }) {
             isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-600',
           )}>/</kbd> để tag câu hỏi cụ thể.
         </p>
+      </div>
+    </div>
+  );
+}
+
+function LockedState({ isDarkMode }) {
+  return (
+    <div className={cn('h-full flex flex-col overflow-hidden rounded-xl', isDarkMode ? 'bg-slate-900' : 'bg-white')}>
+      <div className={cn(
+        'px-4 py-3 border-b flex items-center gap-2 shrink-0',
+        isDarkMode ? 'border-slate-700/60' : 'border-blue-100',
+      )}>
+        <MessageSquare className={cn('w-4 h-4', isDarkMode ? 'text-blue-400' : 'text-blue-500')} />
+        <p className={cn('text-sm font-semibold', isDarkMode ? 'text-slate-200' : 'text-gray-800')}>
+          Thảo luận chung
+        </p>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className={cn(
+          'max-w-sm rounded-xl border px-4 py-5 flex items-center gap-3',
+          isDarkMode ? 'bg-slate-800/50 border-slate-700/60' : 'bg-gray-50 border-gray-200',
+        )}>
+          <div className={cn(
+            'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+            isDarkMode ? 'bg-slate-700' : 'bg-gray-200',
+          )}>
+            <Lock className={cn('w-4 h-4', isDarkMode ? 'text-slate-400' : 'text-gray-400')} />
+          </div>
+          <div>
+            <p className={cn('text-xs font-medium', isDarkMode ? 'text-slate-300' : 'text-gray-600')}>
+              Hoàn thành quiz để tham gia thảo luận
+            </p>
+            <p className={cn('text-[11px] mt-0.5', isDarkMode ? 'text-slate-500' : 'text-gray-400')}>
+              Làm bài trước để trao đổi với các thành viên trong nhóm.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -341,6 +423,7 @@ function GuidelineCard({ isDarkMode }) {
  *  workspaceId         number
  *  quizId              number
  *  isLeader            boolean
+ *  hasAttempted        boolean
  *  allQuestions        Array<{questionId, content, index}> — flat sorted list
  *  questionsById       Record<string, question>
  *  onNavigateToQuestion (questionId: number, questionIndex: number) => void
@@ -350,6 +433,7 @@ export default function GroupDiscussionPanel({
   workspaceId,
   quizId,
   isLeader = false,
+  hasAttempted = false,
   allQuestions = [],
   questionsById = {},
   onNavigateToQuestion,
@@ -373,6 +457,7 @@ export default function GroupDiscussionPanel({
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const canAccess = isLeader || hasAttempted;
 
   // ── Filtered suggestions
   const filteredSuggestions = useMemo(() => {
@@ -390,7 +475,11 @@ export default function GroupDiscussionPanel({
 
   // ── Load messages
   const loadMessages = useCallback(async () => {
-    if (!workspaceId || !quizId) return;
+    if (!canAccess || !workspaceId || !quizId) {
+      setLoadingMessages(false);
+      setMessages([]);
+      return;
+    }
     setLoadingMessages(true);
     try {
       const { messages: msgs } = await getThreadMessages(workspaceId, quizId, null);
@@ -400,7 +489,7 @@ export default function GroupDiscussionPanel({
     } finally {
       setLoadingMessages(false);
     }
-  }, [workspaceId, quizId]);
+  }, [canAccess, workspaceId, quizId]);
 
   useEffect(() => { void loadMessages(); }, [loadMessages]);
 
@@ -461,6 +550,34 @@ export default function GroupDiscussionPanel({
     });
   }, [draft, slashRange]);
 
+  // ── Post message
+  const handlePost = useCallback(async () => {
+    const rawBody = draft.trim();
+    if (!rawBody || posting || !canAccess) return;
+
+    const encodedBody = encodeDraftTags(rawBody, draftTags);
+    const authorId = profile?.userId ?? profile?.id ?? 0;
+    const authorName = profile?.fullName ?? profile?.name ?? 'Người dùng';
+    const authorRole = isLeader ? 'LEADER' : 'MEMBER';
+
+    setPosting(true);
+    try {
+      const msg = await postMessage(workspaceId, quizId, null, {
+        body: encodedBody,
+        authorId,
+        authorName,
+        authorRole,
+      });
+      setMessages((prev) => [...prev, msg]);
+      setDraft('');
+      setDraftTags({});
+    } catch {
+      // upstream handles errors
+    } finally {
+      setPosting(false);
+    }
+  }, [draft, draftTags, posting, canAccess, profile, isLeader, workspaceId, quizId]);
+
   // ── Keyboard navigation in suggestions + send
   const handleKeyDown = useCallback((e) => {
     if (showSuggestions && filteredSuggestions.length > 0) {
@@ -489,35 +606,7 @@ export default function GroupDiscussionPanel({
       e.preventDefault();
       void handlePost();
     }
-  }, [showSuggestions, filteredSuggestions, activeSuggestion, handleSelectSuggestion]);
-
-  // ── Post message
-  const handlePost = useCallback(async () => {
-    const rawBody = draft.trim();
-    if (!rawBody || posting) return;
-
-    const encodedBody = encodeDraftTags(rawBody, draftTags);
-    const authorId = profile?.userId ?? profile?.id ?? 0;
-    const authorName = profile?.fullName ?? profile?.name ?? 'Người dùng';
-    const authorRole = isLeader ? 'LEADER' : 'MEMBER';
-
-    setPosting(true);
-    try {
-      const msg = await postMessage(workspaceId, quizId, null, {
-        body: encodedBody,
-        authorId,
-        authorName,
-        authorRole,
-      });
-      setMessages((prev) => [...prev, msg]);
-      setDraft('');
-      setDraftTags({});
-    } catch {
-      // upstream handles errors
-    } finally {
-      setPosting(false);
-    }
-  }, [draft, draftTags, posting, profile, isLeader, workspaceId, quizId]);
+  }, [showSuggestions, filteredSuggestions, activeSuggestion, handleSelectSuggestion, handlePost]);
 
   // ── Delete message
   const handleDelete = useCallback(async (messageId) => {
@@ -535,6 +624,10 @@ export default function GroupDiscussionPanel({
   const activeTagCount = Object.keys(draftTags).filter((marker) => draft.includes(marker)).length;
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  if (!canAccess) {
+    return <LockedState isDarkMode={isDarkMode} />;
+  }
 
   return (
     <div className={cn('h-full flex flex-col overflow-hidden rounded-xl', isDarkMode ? 'bg-slate-900' : 'bg-white')}>
@@ -680,13 +773,15 @@ export default function GroupDiscussionPanel({
             ? isDarkMode ? 'border-blue-600/60 bg-slate-800/70' : 'border-blue-400 bg-blue-50/80'
             : isDarkMode ? 'border-slate-700 bg-slate-800/70' : 'border-blue-200 bg-blue-50/40',
         )}>
-          {/* Avatar */}
-          <div className={cn(
-            'w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 mb-0.5 select-none',
-            getAvatarBg(isLeader ? 'LEADER' : 'MEMBER', currentUserId),
-          )}>
-            {getInitials(profile?.fullName ?? profile?.name ?? '?')}
-          </div>
+          <UserAvatar
+            src={getProfileAvatar(profile)}
+            name={profile?.fullName ?? profile?.name ?? '?'}
+            role={isLeader ? 'LEADER' : 'MEMBER'}
+            userId={currentUserId}
+            sizeClass="w-7 h-7"
+            textClass="text-xs"
+            className="mb-0.5"
+          />
 
           <textarea
             ref={textareaRef}

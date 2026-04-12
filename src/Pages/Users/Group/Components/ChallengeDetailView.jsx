@@ -30,6 +30,8 @@ import {
 } from '../../../../api/ChallengeAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
+import { getUserDisplayLabel } from '@/Utils/userProfile';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 import ChallengeLeaderboard from './ChallengeLeaderboard';
 
 /** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS) */
@@ -521,7 +523,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                           </div>
                         )}
                         <span className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                          {c.fullName || c.username || `#${c.userId}`}
+                          <UserDisplayName user={c} fallback={`#${c.userId}`} isDarkMode={isDarkMode} />
                         </span>
                       </div>
                       <p className={`mt-1 pl-9 text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
@@ -567,7 +569,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                   <option value="">{t('groupWorkspace.challenge.reviewContributorPickPlaceholder')}</option>
                   {addableReviewMembers.map((m) => {
                     const id = String(m.userId ?? m.groupMemberId);
-                    const label = m.fullName || m.username || m.email || id;
+                    const label = getUserDisplayLabel(m, m.email || id);
                     return (
                       <option key={id} value={id}>
                         {label}
@@ -718,7 +720,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                     </div>
                   )}
                   <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {p.fullName || p.username}
+                    <UserDisplayName user={p} fallback="Thành viên" isDarkMode={isDarkMode} />
                   </span>
                 </div>
                 <span className={`text-xs ${
