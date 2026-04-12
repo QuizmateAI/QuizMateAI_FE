@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/context/UserProfileContext';
+import { getUserDisplayParts } from '@/Utils/userProfile';
 import {
   getThreadMessages,
   postMessage,
@@ -47,6 +48,37 @@ function getAvatarBg(role, id) {
   if (role === 'LEADER') return 'bg-blue-600';
   const palette = ['bg-emerald-500', 'bg-violet-500', 'bg-orange-500', 'bg-teal-500', 'bg-rose-500'];
   return palette[Number(id || 0) % palette.length];
+}
+
+function getProfileAvatar(profile) {
+  return profile?.avatarUrl || profile?.avatar || '';
+}
+
+function UserAvatar({ src, name, role, userId, sizeClass = 'w-6 h-6', textClass = 'text-[10px]', className = '' }) {
+  const [failed, setFailed] = useState(false);
+  const avatarSrc = typeof src === 'string' ? src.trim() : '';
+  const showImage = avatarSrc && !failed;
+
+  return (
+    <div className={cn(
+      sizeClass,
+      'rounded-full flex items-center justify-center text-white font-bold shrink-0 overflow-hidden select-none',
+      showImage ? 'bg-transparent' : getAvatarBg(role, userId),
+      textClass,
+      className,
+    )}>
+      {showImage ? (
+        <img
+          src={avatarSrc}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        getInitials(name)
+      )}
+    </div>
+  );
 }
 
 // ─── Guideline card ───────────────────────────────────────────────────────────
@@ -131,6 +163,10 @@ function LockedState({ isDarkMode }) {
 function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
   const [pending, setPending] = useState(false);
   const timer = useRef(null);
+  const authorDisplay = getUserDisplayParts({
+    fullName: msg.authorName,
+    username: msg.authorUserName,
+  }, msg.authorName || 'Người dùng');
 
   const handleDeleteClick = () => {
     if (pending) {
@@ -148,19 +184,27 @@ function MessageRow({ msg, canDelete, onDelete, isDarkMode }) {
   return (
     <div className="flex gap-2.5 group">
       {/* Avatar */}
-      <div className={cn(
-        'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5 select-none',
-        getAvatarBg(msg.authorRole, msg.authorId),
-      )}>
-        {getInitials(msg.authorName)}
-      </div>
+      <UserAvatar
+        src={msg.authorAvatar}
+        name={msg.authorName}
+        role={msg.authorRole}
+        userId={msg.authorId}
+        sizeClass="w-6 h-6"
+        textClass="text-[10px]"
+        className="mt-0.5"
+      />
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
           <span className={cn('text-xs font-semibold', isDarkMode ? 'text-slate-200' : 'text-gray-800')}>
-            {msg.authorName}
+            {authorDisplay.name}
           </span>
+          {authorDisplay.hasUsernameSuffix && (
+            <span className={cn('text-[10px] font-normal', isDarkMode ? 'text-slate-600' : 'text-gray-400')}>
+              #{authorDisplay.username}
+            </span>
+          )}
           {msg.authorRole === 'LEADER' && (
             <span className={cn(
               'text-[9px] font-semibold px-1.5 py-0.5 rounded-full',
@@ -423,13 +467,15 @@ export default function QuestionInlineDiscussion({
             ? 'border-slate-700 bg-slate-800/70 focus-within:border-blue-700/70'
             : 'border-blue-200 bg-white focus-within:border-blue-400',
         )}>
-          {/* Avatar */}
-          <div className={cn(
-            'w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0 mb-0.5 select-none',
-            getAvatarBg(isLeader ? 'LEADER' : 'MEMBER', currentUserId),
-          )}>
-            {getInitials(profile?.fullName ?? profile?.name ?? '?')}
-          </div>
+          <UserAvatar
+            src={getProfileAvatar(profile)}
+            name={profile?.fullName ?? profile?.name ?? '?'}
+            role={isLeader ? 'LEADER' : 'MEMBER'}
+            userId={currentUserId}
+            sizeClass="w-5 h-5"
+            textClass="text-[9px]"
+            className="mb-0.5"
+          />
 
           {/* Textarea */}
           <textarea

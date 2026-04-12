@@ -15,6 +15,7 @@ import {
   defaultStartParts,
   getScheduleValidationIssues,
 } from '@/lib/challengeSchedule';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 import ChallengeScheduleFields from './ChallengeScheduleFields';
 
 function getQuizSummaryLine(q) {
@@ -550,7 +551,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                           )}
                           <div className="min-w-0 flex-1">
                             <div className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                              {m.fullName || m.username}
+                              <UserDisplayName user={m} fallback="Thành viên" isDarkMode={isDarkMode} />
                             </div>
                             {m.email && (
                               <div className={`truncate text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{m.email}</div>

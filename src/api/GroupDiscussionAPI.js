@@ -1,34 +1,19 @@
-/**
- * GroupDiscussionAPI — localStorage stub.
- * Drop-in replaceable with real REST/WebSocket calls once the backend is ready.
- *
- * Thread scopes:
- *  - quiz-level  : questionId = null
- *  - question    : questionId = <number>
- */
+import api from './api';
+import { unwrapApiData } from '@/Utils/apiResponse';
 
-const STORE_KEY = 'qm_group_discussions_v1';
-
-function readStore() {
-  try {
-    return JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
-  } catch {
-    return {};
-  }
+function buildDiscussionPath(workspaceId, quizId) {
+  return `/group/${workspaceId}/quizzes/${quizId}/discussion`;
 }
 
-function writeStore(data) {
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(data));
-  } catch {
-    // quota exceeded — silently ignore
-  }
-}
-
-function threadKey(workspaceId, quizId, questionId) {
-  return questionId != null
-    ? `w${workspaceId}:q${quizId}:qu${questionId}`
-    : `w${workspaceId}:q${quizId}`;
+function normalizeMessage(message) {
+  if (!message || typeof message !== 'object') return message;
+  return {
+    ...message,
+    id: String(message.id ?? message.messageId ?? ''),
+    authorUserName: message.authorUserName || message.authorUsername || message.userName || message.username || '',
+    authorAvatar: message.authorAvatar || message.avatar || message.avatarUrl || '',
+    authorRole: String(message.authorRole || 'MEMBER').toUpperCase(),
+  };
 }
 
 /**
@@ -36,43 +21,36 @@ function threadKey(workspaceId, quizId, questionId) {
  * @returns {{ messages: Message[] }}
  */
 export async function getThreadMessages(workspaceId, quizId, questionId = null) {
-  const store = readStore();
-  const key = threadKey(workspaceId, quizId, questionId);
-  return { messages: store[key]?.messages || [] };
+  const response = await api.get(buildDiscussionPath(workspaceId, quizId), {
+    params: questionId != null ? { questionId } : undefined,
+  });
+  const payload = unwrapApiData(response) || {};
+  return {
+    messages: Array.isArray(payload.messages)
+      ? payload.messages.map(normalizeMessage).filter(Boolean)
+      : [],
+  };
 }
 
 /**
  * Post a new message.
  * @returns {Message}
  */
-export async function postMessage(workspaceId, quizId, questionId = null, { body, authorId, authorName, authorRole }) {
-  const store = readStore();
-  const key = threadKey(workspaceId, quizId, questionId);
-  if (!store[key]) store[key] = { messages: [] };
-
-  const msg = {
-    id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    authorId,
-    authorName,
-    authorRole,
-    body: body.trim(),
-    createdAt: new Date().toISOString(),
-  };
-
-  store[key].messages.push(msg);
-  writeStore(store);
-  return msg;
+export async function postMessage(workspaceId, quizId, questionId = null, { body }) {
+  const response = await api.post(buildDiscussionPath(workspaceId, quizId), {
+    questionId,
+    body,
+  });
+  return normalizeMessage(unwrapApiData(response));
 }
 
 /**
- * Delete a message (hard delete).
+ * Delete a message.
  */
 export async function deleteMessage(workspaceId, quizId, questionId = null, messageId) {
-  const store = readStore();
-  const key = threadKey(workspaceId, quizId, questionId);
-  if (!store[key]) return;
-  store[key].messages = store[key].messages.filter((m) => m.id !== messageId);
-  writeStore(store);
+  await api.delete(`${buildDiscussionPath(workspaceId, quizId)}/${messageId}`, {
+    params: questionId != null ? { questionId } : undefined,
+  });
 }
 
 /**
@@ -81,16 +59,15 @@ export async function deleteMessage(workspaceId, quizId, questionId = null, mess
  * @returns {{ quiz: number, questions: Record<string, number> }}
  */
 export async function getThreadCounts(workspaceId, quizId, questionIds = []) {
-  const store = readStore();
-
-  const quizKey = threadKey(workspaceId, quizId, null);
-  const quizCount = (store[quizKey]?.messages || []).length;
-
-  const questions = {};
-  for (const qId of questionIds) {
-    const k = threadKey(workspaceId, quizId, qId);
-    questions[String(qId)] = (store[k]?.messages || []).length;
+  const params = {};
+  if (Array.isArray(questionIds) && questionIds.length > 0) {
+    params.questionIds = questionIds.filter(Boolean).join(',');
   }
 
-  return { quiz: quizCount, questions };
+  const response = await api.get(`${buildDiscussionPath(workspaceId, quizId)}/counts`, { params });
+  const payload = unwrapApiData(response) || {};
+  return {
+    quiz: Number(payload.quiz) || 0,
+    questions: payload.questions && typeof payload.questions === 'object' ? payload.questions : {},
+  };
 }
