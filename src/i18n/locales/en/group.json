@@ -224,14 +224,25 @@
       "title": "Preparing your group workspace",
       "description": "The setup wizard will open as soon as the draft workspace is ready."
     },
-    "header": {
-      "groupPlan": {
-        "viewOrChange": "View or change group plan",
-        "choose": "Choose a group plan",
-        "upgrade": "Upgrade group plan"
-      },
-      "planNames": {
-        "GROUP_BASE": "Group Base"
+    "shell": {
+      "defaultGroupName": "Group workspace",
+      "memberCount": "{{count}} members",
+      "openSidebar": "Open sidebar",
+      "closeSidebar": "Close sidebar",
+      "nav": {
+        "dashboard": "Dashboard",
+        "personalDashboard": "Personal dashboard",
+        "documents": "Documents",
+        "roadmap": "Roadmap",
+        "quiz": "Quiz",
+        "flashcard": "Flashcard",
+        "mockTest": "Mock test",
+        "challenge": "Challenge",
+        "ranking": "Ranking",
+        "notifications": "Notifications",
+        "members": "Members",
+        "wallet": "Wallet",
+        "settings": "Settings"
       }
     },
     "studio": {
@@ -338,6 +349,28 @@
     "members": {
       "loading": "Loading members...",
       "empty": "No member data yet."
+    },
+    "ranking": {
+      "title": "Group ranking",
+      "description": "This is the overall group ranking. Per-quiz ranking is available inside each quiz's Ranking tab.",
+      "loading": "Aggregating data from all quizzes…",
+      "error": "Unable to load ranking data.",
+      "retry": "Try again",
+      "refresh": "Refresh",
+      "empty": "No member has completed any quiz yet.",
+      "noData": "No data yet.",
+      "meta": "Aggregated from {{quizCount}} active quizzes · {{memberCount}} participating members",
+      "metrics": {
+        "accuracy": {
+          "title": "First-attempt accuracy",
+          "subtitle": "Each quiz uses the first official attempt, then averages the accuracy"
+        },
+        "completion": {
+          "title": "Quiz completion",
+          "subtitle": "Ranked by how many quizzes were completed at least once",
+          "value": "{{count}} quizzes"
+        }
+      }
     },
     "profile": {
       "noRules": "No additional rules yet."

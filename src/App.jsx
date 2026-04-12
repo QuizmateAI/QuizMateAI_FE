@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ProtectedRoute, PublicRoute } from './Pages/Route/protectedRoute';
+import HomeTabRedirect from './Pages/Route/HomeTabRedirect';
 import { ToastProvider } from '@/context/ToastContext';
 import { NavigationLoadingProvider } from '@/context/NavigationLoadingContext';
 import { UserProfileProvider } from '@/context/UserProfileContext';
@@ -108,6 +109,8 @@ function MainRoutes() {
           <Route path="surveys" element={<FeedbackSurveyPage />} />
         </Route>
         <Route path="/home" element={<HomePage />} />
+        <Route path="/workspaces" element={<HomeTabRedirect tab="workspace" />} />
+        <Route path="/group-workspaces" element={<HomeTabRedirect tab="group" />} />
         <Route path="/workspaces/:workspaceId" element={<WorkspacePage />} />
         <Route path="/workspaces/:workspaceId/*" element={<WorkspacePage />} />
         <Route path="/group-workspaces/:workspaceId" element={<GroupWorkspacePage />} />

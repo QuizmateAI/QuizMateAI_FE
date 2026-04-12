@@ -638,7 +638,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4 lg:p-6">
+    <div className="fixed inset-0 z-[180] flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4 lg:p-6">
       <div className={`${cardCls} flex max-h-[92vh] w-full max-w-3xl flex-col shadow-2xl sm:min-h-[36rem] lg:max-w-4xl`}>
         {/* Header */}
         <div className={`flex items-center justify-between border-b px-5 py-4 sm:px-6 lg:px-8 ${isDarkMode ? 'border-slate-700' : 'border-gray-200'}`}>

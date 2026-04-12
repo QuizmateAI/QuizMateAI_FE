@@ -1,735 +1,653 @@
-import React, { useEffect, useState } from "react";
-import { Search, Plus, FileText, Image, Film, Link2, Trash2, FolderOpen, CheckSquare, Square, ChevronsLeft, BookOpen, AlertTriangle, Ban, MoreHorizontal, Download, PenLine, Share2 } from "lucide-react";
+import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
+import HomeButton from "@/Components/ui/HomeButton";
+import { Input } from "@/Components/ui/input";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
+import { cn } from "@/lib/utils";
 import SourceDetailView from "./SourceDetailView";
-import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
-import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
-import InlineSpinner from "@/Components/ui/InlineSpinner";
+import {
+  Check,
+  FileText,
+  Image,
+  Link2,
+  PencilLine,
+  Plus,
+  Search,
+  Share2,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 
-// Format MIME type thành tên file type ngắn gọn
 function formatFileType(type) {
   if (!type) return "FILE";
-  const lower = type.toLowerCase();
+  const lower = String(type).toLowerCase();
   if (lower.includes("pdf")) return "PDF";
-  if (lower.includes("wordprocessingml") || lower.includes("msword")) return "DOCX";
-  if (lower.includes("spreadsheetml") || lower.includes("excel")) return "XLSX";
-  if (lower.includes("presentationml") || lower.includes("powerpoint")) return "PPTX";
+  if (lower.includes("doc")) return "DOCX";
+  if (lower.includes("sheet") || lower.includes("excel")) return "XLSX";
+  if (lower.includes("ppt")) return "PPTX";
   if (lower.includes("image")) return "IMAGE";
-  if (lower.includes("video")) return "VIDEO";
   if (lower === "url") return "URL";
   return "FILE";
 }
 
-// Lấy icon theo loại tài liệu
 function getSourceIcon(type) {
-  if (type?.toLowerCase().includes("pdf")) return <FileText className="w-4 h-4 text-red-500" />;
-  if (type?.toLowerCase().includes("doc")) return <FileText className="w-4 h-4 text-blue-600" />;
-  if (type?.toLowerCase().includes("image")) return <Image className="w-4 h-4 text-green-500" />;
-  if (type?.toLowerCase().includes("video")) return <Film className="w-4 h-4 text-purple-500" />;
-  if (type?.toLowerCase() === "url") return <Link2 className="w-4 h-4 text-blue-500" />;
-  return <FileText className="w-4 h-4 text-gray-500" />;
-}
-
-function getSourceDisplayIcon(source, progressTracking = null) {
-  const status = source?.status?.toUpperCase();
-  if (status === "ERROR") return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />;
-  if (status === "WARN" || status === "WARNED") return <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />;
-  if (status === "REJECT" || status === "REJECTED") return <Ban className="w-4 h-4 text-red-600 shrink-0" />;
-  if (status === "PROCESSING") {
-    const materialId = source?.id;
-    const percent = progressTracking?.getMaterialProgress?.(materialId) ?? 0;
-    if (percent > 0) {
-      return <CircularProgressLoader percent={Math.min(percent, 100)} size="sm" color="blue" showSpinner={true} />;
-    }
-    return <InlineSpinner className="h-4 w-4 text-blue-500" />;
-  }
-  return getSourceIcon(source?.type);
+  const lower = String(type || "").toLowerCase();
+  if (lower.includes("image")) return Image;
+  if (lower === "url") return Link2;
+  return FileText;
 }
 
 function canOpenSourceDetail(source) {
-  const status = source?.status?.toUpperCase();
-  return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED", "ERROR"].includes(status);
+  const status = String(source?.status || "").toUpperCase();
+  return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED", "ERROR"].includes(
+    status,
+  );
 }
 
-// Kiểm tra có thể tick chọn tài liệu không - REJECT, WARN, ERROR và đang loading thì không cho chọn
 function canSelectSource(source) {
-  const status = source?.status?.toUpperCase();
-  return !["REJECT", "REJECTED", "WARN", "WARNED", "ERROR", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
+  const status = String(source?.status || "").toUpperCase();
+  return !["REJECT", "REJECTED", "WARN", "WARNED", "ERROR", "PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(
+    status,
+  );
 }
 
-// Kiểm tra có thể xóa tài liệu không - đang loading thì không cho xóa
 function canDeleteSource(source) {
-  const status = source?.status?.toUpperCase();
+  const status = String(source?.status || "").toUpperCase();
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
-function canShareSource(source) {
-  const status = source?.status?.toUpperCase();
-  return status === "ACTIVE";
+function getSourceStatusTone(status, isDarkMode = false) {
+  const normalizedStatus = String(status || "ACTIVE").toUpperCase();
+
+  if (normalizedStatus === "ACTIVE") {
+    return isDarkMode
+      ? "border border-emerald-700/60 bg-emerald-950/35 text-emerald-200"
+      : "border border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(normalizedStatus)) {
+    return isDarkMode
+      ? "border border-amber-700/60 bg-amber-950/35 text-amber-200"
+      : "border border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  if (["ERROR", "REJECT", "REJECTED", "WARN", "WARNED"].includes(normalizedStatus)) {
+    return isDarkMode
+      ? "border border-rose-700/60 bg-rose-950/35 text-rose-200"
+      : "border border-rose-200 bg-rose-50 text-rose-700";
+  }
+
+  return isDarkMode
+    ? "border border-slate-700 bg-slate-900 text-slate-300"
+    : "border border-slate-200 bg-slate-100 text-slate-600";
 }
 
-// Panel hiển thị danh sách tài liệu — hỗ trợ thu gọn/mở rộng và xem chi tiết
-function SourcesPanel({ 
-  isDarkMode = false, 
-  sources = [], 
-  onAddSource, 
-  onRemoveSource, 
-  onRemoveMultiple, 
+function getSourceStatusLabel(status, t) {
+  const normalizedStatus = String(status || "ACTIVE").toUpperCase();
+  return t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus);
+}
+
+function splitNameExt(name) {
+  if (!name) return ["", ""];
+  const matched = String(name).match(/^(.*?)(\.[^.]+)$/);
+  if (matched) return [matched[1], matched[2]];
+  return [String(name), ""];
+}
+
+function SourcesPanel({
+  isDarkMode = false,
+  sources = [],
+  onAddSource,
+  onRemoveSource,
+  onRemoveMultiple,
   onShareSource,
-  onSourceUpdated, 
-  isCollapsed = false, 
-  onToggleCollapse,
-  selectedIds: propSelectedIds,
+  onSourceUpdated,
+  selectedIds: controlledSelectedIds,
   onSelectionChange,
   onDetailViewChange,
   forceCloseDetail = false,
-  progressTracking = null
 }) {
   const { t, i18n } = useTranslation();
-  const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const { showSuccess, showError } = useToast();
+  const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+
   const [search, setSearch] = useState("");
   const [internalSelectedIds, setInternalSelectedIds] = useState([]);
   const [viewingSource, setViewingSource] = useState(null);
-  const [hoverTooltip, setHoverTooltip] = useState(null);
-  const [canShowTooltip, setCanShowTooltip] = useState(false);
-  const [hoveredId, setHoveredId] = useState(null);
-  const [openMenuId, setOpenMenuId] = useState(null);
-  const [renameDialog, setRenameDialog] = useState(null); // { id, name }
+  const [renameDialog, setRenameDialog] = useState(null);
   const [renameInput, setRenameInput] = useState("");
   const [renameLoading, setRenameLoading] = useState(false);
-  const [deleteDialog, setDeleteDialog] = useState(null); // { id, name }
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteMultipleDialog, setDeleteMultipleDialog] = useState(false);
-  const [deleteMultipleLoading, setDeleteMultipleLoading] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(null);
+  const deferredSearch = useDeferredValue(search);
+
+  const selectedIds =
+    controlledSelectedIds !== undefined
+      ? controlledSelectedIds
+      : internalSelectedIds;
+  const toolbarButtonClass = cn(
+    "h-11 rounded-full border px-4 transition-colors duration-200 ease-out",
+    isDarkMode
+      ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white"
+      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  );
+  const actionButtonClass = cn(
+    "h-10 rounded-full border px-4 transition-colors duration-200 ease-out",
+    isDarkMode
+      ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white"
+      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  );
+  const iconButtonClass = cn(
+    "h-10 w-10 rounded-full border transition-colors duration-200 ease-out",
+    isDarkMode
+      ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white"
+      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  );
+
+  const filteredSources = useMemo(() => {
+    const query = deferredSearch.trim().toLowerCase();
+    if (!query) return sources;
+    return sources.filter((source) =>
+      String(source?.name || source?.title || "")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [deferredSearch, sources]);
 
   useEffect(() => {
     onDetailViewChange?.(Boolean(viewingSource));
-    return () => {
-      onDetailViewChange?.(false);
-    };
+    return () => onDetailViewChange?.(false);
   }, [onDetailViewChange, viewingSource]);
 
   useEffect(() => {
-    if (!forceCloseDetail) return;
-    setViewingSource(null);
+    if (forceCloseDetail) {
+      setViewingSource(null);
+    }
   }, [forceCloseDetail]);
 
-  // Use prop if provided, else use internal state
-  const selectedIds = propSelectedIds !== undefined ? propSelectedIds : internalSelectedIds;
-
-  // Helper: split a filename into base name and extension (including the dot), e.g. "file.pdf" => ["file", ".pdf"]
-  const splitNameExt = (name) => {
-    if (!name) return ["", ""];
-    const m = name.match(/^(.*?)(\.[^.]+)$/);
-    if (m) return [m[1], m[2]];
-    return [name, ""];
-  };
-
-  const handleSelectionChange = (newIds) => {
-    if (onSelectionChange) {
-      onSelectionChange(newIds);
-    } else {
-      setInternalSelectedIds(newIds);
+  const setSelected = (nextValue) => {
+    if (typeof onSelectionChange === "function") {
+      onSelectionChange(nextValue);
+      return;
     }
+    setInternalSelectedIds(nextValue);
   };
 
-  const filtered = sources.filter((s) => {
-    const q = search.toLowerCase();
-    const full = s.name?.toLowerCase() || "";
-    const [base] = splitNameExt(s.name);
-    const baseLower = (base || "").toLowerCase();
-    return full.includes(q) || baseLower.includes(q);
-  });
-
-  const toggleSelect = (id) => {
-    const newIds = selectedIds.includes(id) 
-      ? selectedIds.filter((x) => x !== id) 
-      : [...selectedIds, id];
-    handleSelectionChange(newIds);
+  const toggleSelection = (sourceId) => {
+    setSelected(
+      selectedIds.includes(sourceId)
+        ? selectedIds.filter((id) => id !== sourceId)
+        : [...selectedIds, sourceId],
+    );
   };
 
   const selectAll = () => {
-    const newIds = filtered.filter(s => canSelectSource(s)).map((s) => s.id);
-    handleSelectionChange(newIds);
+    const nextIds = filteredSources
+      .filter(canSelectSource)
+      .map((source) => Number(source?.id ?? source?.materialId))
+      .filter((id) => Number.isInteger(id) && id > 0);
+    setSelected(nextIds);
   };
 
-  const deselectAll = () => handleSelectionChange([]);
-
-  const handleRemoveSelected = async () => {
-    setDeleteMultipleDialog(true);
-  };
-
-  const handleRemoveSelectedConfirm = async () => {
-    setDeleteMultipleLoading(true);
-    try {
-      if (onRemoveMultiple) {
-        await onRemoveMultiple(selectedIds);
-      } else {
-        selectedIds.forEach((id) => onRemoveSource?.(id));
-      }
-      handleSelectionChange([]);
-      setDeleteMultipleDialog(false);
-    } finally {
-      setDeleteMultipleLoading(false);
-    }
-  };
+  const clearSelection = () => setSelected([]);
 
   const openRenameDialog = (source) => {
-    setOpenMenuId(null);
-    const [base, ext] = splitNameExt(source.name);
-    setRenameDialog({ id: source.id, name: source.name, displayName: base, ext });
-    setRenameInput(base || "");
-  };
-
-  const openDeleteDialog = (source) => {
-    setOpenMenuId(null);
-    const [base] = splitNameExt(source.name);
-    setDeleteDialog({ id: source.id, name: source.name, displayName: base });
-  };
-
-  const handleDownloadSource = async (source) => {
-    if (!source?.storageURL) {
-      showError(t("workspace.sources.loadError"));
-      return;
-    }
-
-    setOpenMenuId(null);
-
-    try {
-      const response = await fetch(source.storageURL);
-      if (!response.ok) throw new Error("Failed to fetch file");
-
-      const blob = await response.blob();
-      const objectURL = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectURL;
-      link.download = source.name || "material";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(objectURL);
-    } catch {
-      showError(t("workspace.sources.loadError"));
-    }
+    const [baseName, ext] = splitNameExt(source?.name || source?.title || "");
+    setRenameDialog({
+      id: Number(source?.id ?? source?.materialId),
+      extension: ext,
+    });
+    setRenameInput(baseName);
   };
 
   const handleRenameSubmit = async () => {
-    if (!renameDialog || !renameInput.trim()) return;
+    if (!renameDialog?.id || !renameInput.trim()) return;
     setRenameLoading(true);
     try {
-      const finalName = renameInput.trim() + (renameDialog?.ext || "");
-      const res = await renameMaterial(renameDialog.id, finalName);
-
-      // Khắc phục: Lấy data một cách an toàn. 
-      // Nếu API trả về thẳng data, lấy res. Nếu trả về Axios response, lấy res.data
-      const responseData = res?.data || res || {}; 
-
-      onSourceUpdated?.({ 
-        ...responseData, 
-        id: responseData.materialId ?? renameDialog.id, 
-        name: responseData.title ?? finalName,
+      const finalName = `${renameInput.trim()}${renameDialog.extension || ""}`;
+      const response = await renameMaterial(renameDialog.id, finalName);
+      const payload = response?.data || response || {};
+      onSourceUpdated?.({
+        ...payload,
+        id: payload?.materialId ?? renameDialog.id,
+        name: payload?.title ?? finalName,
       });
-
       showSuccess(t("workspace.sources.renameSuccess"));
       setRenameDialog(null);
-    } catch (error) {
-      console.error("Lỗi khi đổi tên:", error); 
+    } catch {
       showError(t("workspace.sources.loadError"));
     } finally {
       setRenameLoading(false);
     }
   };
-  
-  const handleDeleteConfirm = async () => {
+
+  const handleDelete = async () => {
     if (!deleteDialog) return;
-    setDeleteLoading(true);
-    try {
-      await onRemoveSource?.(deleteDialog.id);
-      setDeleteDialog(null);
-    } finally {
-      setDeleteLoading(false);
-    }
-    handleSelectionChange([]); // Clear selection after delete
+    await onRemoveSource?.(deleteDialog.id);
+    setSelected(selectedIds.filter((id) => id !== deleteDialog.id));
+    setDeleteDialog(null);
   };
 
-  useEffect(() => {
-    if (!isCollapsed) {
-      const resetTimer = setTimeout(() => {
-        setHoverTooltip(null);
-        setCanShowTooltip(false);
-      }, 0);
-      return () => clearTimeout(resetTimer);
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    if (onRemoveMultiple) {
+      await onRemoveMultiple(selectedIds);
+    } else {
+      await Promise.all(selectedIds.map((id) => onRemoveSource?.(id)));
     }
-
-    const timer = setTimeout(() => setCanShowTooltip(true), 180);
-    return () => clearTimeout(timer);
-  }, [isCollapsed]);
-
-  const showTooltip = (event, text) => {
-    if (!canShowTooltip) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    setHoverTooltip({
-      text,
-      x: rect.right + 10,
-      y: rect.top + rect.height / 2,
-    });
+    clearSelection();
   };
 
-  // Thu gọn — hiển thị icon từng tài liệu riêng lẻ
-  if (isCollapsed) {
-    return (
-      <aside className={`rounded-2xl border h-full flex flex-col items-center transition-colors duration-300 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
-        <div className={`w-full h-12 px-2 border-b flex items-center justify-center transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-          <button
-            type="button"
-            onClick={() => {
-              setHoverTooltip(null);
-              onToggleCollapse();
-            }}
-            onMouseEnter={(event) => showTooltip(event, t("workspace.sources.title"))}
-            onMouseLeave={() => setHoverTooltip(null)}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-700"}`}
-          >
-            <BookOpen className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
-          <button
-            type="button"
-            onClick={onAddSource}
-            onMouseEnter={(event) => showTooltip(event, t("workspace.sources.addSource"))}
-            onMouseLeave={() => setHoverTooltip(null)}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-              isDarkMode ? "bg-slate-800 text-blue-400 hover:bg-slate-700" : "bg-gray-50 text-blue-500 hover:bg-gray-100"
-            }`}
-          >
-            <Plus className="w-4.5 h-4.5" />
-          </button>
-
-          {sources.map((source) => {
-            const [base] = splitNameExt(source.name);
-            const displayName = base || source.name;
-            return (
-            <button
-              key={source.id}
-              type="button"
-              onClick={() => {
-                if (!canOpenSourceDetail(source)) return;
-                setHoverTooltip(null);
-                setViewingSource(source);
-                onToggleCollapse();
-              }}
-              onMouseEnter={(event) => showTooltip(event, displayName)}
-              onMouseLeave={() => setHoverTooltip(null)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                canOpenSourceDetail(source)
-                  ? isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-50 hover:bg-gray-100"
-                  : isDarkMode ? "bg-slate-800/70 text-slate-500 cursor-not-allowed" : "bg-gray-50 text-gray-400 cursor-not-allowed"
-              }`}
-              title={!canOpenSourceDetail(source) ? "Tài liệu đang được xử lý, vui lòng đợi." : undefined}
-            >
-              {getSourceDisplayIcon(source, progressTracking)}
-            </button>
-            );
-          })}
-        </div>
-        {hoverTooltip && (
-          <div
-            className="fixed z-[120] px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-100 shadow-lg pointer-events-none transition-all duration-200 opacity-100 scale-100"
-            style={{ left: hoverTooltip.x, top: hoverTooltip.y, transform: "translateY(-50%)" }}
-          >
-            {hoverTooltip.text}
-          </div>
-        )}
-      </aside>
-    );
-  }
-
-  // Đang xem chi tiết tài liệu — hiển thị trong panel Tài liệu
-  if (viewingSource) {
-    return (
-      <aside className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
-        <SourceDetailView
-          isDarkMode={isDarkMode}
-          source={viewingSource}
-          onSourceUpdated={(updatedSource) => {
-            setViewingSource(updatedSource);
-            onSourceUpdated?.(updatedSource);
-          }}
-          onBack={() => setViewingSource(null)}
-        />
-      </aside>
-    );
-  }
-
-  // Mở rộng — hiển thị đầy đủ danh sách tài liệu
   return (
-    <aside className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
-      {/* Header — h-12 nhất quán với các panel khác */}
-      <div className={`px-4 h-12 border-b flex items-center justify-between transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>{t("workspace.sources.title")}</p>
-        <div className="flex items-center gap-1">
-          {sources.length > 0 && (
-            <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>{sources.length}</span>
+    <section
+      className={cn(
+        "h-full overflow-y-auto px-6 pb-8 pt-6 transition-colors duration-200",
+        isDarkMode ? "text-slate-100" : "text-slate-900",
+      )}
+    >
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3 border-b pb-5 transition-colors duration-200",
+          isDarkMode ? "border-slate-700/80" : "border-slate-200",
+        )}
+      >
+        <HomeButton
+          size="sm"
+          rounded
+          className={cn(
+            "h-11 px-4 transition-colors duration-200 ease-out",
+            isDarkMode
+              ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
           )}
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-700"}`}
+        />
+        <div className="min-w-0 flex-1">
+          <h2
+            className={cn(
+              "truncate text-2xl font-semibold",
+              isDarkMode ? "text-slate-100" : "text-slate-900",
+              fontClass,
+            )}
           >
-            <ChevronsLeft className="w-4 h-4" />
-          </button>
+            {t("workspace.shell.sourcesHeadline", "Source library for this workspace")}
+          </h2>
+          <p className={cn("mt-1 text-sm", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+            {t(
+              "workspace.shell.sourcesHint",
+              "Search, preview, select, and curate the exact materials that power roadmap, quiz, and flashcard generation.",
+            )}
+          </p>
         </div>
+
+        <Button
+          type="button"
+          onClick={onAddSource}
+          className={cn(
+            "h-11 rounded-full px-5 transition-colors duration-200 ease-out",
+            isDarkMode
+              ? "bg-slate-100 text-slate-900 hover:bg-white"
+              : "bg-slate-900 text-white hover:bg-slate-800",
+          )}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          {t("workspace.shell.addSource", "Add source")}
+        </Button>
       </div>
 
-      {/* Thanh tìm kiếm + nút thêm */}
-      <div className="px-4 pt-3 space-y-2">
-        <div className={`flex items-center gap-2 border rounded-xl px-3 py-2 ${
-          isDarkMode ? "bg-slate-950 border-slate-700" : "bg-gray-50 border-gray-200"
-        }`}>
-          <Search className={`w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`} />
-          <input
-            className={`bg-transparent outline-none text-sm w-full ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}
-            placeholder={t("workspace.sources.searchPlaceholder")}
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3 border-b py-4 transition-colors duration-200",
+          isDarkMode ? "border-slate-700/80" : "border-slate-200",
+        )}
+      >
+        <div
+          className={cn(
+            "flex min-w-[280px] flex-1 items-center gap-3 rounded-full border px-4 transition-colors duration-200",
+            isDarkMode
+              ? "border-slate-700 bg-slate-900"
+              : "border-slate-200 bg-white",
+          )}
+        >
+          <Search className={cn("h-4 w-4", isDarkMode ? "text-slate-500" : "text-slate-400")} />
+          <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("workspace.sources.searchPlaceholder", "Search sources...")}
+            className={cn(
+              "border-0 bg-transparent px-0 shadow-none focus-visible:ring-0",
+              isDarkMode
+                ? "text-slate-100 placeholder:text-slate-500"
+                : "text-slate-900 placeholder:text-slate-400",
+            )}
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onAddSource}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
-              isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className={toolbarButtonClass}
+            onClick={selectAll}
           >
-            <Plus className="w-3 h-3" />
-            <span className={fontClass}>{t("workspace.sources.addSource")}</span>
-          </button>
+            {t("workspace.sources.selectAll")}
+          </Button>
 
-          {selectedIds.length > 0 && (
+          {selectedIds.length > 0 ? (
             <>
-              <button onClick={deselectAll} className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} hover:underline`}>
-                {t("workspace.sources.deselectAll")}
-              </button>
-              <button onClick={handleRemoveSelected} className="text-xs text-red-500 hover:underline flex items-center gap-1">
-                <Trash2 className="w-3 h-3" />
-                {t("workspace.sources.remove")}
-              </button>
+              <Button
+                type="button"
+                variant="outline"
+                className={toolbarButtonClass}
+                onClick={clearSelection}
+              >
+                <X className="mr-2 h-4 w-4" />
+                {t("workspace.shell.clearSelection", "Clear")}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className={toolbarButtonClass}
+                onClick={handleDeleteSelected}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {t("workspace.shell.deleteSelected", "Delete selected")}
+              </Button>
+
+              {typeof onShareSource === "function" ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={toolbarButtonClass}
+                  onClick={() => onShareSource?.(selectedIds)}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  {t("workspace.shell.shareSelected", "Share selected")}
+                </Button>
+              ) : null}
             </>
-          )}
-          {sources.length > 0 && selectedIds.length === 0 && (
-            <button onClick={selectAll} className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} hover:underline`}>
-              {t("workspace.sources.selectAll")}
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
 
-      {/* Danh sách tài liệu — tên canh lề trái, click để xem chi tiết */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4 gap-2">
-            <FolderOpen className={`w-10 h-10 ${isDarkMode ? "text-slate-700" : "text-gray-300"}`} />
-            <p className={`text-sm font-medium ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-              {t("workspace.sources.emptyTitle")}
-            </p>
-            <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-              {t("workspace.sources.emptyDesc")}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {filtered.map((source) => {
-              const [base] = splitNameExt(source.name);
-              const displayName = base || source.name;
-              const isSelected = selectedIds.includes(source.id);
-              const isRejected = ["REJECT", "REJECTED"].includes(source.status?.toUpperCase());
-              const isWarn = ["WARN", "WARNED"].includes(source.status?.toUpperCase());
-              const isError = source.status?.toUpperCase() === "ERROR";
-              const isActive = source.status?.toUpperCase() === "ACTIVE";
-              const isMenuOpen = openMenuId === source.id;
-              const showActions = hoveredId === source.id || isMenuOpen;
-              return (
-                <div
-                  key={source.id}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors ${
-                    isSelected
-                      ? isDarkMode ? "bg-blue-950/40 border border-blue-800" : "bg-blue-50 border border-blue-200"
-                      : isDarkMode ? "hover:bg-slate-800" : "hover:bg-gray-50"
-                  } ${!isSelected ? "border border-transparent" : ""}`}
-                  onMouseEnter={() => setHoveredId(source.id)}
-                  onMouseLeave={() => { if (!isMenuOpen) setHoveredId(null); }}
-                >
-                  {/* Checkbox — click riêng để chọn/bỏ chọn */}
-                  <div 
-                    className={`shrink-0 ${canSelectSource(source) ? "cursor-pointer" : "cursor-not-allowed"}`}
-                    onClick={() => canSelectSource(source) && toggleSelect(source.id)}
-                    title={isRejected ? "Không thể chọn tài liệu này" : isWarn ? "Tài liệu cảnh báo, không thể chọn" : undefined}
-                  >
-                    {(isRejected || isWarn)
-                      ? <Square className={`w-4 h-4 ${isDarkMode ? "text-red-800" : "text-red-300"} opacity-50`} />
-                      : isSelected
-                        ? <CheckSquare className="w-4 h-4 text-blue-500" />
-                        : <Square className={`w-4 h-4 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-                    }
-                  </div>
-
-                  {/* Nội dung tài liệu — click để xem chi tiết */}
-                  <div
-                    className={`min-w-0 flex-1 flex items-center gap-2.5 ${canOpenSourceDetail(source) ? "cursor-pointer" : "cursor-not-allowed opacity-80"}`}
-                    onClick={() => {
-                      if (!canOpenSourceDetail(source)) return;
-                      setViewingSource(source);
-                    }}
-                    title={!canOpenSourceDetail(source) ? (source.status?.toUpperCase() === "REJECT" ? "Tài liệu không liên quan đến học tập" : "Tài liệu đang được xử lý, vui lòng đợi.") : undefined}
-                  >
-                    {/* Icon trạng thái: ERROR (chấm than), WARN (chấm than vàng), REJECT (ban), PROCESSING (spinner), hoặc icon file thông thường */}
-                    {getSourceDisplayIcon(source, progressTracking)}
-                    <div className="min-w-0 flex-1 text-left">
-                      <HoverMarqueeText
-                        text={displayName}
-                        className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}
-                      />
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatFileType(source.type)}</span>
-                        {source.status?.toUpperCase() === "ERROR" && (
-                          <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-red-950/60 text-red-400" : "bg-red-100 text-red-600"}`}>
-                            Lỗi tải lên
-                          </span>
-                        )}
-                        {(source.status?.toUpperCase() === "WARN" || source.status?.toUpperCase() === "WARNED") && (
-                          <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-amber-950/60 text-amber-400" : "bg-amber-100 text-amber-700"}`}>
-                            ⚠ Nội dung cảnh báo
-                          </span>
-                        )}
-                        {(source.status?.toUpperCase() === "REJECT" || source.status?.toUpperCase() === "REJECTED") && (
-                          <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-red-950/60 text-red-400" : "bg-red-100 text-red-700"}`}>
-                            Không liên quan
-                          </span>
-                        )}
-                        {source.status?.toUpperCase() === "PROCESSING" && (
-                          <span className={`inline-flex items-center text-xs ${isDarkMode ? "text-blue-400" : "text-blue-500"}`}>
-                            Đang tải lên... {progressTracking?.getMaterialProgress?.(source?.id) ?? 0}%
-                          </span>
-                        )}
-                        {!source.status || ["ACTIVE"].includes(source.status?.toUpperCase()) ? (
-                          source.size && <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{source.size}</span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hành động bên phải: REJECT/WARN → nút xóa trực tiếp; đang loading → không hiện gì; còn lại → nút 3 chấm khi hover */}
-                  {(isRejected || isWarn || isError) ? (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); openDeleteDialog(source); }}
-                      className={`shrink-0 w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-                        isDarkMode ? "text-red-400 hover:bg-red-950/40" : "text-red-500 hover:bg-red-50"
-                      }`}
-                      title={t("workspace.sources.menuDelete")}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  ) : canDeleteSource(source) ? (
-                  /* Nút 3 chấm — hiện khi hover hoặc menu đang mở */
-                  <div className={`relative shrink-0 transition-opacity duration-150 ${showActions ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(isMenuOpen ? null : source.id);
-                      }}
-                      className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
-                        isDarkMode ? "text-slate-400 hover:bg-slate-700 hover:text-slate-200" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                      } ${isMenuOpen ? (isDarkMode ? "bg-slate-700 text-slate-200" : "bg-gray-100 text-gray-700") : ""}`}
-                      aria-label={t("common.options")}
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
-
-                    {isMenuOpen && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-[110]"
-                          onClick={() => { setOpenMenuId(null); setHoveredId(null); }}
-                        />
-                        <div className={`absolute right-0 top-8 z-[120] w-36 rounded-lg shadow-lg border py-1 ${
-                          isDarkMode ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
-                        }`}>
-                          {canShareSource(source) && onShareSource ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMenuId(null);
-                                setHoveredId(null);
-                                onShareSource(source);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                                isDarkMode ? "text-slate-200 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50"
-                              } ${fontClass}`}
-                            >
-                              <Share2 className="w-4 h-4" />
-                              {t("home.actions.share", "Share")}
-                            </button>
-                          ) : null}
-                          {isActive && source.storageURL && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); handleDownloadSource(source); }}
-                              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                                isDarkMode ? "text-slate-200 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50"
-                              } ${fontClass}`}
-                            >
-                              <Download className="w-4 h-4" />
-                              {t("workspace.sources.menuDownload")}
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); openRenameDialog(source); }}
-                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                              isDarkMode ? "text-slate-200 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-50"
-                            } ${fontClass}`}
-                          >
-                            <PenLine className="w-4 h-4" />
-                            {t("workspace.sources.menuRename")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); openDeleteDialog(source); }}
-                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors text-red-500 ${
-                              isDarkMode ? "hover:bg-red-950/30" : "hover:bg-red-50"
-                            } ${fontClass}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            {t("workspace.sources.menuDelete")}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+      <div
+        className={cn(
+          "py-3 text-xs font-semibold uppercase tracking-[0.18em]",
+          isDarkMode ? "text-slate-500" : "text-slate-400",
         )}
+      >
+        {selectedIds.length > 0
+          ? `${selectedIds.length} ${t("workspace.shell.selectedBadge", "Selected")}`
+          : t("workspace.sources.title", "Sources")}
       </div>
 
-      {/* Dialog đổi tên tài liệu */}
-      <Dialog open={!!renameDialog} onOpenChange={(open) => { if (!open) setRenameDialog(null); }}>
-          <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
-          <h2 className={`text-base font-semibold mb-4 ${fontClass}`}>
-            {t("workspace.sources.renameDialogTitle", { name: renameDialog?.displayName ?? renameDialog?.name ?? "" })}
-          </h2>
-          <div className="space-y-1 mb-6">
-            <label className={`text-sm font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
-              {t("workspace.sources.renameLabel")}<span className="text-red-500 ml-0.5">*</span>
-            </label>
-            <input
-              className={`w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none transition-colors ${
-                isDarkMode
-                  ? "bg-slate-800 border-slate-600 text-slate-100 focus:border-blue-500"
-                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
-              } ${fontClass}`}
-              value={renameInput}
-              onChange={(e) => setRenameInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleRenameSubmit(); }}
-              autoFocus
+      {filteredSources.length > 0 ? (
+        <div className={cn("divide-y", isDarkMode ? "divide-slate-800" : "divide-slate-200")}>
+          {filteredSources.map((source, index) => {
+            const sourceId = Number(source?.id ?? source?.materialId);
+            const isSelected =
+              Number.isInteger(sourceId) && selectedIds.includes(sourceId);
+            const isSelectable =
+              Number.isInteger(sourceId) && canSelectSource(source);
+            const Icon = getSourceIcon(source?.type ?? source?.materialType);
+
+            return (
+              <article
+                key={source?.id ?? source?.materialId ?? `source:${index}`}
+                className="grid gap-4 py-5 lg:grid-cols-[minmax(0,1fr)_auto]"
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <button
+                    type="button"
+                    disabled={!isSelectable}
+                    onClick={() => isSelectable && toggleSelection(sourceId)}
+                    className={cn(
+                      "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ease-out",
+                      isSelected
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : isDarkMode
+                          ? "border-slate-700 bg-slate-900 text-slate-500"
+                          : "border-slate-300 bg-white text-slate-400",
+                    )}
+                    aria-label={
+                      isSelected
+                        ? t("workspace.shell.unselectSource", "Unselect source")
+                        : t("workspace.shell.selectSource", "Select source")
+                    }
+                  >
+                    {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
+                  </button>
+
+                  <div
+                    className={cn(
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-colors duration-200",
+                      isDarkMode
+                        ? "border-slate-700 bg-slate-900 text-slate-300"
+                        : "border-slate-200 bg-slate-50 text-slate-700",
+                    )}
+                  >
+                    <Icon className="h-4.5 w-4.5" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p
+                        className={cn(
+                          "truncate text-base font-semibold",
+                          isDarkMode ? "text-slate-100" : "text-slate-900",
+                          fontClass,
+                        )}
+                      >
+                        {source?.name ||
+                          source?.title ||
+                          t("workspace.shell.untitledSource", "Untitled source")}
+                      </p>
+                      <span
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors duration-200",
+                          isDarkMode
+                            ? "border-slate-700 bg-slate-900 text-slate-300"
+                            : "border-slate-200 bg-slate-100 text-slate-600",
+                        )}
+                      >
+                        {formatFileType(source?.type ?? source?.materialType)}
+                      </span>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSourceStatusTone(source?.status, isDarkMode)}`}
+                      >
+                        {getSourceStatusLabel(source?.status, t)}
+                      </span>
+                    </div>
+                    <p className={cn("mt-2 line-clamp-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-600")}>
+                      {source?.description ||
+                        source?.summary ||
+                        t(
+                          "workspace.shell.sourceFallbackSummary",
+                          "Use this source as context for roadmap, quiz, and flashcard generation.",
+                        )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={actionButtonClass}
+                    onClick={() =>
+                      canOpenSourceDetail(source) && setViewingSource(source)
+                    }
+                    disabled={!canOpenSourceDetail(source)}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {t("workspace.shell.previewSource", "Preview")}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className={iconButtonClass}
+                    onClick={() => openRenameDialog(source)}
+                    aria-label={t("workspace.sources.menuRename")}
+                  >
+                    <PencilLine className="h-4 w-4" />
+                  </Button>
+
+                  {typeof onShareSource === "function" ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className={iconButtonClass}
+                      onClick={() => onShareSource?.(source)}
+                      aria-label={t("workspace.shell.shareSource", "Share source")}
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className={iconButtonClass}
+                    aria-label={t("workspace.shell.deleteSourceTitle", "Delete source")}
+                    disabled={!canDeleteSource(source)}
+                    onClick={() =>
+                      setDeleteDialog({
+                        id: sourceId,
+                        name: source?.name || source?.title,
+                      })
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
+          <FileText className={cn("mb-3 h-12 w-12", isDarkMode ? "text-slate-600" : "text-slate-300")} />
+          <p className={cn("text-base font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900", fontClass)}>
+            {t("workspace.shell.noSourcesFound", "No sources match this filter")}
+          </p>
+          <p className={cn("mt-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+            {t(
+              "workspace.shell.noSourcesFoundHint",
+              "Try another keyword or upload a new document.",
+            )}
+          </p>
+        </div>
+      )}
+
+      <Dialog
+        open={Boolean(viewingSource)}
+        onOpenChange={(open) => {
+          if (!open) setViewingSource(null);
+        }}
+      >
+        <DialogContent className="h-[88vh] max-w-5xl overflow-hidden p-0">
+          {viewingSource ? (
+            <SourceDetailView
+              isDarkMode={isDarkMode}
+              source={viewingSource}
+              onBack={() => setViewingSource(null)}
+              onSourceUpdated={onSourceUpdated}
             />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setRenameDialog(null)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"
-              } ${fontClass}`}
-            >
-              {t("workspace.sources.cancelBtn")}
-            </button>
-            <button
-              type="button"
-              onClick={handleRenameSubmit}
-              disabled={renameLoading || !renameInput.trim()}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-blue-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed ${fontClass}`}
-            >
-              {t("workspace.sources.saveBtn")}
-            </button>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(renameDialog)}
+        onOpenChange={(open) => {
+          if (!open) setRenameDialog(null);
+        }}
+      >
+        <DialogContent
+          className={
+            isDarkMode
+              ? "border-white/10 bg-slate-950 text-slate-100"
+              : "bg-white"
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <p className={`text-lg font-semibold ${fontClass}`}>
+                {t("workspace.sources.menuRename")}
+              </p>
+              <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                {t("workspace.shell.renameHint", "Update the source name shown across the workspace.")}
+              </p>
+            </div>
+            <Input
+              value={renameInput}
+              onChange={(event) => setRenameInput(event.target.value)}
+              placeholder={t("workspace.shell.renamePlaceholder", "New source name")}
+            />
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setRenameDialog(null)}>
+                {t("common.cancel", "Cancel")}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleRenameSubmit}
+                disabled={renameLoading || !renameInput.trim()}
+              >
+                {renameLoading
+                  ? t("common.saving", "Saving...")
+                  : t("workspace.sources.saveBtn")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog xác nhận xóa nhiều tài liệu */}
-      <Dialog open={deleteMultipleDialog} onOpenChange={(open) => { if (!open) setDeleteMultipleDialog(false); }}>
-        <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
-          <h2 className={`text-base font-semibold mb-3 ${fontClass}`}>
-            {t("workspace.sources.deleteDialogTitle")}
-          </h2>
-          <p className={`text-sm mb-6 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-            {t("workspace.sources.deleteMultipleDesc", { count: selectedIds.length })}
-          </p>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setDeleteMultipleDialog(false)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"
-              } ${fontClass}`}
-            >
-              {t("workspace.sources.cancelBtn")}
-            </button>
-            <button
-              type="button"
-              onClick={handleRemoveSelectedConfirm}
-              disabled={deleteMultipleLoading}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-red-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed ${fontClass}`}
-            >
-              {t("workspace.sources.deleteConfirmBtn")}
-            </button>
+      <Dialog
+        open={Boolean(deleteDialog)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteDialog(null);
+        }}
+      >
+        <DialogContent
+          className={
+            isDarkMode
+              ? "border-white/10 bg-slate-950 text-slate-100"
+              : "bg-white"
+          }
+        >
+          <div className="space-y-4">
+            <div>
+              <p className={`text-lg font-semibold ${fontClass}`}>
+                {t("workspace.shell.deleteSourceTitle", "Delete source")}
+              </p>
+              <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
+                {deleteDialog?.name
+                  ? t("workspace.shell.deleteSourceHint", "Remove {{name}} from this workspace.", {
+                      name: deleteDialog.name,
+                      defaultValue: `Remove ${deleteDialog.name} from this workspace.`,
+                    })
+                  : t("workspace.shell.deleteSourceHintFallback", "Remove this source from the workspace.")}
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setDeleteDialog(null)}>
+                {t("common.cancel", "Cancel")}
+              </Button>
+              <Button type="button" variant="destructive" onClick={handleDelete}>
+                {t("common.delete", "Delete")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Dialog xác nhận xóa tài liệu */}
-      <Dialog open={!!deleteDialog} onOpenChange={(open) => { if (!open) setDeleteDialog(null); }}>
-        <DialogContent hideClose className={`max-w-sm p-6 rounded-2xl ${isDarkMode ? "bg-slate-900 border-slate-700 text-slate-100" : "bg-white border-gray-200 text-gray-900"}`}>
-          <h2 className={`text-base font-semibold mb-3 ${fontClass}`}>
-            {t("workspace.sources.deleteDialogTitle")}
-          </h2>
-          <p className={`text-sm mb-6 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-            {t("workspace.sources.deleteDialogDesc", { name: deleteDialog?.displayName ?? deleteDialog?.name ?? "" })}
-          </p>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setDeleteDialog(null)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isDarkMode ? "text-slate-300 hover:bg-slate-800" : "text-gray-600 hover:bg-gray-100"
-              } ${fontClass}`}
-            >
-              {t("workspace.sources.cancelBtn")}
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteConfirm}
-              disabled={deleteLoading}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors text-red-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed ${fontClass}`}
-            >
-              {t("workspace.sources.deleteConfirmBtn")}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </aside>
+    </section>
   );
 }
 
