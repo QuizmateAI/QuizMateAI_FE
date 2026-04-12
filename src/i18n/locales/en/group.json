@@ -311,6 +311,7 @@
         "DRAFT": "Draft",
         "PROCESSING": "Generating",
         "ACTIVE": "Ready",
+        "REVIEW_PENDING": "Awaiting reviewer",
         "ERROR": "Generation error"
       },
       "reviewContributorsTitle": "Quiz reviewers",
@@ -319,7 +320,10 @@
       "reviewContributorPickPlaceholder": "Select a member…",
       "reviewContributorAdd": "Add",
       "reviewContributorRemove": "Remove",
-      "reviewContributorCannotRegister": "You are assigned as a quiz reviewer, so you cannot register for this challenge."
+      "reviewContributorCannotRegister": "You are assigned as a quiz reviewer, so you cannot register for this challenge.",
+      "reviewInviteeNotice": "You were invited to review this challenge quiz. Open “View quiz” → Check tab: mark the exam as OK or submit an APPROVED vote when ready. At the start time, the system will open the challenge automatically once review requirements are met.",
+      "reviewInviteeShortHint": "Click “View quiz” in the Quiz challenge block above, then open the “Check” tab.",
+      "reviewQuizNotReadyHint": "The exam is not ready to preview yet (for example still generating). Please try again later."
     },
     "members": {
       "loading": "Loading members...",

@@ -11,6 +11,7 @@ import {
   Crown,
   Users,
 } from 'lucide-react';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 
 // Panel hiển thị danh sách thành viên nhóm với quản lý role/upload
 function GroupMembersPanel({
@@ -197,7 +198,7 @@ function GroupMembersPanel({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {member.fullName || member.username}
+                    <UserDisplayName user={member} fallback={t('home.group.member')} isDarkMode={isDarkMode} />
                   </p>
                   {member.isCurrentUser && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDarkMode ? 'bg-blue-950/50 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>

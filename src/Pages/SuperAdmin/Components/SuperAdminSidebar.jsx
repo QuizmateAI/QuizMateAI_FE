@@ -130,7 +130,7 @@ const MENU_SECTIONS = [
       {
         icon: MessageSquareText,
         labelKey: 'sidebar.feedback',
-        path: '/super-admin/feedbacks',
+        path: '/super-admin/feedbacks/forms',
         matchPrefix: true,
       },
     ],

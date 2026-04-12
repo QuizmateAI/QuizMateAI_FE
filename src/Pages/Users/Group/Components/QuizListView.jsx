@@ -894,7 +894,12 @@ function QuizListView({
           </Button>
           ) : null}
           {!hideCreateButton ? (
-          <Button disabled={disableCreate} onClick={onCreateQuiz} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
+          <Button
+            disabled={disableCreate}
+            title={disableCreate ? t("workspace.quiz.createQuizDisabledHint", "Chỉ Leader hoặc Cộng tác viên mới có thể tạo quiz nhóm.") : undefined}
+            onClick={onCreateQuiz}
+            className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]"
+          >
             <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
           </Button>
           ) : null}
@@ -941,6 +946,7 @@ function QuizListView({
             {!hideCreateButton ? (
             <Button
               disabled={disableCreate}
+              title={disableCreate ? t("workspace.quiz.createQuizDisabledHint", "Chỉ Leader hoặc Cộng tác viên mới có thể tạo quiz nhóm.") : undefined}
               onClick={onCreateQuiz}
               className="mt-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]"
             >

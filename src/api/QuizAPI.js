@@ -65,9 +65,11 @@ export const deleteQuiz = async (quizId) => {
   return response;
 };
 
-/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE. */
-export const publishGroupQuiz = async (quizId) => {
-  const response = await api.post(`/quiz/${quizId}/group/publish`);
+/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE.
+ *  options.leaderJoinsRanking = true → leader phải hoàn thành trước khi members làm được.
+ */
+export const publishGroupQuiz = async (quizId, options = {}) => {
+  const response = await api.post(`/quiz/${quizId}/group/publish`, Object.keys(options).length ? options : undefined);
   return response;
 };
 
@@ -310,9 +312,15 @@ export const dismissRecommendation = async (assessmentId) => {
   return response;
 };
 
-// Lấy lịch sử làm bài của 1 quiz
+// Lấy lịch sử làm bài của 1 quiz (chỉ của user hiện tại)
 export const getQuizHistory = async (quizId) => {
   const response = await api.get(`/quiz-attempts/history?quizId=${quizId}`);
+  return response;
+};
+
+// Lấy lịch sử làm bài của tất cả members trong nhóm (dành cho leader)
+export const getGroupQuizHistory = async (workspaceId, quizId) => {
+  const response = await api.get(`/group/${workspaceId}/quiz-attempts/history?quizId=${quizId}`);
   return response;
 };
 
