@@ -276,6 +276,7 @@ function ChatPanel({
             contextId={workspaceId}
             selectedSourceIds={selectedSourceIds}
             sources={sources}
+            onToggleMaterialSelection={onToggleMaterialSelection}
           />
         );
       case "flashcardDetail":
@@ -316,6 +317,9 @@ function ChatPanel({
             onBack={onBack}
             contextType="WORKSPACE"
             contextId={workspaceId}
+            selectedSourceIds={selectedSourceIds}
+            sources={sources}
+            onToggleMaterialSelection={onToggleMaterialSelection}
           />
         );
       case "createPostLearning":
@@ -326,6 +330,9 @@ function ChatPanel({
             onBack={onBack}
             contextType="WORKSPACE"
             contextId={workspaceId}
+            selectedSourceIds={selectedSourceIds}
+            sources={sources}
+            onToggleMaterialSelection={onToggleMaterialSelection}
           />
         );
       case "mockTestDetail":

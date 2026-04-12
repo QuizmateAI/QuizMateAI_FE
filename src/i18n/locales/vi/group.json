@@ -34,6 +34,19 @@
       "yes": "Có",
       "no": "Không",
       "reload": "Tải lại",
+      "refresh": "Làm mới",
+      "headingEyebrow": "Bảng thành viên",
+      "headingTitle": "Thành viên và vai trò",
+      "headingDescription": "Quản lý vai trò và quyền để mọi người nắm rõ trách nhiệm.",
+      "columns": {
+        "member": "Thành viên",
+        "role": "Vai trò",
+        "uploadAccess": "Quyền tải lên",
+        "actions": "Thao tác"
+      },
+      "uploadGranted": "Được tải lên",
+      "uploadLimited": "Chỉ đọc và tham gia",
+      "removeConfirmEyebrow": "Xác nhận thao tác",
       "showing": "Hiển thị {{count}} / {{total}} thành viên"
     },
     "settings": {
@@ -175,16 +188,88 @@
       "title": "Đang chuẩn bị không gian nhóm",
       "description": "Trình hướng dẫn thiết lập sẽ mở ngay khi không gian nháp sẵn sàng."
     },
+    "shell": {
+      "defaultGroupName": "Không gian nhóm",
+      "memberCount": "{{count}} thành viên",
+      "openSidebar": "Mở sidebar",
+      "closeSidebar": "Đóng sidebar",
+      "nav": {
+        "dashboard": "Tổng quan",
+        "personalDashboard": "Dashboard cá nhân",
+        "documents": "Tài liệu",
+        "roadmap": "Roadmap",
+        "quiz": "Quiz",
+        "flashcard": "Flashcard",
+        "mockTest": "Mock test",
+        "challenge": "Challenge",
+        "notifications": "Thông báo",
+        "members": "Thành viên",
+        "wallet": "Ví",
+        "settings": "Cài đặt"
+      }
+    },
+    "header": {
+      "groupPlan": {
+        "viewOrChange": "Xem / đổi gói nhóm",
+        "choose": "Chọn gói nhóm",
+        "upgrade": "Nâng cấp gói nhóm"
+      },
+      "planNames": {
+        "GROUP_BASE": "Gói nhóm cơ bản"
+      }
+    },
     "studio": {
-      "systemDashboard": "Bảng điều khiển hệ thống",
-      "personalDashboard": "Bảng điều khiển cá nhân",
-      "documents": "Quản lý tài liệu",
-      "activity": "Hoạt động nhóm",
-      "memberManagement": "Quản lý thành viên",
-      "memberStatus": "Tình trạng thành viên",
+      "systemDashboard": "Tổng quan",
+      "personalDashboard": "Cá nhân",
+      "documents": "Tài liệu",
+      "activity": "Hoạt động",
+      "memberManagement": "Thành viên",
+      "memberStatus": "Thành viên",
+      "memberStats": "Thống kê thành viên",
+      "wallet": "Ví",
       "groupStudy": "Học tập",
       "groupActivity": "Hoạt động",
-      "groupManage": "Quản lý"
+      "groupManage": "Quản lý",
+      "requireUploadBeforeActions": "Vui lòng tải lên ít nhất một tài liệu trong tab Tài liệu trước khi dùng tính năng này."
+    },
+    "memberStats": {
+      "eyebrow": "Vận hành thành viên",
+      "title": "Thống kê thành viên",
+      "description": "Theo dõi từng thành viên và thao tác nhanh theo nhu cầu học tập.",
+      "totalMembers": "{{count}} thành viên",
+      "readOnlyBadge": "Contributor chỉ xem",
+      "empty": "Chưa có dữ liệu thành viên.",
+      "quizDone": "Quiz đã làm",
+      "avgScore": "Điểm TB",
+      "accuracy": "Độ chính xác",
+      "aiClass": "Phân loại AI",
+      "assignQuiz": "Giao quiz",
+      "assignQuizDisabled": "Giao quiz (chỉ leader)",
+      "roadmapByMember": "Tạo roadmap riêng",
+      "roadmapPending": "Tính năng roadmap riêng theo thành viên đang chờ backend hỗ trợ.",
+      "contributorReadOnly": "Contributor chỉ có quyền xem thống kê thành viên.",
+      "assignRequiredQuiz": "Vui lòng chọn quiz trước.",
+      "assignMissingMember": "Không tìm thấy thành viên. Vui lòng mở lại hộp thoại.",
+      "assignSuccess": "Đã giao quiz thành công.",
+      "assignFailed": "Không thể giao quiz.",
+      "pageInfo": "Trang {{page}}/{{totalPages}} · {{count}} thành viên",
+      "prev": "Trước",
+      "next": "Sau",
+      "assignDialogTitle": "Giao quiz",
+      "assignDialogDescription": "Chọn một quiz để giao cho {{name}}.",
+      "pickQuiz": "Chọn quiz",
+      "pickQuizPlaceholder": "Chọn một quiz",
+      "noQuiz": "Nhóm chưa có quiz nào.",
+      "openQuizTab": "Mở tab quiz",
+      "cancel": "Đóng",
+      "confirmAssign": "Giao ngay",
+      "assigning": "Đang giao..."
+    },
+    "forms": {
+      "loadingMaterials": "Đang tải tài liệu dùng chung...",
+      "loadMaterialsError": "Không tải được danh sách tài liệu dùng chung. Vui lòng đóng và mở lại form.",
+      "workspaceMaterialsEmpty": "Nhóm chưa có tài liệu dùng chung. Hãy tải tài liệu ở tab Tài liệu rồi chọn trực tiếp trong form này.",
+      "sourceSelectHint": "Chọn các tài liệu mà AI sẽ dùng để tạo nội dung."
     },
     "challenge": {
       "title": "Challenge",

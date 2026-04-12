@@ -1701,6 +1701,11 @@
       "noResults": "No results found",
       "createdAt": "Created",
       "updatedAt": "Updated",
+      "pagination": {
+        "prev": "Previous page",
+        "next": "Next page",
+        "pageInfo": "Page {{page}} / {{totalPages}} · {{count}} items"
+      },
       "levels": {
         "roadmap": "All Roadmaps",
         "phase": "Phases",

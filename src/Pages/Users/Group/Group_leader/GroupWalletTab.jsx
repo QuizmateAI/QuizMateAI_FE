@@ -317,8 +317,8 @@ export default function GroupWalletTab({
     });
   };
 
-  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-white/10 bg-[#08131a]/92' : 'border-white/80 bg-white/82'}`;
-  const innerCardClass = isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-white/80 bg-white/78';
+  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-slate-700/70 bg-[#08131a]/92' : 'border-slate-200/80 bg-white/90'}`;
+  const innerCardClass = isDarkMode ? 'border-slate-700/60 bg-white/[0.04]' : 'border-slate-200/70 bg-white/85';
   const subtleTextClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const eyebrowClass = 'text-slate-500';
 

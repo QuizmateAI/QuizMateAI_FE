@@ -64,10 +64,13 @@ function CreateQuizAiFormContent({
     fontClass,
     isDarkMode,
     hasAdvanceQuizConfig = false,
+    onClearSelectedMaterials,
+    onSelectAllMaterials,
     onToggleMaterialSelection,
     readOnly = false,
   } = ui;
   const {
+    areAllWorkspaceMaterialsSelected,
     aiDuration,
     aiDurationSyncNotice,
     aiEasyDuration,
@@ -100,6 +103,8 @@ function CreateQuizAiFormContent({
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
+    workspaceMaterialsError,
+    workspaceMaterialsLoading,
     workspaceSources = [],
     structurePreview,
     structurePreviewError,
@@ -157,6 +162,71 @@ function CreateQuizAiFormContent({
   const isStructureCountMissing = structureTargetCount > 0 && structureCurrentCount < structureTargetCount;
   const canAddMoreStructureItem = structureTargetCount <= 0 || structureCurrentCount < structureTargetCount;
   const showStructureOutdatedOverlay = Boolean(isStructureOutdated && structurePreview?.structureJson);
+
+  const selectableQuestionTypeIds = qTypes
+    .filter((item) => hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(item?.questionType))
+    .map((item) => Number(item?.questionTypeId))
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  const selectedQuestionTypeIdSet = new Set(
+    selectedQTypes
+      .map((item) => Number(item?.questionTypeId))
+      .filter((id) => Number.isInteger(id) && id > 0),
+  );
+
+  const areAllQuestionTypesSelected = selectableQuestionTypeIds.length > 0
+    && selectableQuestionTypeIds.every((id) => selectedQuestionTypeIdSet.has(id));
+
+  const hasSelectedQuestionTypes = selectedQTypes.length > 0;
+
+  const selectableBloomIds = bloomSkills
+    .map((item) => Number(item?.bloomId))
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  const selectedBloomIdSet = new Set(
+    selectedBloomSkills
+      .map((item) => Number(item?.bloomId))
+      .filter((id) => Number.isInteger(id) && id > 0),
+  );
+
+  const areAllBloomSkillsSelected = selectableBloomIds.length > 0
+    && selectableBloomIds.every((id) => selectedBloomIdSet.has(id));
+
+  const hasSelectedBloomSkills = selectedBloomSkills.length > 0;
+
+  const handleSelectAllQuestionTypes = () => {
+    selectableQuestionTypeIds.forEach((id) => {
+      if (!selectedQuestionTypeIdSet.has(id)) {
+        handleToggleQuestionTypeSelection(id);
+      }
+    });
+  };
+
+  const handleClearQuestionTypes = () => {
+    selectedQTypes.forEach((item) => {
+      const id = Number(item?.questionTypeId);
+      if (Number.isInteger(id) && selectableQuestionTypeIds.includes(id)) {
+        handleToggleQuestionTypeSelection(id);
+      }
+    });
+  };
+
+  const handleSelectAllBloomSkills = () => {
+    selectableBloomIds.forEach((id) => {
+      if (!selectedBloomIdSet.has(id)) {
+        handleToggleBloomSelection(id);
+      }
+    });
+  };
+
+  const handleClearBloomSkills = () => {
+    selectedBloomSkills.forEach((item) => {
+      const id = Number(item?.bloomId);
+      if (Number.isInteger(id) && selectableBloomIds.includes(id)) {
+        handleToggleBloomSelection(id);
+      }
+    });
+  };
 
   const onStructureDragStart = (index) => {
     dragSourceIndexRef.current = index;
@@ -280,44 +350,85 @@ function CreateQuizAiFormContent({
             </p>
           ) : null}
         </div>
-        {workspaceSources.length === 0 ? (
-          <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
-          </p>
-        ) : (
-          <div
-            className={`max-h-48 overflow-y-auto border-y ${
-              isDarkMode ? "divide-slate-800 border-slate-800 divide-y" : "divide-slate-100 border-slate-200 divide-y"
-            }`}
-          >
-            {workspaceSources.map((item, index) => {
-              const id = item?.id;
-              const isSelected = id != null && selectedMaterialIds.includes(id);
-              const canToggle = typeof onToggleMaterialSelection === "function" && id != null && !readOnly;
-              return (
-                <label
-                  key={id != null ? String(id) : `ws-src-${index}`}
-                  className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 text-xs transition-colors ${
-                    isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50/90"
-                  } ${!canToggle ? "cursor-default opacity-80" : ""}`}
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    disabled={!canToggle}
-                    onCheckedChange={(checked) => {
-                      if (!canToggle || id == null) return;
-                      onToggleMaterialSelection(id, checked === true);
-                    }}
-                    className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}`}
-                  />
-                  <span className={`min-w-0 flex-1 break-words leading-snug ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                    {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: id ?? "" })}
-                  </span>
-                </label>
-              );
-            })}
+
+        {workspaceMaterialsLoading && (
+          <div className={`mb-2 flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {t("workspace.quiz.aiConfig.materialsLoading", "Đang tải danh sách tài liệu...")}
           </div>
         )}
+
+        {workspaceMaterialsError && !workspaceMaterialsLoading && (
+          <div className={`mb-2 rounded-lg px-3 py-2 text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
+            {workspaceMaterialsError}
+          </div>
+        )}
+
+        <div className={`rounded-xl border p-2.5 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-slate-50/50"}`}>
+          {workspaceSources.length === 0 && !workspaceMaterialsLoading ? (
+            <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+              {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
+            </p>
+          ) : (
+            <>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={readOnly || typeof onSelectAllMaterials !== "function" || areAllWorkspaceMaterialsSelected}
+                  onClick={() => onSelectAllMaterials?.()}
+                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+                >
+                  {t("workspace.sources.selectAll")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={readOnly || typeof onClearSelectedMaterials !== "function" || selectedMaterialIds.length === 0}
+                  onClick={() => onClearSelectedMaterials?.()}
+                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+                >
+                  {t("workspace.sources.deselectAll")}
+                </Button>
+              </div>
+
+              <div
+                className={`max-h-48 overflow-y-auto rounded-lg border ${
+                  isDarkMode ? "divide-slate-800 border-slate-700 divide-y bg-slate-950/50" : "divide-slate-100 border-slate-200 divide-y bg-white"
+                }`}
+              >
+                {workspaceSources.map((item, index) => {
+                  const id = item?.id;
+                  const isSelected = id != null && selectedMaterialIds.includes(id);
+                  const canToggle = typeof onToggleMaterialSelection === "function" && id != null && !readOnly;
+                  return (
+                    <label
+                      key={id != null ? String(id) : `ws-src-${index}`}
+                      className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 text-xs transition-colors ${
+                        isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50/90"
+                      } ${!canToggle ? "cursor-default opacity-80" : ""}`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        disabled={!canToggle}
+                        onCheckedChange={(checked) => {
+                          if (!canToggle || id == null) return;
+                          onToggleMaterialSelection(id, checked === true);
+                        }}
+                        className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" : "border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"}`}
+                      />
+                      <span className={`min-w-0 flex-1 break-words leading-snug ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                        {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: id ?? "" })}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div ref={aiSettingsSectionRef} className={getAiSectionCardClass(["aiTotalQuestions", "aiDuration", "aiDurations"])}>
@@ -602,6 +713,29 @@ function CreateQuizAiFormContent({
             <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{t("workspace.quiz.aiConfig.questionTypeUnitByCount")}</span>
           </div>
 
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleSelectAllQuestionTypes}
+              disabled={areAllQuestionTypesSelected || selectableQuestionTypeIds.length === 0}
+              className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+            >
+              {t("workspace.sources.selectAll")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleClearQuestionTypes}
+              disabled={!hasSelectedQuestionTypes}
+              className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+            >
+              {t("workspace.sources.deselectAll")}
+            </Button>
+          </div>
+
           <div className="mb-3 flex flex-wrap gap-2">
             {qTypes.map((questionType) => {
               const isSelected = selectedQTypes.some((item) => item.questionTypeId === questionType.questionTypeId);
@@ -639,33 +773,35 @@ function CreateQuizAiFormContent({
             })}
           </div>
 
-          <div className="space-y-2">
-            {selectedQTypes.map((item) => {
-              const detail = qTypes.find((questionType) => questionType.questionTypeId === item.questionTypeId);
+          <div className={`rounded-xl border p-2 ${isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"}`}>
+            <div className="space-y-2">
+              {selectedQTypes.map((item) => {
+                const detail = qTypes.find((questionType) => questionType.questionTypeId === item.questionTypeId);
 
-              return (
-                <div key={item.questionTypeId} className={`flex items-center gap-2 border-b py-2 text-xs ${isDarkMode ? "border-slate-800 text-slate-300" : "border-gray-200 text-gray-700"}`}>
-                  <span className="flex-1 truncate" title={detail?.description}>
-                    {detail?.questionType ? getQuestionTypeLabel(detail.questionType) : t("workspace.quiz.aiConfig.questionTypeFallback", { id: item.questionTypeId })}
-                  </span>
-                  <input
-                    type="number"
-                    className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}
-                    value={item.ratio}
-                    onChange={(event) => handleQTypeRatioChange(item.questionTypeId, event.target.value)}
-                  />
-                  <span>{questionTypeUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleQTypeLock(item.questionTypeId)}
-                    className={`rounded p-1 ${item.isLocked ? "text-blue-500" : (isDarkMode ? "text-slate-400" : "text-gray-500")}`}
-                    title={item.isLocked ? t("workspace.quiz.aiConfig.unlock") : t("workspace.quiz.aiConfig.lock")}
-                  >
-                    {item.isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              );
-            })}
+                return (
+                  <div key={item.questionTypeId} className={`flex items-center gap-2 border-b py-2 text-xs last:border-b-0 ${isDarkMode ? "border-slate-800 text-slate-300" : "border-gray-200 text-gray-700"}`}>
+                    <span className="flex-1 truncate" title={detail?.description}>
+                      {detail?.questionType ? getQuestionTypeLabel(detail.questionType) : t("workspace.quiz.aiConfig.questionTypeFallback", { id: item.questionTypeId })}
+                    </span>
+                    <input
+                      type="number"
+                      className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}
+                      value={item.ratio}
+                      onChange={(event) => handleQTypeRatioChange(item.questionTypeId, event.target.value)}
+                    />
+                    <span>{questionTypeUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleQTypeLock(item.questionTypeId)}
+                      className={`rounded p-1 ${item.isLocked ? "text-blue-500" : (isDarkMode ? "text-slate-400" : "text-gray-500")}`}
+                      title={item.isLocked ? t("workspace.quiz.aiConfig.unlock") : t("workspace.quiz.aiConfig.lock")}
+                    >
+                      {item.isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {fieldErrors.selectedQTypes && (
@@ -709,6 +845,29 @@ function CreateQuizAiFormContent({
             <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"}`}>{t("workspace.quiz.aiConfig.bloomUnitByCount")}</span>
           </div>
 
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleSelectAllBloomSkills}
+              disabled={areAllBloomSkillsSelected || selectableBloomIds.length === 0}
+              className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+            >
+              {t("workspace.sources.selectAll")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleClearBloomSkills}
+              disabled={!hasSelectedBloomSkills}
+              className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+            >
+              {t("workspace.sources.deselectAll")}
+            </Button>
+          </div>
+
           <div className="mb-3 flex flex-wrap gap-2">
             {bloomSkills.map((skill) => {
               const isSelected = selectedBloomSkills.some((item) => item.bloomId === skill.bloomId);
@@ -731,33 +890,35 @@ function CreateQuizAiFormContent({
             })}
           </div>
 
-          <div className="space-y-2">
-            {selectedBloomSkills.map((item) => {
-              const detail = bloomSkills.find((skill) => skill.bloomId === item.bloomId);
+          <div className={`rounded-xl border p-2 ${isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"}`}>
+            <div className="space-y-2">
+              {selectedBloomSkills.map((item) => {
+                const detail = bloomSkills.find((skill) => skill.bloomId === item.bloomId);
 
-              return (
-                <div key={item.bloomId} className={`flex items-center gap-2 border-b py-2 text-xs ${isDarkMode ? "border-slate-800 text-slate-300" : "border-gray-200 text-gray-700"}`}>
-                  <span className="flex-1 truncate" title={detail?.description}>
-                    {detail?.bloomName || t("workspace.quiz.aiConfig.bloomFallback", { id: item.bloomId })}
-                  </span>
-                  <input
-                    type="number"
-                    className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}
-                    value={item.ratio}
-                    onChange={(event) => handleBloomRatioChange(item.bloomId, event.target.value)}
-                  />
-                  <span>{bloomUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleBloomLock(item.bloomId)}
-                    className={`rounded p-1 ${item.isLocked ? "text-blue-500" : (isDarkMode ? "text-slate-400" : "text-gray-500")}`}
-                    title={item.isLocked ? t("workspace.quiz.aiConfig.unlock") : t("workspace.quiz.aiConfig.lock")}
-                  >
-                    {item.isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              );
-            })}
+                return (
+                  <div key={item.bloomId} className={`flex items-center gap-2 border-b py-2 text-xs last:border-b-0 ${isDarkMode ? "border-slate-800 text-slate-300" : "border-gray-200 text-gray-700"}`}>
+                    <span className="flex-1 truncate" title={detail?.description}>
+                      {detail?.bloomName || t("workspace.quiz.aiConfig.bloomFallback", { id: item.bloomId })}
+                    </span>
+                    <input
+                      type="number"
+                      className={`w-16 rounded border p-1 text-center ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}
+                      value={item.ratio}
+                      onChange={(event) => handleBloomRatioChange(item.bloomId, event.target.value)}
+                    />
+                    <span>{bloomUnit ? t("workspace.quiz.aiConfig.countUnit") : "%"}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleBloomLock(item.bloomId)}
+                      className={`rounded p-1 ${item.isLocked ? "text-blue-500" : (isDarkMode ? "text-slate-400" : "text-gray-500")}`}
+                      title={item.isLocked ? t("workspace.quiz.aiConfig.unlock") : t("workspace.quiz.aiConfig.lock")}
+                    >
+                      {item.isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {fieldErrors.selectedBloomSkills && (
