@@ -63,3 +63,16 @@
 - `vi.json` is UTF-8 without BOM; some Windows tools may display mojibake if opened as ANSI. The FE runtime (Vite) should still treat it as UTF-8.
 - There may still be Vietnamese hard-coded copy in some Individual components (non-English) that could be moved to i18n in a later sweep if needed.
 
+## Follow-up 2026-04-09
+
+- Refactor personal workspace shell introduced a new `workspace.shell` namespace inside:
+  - `src/i18n/locales/en/workspace.json`
+  - `src/i18n/locales/vi/workspace.json`
+- New namespace now covers:
+  - sidebar nav labels
+  - overview dashboard copy
+  - source hub actions
+  - fishbone roadmap surface labels
+  - output hint/status labels
+- Existing profile/config dialogs still have independent test failures outside the shell rewrite scope. They should be audited separately if full workspace test parity is required.
+

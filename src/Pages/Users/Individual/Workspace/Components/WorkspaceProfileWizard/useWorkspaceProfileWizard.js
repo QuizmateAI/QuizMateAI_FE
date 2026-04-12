@@ -197,6 +197,16 @@ function hasBasicStepData(initialData) {
   );
 }
 
+function hasCompleteBasicStepData(initialData) {
+  if (!initialData || typeof initialData !== 'object') return false;
+
+  return Boolean(
+    hasTextValue(initialData?.workspacePurpose || initialData?.learningMode)
+    && hasTextValue(initialData?.knowledgeInput || initialData?.knowledge || initialData?.customKnowledge)
+    && hasTextValue(initialData?.inferredDomain || initialData?.domain || initialData?.customDomain)
+  );
+}
+
 function hasPersonalInfoStepData(initialData) {
   if (!initialData || typeof initialData !== 'object') return false;
 
@@ -309,17 +319,17 @@ function getInitialStep(initialData, isReadOnly, storageKey, totalSteps = ROADMA
   const explicitStep = Number(initialData?.currentStep);
   const profileStatus = initialData?.profileStatus;
   const setupStatus = initialData?.workspaceSetupStatus;
-  const hasBasicData = hasBasicStepData(initialData);
+  const hasCompleteBasicData = hasCompleteBasicStepData(initialData);
   const isCompletedFlow = isReadOnly || initialData?.onboardingCompleted || setupStatus === 'DONE';
   const baseStep =
     isCompletedFlow
       ? totalSteps
       : explicitStep >= 1 && explicitStep <= totalSteps
-        ? explicitStep
+        ? (explicitStep > 1 && !hasCompleteBasicData ? 1 : explicitStep)
         : setupStatus === 'PROFILE_DONE'
           ? totalSteps
           : profileStatus === 'BASIC_DONE' || profileStatus === 'DONE'
-            ? hasBasicData
+            ? hasCompleteBasicData
               ? 2
               : 1
             : 1;
