@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Swords } from 'lucide-react';
@@ -22,13 +22,12 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
 
-  /** Mở thẳng chi tiết challenge khi quay lại từ xem quiz snapshot (URL ?challengeEventId=) */
-  useEffect(() => {
+  const selectedEventIdFromUrl = useMemo(() => {
     const raw = Number(challengeEventIdFromUrl);
-    if (Number.isInteger(raw) && raw > 0) {
-      setSelectedEventId(raw);
-    }
+    return Number.isInteger(raw) && raw > 0 ? raw : null;
   }, [challengeEventIdFromUrl]);
+
+  const effectiveSelectedEventId = selectedEventId ?? selectedEventIdFromUrl;
 
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['challenges', workspaceId, activeSubTab],
@@ -36,7 +35,7 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
       const res = await listChallenges(workspaceId, activeSubTab);
       return res.data || [];
     },
-    enabled: Boolean(workspaceId) && !selectedEventId,
+    enabled: Boolean(workspaceId) && !effectiveSelectedEventId,
     refetchInterval: 15000,
   });
 
@@ -59,11 +58,11 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
     queryClient.invalidateQueries({ queryKey: ['challenges', workspaceId] });
   }, [queryClient, workspaceId]);
 
-  if (selectedEventId) {
+  if (effectiveSelectedEventId) {
     return (
       <ChallengeDetailView
         workspaceId={workspaceId}
-        eventId={selectedEventId}
+        eventId={effectiveSelectedEventId}
         isDarkMode={isDarkMode}
         isLeader={isLeader}
         currentUserId={currentUserId}

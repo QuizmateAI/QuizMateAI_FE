@@ -765,6 +765,11 @@
         "statusSection": "Trạng thái",
         "groupSection": "Nhóm"
       },
+      "list": {
+        "pagination": {
+          "showing": "Hiển thị {{from}}-{{to}} / {{total}} quiz"
+        }
+      },
       "groupAudience": {
         "filterLabel": "Phạm vi nhóm",
         "filterLabelShort": "Nhóm",
@@ -776,6 +781,30 @@
         "pickMemberHint": "Chọn tên để chỉ xem quiz được giao cho người đó",
         "badgeWholeGroup": "Chung nhóm",
         "badgeAssigned": "Giao riêng"
+      },
+      "bulk": {
+        "selectedCount": "Đã chọn {{count}} quiz",
+        "assign": "Giao",
+        "changeStatus": "Đổi trạng thái",
+        "delete": "Xóa",
+        "clear": "Bỏ chọn",
+        "confirmAssignTitle": "Giao quiz đã chọn",
+        "confirmAssignDescription": "Chọn cách giao cho {{count}} quiz đã chọn.",
+        "assignModeAll": "Chung cả nhóm",
+        "assignModeMember": "Giao cho thành viên cụ thể",
+        "pickMember": "Chọn thành viên",
+        "pickMemberPlaceholder": "Chọn thành viên",
+        "confirmStatusTitle": "Đổi trạng thái quiz",
+        "confirmStatusDescription": "Chọn trạng thái mới cho {{count}} quiz đã chọn.",
+        "statusDraft": "Bản nháp",
+        "statusActive": "Đang hoạt động",
+        "statusInactive": "Không hoạt động",
+        "confirmDeleteTitle": "Xóa quiz đã chọn",
+        "confirmDeleteDescription": "Bạn có chắc muốn xóa {{count}} quiz đã chọn?",
+        "apply": "Áp dụng",
+        "cancel": "Hủy",
+        "memberRequired": "Vui lòng chọn thành viên để giao quiz.",
+        "failed": "Không thể hoàn tất thao tác hàng loạt. Thành công {{success}}/{{total}} quiz."
       },
       "communityRecommendations": {
         "title": "Quiz phù hợp cho workspace này",
