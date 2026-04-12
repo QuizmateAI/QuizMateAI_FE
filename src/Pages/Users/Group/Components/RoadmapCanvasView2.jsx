@@ -419,14 +419,20 @@ function RoadmapCanvasView2({
     [defaultOpenKnowledgeMap, persistedKnowledgeMap]
   );
 
+  const normalizedSelectedPhaseId = Number(selectedPhaseId);
+  const normalizedOpenPhaseId = Number(openPhaseId);
   const fallbackPhaseId = phases[0]?.phaseId ?? null;
-  const hasSelectedPhaseFromSidebar = phases.some((phase) => phase.phaseId === selectedPhaseId);
+  const hasSelectedPhaseFromSidebar = Number.isInteger(normalizedSelectedPhaseId)
+    && normalizedSelectedPhaseId > 0
+    && phases.some((phase) => Number(phase?.phaseId) === normalizedSelectedPhaseId);
   const effectiveOpenPhaseId = hasSelectedPhaseFromSidebar
-    ? selectedPhaseId
-    : phases.some((phase) => phase.phaseId === openPhaseId)
-    ? openPhaseId
+    ? normalizedSelectedPhaseId
+    : Number.isInteger(normalizedOpenPhaseId)
+    && normalizedOpenPhaseId > 0
+    && phases.some((phase) => Number(phase?.phaseId) === normalizedOpenPhaseId)
+    ? normalizedOpenPhaseId
     : fallbackPhaseId;
-  const activePhase = phases.find((phase) => phase.phaseId === effectiveOpenPhaseId) || null;
+  const activePhase = phases.find((phase) => Number(phase?.phaseId) === Number(effectiveOpenPhaseId)) || null;
 
   const {
     decisionState,
@@ -978,7 +984,7 @@ function RoadmapCanvasView2({
           </div>
         ) : null}
         {activePhase ? [activePhase].map((phase) => {
-          const isOpen = effectiveOpenPhaseId === phase.phaseId;
+          const isOpen = Number(effectiveOpenPhaseId) === Number(phase.phaseId);
           const normalizedPhaseId = Number(phase.phaseId);
           const phaseIndex = phases.findIndex((p) => Number(p.phaseId) === normalizedPhaseId);
 

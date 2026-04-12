@@ -106,6 +106,7 @@ function RoadmapCanvasViewStage({
   roadmap,
   isDarkMode = false,
   fontClass = "font-sans",
+  sidebarSelectedPhaseId = null,
   onViewQuiz,
   isStudyNewRoadmap = false,
   generatingKnowledgePhaseIds = [],
@@ -517,6 +518,20 @@ function RoadmapCanvasViewStage({
     setSelectedPhaseId(normalizedPhaseId);
     setSelectedKnowledgeId(normalizedKnowledgeId);
   };
+
+  useEffect(() => {
+    const normalizedSidebarPhaseId = normalizePositiveId(sidebarSelectedPhaseId);
+    if (!normalizedSidebarPhaseId) return;
+    const hasSidebarPhaseInRoadmap = phases.some(
+      (phase) => normalizePositiveId(phase?.phaseId) === normalizedSidebarPhaseId,
+    );
+    if (!hasSidebarPhaseInRoadmap) return;
+    if (normalizedSelectedPhaseId === normalizedSidebarPhaseId && selectedType === "phase") return;
+
+    setSelectedType("phase");
+    setSelectedPhaseId(normalizedSidebarPhaseId);
+    setSelectedKnowledgeId(null);
+  }, [phases, normalizedSelectedPhaseId, sidebarSelectedPhaseId, selectedType]);
 
   const handleUnlockSelectedPhase = async () => {
     if (!isSelectedPhaseUnlockable || !selectedPhase) return;
@@ -1279,6 +1294,7 @@ function RoadmapCanvasViewStage({
                     </div>
                   </div>
                 ) : null}
+              </div>
               </div>
             ) : null}
           </div>

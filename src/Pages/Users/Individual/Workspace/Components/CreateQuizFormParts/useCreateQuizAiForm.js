@@ -848,6 +848,36 @@ export const useCreateQuizAiForm = ({
     });
   }, [getTargetTotal, hasAdvanceQuizConfig, qTypes, questionTypeUnit]);
 
+  const handleSelectAllQuestionTypes = useCallback(() => {
+    setSelectedQTypes((previousItems) => {
+      const selectableQuestionTypes = qTypes.filter((item) => (
+        hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(item?.questionType)
+      ));
+
+      if (selectableQuestionTypes.length === 0) {
+        return previousItems;
+      }
+
+      const nextItems = selectableQuestionTypes.map((item) => {
+        const existingItem = previousItems.find(
+          (previousItem) => Number(previousItem.questionTypeId) === Number(item.questionTypeId)
+        );
+
+        return existingItem || {
+          questionTypeId: item.questionTypeId,
+          ratio: 0,
+          isLocked: false,
+        };
+      });
+
+      return distributeConfigValues(nextItems, getTargetTotal(questionTypeUnit), questionTypeUnit);
+    });
+  }, [getTargetTotal, hasAdvanceQuizConfig, qTypes, questionTypeUnit]);
+
+  const handleClearAllQuestionTypes = useCallback(() => {
+    setSelectedQTypes([]);
+  }, []);
+
   const handleQTypeRatioChange = useCallback((questionTypeId, ratio) => {
     const rawRatio = Math.max(0, Number(ratio) || 0);
     const parsedRatio = questionTypeUnit ? Math.round(rawRatio) : rawRatio;
@@ -904,6 +934,32 @@ export const useCreateQuizAiForm = ({
       return distributeConfigValues(nextItems, getTargetTotal(bloomUnit), bloomUnit);
     });
   }, [bloomUnit, getTargetTotal]);
+
+  const handleSelectAllBloomSkills = useCallback(() => {
+    setSelectedBloomSkills((previousItems) => {
+      if (!Array.isArray(bloomSkills) || bloomSkills.length === 0) {
+        return previousItems;
+      }
+
+      const nextItems = bloomSkills.map((skill) => {
+        const existingItem = previousItems.find(
+          (previousItem) => Number(previousItem.bloomId) === Number(skill.bloomId)
+        );
+
+        return existingItem || {
+          bloomId: skill.bloomId,
+          ratio: 0,
+          isLocked: false,
+        };
+      });
+
+      return distributeConfigValues(nextItems, getTargetTotal(bloomUnit), bloomUnit);
+    });
+  }, [bloomSkills, bloomUnit, getTargetTotal]);
+
+  const handleClearAllBloomSkills = useCallback(() => {
+    setSelectedBloomSkills([]);
+  }, []);
 
   const handleBloomRatioChange = useCallback((bloomId, ratio) => {
     const rawRatio = Math.max(0, Number(ratio) || 0);
@@ -1507,9 +1563,13 @@ export const useCreateQuizAiForm = ({
       handleQTypeRatioChange,
       handleToggleBloomLock,
       handleToggleBloomSelection,
+      handleSelectAllBloomSkills,
+      handleClearAllBloomSkills,
       handleToggleDifficultyLock,
       handleToggleQTypeLock,
       handleToggleQuestionTypeSelection,
+      handleSelectAllQuestionTypes,
+      handleClearAllQuestionTypes,
       handlePreviewStructure,
       handleStartStructureEdit,
       handleCancelStructureEdit,

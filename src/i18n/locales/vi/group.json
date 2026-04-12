@@ -188,6 +188,16 @@
       "title": "Đang chuẩn bị không gian nhóm",
       "description": "Trình hướng dẫn thiết lập sẽ mở ngay khi không gian nháp sẵn sàng."
     },
+    "header": {
+      "groupPlan": {
+        "viewOrChange": "Xem / đổi gói nhóm",
+        "choose": "Chọn gói nhóm",
+        "upgrade": "Nâng cấp gói nhóm"
+      },
+      "planNames": {
+        "GROUP_BASE": "Gói nhóm Cơ bản"
+      }
+    },
     "studio": {
       "systemDashboard": "Tổng quan",
       "personalDashboard": "Cá nhân",

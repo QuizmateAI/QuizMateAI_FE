@@ -268,6 +268,46 @@ const GROUP_SECTIONS_REQUIRE_MATERIALS = new Set([
   'challenge',
 ]);
 
+function normalizePlanNameToken(value) {
+  return String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_')
+    .replace(/[^A-Z0-9_]/g, '');
+}
+
+function canonicalPlanNameToken(value) {
+  const normalizedValue = normalizePlanNameToken(value);
+  if (normalizedValue === 'GROUPBASE') {
+    return 'GROUP_BASE';
+  }
+  return normalizedValue;
+}
+
+function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t }) {
+  const normalizedPlanCode = canonicalPlanNameToken(planCode);
+  const normalizedDisplayName = canonicalPlanNameToken(planDisplayName);
+  const normalizedDisplayNameCompact = normalizedDisplayName.replace(/_/g, '');
+
+  const keyCandidates = [
+    normalizedPlanCode,
+    normalizedDisplayName,
+    canonicalPlanNameToken(normalizedDisplayNameCompact),
+  ].filter(Boolean).filter((candidate, index, candidates) => candidates.indexOf(candidate) === index);
+
+  for (const candidate of keyCandidates) {
+    const localized = String(
+      t(`groupWorkspace.header.planNames.${candidate}`, { defaultValue: '' })
+    ).trim();
+
+    if (localized) {
+      return localized;
+    }
+  }
+
+  return String(planDisplayName || planCode || '').trim();
+}
+
 function shouldTrackInLeaderReviewQueue(status, needReview) {
   return isProcessingMaterialStatus(status) || Boolean(needReview);
 }
@@ -402,7 +442,7 @@ function buildPendingQueueMessage(status, currentLang, isLeader = false, needRev
   if (normalized === 'REJECT') {
     return currentLang === 'en'
       ? 'The material was rejected for this group workspace.'
-      : 'Tài liệu đã bị loại khỏi group workspace này.';
+      : 'Tài liệu đã bị loại khỏi không gian nhóm này.';
   }
 
   return currentLang === 'en'
@@ -678,6 +718,7 @@ function GroupWorkspacePage() {
     || '';
   const actualRoleKey = String(currentGroupWorkspace?.memberRole || currentGroupFromGroups?.memberRole || 'MEMBER').toUpperCase();
   const currentRoleKey = actualRoleKey;
+  const currentRoleLabel = formatGroupRole(currentRoleKey, currentLang);
   const isLeader = currentRoleKey === 'LEADER';
   const isContributor = currentRoleKey === 'CONTRIBUTOR';
   const isMember = currentRoleKey === 'MEMBER';
@@ -784,7 +825,16 @@ function GroupWorkspacePage() {
     || (isLeader && canManageGroup && !isCreating && hasLoadedGroupProfile && !groupProfile && !hasCompletedGroupProfile)
     || (hasLoadedGroupProfile && openProfileConfig && !hasCompletedGroupProfile)
   );
-  const currentGroupPlanName = String(groupSubscription?.plan?.displayName || groupSubscription?.plan?.code || '').trim();
+  const rawGroupPlanDisplayName = String(groupSubscription?.plan?.displayName || '').trim();
+  const rawGroupPlanCode = String(groupSubscription?.plan?.code || '').trim();
+  const currentGroupPlanName = useMemo(
+    () => resolveLocalizedGroupPlanName({
+      planDisplayName: rawGroupPlanDisplayName,
+      planCode: rawGroupPlanCode,
+      t,
+    }),
+    [rawGroupPlanCode, rawGroupPlanDisplayName, t]
+  );
   /** Subtitle tránh trùng với nút header đang hiển thị tên gói */
   const groupHeaderSubtitle = currentGroupPlanName
     ? ''
@@ -1185,12 +1235,12 @@ function GroupWorkspacePage() {
 
     const bootstrapGroupWorkspace = async () => {
       try {
-        showInfo(currentLang === 'en' ? 'Creating group workspace...' : 'Dang tao group workspace...');
+        showInfo(currentLang === 'en' ? 'Creating group workspace...' : 'Đang tạo không gian nhóm...');
         const newGroupWorkspace = await createGroupWorkspace({ title: null });
         const newWorkspaceId = newGroupWorkspace?.workspaceId;
 
         if (!newWorkspaceId) {
-          throw new Error(currentLang === 'en' ? 'Unable to create the group workspace.' : 'Khong the tao group workspace.');
+          throw new Error(currentLang === 'en' ? 'Unable to create the group workspace.' : 'Không thể tạo không gian nhóm.');
         }
 
         setCreatedGroupWorkspaceId(newWorkspaceId);
@@ -1200,7 +1250,7 @@ function GroupWorkspacePage() {
           state: { openProfileConfig: true },
         });
       } catch (error) {
-        showError(error?.message || (currentLang === 'en' ? 'Unable to create the group workspace.' : 'Khong the tao group workspace.'));
+        showError(error?.message || (currentLang === 'en' ? 'Unable to create the group workspace.' : 'Không thể tạo không gian nhóm.'));
         navigate('/home', { replace: true });
       } finally {
         setIsBootstrappingGroup(false);
@@ -1308,7 +1358,7 @@ function GroupWorkspacePage() {
       showError(
         currentLang === 'en'
           ? `"${materialTitle}" was rejected for this group workspace.`
-          : `"${materialTitle}" đã bị loại khỏi group workspace này.`,
+          : `"${materialTitle}" đã bị loại khỏi không gian nhóm này.`,
       );
     }
   }, [currentLang, isLeader, showError, showInfo, showSuccess, showWarning]);
@@ -1552,8 +1602,8 @@ function GroupWorkspacePage() {
       await refreshGroupMaterialViews({ silent: true });
       showSuccess(
         isApproved
-          ? (currentLang === 'en' ? 'Material approved for the group.' : 'Đã duyệt tài liệu vào group.')
-          : (currentLang === 'en' ? 'Material rejected from the group.' : 'Đã từ chối tài liệu khỏi group.'),
+          ? (currentLang === 'en' ? 'Material approved for the group.' : 'Đã duyệt tài liệu vào nhóm.')
+          : (currentLang === 'en' ? 'Material rejected from the group.' : 'Đã từ chối tài liệu khỏi nhóm.'),
       );
     } catch (error) {
       showError(resolveUiErrorMessage(error));
@@ -1778,7 +1828,7 @@ function GroupWorkspacePage() {
       showInfo(
         currentLang === 'en'
           ? `Submitted ${successfulUploads.length} file(s) to the group review queue.`
-          : `Đã gửi ${successfulUploads.length} tệp vào hàng chờ duyệt của group.`,
+          : `Đã gửi ${successfulUploads.length} tệp vào hàng chờ duyệt của nhóm.`,
       );
       showWarning(
         isLeader
@@ -1926,7 +1976,7 @@ function GroupWorkspacePage() {
         materialId: hasMaterialId ? materialId : null,
         progress: materialProgress.getProgress(progressKey),
         source: 'server',
-        ownerLabel: currentLang === 'en' ? 'Official group review queue' : 'Hàng chờ duyệt chính thức của group',
+        ownerLabel: currentLang === 'en' ? 'Official group review queue' : 'Hàng chờ duyệt chính thức của nhóm',
         message: buildPendingQueueMessage(item?.status, currentLang, true, item?.needReview !== false),
         canApprove: isReviewableMaterialStatus(item?.status),
         canReject: !isProcessingMaterialStatus(item?.status) && normalizeMaterialStatus(item?.status) !== 'ERROR',
@@ -2503,7 +2553,7 @@ function GroupWorkspacePage() {
     notifications: t('groupWorkspace.studio.activity'),
     members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
     memberStats: t('groupWorkspace.studio.memberStats'),
-    wallet: t('groupWorkspace.studio.wallet', 'Group wallet'),
+    wallet: t('groupWorkspace.studio.wallet', currentLang === 'en' ? 'Group wallet' : 'Ví nhóm'),
     settings: t('workspaceSettings'),
   };
 
@@ -2584,7 +2634,7 @@ function GroupWorkspacePage() {
             {currentLang === 'en' ? 'Recent group activity' : 'Hoạt động nhóm gần đây'}
           </h3>
           <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            {currentLang === 'en' ? 'Real events from the group workspace log.' : 'Dữ liệu thật từ activity log của nhóm.'}
+            {currentLang === 'en' ? 'Real events from the group workspace log.' : 'Dữ liệu thật từ nhật ký hoạt động của nhóm.'}
           </p>
         </div>
       </div>
@@ -2985,7 +3035,7 @@ function GroupWorkspacePage() {
         <h2 className={`mt-6 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
           {isCheckingMandatoryProfile
             ? (currentLang === 'en' ? 'Checking the group profile...' : 'Đang kiểm tra profile nhóm...')
-            : (currentLang === 'en' ? 'Complete the group profile before continuing' : 'Hoàn thành profile nhóm trước khi dùng workspace')}
+            : (currentLang === 'en' ? 'Complete the group profile before continuing' : 'Hoàn thành profile nhóm trước khi dùng không gian nhóm')}
         </h2>
         <p className={`mx-auto mt-4 max-w-2xl text-sm leading-7 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
           {isCheckingMandatoryProfile
@@ -3234,14 +3284,14 @@ function GroupWorkspacePage() {
           className={headerPlanActionClass}
           title={
             currentGroupPlanName
-              ? (currentLang === 'en' ? 'View or change group plan' : 'Xem / đổi gói nhóm')
-              : (currentLang === 'en' ? 'Choose a group plan' : 'Chọn gói nhóm')
+              ? t('groupWorkspace.header.groupPlan.viewOrChange')
+              : t('groupWorkspace.header.groupPlan.choose')
           }
         >
           <Sparkles className="h-4 w-4 shrink-0" />
           <span className={`${fontClass} max-w-[10rem] truncate sm:max-w-[14rem] md:max-w-[18rem]`}>
             {currentGroupPlanName
-              || (currentLang === 'en' ? 'Upgrade group plan' : 'Nâng cấp gói group')}
+              || t('groupWorkspace.header.groupPlan.upgrade')}
           </span>
         </Button>
       ) : null}
@@ -3309,7 +3359,7 @@ function GroupWorkspacePage() {
                   {currentLang === 'en' ? 'Roadmap panel' : 'Panel lộ trình'}
                 </Button>
               ) : null}
-              <span className={`ml-auto text-[11px] font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentRoleKey}</span>
+              <span className={`ml-auto text-[11px] font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentRoleLabel}</span>
             </div>
             ) : null}
             <div className="p-4 md:p-5 lg:p-6">
