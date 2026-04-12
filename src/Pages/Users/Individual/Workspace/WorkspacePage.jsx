@@ -7,6 +7,7 @@
 } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
+import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
 import PersonalWorkspaceSidebar from "@/Pages/Users/Individual/Workspace/Components/PersonalWorkspaceSidebar";
@@ -167,7 +168,7 @@ function WorkspacePage() {
   const progressTracking = useProgressTracking({
     scopeKey: workspaceId ? `workspace:${workspaceId}` : null,
   });
-  const personalWorkspaceIsDark = false;
+  const personalWorkspaceIsDark = isDarkMode;
 
   const reconcileMaterialProgress = progressTracking.reconcileMaterialProgress;
 
@@ -2147,9 +2148,14 @@ function WorkspacePage() {
 
   return (
     <div
-      className="h-screen overflow-hidden bg-[#f5f7fb] text-slate-900"
+      className={cn(
+        "h-screen overflow-hidden transition-colors duration-200",
+        personalWorkspaceIsDark
+          ? "bg-slate-950 text-slate-100"
+          : "bg-[#f5f7fb] text-slate-900",
+      )}
     >
-      <div className="flex h-full min-h-0 overflow-hidden">
+      <div className="flex h-full min-h-0 overflow-hidden transition-colors duration-200">
         <PersonalWorkspaceSidebar
           isDarkMode={isDarkMode}
           workspaceTitle={
@@ -2183,19 +2189,28 @@ function WorkspacePage() {
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
-        <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden transition-colors duration-200">
           {mockTestGenerationState !== "idle" ? (
             <div className="px-4 pt-4 sm:px-5 lg:px-6">
               <div
-                className={`mx-auto max-w-[1740px] rounded-[24px] border px-4 py-3 ${
+                className={cn(
+                  "mx-auto max-w-[1740px] rounded-[24px] border px-4 py-3 transition-colors duration-200",
                   mockTestGenerationState === "ready"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    ? (personalWorkspaceIsDark
+                      ? "border-emerald-700/60 bg-emerald-950/35 text-emerald-200"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-800")
                     : isMockTestTakingLongerThanExpected
-                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                      ? (personalWorkspaceIsDark
+                        ? "border-amber-700/60 bg-amber-950/35 text-amber-200"
+                        : "border-amber-200 bg-amber-50 text-amber-800")
                       : mockTestGenerationState === "error"
-                        ? "border-rose-200 bg-rose-50 text-rose-800"
-                        : "border-cyan-200 bg-cyan-50 text-cyan-800"
-                }`}
+                        ? (personalWorkspaceIsDark
+                          ? "border-rose-700/60 bg-rose-950/35 text-rose-200"
+                          : "border-rose-200 bg-rose-50 text-rose-800")
+                        : (personalWorkspaceIsDark
+                          ? "border-cyan-700/60 bg-cyan-950/35 text-cyan-200"
+                          : "border-cyan-200 bg-cyan-50 text-cyan-800"),
+                )}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -2203,7 +2218,10 @@ function WorkspacePage() {
                       {mockTestGenerationDisplayMessage}
                     </p>
 
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/80">
+                    <div className={cn(
+                      "mt-2 h-2 overflow-hidden rounded-full transition-colors duration-200",
+                      personalWorkspaceIsDark ? "bg-slate-800/90" : "bg-white/80",
+                    )}>
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           mockTestGenerationState === "ready"
@@ -2254,7 +2272,12 @@ function WorkspacePage() {
 
                         setProfileOverviewOpen(false);
                       }}
-                      className="rounded-full border-white bg-white text-slate-700 hover:bg-slate-100"
+                      className={cn(
+                        "rounded-full transition-colors duration-200",
+                        personalWorkspaceIsDark
+                          ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+                          : "border-white bg-white text-slate-700 hover:bg-slate-100",
+                      )}
                     >
                       {mockTestGenerationState === "ready"
                         ? "Mở Mock test"
@@ -2276,7 +2299,12 @@ function WorkspacePage() {
                   variant="outline"
                   size="icon"
                   onClick={() => setIsMobileSidebarOpen(true)}
-                  className="h-11 w-11 shrink-0 rounded-2xl border-slate-200 bg-white text-slate-700 shadow-[0_16px_36px_rgba(15,23,42,0.12)]"
+                  className={cn(
+                    "h-11 w-11 shrink-0 rounded-2xl transition-colors duration-200",
+                    personalWorkspaceIsDark
+                      ? "border-slate-700 bg-slate-900 text-slate-100 shadow-[0_16px_36px_rgba(2,6,23,0.35)]"
+                      : "border-slate-200 bg-white text-slate-700 shadow-[0_16px_36px_rgba(15,23,42,0.12)]",
+                  )}
                   aria-label={t("workspace.shell.openSidebar", "Open sidebar")}
                 >
                   <Menu className="h-4 w-4" />
