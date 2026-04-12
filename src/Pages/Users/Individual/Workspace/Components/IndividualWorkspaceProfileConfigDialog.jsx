@@ -130,15 +130,14 @@ function normalizeDisplayValue(value) {
 }
 
 function createConfirmationSummary(t, values) {
-  const emptyValueLabel = translateOrFallback(
-    t,
-    'workspace.profileConfig.confirmProfileDialog.emptyValue',
-    'Chưa thiết lập'
+  const emptyValueLabel = t(
+    'individualWorkspaceProfileConfigDialog.emptyValue',
+    'Not set yet'
   );
   const shouldShowRoadmapConfig = values.workspacePurpose === 'STUDY_NEW' || values.enableRoadmap;
   const beginnerScope = getBeginnerScopeLabel(
     values,
-    translateOrFallback(t, 'workspace.profileConfig.stepTwo.beginnerFallbackScope', 'kiến thức này')
+    t('individualWorkspaceProfileConfigDialog.beginnerFallbackScope', 'this topic')
   );
   const isBeginnerProfile = isAbsoluteBeginnerLevel(values.currentLevel);
   const purposeTitle = values.workspacePurpose
@@ -150,19 +149,17 @@ function createConfirmationSummary(t, values) {
     : emptyValueLabel;
   const strongAreasValue = normalizeDisplayValue(values.strongAreas)
     || (isBeginnerProfile
-      ? translateOrFallback(
-        t,
-        'workspace.profileConfig.stepTwo.beginnerStrongSuggestion1',
-        'Mới bắt đầu học nên chưa xác định được điểm mạnh rõ ràng.',
+      ? t(
+        'individualWorkspaceProfileConfigDialog.beginnerStrongSuggestion',
+        'Still at the very beginning so clear strengths have not been identified yet.',
         { scope: beginnerScope }
       )
       : emptyValueLabel);
   const weakAreasValue = normalizeDisplayValue(values.weakAreas)
     || (isBeginnerProfile
-      ? translateOrFallback(
-        t,
-        'workspace.profileConfig.stepTwo.beginnerWeakSuggestion1',
-        'Mới bắt đầu học nên chưa xác định được điểm yếu rõ ràng.',
+      ? t(
+        'individualWorkspaceProfileConfigDialog.beginnerWeakSuggestion',
+        'Still at the very beginning so clear weaknesses have not been identified yet.',
         { scope: beginnerScope }
       )
       : emptyValueLabel);
@@ -181,7 +178,7 @@ function createConfirmationSummary(t, values) {
       },
       {
         id: 'adaptationMode',
-        label: translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', 'Loại lộ trình'),
+        label: t('individualWorkspaceProfileConfigDialog.fields.adaptationMode', 'Roadmap type'),
         value: values.adaptationMode
           ? translateOrFallback(
             t,
@@ -192,7 +189,7 @@ function createConfirmationSummary(t, values) {
       },
       {
         id: 'roadmapSpeedMode',
-        label: translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', 'Tốc độ lộ trình'),
+        label: t('individualWorkspaceProfileConfigDialog.fields.roadmapSpeedMode', 'Roadmap pace'),
         value: values.roadmapSpeedMode
           ? translateOrFallback(
             t,
@@ -203,28 +200,25 @@ function createConfirmationSummary(t, values) {
       },
       {
         id: 'estimatedTotalDays',
-        label: translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', 'Số ngày dự kiến'),
+        label: t('individualWorkspaceProfileConfigDialog.fields.estimatedTotalDays', 'Estimated number of days'),
         value: Number(values.estimatedTotalDays) > 0
-          ? translateOrFallback(
-            t,
-            'workspace.profileConfig.confirmProfileDialog.values.estimatedTotalDays',
-            `${values.estimatedTotalDays} ngày`,
+          ? t(
+            'individualWorkspaceProfileConfigDialog.values.estimatedTotalDays',
+            '{{value}} days',
             { value: values.estimatedTotalDays }
           )
           : emptyValueLabel,
       },
       {
         id: 'recommendedMinutesPerDay',
-        label: translateOrFallback(
-          t,
-          'workspace.profileConfig.fields.recommendedMinutesPerDay',
-          'Số phút học mỗi ngày'
+        label: t(
+          'individualWorkspaceProfileConfigDialog.fields.recommendedMinutesPerDay',
+          'Minutes of study per day'
         ),
         value: Number(values.recommendedMinutesPerDay) > 0
-          ? translateOrFallback(
-            t,
-            'workspace.profileConfig.confirmProfileDialog.values.recommendedMinutesPerDay',
-            `${values.recommendedMinutesPerDay} phút/ngày`,
+          ? t(
+            'individualWorkspaceProfileConfigDialog.values.recommendedMinutesPerDay',
+            '{{value}} minutes/day',
             { value: values.recommendedMinutesPerDay }
           )
           : emptyValueLabel,
@@ -233,56 +227,51 @@ function createConfirmationSummary(t, values) {
     : [
       {
         id: 'roadmapDisabled',
-        value: translateOrFallback(
-          t,
-          'workspace.profileConfig.confirmProfileDialog.roadmapDisabled',
-          'Không bật lộ trình cho hồ sơ này.'
+        value: t(
+          'individualWorkspaceProfileConfigDialog.roadmapDisabled',
+          'Roadmap is not enabled for this profile.'
         ),
       },
     ];
 
   return {
-    summaryLabel: translateOrFallback(
-      t,
-      'workspace.profileConfig.confirmProfileDialog.summaryLabel',
-      'Hồ sơ sẽ được áp dụng'
+    summaryLabel: t(
+      'individualWorkspaceProfileConfigDialog.summaryLabel',
+      'Profile to be applied'
     ),
     sections: [
       {
         id: 'purpose',
-        title: translateOrFallback(
-          t,
-          'workspace.profileConfig.confirmProfileDialog.sections.purpose',
-          'Mục đích sử dụng'
+        title: t(
+          'individualWorkspaceProfileConfigDialog.sections.purpose',
+          'Usage purpose'
         ),
         items: [{ id: 'purposeValue', value: purposeTitle }],
       },
       {
         id: 'knowledgeDomain',
-        title: translateOrFallback(
-          t,
-          'workspace.profileConfig.confirmProfileDialog.sections.knowledgeDomain',
-          'Kiến thức - lĩnh vực'
+        title: t(
+          'individualWorkspaceProfileConfigDialog.sections.knowledgeDomain',
+          'Knowledge - domain'
         ),
         items: [
           {
             id: 'knowledgeInput',
-            label: translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeInput', 'Kiến thức bạn muốn học'),
+            label: t('individualWorkspaceProfileConfigDialog.fields.knowledgeInput', 'Knowledge you want to learn'),
             value: normalizeDisplayValue(values.knowledgeInput) || emptyValueLabel,
           },
           {
             id: 'primaryDomain',
-            label: translateOrFallback(t, 'workspace.profileConfig.fields.primaryDomain', 'Lĩnh vực chính'),
+            label: t('individualWorkspaceProfileConfigDialog.fields.primaryDomain', 'Primary domain'),
             value: normalizeDisplayValue(values.inferredDomain) || emptyValueLabel,
           },
         ],
       },
       {
         id: 'currentLevel',
-        title: translateOrFallback(
-          t,
-          'workspace.profileConfig.confirmProfileDialog.sections.currentLevel',
-          'Trình độ hiện tại'
+        title: t(
+          'individualWorkspaceProfileConfigDialog.sections.currentLevel',
+          'Current level'
         ),
         items: [
           {
@@ -293,10 +282,9 @@ function createConfirmationSummary(t, values) {
       },
       {
         id: 'learningGoal',
-        title: translateOrFallback(
-          t,
-          'workspace.profileConfig.confirmProfileDialog.sections.learningGoal',
-          'Mục tiêu'
+        title: t(
+          'individualWorkspaceProfileConfigDialog.sections.learningGoal',
+          'Goal'
         ),
         items: [
           {
@@ -307,31 +295,29 @@ function createConfirmationSummary(t, values) {
       },
       {
         id: 'strengthWeakness',
-        title: translateOrFallback(
-          t,
-          'workspace.profileConfig.confirmProfileDialog.sections.strengthWeakness',
-          'Điểm mạnh và điểm yếu'
+        title: t(
+          'individualWorkspaceProfileConfigDialog.sections.strengthWeakness',
+          'Strengths and weaknesses'
         ),
         spanClass: 'md:col-span-2',
         items: [
           {
             id: 'strongAreas',
-            label: translateOrFallback(t, 'workspace.profileConfig.fields.strongAreas', 'Điểm mạnh'),
+            label: t('individualWorkspaceProfileConfigDialog.fields.strongAreas', 'Strengths'),
             value: strongAreasValue,
           },
           {
             id: 'weakAreas',
-            label: translateOrFallback(t, 'workspace.profileConfig.fields.weakAreas', 'Điểm yếu'),
+            label: t('individualWorkspaceProfileConfigDialog.fields.weakAreas', 'Weaknesses'),
             value: weakAreasValue,
           },
         ],
       },
       {
         id: 'roadmapConfig',
-        title: translateOrFallback(
-          t,
-          'workspace.profileConfig.confirmProfileDialog.sections.roadmapConfig',
-          'Các config của lộ trình'
+        title: t(
+          'individualWorkspaceProfileConfigDialog.sections.roadmapConfig',
+          'Roadmap settings'
         ),
         spanClass: 'md:col-span-2',
         itemsGridClass: shouldShowRoadmapConfig ? 'grid gap-3 md:grid-cols-2' : 'space-y-3',
@@ -395,9 +381,9 @@ function createActionCopy(t) {
     overallReviewLoading: translateOrFallback(
       t,
       'workspace.profileConfig.stepTwo.overallReviewLoadingTitle',
-      'Quizmate AI dang danh gia tong quan'
+      'Quizmate AI is performing an overall review'
     ),
-    confirm: translateOrFallback(t, 'confirm', 'Xác nhận'),
+    confirm: t('individualWorkspaceProfileConfigDialog.actions.confirm', 'Confirm'),
     cancel: translateOrFallback(t, 'workspace.profileConfig.actions.cancel', 'Cancel'),
     confirmProfileUse: translateOrFallback(
       t,
@@ -465,15 +451,13 @@ function IndividualWorkspaceProfileConfigDialog({
   const progressFraction = stepIds.length > 1 ? (wizard.step - 1) / (stepIds.length - 1) : 0;
   const stepTransitionClass = 'animate-in fade-in-50 slide-in-from-bottom-3 zoom-in-95 duration-500';
   const [isProfileConfirmView, setIsProfileConfirmView] = React.useState(false);
-  const confirmationTitle = translateOrFallback(
-    t,
-    'workspace.profileConfig.confirmProfileDialog.title',
-    'Xác nhận sử dụng hồ sơ này'
+  const confirmationTitle = t(
+    'individualWorkspaceProfileConfigDialog.confirmProfile.title',
+    'Confirm using this profile'
   );
-  const confirmationDescription = translateOrFallback(
-    t,
-    'workspace.profileConfig.confirmProfileDialog.description',
-    'Bạn đã chắc chắn sử dụng hồ sơ này chưa? Sau khi xác nhận, hệ thống sẽ lưu cấu hình hiện tại cho không gian học tập.'
+  const confirmationDescription = t(
+    'individualWorkspaceProfileConfigDialog.confirmProfile.description',
+    'Are you sure you want to use this profile? Once confirmed, the system will save the current configuration for this learning workspace.'
   );
   const confirmationSummary = React.useMemo(
     () => createConfirmationSummary(t, wizard.values),
@@ -927,7 +911,7 @@ function IndividualWorkspaceProfileConfigDialog({
                 )}
               >
                 <Check className="h-3.5 w-3.5" />
-                {i18n.language === 'en' ? 'PROFILE CONFIRMATION' : 'XÁC NHẬN HỒ SƠ'}
+                {t('individualWorkspaceProfileConfigDialog.confirmProfile.badge', 'PROFILE CONFIRMATION')}
               </div>
               <DialogTitle className="max-w-4xl text-[clamp(1.55rem,1.8vw,1.95rem)] font-bold leading-[1.08] tracking-tight">
                 {confirmationTitle}
@@ -991,14 +975,16 @@ function IndividualWorkspaceProfileConfigDialog({
                 </div>
                 <div>
                   <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                    {i18n.language === 'en'
-                      ? 'Final review before applying this setup'
-                      : 'Rà soát lần cuối trước khi áp dụng hồ sơ này'}
+                    {t(
+                      'individualWorkspaceProfileConfigDialog.confirmProfile.finalReviewTitle',
+                      'Final review before applying this setup'
+                    )}
                   </p>
                   <p className={cn('mt-1 text-sm leading-6', confirmMutedClass)}>
-                    {i18n.language === 'en'
-                      ? 'Check the summary below. Once confirmed, this configuration becomes the active workspace profile.'
-                      : 'Kiểm tra nhanh bản tóm tắt bên dưới. Sau khi xác nhận, cấu hình này sẽ trở thành hồ sơ đang áp dụng cho workspace.'}
+                    {t(
+                      'individualWorkspaceProfileConfigDialog.confirmProfile.finalReviewDescription',
+                      'Check the summary below. Once confirmed, this configuration becomes the active workspace profile.'
+                    )}
                   </p>
                 </div>
               </div>
@@ -1020,9 +1006,10 @@ function IndividualWorkspaceProfileConfigDialog({
                     {confirmationSummary.summaryLabel}
                   </p>
                   <p className={cn('mt-1 text-sm leading-6', confirmMutedClass)}>
-                    {i18n.language === 'en'
-                      ? 'Everything below will be saved as the current learning setup for this workspace.'
-                      : 'Toàn bộ nội dung bên dưới sẽ được lưu thành cấu hình học tập hiện tại của workspace này.'}
+                    {t(
+                      'individualWorkspaceProfileConfigDialog.confirmProfile.summaryHelper',
+                      'Everything below will be saved as the current learning setup for this workspace.'
+                    )}
                   </p>
                 </div>
               </div>
@@ -1089,9 +1076,10 @@ function IndividualWorkspaceProfileConfigDialog({
           )}
         >
           <div className={cn('mr-auto hidden text-xs leading-5 lg:block', confirmMutedClass)}>
-            {i18n.language === 'en'
-              ? 'You can still go back to the wizard to edit before applying.'
-              : 'Bạn vẫn có thể quay lại wizard để chỉnh sửa thêm trước khi áp dụng.'}
+            {t(
+              'individualWorkspaceProfileConfigDialog.confirmProfile.footerHelper',
+              'You can still go back to the wizard to edit before applying.'
+            )}
           </div>
 
           <Button

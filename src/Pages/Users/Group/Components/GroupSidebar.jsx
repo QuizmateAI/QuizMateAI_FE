@@ -105,7 +105,7 @@ function GroupSidebar({
       {isMobile && mobileOpen ? (
         <button
           type="button"
-          aria-label={t('groupWorkspace.shell.closeSidebar', 'Đóng sidebar')}
+          aria-label={t('groupWorkspace.shell.closeSidebar', 'Close sidebar')}
           className="fixed inset-0 z-30 bg-slate-950/20 backdrop-blur-[2px]"
           onClick={onCloseMobile}
         />
@@ -139,7 +139,7 @@ function GroupSidebar({
                     ? 'border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                     : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900',
                 )}
-                aria-label={t('groupWorkspace.shell.closeSidebar', 'Đóng sidebar')}
+                aria-label={t('groupWorkspace.shell.closeSidebar', 'Close sidebar')}
               >
                 <X className="h-3.5 w-3.5" />
               </button>

@@ -153,14 +153,14 @@ function TopicManagement() {
   const createTopic = useCallback(async (title, code) => {
     const trimmedTitle = String(title || '').trim();
     if (!trimmedTitle) {
-      throw new Error('Vui lòng nhập tên topic.');
+      throw new Error(i18n.t('topicManagement.topicNameRequired'));
     }
 
     const topicExists = topics.some(
       (topic) => String(topic?.title || '').trim().toLowerCase() === trimmedTitle.toLowerCase()
     );
     if (topicExists) {
-      throw new Error('Topic này đã tồn tại.');
+      throw new Error(i18n.t('topicManagement.topicExists'));
     }
 
     const maxTopicId = topics.reduce((currentMax, topic) => {
@@ -188,15 +188,15 @@ function TopicManagement() {
     const trimmedTitle = String(title || '').trim();
 
     if (!normalizedTopicId) {
-      throw new Error('Vui lòng chọn topic trước.');
+      throw new Error(i18n.t('topicManagement.selectTopicFirst'));
     }
     if (!trimmedTitle) {
-      throw new Error('Vui lòng nhập tên field.');
+      throw new Error(i18n.t('topicManagement.fieldNameRequired'));
     }
 
     const targetTopic = topics.find((topic) => Number(topic?.topicId) === normalizedTopicId);
     if (!targetTopic) {
-      throw new Error('Không tìm thấy topic đã chọn.');
+      throw new Error(i18n.t('topicManagement.topicNotFound'));
     }
 
     const currentFields = Array.isArray(targetTopic.fields) ? targetTopic.fields : [];
@@ -204,7 +204,7 @@ function TopicManagement() {
       (field) => String(field?.title || '').trim().toLowerCase() === trimmedTitle.toLowerCase()
     );
     if (fieldExists) {
-      throw new Error('Field này đã tồn tại trong topic.');
+      throw new Error(i18n.t('topicManagement.fieldExists'));
     }
 
     const maxFieldId = currentFields.reduce((currentMax, field) => {

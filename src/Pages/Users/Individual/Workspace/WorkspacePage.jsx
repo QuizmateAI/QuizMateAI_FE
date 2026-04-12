@@ -1675,13 +1675,9 @@ function WorkspacePage() {
 
       showSuccess(
         shouldShare
-          ? t(
-              "workspace.quiz.sharedToCommunitySuccess",
-              "Đã chia sẻ quiz lên cộng đồng.",
+          ? t("workspace.quiz.sharedToCommunitySuccess", "Quiz shared to the community.",
             )
-          : t(
-              "workspace.quiz.unsharedFromCommunitySuccess",
-              "Đã chuyển quiz về private.",
+          : t("workspace.quiz.unsharedFromCommunitySuccess", "Quiz moved back to private.",
             ),
       );
     },

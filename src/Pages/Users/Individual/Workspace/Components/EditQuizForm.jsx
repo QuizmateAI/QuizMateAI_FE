@@ -201,9 +201,9 @@ function EditQuizForm({
         return;
       }
       if (trimmedName.length > QUIZ_TITLE_MAX_LENGTH) {
-        setError(t("workspace.quiz.validation.nameMaxLength", {
+        setError(t("editQuizForm.nameMaxLength", {
           max: QUIZ_TITLE_MAX_LENGTH,
-          defaultValue: `Tên bài kiểm tra tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+          defaultValue: `Quiz title must be at most ${QUIZ_TITLE_MAX_LENGTH} characters.`,
         }));
         setSubmitting(false);
         return;
@@ -412,9 +412,9 @@ function EditQuizForm({
             onChange={(e) => setName(normalizeQuizTitleInput(e.target.value))}
           />
           <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-            {t("workspace.quiz.validation.nameMaxLengthHint", {
+            {t("editQuizForm.nameMaxLengthHint", {
               max: QUIZ_TITLE_MAX_LENGTH,
-              defaultValue: `Tối đa ${QUIZ_TITLE_MAX_LENGTH} ký tự.`,
+              defaultValue: `Maximum ${QUIZ_TITLE_MAX_LENGTH} characters.`,
             })}
           </p>
         </div>
@@ -524,10 +524,10 @@ function EditQuizForm({
                   value={jumpTarget}
                   onChange={(e) => jumpToQuestion(e.target.value)}
                 >
-                  <option value="">{t("workspace.quiz.edit.selectQuestion", { defaultValue: "Chọn câu" })}</option>
+                  <option value="">{t("editQuizForm.selectQuestion", { defaultValue: "Select a question" })}</option>
                   {questions.map((q, idx) => (
                     <option key={q.questionId || `jump-${idx}`} value={idx + 1}>
-                      {t("workspace.quiz.edit.questionOption", { defaultValue: "Câu {{number}}", number: idx + 1 })}
+                      {t("editQuizForm.questionOption", { defaultValue: "Question {{number}}", number: idx + 1 })}
                     </option>
                   ))}
                 </select>

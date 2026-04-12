@@ -190,8 +190,8 @@ function resolveVisibilityMeta(isCommunityShared, isDarkMode, t) {
   if (isCommunityShared) {
     return {
       icon: Globe,
-      shortLabel: t("workspace.quiz.communityPublic", "Đã public"),
-      longLabel: t("workspace.quiz.communityPublicLong", "Đã public lên cộng đồng"),
+      shortLabel: t("roadmapQuizListView.visibility.communityPublicShort", "Public"),
+      longLabel: t("roadmapQuizListView.visibility.communityPublicLong", "Shared with community"),
       lightClassName: "bg-emerald-100 text-emerald-700",
       darkClassName: "bg-emerald-950/50 text-emerald-300",
     };
@@ -199,8 +199,8 @@ function resolveVisibilityMeta(isCommunityShared, isDarkMode, t) {
 
   return {
     icon: Lock,
-    shortLabel: t("workspace.quiz.privateShort", "Riêng tư"),
-    longLabel: t("workspace.quiz.privateLong", "Đang ở chế độ private"),
+    shortLabel: t("roadmapQuizListView.visibility.privateShort", "Private"),
+    longLabel: t("roadmapQuizListView.visibility.privateLong", "Currently private"),
     lightClassName: "bg-slate-100 text-slate-700",
     darkClassName: "bg-slate-800 text-slate-300",
   };
@@ -575,7 +575,7 @@ function QuizListView({
       setDeleteTargetQuiz(null);
     } catch (err) {
       console.error("Lỗi khi xóa quiz:", err);
-      showError(err?.message || t("workspace.quiz.deleteFail", "Xóa quiz thất bại"));
+      showError(err?.message || t("roadmapQuizListView.errors.deleteFail", "Failed to delete quiz"));
     } finally {
       setDeletingId(null);
     }
@@ -602,8 +602,8 @@ function QuizListView({
       <DirectFeedbackButton
         targetType="QUIZ"
         targetId={quizId}
-        label={t("feedback", "Feedback")}
-        title={t("feedback", "Feedback")}
+        label={t("roadmapQuizListView.feedback.button", "Feedback")}
+        title={t("roadmapQuizListView.feedback.button", "Feedback")}
         isDarkMode={isDarkMode}
         className={className}
         onSubmitted={() => handleQuizFeedbackSubmitted(quizId)}
@@ -639,7 +639,7 @@ function QuizListView({
       quizGenerationProgressByQuizId,
     );
     const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
-    const statusLabel = t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus || "DRAFT");
+    const statusLabel = t(`roadmapQuizListView.statusLabels.${normalizedStatus}`, normalizedStatus || "DRAFT");
     const questionCount = Number(quiz?.questionCount ?? quiz?.totalQuestion ?? quiz?.totalQuestions ?? 0) || 0;
     const maxAttempt = Number(quiz?.maxAttempt);
     const attemptCount = Number(quiz?.attemptCount ?? quiz?.attemptsCount ?? quiz?.myAttemptCount);
@@ -653,13 +653,13 @@ function QuizListView({
     const updatedLabel = formatCardDate(quiz.updatedAt || quiz.createdAt);
     const overviewStats = [
       {
-        label: t("workspace.quiz.roadmapOverview.questions", "Câu hỏi"),
+        label: t("roadmapQuizListView.roadmapOverview.questions", "Questions"),
         value: questionCount > 0 ? String(questionCount) : "-",
-        hint: questionCount > 0 ? t("workspace.quiz.roadmapOverview.questionsHint", "câu") : null,
+        hint: questionCount > 0 ? t("roadmapQuizListView.roadmapOverview.questionsHint", "questions") : null,
         icon: BadgeCheck,
       },
       {
-        label: t("workspace.quiz.roadmapOverview.attempts", "Số lần làm"),
+        label: t("roadmapQuizListView.roadmapOverview.attempts", "Attempts"),
         value: maxAttempt > 0
           ? `${resolvedAttemptCount ?? "-"} / ${maxAttempt}`
           : (resolvedAttemptCount != null ? String(resolvedAttemptCount) : "-"),
@@ -667,15 +667,15 @@ function QuizListView({
         icon: RefreshCw,
       },
       {
-        label: t("workspace.quiz.roadmapOverview.duration", "Thời gian"),
+        label: t("roadmapQuizListView.roadmapOverview.duration", "Duration"),
         value: durationInMinutes > 0 ? String(durationInMinutes) : "-",
-        hint: durationInMinutes > 0 ? t("workspace.quiz.minutesShort", "phút") : null,
+        hint: durationInMinutes > 0 ? t("roadmapQuizListView.card.minutesShort", "min") : null,
         icon: Timer,
       },
       {
         label: resolvedScoreValue != null
-          ? t("workspace.quiz.roadmapOverview.score", "Điểm")
-          : t("workspace.quiz.roadmapOverview.passScore", "Ngưỡng đạt"),
+          ? t("roadmapQuizListView.roadmapOverview.score", "Score")
+          : t("roadmapQuizListView.roadmapOverview.passScore", "Pass score"),
         value: resolvedScoreValue != null
           ? (
             maxScore > 0
@@ -698,12 +698,13 @@ function QuizListView({
     const resultLabel = myAttempted
       ? (
         myPassed
-          ? t("workspace.quiz.myPassedTrue", "Đã đậu")
-          : t("workspace.quiz.myPassedFalse", "Chưa đậu")
+          ? t("roadmapQuizListView.result.passed", "Passed")
+          : t("roadmapQuizListView.result.notPassed", "Not passed")
       )
-      : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
-    const roadmapExamLabel = "Kiểm tra";
-    const roadmapRetakeExamLabel = "Kiểm tra lại";
+      : t("roadmapQuizListView.result.notAttempted", "Not attempted");
+    const shouldShowResultPill = !myAttempted || myPassed;
+    const roadmapExamLabel = t("roadmapQuizListView.actions.exam", "Exam");
+    const roadmapRetakeExamLabel = t("roadmapQuizListView.actions.retakeExam", "Retake");
 
     return (
       <div
@@ -725,21 +726,21 @@ function QuizListView({
                 {questionCount > 0 ? (
                   <span className="flex items-center gap-1.5">
                     <BadgeCheck className="h-4 w-4" />
-                    {questionCount} {t("workspace.quiz.roadmapOverview.questionsHint", "câu")}
+                    {questionCount} {t("roadmapQuizListView.roadmapOverview.questionsHint", "questions")}
                   </span>
                 ) : null}
                 {updatedLabel ? (
                   <span className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4" />
-                    {t("workspace.quiz.roadmapOverview.updatedOn", "Cập nhật")} {updatedLabel}
+                    {t("roadmapQuizListView.roadmapOverview.updatedOn", "Updated")} {updatedLabel}
                   </span>
                 ) : null}
                 {quiz.overallDifficulty ? (
                   <span className={`inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
                     <BarChart3 className="h-3.5 w-3.5" />
                     {difficultyKey === "CUSTOM"
-                      ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
-                      : t(`workspace.quiz.difficultyLevels.${String(quiz.overallDifficulty).toLowerCase()}`)}
+                      ? t("roadmapQuizListView.difficultyLevels.custom", "Custom")
+                      : t(`roadmapQuizListView.difficultyLevels.${String(quiz.overallDifficulty).toLowerCase()}`, String(quiz.overallDifficulty))}
                   </span>
                 ) : null}
               </div>
@@ -790,13 +791,13 @@ function QuizListView({
                     : (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
                 }`}>
                   {quiz.timerMode
-                    ? t("workspace.quiz.examModeType1", "Exam giới hạn thời gian tổng")
-                    : t("workspace.quiz.examModeType2", "Exam theo từng câu")}
+                    ? t("roadmapQuizListView.examMode.totalTimer", "Total time limit exam")
+                    : t("roadmapQuizListView.examMode.perQuestion", "Per-question exam")}
                 </span>
               ) : null}
               {quiz.quizIntent && !shouldHideRoadmapIntentBadge ? (
                 <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${isDarkMode ? is.dark || "bg-slate-800 text-slate-400" : is.light || "bg-slate-100 text-slate-600"}`}>
-                  {t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)}
+                  {t(`roadmapQuizListView.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)}
                 </span>
               ) : null}
               {!shouldHideActiveStatusBadge ? (
@@ -804,15 +805,15 @@ function QuizListView({
                   {statusLabel}
                 </span>
               ) : null}
-              <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${
-                myPassed
-                  ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
-                  : myAttempted
-                    ? (isDarkMode ? "bg-amber-950/40 text-amber-300" : "bg-amber-100 text-amber-700")
+              {shouldShowResultPill ? (
+                <span className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${
+                  myPassed
+                    ? (isDarkMode ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700")
                     : (isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600")
-              }`}>
-                {resultLabel}
-              </span>
+                }`}>
+                  {resultLabel}
+                </span>
+              ) : null}
             </div>
 
             <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -828,7 +829,7 @@ function QuizListView({
                 <div className={`min-w-[170px] rounded-2xl border px-4 py-3 ${isDarkMode ? "border-sky-900/60 bg-sky-950/20" : "border-sky-200 bg-sky-50/70"}`}>
                   <div className="flex items-center justify-between gap-3">
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                      {t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}
+                      {t("roadmapQuizListView.processing.label", "Generating quiz")}
                     </span>
                     <span className={`text-xs font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
                       {processingPercent}%
@@ -890,12 +891,12 @@ function QuizListView({
             className={`rounded-full h-9 px-4 flex items-center gap-2 ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : ""}`}
           >
             <Globe className="w-4 h-4" />
-            <span className="text-sm">{t("workspace.quiz.communityExplorer.title", "Community Quiz")}</span>
+            <span className="text-sm">{t("roadmapQuizListView.header.communityExplorer", "Community Quiz")}</span>
           </Button>
           ) : null}
           {!hideCreateButton ? (
           <Button disabled={disableCreate} onClick={onCreateQuiz} className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]">
-            <Plus className="w-4 h-4" /><span className="text-sm">{t("workspace.listView.create")}</span>
+            <Plus className="w-4 h-4" /><span className="text-sm">{t("roadmapQuizListView.header.create", "Create")}</span>
           </Button>
           ) : null}
         </div>
@@ -907,7 +908,7 @@ function QuizListView({
       <div className="px-4 py-3 flex flex-col gap-3">
         <div className="relative max-w-sm">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("workspace.listView.searchPlaceholder")}
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("roadmapQuizListView.search.placeholder", "Search quizzes...")}
             className={`w-full pl-9 pr-9 py-2 rounded-xl text-sm border outline-none transition-colors ${isDarkMode ? "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500" : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-blue-500"}`} />
           {searchQuery && <button onClick={() => setSearchQuery("")} className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}><X className="w-4 h-4" /></button>}
         </div>
@@ -918,7 +919,7 @@ function QuizListView({
                 ? isDarkMode ? "bg-blue-950/50 text-blue-400" : "bg-blue-100 text-blue-700"
                 : isDarkMode ? "text-slate-400 hover:bg-slate-800" : "text-gray-500 hover:bg-gray-100"
               }`}>
-              {t(`workspace.quiz.statusFilter.${opt}`)}
+              {t(`roadmapQuizListView.statusFilter.${opt}`, opt)}
             </button>
           ))}
         </div>
@@ -930,13 +931,13 @@ function QuizListView({
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className={`w-8 h-8 animate-spin mb-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.quiz.loading")}</p>
+            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("roadmapQuizListView.empty.loading", "Loading quizzes...")}</p>
           </div>
         ) : quizzes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
             <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {t("workspace.roadmap.noQuizYet")}
+              {t("roadmapQuizListView.empty.noQuizYet", "No quizzes yet")}
             </p>
             {!hideCreateButton ? (
             <Button
@@ -945,14 +946,14 @@ function QuizListView({
               className="mt-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-full h-9 px-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2563EB]"
             >
               <Plus className="w-4 h-4" />
-              <span className="text-sm">{t("workspace.studio.actions.createQuiz")}</span>
+              <span className="text-sm">{t("roadmapQuizListView.empty.createQuiz", "Create quiz")}</span>
             </Button>
             ) : null}
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <FolderOpen className={`w-10 h-10 mb-2 ${isDarkMode ? "text-slate-600" : "text-gray-300"}`} />
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("workspace.listView.noResults")}</p>
+            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("roadmapQuizListView.empty.noResults", "No matching quizzes")}</p>
           </div>
         ) : (
           <div className={useLegacyRoadmapCards ? "space-y-2" : "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"}>
@@ -989,17 +990,17 @@ function QuizListView({
               const myAttempted = quiz?.myAttempted === true;
               const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
               const intentLabel = quiz?.quizIntent && !isRoadmapContextQuiz
-                ? t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)
+                ? t(`roadmapQuizListView.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)
                 : null;
               const timerLabel = typeof quiz.timerMode === "boolean"
                 ? (
                   quiz.timerMode
-                    ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
-                    : t("workspace.quiz.examModeType2Short", "Theo từng câu")
+                    ? t("roadmapQuizListView.examMode.totalTimerShort", "Total time limit")
+                    : t("roadmapQuizListView.examMode.perQuestionShort", "Per question")
                 )
                 : null;
               const specialStatusLabel = ["PROCESSING", "DRAFT", "ERROR"].includes(normalizedStatus)
-                ? t(`workspace.quiz.statusLabels.${normalizedStatus}`, normalizedStatus)
+                ? t(`roadmapQuizListView.statusLabels.${normalizedStatus}`, normalizedStatus)
                 : null;
               const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz && myAttempted;
               const showExamAction = normalizedStatus === "ACTIVE";
@@ -1035,8 +1036,8 @@ function QuizListView({
                         <div className="min-w-0">
                           <p className={`truncate text-[11px] font-semibold uppercase tracking-[0.18em] ${isDarkMode ? "text-slate-300" : "text-slate-500"}`}>
                             {quiz?.createVia === "AI"
-                              ? t("workspace.quiz.cardAiLabel", "QUIZMATE AI")
-                              : t("workspace.quiz.cardManualLabel", "Quiz thủ công")}
+                              ? t("roadmapQuizListView.card.aiLabel", "QUIZMATE AI")
+                              : t("roadmapQuizListView.card.manualLabel", "Manual quiz")}
                           </p>
                         </div>
                       </div>
@@ -1077,7 +1078,7 @@ function QuizListView({
                                     await onShareQuiz(quiz);
                                     await fetchQuizzes({ silent: true });
                                   } catch (error) {
-                                    showError(error?.message || t("home.actions.share", "Share"));
+                                    showError(error?.message || t("roadmapQuizListView.actions.share", "Share"));
                                   } finally {
                                     setSharingQuizId(null);
                                   }
@@ -1093,8 +1094,8 @@ function QuizListView({
                                 )}
                                 <span>
                                   {isCommunityShared
-                                    ? t("workspace.quiz.makePrivateShort", "Riêng tư")
-                                    : t("workspace.quiz.makePublicShort", "Công khai")}
+                                    ? t("roadmapQuizListView.actions.makePrivateShort", "Private")
+                                    : t("roadmapQuizListView.actions.makePublicShort", "Public")}
                                 </span>
                               </DropdownMenuItem>
                             ) : null}
@@ -1108,7 +1109,7 @@ function QuizListView({
                               ) : (
                                 <Trash2 className="h-4 w-4" />
                               )}
-                              <span>{t("workspace.quiz.deleteQuiz")}</span>
+                              <span>{t("roadmapQuizListView.actions.deleteQuiz", "Delete quiz")}</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1136,10 +1137,10 @@ function QuizListView({
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
-                              {t("workspace.quiz.processingProgressLabel", "Đang tạo quiz")}
+                              {t("roadmapQuizListView.processing.label", "Generating quiz")}
                             </p>
                             <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                              {t("workspace.quiz.processingProgressHint", "Hệ thống đang sinh câu hỏi và cấu hình bài kiểm tra.")}
+                              {t("roadmapQuizListView.processing.hint", "The system is generating questions and configuring the quiz.")}
                             </p>
                           </div>
                           <span className={`shrink-0 text-sm font-semibold tabular-nums ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
@@ -1157,23 +1158,23 @@ function QuizListView({
                       <div className="grid grid-cols-2 gap-2.5">
                         <div className={`rounded-[20px] border px-3 py-3 ${isDarkMode ? "border-slate-700/50 bg-slate-800/50" : "border-slate-200 bg-slate-50"}`}>
                           <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400/80" : "text-slate-500"}`}>
-                            {t("workspace.quiz.timeDuration", "Thời gian")}
+                            {t("roadmapQuizListView.card.timeDuration", "Duration")}
                           </p>
                           <p className={`mt-2 flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
                             <Timer className="h-3.5 w-3.5" />
-                            <span>{durationInMinutes > 0 ? `${durationInMinutes} ${t("workspace.quiz.minutes", "phút")}` : "-"}</span>
+                            <span>{durationInMinutes > 0 ? `${durationInMinutes} ${t("roadmapQuizListView.card.minutes", "min")}` : "-"}</span>
                           </p>
                         </div>
                         <div className={`rounded-[20px] border px-3 py-3 ${isDarkMode ? "border-slate-700/50 bg-slate-800/50" : "border-slate-200 bg-slate-50"}`}>
                           <p className={`text-[11px] uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-400/80" : "text-slate-500"}`}>
-                            {t("workspace.quiz.overallDifficulty", "Độ khó")}
+                            {t("roadmapQuizListView.card.overallDifficulty", "Difficulty")}
                           </p>
                           <span className={`mt-2 inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none ${isDarkMode ? difficultyMeta.dark : difficultyMeta.light}`}>
                             <BarChart3 className="h-3.5 w-3.5" />
                             <span>
                               {difficultyKey === "CUSTOM"
-                                ? t("workspace.quiz.difficultyLevels.custom", "Tùy chỉnh")
-                                : t(`workspace.quiz.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`)}
+                                ? t("roadmapQuizListView.difficultyLevels.custom", "Custom")
+                                : t(`roadmapQuizListView.difficultyLevels.${String(quiz?.overallDifficulty || "medium").toLowerCase()}`, String(quiz?.overallDifficulty || "medium"))}
                             </span>
                           </span>
                         </div>
@@ -1201,20 +1202,20 @@ function QuizListView({
                           <button
                             onClick={(e) => { e.stopPropagation(); handleStartQuiz('practice', quiz.quizId); }}
                             className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${isDarkMode ? "border-blue-900/50 bg-blue-950/20 text-blue-300 hover:bg-blue-900/30" : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"}`}
-                            title={t("workspace.quiz.practice", "Luyện tập")}
+                            title={t("roadmapQuizListView.actions.practice", "Practice")}
                           >
                             <Play className="h-4.5 w-4.5" />
-                            <span>{t("workspace.quiz.practice", "Luyện tập")}</span>
+                            <span>{t("roadmapQuizListView.actions.practice", "Practice")}</span>
                           </button>
                         ) : null}
                         {showExamAction ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); setExamStartQuiz(quiz); }}
                             className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors ${isDarkMode ? "border-emerald-900/50 bg-emerald-950/20 text-emerald-300 hover:bg-emerald-900/30" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
-                            title={t("workspace.quiz.exam", "Kiểm tra")}
+                            title={t("roadmapQuizListView.actions.exam", "Exam")}
                           >
                             <ClipboardCheck className="h-4.5 w-4.5" />
-                            <span>{t("workspace.quiz.exam", "Kiểm tra")}</span>
+                            <span>{t("roadmapQuizListView.actions.exam", "Exam")}</span>
                           </button>
                         ) : null}
                         {showFeedbackAction ? (
@@ -1242,17 +1243,17 @@ function QuizListView({
       <Dialog open={Boolean(examStartQuiz)} onOpenChange={(open) => { if (!open) setExamStartQuiz(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.exam", "KIểm tra")}</DialogTitle>
+            <DialogTitle>{t("roadmapQuizListView.dialog.examTitle", "Exam")}</DialogTitle>
             <DialogDescription>
-              {t("workspace.quiz.startExamPrompt", "Xác nhận bắt đầu ở chế độ kiểm tra?")}
+              {t("roadmapQuizListView.dialog.startExamPrompt", "Confirm starting in exam mode?")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setExamStartQuiz(null)}>
-              {t("workspace.quiz.close", "Đóng")}
+              {t("roadmapQuizListView.actions.close", "Close")}
             </Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleConfirmExamStart}>
-              {t("workspace.quiz.header.confirm", "Confirm")}
+              {t("roadmapQuizListView.actions.confirm", "Confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1266,13 +1267,13 @@ function QuizListView({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("workspace.quiz.deleteQuiz", "Xóa quiz")}</DialogTitle>
+            <DialogTitle>{t("roadmapQuizListView.dialog.deleteTitle", "Delete quiz")}</DialogTitle>
             <DialogDescription className="space-y-2">
               <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">
                 {deleteTargetQuiz?.title}
               </span>
               <span className="block">
-                {t("workspace.quiz.deleteConfirm", "Bạn có chắc chắn không?")}
+                {t("roadmapQuizListView.dialog.deleteConfirm", "Are you sure?")}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -1282,7 +1283,7 @@ function QuizListView({
               onClick={() => setDeleteTargetQuiz(null)}
               disabled={Boolean(deletingId)}
             >
-              {t("workspace.quiz.close", "Đóng")}
+              {t("roadmapQuizListView.actions.close", "Close")}
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -1290,8 +1291,8 @@ function QuizListView({
               disabled={Boolean(deletingId)}
             >
               {deletingId
-                ? t("workspace.quiz.actionButtons.deleting", "Deleting...")
-                : t("workspace.quiz.actionButtons.delete", "Delete")}
+                ? t("roadmapQuizListView.actions.deleting", "Deleting...")
+                : t("roadmapQuizListView.actions.delete", "Delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

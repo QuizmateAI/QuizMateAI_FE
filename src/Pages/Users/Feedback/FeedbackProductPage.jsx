@@ -1,4 +1,5 @@
 import { MessageSquareHeart, Ticket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/Components/ui/button';
 import {
   FeedbackEmptyState,
@@ -10,10 +11,10 @@ import {
 import { cn } from '@/lib/utils';
 
 function FeedbackProductPage() {
+  const { t } = useTranslation();
   const {
     currentLang,
     isDarkMode,
-    isEnglish,
     locale,
     loading,
     openTicketDialog,
@@ -33,11 +34,9 @@ function FeedbackProductPage() {
                 <MessageSquareHeart className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold">{isEnglish ? 'Product queue' : 'Khu feedback product'}</h2>
+                <h2 className="text-lg font-semibold">{t('feedbackChannelPages.product.heroTitle', 'Product queue')}</h2>
                 <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish
-                    ? 'Report bugs, ask for support, or request missing product flows here.'
-                    : 'Báo lỗi, yêu cầu hỗ trợ hoặc phản ánh các flow sản phẩm còn thiếu tại đây.'}
+                  {t('feedbackChannelPages.product.heroDescription', 'Report bugs, ask for support, or request missing product flows here.')}
                 </p>
               </div>
             </div>
@@ -45,28 +44,28 @@ function FeedbackProductPage() {
 
           <Button type="button" onClick={() => openTicketDialog('PRODUCT')}>
             <Ticket className="h-4 w-4" />
-            <span>{isEnglish ? 'Send product ticket' : 'Gửi ticket product'}</span>
+            <span>{t('feedbackChannelPages.product.sendTicket', 'Send product ticket')}</span>
           </Button>
         </div>
       </FeedbackSectionCard>
 
       <div className="grid gap-4 md:grid-cols-3">
         <FeedbackSummaryCard
-          title={isEnglish ? 'Total tickets' : 'Tổng ticket'}
+          title={t('feedbackChannelPages.common.totalTickets', 'Total tickets')}
           value={productTickets.length}
-          helper={isEnglish ? 'All product-related requests from your account' : 'Tất cả yêu cầu liên quan đến product từ tài khoản của bạn'}
+          helper={t('feedbackChannelPages.product.totalHelper', 'All product-related requests from your account')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'Open / In progress' : 'Mới / Đang xử lý'}
+          title={t('feedbackChannelPages.common.openInProgress', 'Open / In progress')}
           value={openCount}
-          helper={isEnglish ? 'Issues still being handled by super admin' : 'Các vấn đề đang được super admin xử lý'}
+          helper={t('feedbackChannelPages.product.openHelper', 'Issues still being handled by super admin')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'Resolved / Closed' : 'Đã giải quyết / Đã đóng'}
+          title={t('feedbackChannelPages.common.resolvedClosed', 'Resolved / Closed')}
           value={resolvedCount}
-          helper={isEnglish ? 'Requests that already reached a final state' : 'Các yêu cầu đã đi tới trạng thái cuối'}
+          helper={t('feedbackChannelPages.product.resolvedHelper', 'Requests that already reached a final state')}
           isDarkMode={isDarkMode}
         />
       </div>
@@ -74,11 +73,9 @@ function FeedbackProductPage() {
       <FeedbackSectionCard isDarkMode={isDarkMode}>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{isEnglish ? 'Product tickets list' : 'Danh sách ticket product'}</h2>
+            <h2 className="text-lg font-semibold">{t('feedbackChannelPages.product.listTitle', 'Product tickets list')}</h2>
             <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-              {isEnglish
-                ? 'Track replies and handling progress without mixing in system incidents or surveys.'
-                : 'Theo dõi phản hồi và tiến độ xử lý mà không bị trộn với ticket system hoặc survey.'}
+              {t('feedbackChannelPages.product.listDescription', 'Track replies and handling progress without mixing in system incidents or surveys.')}
             </p>
           </div>
         </div>
@@ -86,14 +83,14 @@ function FeedbackProductPage() {
         <div className="mt-5 grid gap-4">
           {loading ? (
             <div className={cn('rounded-[24px] border px-6 py-10 text-center text-sm', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500')}>
-              {isEnglish ? 'Loading product tickets...' : 'Đang tải ticket product...'}
+              {t('feedbackChannelPages.product.loading', 'Loading product tickets...')}
             </div>
           ) : null}
 
           {!loading && productTickets.length === 0 ? (
             <FeedbackEmptyState
-              title={isEnglish ? 'No product ticket yet' : 'Bạn chưa gửi ticket product nào'}
-              description={isEnglish ? 'Open a ticket when product issues block your work.' : 'Tạo ticket khi vấn đề sản phẩm đang chặn công việc hoặc trải nghiệm học tập của bạn.'}
+              title={t('feedbackChannelPages.product.emptyTitle', 'No product ticket yet')}
+              description={t('feedbackChannelPages.product.emptyDescription', 'Open a ticket when product issues block your work.')}
               icon={MessageSquareHeart}
               isDarkMode={isDarkMode}
             />

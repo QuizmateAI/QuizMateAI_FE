@@ -1,4 +1,5 @@
 import { ClipboardList, Cpu, MessageSquareHeart, Ticket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Link } from 'react-router-dom';
@@ -14,10 +15,10 @@ import { buildFeedbacksPath } from '@/lib/routePaths';
 import { cn } from '@/lib/utils';
 
 function FeedbackCenterPage() {
+  const { t } = useTranslation();
   const {
     currentLang,
     isDarkMode,
-    isEnglish,
     locale,
     loading,
     openRequestDialog,
@@ -36,38 +37,39 @@ function FeedbackCenterPage() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-4">
         <FeedbackSummaryCard
-          title={isEnglish ? 'Pending surveys' : 'Survey đang chờ'}
+          title={t('feedbackCenterPage.summary.pendingSurveysTitle', 'Pending surveys')}
           value={requests.length}
-          helper={isEnglish ? 'Requests that still need your answers' : 'Các yêu cầu phản hồi bạn chưa trả lời'}
+          helper={t('feedbackCenterPage.summary.pendingSurveysHelper', 'Requests that still need your answers')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'Product tickets' : 'Ticket product'}
+          title={t('feedbackCenterPage.summary.productTicketsTitle', 'Product tickets')}
           value={ticketStats.product}
-          helper={isEnglish ? 'Bug reports, support requests, product blockers' : 'Báo lỗi, yêu cầu hỗ trợ và các vấn đề chặn luồng dùng sản phẩm'}
+          helper={t('feedbackCenterPage.summary.productTicketsHelper', 'Bug reports, support requests, product blockers')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'System tickets' : 'Ticket system'}
+          title={t('feedbackCenterPage.summary.systemTicketsTitle', 'System tickets')}
           value={ticketStats.system}
-          helper={isEnglish ? 'Platform incidents and infrastructure issues' : 'Sự cố nền tảng và các vấn đề vận hành hệ thống'}
+          helper={t('feedbackCenterPage.summary.systemTicketsHelper', 'Platform incidents and infrastructure issues')}
           isDarkMode={isDarkMode}
         />
         <FeedbackSummaryCard
-          title={isEnglish ? 'Open tickets' : 'Ticket đang xử lý'}
+          title={t('feedbackCenterPage.summary.openTicketsTitle', 'Open tickets')}
           value={ticketStats.active}
-          helper={isEnglish ? 'Open or in-progress product/system tickets' : 'Các ticket sản phẩm hoặc hệ thống đang mở hoặc đang xử lý'}
+          helper={t('feedbackCenterPage.summary.openTicketsHelper', 'Open or in-progress product/system tickets')}
           isDarkMode={isDarkMode}
         />
       </div>
 
       <FeedbackSectionCard isDarkMode={isDarkMode}>
         <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">{isEnglish ? 'Create a new ticket' : 'Tạo ticket mới'}</h2>
+          <h2 className="text-lg font-semibold">{t('feedbackCenterPage.createSection.title', 'Create a new ticket')}</h2>
           <p className={cn('text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-            {isEnglish
-              ? 'Choose the correct channel so super admin can pick up the issue in the right queue.'
-              : 'Chọn đúng kênh để super admin xử lý ở đúng hàng đợi phản hồi.'}
+            {t(
+              'feedbackCenterPage.createSection.description',
+              'Choose the correct channel so super admin can pick up the issue in the right queue.',
+            )}
           </p>
         </div>
 
@@ -78,22 +80,23 @@ function FeedbackCenterPage() {
                 <MessageSquareHeart className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold">{isEnglish ? 'Product feedback' : 'Feedback sản phẩm'}</h3>
+                <h3 className="text-base font-semibold">{t('feedbackCenterPage.createSection.productTitle', 'Product feedback')}</h3>
                 <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish
-                    ? 'Bugs, missing flows, support requests, or anything blocking normal product usage.'
-                    : 'Lỗi sản phẩm, thiếu flow, cần hỗ trợ sử dụng hoặc bất kỳ vấn đề nào chặn thao tác bình thường.'}
+                  {t(
+                    'feedbackCenterPage.createSection.productDescription',
+                    'Bugs, missing flows, support requests, or anything blocking normal product usage.',
+                  )}
                 </p>
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button type="button" onClick={() => openTicketDialog('PRODUCT')}>
                 <Ticket className="h-4 w-4" />
-                <span>{isEnglish ? 'Send product ticket' : 'Gửi ticket product'}</span>
+                <span>{t('feedbackCenterPage.createSection.sendProductTicket', 'Send product ticket')}</span>
               </Button>
               <Button asChild type="button" variant="outline" className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}>
                 <Link to={buildFeedbacksPath('product')}>
-                  {isEnglish ? 'Open product queue' : 'Mở khu product'}
+                  {t('feedbackCenterPage.createSection.openProductQueue', 'Open product queue')}
                 </Link>
               </Button>
             </div>
@@ -105,22 +108,23 @@ function FeedbackCenterPage() {
                 <Cpu className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-semibold">{isEnglish ? 'System feedback' : 'Feedback hệ thống'}</h3>
+                <h3 className="text-base font-semibold">{t('feedbackCenterPage.createSection.systemTitle', 'System feedback')}</h3>
                 <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish
-                    ? 'Platform incidents, unstable service, infrastructure errors, or operational issues.'
-                    : 'Sự cố nền tảng, lỗi hạ tầng, dịch vụ không ổn định hoặc các vấn đề vận hành hệ thống.'}
+                  {t(
+                    'feedbackCenterPage.createSection.systemDescription',
+                    'Platform incidents, unstable service, infrastructure errors, or operational issues.',
+                  )}
                 </p>
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button type="button" onClick={() => openTicketDialog('SYSTEM')}>
                 <Ticket className="h-4 w-4" />
-                <span>{isEnglish ? 'Send system ticket' : 'Gửi ticket system'}</span>
+                <span>{t('feedbackCenterPage.createSection.sendSystemTicket', 'Send system ticket')}</span>
               </Button>
               <Button asChild type="button" variant="outline" className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}>
                 <Link to={buildFeedbacksPath('system')}>
-                  {isEnglish ? 'Open system queue' : 'Mở khu system'}
+                  {t('feedbackCenterPage.createSection.openSystemQueue', 'Open system queue')}
                 </Link>
               </Button>
             </div>
@@ -132,11 +136,12 @@ function FeedbackCenterPage() {
         <FeedbackSectionCard isDarkMode={isDarkMode}>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold">{isEnglish ? 'Recent tickets' : 'Ticket gần đây'}</h2>
+              <h2 className="text-lg font-semibold">{t('feedbackCenterPage.recentTickets.title', 'Recent tickets')}</h2>
               <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                {isEnglish
-                  ? 'The latest feedback handled inside the dedicated product and system queues.'
-                  : 'Các ticket mới nhất đang được xử lý trong hai hàng đợi product và system.'}
+                {t(
+                  'feedbackCenterPage.recentTickets.description',
+                  'The latest feedback handled inside the dedicated product and system queues.',
+                )}
               </p>
             </div>
             <Badge variant="secondary">{ticketStats.total}</Badge>
@@ -145,14 +150,14 @@ function FeedbackCenterPage() {
           <div className="mt-5 grid gap-4">
             {loading ? (
               <div className={cn('rounded-[24px] border px-6 py-10 text-center text-sm', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500')}>
-                {isEnglish ? 'Loading tickets...' : 'Đang tải ticket...'}
+                {t('feedbackCenterPage.recentTickets.loading', 'Loading tickets...')}
               </div>
             ) : null}
 
             {!loading && recentTickets.length === 0 ? (
               <FeedbackEmptyState
-                title={isEnglish ? 'No ticket yet' : 'Chưa có ticket nào'}
-                description={isEnglish ? 'Create a product or system ticket to start the feedback flow.' : 'Tạo ticket product hoặc system để bắt đầu luồng feedback.'}
+                title={t('feedbackCenterPage.recentTickets.emptyTitle', 'No ticket yet')}
+                description={t('feedbackCenterPage.recentTickets.emptyDescription', 'Create a product or system ticket to start the feedback flow.')}
                 icon={Ticket}
                 isDarkMode={isDarkMode}
               />
@@ -172,7 +177,7 @@ function FeedbackCenterPage() {
           {!loading && tickets.length > 3 ? (
             <Button asChild type="button" variant="outline" className={cn('mt-5', isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : '')}>
               <Link to={buildFeedbacksPath(productTickets.length >= systemTickets.length ? 'product' : 'system')}>
-                {isEnglish ? 'Open ticket queues' : 'Mở các hàng đợi ticket'}
+                {t('feedbackCenterPage.recentTickets.openQueues', 'Open ticket queues')}
               </Link>
             </Button>
           ) : null}
@@ -181,11 +186,12 @@ function FeedbackCenterPage() {
         <FeedbackSectionCard isDarkMode={isDarkMode}>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold">{isEnglish ? 'Pending surveys' : 'Survey đang chờ'}</h2>
+              <h2 className="text-lg font-semibold">{t('feedbackCenterPage.pendingSurveys.title', 'Pending surveys')}</h2>
               <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                {isEnglish
-                  ? 'Scheduled feedback requests are separated into their own survey queue.'
-                  : 'Các survey phản hồi theo lịch được tách riêng thành một hàng đợi riêng.'}
+                {t(
+                  'feedbackCenterPage.pendingSurveys.description',
+                  'Scheduled feedback requests are separated into their own survey queue.',
+                )}
               </p>
             </div>
             <Badge variant="secondary">{requests.length}</Badge>
@@ -194,8 +200,8 @@ function FeedbackCenterPage() {
           <div className="mt-5 grid gap-4">
             {!loading && recentRequests.length === 0 ? (
               <FeedbackEmptyState
-                title={isEnglish ? 'No pending survey right now' : 'Hiện chưa có survey nào đang chờ'}
-                description={isEnglish ? 'When the system creates a scheduled survey, it will appear here.' : 'Khi hệ thống tạo survey theo lịch, nội dung sẽ xuất hiện ở đây.'}
+                title={t('feedbackCenterPage.pendingSurveys.emptyTitle', 'No pending survey right now')}
+                description={t('feedbackCenterPage.pendingSurveys.emptyDescription', 'When the system creates a scheduled survey, it will appear here.')}
                 icon={ClipboardList}
                 isDarkMode={isDarkMode}
               />
@@ -216,7 +222,7 @@ function FeedbackCenterPage() {
           {!loading && requests.length > 3 ? (
             <Button asChild type="button" variant="outline" className={cn('mt-5', isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : '')}>
               <Link to={buildFeedbacksPath('surveys')}>
-                {isEnglish ? 'Open survey queue' : 'Mở khu survey'}
+                {t('feedbackCenterPage.pendingSurveys.openQueue', 'Open survey queue')}
               </Link>
             </Button>
           ) : null}

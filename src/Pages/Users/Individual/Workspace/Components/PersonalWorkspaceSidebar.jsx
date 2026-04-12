@@ -386,33 +386,33 @@ function PersonalWorkspaceSidebar({
         <DialogContent className={workspaceShellTheme.page}>
           <DialogHeader>
             <DialogTitle className={fontClass}>
-              {t("workspace.shell.editWorkspaceTitle", "Chỉnh sửa không gian học tập")}
+              {t("workspace.shell.editWorkspaceTitle", "Edit workspace")}
             </DialogTitle>
             <DialogDescription className={fontClass}>
-              {t("workspace.shell.editWorkspaceDescription", "Cập nhật tên và mô tả cho không gian học tập này.")}
+              {t("workspace.shell.editWorkspaceDescription", "Update the name and description for this workspace.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className={cn("text-sm font-medium", fontClass)}>
-                {t("workspace.shell.editWorkspaceNameLabel", "Tên không gian")}
+                {t("workspace.shell.editWorkspaceNameLabel", "Workspace name")}
               </label>
               <Input
                 value={editTitle}
                 onChange={(event) => setEditTitle(event.target.value)}
                 className={workspaceShellTheme.input}
-                placeholder={t("workspace.shell.editWorkspaceNamePlaceholder", "Nhập tên không gian học tập...")}
+                placeholder={t("workspace.shell.editWorkspaceNamePlaceholder", "Enter workspace name...")}
               />
             </div>
             <div className="space-y-1.5">
               <label className={cn("text-sm font-medium", fontClass)}>
-                {t("workspace.shell.editWorkspaceDescriptionLabel", "Mô tả")}
+                {t("workspace.shell.editWorkspaceDescriptionLabel", "Description")}
               </label>
               <Input
                 value={editDescription}
                 onChange={(event) => setEditDescription(event.target.value)}
                 className={workspaceShellTheme.input}
-                placeholder={t("workspace.shell.editWorkspaceDescriptionPlaceholder", "Nhập mô tả ngắn cho không gian học tập...")}
+                placeholder={t("workspace.shell.editWorkspaceDescriptionPlaceholder", "Enter a short workspace description...")}
               />
             </div>
           </div>

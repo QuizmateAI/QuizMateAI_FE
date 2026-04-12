@@ -208,7 +208,7 @@ function PracticeSidebar({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            {t('workspace.quiz.practiceActions.questionListTitle', 'Danh sách câu hỏi')}
+            {t('workspace.quiz.practiceActions.questionListTitle', 'Question list')}
           </h3>
           <span className="text-xs text-slate-500 dark:text-slate-400">
             {currentIndex + 1}/{questions.length}
@@ -269,7 +269,7 @@ function PracticeSidebar({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">
-                      {t('workspace.quiz.practiceActions.questionLabel', 'Câu hỏi')} {index + 1}
+                      {t('workspace.quiz.practiceActions.questionLabel', 'Question')} {index + 1}
                     </p>
                     <p className="overflow-hidden text-ellipsis whitespace-nowrap text-xs opacity-70">{question.content}</p>
                   </div>
@@ -407,7 +407,7 @@ export default function PracticeQuizPage() {
       setIsStarted(true);
     } catch (err) {
       console.error('Failed to start attempt:', err);
-      const message = err?.message || t('workspace.quiz.practiceActions.startFailed', 'Không thể bắt đầu chế độ luyện tập. Vui lòng thử lại.');
+      const message = err?.message || t('workspace.quiz.practiceActions.startFailed', 'Could not start practice mode. Please try again.');
       setActionError(message);
       showError(message);
 
@@ -428,7 +428,7 @@ export default function PracticeQuizPage() {
     try {
       const payload = buildSingleQuestionPayload(currentQuestion, currentAnswerValue);
       if (!payload) {
-        throw new Error(t('workspace.quiz.practiceActions.invalidAnswer', 'Câu trả lời hiện tại không hợp lệ.'));
+        throw new Error(t('workspace.quiz.practiceActions.invalidAnswer', 'The current answer is invalid.'));
       }
 
       const res = await submitPracticeQuestion(attemptId, payload);
@@ -440,7 +440,7 @@ export default function PracticeQuizPage() {
       }));
     } catch (err) {
       console.error('Failed to submit practice question:', err);
-      const message = err?.message || t('workspace.quiz.practiceActions.checkFailed', 'Kiểm tra câu trả lời thất bại. Vui lòng thử lại.');
+      const message = err?.message || t('workspace.quiz.practiceActions.checkFailed', 'Failed to check the answer. Please try again.');
       setActionError(message);
       showError(message);
     } finally {
@@ -488,7 +488,7 @@ export default function PracticeQuizPage() {
       });
     } catch (err) {
       console.error('Failed to finish practice attempt:', err);
-      const message = err?.message || t('workspace.quiz.practiceActions.finishFailed', 'Không thể hoàn thành bài luyện tập. Vui lòng thử lại.');
+      const message = err?.message || t('workspace.quiz.practiceActions.finishFailed', 'Could not finish practice. Please try again.');
       setActionError(message);
       showError(message);
       setIsFinishing(false);
@@ -512,7 +512,7 @@ export default function PracticeQuizPage() {
   if (!quiz) {
     return (
       <div className={cn('flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900', fontClass)} style={quizFontStyle}>
-        <h2 className="text-xl text-slate-600 dark:text-slate-300">{t('workspace.quiz.result.notFound', 'Không tìm thấy quiz')}</h2>
+        <h2 className="text-xl text-slate-600 dark:text-slate-300">{t('workspace.quiz.result.notFound', 'Result not found')}</h2>
       </div>
     );
   }
@@ -522,7 +522,7 @@ export default function PracticeQuizPage() {
       <div className={cn('flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-900', fontClass)} style={quizFontStyle}>
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
         <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-          {t('workspace.quiz.practiceActions.finishing', 'Đang hoàn thành bài luyện tập...')}
+          {t('workspace.quiz.practiceActions.finishing', 'Finishing practice...')}
         </p>
       </div>
     );
@@ -534,7 +534,7 @@ export default function PracticeQuizPage() {
         <div className={cn('flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-900', fontClass)} style={quizFontStyle}>
           <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
           <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            {t('workspace.quiz.practiceActions.starting', 'Đang mở phòng luyện tập...')}
+            {t('workspace.quiz.practiceActions.starting', 'Opening practice room...')}
           </p>
         </div>
       );
@@ -559,7 +559,7 @@ export default function PracticeQuizPage() {
                   {total} {t('workspace.quiz.questions', 'questions')} • {t('workspace.quiz.practice', 'Practice mode')}
                 </span>
                 <span className="mt-3 block text-xs text-slate-500 dark:text-slate-400">
-                  {t('workspace.quiz.practiceActions.resumeHint', 'Nếu bạn đã làm dở, hệ thống sẽ mở lại đúng câu đang tiếp tục.')}
+                  {t('workspace.quiz.practiceActions.resumeHint', 'If you left midway, we will reopen the first unfinished question.')}
                 </span>
               </DialogDescription>
             </DialogHeader>
@@ -570,7 +570,7 @@ export default function PracticeQuizPage() {
             )}
             <DialogFooter className="gap-2 sm:justify-between">
               <Button variant="outline" onClick={handleCloseStartDialog}>
-                {t('workspace.quiz.header.cancel', 'Hủy')}
+                {t('workspace.quiz.header.cancel', 'Cancel')}
               </Button>
               <Button
                 disabled={isStarting}
@@ -578,8 +578,8 @@ export default function PracticeQuizPage() {
                 onClick={handleStart}
               >
                 {isStarting
-                  ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{t('workspace.quiz.practiceActions.starting', 'Đang mở phòng luyện tập...')}</span>
-                  : t('workspace.quiz.practiceActions.startButton', 'Bắt đầu luyện tập')}
+                  ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{t('workspace.quiz.practiceActions.starting', 'Opening practice room...')}</span>
+                  : t('workspace.quiz.practiceActions.startButton', 'Start Practice')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -594,8 +594,8 @@ export default function PracticeQuizPage() {
         onBack={handleHeaderBack}
         title={quiz.title}
         showConfirm={isStarted}
-        confirmTitle={t('workspace.quiz.practiceActions.confirmExitTitle', 'Thoát thực hành?')}
-        confirmDescription={t('workspace.quiz.practiceActions.confirmExitDescription', 'Câu bạn chưa kiểm tra có thể bị mất.')}
+        confirmTitle={t('workspace.quiz.practiceActions.confirmExitTitle', 'Leave practice mode?')}
+        confirmDescription={t('workspace.quiz.practiceActions.confirmExitDescription', 'Your unchecked answer may be lost.')}
       />
 
       <div className="mx-auto max-w-[1380px] px-4 py-6 md:px-6 md:py-8">
@@ -607,14 +607,14 @@ export default function PracticeQuizPage() {
               </p>
               <h1 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-50 md:text-3xl">{quiz.title}</h1>
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                {t('workspace.quiz.practiceActions.headerHint', 'Chọn đáp án, bấm kiểm tra để xem đúng sai và lời giải, rồi chuyển sang câu tiếp theo.')}
+                {t('workspace.quiz.practiceActions.headerHint', 'Choose an answer, press check to see the result and explanation, then move to the next question.')}
               </p>
             </div>
 
             <div className="flex min-w-[200px] items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900/80">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                  {t('workspace.quiz.practiceActions.currentQuestionLabel', 'Câu hiện tại')}
+                  {t('workspace.quiz.practiceActions.currentQuestionLabel', 'Current question')}
                 </p>
                 <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-50">
                   {currentIndex + 1}/{total}
@@ -622,7 +622,7 @@ export default function PracticeQuizPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                  {t('workspace.quiz.practiceActions.answeredLabel', 'Đã kiểm tra')}
+                  {t('workspace.quiz.practiceActions.answeredLabel', 'Checked')}
                 </p>
                 <p className="mt-1 text-xl font-bold text-emerald-600 dark:text-emerald-400">{answeredCount}</p>
               </div>
@@ -666,7 +666,7 @@ export default function PracticeQuizPage() {
                 disabled={currentIndex === 0 || isCheckingAnswer}
                 className="min-w-[140px] rounded-2xl border-slate-300 px-5 py-6 text-base dark:border-slate-600"
               >
-                {t('workspace.quiz.practiceActions.previousButton', 'Câu trước')}
+                {t('workspace.quiz.practiceActions.previousButton', 'Previous')}
               </Button>
 
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -677,8 +677,8 @@ export default function PracticeQuizPage() {
                     className="min-w-[180px] rounded-2xl bg-emerald-600 px-6 py-6 text-base font-semibold text-white hover:bg-emerald-700"
                   >
                     {isCheckingAnswer
-                      ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{t('workspace.quiz.practiceActions.checkingButton', 'Đang kiểm tra...')}</span>
-                      : t('workspace.quiz.practiceActions.checkButton', 'Kiểm tra')}
+                      ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{t('workspace.quiz.practiceActions.checkingButton', 'Checking...')}</span>
+                      : t('workspace.quiz.practiceActions.checkButton', 'Check answer')}
                   </Button>
                 ) : null}
 
@@ -687,7 +687,7 @@ export default function PracticeQuizPage() {
                     onClick={handleNext}
                     className="min-w-[180px] rounded-2xl bg-slate-900 px-6 py-6 text-base font-semibold text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                   >
-                    {t('workspace.quiz.practiceActions.nextButton', 'Câu tiếp theo')}
+                    {t('workspace.quiz.practiceActions.nextButton', 'Next question')}
                   </Button>
                 ) : null}
 
@@ -696,7 +696,7 @@ export default function PracticeQuizPage() {
                     onClick={handleFinish}
                     className="min-w-[180px] rounded-2xl bg-sky-600 px-6 py-6 text-base font-semibold text-white hover:bg-sky-700"
                   >
-                    {t('workspace.quiz.practiceActions.finishButton', 'Hoàn thành luyện tập')}
+                    {t('workspace.quiz.practiceActions.finishButton', 'Finish practice')}
                   </Button>
                 ) : null}
               </div>

@@ -52,7 +52,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       });
     return () => { cancelled = true; };
   }, [activeRoadmapId]);
-  const documentsHubLabel = i18n.language === "en" ? "Open documents hub" : "Mở trung tâm tài liệu";
+  const documentsHubLabel = t("groupWorkspace.chatPanel.openDocumentsHub", "Open documents hub");
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
     if (!workspaceId) return "view2";
@@ -333,7 +333,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
           />
         ) : null;
       case "createMockTest":
-        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
+        return <LazyCreateGroupMockTestForm isDarkMode={isDarkMode} workspaceId={workspaceId} onBack={onBack} onCreated={onCreateMockTest} />;
       case "createPostLearning":
         return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "mockTestDetail":

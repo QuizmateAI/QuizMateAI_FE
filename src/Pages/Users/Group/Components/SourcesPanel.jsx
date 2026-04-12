@@ -267,7 +267,7 @@ function SourcesPanel({
                   ? isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-50 hover:bg-gray-100"
                   : isDarkMode ? "bg-slate-800/70 text-slate-500 cursor-not-allowed" : "bg-gray-50 text-gray-400 cursor-not-allowed"
               }`}
-              title={!canOpenSourceDetail(source) ? "Tài liệu đang được xử lý, vui lòng đợi." : undefined}
+              title={!canOpenSourceDetail(source) ? t("groupSourcesPanel.sourceProcessingTooltip", "The source is being processed, please wait.") : undefined}
             >
               {getSourceDisplayIcon(source)}
             </button>
@@ -405,7 +405,7 @@ function SourcesPanel({
                   <div 
                     className={`shrink-0 ${canSelectSource(source) ? "cursor-pointer" : "cursor-not-allowed"}`}
                     onClick={() => canSelectSource(source) && toggleSelect(source.id)}
-                    title={isRejected ? "Không thể chọn tài liệu này" : undefined}
+                    title={isRejected ? t("groupSourcesPanel.cannotSelectTooltip", "This source cannot be selected") : undefined}
                   >
                     {isRejected
                       ? <Square className={`w-4 h-4 ${isDarkMode ? "text-red-800" : "text-red-300"} opacity-50`} />
@@ -422,7 +422,7 @@ function SourcesPanel({
                       if (!canOpenSourceDetail(source)) return;
                       setViewingSource(source);
                     }}
-                    title={!canOpenSourceDetail(source) ? (source.status?.toUpperCase() === "REJECT" ? "Tài liệu không liên quan đến học tập" : "Tài liệu đang được xử lý, vui lòng đợi.") : undefined}
+                    title={!canOpenSourceDetail(source) ? (source.status?.toUpperCase() === "REJECT" ? t("groupSourcesPanel.sourceIrrelevantTooltip", "This source is not relevant to learning") : t("groupSourcesPanel.sourceProcessingTooltip", "The source is being processed, please wait.")) : undefined}
                   >
                     {/* Icon trạng thái */}
                     {getSourceDisplayIcon(source)}
@@ -432,22 +432,22 @@ function SourcesPanel({
                         <span className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatFileType(source.type)}</span>
                         {source.status?.toUpperCase() === "ERROR" && (
                           <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-red-950/60 text-red-400" : "bg-red-100 text-red-600"}`}>
-                            Lỗi tải lên
+                            {t("groupSourcesPanel.uploadErrorBadge", "Upload failed")}
                           </span>
                         )}
                         {(source.status?.toUpperCase() === "WARN" || source.status?.toUpperCase() === "WARNED") && (
                           <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-amber-950/60 text-amber-400" : "bg-amber-100 text-amber-700"}`}>
-                            ⚠ Nội dung cảnh báo
+                            {t("groupSourcesPanel.warnContentBadge", "⚠ Content warning")}
                           </span>
                         )}
                         {(source.status?.toUpperCase() === "REJECT" || source.status?.toUpperCase() === "REJECTED") && (
                           <span className={`inline-flex items-center text-xs font-medium px-1.5 py-0.5 rounded-full ${isDarkMode ? "bg-red-950/60 text-red-400" : "bg-red-100 text-red-700"}`}>
-                            Không liên quan
+                            {t("groupSourcesPanel.irrelevantBadge", "Not relevant")}
                           </span>
                         )}
                         {source.status?.toUpperCase() === "PROCESSING" && (
                           <span className={`inline-flex items-center text-xs ${isDarkMode ? "text-blue-400" : "text-blue-500"}`}>
-                            Đang tải lên...
+                            {t("groupSourcesPanel.uploadingBadge", "Uploading...")}
                           </span>
                         )}
                         {!source.status || ["ACTIVE"].includes(source.status?.toUpperCase()) ? (
@@ -481,7 +481,7 @@ function SourcesPanel({
                       className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors ${
                         isDarkMode ? "text-slate-400 hover:bg-slate-700 hover:text-slate-200" : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                       } ${isMenuOpen ? (isDarkMode ? "bg-slate-700 text-slate-200" : "bg-gray-100 text-gray-700") : ""}`}
-                      aria-label="Tùy chọn"
+                      aria-label={t("groupSourcesPanel.optionsAriaLabel", "Options")}
                     >
                       <MoreHorizontal className="w-4 h-4" />
                     </button>

@@ -666,9 +666,9 @@ function AiCostManagement() {
               <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
                 <h3 className={`text-sm font-bold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('aiCosts.detail.formula')}</h3>
                 <div className="mt-4 space-y-2 text-sm">
-                  <p>{t('aiCosts.formula.chargedCredit', 'Credit người dùng trả')}: <span className="font-semibold">{formatInteger(detailRow.chargedCredit)} {t('aiCosts.units.credit')}</span></p>
+                  <p>{t('aiCosts.formula.chargedCredit', 'Charged credits')}: <span className="font-semibold">{formatInteger(detailRow.chargedCredit)} {t('aiCosts.units.credit')}</span></p>
                   <p>{t('aiCosts.formula.chargedVnd')}: <span className="font-semibold">{formatVnd(detailRow.chargedVnd)}</span></p>
-                  <p>{t('aiCosts.formula.actualCostTokens', 'Token thực tế')}: <span className="font-semibold">{formatEquivalentToken(detailActualTokenEquivalent, numberLocale)} {t('aiCosts.units.tokenEquivalent', { defaultValue: 'token' })}</span></p>
+                  <p>{t('aiCosts.formula.actualCostTokens', 'Actual-cost tokens')}: <span className="font-semibold">{formatEquivalentToken(detailActualTokenEquivalent, numberLocale)} {t('aiCosts.units.tokenEquivalent', { defaultValue: 'token' })}</span></p>
                   <p>{t('aiCosts.formula.providerCost')}: <span className="font-semibold">{formatVnd(detailRow.providerCostVnd)}</span></p>
                   <p>{t('aiCosts.formula.providerCostUsd', 'Provider cost (USD)')}: <span className="font-semibold">{formatUsd(detailRow.providerCostUsd)}</span></p>
                   <p>{t('aiCosts.formula.profit')}: <span className={`font-semibold ${isDetailProfitPositive ? 'text-emerald-500' : 'text-rose-500'}`}>{formatVnd(detailRow.profitVnd)}</span></p>

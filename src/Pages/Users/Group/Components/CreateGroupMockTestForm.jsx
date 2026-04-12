@@ -1,4 +1,5 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   Bot,
@@ -12,13 +13,6 @@ import { Button } from "@/Components/ui/button";
 import { generateGroupMockTestPreview } from "@/api/AIAPI";
 import { createFullQuiz } from "@/api/QuizAPI";
 
-const DIFFICULTY_LEVELS = [
-  { value: "easy", label: "Dễ" },
-  { value: "medium", label: "Trung bình" },
-  { value: "hard", label: "Khó" },
-];
-
-// Simulate AI polling progress animation
 function useProgressSim(active) {
   const [progress, setProgress] = useState(0);
   const timerRef = useRef(null);
@@ -27,13 +21,11 @@ function useProgressSim(active) {
     if (!active) {
       clearInterval(timerRef.current);
       timerRef.current = null;
-      // Reset progress when inactive (via functional update, avoids sync setState warning)
-      timerRef.current = null;
       return () => { setProgress(0); };
     }
     timerRef.current = setInterval(() => {
       setProgress((p) => {
-        if (p === 0) return 8; // first tick: initialize
+        if (p === 0) return 8;
         if (p >= 90) return p;
         if (p < 40) return Math.min(90, p + 14);
         if (p < 70) return Math.min(90, p + 8);
@@ -48,31 +40,29 @@ function useProgressSim(active) {
   return progress;
 }
 
-/**
- * CreateGroupMockTestForm
- * AI-only mock test creation for group workspace.
- * Leader picks one of two modes:
- *   - "examName" → nhập tên kỳ thi để AI tạo template tương ứng
- *   - "custom"   → nhập prompt tuỳ chỉnh
- * Flow: AI tạo template → leader xem trước → Áp dụng & Tạo Draft
- */
 export default function CreateGroupMockTestForm({
   isDarkMode = false,
   workspaceId,
   onBack,
-  onCreated, // callback(quiz) khi đã tạo xong draft
+  onCreated,
 }) {
-  // ── UI state ──
-  const [mode, setMode] = useState("examName"); // "examName" | "custom"
+  const { t } = useTranslation();
+
+  const DIFFICULTY_LEVELS = useMemo(() => [
+    { value: "easy", label: t("createGroupMockTestForm.difficulty.easy", "Easy") },
+    { value: "medium", label: t("createGroupMockTestForm.difficulty.medium", "Medium") },
+    { value: "hard", label: t("createGroupMockTestForm.difficulty.hard", "Hard") },
+  ], [t]);
+
+  const [mode, setMode] = useState("examName");
   const [examName, setExamName] = useState("");
   const [customPrompt, setCustomPrompt] = useState("");
   const [difficulty, setDifficulty] = useState("medium");
   const [totalQuestions, setTotalQuestions] = useState(30);
   const [duration, setDuration] = useState(60);
 
-  // ── Generation state ──
-  const [genPhase, setGenPhase] = useState("idle"); // "idle" | "generating" | "preview" | "applying" | "done" | "error"
-  const [template, setTemplate] = useState(null); // raw AI result
+  const [genPhase, setGenPhase] = useState("idle");
+  const [template, setTemplate] = useState(null);
   const [genError, setGenError] = useState("");
   const [applyError, setApplyError] = useState("");
 
@@ -80,7 +70,6 @@ export default function CreateGroupMockTestForm({
   const isApplying = genPhase === "applying";
   const simProgress = useProgressSim(isGenerating);
 
-  // ── Input helpers ──
   const inputCls = [
     "w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all",
     isDarkMode
@@ -90,7 +79,6 @@ export default function CreateGroupMockTestForm({
 
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"}`;
 
-  // ── Mode tab ──
   const tabBtn = (key, label) => (
     <button
       type="button"
@@ -110,7 +98,6 @@ export default function CreateGroupMockTestForm({
     </button>
   );
 
-  // ── Generate template ──
   const handleGenerate = useCallback(async () => {
     const prompt =
       mode === "examName"
@@ -120,8 +107,8 @@ export default function CreateGroupMockTestForm({
     if (!prompt) {
       setGenError(
         mode === "examName"
-          ? "Vui lòng nhập tên kỳ thi."
-          : "Vui lòng nhập yêu cầu tuỳ chỉnh."
+          ? t("createGroupMockTestForm.errors.missingExamName", "Please enter the exam name.")
+          : t("createGroupMockTestForm.errors.missingCustomPrompt", "Please enter your custom request.")
       );
       return;
     }
@@ -147,30 +134,28 @@ export default function CreateGroupMockTestForm({
       setGenPhase("preview");
     } catch (err) {
       console.error("AI generate mock test error:", err);
-      setGenError(err?.response?.data?.message || err?.message || "Tạo template thất bại. Vui lòng thử lại.");
+      setGenError(err?.response?.data?.message || err?.message || t("createGroupMockTestForm.errors.generateFailed", "Failed to generate template. Please try again."));
       setGenPhase("error");
     }
-  }, [mode, examName, customPrompt, difficulty, totalQuestions, duration, workspaceId]);
+  }, [mode, examName, customPrompt, difficulty, totalQuestions, duration, workspaceId, t]);
 
-  // ── Apply template → create DRAFT ──
   const handleApply = useCallback(async () => {
     if (!template) return;
     setApplyError("");
     setGenPhase("applying");
 
     try {
-      // Normalise template fields from AI response
+      const fallbackTitle = t("createGroupMockTestForm.fallbackTitle", "Mock Test");
       const quizTitle =
         template.title
         || template.name
-        || (mode === "examName" ? examName : "Mock Test")
-        || "Mock Test";
+        || (mode === "examName" ? examName : fallbackTitle)
+        || fallbackTitle;
 
       const sections = Array.isArray(template.sections)
         ? template.sections
         : [];
 
-      // Build questions from sections
       const questions = sections.flatMap((sec) =>
         (Array.isArray(sec.questions) ? sec.questions : []).map((q) => ({
           type: q.type || q.questionType || "multipleChoice",
@@ -209,12 +194,11 @@ export default function CreateGroupMockTestForm({
       onCreated?.(result);
     } catch (err) {
       console.error("Apply mock test template error:", err);
-      setApplyError(err?.response?.data?.message || err?.message || "Tạo mock test thất bại. Vui lòng thử lại.");
+      setApplyError(err?.response?.data?.message || err?.message || t("createGroupMockTestForm.errors.createMockTestFailed", "Failed to create mock test. Please try again."));
       setGenPhase("preview");
     }
-  }, [template, mode, examName, difficulty, duration, workspaceId, onCreated]);
+  }, [template, mode, examName, difficulty, duration, workspaceId, onCreated, t]);
 
-  // ── Section breakdown display ──
   const sections = template ? (Array.isArray(template.sections) ? template.sections : []) : [];
   const totalQCount = sections.reduce(
     (sum, s) => sum + (Array.isArray(s.questions) ? s.questions.length : (s.questionCount || 0)),
@@ -223,7 +207,6 @@ export default function CreateGroupMockTestForm({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div
         className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors ${
           isDarkMode ? "border-slate-800" : "border-[#BFDBFE]"
@@ -241,47 +224,59 @@ export default function CreateGroupMockTestForm({
         <div className="flex items-center gap-2">
           <ClipboardList className={`w-5 h-5 ${isDarkMode ? "text-blue-400" : "text-[#0455BF]"}`} />
           <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>
-            Tạo Mock Test bằng AI
+            {t("createGroupMockTestForm.header.title", "Create Mock Test with AI")}
           </p>
         </div>
       </div>
 
-      {/* Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Intro */}
         <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-          AI sẽ tạo template đề thi phù hợp. Leader có thể xem trước rồi áp dụng để tạo bài mock test (DRAFT) cho nhóm.
+          {t(
+            "createGroupMockTestForm.description",
+            "AI will generate a suitable exam template. The leader can preview and then apply it to create a DRAFT mock test for the group."
+          )}
         </p>
 
-        {/* Mode tabs */}
         <div
           className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-[#EFF6FF]"}`}
         >
-          {tabBtn("examName", "Tên kỳ thi")}
-          {tabBtn("custom", "Yêu cầu tuỳ chỉnh")}
+          {tabBtn("examName", t("createGroupMockTestForm.tabs.examName", "Exam name"))}
+          {tabBtn("custom", t("createGroupMockTestForm.tabs.custom", "Custom request"))}
         </div>
 
-        {/* Input fields */}
         {mode === "examName" ? (
           <div>
-            <label className={labelCls}>Tên kỳ thi / đề thi</label>
+            <label className={labelCls}>
+              {t("createGroupMockTestForm.examName.label", "Exam / test name")}
+            </label>
             <input
               className={inputCls}
-              placeholder="VD: TOEIC 900, Thi thử THPTQG Toán 2025, AWS SAA-C03..."
+              placeholder={t(
+                "createGroupMockTestForm.examName.placeholder",
+                "e.g., TOEIC 900, Mock Math HSG 2025, AWS SAA-C03..."
+              )}
               value={examName}
               onChange={(e) => setExamName(e.target.value)}
               disabled={isGenerating || isApplying}
             />
             <p className={`mt-1 text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-              AI sẽ tạo template phù hợp với cấu trúc và nội dung của kỳ thi này.
+              {t(
+                "createGroupMockTestForm.examName.hint",
+                "AI will generate a template matching the structure and content of this exam."
+              )}
             </p>
           </div>
         ) : (
           <div>
-            <label className={labelCls}>Yêu cầu tuỳ chỉnh</label>
+            <label className={labelCls}>
+              {t("createGroupMockTestForm.custom.label", "Custom request")}
+            </label>
             <textarea
               className={`${inputCls} min-h-[90px] resize-none`}
-              placeholder="VD: Tạo bài kiểm tra 30 câu về Lập trình Python cơ bản, độ khó tăng dần, tập trung vào cú pháp và xử lý lỗi..."
+              placeholder={t(
+                "createGroupMockTestForm.custom.placeholder",
+                "e.g., Create a 30-question test on Python basics, increasing difficulty, focus on syntax and error handling..."
+              )}
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
               disabled={isGenerating || isApplying}
@@ -289,10 +284,11 @@ export default function CreateGroupMockTestForm({
           </div>
         )}
 
-        {/* Config */}
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className={labelCls}>Độ khó</label>
+            <label className={labelCls}>
+              {t("createGroupMockTestForm.fields.difficulty", "Difficulty")}
+            </label>
             <select
               className={inputCls}
               value={difficulty}
@@ -305,7 +301,9 @@ export default function CreateGroupMockTestForm({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Số câu hỏi</label>
+            <label className={labelCls}>
+              {t("createGroupMockTestForm.fields.totalQuestions", "Number of questions")}
+            </label>
             <input
               type="number"
               className={inputCls}
@@ -317,7 +315,9 @@ export default function CreateGroupMockTestForm({
             />
           </div>
           <div>
-            <label className={labelCls}>Thời gian (phút)</label>
+            <label className={labelCls}>
+              {t("createGroupMockTestForm.fields.duration", "Duration (minutes)")}
+            </label>
             <input
               type="number"
               className={inputCls}
@@ -329,18 +329,16 @@ export default function CreateGroupMockTestForm({
           </div>
         </div>
 
-        {/* Generation error */}
         {(genPhase === "error" || genError) && (
           <div
             className={`text-xs px-3 py-2 rounded-lg ${
               isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"
             }`}
           >
-            {genError || "Có lỗi xảy ra khi tạo template."}
+            {genError || t("createGroupMockTestForm.errors.genericGenerate", "An error occurred while generating the template.")}
           </div>
         )}
 
-        {/* Progress bar while generating */}
         {isGenerating && (
           <div
             className={`rounded-xl border p-4 space-y-3 ${
@@ -350,7 +348,7 @@ export default function CreateGroupMockTestForm({
             <div className="flex items-center gap-2">
               <Sparkles className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-[#0455BF]"} animate-pulse`} />
               <span className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-[#0455BF]"}`}>
-                AI đang tạo template…
+                {t("createGroupMockTestForm.generating.title", "AI is generating the template…")}
               </span>
               <span className={`ml-auto text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 {simProgress}%
@@ -363,19 +361,17 @@ export default function CreateGroupMockTestForm({
               />
             </div>
             <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-              Quá trình có thể mất 15–40 giây tuỳ độ phức tạp…
+              {t("createGroupMockTestForm.generating.hint", "This may take 15–40 seconds depending on complexity…")}
             </p>
           </div>
         )}
 
-        {/* Template preview */}
         {genPhase === "preview" && template && (
           <div
             className={`rounded-xl border space-y-3 overflow-hidden ${
               isDarkMode ? "border-slate-700 bg-slate-800/40" : "border-[#BFDBFE] bg-[#EFF6FF]/60"
             }`}
           >
-            {/* Preview header */}
             <div
               className={`px-4 py-3 border-b flex items-center gap-2 ${
                 isDarkMode ? "border-slate-700 bg-slate-800" : "border-[#BFDBFE] bg-white"
@@ -383,34 +379,32 @@ export default function CreateGroupMockTestForm({
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-800"}`}>
-                Template AI đã sẵn sàng
+                {t("createGroupMockTestForm.preview.ready", "AI template is ready")}
               </span>
               <button
                 type="button"
                 onClick={() => { setGenPhase("idle"); setTemplate(null); }}
                 className={`ml-auto text-xs underline ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}
               >
-                Tạo lại
+                {t("createGroupMockTestForm.preview.regenerate", "Regenerate")}
               </button>
             </div>
 
             <div className="px-4 pb-4 space-y-3">
-              {/* Title */}
               <div>
                 <p className={`text-xs font-medium mb-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                  Tên bài thi
+                  {t("createGroupMockTestForm.preview.examTitle", "Exam name")}
                 </p>
                 <p className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                  {template.title || template.name || (mode === "examName" ? examName : "Mock Test")}
+                  {template.title || template.name || (mode === "examName" ? examName : t("createGroupMockTestForm.fallbackTitle", "Mock Test"))}
                 </p>
               </div>
 
-              {/* Stats row */}
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: "Số câu", value: totalQCount },
-                  { label: "Thời gian", value: `${template.duration || duration} phút` },
-                  { label: "Độ khó", value: DIFFICULTY_LEVELS.find((d) => d.value === (template.difficulty || difficulty))?.label || difficulty },
+                  { label: t("createGroupMockTestForm.preview.stats.questionCount", "Questions"), value: totalQCount },
+                  { label: t("createGroupMockTestForm.preview.stats.duration", "Duration"), value: t("createGroupMockTestForm.preview.durationValue", "{{value}} minutes", { value: template.duration || duration }) },
+                  { label: t("createGroupMockTestForm.preview.stats.difficulty", "Difficulty"), value: DIFFICULTY_LEVELS.find((d) => d.value === (template.difficulty || difficulty))?.label || difficulty },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
@@ -424,11 +418,10 @@ export default function CreateGroupMockTestForm({
                 ))}
               </div>
 
-              {/* Sections breakdown */}
               {sections.length > 0 && (
                 <div>
                   <p className={`text-xs font-medium mb-1.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                    Cấu trúc đề ({sections.length} phần)
+                    {t("createGroupMockTestForm.preview.structure", "Exam structure ({{count}} sections)", { count: sections.length })}
                   </p>
                   <div className="space-y-1.5">
                     {sections.map((sec, i) => (
@@ -439,10 +432,10 @@ export default function CreateGroupMockTestForm({
                         }`}
                       >
                         <span className="font-medium truncate max-w-[70%]">
-                          {sec.title || sec.name || `Phần ${i + 1}`}
+                          {sec.title || sec.name || t("createGroupMockTestForm.preview.sectionFallback", "Section {{index}}", { index: i + 1 })}
                         </span>
                         <span className={`shrink-0 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`}>
-                          {Array.isArray(sec.questions) ? sec.questions.length : (sec.questionCount || 0)} câu
+                          {Array.isArray(sec.questions) ? sec.questions.length : (sec.questionCount || 0)} {t("createGroupMockTestForm.preview.questionCountSuffix", "questions")}
                         </span>
                       </div>
                     ))}
@@ -450,14 +443,12 @@ export default function CreateGroupMockTestForm({
                 </div>
               )}
 
-              {/* Description */}
               {template.description && (
                 <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                   {template.description}
                 </p>
               )}
 
-              {/* Apply error */}
               {applyError && (
                 <div
                   className={`text-xs px-3 py-2 rounded-lg ${
@@ -472,7 +463,6 @@ export default function CreateGroupMockTestForm({
         )}
       </div>
 
-      {/* Footer */}
       <div
         className={`px-4 py-3 border-t flex justify-end gap-2 shrink-0 transition-colors ${
           isDarkMode ? "border-slate-800" : "border-[#BFDBFE]"
@@ -484,7 +474,7 @@ export default function CreateGroupMockTestForm({
           disabled={isGenerating || isApplying}
           className={isDarkMode ? "border-slate-700 text-slate-300" : "border-[#BFDBFE] text-gray-700"}
         >
-          Huỷ
+          {t("createGroupMockTestForm.buttons.cancel", "Cancel")}
         </Button>
 
         {genPhase !== "preview" ? (
@@ -496,12 +486,12 @@ export default function CreateGroupMockTestForm({
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Đang tạo…
+                {t("createGroupMockTestForm.buttons.generating", "Generating…")}
               </>
             ) : (
               <>
                 <Bot className="w-4 h-4 mr-2" />
-                Tạo template với AI
+                {t("createGroupMockTestForm.buttons.generate", "Generate template with AI")}
               </>
             )}
           </Button>
@@ -514,12 +504,12 @@ export default function CreateGroupMockTestForm({
             {isApplying ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Đang tạo Draft…
+                {t("createGroupMockTestForm.buttons.applying", "Creating Draft…")}
               </>
             ) : (
               <>
                 <Rocket className="w-4 h-4 mr-2" />
-                Áp dụng &amp; Tạo Draft
+                {t("createGroupMockTestForm.buttons.apply", "Apply & Create Draft")}
               </>
             )}
           </Button>

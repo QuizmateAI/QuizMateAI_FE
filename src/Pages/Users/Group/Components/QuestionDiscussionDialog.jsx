@@ -10,6 +10,7 @@ import {
   Timer,
   Trash2,
 } from "lucide-react";
+import i18n from "@/i18n";
 import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
 import {
@@ -62,7 +63,7 @@ function renderAnswerPreview(question, answers, isDarkMode, t) {
             isDarkMode ? "bg-emerald-800 text-emerald-300" : "bg-emerald-200 text-emerald-700",
           )}
         >
-          {t("workspace.quiz.correctAnswerLabel", "Đáp án đúng")}
+          {t("workspace.quiz.correctAnswerLabel", "Correct answer")}
         </span>
         <span className={cn("flex-1", isDarkMode ? "text-emerald-300" : "text-emerald-700")}>
           {textAnswersToDisplay.length ? <MixedMathText>{textAnswersToDisplay.join(" / ")}</MixedMathText> : "-"}
@@ -180,9 +181,9 @@ function renderAnswerPreview(question, answers, isDarkMode, t) {
 function relativeTime(iso) {
   if (!iso) return "";
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "vừa xong";
-  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  if (diff < 60) return i18n.t("questionDiscussion.shared.relativeTime.justNow", "just now");
+  if (diff < 3600) return i18n.t("questionDiscussion.shared.relativeTime.minutesAgo", "{{count}} minutes ago", { count: Math.floor(diff / 60) });
+  if (diff < 86400) return i18n.t("questionDiscussion.shared.relativeTime.hoursAgo", "{{count}} hours ago", { count: Math.floor(diff / 3600) });
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
@@ -231,12 +232,13 @@ function ThreadAvatar({ src, name, role, userId, className = "" }) {
 }
 
 function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
+  const { t } = useTranslation();
   const [pendingDelete, setPendingDelete] = useState(false);
   const resetRef = useRef(null);
   const authorDisplay = getUserDisplayParts({
     fullName: msg.authorName,
     username: msg.authorUserName,
-  }, msg.authorName || "Người dùng");
+  }, msg.authorName || t("questionDiscussion.shared.userFallback", "User"));
 
   const handleDeleteClick = () => {
     if (pendingDelete) {
@@ -294,7 +296,7 @@ function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
                 className="inline-flex self-center items-center gap-1 rounded-full bg-red-500 px-2 py-1 text-[11px] font-medium text-white"
               >
                 <Trash2 className="h-3 w-3" />
-                Xóa
+                {t("questionDiscussion.shared.delete", "Delete")}
               </button>
             ) : (
               <button
@@ -304,7 +306,7 @@ function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
                   "self-center rounded-full p-1 transition-colors",
                   isDarkMode ? "text-slate-500 hover:bg-slate-800 hover:text-red-300" : "text-slate-400 hover:bg-slate-100 hover:text-red-500",
                 )}
-                title="Xóa bình luận"
+                title={t("questionDiscussion.shared.deleteCommentTitle", "Delete comment")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -317,6 +319,7 @@ function ThreadMessageRow({ msg, canDelete, onDelete, isDarkMode }) {
 }
 
 function LockedDiscussionNotice({ isDarkMode }) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -324,7 +327,7 @@ function LockedDiscussionNotice({ isDarkMode }) {
         isDarkMode ? "border-slate-800 bg-slate-900/70 text-slate-400" : "border-slate-200 bg-slate-50 text-slate-600",
       )}
     >
-      Hoàn thành quiz để tham gia thảo luận cho câu hỏi này.
+      {t("questionDiscussion.dialog.lockedNotice", "Complete the quiz to join the discussion for this question.")}
     </div>
   );
 }
@@ -337,6 +340,7 @@ function useQuestionDiscussionThread({
   hasAttempted,
   onMessageCountChange,
 }) {
+  const { t } = useTranslation();
   const { profile } = useUserProfile();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -399,7 +403,7 @@ function useQuestionDiscussionThread({
     if (!body || posting || !canAccess) return;
 
     const authorId = profile?.userId ?? profile?.id ?? 0;
-    const authorName = profile?.fullName ?? profile?.name ?? "Người dùng";
+    const authorName = profile?.fullName ?? profile?.name ?? t("questionDiscussion.shared.userFallback", "User");
     const authorRole = isLeader ? "LEADER" : "MEMBER";
 
     setPosting(true);
@@ -423,7 +427,7 @@ function useQuestionDiscussionThread({
     } finally {
       setPosting(false);
     }
-  }, [canAccess, draft, isLeader, posting, profile, questionId, quizId, workspaceId]);
+  }, [canAccess, draft, isLeader, posting, profile, questionId, quizId, workspaceId, t]);
 
   const handleDelete = useCallback(async (messageId) => {
     try {
@@ -507,9 +511,10 @@ export default function QuestionDiscussionDialog({
   if (!question) return null;
 
   const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
+  const composerNameFallback = t("questionDiscussion.shared.composerNameFallback", "you");
   const composerDisplayName = String(
-    discussionProfile?.fullName ?? discussionProfile?.name ?? "bạn",
-  ).trim() || "bạn";
+    discussionProfile?.fullName ?? discussionProfile?.name ?? composerNameFallback,
+  ).trim() || composerNameFallback;
   const visibleCommentCount = discussionLoading ? commentCount : discussionMessages.length;
 
   return (
@@ -539,7 +544,7 @@ export default function QuestionDiscussionDialog({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <DialogTitle className={cn("text-lg font-semibold tracking-tight", isDarkMode ? "text-slate-50" : "text-slate-900")}>
-                    Thảo luận câu {questionIndex}
+                    {t("questionDiscussion.shared.threadTitle", "Discussion for question {{index}}", { index: questionIndex })}
                   </DialogTitle>
                   <span
                     className={cn(
@@ -547,11 +552,11 @@ export default function QuestionDiscussionDialog({
                       isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600",
                     )}
                   >
-                    {visibleCommentCount} bình luận
+                    {t("questionDiscussion.dialog.commentCount", "{{count}} comments", { count: visibleCommentCount })}
                   </span>
                 </div>
                 <DialogDescription className={cn("mt-2 text-sm leading-relaxed", isDarkMode ? "text-slate-400" : "text-slate-600")}>
-                  Mở riêng thread cho câu hỏi này để member trao đổi đáp án, cách giải và những điểm chưa rõ.
+                  {t("questionDiscussion.dialog.headerDescription", "Open a dedicated thread for this question so members can discuss answers, solutions, and anything unclear.")}
                 </DialogDescription>
               </div>
             </div>
@@ -574,7 +579,7 @@ export default function QuestionDiscussionDialog({
                     isDarkMode ? "bg-blue-950/70 text-blue-300" : "bg-blue-100 text-blue-700",
                   )}
                 >
-                  Câu {questionIndex}
+                  {t("questionDiscussion.dialog.questionBadge", "Question {{index}}", { index: questionIndex })}
                 </span>
                 {sectionLabel ? (
                   <span className={cn("rounded-full px-2.5 py-1", isDarkMode ? "bg-slate-800 text-slate-400" : "bg-white text-slate-500")}>
@@ -614,17 +619,17 @@ export default function QuestionDiscussionDialog({
               <div className="mt-4 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={cn("text-xs font-semibold uppercase tracking-wide", isDarkMode ? "text-slate-500" : "text-slate-500")}>
-                    Đáp án và lời giải
+                    {t("questionDiscussion.dialog.answersAndExplanation", "Answers and explanation")}
                   </span>
                   {canViewAnswers ? (
                     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]", isDarkMode ? "bg-emerald-950/60 text-emerald-300" : "bg-emerald-100 text-emerald-700")}>
                       <Sparkles className="h-3 w-3" />
-                      Có thể xem ngay
+                      {t("questionDiscussion.dialog.canViewNow", "Available to view now")}
                     </span>
                   ) : (
                     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]", isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-100 text-slate-500")}>
                       <Lock className="h-3 w-3" />
-                      Khóa tới khi hoàn thành quiz
+                      {t("questionDiscussion.dialog.lockedUntilFinish", "Locked until you finish the quiz")}
                     </span>
                   )}
                 </div>
@@ -634,14 +639,14 @@ export default function QuestionDiscussionDialog({
                 ) : (
                   <div className={cn("flex items-start gap-2 rounded-2xl px-3 py-3 text-sm", isDarkMode ? "bg-slate-900/70 text-slate-400" : "bg-white text-slate-600")}>
                     <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{t("workspace.quiz.answerLocked", "Hoàn thành bài quiz để xem đáp án và giải thích.")}</span>
+                    <span>{t("workspace.quiz.answerLocked", "Finish the quiz to view answers and explanations.")}</span>
                   </div>
                 )}
               </div>
 
               {question.explanation ? (
                 <div className={cn("mt-4 rounded-[20px] border px-4 py-3 text-sm leading-6", isDarkMode ? "border-amber-900/40 bg-amber-950/20 text-amber-100" : "border-amber-200 bg-amber-50 text-amber-900")}>
-                  <span className="font-semibold">Giải thích:</span>{" "}
+                  <span className="font-semibold">{t("questionDiscussion.dialog.explanationLabel", "Explanation:")}</span>{" "}
                   <MixedMathText>{question.explanation}</MixedMathText>
                 </div>
               ) : null}
@@ -665,10 +670,10 @@ export default function QuestionDiscussionDialog({
                     </div>
                     <div>
                       <p className={cn("text-sm font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900")}>
-                        Bình luận theo câu hỏi
+                        {t("questionDiscussion.dialog.commentsPerQuestion", "Comments for this question")}
                       </p>
                       <p className={cn("text-xs", isDarkMode ? "text-slate-500" : "text-slate-500")}>
-                        Câu hỏi và bình luận nằm chung một luồng thảo luận.
+                        {t("questionDiscussion.dialog.commentsPerQuestionSubtitle", "The question and its comments live in the same discussion thread.")}
                       </p>
                     </div>
                   </div>
@@ -678,7 +683,7 @@ export default function QuestionDiscussionDialog({
                       isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600",
                     )}
                   >
-                    {visibleCommentCount} bình luận
+                    {t("questionDiscussion.dialog.commentCount", "{{count}} comments", { count: visibleCommentCount })}
                   </span>
                 </div>
 
@@ -690,7 +695,7 @@ export default function QuestionDiscussionDialog({
                   </div>
                 ) : discussionMessages.length === 0 ? (
                   <p className={cn("text-sm", isDarkMode ? "text-slate-500" : "text-slate-500")}>
-                    Chưa có bình luận nào. Mở đầu cuộc thảo luận cho câu này.
+                    {t("questionDiscussion.shared.emptyState", "No comments yet. Start the discussion for this question.")}
                   </p>
                 ) : (
                   <div className="space-y-4">
@@ -739,7 +744,7 @@ export default function QuestionDiscussionDialog({
                     onChange={(event) => setDiscussionDraft(event.target.value)}
                     onKeyDown={handleDiscussionKeyDown}
                     onInput={handleDiscussionInput}
-                    placeholder={`Bình luận dưới tên ${composerDisplayName}`}
+                    placeholder={t("questionDiscussion.shared.composerPlaceholder", "Comment as {{name}}", { name: composerDisplayName })}
                     rows={1}
                     className={cn(
                       "min-h-[22px] max-h-24 flex-1 resize-none bg-transparent py-1 text-sm leading-5 outline-none",
@@ -762,7 +767,7 @@ export default function QuestionDiscussionDialog({
                           ? "cursor-not-allowed bg-slate-700/70 text-slate-500"
                           : "cursor-not-allowed bg-slate-300/70 text-slate-500",
                     )}
-                    title="Gửi (Enter)"
+                    title={t("questionDiscussion.shared.sendTitle", "Send (Enter)")}
                   >
                     {discussionPosting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

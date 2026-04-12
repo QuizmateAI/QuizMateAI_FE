@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import HomeButton from "@/Components/ui/HomeButton";
 import { getExtractedText, getExtractedSummary, getModerationReportDetail, getTaskStatusByTaskId, reviewMaterial } from "@/api/MaterialAPI";
 import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
@@ -81,7 +82,7 @@ function buildContentBlocks(text) {
   if (isImageUrl(sanitized)) {
     return [{
       type: "image",
-      alt: "Hinh anh tai lieu",
+      alt: i18n.t("sourceDetailView.documentImageAlt", "Document image"),
       url: sanitized,
     }];
   }
@@ -99,7 +100,7 @@ function buildContentBlocks(text) {
 
     blocks.push({
       type: "image",
-      alt: match[1] || "Hinh anh tai lieu",
+      alt: match[1] || i18n.t("sourceDetailView.documentImageAlt", "Document image"),
       url: match[2],
     });
 
@@ -199,11 +200,11 @@ function getModerationNodeFindings(report) {
   if (!report || typeof report !== "object") return [];
 
   const nodeLabels = {
-    legal: "Pháp lý",
-    intent: "Ý định",
-    harmful: "Độc hại",
-    accuracy: "Độ chính xác",
-    community: "Cộng đồng",
+    legal: i18n.t("sourceDetailView.nodeLabels.legal", "Legal"),
+    intent: i18n.t("sourceDetailView.nodeLabels.intent", "Intent"),
+    harmful: i18n.t("sourceDetailView.nodeLabels.harmful", "Harmful"),
+    accuracy: i18n.t("sourceDetailView.nodeLabels.accuracy", "Accuracy"),
+    community: i18n.t("sourceDetailView.nodeLabels.community", "Community"),
   };
 
   return Object.entries(nodeLabels)
@@ -461,9 +462,9 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
       const updatedSource = mergeMaterialSource(currentSource, result);
       setCurrentSource(updatedSource);
       onSourceUpdated?.(updatedSource);
-      setReviewMessage(isApproved ? "Đã duyệt tài liệu này." : "Đã từ chối tài liệu này.");
+      setReviewMessage(isApproved ? t("sourceDetailView.reviewApproved", "Document approved.") : t("sourceDetailView.reviewRejected", "Document rejected."));
     } catch (error) {
-      setReviewError(error?.message || "Không thể duyệt tài liệu lúc này.");
+      setReviewError(error?.message || t("sourceDetailView.reviewFailed", "Unable to review the document at this time."));
     } finally {
       setReviewLoading(false);
     }
@@ -564,7 +565,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                 <div className="flex items-center gap-2">
                   <InlineSpinner className={`h-4 w-4 ${isDarkMode ? "text-slate-300" : "text-gray-500"}`} />
                   <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                    Đang tải báo cáo kiểm duyệt...
+                    {t("sourceDetailView.moderationLoading", "Loading moderation report...")}
                   </span>
                 </div>
               ) : null}
@@ -577,7 +578,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                       isDarkMode ? "text-slate-200 hover:bg-white/5" : "text-gray-700 hover:bg-black/5"
                     } ${fontClass}`}
                   >
-                    <span>Chi tiết kiểm duyệt</span>
+                    <span>{t("sourceDetailView.moderationDetails", "Moderation details")}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${moderationDetailOpen ? "rotate-180" : ""}`} />
                   </button>
 
@@ -585,33 +586,33 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                     <div className="mt-1.5 space-y-1.5">
                       {moderationInfo?.reason && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                          <span className="font-semibold">Lý do: </span>
+                          <span className="font-semibold">{t("sourceDetailView.labelReason", "Reason: ")}</span>
                           {moderationInfo.reason}
                         </p>
                       )}
                       {moderationInfo?.type === "WARN" && moderationInfo?.suggestion && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Gợi ý: </span>
+                          <span className="font-semibold">{t("sourceDetailView.labelSuggestion", "Suggestion: ")}</span>
                           {moderationInfo.suggestion}
                         </p>
                       )}
                       {moderationInfo?.type === "REJECT" && moderationInfo?.detectedTopic && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Chủ đề phát hiện của tài liệu: </span>
+                          <span className="font-semibold">{t("sourceDetailView.labelDetectedTopic", "Detected topic of the document: ")}</span>
                           {moderationInfo.detectedTopic}
                         </p>
                       )}
                       {moderationInfo?.type === "WARN" && suitablePercentText && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Phần trăm nội dung phù hợp: </span>
+                          <span className="font-semibold">{t("sourceDetailView.labelSuitablePercent", "Percentage of suitable content: ")}</span>
                           {suitablePercentText}
                         </p>
                       )}
                       {moderationInfo?.type === "WARN" && moderationInfo?.currentLevelDetected && moderationInfo?.targetLevelRequired && (
                         <p className={`text-xs leading-relaxed ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                          <span className="font-semibold">Mức hiện tại của tài liệu: </span>
+                          <span className="font-semibold">{t("sourceDetailView.labelCurrentLevel", "Current level of the document: ")}</span>
                           {moderationInfo.currentLevelDetected}
-                          <span className="font-semibold"> | Mức yêu cầu: </span>
+                          <span className="font-semibold">{t("sourceDetailView.labelTargetLevel", " | Required level: ")}</span>
                           {moderationInfo.targetLevelRequired}
                         </p>
                       )}
@@ -632,7 +633,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
               {showWarnReviewActions && (
                 <div className="mt-3 pt-3 border-t border-black/10 dark:border-white/10">
                   <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                    Có duyệt tài liệu này không?
+                    {t("sourceDetailView.reviewPrompt", "Do you want to approve this document?")}
                   </p>
                   <div className="flex items-center gap-2">
                     <button
@@ -645,7 +646,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                           : isDarkMode ? "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
                       }`}
                     >
-                      Có
+                      {t("sourceDetailView.approveYes", "Yes")}
                     </button>
                     <button
                       type="button"
@@ -657,7 +658,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
                           : isDarkMode ? "bg-red-500/20 text-red-300 hover:bg-red-500/30" : "bg-red-100 text-red-700 hover:bg-red-200"
                       }`}
                     >
-                      Không
+                      {t("sourceDetailView.approveNo", "No")}
                     </button>
                     <span
                       aria-hidden="true"

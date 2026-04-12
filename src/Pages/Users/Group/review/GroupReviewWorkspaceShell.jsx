@@ -79,22 +79,27 @@ import {
 } from '@/lib/routePaths';
 
 const SECTION_META = {
-  overview: { label: 'Tổng quan', icon: LayoutDashboard },
-  materials: { label: 'Tài liệu', icon: FolderOpen },
-  moderation: { label: 'Warning', icon: ShieldAlert },
-  quiz: { label: 'Quiz', icon: PenLine },
-  members: { label: 'Thành viên', icon: Users },
-  performance: { label: 'Hiệu suất', icon: Activity },
-  roadmap: { label: 'Roadmap', icon: MapIcon },
-  logs: { label: 'Logs', icon: ClipboardList },
+  overview: { labelKey: 'overview', fallback: 'Overview', icon: LayoutDashboard },
+  materials: { labelKey: 'materials', fallback: 'Materials', icon: FolderOpen },
+  moderation: { labelKey: 'moderation', fallback: 'Warning', icon: ShieldAlert },
+  quiz: { labelKey: 'quiz', fallback: 'Quiz', icon: PenLine },
+  members: { labelKey: 'members', fallback: 'Members', icon: Users },
+  performance: { labelKey: 'performance', fallback: 'Performance', icon: Activity },
+  roadmap: { labelKey: 'roadmap', fallback: 'Roadmap', icon: MapIcon },
+  logs: { labelKey: 'logs', fallback: 'Logs', icon: ClipboardList },
 };
 
 const FLAGGED_STATES = new Set(['WARN', 'REJECT', 'REJECTED', 'NEEDS_REVIEW']);
-const LEARNING_MODE_LABELS = {
-  STUDY_NEW: 'Học kiến thức mới',
-  REVIEW: 'Ôn tập theo nhóm',
-  MOCK_TEST: 'Thi thử cùng nhóm',
+const LEARNING_MODE_FALLBACKS = {
+  STUDY_NEW: 'Learn new knowledge',
+  REVIEW: 'Group review',
+  MOCK_TEST: 'Group mock test',
 };
+
+function getLearningModeLabel(mode, t) {
+  const key = mode && LEARNING_MODE_FALLBACKS[mode] ? mode : 'REVIEW';
+  return t(`groupReview.learningMode.${key}`, LEARNING_MODE_FALLBACKS[key]);
+}
 
 function readCurrentUser() {
   try {
@@ -112,26 +117,33 @@ function normalizeRole(role) {
   return 'MEMBER';
 }
 
-function formatRoleLabel(role) {
-  if (role === 'LEADER') return 'Leader';
-  if (role === 'CONTRIBUTOR') return 'Contributor';
-  return 'Member';
+function formatRoleLabel(role, t) {
+  if (!t) {
+    if (role === 'LEADER') return 'Leader';
+    if (role === 'CONTRIBUTOR') return 'Contributor';
+    return 'Member';
+  }
+  if (role === 'LEADER') return t('groupReview.role.leader', 'Leader');
+  if (role === 'CONTRIBUTOR') return t('groupReview.role.contributor', 'Contributor');
+  return t('groupReview.role.member', 'Member');
 }
 
-function formatMaterialStatus(status) {
+function formatMaterialStatus(status, t) {
   const normalized = String(status || 'APPROVED').toUpperCase();
-  if (normalized === 'WARN') return 'Cần xem lại';
-  if (normalized === 'REJECT' || normalized === 'REJECTED') return 'Bị từ chối';
-  if (normalized === 'NEEDS_REVIEW') return 'Yêu cầu upload lại';
-  if (normalized === 'PROCESSING') return 'Đang xử lý';
-  if (normalized === 'UPLOADING') return 'Đang upload';
-  return 'Đã duyệt';
+  const fallback = (key, fb) => (t ? t(`groupReview.status.${key}`, fb) : fb);
+  if (normalized === 'WARN') return fallback('needsRecheck', 'Needs recheck');
+  if (normalized === 'REJECT' || normalized === 'REJECTED') return fallback('rejected', 'Rejected');
+  if (normalized === 'NEEDS_REVIEW') return fallback('needsReupload', 'Re-upload required');
+  if (normalized === 'PROCESSING') return fallback('processing', 'Processing');
+  if (normalized === 'UPLOADING') return fallback('uploading', 'Uploading');
+  return fallback('approved', 'Approved');
 }
 
-function formatDateTime(value, lang = 'vi') {
-  if (!value) return 'Chưa cập nhật';
+function formatDateTime(value, lang = 'vi', t) {
+  const notUpdated = t ? t('groupReview.time.notUpdated', 'Not updated') : 'Not updated';
+  if (!value) return notUpdated;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Chưa cập nhật';
+  if (Number.isNaN(date.getTime())) return notUpdated;
   return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -141,19 +153,28 @@ function formatDateTime(value, lang = 'vi') {
   }).format(date);
 }
 
-function formatRelativeTime(value, lang = 'vi') {
-  if (!value) return lang === 'en' ? 'No recent activity' : 'Chưa có hoạt động';
+function formatRelativeTime(value, lang = 'vi', t) {
+  const noActivity = t ? t('groupReview.time.noActivity', 'No recent activity') : 'No recent activity';
+  if (!value) return noActivity;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return lang === 'en' ? 'No recent activity' : 'Chưa có hoạt động';
+  if (Number.isNaN(date.getTime())) return noActivity;
 
   const diffMs = Date.now() - date.getTime();
   const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
   const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
 
-  if (diffHours < 1) return lang === 'en' ? 'Just now' : 'Vừa xong';
-  if (diffHours < 24) return lang === 'en' ? `${diffHours} hour(s) ago` : `${diffHours} giờ trước`;
-  if (diffDays < 7) return lang === 'en' ? `${diffDays} day(s) ago` : `${diffDays} ngày trước`;
-  return formatDateTime(value, lang);
+  if (diffHours < 1) return t ? t('groupReview.time.justNow', 'Just now') : 'Just now';
+  if (diffHours < 24) {
+    return t
+      ? t('groupReview.time.hoursAgo', { count: diffHours, defaultValue: '{{count}} hour(s) ago' })
+      : `${diffHours} hour(s) ago`;
+  }
+  if (diffDays < 7) {
+    return t
+      ? t('groupReview.time.daysAgo', { count: diffDays, defaultValue: '{{count}} day(s) ago' })
+      : `${diffDays} day(s) ago`;
+  }
+  return formatDateTime(value, lang, t);
 }
 
 function parseDetailRoute(pathname, workspaceId) {
@@ -240,9 +261,10 @@ function EmptyState({ title, description, action, isDarkMode }) {
   );
 }
 
-function SectionButton({ sectionKey, active, onClick, isDarkMode }) {
+function SectionButton({ sectionKey, active, onClick, isDarkMode, t }) {
   const meta = SECTION_META[sectionKey];
   const Icon = meta.icon;
+  const label = t ? t(`groupReview.sections.${meta.labelKey}`, meta.fallback) : meta.fallback;
   return (
     <button
       type="button"
@@ -258,7 +280,7 @@ function SectionButton({ sectionKey, active, onClick, isDarkMode }) {
         <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${active ? (isDarkMode ? 'bg-cyan-400/15' : 'bg-white') : (isDarkMode ? 'bg-slate-900/70' : 'bg-slate-100')}`}>
           <Icon className="h-4 w-4" />
         </span>
-        <span className="text-sm font-medium">{meta.label}</span>
+        <span className="text-sm font-medium">{label}</span>
       </span>
       <ArrowRight className="h-4 w-4 opacity-60" />
     </button>
@@ -270,7 +292,7 @@ export default function GroupReviewWorkspaceShell() {
   const location = useLocation();
   const navigate = useNavigateWithLoading();
   const [searchParams] = useSearchParams();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isDarkMode } = useDarkMode();
   const { showError, showInfo, showSuccess } = useToast();
   const currentUser = useMemo(() => readCurrentUser(), []);
@@ -345,12 +367,12 @@ export default function GroupReviewWorkspaceShell() {
       || currentGroupFromGroups?.groupName
       || currentGroupWorkspace?.displayTitle
       || currentGroupWorkspace?.name
-      || 'Nhóm học tập',
+      || t('groupReview.fallback.groupName', 'Study group'),
     description:
       groupProfile?.groupLearningGoal
       || currentGroupFromGroups?.description
       || currentGroupWorkspace?.description
-      || 'Không gian review UI cho học nhóm.',
+      || t('groupReview.fallback.description', 'Review UI space for group study.'),
     learningMode: groupProfile?.learningMode || 'REVIEW',
     rules: groupProfile?.rules || '',
   };
@@ -400,8 +422,8 @@ export default function GroupReviewWorkspaceShell() {
           ...item,
           id: Number(item?.materialId ?? item?.id),
           materialId: Number(item?.materialId ?? item?.id),
-          name: item?.title || item?.name || 'Tài liệu chưa đặt tên',
-          title: item?.title || item?.name || 'Tài liệu chưa đặt tên',
+          name: item?.title || item?.name || t('groupReview.fallback.untitledMaterial', 'Untitled document'),
+          title: item?.title || item?.name || t('groupReview.fallback.untitledMaterial', 'Untitled document'),
           type: item?.materialType || item?.type || 'application/pdf',
           status: String(item?.status || 'APPROVED').toUpperCase(),
         }))
@@ -410,13 +432,13 @@ export default function GroupReviewWorkspaceShell() {
       return materials;
     } catch (error) {
       console.error('Failed to fetch group materials:', error);
-      showError(error?.message || 'Không thể tải danh sách tài liệu.');
+      showError(error?.message || t('groupReview.toast.loadMaterialsFailed', 'Unable to load the document list.'));
       setSources([]);
       return [];
     } finally {
       setSourcesLoading(false);
     }
-  }, [isCreating, resolvedWorkspaceId, showError]);
+  }, [isCreating, resolvedWorkspaceId, showError, t]);
 
   const loadMembers = useCallback(async () => {
     if (!resolvedWorkspaceId || isCreating) return [];
@@ -427,13 +449,13 @@ export default function GroupReviewWorkspaceShell() {
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Failed to fetch group members:', error);
-      showError(error?.message || 'Không thể tải thành viên nhóm.');
+      showError(error?.message || t('groupReview.toast.loadMembersFailed', 'Unable to load group members.'));
       setMembers([]);
       return [];
     } finally {
       setMembersLoading(false);
     }
-  }, [fetchMembers, isCreating, resolvedWorkspaceId, showError]);
+  }, [fetchMembers, isCreating, resolvedWorkspaceId, showError, t]);
 
   const loadGroupProfile = useCallback(async () => {
     if (!resolvedWorkspaceId || isCreating) return null;
@@ -510,18 +532,18 @@ export default function GroupReviewWorkspaceShell() {
 
     const bootstrapGroupWorkspace = async () => {
       try {
-        showInfo('Đang tạo group workspace...');
+        showInfo(t('groupReview.toast.bootstrapCreating', 'Creating group workspace...'));
         const createdWorkspace = await createGroupWorkspace({ title: null });
         const createdWorkspaceId = createdWorkspace?.workspaceId;
         if (!createdWorkspaceId) {
-          throw new Error('Không thể tạo group workspace.');
+          throw new Error(t('groupReview.toast.bootstrapFailed', 'Unable to create group workspace.'));
         }
         navigate(buildGroupWorkspacePath(createdWorkspaceId), {
           replace: true,
           state: { openProfileConfig: true },
         });
       } catch (error) {
-        showError(error?.message || 'Không thể tạo group workspace.');
+        showError(error?.message || t('groupReview.toast.bootstrapFailed', 'Unable to create group workspace.'));
         navigate('/home', { replace: true });
       } finally {
         setIsBootstrappingGroup(false);
@@ -529,7 +551,7 @@ export default function GroupReviewWorkspaceShell() {
     };
 
     void bootstrapGroupWorkspace();
-  }, [createGroupWorkspace, isCreating, navigate, showError, showInfo]);
+  }, [createGroupWorkspace, isCreating, navigate, showError, showInfo, t]);
 
   useEffect(() => {
     if (openProfileConfig && !isCreating && !profileEditLocked) {
@@ -563,7 +585,7 @@ export default function GroupReviewWorkspaceShell() {
       logs: groupLogs,
       currentUser: {
         userId: Number(currentUser?.id ?? currentUser?.userId ?? 0),
-        fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || 'QuizMate User',
+        fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || t('groupReview.fallback.quizMateUser', 'QuizMate User'),
         email: currentUser?.email || 'user@quizmate.local',
         role: actualRoleKey,
       },
@@ -582,6 +604,7 @@ export default function GroupReviewWorkspaceShell() {
     resolvedGroupData.groupName,
     resolvedWorkspaceId,
     sources,
+    t,
   ]);
 
   useEffect(() => {
@@ -789,33 +812,33 @@ export default function GroupReviewWorkspaceShell() {
 
   const handleInvite = useCallback(async (email) => {
     if (!canManageMembers || !resolvedWorkspaceId) {
-      throw new Error('Chỉ leader mới có thể mời thành viên.');
+      throw new Error(t('groupReview.toast.inviteLeaderOnly', 'Only leaders can invite members.'));
     }
     await inviteMemberHook(resolvedWorkspaceId, email);
-    showSuccess('Đã gửi lời mời thành viên.');
+    showSuccess(t('groupReview.toast.inviteSent', 'Member invitation sent.'));
     await Promise.all([loadMembers(), loadGroupLogs()]);
-  }, [canManageMembers, inviteMemberHook, loadGroupLogs, loadMembers, resolvedWorkspaceId, showSuccess]);
+  }, [canManageMembers, inviteMemberHook, loadGroupLogs, loadMembers, resolvedWorkspaceId, showSuccess, t]);
 
   const handleUploadFiles = useCallback(async (files) => {
     if (shouldForceProfileSetup) {
-      showError('Hoàn thành profile nhóm trước khi tải tài liệu.');
+      showError(t('groupReview.toast.profileBeforeUpload', 'Complete the group profile before uploading documents.'));
       setProfileConfigOpen(true);
       return;
     }
     if (!canUploadSource || !resolvedWorkspaceId) {
-      showError('Bạn không có quyền tải tài liệu.');
+      showError(t('groupReview.toast.noUploadPermission', "You don't have permission to upload documents."));
       return;
     }
 
     try {
       await Promise.all(files.map((file) => uploadMaterial(file, resolvedWorkspaceId)));
-      showSuccess(`Đã gửi ${files.length} tài liệu để xử lý.`);
+      showSuccess(t('groupReview.toast.uploadSuccess', { count: files.length, defaultValue: 'Sent {{count}} document(s) for processing.' }));
       await Promise.all([fetchSources(), loadGroupLogs()]);
     } catch (error) {
       console.error('Failed to upload materials:', error);
-      showError(error?.message || 'Tải tài liệu thất bại.');
+      showError(error?.message || t('groupReview.toast.uploadFailed', 'Document upload failed.'));
     }
-  }, [canUploadSource, fetchSources, loadGroupLogs, resolvedWorkspaceId, shouldForceProfileSetup, showError, showSuccess]);
+  }, [canUploadSource, fetchSources, loadGroupLogs, resolvedWorkspaceId, shouldForceProfileSetup, showError, showSuccess, t]);
 
   const handleRequestGroupProfileUpdate = useCallback(() => {
     if (profileEditLocked) {
@@ -896,10 +919,10 @@ export default function GroupReviewWorkspaceShell() {
       ]);
       setProfileUpdateGuardOpen(false);
       setProfileConfigOpen(true);
-      showSuccess('Đã xóa dữ liệu để cập nhật onboarding nhóm.');
+      showSuccess(t('groupReview.toast.resetDataSuccess', 'Data cleared to update group onboarding.'));
     } catch (error) {
       console.error('Failed to reset workspace for group profile update:', error);
-      showError(error?.message || 'Không thể xóa dữ liệu workspace.');
+      showError(error?.message || t('groupReview.toast.resetDataFailed', 'Unable to clear workspace data.'));
     } finally {
       setIsResettingWorkspaceForProfileUpdate(false);
     }
@@ -913,46 +936,66 @@ export default function GroupReviewWorkspaceShell() {
     showError,
     showSuccess,
     sources,
+    t,
   ]);
 
   const handleToggleUploadPermission = useCallback(async (member) => {
     if (!resolvedWorkspaceId) return;
+    const memberFallback = t('groupReview.fallback.member', 'Member');
     try {
       if (member?.canUpload) {
         await revokeUpload(resolvedWorkspaceId, member.userId);
-        showSuccess(`Đã thu hồi quyền upload của ${getUserDisplayLabel(member, 'thành viên')}.`);
+        showSuccess(t('groupReview.toast.revokeUploadSuccess', {
+          name: getUserDisplayLabel(member, memberFallback),
+          defaultValue: 'Upload permission revoked from {{name}}.',
+        }));
       } else {
         await grantUpload(resolvedWorkspaceId, member.userId);
-        showSuccess(`Đã cấp quyền upload cho ${getUserDisplayLabel(member, 'thành viên')}.`);
+        showSuccess(t('groupReview.toast.grantUploadSuccess', {
+          name: getUserDisplayLabel(member, memberFallback),
+          defaultValue: 'Upload permission granted to {{name}}.',
+        }));
       }
       await loadMembers();
     } catch (error) {
-      showError(error?.message || 'Không thể cập nhật quyền upload.');
+      showError(error?.message || t('groupReview.toast.updateUploadFailed', 'Unable to update upload permission.'));
     }
-  }, [grantUpload, loadMembers, resolvedWorkspaceId, revokeUpload, showError, showSuccess]);
+  }, [grantUpload, loadMembers, resolvedWorkspaceId, revokeUpload, showError, showSuccess, t]);
 
   const handleMemberRoleChange = useCallback(async (member, nextRole) => {
     if (!resolvedWorkspaceId || !nextRole || nextRole === member.role) return;
+    const memberFallback = t('groupReview.fallback.member', 'Member');
     try {
       await updateMemberRole(resolvedWorkspaceId, member.userId, nextRole);
-      showSuccess(`Đã cập nhật vai trò của ${getUserDisplayLabel(member, 'thành viên')}.`);
+      showSuccess(t('groupReview.toast.updateRoleSuccess', {
+        name: getUserDisplayLabel(member, memberFallback),
+        defaultValue: 'Role updated for {{name}}.',
+      }));
       await loadMembers();
     } catch (error) {
-      showError(error?.message || 'Không thể cập nhật vai trò.');
+      showError(error?.message || t('groupReview.toast.updateRoleFailed', 'Unable to update role.'));
     }
-  }, [loadMembers, resolvedWorkspaceId, showError, showSuccess, updateMemberRole]);
+  }, [loadMembers, resolvedWorkspaceId, showError, showSuccess, t, updateMemberRole]);
 
   const handleRemoveMember = useCallback(async (member) => {
     if (!resolvedWorkspaceId) return;
-    if (!window.confirm(`Xóa ${getUserDisplayLabel(member, 'thành viên')} khỏi nhóm?`)) return;
+    const memberFallback = t('groupReview.fallback.member', 'Member');
+    const displayName = getUserDisplayLabel(member, memberFallback);
+    if (!window.confirm(t('groupReview.toast.removeConfirm', {
+      name: displayName,
+      defaultValue: 'Remove {{name}} from the group?',
+    }))) return;
     try {
       await removeMember(resolvedWorkspaceId, member.userId);
-      showSuccess(`Đã xóa ${getUserDisplayLabel(member, 'thành viên')} khỏi nhóm.`);
+      showSuccess(t('groupReview.toast.removeSuccess', {
+        name: displayName,
+        defaultValue: 'Removed {{name}} from the group.',
+      }));
       await Promise.all([loadMembers(), loadGroupLogs()]);
     } catch (error) {
-      showError(error?.message || 'Không thể xóa thành viên khỏi nhóm.');
+      showError(error?.message || t('groupReview.toast.removeFailed', 'Unable to remove member from the group.'));
     }
-  }, [loadGroupLogs, loadMembers, removeMember, resolvedWorkspaceId, showError, showSuccess]);
+  }, [loadGroupLogs, loadMembers, removeMember, resolvedWorkspaceId, showError, showSuccess, t]);
 
   const handleReviewQueueAction = useCallback(async (material, decision) => {
     if (!resolvedWorkspaceId || !material) return;
@@ -962,7 +1005,7 @@ export default function GroupReviewWorkspaceShell() {
       }
       const nextWorkspace = reviewGroupMaterial(resolvedWorkspaceId, material.materialId, decision, {
         userId: Number(currentUser?.id ?? currentUser?.userId ?? 0),
-        fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || 'Leader',
+        fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || t('groupReview.fallback.reviewer', 'Leader'),
         email: currentUser?.email || 'user@quizmate.local',
         role: actualRoleKey,
       });
@@ -974,10 +1017,10 @@ export default function GroupReviewWorkspaceShell() {
       if (material.source === 'live') {
         await Promise.all([fetchSources(), loadGroupLogs()]);
       }
-      showSuccess('Đã cập nhật trạng thái moderation.');
+      showSuccess(t('groupReview.toast.moderationUpdated', 'Moderation status updated.'));
     } catch (error) {
       console.error('Failed to review material:', error);
-      showError(error?.message || 'Không thể cập nhật moderation.');
+      showError(error?.message || t('groupReview.toast.moderationFailed', 'Unable to update moderation.'));
     }
   }, [
     actualRoleKey,
@@ -991,13 +1034,14 @@ export default function GroupReviewWorkspaceShell() {
     resolvedWorkspaceId,
     showError,
     showSuccess,
+    t,
   ]);
 
   const handleSaveMaterialName = useCallback(async () => {
     if (!resolvedWorkspaceId || !groupMaterialDetail) return;
     const trimmedName = materialNameDraft.trim();
     if (!trimmedName) {
-      showError('Tên tài liệu không được để trống.');
+      showError(t('groupReview.toast.materialNameRequired', 'Document name cannot be empty.'));
       return;
     }
 
@@ -1014,16 +1058,19 @@ export default function GroupReviewWorkspaceShell() {
       if (groupMaterialDetail.source === 'live') {
         await fetchSources();
       }
-      showSuccess('Đã cập nhật tên tài liệu.');
+      showSuccess(t('groupReview.toast.materialRenamed', 'Document name updated.'));
     } catch (error) {
       console.error('Failed to rename material:', error);
-      showError(error?.message || 'Không thể đổi tên tài liệu.');
+      showError(error?.message || t('groupReview.toast.materialRenameFailed', 'Unable to rename document.'));
     }
-  }, [fetchSources, groupMaterialDetail, materialNameDraft, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess]);
+  }, [fetchSources, groupMaterialDetail, materialNameDraft, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess, t]);
 
   const handleDeleteCurrentMaterial = useCallback(async () => {
     if (!resolvedWorkspaceId || !groupMaterialDetail) return;
-    if (!window.confirm(`Xóa tài liệu "${groupMaterialDetail.name}"?`)) return;
+    if (!window.confirm(t('groupReview.toast.materialDeleteConfirm', {
+      name: groupMaterialDetail.name,
+      defaultValue: 'Delete the document "{{name}}"?',
+    }))) return;
 
     try {
       if (groupMaterialDetail.source === 'live') {
@@ -1036,26 +1083,26 @@ export default function GroupReviewWorkspaceShell() {
       if (groupMaterialDetail.source === 'live') {
         await fetchSources();
       }
-      showSuccess('Đã xóa tài liệu.');
+      showSuccess(t('groupReview.toast.materialDeleted', 'Document deleted.'));
       navigate(buildGroupWorkspaceSectionPath(resolvedWorkspaceId || 'new', 'materials'), { replace: true });
     } catch (error) {
       console.error('Failed to delete material:', error);
-      showError(error?.message || 'Không thể xóa tài liệu.');
+      showError(error?.message || t('groupReview.toast.materialDeleteFailed', 'Unable to delete document.'));
     }
-  }, [fetchSources, groupMaterialDetail, navigate, resolvedWorkspaceId, showError, showSuccess]);
+  }, [fetchSources, groupMaterialDetail, navigate, resolvedWorkspaceId, showError, showSuccess, t]);
 
   const handleCreateQuiz = useCallback(async () => {
     if (!resolvedWorkspaceId) return;
     const trimmedTitle = quizForm.title.trim();
     if (!trimmedTitle) {
-      showError('Hãy nhập tên quiz.');
+      showError(t('groupReview.toast.quizNameRequired', 'Please enter the quiz name.'));
       return;
     }
 
     try {
       const nextWorkspace = createGroupReviewQuiz(resolvedWorkspaceId, quizForm, {
         userId: Number(currentUser?.id ?? currentUser?.userId ?? 0),
-        fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || 'Contributor',
+        fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || t('groupReview.fallback.contributorFallback', 'Contributor'),
         email: currentUser?.email || 'user@quizmate.local',
         role: actualRoleKey,
       });
@@ -1065,12 +1112,12 @@ export default function GroupReviewWorkspaceShell() {
         refreshReviewWorkspace();
       }
       setQuizForm({ title: '', description: '', questionCount: 8, durationMinutes: 12, passScore: 70, quizIntent: 'REVIEW' });
-      showSuccess('Đã tạo quiz mock để review UI.');
+      showSuccess(t('groupReview.toast.quizCreated', 'Created mock quiz for UI review.'));
     } catch (error) {
       console.error('Failed to create review quiz:', error);
-      showError(error?.message || 'Không thể tạo quiz mới.');
+      showError(error?.message || t('groupReview.toast.quizCreateFailed', 'Unable to create a new quiz.'));
     }
-  }, [actualRoleKey, currentUser?.email, currentUser?.fullName, currentUser?.id, currentUser?.userId, quizForm, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess]);
+  }, [actualRoleKey, currentUser?.email, currentUser?.fullName, currentUser?.id, currentUser?.userId, quizForm, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess, t]);
 
   const handleStartQuiz = useCallback((quiz, mode) => {
     if (!quiz?.quizId) return;
@@ -1100,7 +1147,7 @@ export default function GroupReviewWorkspaceShell() {
         trimmedReply,
         {
           userId: Number(currentUser?.id ?? currentUser?.userId ?? 0),
-          fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || 'Thành viên',
+          fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || t('groupReview.fallback.member', 'Member'),
           email: currentUser?.email || 'user@quizmate.local',
           role: actualRoleKey,
         },
@@ -1111,14 +1158,14 @@ export default function GroupReviewWorkspaceShell() {
         refreshReviewWorkspace();
       }
       setDiscussionReply('');
-      showSuccess('Đã gửi phản hồi trong discussion.');
+      showSuccess(t('groupReview.toast.replySent', 'Reply sent in discussion.'));
     } catch (error) {
       console.error('Failed to send discussion reply:', error);
-      showError(error?.message || 'Không thể gửi phản hồi.');
+      showError(error?.message || t('groupReview.toast.replyFailed', 'Unable to send reply.'));
     } finally {
       setIsSubmittingDiscussionReply(false);
     }
-  }, [actualRoleKey, currentUser?.email, currentUser?.fullName, currentUser?.id, currentUser?.userId, detailRoute, discussionReply, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess]);
+  }, [actualRoleKey, currentUser?.email, currentUser?.fullName, currentUser?.id, currentUser?.userId, detailRoute, discussionReply, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess, t]);
 
   const handleToggleThreadResolved = useCallback(async (thread) => {
     if (!resolvedWorkspaceId || !thread) return;
@@ -1129,7 +1176,7 @@ export default function GroupReviewWorkspaceShell() {
         !thread.isResolved,
         {
           userId: Number(currentUser?.id ?? currentUser?.userId ?? 0),
-          fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || 'Leader',
+          fullName: currentUser?.fullName || currentUser?.username || currentUser?.email || t('groupReview.fallback.reviewer', 'Leader'),
           email: currentUser?.email || 'user@quizmate.local',
           role: actualRoleKey,
         },
@@ -1139,27 +1186,29 @@ export default function GroupReviewWorkspaceShell() {
       } else {
         refreshReviewWorkspace();
       }
-      showSuccess(thread.isResolved ? 'Đã mở lại discussion.' : 'Đã đánh dấu discussion là resolved.');
+      showSuccess(thread.isResolved
+        ? t('groupReview.toast.threadReopened', 'Discussion reopened.')
+        : t('groupReview.toast.threadResolved', 'Discussion marked as resolved.'));
     } catch (error) {
       console.error('Failed to update discussion state:', error);
-      showError(error?.message || 'Không thể cập nhật discussion.');
+      showError(error?.message || t('groupReview.toast.threadUpdateFailed', 'Unable to update discussion.'));
     }
-  }, [actualRoleKey, currentUser?.email, currentUser?.fullName, currentUser?.id, currentUser?.userId, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess]);
+  }, [actualRoleKey, currentUser?.email, currentUser?.fullName, currentUser?.id, currentUser?.userId, refreshReviewWorkspace, resolvedWorkspaceId, showError, showSuccess, t]);
 
   const headerSettingsMenu = (
     <div className="hidden items-center gap-2 md:flex">
       <Button variant="outline" size="sm" onClick={() => void refreshAllData()}>
         <RefreshCw className="h-4 w-4" />
-        Làm mới
+        {t('groupReview.header.refresh', 'Refresh')}
       </Button>
       <Button variant="outline" size="sm" onClick={handleRequestGroupProfileUpdate}>
         <Sparkles className="h-4 w-4" />
-        Hồ sơ nhóm
+        {t('groupReview.header.groupProfile', 'Group profile')}
       </Button>
       {canUploadSource ? (
         <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(true)}>
           <Upload className="h-4 w-4" />
-          Upload
+          {t('groupReview.header.upload', 'Upload')}
         </Button>
       ) : null}
     </div>
@@ -1168,48 +1217,48 @@ export default function GroupReviewWorkspaceShell() {
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={Users} label="Member hoạt động" value={`${activeMembers}/${reviewWorkspace?.members?.length || 0}`} caption="Số member có tần suất tham gia ổn định trong tuần." isDarkMode={isDarkMode} />
-        <MetricCard icon={FolderOpen} label="Tài liệu trong group" value={allMaterials.length} caption={`${warningQueue.length} tài liệu đang nằm trong warning queue.`} tone={warningQueue.length > 0 ? 'warn' : 'default'} isDarkMode={isDarkMode} />
-        <MetricCard icon={PenLine} label="Độ chính xác" value={`${averageAccuracy}%`} caption="Điểm trung bình hiện tại của toàn group." tone={averageAccuracy >= 70 ? 'success' : 'warn'} isDarkMode={isDarkMode} />
-            <MetricCard icon={MapIcon} label="Roadmap progress" value={`${completionRate}%`} caption={`${overdueRoadmapItems} mục đang bị block cần leader xử lý.`} isDarkMode={isDarkMode} />
+        <MetricCard icon={Users} label={t('groupReview.metrics.activeMembers', 'Active members')} value={`${activeMembers}/${reviewWorkspace?.members?.length || 0}`} caption={t('groupReview.metrics.activeMembersCaption', 'Members with a steady weekly participation rhythm.')} isDarkMode={isDarkMode} />
+        <MetricCard icon={FolderOpen} label={t('groupReview.metrics.materialsInGroup', 'Group documents')} value={allMaterials.length} caption={t('groupReview.metrics.materialsInGroupCaption', { count: warningQueue.length, defaultValue: '{{count}} document(s) currently in the warning queue.' })} tone={warningQueue.length > 0 ? 'warn' : 'default'} isDarkMode={isDarkMode} />
+        <MetricCard icon={PenLine} label={t('groupReview.metrics.accuracy', 'Accuracy')} value={`${averageAccuracy}%`} caption={t('groupReview.metrics.accuracyCaption', 'Current average score of the whole group.')} tone={averageAccuracy >= 70 ? 'success' : 'warn'} isDarkMode={isDarkMode} />
+            <MetricCard icon={MapIcon} label={t('groupReview.metrics.roadmapProgress', 'Roadmap progress')} value={`${completionRate}%`} caption={t('groupReview.metrics.roadmapProgressCaption', { count: overdueRoadmapItems, defaultValue: '{{count}} item(s) blocked and need leader action.' })} isDarkMode={isDarkMode} />
       </div>
 
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-xl">Hub quản trị và học nhóm</CardTitle>
+          <CardTitle className="text-xl">{t('groupReview.overview.hubTitle', 'Group management and study hub')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Review end-to-end cho materials, moderation, quiz, discussion, dashboard hiệu suất và roadmap trong cùng một shell.
+            {t('groupReview.overview.hubDescription', 'Review end-to-end for materials, moderation, quiz, discussion, performance dashboard and roadmap in a single shell.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-[1.3fr,0.9fr]">
           <div className={`rounded-3xl border p-5 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{formatRoleLabel(actualRoleKey)}</Badge>
-              <Badge variant="outline">{LEARNING_MODE_LABELS[resolvedGroupData.learningMode] || 'Ôn tập theo nhóm'}</Badge>
-              <Badge variant="outline">{hasCompletedGroupProfile ? 'Profile hoàn tất' : 'Profile cần cập nhật'}</Badge>
+              <Badge variant="outline">{formatRoleLabel(actualRoleKey, t)}</Badge>
+              <Badge variant="outline">{getLearningModeLabel(resolvedGroupData.learningMode, t)}</Badge>
+              <Badge variant="outline">{hasCompletedGroupProfile ? t('groupReview.overview.profileComplete', 'Profile complete') : t('groupReview.overview.profileIncomplete', 'Profile needs update')}</Badge>
             </div>
             <h2 className="mt-4 text-2xl font-semibold">{resolvedGroupData.groupName}</h2>
             <p className={`mt-3 text-sm leading-7 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{resolvedGroupData.description}</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <Button onClick={() => goToSection('materials')}><FolderOpen className="h-4 w-4" />Review tài liệu</Button>
-              <Button variant="outline" onClick={() => goToSection('performance')}><Activity className="h-4 w-4" />Xem dashboard</Button>
-              <Button variant="outline" onClick={() => goToSection('quiz')}><PenLine className="h-4 w-4" />Tạo quiz</Button>
+              <Button onClick={() => goToSection('materials')}><FolderOpen className="h-4 w-4" />{t('groupReview.overview.reviewMaterials', 'Review materials')}</Button>
+              <Button variant="outline" onClick={() => goToSection('performance')}><Activity className="h-4 w-4" />{t('groupReview.overview.viewDashboard', 'View dashboard')}</Button>
+              <Button variant="outline" onClick={() => goToSection('quiz')}><PenLine className="h-4 w-4" />{t('groupReview.overview.createQuiz', 'Create quiz')}</Button>
             </div>
           </div>
 
           <div className="grid gap-4">
             <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Điểm nóng cần xử lý</CardTitle>
+                <CardTitle className="text-base">{t('groupReview.overview.hotspotsTitle', 'Hotspots that need action')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-amber-400/20 bg-amber-500/10' : 'border-amber-200 bg-amber-50'}`}>
-                  <p className="text-sm font-semibold">Moderation queue</p>
-                  <p className={`mt-1 text-sm ${isDarkMode ? 'text-amber-100/80' : 'text-amber-800'}`}>{warningQueue.length} tài liệu cần leader hoặc contributor review.</p>
+                  <p className="text-sm font-semibold">{t('groupReview.overview.moderationQueue', 'Moderation queue')}</p>
+                  <p className={`mt-1 text-sm ${isDarkMode ? 'text-amber-100/80' : 'text-amber-800'}`}>{t('groupReview.overview.moderationQueueDetail', { count: warningQueue.length, defaultValue: '{{count}} document(s) need leader or contributor review.' })}</p>
                 </div>
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50'}`}>
-                  <p className="text-sm font-semibold">Discussion đang mở</p>
-                  <p className={`mt-1 text-sm ${isDarkMode ? 'text-cyan-100/80' : 'text-cyan-800'}`}>{unresolvedDiscussionCount} thread chưa resolve, có thể mở từ quiz hoặc kết quả làm bài.</p>
+                  <p className="text-sm font-semibold">{t('groupReview.overview.openDiscussions', 'Open discussions')}</p>
+                  <p className={`mt-1 text-sm ${isDarkMode ? 'text-cyan-100/80' : 'text-cyan-800'}`}>{t('groupReview.overview.openDiscussionsDetail', { count: unresolvedDiscussionCount, defaultValue: '{{count}} thread(s) unresolved, openable from quiz or result screens.' })}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1220,9 +1269,9 @@ export default function GroupReviewWorkspaceShell() {
       <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
         <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
           <CardHeader>
-            <CardTitle className="text-lg">Tài liệu mới và warning queue</CardTitle>
+            <CardTitle className="text-lg">{t('groupReview.overview.recentMaterialsTitle', 'New materials and warning queue')}</CardTitle>
             <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-              Lane quản lý tài liệu member upload và queue cần moderation.
+              {t('groupReview.overview.recentMaterialsDescription', 'Lane to manage member uploads and the moderation queue.')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -1231,9 +1280,9 @@ export default function GroupReviewWorkspaceShell() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="font-semibold">{material.name}</p>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{material.uploaderName} • {formatMaterialStatus(material.moderation?.state || material.status)}</p>
+                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{material.uploaderName} • {formatMaterialStatus(material.moderation?.state || material.status, t)}</p>
                   </div>
-                  <Badge variant="outline">{material.source === 'live' ? 'Live' : 'Mock'}</Badge>
+                  <Badge variant="outline">{material.source === 'live' ? t('groupReview.materials.sourceLive', 'Live') : t('groupReview.materials.sourceMock', 'Mock')}</Badge>
                 </div>
               </button>
             ))}
@@ -1242,9 +1291,9 @@ export default function GroupReviewWorkspaceShell() {
 
         <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
           <CardHeader>
-            <CardTitle className="text-lg">Discussion từng câu quiz</CardTitle>
+            <CardTitle className="text-lg">{t('groupReview.overview.quizDiscussionsTitle', 'Per-question quiz discussion')}</CardTitle>
             <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-              Deep-link discussion mở từ quiz result hoặc từ studio quiz.
+              {t('groupReview.overview.quizDiscussionsDescription', 'Deep-link discussions opened from quiz results or the quiz studio.')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -1253,9 +1302,9 @@ export default function GroupReviewWorkspaceShell() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold">{thread.title}</p>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{thread.messages.length} phản hồi • {thread.isResolved ? 'Đã resolve' : 'Đang mở'}</p>
+                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('groupReview.overview.repliesCount', { count: thread.messages.length, defaultValue: '{{count}} reply/replies' })} • {thread.isResolved ? t('groupReview.overview.threadResolved', 'Resolved') : t('groupReview.overview.threadOpen', 'Open')}</p>
                   </div>
-                  {thread.unreadCount > 0 ? <Badge>{thread.unreadCount} mới</Badge> : <Badge variant="outline">Theo dõi</Badge>}
+                  {thread.unreadCount > 0 ? <Badge>{t('groupReview.overview.newBadge', { count: thread.unreadCount, defaultValue: '{{count}} new' })}</Badge> : <Badge variant="outline">{t('groupReview.overview.trackingBadge', 'Tracking')}</Badge>}
                 </div>
               </button>
             ))}
@@ -1269,30 +1318,30 @@ export default function GroupReviewWorkspaceShell() {
     <div className="space-y-6">
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-lg">Member materials</CardTitle>
+          <CardTitle className="text-lg">{t('groupReview.materials.title', 'Member materials')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Quản lý tài liệu được upload trong group, filter theo uploader, trạng thái và xem detail đã extract.
+            {t('groupReview.materials.description', 'Manage documents uploaded in the group, filter by uploader and status, and view extracted details.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 lg:grid-cols-[1.4fr,0.8fr,0.8fr]">
-            <Input value={materialSearch} onChange={(event) => setMaterialSearch(event.target.value)} placeholder="Tìm theo tên tài liệu hoặc summary" className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
+            <Input value={materialSearch} onChange={(event) => setMaterialSearch(event.target.value)} placeholder={t('groupReview.materials.searchPlaceholder', 'Search by document name or summary')} className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
             <select value={materialStatusFilter} onChange={(event) => setMaterialStatusFilter(event.target.value)} className={`h-10 rounded-md border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="APPROVED">Đã duyệt</option>
-              <option value="WARN">Cần xem lại</option>
-              <option value="REJECT">Bị từ chối</option>
-              <option value="NEEDS_REVIEW">Yêu cầu upload lại</option>
-              <option value="PROCESSING">Đang xử lý</option>
+              <option value="ALL">{t('groupReview.materials.filterAllStatus', 'All statuses')}</option>
+              <option value="APPROVED">{t('groupReview.status.approved', 'Approved')}</option>
+              <option value="WARN">{t('groupReview.status.needsRecheck', 'Needs recheck')}</option>
+              <option value="REJECT">{t('groupReview.status.rejected', 'Rejected')}</option>
+              <option value="NEEDS_REVIEW">{t('groupReview.status.needsReupload', 'Re-upload required')}</option>
+              <option value="PROCESSING">{t('groupReview.status.processing', 'Processing')}</option>
             </select>
             <select value={materialOwnerFilter} onChange={(event) => setMaterialOwnerFilter(event.target.value)} className={`h-10 rounded-md border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="ALL">Tất cả uploader</option>
+              <option value="ALL">{t('groupReview.materials.filterAllOwners', 'All uploaders')}</option>
               {materialOwners.map((owner) => <option key={owner.value} value={owner.value}>{owner.label}</option>)}
             </select>
           </div>
 
           {filteredMaterials.length === 0 ? (
-            <EmptyState title="Chưa có tài liệu phù hợp bộ lọc" description="Thử đổi trạng thái, uploader hoặc upload thêm tài liệu để review." action={canUploadSource ? <Button onClick={() => setUploadDialogOpen(true)}><Upload className="h-4 w-4" />Upload tài liệu</Button> : null} isDarkMode={isDarkMode} />
+            <EmptyState title={t('groupReview.materials.emptyTitle', 'No documents match the filters')} description={t('groupReview.materials.emptyDescription', 'Try another status, uploader, or upload more documents to review.')} action={canUploadSource ? <Button onClick={() => setUploadDialogOpen(true)}><Upload className="h-4 w-4" />{t('groupReview.materials.uploadButton', 'Upload document')}</Button> : null} isDarkMode={isDarkMode} />
           ) : (
             <div className="grid gap-4 xl:grid-cols-2">
               {filteredMaterials.map((material) => (
@@ -1301,17 +1350,17 @@ export default function GroupReviewWorkspaceShell() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-base font-semibold">{material.name}</p>
-                        <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{material.uploaderName} • {formatDateTime(material.uploadedAt, currentLang)}</p>
+                        <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{material.uploaderName} • {formatDateTime(material.uploadedAt, currentLang, t)}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline">{formatMaterialStatus(material.moderation?.state || material.status)}</Badge>
-                        <Badge variant="outline">{material.source === 'live' ? 'Live' : 'Mock'}</Badge>
+                        <Badge variant="outline">{formatMaterialStatus(material.moderation?.state || material.status, t)}</Badge>
+                        <Badge variant="outline">{material.source === 'live' ? t('groupReview.materials.sourceLive', 'Live') : t('groupReview.materials.sourceMock', 'Mock')}</Badge>
                       </div>
                     </div>
-                    <p className={`mt-4 line-clamp-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{material.summary || material.excerpt || 'Chưa có summary cho tài liệu này.'}</p>
+                    <p className={`mt-4 line-clamp-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{material.summary || material.excerpt || t('groupReview.materials.noSummary', 'No summary for this document yet.')}</p>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openMaterialDetail(material.materialId)}><Eye className="h-4 w-4" />Xem detail</Button>
-                      {FLAGGED_STATES.has(String(material.moderation?.state || material.status).toUpperCase()) ? <Button size="sm" onClick={() => goToSection('moderation')} className="bg-amber-600 text-white hover:bg-amber-700"><ShieldAlert className="h-4 w-4" />Mở moderation</Button> : null}
+                      <Button variant="outline" size="sm" onClick={() => openMaterialDetail(material.materialId)}><Eye className="h-4 w-4" />{t('groupReview.materials.viewDetail', 'View detail')}</Button>
+                      {FLAGGED_STATES.has(String(material.moderation?.state || material.status).toUpperCase()) ? <Button size="sm" onClick={() => goToSection('moderation')} className="bg-amber-600 text-white hover:bg-amber-700"><ShieldAlert className="h-4 w-4" />{t('groupReview.materials.openModeration', 'Open moderation')}</Button> : null}
                     </div>
                   </CardContent>
                 </Card>
@@ -1327,14 +1376,14 @@ export default function GroupReviewWorkspaceShell() {
     <div className="space-y-6">
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-lg">Moderation queue</CardTitle>
+          <CardTitle className="text-lg">{t('groupReview.moderation.title', 'Moderation queue')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Hàng đợi tài liệu bị warning, reject hoặc cần request upload lại. Mỗi action sẽ đẩy event vào logs mock.
+            {t('groupReview.moderation.description', 'Queue of documents that are flagged, rejected, or need re-upload. Each action pushes an event to the mock logs.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {warningQueue.length === 0 ? (
-            <EmptyState title="Không có tài liệu cần review" description="Queue moderation hiện đang trống. Bạn có thể quay lại materials hub để xem toàn bộ tài liệu." action={<Button onClick={() => goToSection('materials')}>Mở materials hub</Button>} isDarkMode={isDarkMode} />
+            <EmptyState title={t('groupReview.moderation.emptyTitle', 'No documents need review')} description={t('groupReview.moderation.emptyDescription', 'Moderation queue is empty. You can go back to the materials hub to view all documents.')} action={<Button onClick={() => goToSection('materials')}>{t('groupReview.moderation.openMaterialsHub', 'Open materials hub')}</Button>} isDarkMode={isDarkMode} />
           ) : (
             warningQueue.map((material) => (
               <Card key={material.materialId} className={isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}>
@@ -1342,16 +1391,16 @@ export default function GroupReviewWorkspaceShell() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-base font-semibold">{material.name}</p>
-                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{material.uploaderName} • {formatRoleLabel(material.uploaderRole)}</p>
+                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{material.uploaderName} • {formatRoleLabel(material.uploaderRole, t)}</p>
                     </div>
-                    <Badge variant="outline">{formatMaterialStatus(material.moderation?.state || material.status)}</Badge>
+                    <Badge variant="outline">{formatMaterialStatus(material.moderation?.state || material.status, t)}</Badge>
                   </div>
-                  <p className={`mt-4 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{material.moderation?.reason || material.summary || 'Tài liệu cần được review thêm trước khi dùng trong group.'}</p>
+                  <p className={`mt-4 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{material.moderation?.reason || material.summary || t('groupReview.moderation.needsReview', 'Document needs further review before being used in the group.')}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => void handleReviewQueueAction(material, 'approve')} className="bg-emerald-600 text-white hover:bg-emerald-700"><CheckCircle2 className="h-4 w-4" />Approve</Button>
-                    <Button size="sm" variant="outline" onClick={() => void handleReviewQueueAction(material, 'request_reupload')}><RefreshCw className="h-4 w-4" />Request re-upload</Button>
-                    <Button size="sm" variant="destructive" onClick={() => void handleReviewQueueAction(material, 'reject')}><Trash2 className="h-4 w-4" />Reject</Button>
-                    <Button size="sm" variant="outline" onClick={() => openMaterialDetail(material.materialId)}><Eye className="h-4 w-4" />Xem detail</Button>
+                    <Button size="sm" onClick={() => void handleReviewQueueAction(material, 'approve')} className="bg-emerald-600 text-white hover:bg-emerald-700"><CheckCircle2 className="h-4 w-4" />{t('groupReview.moderation.approve', 'Approve')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => void handleReviewQueueAction(material, 'request_reupload')}><RefreshCw className="h-4 w-4" />{t('groupReview.moderation.requestReupload', 'Request re-upload')}</Button>
+                    <Button size="sm" variant="destructive" onClick={() => void handleReviewQueueAction(material, 'reject')}><Trash2 className="h-4 w-4" />{t('groupReview.moderation.reject', 'Reject')}</Button>
+                    <Button size="sm" variant="outline" onClick={() => openMaterialDetail(material.materialId)}><Eye className="h-4 w-4" />{t('groupReview.moderation.viewDetail', 'View detail')}</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1367,24 +1416,24 @@ export default function GroupReviewWorkspaceShell() {
       {canCreateContent ? (
         <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
           <CardHeader>
-            <CardTitle className="text-lg">Quiz studio</CardTitle>
+            <CardTitle className="text-lg">{t('groupReview.quiz.studioTitle', 'Quiz studio')}</CardTitle>
             <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-              Tạo quiz mock để review luồng studio, practice, exam, result và discussion theo câu.
+              {t('groupReview.quiz.studioDescription', 'Create a mock quiz to review the flow of studio, practice, exam, result, and per-question discussion.')}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 lg:grid-cols-2">
-            <Input value={quizForm.title} onChange={(event) => setQuizForm((prev) => ({ ...prev, title: event.target.value }))} placeholder="Tên quiz" className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
+            <Input value={quizForm.title} onChange={(event) => setQuizForm((prev) => ({ ...prev, title: event.target.value }))} placeholder={t('groupReview.quiz.namePlaceholder', 'Quiz name')} className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
             <select value={quizForm.quizIntent} onChange={(event) => setQuizForm((prev) => ({ ...prev, quizIntent: event.target.value }))} className={`h-10 rounded-md border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : 'border-slate-200 bg-white text-slate-900'}`}>
-              <option value="PRE_LEARNING">Pre-learning</option>
-              <option value="REVIEW">Review</option>
-              <option value="POST_LEARNING">Post-learning</option>
+              <option value="PRE_LEARNING">{t('groupReview.quiz.intentPreLearning', 'Pre-learning')}</option>
+              <option value="REVIEW">{t('groupReview.quiz.intentReview', 'Review')}</option>
+              <option value="POST_LEARNING">{t('groupReview.quiz.intentPostLearning', 'Post-learning')}</option>
             </select>
-            <textarea value={quizForm.description} onChange={(event) => setQuizForm((prev) => ({ ...prev, description: event.target.value }))} placeholder="Mô tả quiz" className={`min-h-[110px] rounded-md border px-3 py-2 text-sm outline-none lg:col-span-2 ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500' : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400'}`} />
-            <Input type="number" min={5} max={30} value={quizForm.questionCount} onChange={(event) => setQuizForm((prev) => ({ ...prev, questionCount: Number(event.target.value || 0) }))} placeholder="Số câu hỏi" className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
-            <Input type="number" min={5} value={quizForm.durationMinutes} onChange={(event) => setQuizForm((prev) => ({ ...prev, durationMinutes: Number(event.target.value || 0) }))} placeholder="Thời lượng (phút)" className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
-            <Input type="number" min={50} max={100} value={quizForm.passScore} onChange={(event) => setQuizForm((prev) => ({ ...prev, passScore: Number(event.target.value || 0) }))} placeholder="Điểm đạt" className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
+            <textarea value={quizForm.description} onChange={(event) => setQuizForm((prev) => ({ ...prev, description: event.target.value }))} placeholder={t('groupReview.quiz.descriptionPlaceholder', 'Quiz description')} className={`min-h-[110px] rounded-md border px-3 py-2 text-sm outline-none lg:col-span-2 ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500' : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400'}`} />
+            <Input type="number" min={5} max={30} value={quizForm.questionCount} onChange={(event) => setQuizForm((prev) => ({ ...prev, questionCount: Number(event.target.value || 0) }))} placeholder={t('groupReview.quiz.questionCountPlaceholder', 'Question count')} className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
+            <Input type="number" min={5} value={quizForm.durationMinutes} onChange={(event) => setQuizForm((prev) => ({ ...prev, durationMinutes: Number(event.target.value || 0) }))} placeholder={t('groupReview.quiz.durationPlaceholder', 'Duration (minutes)')} className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
+            <Input type="number" min={50} max={100} value={quizForm.passScore} onChange={(event) => setQuizForm((prev) => ({ ...prev, passScore: Number(event.target.value || 0) }))} placeholder={t('groupReview.quiz.passScorePlaceholder', 'Pass score')} className={isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''} />
             <div className="flex items-center justify-end">
-              <Button onClick={() => void handleCreateQuiz()} className="bg-cyan-600 text-white hover:bg-cyan-700"><Plus className="h-4 w-4" />Tạo quiz mock</Button>
+              <Button onClick={() => void handleCreateQuiz()} className="bg-cyan-600 text-white hover:bg-cyan-700"><Plus className="h-4 w-4" />{t('groupReview.quiz.createMockQuiz', 'Create mock quiz')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -1400,7 +1449,7 @@ export default function GroupReviewWorkspaceShell() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-lg font-semibold">{quiz.title}</p>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{quiz.questionCount} câu • {Math.round(Number(quiz.duration || 0) / 60)} phút • {quiz.ownerName}</p>
+                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('groupReview.quiz.questionCountLabel', { count: quiz.questionCount, defaultValue: '{{count}} questions' })} • {t('groupReview.quiz.minutesLabel', { count: Math.round(Number(quiz.duration || 0) / 60), defaultValue: '{{count}} min' })} • {quiz.ownerName}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline">{quiz.quizIntent}</Badge>
@@ -1410,14 +1459,14 @@ export default function GroupReviewWorkspaceShell() {
                 <p className={`mt-4 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{quiz.description}</p>
                 {recentHistory ? (
                   <div className={`mt-4 rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
-                    <p className="text-sm font-semibold">Lần làm gần nhất</p>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{recentHistory.score}% • {recentHistory.passed ? 'Đạt' : 'Chưa đạt'} • {formatDateTime(recentHistory.completedAt, currentLang)}</p>
+                    <p className="text-sm font-semibold">{t('groupReview.quiz.lastAttempt', 'Last attempt')}</p>
+                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{recentHistory.score}% • {recentHistory.passed ? t('groupReview.quiz.attemptPassed', 'Passed') : t('groupReview.quiz.attemptFailed', 'Not passed')} • {formatDateTime(recentHistory.completedAt, currentLang, t)}</p>
                   </div>
                 ) : null}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => handleStartQuiz(quiz, 'practice')}><BookOpen className="h-4 w-4" />Làm practice</Button>
-                  <Button size="sm" variant="outline" onClick={() => handleStartQuiz(quiz, 'exam')}><Clock3 className="h-4 w-4" />Làm exam</Button>
-                  {firstQuestion ? <Button size="sm" variant="outline" onClick={() => openDiscussionDetail(quiz.quizId, firstQuestion.questionId)}><MessageSquare className="h-4 w-4" />Discussion câu 1</Button> : null}
+                  <Button size="sm" onClick={() => handleStartQuiz(quiz, 'practice')}><BookOpen className="h-4 w-4" />{t('groupReview.quiz.practice', 'Practice')}</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleStartQuiz(quiz, 'exam')}><Clock3 className="h-4 w-4" />{t('groupReview.quiz.exam', 'Exam')}</Button>
+                  {firstQuestion ? <Button size="sm" variant="outline" onClick={() => openDiscussionDetail(quiz.quizId, firstQuestion.questionId)}><MessageSquare className="h-4 w-4" />{t('groupReview.quiz.discussionQuestion1', 'Question 1 discussion')}</Button> : null}
                 </div>
               </CardContent>
             </Card>
@@ -1427,23 +1476,23 @@ export default function GroupReviewWorkspaceShell() {
 
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-lg">Recent attempts</CardTitle>
+          <CardTitle className="text-lg">{t('groupReview.quiz.recentAttemptsTitle', 'Recent attempts')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Lịch sử lượt làm quiz gần nhất trong group.
+            {t('groupReview.quiz.recentAttemptsDescription', 'Latest quiz attempt history in the group.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {attempts.length === 0 ? (
-            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Chưa có attempt nào trong mock review.</p>
+            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('groupReview.quiz.noAttempts', 'No attempts yet in the mock review.')}</p>
           ) : (
             attempts.slice().sort((left, right) => new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime()).slice(0, 5).map((attempt) => (
               <div key={attempt.attemptId} className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="font-medium">{attempt.userName}</p>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{attempt.isPracticeMode ? 'Practice' : 'Exam'} • {attempt.status} • {formatDateTime(attempt.startedAt, currentLang)}</p>
+                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{attempt.isPracticeMode ? t('groupReview.quiz.attemptModePractice', 'Practice') : t('groupReview.quiz.attemptModeExam', 'Exam')} • {attempt.status} • {formatDateTime(attempt.startedAt, currentLang, t)}</p>
                   </div>
-                  {attempt.result ? <Badge>{attempt.result.score}%</Badge> : <Badge variant="outline">Đang làm</Badge>}
+                  {attempt.result ? <Badge>{attempt.result.score}%</Badge> : <Badge variant="outline">{t('groupReview.quiz.attemptOngoing', 'Ongoing')}</Badge>}
                 </div>
               </div>
             ))
@@ -1456,9 +1505,9 @@ export default function GroupReviewWorkspaceShell() {
     <div className="space-y-6">
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-lg">UI member theo role</CardTitle>
+          <CardTitle className="text-lg">{t('groupReview.members.title', 'Member UI by role')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Leader quản trị roster và quyền upload, contributor theo dõi lane nội dung, member xem tiến độ cá nhân.
+            {t('groupReview.members.description', 'Leaders manage the roster and upload permissions, contributors follow content lanes, members review personal progress.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 xl:grid-cols-2">
@@ -1470,28 +1519,28 @@ export default function GroupReviewWorkspaceShell() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-base font-semibold">
-                        <UserDisplayName user={member} fallback="Thành viên" isDarkMode={isDarkMode} />
+                        <UserDisplayName user={member} fallback={t('groupReview.fallback.member', 'Member')} isDarkMode={isDarkMode} />
                       </p>
                       <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{member.email}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline">{formatRoleLabel(member.role)}</Badge>
-                      <Badge variant="outline">{member.canUpload ? 'Có quyền upload' : 'Chỉ xem'}</Badge>
+                      <Badge variant="outline">{formatRoleLabel(member.role, t)}</Badge>
+                      <Badge variant="outline">{member.canUpload ? t('groupReview.members.uploadGranted', 'Can upload') : t('groupReview.members.uploadReadOnly', 'View only')}</Badge>
                     </div>
                   </div>
 
                   {perf ? (
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                       <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white'}`}>
-                        <p className={`text-xs uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Accuracy</p>
+                        <p className={`text-xs uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('groupReview.members.accuracy', 'Accuracy')}</p>
                         <p className="mt-2 text-xl font-semibold">{perf.accuracy}%</p>
                       </div>
                       <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white'}`}>
-                        <p className={`text-xs uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Roadmap</p>
+                        <p className={`text-xs uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('groupReview.members.roadmap', 'Roadmap')}</p>
                         <p className="mt-2 text-xl font-semibold">{perf.roadmapProgress}%</p>
                       </div>
                       <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white'}`}>
-                        <p className={`text-xs uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Discussion</p>
+                        <p className={`text-xs uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('groupReview.members.discussion', 'Discussion')}</p>
                         <p className="mt-2 text-xl font-semibold">{perf.discussionCount}</p>
                       </div>
                     </div>
@@ -1505,20 +1554,23 @@ export default function GroupReviewWorkspaceShell() {
                         disabled={member.isCurrentUser}
                         className={`h-9 rounded-md border px-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : 'border-slate-200 bg-white text-slate-900'}`}
                       >
-                        <option value="LEADER">Leader</option>
-                        <option value="CONTRIBUTOR">Contributor</option>
-                        <option value="MEMBER">Member</option>
+                        <option value="LEADER">{t('groupReview.role.leader', 'Leader')}</option>
+                        <option value="CONTRIBUTOR">{t('groupReview.role.contributor', 'Contributor')}</option>
+                        <option value="MEMBER">{t('groupReview.role.member', 'Member')}</option>
                       </select>
                       <Button size="sm" variant="outline" onClick={() => void handleToggleUploadPermission(member)} disabled={member.isCurrentUser}>
-                        {member.canUpload ? 'Thu hồi upload' : 'Cấp upload'}
+                        {member.canUpload ? t('groupReview.members.revokeUpload', 'Revoke upload') : t('groupReview.members.grantUpload', 'Grant upload')}
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => void handleRemoveMember(member)} disabled={member.isCurrentUser}>
-                        Xóa member
+                        {t('groupReview.members.removeMember', 'Remove member')}
                       </Button>
                     </div>
                   ) : (
                     <p className={`mt-4 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      Lane cá nhân: {perf?.recentFocus || 'Theo dõi tiến độ, quiz được giao và discussion đang theo dõi.'}
+                      {t('groupReview.members.personalLane', {
+                        focus: perf?.recentFocus || t('groupReview.members.personalLaneDefault', 'Track progress, assigned quizzes, and followed discussions.'),
+                        defaultValue: 'Personal lane: {{focus}}',
+                      })}
                     </p>
                   )}
                 </CardContent>
@@ -1533,17 +1585,17 @@ export default function GroupReviewWorkspaceShell() {
   const renderPerformance = () => (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={Target} label="Completion rate" value={`${completionRate}%`} caption="Trung bình tiến độ roadmap của nhóm." isDarkMode={isDarkMode} />
-        <MetricCard icon={CheckCircle2} label="Score trend" value={`${averageAccuracy}%`} caption="Điểm trung bình của các attempt đã hoàn thành." isDarkMode={isDarkMode} />
-        <MetricCard icon={Users} label="Active members" value={activeMembers} caption="Số member có ít nhất 5 ngày hoạt động." isDarkMode={isDarkMode} />
-        <MetricCard icon={AlertTriangle} label="Pending review" value={warningQueue.length} caption="Tài liệu flagged đang chờ moderation." tone={warningQueue.length > 0 ? 'warn' : 'success'} isDarkMode={isDarkMode} />
+        <MetricCard icon={Target} label={t('groupReview.metrics.completionRate', 'Completion rate')} value={`${completionRate}%`} caption={t('groupReview.metrics.completionRateCaption', 'Average roadmap progress for the group.')} isDarkMode={isDarkMode} />
+        <MetricCard icon={CheckCircle2} label={t('groupReview.metrics.scoreTrend', 'Score trend')} value={`${averageAccuracy}%`} caption={t('groupReview.metrics.scoreTrendCaption', 'Average score of completed attempts.')} isDarkMode={isDarkMode} />
+        <MetricCard icon={Users} label={t('groupReview.metrics.activeMembers', 'Active members')} value={activeMembers} caption={t('groupReview.metrics.activeMembersCountCaption', 'Members with at least 5 days of activity.')} isDarkMode={isDarkMode} />
+        <MetricCard icon={AlertTriangle} label={t('groupReview.metrics.pendingReview', 'Pending review')} value={warningQueue.length} caption={t('groupReview.metrics.pendingReviewCaption', 'Flagged documents waiting for moderation.')} tone={warningQueue.length > 0 ? 'warn' : 'success'} isDarkMode={isDarkMode} />
       </div>
 
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-lg">Đánh giá hiệu suất từng member</CardTitle>
+          <CardTitle className="text-lg">{t('groupReview.performance.title', 'Per-member performance review')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Xem accuracy, streak, tiến độ roadmap, upload outcomes, logs gần đây và mức độ tham gia discussion.
+            {t('groupReview.performance.description', 'View accuracy, streak, roadmap progress, upload outcomes, recent logs, and discussion participation.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 xl:grid-cols-[0.8fr,1.2fr]">
@@ -1558,10 +1610,10 @@ export default function GroupReviewWorkspaceShell() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="font-semibold">
-                      <UserDisplayName user={member} fallback="Thành viên" isDarkMode={isDarkMode} />
+                      <UserDisplayName user={member} fallback={t('groupReview.fallback.member', 'Member')} isDarkMode={isDarkMode} />
                     </p>
                     <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                      {formatRoleLabel(member.role)} • {member.currentStreak} ngày streak
+                      {formatRoleLabel(member.role, t)} • {t('groupReview.members.streakLabel', { count: member.currentStreak, defaultValue: '{{count}} day streak' })}
                     </p>
                   </div>
                   <Badge variant="outline">{member.accuracy}%</Badge>
@@ -1573,34 +1625,34 @@ export default function GroupReviewWorkspaceShell() {
           {selectedPerformance ? (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <MetricCard icon={Target} label="Accuracy" value={`${selectedPerformance.accuracy}%`} caption="Điểm trung bình hiện tại." isDarkMode={isDarkMode} />
-            <MetricCard icon={MapIcon} label="Roadmap" value={`${selectedPerformance.roadmapProgress}%`} caption="Tiến độ roadmap cá nhân." isDarkMode={isDarkMode} />
-                <MetricCard icon={Upload} label="Upload OK" value={selectedPerformance.uploadsApproved} caption={`${selectedPerformance.uploadsWarned} warning • ${selectedPerformance.uploadsRejected} reject`} isDarkMode={isDarkMode} />
-                <MetricCard icon={MessageSquare} label="Discussion" value={selectedPerformance.discussionCount} caption={`Active ${selectedPerformance.activeDays} ngày`} isDarkMode={isDarkMode} />
+                <MetricCard icon={Target} label={t('groupReview.metrics.accuracyShort', 'Accuracy')} value={`${selectedPerformance.accuracy}%`} caption={t('groupReview.metrics.accuracyShortCaption', 'Current average score.')} isDarkMode={isDarkMode} />
+            <MetricCard icon={MapIcon} label={t('groupReview.metrics.roadmapLabel', 'Roadmap')} value={`${selectedPerformance.roadmapProgress}%`} caption={t('groupReview.metrics.roadmapCaption', 'Personal roadmap progress.')} isDarkMode={isDarkMode} />
+                <MetricCard icon={Upload} label={t('groupReview.metrics.uploadOk', 'Upload OK')} value={selectedPerformance.uploadsApproved} caption={t('groupReview.metrics.uploadOkCaption', { warned: selectedPerformance.uploadsWarned, rejected: selectedPerformance.uploadsRejected, defaultValue: '{{warned}} warning • {{rejected}} reject' })} isDarkMode={isDarkMode} />
+                <MetricCard icon={MessageSquare} label={t('groupReview.metrics.discussion', 'Discussion')} value={selectedPerformance.discussionCount} caption={t('groupReview.metrics.discussionCaption', { count: selectedPerformance.activeDays, defaultValue: 'Active {{count}} day(s)' })} isDarkMode={isDarkMode} />
               </div>
 
               <Card className={isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}>
                 <CardContent className="p-5">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <p className="text-sm font-semibold">Xu hướng điểm số</p>
+                      <p className="text-sm font-semibold">{t('groupReview.performance.scoreTrendTitle', 'Score trend')}</p>
                       <div className="mt-3 flex items-end gap-2">
                         {selectedPerformance.scoreTrend.map((value, index) => (
                           <div key={`${selectedPerformance.userId}-${index}`} className="flex-1">
                             <div className={`rounded-t-xl ${isDarkMode ? 'bg-cyan-400/60' : 'bg-cyan-500'}`} style={{ height: `${Math.max(24, value)}px` }} />
-                            <p className={`mt-2 text-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>T{index + 1}</p>
+                            <p className={`mt-2 text-center text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{t('groupReview.performance.weekLabel', { index: index + 1, defaultValue: 'W{{index}}' })}</p>
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <p className="text-sm font-semibold">Điểm nhấn gần đây</p>
+                      <p className="text-sm font-semibold">{t('groupReview.performance.recentFocusTitle', 'Recent highlights')}</p>
                       <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                         {selectedPerformance.recentFocus}
                       </p>
                       <p className={`mt-3 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                        Hoạt động gần nhất: {formatRelativeTime(selectedPerformance.lastActiveAt, currentLang)}
+                        {t('groupReview.performance.lastActivity', 'Last activity:')} {formatRelativeTime(selectedPerformance.lastActiveAt, currentLang, t)}
                       </p>
                     </div>
                   </div>
@@ -1616,22 +1668,22 @@ export default function GroupReviewWorkspaceShell() {
     <div className="space-y-6">
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-lg">Roadmap board</CardTitle>
+          <CardTitle className="text-lg">{t('groupReview.roadmap.title', 'Roadmap board')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Phase, knowledge, progress, owner, blocker và liên kết quiz-material để review toàn luồng trong group.
+            {t('groupReview.roadmap.description', 'Phases, knowledge, progress, owner, blockers, and quiz-material links to review the full group flow.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{roadmap?.stats?.phaseCount || 0} phases</Badge>
-              <Badge variant="outline">{roadmap?.stats?.knowledgeCount || 0} knowledges</Badge>
-              <Badge variant="outline">{roadmap?.stats?.quizCount || quizzes.length} quizzes</Badge>
+              <Badge variant="outline">{t('groupReview.roadmap.phases', { count: roadmap?.stats?.phaseCount || 0, defaultValue: '{{count}} phases' })}</Badge>
+              <Badge variant="outline">{t('groupReview.roadmap.knowledges', { count: roadmap?.stats?.knowledgeCount || 0, defaultValue: '{{count}} knowledges' })}</Badge>
+              <Badge variant="outline">{t('groupReview.roadmap.quizzes', { count: roadmap?.stats?.quizCount || quizzes.length, defaultValue: '{{count}} quizzes' })}</Badge>
             </div>
             {roadmap?.roadmapId ? (
               <Button variant="outline" onClick={() => openRoadmapDetail(roadmap.roadmapId)}>
                 <Eye className="h-4 w-4" />
-                Drill-down roadmap
+                {t('groupReview.roadmap.drillDown', 'Drill-down roadmap')}
               </Button>
             ) : null}
           </div>
@@ -1645,10 +1697,14 @@ export default function GroupReviewWorkspaceShell() {
                     <div>
                       <p className="text-base font-semibold">{phase.title}</p>
                       <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                        Owner: {owner?.fullName || 'Chưa gán'} • Progress {phase.progress}%
+                        {t('groupReview.roadmap.ownerLine', {
+                          owner: owner?.fullName || t('groupReview.roadmap.ownerUnassigned', 'Unassigned'),
+                          progress: phase.progress,
+                          defaultValue: 'Owner: {{owner}} • Progress {{progress}}%',
+                        })}
                       </p>
                     </div>
-                    {phase.blocker ? <Badge variant="outline">Đang blocked</Badge> : <Badge variant="outline">Đúng tiến độ</Badge>}
+                    {phase.blocker ? <Badge variant="outline">{t('groupReview.roadmap.blocked', 'Blocked')}</Badge> : <Badge variant="outline">{t('groupReview.roadmap.onTrack', 'On track')}</Badge>}
                   </div>
 
                   {phase.blocker ? (
@@ -1662,7 +1718,11 @@ export default function GroupReviewWorkspaceShell() {
                       <div key={knowledge.knowledgeId} className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white'}`}>
                         <p className="font-medium">{knowledge.title}</p>
                         <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                          Progress {knowledge.progress}% • {knowledge.relatedQuizIds.length} quiz liên quan
+                          {t('groupReview.roadmap.knowledgeLine', {
+                            progress: knowledge.progress,
+                            count: knowledge.relatedQuizIds.length,
+                            defaultValue: 'Progress {{progress}}% • {{count}} related quizzes',
+                          })}
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {knowledge.relatedQuizIds.slice(0, 1).map((quizId) => {
@@ -1670,7 +1730,7 @@ export default function GroupReviewWorkspaceShell() {
                             return quiz ? (
                               <Button key={quizId} size="sm" variant="outline" onClick={() => handleStartQuiz(quiz, 'practice')}>
                                 <BookOpen className="h-4 w-4" />
-                                Practice
+                                {t('groupReview.roadmap.practice', 'Practice')}
                               </Button>
                             ) : null;
                           })}
@@ -1679,7 +1739,7 @@ export default function GroupReviewWorkspaceShell() {
                             return material ? (
                               <Button key={materialId} size="sm" variant="outline" onClick={() => openMaterialDetail(material.materialId)}>
                                 <FileText className="h-4 w-4" />
-                                Tài liệu
+                                {t('groupReview.roadmap.material', 'Material')}
                               </Button>
                             ) : null;
                           })}
@@ -1700,9 +1760,9 @@ export default function GroupReviewWorkspaceShell() {
     <div className="space-y-6">
       <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
         <CardHeader>
-          <CardTitle className="text-lg">Activity logs</CardTitle>
+          <CardTitle className="text-lg">{t('groupReview.logs.title', 'Activity logs')}</CardTitle>
           <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-            Log tổng hợp từ live activity và mock event phát sinh khi moderation, discussion hoặc quiz thay đổi.
+            {t('groupReview.logs.description', 'Aggregated logs from live activity and mock events generated when moderation, discussion, or quiz change.')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -1715,10 +1775,10 @@ export default function GroupReviewWorkspaceShell() {
                     {log.description}
                   </p>
                 </div>
-                <Badge variant="outline">{log.source === 'live' ? 'Live' : 'Mock'}</Badge>
+                <Badge variant="outline">{log.source === 'live' ? t('groupReview.materials.sourceLive', 'Live') : t('groupReview.materials.sourceMock', 'Mock')}</Badge>
               </div>
               <p className={`mt-3 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                {log.actorName || log.actorEmail} • {formatDateTime(log.logTime, currentLang)}
+                {log.actorName || log.actorEmail} • {formatDateTime(log.logTime, currentLang, t)}
               </p>
             </div>
           ))}
@@ -1730,9 +1790,9 @@ export default function GroupReviewWorkspaceShell() {
     if (!groupMaterialDetail) {
       return (
         <EmptyState
-          title="Không tìm thấy tài liệu"
-          description="Material detail có thể đã bị xóa hoặc chưa được đồng bộ."
-          action={<Button onClick={() => goToSection('materials')}>Quay lại materials</Button>}
+          title={t('groupReview.materialDetail.emptyTitle', 'Document not found')}
+          description={t('groupReview.materialDetail.emptyDescription', 'Material detail may have been deleted or is not synced yet.')}
+          action={<Button onClick={() => goToSection('materials')}>{t('groupReview.materialDetail.backToMaterials', 'Back to materials')}</Button>}
           isDarkMode={isDarkMode}
         />
       );
@@ -1745,71 +1805,71 @@ export default function GroupReviewWorkspaceShell() {
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" onClick={() => navigate(buildGroupWorkspaceSectionPath(resolvedWorkspaceId || 'new', 'materials'))}>
             <ArrowLeft className="h-4 w-4" />
-            Quay lại materials
+            {t('groupReview.materialDetail.backToMaterials', 'Back to materials')}
           </Button>
-          <Badge variant="outline">{formatMaterialStatus(normalizedState)}</Badge>
-          <Badge variant="outline">{groupMaterialDetail.source === 'live' ? 'Live material' : 'Mock material'}</Badge>
+          <Badge variant="outline">{formatMaterialStatus(normalizedState, t)}</Badge>
+          <Badge variant="outline">{groupMaterialDetail.source === 'live' ? t('groupReview.materialDetail.liveMaterial', 'Live material') : t('groupReview.materialDetail.mockMaterial', 'Mock material')}</Badge>
         </div>
 
         <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
           <CardHeader>
-            <CardTitle className="text-lg">Quản lý tài liệu upload</CardTitle>
+            <CardTitle className="text-lg">{t('groupReview.materialDetail.title', 'Manage uploaded document')}</CardTitle>
             <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-              Xem extracted text, summary, moderation report và thao tác rename / delete / review.
+              {t('groupReview.materialDetail.description', 'View extracted text, summary, moderation report, and perform rename / delete / review actions.')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-4 lg:grid-cols-[1.2fr,0.8fr]">
               <div className="space-y-4">
                 <div>
-                  <p className={`mb-2 text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Tên tài liệu</p>
+                  <p className={`mb-2 text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{t('groupReview.materialDetail.documentName', 'Document name')}</p>
                   <div className="flex flex-wrap gap-2">
                     <Input value={materialNameDraft} onChange={(event) => setMaterialNameDraft(event.target.value)} className={`flex-1 ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white' : ''}`} />
-                    <Button onClick={() => void handleSaveMaterialName()}>Lưu tên</Button>
+                    <Button onClick={() => void handleSaveMaterialName()}>{t('groupReview.materialDetail.saveName', 'Save name')}</Button>
                   </div>
                 </div>
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
-                  <p className="text-sm font-semibold">Tóm tắt</p>
+                  <p className="text-sm font-semibold">{t('groupReview.materialDetail.summary', 'Summary')}</p>
                   {materialInsightLoading ? (
                     <div className="mt-3 flex items-center gap-2 text-sm">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Đang tải thông tin extract...
+                      {t('groupReview.materialDetail.loadingExtract', 'Loading extract info...')}
                     </div>
                   ) : (
                     <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                      {materialInsight?.extractedSummary || groupMaterialDetail.summary || 'Chưa có summary.'}
+                      {materialInsight?.extractedSummary || groupMaterialDetail.summary || t('groupReview.materialDetail.noSummary', 'No summary yet.')}
                     </p>
                   )}
                 </div>
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
-                  <p className="text-sm font-semibold">Extracted text / preview</p>
+                  <p className="text-sm font-semibold">{t('groupReview.materialDetail.extractedText', 'Extracted text / preview')}</p>
                   <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                    {materialInsight?.extractedText || groupMaterialDetail.excerpt || 'Chưa có preview.'}
+                    {materialInsight?.extractedText || groupMaterialDetail.excerpt || t('groupReview.materialDetail.noPreview', 'No preview yet.')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
-                  <p className="text-sm font-semibold">Metadata</p>
+                  <p className="text-sm font-semibold">{t('groupReview.materialDetail.metadata', 'Metadata')}</p>
                   <div className={`mt-3 space-y-2 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                    <p>Uploader: {groupMaterialDetail.uploaderName}</p>
-                    <p>Role: {formatRoleLabel(groupMaterialDetail.uploaderRole)}</p>
-                    <p>Uploaded: {formatDateTime(groupMaterialDetail.uploadedAt, currentLang)}</p>
-                    <p>Type: {groupMaterialDetail.type || 'application/pdf'}</p>
+                    <p>{t('groupReview.materialDetail.uploader', { name: groupMaterialDetail.uploaderName, defaultValue: 'Uploader: {{name}}' })}</p>
+                    <p>{t('groupReview.materialDetail.role', { role: formatRoleLabel(groupMaterialDetail.uploaderRole, t), defaultValue: 'Role: {{role}}' })}</p>
+                    <p>{t('groupReview.materialDetail.uploaded', { time: formatDateTime(groupMaterialDetail.uploadedAt, currentLang, t), defaultValue: 'Uploaded: {{time}}' })}</p>
+                    <p>{t('groupReview.materialDetail.type', { type: groupMaterialDetail.type || 'application/pdf', defaultValue: 'Type: {{type}}' })}</p>
                   </div>
                 </div>
                 <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
-                  <p className="text-sm font-semibold">Moderation report</p>
+                  <p className="text-sm font-semibold">{t('groupReview.materialDetail.moderationReport', 'Moderation report')}</p>
                   <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                    {materialInsight?.moderationDetail || groupMaterialDetail.moderation?.reason || 'Chưa có moderation detail.'}
+                    {materialInsight?.moderationDetail || groupMaterialDetail.moderation?.reason || t('groupReview.materialDetail.noModerationDetail', 'No moderation detail yet.')}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => void handleReviewQueueAction(groupMaterialDetail, 'approve')}><CheckCircle2 className="h-4 w-4" />Approve</Button>
-                  <Button variant="outline" onClick={() => void handleReviewQueueAction(groupMaterialDetail, 'request_reupload')}><RefreshCw className="h-4 w-4" />Request re-upload</Button>
-                  <Button variant="outline" onClick={() => window.alert('Download demo cho clickable review UI.')}><Download className="h-4 w-4" />Download</Button>
-                  <Button variant="destructive" onClick={() => void handleDeleteCurrentMaterial()}><Trash2 className="h-4 w-4" />Xóa</Button>
+                  <Button variant="outline" onClick={() => void handleReviewQueueAction(groupMaterialDetail, 'approve')}><CheckCircle2 className="h-4 w-4" />{t('groupReview.materialDetail.approve', 'Approve')}</Button>
+                  <Button variant="outline" onClick={() => void handleReviewQueueAction(groupMaterialDetail, 'request_reupload')}><RefreshCw className="h-4 w-4" />{t('groupReview.materialDetail.requestReupload', 'Request re-upload')}</Button>
+                  <Button variant="outline" onClick={() => window.alert(t('groupReview.toast.downloadDemo', 'Download demo for clickable review UI.'))}><Download className="h-4 w-4" />{t('groupReview.materialDetail.download', 'Download')}</Button>
+                  <Button variant="destructive" onClick={() => void handleDeleteCurrentMaterial()}><Trash2 className="h-4 w-4" />{t('groupReview.materialDetail.delete', 'Delete')}</Button>
                 </div>
               </div>
             </div>
@@ -1823,9 +1883,9 @@ export default function GroupReviewWorkspaceShell() {
     if (!discussionThread || !discussionContext.question || !discussionContext.quiz) {
       return (
         <EmptyState
-          title="Discussion chưa sẵn sàng"
-          description="Thread có thể chưa được khởi tạo hoặc quiz/question không còn tồn tại."
-          action={<Button onClick={() => goToSection('quiz')}>Quay lại quiz hub</Button>}
+          title={t('groupReview.discussionDetail.emptyTitle', 'Discussion not ready')}
+          description={t('groupReview.discussionDetail.emptyDescription', 'The thread may not be initialized or the quiz/question no longer exists.')}
+          action={<Button onClick={() => goToSection('quiz')}>{t('groupReview.discussionDetail.backToQuizHub', 'Back to quiz hub')}</Button>}
           isDarkMode={isDarkMode}
         />
       );
@@ -1836,25 +1896,28 @@ export default function GroupReviewWorkspaceShell() {
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" onClick={() => navigate(returnToQuizPath)}>
             <ArrowLeft className="h-4 w-4" />
-            Quay lại quiz hub
+            {t('groupReview.discussionDetail.backToQuizHub', 'Back to quiz hub')}
           </Button>
-          <Badge variant="outline">{discussionThread.isResolved ? 'Đã resolve' : 'Đang mở'}</Badge>
-          <Badge variant="outline">{discussionThread.unreadCount} activity</Badge>
+          <Badge variant="outline">{discussionThread.isResolved ? t('groupReview.discussionDetail.resolved', 'Resolved') : t('groupReview.discussionDetail.open', 'Open')}</Badge>
+          <Badge variant="outline">{t('groupReview.discussionDetail.activityCount', { count: discussionThread.unreadCount, defaultValue: '{{count}} activity' })}</Badge>
         </div>
 
         <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
           <CardHeader>
             <CardTitle className="text-lg">{discussionThread.title}</CardTitle>
             <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>
-              {discussionContext.quiz.title} • Discussion async theo từng câu quiz để leader, contributor và member cùng review.
+              {t('groupReview.discussionDetail.contextSubtitle', {
+                title: discussionContext.quiz.title,
+                defaultValue: '{{title}} • Async discussion per quiz question for leader, contributor, and member to review together.',
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className={`rounded-2xl border p-5 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
-              <p className="text-sm font-semibold">Câu hỏi</p>
+              <p className="text-sm font-semibold">{t('groupReview.discussionDetail.question', 'Question')}</p>
               <p className={`mt-3 text-sm leading-7 ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{discussionContext.question.content}</p>
               <div className={`mt-4 rounded-2xl border p-4 ${isDarkMode ? 'border-cyan-400/20 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50'}`}>
-                <p className="text-sm font-semibold">Sample answer</p>
+                <p className="text-sm font-semibold">{t('groupReview.discussionDetail.sampleAnswer', 'Sample answer')}</p>
                 <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-cyan-100/90' : 'text-cyan-900'}`}>{discussionThread.sampleAnswer}</p>
               </div>
             </div>
@@ -1865,26 +1928,26 @@ export default function GroupReviewWorkspaceShell() {
                     <p className="font-semibold">
                       <UserDisplayName
                         user={{ fullName: message.authorName, username: message.authorUserName }}
-                        fallback={message.authorName || 'Thành viên'}
+                        fallback={message.authorName || t('groupReview.fallback.member', 'Member')}
                         isDarkMode={isDarkMode}
                       />
                     </p>
-                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatRoleLabel(message.authorRole)} • {formatDateTime(message.createdAt, currentLang)}</p>
+                    <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatRoleLabel(message.authorRole, t)} • {formatDateTime(message.createdAt, currentLang, t)}</p>
                   </div>
                   <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{message.body}</p>
                 </div>
               ))}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => void handleToggleThreadResolved(discussionThread)}>{discussionThread.isResolved ? 'Mở lại thread' : 'Đánh dấu resolved'}</Button>
+              <Button variant="outline" onClick={() => void handleToggleThreadResolved(discussionThread)}>{discussionThread.isResolved ? t('groupReview.discussionDetail.reopenThread', 'Reopen thread') : t('groupReview.discussionDetail.markResolved', 'Mark as resolved')}</Button>
             </div>
             <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
-              <p className="text-sm font-semibold">Phản hồi mới</p>
-              <textarea value={discussionReply} onChange={(event) => setDiscussionReply(event.target.value)} placeholder="Viết ý kiến, phản biện hoặc note để cả nhóm cùng review..." className={`mt-3 min-h-[130px] w-full rounded-md border px-3 py-2 text-sm outline-none ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500' : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400'}`} />
+              <p className="text-sm font-semibold">{t('groupReview.discussionDetail.newReplyTitle', 'New reply')}</p>
+              <textarea value={discussionReply} onChange={(event) => setDiscussionReply(event.target.value)} placeholder={t('groupReview.discussionDetail.replyPlaceholder', 'Write opinions, counter-arguments, or notes for the whole group to review...')} className={`mt-3 min-h-[130px] w-full rounded-md border px-3 py-2 text-sm outline-none ${isDarkMode ? 'border-slate-700 bg-slate-950/70 text-white placeholder:text-slate-500' : 'border-slate-200 bg-white text-slate-900 placeholder:text-slate-400'}`} />
               <div className="mt-3 flex justify-end">
                 <Button onClick={() => void handleDiscussionReply()} disabled={isSubmittingDiscussionReply}>
                   {isSubmittingDiscussionReply ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
-                  Gửi phản hồi
+                  {t('groupReview.discussionDetail.sendReply', 'Send reply')}
                 </Button>
               </div>
             </div>
@@ -1897,9 +1960,9 @@ export default function GroupReviewWorkspaceShell() {
     if (!roadmapDetail) {
       return (
         <EmptyState
-          title="Không tìm thấy roadmap"
-          description="Roadmap detail có thể chưa được seed hoặc chưa đồng bộ."
-          action={<Button onClick={() => goToSection('roadmap')}>Quay lại roadmap</Button>}
+          title={t('groupReview.roadmap.detailEmptyTitle', 'Roadmap not found')}
+          description={t('groupReview.roadmap.detailEmptyDescription', 'Roadmap detail may not be seeded or synced yet.')}
+          action={<Button onClick={() => goToSection('roadmap')}>{t('groupReview.roadmap.backToRoadmap', 'Back to roadmap')}</Button>}
           isDarkMode={isDarkMode}
         />
       );
@@ -1910,9 +1973,9 @@ export default function GroupReviewWorkspaceShell() {
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" onClick={() => navigate(buildGroupWorkspaceSectionPath(resolvedWorkspaceId || 'new', 'roadmap'))}>
             <ArrowLeft className="h-4 w-4" />
-            Quay lại roadmap
+            {t('groupReview.roadmap.backToRoadmap', 'Back to roadmap')}
           </Button>
-          <Badge variant="outline">{roadmapDetail.stats?.phaseCount || roadmapDetail.phases?.length || 0} phases</Badge>
+          <Badge variant="outline">{t('groupReview.roadmap.phases', { count: roadmapDetail.stats?.phaseCount || roadmapDetail.phases?.length || 0, defaultValue: '{{count}} phases' })}</Badge>
         </div>
 
         <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
@@ -1927,23 +1990,23 @@ export default function GroupReviewWorkspaceShell() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-base font-semibold">{phase.title}</p>
-                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Progress {phase.progress}% • {phase.knowledges?.length || 0} knowledge nodes</p>
+                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('groupReview.roadmap.phaseProgressLine', { progress: phase.progress, count: phase.knowledges?.length || 0, defaultValue: 'Progress {{progress}}% • {{count}} knowledge nodes' })}</p>
                     </div>
-                    {phase.blocker ? <Badge variant="outline">Blocked</Badge> : <Badge variant="outline">Healthy</Badge>}
+                    {phase.blocker ? <Badge variant="outline">{t('groupReview.roadmap.blockedBadge', 'Blocked')}</Badge> : <Badge variant="outline">{t('groupReview.roadmap.healthyBadge', 'Healthy')}</Badge>}
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     {(phase.knowledges || []).map((knowledge) => (
                       <div key={knowledge.knowledgeId} className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white'}`}>
                         <p className="font-medium">{knowledge.title}</p>
-                        <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Progress {knowledge.progress}% • {knowledge.relatedMaterialIds.length} material • {knowledge.relatedQuizIds.length} quiz</p>
+                        <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('groupReview.roadmap.knowledgeDetailLine', { progress: knowledge.progress, materialCount: knowledge.relatedMaterialIds.length, quizCount: knowledge.relatedQuizIds.length, defaultValue: 'Progress {{progress}}% • {{materialCount}} material • {{quizCount}} quiz' })}</p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {knowledge.relatedMaterialIds.slice(0, 1).map((materialId) => {
                             const material = allMaterials.find((item) => Number(item.materialId) === Number(materialId));
-                            return material ? <Button key={materialId} size="sm" variant="outline" onClick={() => openMaterialDetail(material.materialId)}><FileText className="h-4 w-4" />Xem tài liệu</Button> : null;
+                            return material ? <Button key={materialId} size="sm" variant="outline" onClick={() => openMaterialDetail(material.materialId)}><FileText className="h-4 w-4" />{t('groupReview.roadmap.viewMaterial', 'View material')}</Button> : null;
                           })}
                           {knowledge.relatedQuizIds.slice(0, 1).map((quizId) => {
                             const quiz = quizzes.find((item) => Number(item.quizId) === Number(quizId));
-                            return quiz ? <Button key={quizId} size="sm" variant="outline" onClick={() => handleStartQuiz(quiz, 'practice')}><BookOpen className="h-4 w-4" />Mở quiz</Button> : null;
+                            return quiz ? <Button key={quizId} size="sm" variant="outline" onClick={() => handleStartQuiz(quiz, 'practice')}><BookOpen className="h-4 w-4" />{t('groupReview.roadmap.openQuiz', 'Open quiz')}</Button> : null;
                           })}
                         </div>
                       </div>
@@ -1977,7 +2040,7 @@ export default function GroupReviewWorkspaceShell() {
       <div className={`${pageShellClass} flex min-h-screen items-center justify-center px-6`}>
         <div className="flex items-center gap-3 text-lg font-medium">
           <Loader2 className="h-6 w-6 animate-spin" />
-          Đang khởi tạo group workspace...
+          {t('groupReview.shell.bootstrapping', 'Initializing group workspace...')}
         </div>
       </div>
     );
@@ -1988,8 +2051,8 @@ export default function GroupReviewWorkspaceShell() {
       <div className={`${pageShellClass} flex min-h-screen items-center justify-center px-6`}>
         <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
           <CardContent className="p-8">
-            <p className="text-lg font-semibold">Không tìm thấy group workspace</p>
-            <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Workspace có thể chưa được tạo hoặc bạn không còn quyền truy cập.</p>
+            <p className="text-lg font-semibold">{t('groupReview.shell.notFoundTitle', 'Group workspace not found')}</p>
+            <p className={`mt-2 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('groupReview.shell.notFoundDescription', 'The workspace may not have been created or you no longer have access.')}</p>
           </CardContent>
         </Card>
       </div>
@@ -2004,36 +2067,36 @@ export default function GroupReviewWorkspaceShell() {
         isDarkMode={isDarkMode}
         settingsMenu={headerSettingsMenu}
         wsConnected={wsConnected}
-        subtitle={`${formatRoleLabel(actualRoleKey)} • ${LEARNING_MODE_LABELS[resolvedGroupData.learningMode] || 'Ôn tập theo nhóm'}`}
+        subtitle={`${formatRoleLabel(actualRoleKey, t)} • ${getLearningModeLabel(resolvedGroupData.learningMode, t)}`}
       />
       <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-6 xl:px-8">
         <div className="mb-4 flex flex-wrap gap-2 md:hidden">
-          <Button variant="outline" size="sm" onClick={() => void refreshAllData()}><RefreshCw className="h-4 w-4" />Làm mới</Button>
-          <Button variant="outline" size="sm" onClick={handleRequestGroupProfileUpdate}><Sparkles className="h-4 w-4" />Hồ sơ nhóm</Button>
-          {canUploadSource ? <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(true)}><Upload className="h-4 w-4" />Upload</Button> : null}
-          {canManageMembers ? <Button size="sm" onClick={() => setInviteDialogOpen(true)} className="bg-cyan-600 text-white hover:bg-cyan-700"><UserPlus className="h-4 w-4" />Mời member</Button> : null}
+          <Button variant="outline" size="sm" onClick={() => void refreshAllData()}><RefreshCw className="h-4 w-4" />{t('groupReview.shell.refresh', 'Refresh')}</Button>
+          <Button variant="outline" size="sm" onClick={handleRequestGroupProfileUpdate}><Sparkles className="h-4 w-4" />{t('groupReview.shell.groupProfile', 'Group profile')}</Button>
+          {canUploadSource ? <Button variant="outline" size="sm" onClick={() => setUploadDialogOpen(true)}><Upload className="h-4 w-4" />{t('groupReview.shell.upload', 'Upload')}</Button> : null}
+          {canManageMembers ? <Button size="sm" onClick={() => setInviteDialogOpen(true)} className="bg-cyan-600 text-white hover:bg-cyan-700"><UserPlus className="h-4 w-4" />{t('groupReview.shell.inviteMember', 'Invite member')}</Button> : null}
         </div>
         <div className="grid gap-6 xl:grid-cols-[280px,minmax(0,1fr)]">
           <aside className="space-y-4">
             <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Group workspace flow</CardTitle>
-                <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>Điều hướng section bằng `?section=` và giữ detail route riêng cho materials, discussion và roadmap.</CardDescription>
+                <CardTitle className="text-base">{t('groupReview.sidebar.flowTitle', 'Group workspace flow')}</CardTitle>
+                <CardDescription className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>{t('groupReview.sidebar.flowDescription', 'Navigate sections via `?section=` and keep detail routes separate for materials, discussion, and roadmap.')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                {Object.keys(SECTION_META).map((sectionKey) => <SectionButton key={sectionKey} sectionKey={sectionKey} active={!detailRoute && activeSection === sectionKey} onClick={goToSection} isDarkMode={isDarkMode} />)}
+                {Object.keys(SECTION_META).map((sectionKey) => <SectionButton key={sectionKey} sectionKey={sectionKey} active={!detailRoute && activeSection === sectionKey} onClick={goToSection} isDarkMode={isDarkMode} t={t} />)}
               </CardContent>
             </Card>
             <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}>
-              <CardHeader className="pb-3"><CardTitle className="text-base">Snapshot</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base">{t('groupReview.sidebar.snapshot', 'Snapshot')}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60 text-slate-300' : 'border-slate-200 bg-slate-50/80 text-slate-700'}`}><p className="font-medium">Moderation queue</p><p className="mt-2">{warningQueue.length} tài liệu flagged</p></div>
-                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60 text-slate-300' : 'border-slate-200 bg-slate-50/80 text-slate-700'}`}><p className="font-medium">Discussion</p><p className="mt-2">{unresolvedDiscussionCount} thread chưa resolve</p></div>
-                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60 text-slate-300' : 'border-slate-200 bg-slate-50/80 text-slate-700'}`}><p className="font-medium">Logs</p><p className="mt-2">{(reviewWorkspace?.logs || []).length} entries</p></div>
+                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60 text-slate-300' : 'border-slate-200 bg-slate-50/80 text-slate-700'}`}><p className="font-medium">{t('groupReview.sidebar.moderationQueue', 'Moderation queue')}</p><p className="mt-2">{t('groupReview.sidebar.flaggedDocs', { count: warningQueue.length, defaultValue: '{{count}} flagged document(s)' })}</p></div>
+                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60 text-slate-300' : 'border-slate-200 bg-slate-50/80 text-slate-700'}`}><p className="font-medium">{t('groupReview.sidebar.discussion', 'Discussion')}</p><p className="mt-2">{t('groupReview.sidebar.unresolvedThreads', { count: unresolvedDiscussionCount, defaultValue: '{{count}} unresolved thread(s)' })}</p></div>
+                <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60 text-slate-300' : 'border-slate-200 bg-slate-50/80 text-slate-700'}`}><p className="font-medium">{t('groupReview.sidebar.logs', 'Logs')}</p><p className="mt-2">{t('groupReview.sidebar.logEntries', { count: (reviewWorkspace?.logs || []).length, defaultValue: '{{count}} entries' })}</p></div>
               </CardContent>
             </Card>
           </aside>
-          <main className="min-w-0">{(sourcesLoading || membersLoading || groupProfileLoading || logsLoading) && !reviewWorkspace ? <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}><CardContent className="flex items-center gap-3 p-8 text-lg"><Loader2 className="h-5 w-5 animate-spin" />Đang tải dữ liệu group workspace...</CardContent></Card> : renderCurrentContent()}</main>
+          <main className="min-w-0">{(sourcesLoading || membersLoading || groupProfileLoading || logsLoading) && !reviewWorkspace ? <Card className={isDarkMode ? 'border-white/10 bg-white/[0.03]' : 'border-slate-200 bg-white'}><CardContent className="flex items-center gap-3 p-8 text-lg"><Loader2 className="h-5 w-5 animate-spin" />{t('groupReview.shell.loadingData', 'Loading group workspace data...')}</CardContent></Card> : renderCurrentContent()}</main>
         </div>
       </div>
       <UploadSourceDialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen} isDarkMode={isDarkMode} onUploadFiles={handleUploadFiles} workspaceId={resolvedWorkspaceId} onSuggestedImported={() => Promise.all([fetchSources(), loadGroupLogs()])} />
@@ -2048,7 +2111,7 @@ export default function GroupReviewWorkspaceShell() {
         onComplete={async () => {
           setProfileConfigOpen(false);
           await Promise.all([fetchWorkspaceDetail(resolvedWorkspaceId).catch(() => null), fetchGroups().catch(() => null), loadGroupProfile()]);
-          showSuccess('Đã cập nhật profile nhóm.');
+          showSuccess(t('groupReview.toast.profileUpdated', 'Group profile updated.'));
         }}
       />
       <WorkspaceOnboardingUpdateGuardDialog open={profileUpdateGuardOpen} onOpenChange={setProfileUpdateGuardOpen} isDarkMode={isDarkMode} currentLang={currentLang} materialCount={sources.length} hasLearningData={groupHasLearningData} onDeleteAndContinue={handleDeleteMaterialsForGroupProfileUpdate} deleting={isResettingWorkspaceForProfileUpdate} />

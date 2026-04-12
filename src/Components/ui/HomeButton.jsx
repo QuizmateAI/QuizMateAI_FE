@@ -42,7 +42,7 @@ export function HomeButton({
     }
   };
 
-  const buttonText = label || t('common.home', 'Trang chủ');
+  const buttonText = label || t('common.home', 'Home');
 
   const roundedClass = rounded ? 'rounded-full' : 'rounded-[14px]';
   const toneClass = isDarkMode

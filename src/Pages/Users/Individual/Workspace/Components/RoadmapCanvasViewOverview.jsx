@@ -540,12 +540,12 @@ function RoadmapCanvasViewOverview({
                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${STATUS_BADGE_STYLES[state]}`}>
                               <StatusIcon className="h-2.5 w-2.5" />
                               {state === "done"
-                                ? t("workspace.shell.phaseCompleted", "Đã hoàn thành")
+                                ? t("workspace.shell.phaseCompleted", "Completed")
                                 : state === "current"
-                                  ? t("workspace.shell.phaseCurrent", "Hiện tại")
+                                  ? t("workspace.shell.phaseCurrent", "Current")
                                   : state === "next"
                                     ? t("workspace.timeline.phaseNext", "Next")
-                                    : t("workspace.shell.phaseLocked", "Đã khóa")}
+                                    : t("workspace.shell.phaseLocked", "Locked")}
                             </span>
                           </div>
 
@@ -554,7 +554,7 @@ function RoadmapCanvasViewOverview({
                           </h4>
 
                           <p className={`mt-1 leading-5 line-clamp-2 ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`} style={{ fontSize: layoutConfig.cardWidth < 180 ? 10 : 11 }}>
-                            {phase?.description || t("workspace.shell.phaseDescriptionFallback", "Phase này sẵn sàng cho knowledge và quiz.")}
+                            {phase?.description || t("workspace.shell.phaseDescriptionFallback", "This phase is ready for knowledge and quiz generation.")}
                           </p>
 
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -579,10 +579,10 @@ function RoadmapCanvasViewOverview({
           <div className="pointer-events-none absolute inset-x-0 bottom-2 sm:bottom-3 z-20 flex justify-center px-2 sm:px-4">
             <div className={`flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 backdrop-blur-sm ${isDarkMode ? "border-slate-700 bg-slate-900/85" : "border-slate-200/90 bg-white/92"}`}>
               {[
-                { state: "done", label: t("workspace.shell.phaseCompleted", "Đã hoàn thành") },
-                { state: "current", label: t("workspace.shell.phaseCurrent", "Hiện tại") },
+                { state: "done", label: t("workspace.shell.phaseCompleted", "Completed") },
+                { state: "current", label: t("workspace.shell.phaseCurrent", "Current") },
                 { state: "next", label: t("workspace.timeline.phaseNext", "Next") },
-                { state: "locked", label: t("workspace.shell.phaseLocked", "Đã khóa") },
+                { state: "locked", label: t("workspace.shell.phaseLocked", "Locked") },
               ].map(({ state, label }) => (
                 <div key={state} className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-50 text-slate-600"}`}>
                   <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: NODE_COLORS[state] }} />

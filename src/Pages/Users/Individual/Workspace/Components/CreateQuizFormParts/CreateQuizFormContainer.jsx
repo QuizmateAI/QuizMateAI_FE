@@ -56,6 +56,7 @@ function CreateQuizForm({
   /** Ghi AI vào quiz snapshot challenge (BE existingQuizId). */
   existingQuizId = null,
   seedQuizTitle = '',
+  workspaceMaterialsEmptyMessage: workspaceMaterialsEmptyMessageProp,
 }) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -86,6 +87,12 @@ function CreateQuizForm({
     () => workspaceSources.filter((source) => selectedMaterialIds.includes(source.id)),
     [selectedMaterialIds, workspaceSources],
   );
+
+  const workspaceMaterialsEmptyMessage = workspaceMaterialsEmptyMessageProp
+    ?? (workspaceMaterialsError
+      || (workspaceMaterialsLoading
+        ? t("workspace.quiz.aiConfig.loadingMaterials", "Đang tải tài liệu...")
+        : t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")));
 
   const selectableMaterialIds = useMemo(() => (
     (Array.isArray(sources) ? sources : [])
