@@ -256,12 +256,19 @@ function WorkspacePage() {
   const STUDIO_PANEL_MIN_WIDTH = 288;
   const CHAT_PANEL_MIN_WIDTH = 760;
   const CHAT_PANEL_COMFORT_WIDTH = 840;
+  const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] =
+    useState(false);
+  const [roadmapCanvasView, setRoadmapCanvasView] = useState("view2");
 
   const isRoadmapJourActive =
     activeView === "roadmap" ||
     (quizBackTarget?.view === "roadmap" &&
       (activeView === "quizDetail" || activeView === "editQuiz"));
-  const shouldProtectSourcesSpace = isMaterialDetailOpen || isRoadmapJourActive;
+  const shouldHideRoadmapJourOnOverview =
+    activeView === "roadmap" && roadmapCanvasView === "overview";
+  const shouldProtectSourcesSpace =
+    isMaterialDetailOpen ||
+    (isRoadmapJourActive && !shouldHideRoadmapJourOnOverview);
   const sourcesPanelTargetWidth = useMemo(
     () =>
       shouldProtectSourcesSpace
@@ -315,14 +322,17 @@ function WorkspacePage() {
         ? isStudioCollapsed
         : shouldPreferStudioCollapse));
 
-  const effectiveLeftWidth = effectiveSourcesCollapsed
+  const effectiveLeftBaseWidth = effectiveSourcesCollapsed
     ? COLLAPSED_WIDTH
     : sourcesPanelTargetWidth;
+  const effectiveLeftWidth = shouldHideRoadmapJourOnOverview
+    ? 0
+    : effectiveLeftBaseWidth;
+  const shouldShowLeftSeparator =
+    !shouldHideRoadmapJourOnOverview && !effectiveSourcesCollapsed;
   const effectiveRightWidth = effectiveStudioCollapsed
     ? COLLAPSED_WIDTH
     : STUDIO_PANEL_MIN_WIDTH;
-  const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] =
-    useState(false);
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
     return new RegExp(
@@ -336,7 +346,8 @@ function WorkspacePage() {
   }, [isOnWorkspaceQuizRoute]);
 
   const shouldRenderRoadmapJourPanel =
-    hasActivatedRoadmapPanel || isRoadmapJourActive;
+    (hasActivatedRoadmapPanel || isRoadmapJourActive) &&
+    !shouldHideRoadmapJourOnOverview;
 
   useEffect(() => {
     if (isRoadmapJourActive) {
@@ -2294,6 +2305,8 @@ function WorkspacePage() {
 
     planEntitlements,
 
+    onRoadmapCanvasViewChange: setRoadmapCanvasView,
+
     onEditRoadmapConfig: () => setRoadmapConfigEditOpen(true),
   };
 
@@ -2452,7 +2465,7 @@ function WorkspacePage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <span className={`text-xs font-semibold ${fontClass}`}>
                   {mockTestGenerationDisplayLabel}
                 </span>
@@ -2501,12 +2514,12 @@ function WorkspacePage() {
           {/* Layout workspace: bình thường là 3 cột, màn hình quá nhỏ thì đưa sources + studio xuống dưới */}
 
           {shouldStackSidePanels ? (
-            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-4">
+            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-1">
               <div className="min-h-0">
                 <ChatPanel {...chatPanelProps} />
               </div>
 
-              <div className="grid min-h-0 grid-cols-2 gap-4">
+              <div className="grid min-h-0 grid-cols-2 gap-1">
                 <div className="min-w-0 min-h-0">
                   {renderSourceWorkspacePanel(false)}
                 </div>
@@ -2517,7 +2530,7 @@ function WorkspacePage() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full gap-4">
+            <div className="flex h-full gap-1">
               {/* Source panel (left) */}
 
               <div
@@ -2525,18 +2538,20 @@ function WorkspacePage() {
                   width: effectiveLeftWidth,
                   minWidth: effectiveLeftWidth,
                 }}
-                className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
+                className="shrink-0 h-full overflow-hidden transition-[width,min-width] duration-300 ease-in-out"
               >
-                {renderSourceWorkspacePanel(effectiveSourcesCollapsed)}
+                {!shouldHideRoadmapJourOnOverview
+                  ? renderSourceWorkspacePanel(effectiveSourcesCollapsed)
+                  : null}
               </div>
 
               {/* Left panel separator */}
 
               <div
                 aria-hidden="true"
-                className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${effectiveSourcesCollapsed ? "w-2" : "w-4"}`}
+                className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${shouldShowLeftSeparator ? "w-4" : "w-0"}`}
               >
-                {!effectiveSourcesCollapsed && (
+                {shouldShowLeftSeparator && (
                   <div
                     className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`}
                   />

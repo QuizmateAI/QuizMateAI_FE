@@ -1,5 +1,8 @@
-import fs from 'node:fs';
-import path from 'node:path';
+/* global process */
+/* eslint-disable import/no-unresolved */
+
+import fs from 'fs';
+import path from 'path';
 import { test } from 'playwright/test';
 
 const PREVIEW_URL = process.env.PREVIEW_URL || 'http://127.0.0.1:4173';

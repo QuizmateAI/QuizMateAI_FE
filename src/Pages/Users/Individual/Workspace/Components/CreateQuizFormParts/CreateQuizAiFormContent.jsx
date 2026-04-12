@@ -64,8 +64,10 @@ function CreateQuizAiFormContent({
     fontClass,
     isDarkMode,
     hasAdvanceQuizConfig = false,
+    onToggleAllMaterialSelection,
     onToggleMaterialSelection,
     readOnly = false,
+    workspaceMaterialsEmptyMessage,
   } = ui;
   const {
     aiDuration,
@@ -124,9 +126,13 @@ function CreateQuizAiFormContent({
     handleAiTotalQuestionsBlur,
     handleAiTotalQuestionsChange,
     handleBloomRatioChange,
+    handleClearAllBloomSkills,
+    handleClearAllQuestionTypes,
     handleCustomDifficultyChange,
     handleDifficultyChange,
     handleQTypeRatioChange,
+    handleSelectAllBloomSkills,
+    handleSelectAllQuestionTypes,
     handleToggleBloomLock,
     handleToggleBloomSelection,
     handleToggleDifficultyLock,
@@ -157,6 +163,28 @@ function CreateQuizAiFormContent({
   const isStructureCountMissing = structureTargetCount > 0 && structureCurrentCount < structureTargetCount;
   const canAddMoreStructureItem = structureTargetCount <= 0 || structureCurrentCount < structureTargetCount;
   const showStructureOutdatedOverlay = Boolean(isStructureOutdated && structurePreview?.structureJson);
+  const selectableMaterialIds = workspaceSources
+    .map((item) => Number(item?.id ?? item?.materialId))
+    .filter((id, index, ids) => Number.isInteger(id) && id > 0 && ids.indexOf(id) === index);
+  const hasSelectedMaterialInList = selectableMaterialIds.some((id) => selectedMaterialIds.includes(id));
+  const areAllMaterialsSelected = selectableMaterialIds.length > 0
+    && selectableMaterialIds.every((id) => selectedMaterialIds.includes(id));
+  const selectableQuestionTypes = qTypes.filter((questionType) => (
+    hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(questionType?.questionType)
+  ));
+  const hasSelectedQuestionTypes = selectedQTypes.length > 0;
+  const areAllQuestionTypesSelected = selectableQuestionTypes.length > 0
+    && selectableQuestionTypes.every((questionType) => (
+      selectedQTypes.some((item) => item.questionTypeId === questionType.questionTypeId)
+    ));
+  const hasSelectedBloomSkills = selectedBloomSkills.length > 0;
+  const areAllBloomSkillsSelected = bloomSkills.length > 0
+    && bloomSkills.every((skill) => (
+      selectedBloomSkills.some((item) => item.bloomId === skill.bloomId)
+    ));
+  const bulkActionButtonClass = isDarkMode
+    ? "h-7 border-slate-700 bg-slate-900/60 px-2.5 text-[11px] text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+    : "h-7 border-gray-200 bg-white px-2.5 text-[11px] text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
 
   const onStructureDragStart = (index) => {
     dragSourceIndexRef.current = index;
@@ -271,18 +299,42 @@ function CreateQuizAiFormContent({
           <h3 className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
             <CheckSquare className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} /> {t("workspace.quiz.aiConfig.selectedMaterials")}
           </h3>
-          {workspaceSources.length > 0 ? (
-            <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
-              {t("workspace.quiz.aiConfig.materialsSelectedSummary", {
-                selected: selectedMaterialIds.length,
-                total: workspaceSources.length,
-              })}
-            </p>
-          ) : null}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {workspaceSources.length > 0 ? (
+              <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+                {t("workspace.quiz.aiConfig.materialsSelectedSummary", {
+                  selected: selectedMaterialIds.length,
+                  total: workspaceSources.length,
+                })}
+              </p>
+            ) : null}
+            {selectableMaterialIds.length > 0 && typeof onToggleAllMaterialSelection === "function" && !readOnly ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={bulkActionButtonClass}
+                  disabled={areAllMaterialsSelected}
+                  onClick={() => onToggleAllMaterialSelection(true)}
+                >
+                  {t("workspace.sources.selectAll")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={bulkActionButtonClass}
+                  disabled={!hasSelectedMaterialInList}
+                  onClick={() => onToggleAllMaterialSelection(false)}
+                >
+                  {t("workspace.sources.deselectAll")}
+                </Button>
+              </>
+            ) : null}
+          </div>
         </div>
         {workspaceSources.length === 0 ? (
           <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-            {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
+            {workspaceMaterialsEmptyMessage || t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
           </p>
         ) : (
           <div
@@ -590,9 +642,33 @@ function CreateQuizAiFormContent({
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         <div ref={aiQuestionTypesSectionRef} className={getAiSectionCardClass(["selectedQTypes"])}>
-          <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-            <Sparkles className="h-4 w-4 text-purple-500" /> {t("workspace.quiz.aiConfig.questionTypes")}
-          </h3>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+              <Sparkles className="h-4 w-4 text-purple-500" /> {t("workspace.quiz.aiConfig.questionTypes")}
+            </h3>
+            {selectableQuestionTypes.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={bulkActionButtonClass}
+                  disabled={areAllQuestionTypesSelected}
+                  onClick={handleSelectAllQuestionTypes}
+                >
+                  {t("workspace.sources.selectAll")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={bulkActionButtonClass}
+                  disabled={!hasSelectedQuestionTypes}
+                  onClick={handleClearAllQuestionTypes}
+                >
+                  {t("workspace.sources.deselectAll")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
 
           <div className="mb-3 flex items-center gap-2">
             <input
@@ -676,30 +752,54 @@ function CreateQuizAiFormContent({
         </div>
 
         <div ref={aiBloomSectionRef} className={getAiSectionCardClass(["selectedBloomSkills"])}>
-          <h3 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-            <BrainCircuit className="h-4 w-4 text-teal-500" /> {t("workspace.quiz.aiConfig.bloomSkills")}
-            <div className="group/bloom-info relative">
-              <button
-                type="button"
-                className={`inline-flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${isDarkMode ? "border-slate-700 text-slate-400 hover:border-teal-500/50 hover:text-teal-300" : "border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600"}`}
-                aria-label={t("workspace.quiz.aiConfig.bloomInfo")}
-                title={t("workspace.quiz.aiConfig.bloomInfo")}
-              >
-                <Info className="h-3.5 w-3.5" />
-              </button>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <h3 className={`flex items-center gap-2 text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+              <BrainCircuit className="h-4 w-4 text-teal-500" /> {t("workspace.quiz.aiConfig.bloomSkills")}
+              <div className="group/bloom-info relative">
+                <button
+                  type="button"
+                  className={`inline-flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${isDarkMode ? "border-slate-700 text-slate-400 hover:border-teal-500/50 hover:text-teal-300" : "border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600"}`}
+                  aria-label={t("workspace.quiz.aiConfig.bloomInfo")}
+                  title={t("workspace.quiz.aiConfig.bloomInfo")}
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </button>
 
-              <div className={`absolute left-0 top-7 z-50 hidden w-[320px] rounded-xl border p-2 shadow-xl group-hover/bloom-info:block group-focus-within/bloom-info:block md:w-[420px] ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}>
-                <p className={`mb-1 text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
-                  {t("workspace.quiz.aiConfig.bloomInfo")}
-                </p>
-                <img
-                  src={bloomTaxonomyImage}
-                  alt={t("workspace.quiz.aiConfig.bloomInfoAlt")}
-                  className="h-auto w-full rounded-lg border border-slate-200/30"
-                />
+                <div className={`absolute left-0 top-7 z-50 hidden w-[320px] rounded-xl border p-2 shadow-xl group-hover/bloom-info:block group-focus-within/bloom-info:block md:w-[420px] ${isDarkMode ? "border-slate-700 bg-slate-900" : "border-gray-200 bg-white"}`}>
+                  <p className={`mb-1 text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-700"} ${fontClass}`}>
+                    {t("workspace.quiz.aiConfig.bloomInfo")}
+                  </p>
+                  <img
+                    src={bloomTaxonomyImage}
+                    alt={t("workspace.quiz.aiConfig.bloomInfoAlt")}
+                    className="h-auto w-full rounded-lg border border-slate-200/30"
+                  />
+                </div>
               </div>
-            </div>
-          </h3>
+            </h3>
+            {bloomSkills.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={bulkActionButtonClass}
+                  disabled={areAllBloomSkillsSelected}
+                  onClick={handleSelectAllBloomSkills}
+                >
+                  {t("workspace.sources.selectAll")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={bulkActionButtonClass}
+                  disabled={!hasSelectedBloomSkills}
+                  onClick={handleClearAllBloomSkills}
+                >
+                  {t("workspace.sources.deselectAll")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
 
           <div className="mb-3 flex items-center gap-2">
             <input
