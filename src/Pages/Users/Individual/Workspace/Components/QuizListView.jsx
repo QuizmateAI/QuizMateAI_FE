@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock, MoreVertical, Users, UserPlus } from "lucide-react";
+import { Search, X, Plus, BadgeCheck, FolderOpen, Clock, RefreshCw, Trash2, Loader2, Timer, BarChart3, Play, ClipboardCheck, Globe, Lock, MoreVertical, Users, UserPlus, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/Components/ui/dropdown-menu";
@@ -12,6 +12,9 @@ import { unwrapApiData } from "@/Utils/apiResponse";
 import { getFeedbackTargetStatuses } from "@/api/FeedbackAPI";
 import { useToast } from "@/context/ToastContext";
 import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
+import { cn } from "@/lib/utils";
+import UserDisplayName from "@/Components/users/UserDisplayName";
+import { getUserDisplayLabel } from "@/Utils/userProfile";
 import {
   buildQuizAttemptPath,
   buildWorkspaceRoadmapsPath,
@@ -195,7 +198,7 @@ function getQuizAssignedUserIds(quiz) {
 function resolveMemberDisplayName(userId, groupMembers) {
   const uid = Number(userId);
   const m = (groupMembers || []).find((x) => Number(x.userId ?? x.id) === uid);
-  return m?.fullName || m?.username || `User ${uid}`;
+  return getUserDisplayLabel(m, `User ${uid}`);
 }
 
 function resolveGroupMember(userId, groupMembers) {
@@ -210,6 +213,32 @@ function formatAssignedNames(quiz, groupMembers, maxNames = 3) {
   const names = ids.map((id) => resolveMemberDisplayName(id, groupMembers));
   if (names.length <= maxNames) return names.join(", ");
   return `${names.slice(0, maxNames).join(", ")} +${names.length - maxNames}`;
+}
+
+function GroupMemberAvatar({ member, fallback, isDarkMode, sizeClass = "h-7 w-7", textClass = "text-[10px]" }) {
+  const avatarSrc = member?.avatar || member?.avatarUrl || "";
+  const initial = String(fallback || member?.fullName || member?.username || "?").trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold",
+        sizeClass,
+        textClass,
+        avatarSrc
+          ? "bg-transparent"
+          : isDarkMode
+            ? "bg-slate-800 text-slate-200"
+            : "bg-slate-100 text-slate-700",
+      )}
+    >
+      {avatarSrc ? (
+        <img src={avatarSrc} alt="" className="h-full w-full object-cover" />
+      ) : (
+        initial
+      )}
+    </div>
+  );
 }
 
 function resolveQuizCardTheme(difficultyKey) {
@@ -271,6 +300,8 @@ function QuizListView({
   quizGenerationTaskByQuizId = null,
   quizGenerationProgressByQuizId = null,
   legacyRoadmapUI = false,
+  groupRole = "MEMBER",
+  groupCurrentUserId = null,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
@@ -306,6 +337,9 @@ function QuizListView({
   }, [contextId, contextType, location.pathname, location.search, returnToPath]);
 
   const isGroupQuizList = String(contextType || "").toUpperCase() === "GROUP";
+  const normalizedGroupRole = String(groupRole || "").toUpperCase();
+  const canFilterGroupAssignees = normalizedGroupRole === "LEADER" || normalizedGroupRole === "CONTRIBUTOR";
+  const currentGroupUserId = Number(groupCurrentUserId);
 
   useEffect(() => {
     if (!isGroupQuizList || !contextId) {
@@ -333,10 +367,15 @@ function QuizListView({
   }, [isGroupQuizList, contextId]);
 
   useEffect(() => {
-    if (groupAudienceFilter !== "SELECTED_MEMBERS") {
+    if (groupAudienceFilter !== "SELECTED_MEMBERS" || !canFilterGroupAssignees) {
       setGroupMemberUserId(null);
     }
-  }, [groupAudienceFilter]);
+  }, [groupAudienceFilter, canFilterGroupAssignees]);
+
+  const selectedGroupAudienceMember = useMemo(() => {
+    if (groupMemberUserId == null) return null;
+    return resolveGroupMember(groupMemberUserId, groupMembers);
+  }, [groupMemberUserId, groupMembers]);
 
   const quizNavigationSourceState = useMemo(() => {
     const normalizedContextType = String(contextType || "").toUpperCase();
@@ -632,14 +671,19 @@ function QuizListView({
         items = items.filter((q) => normalizeGroupAudienceMode(q) === "ALL_MEMBERS");
       } else if (groupAudienceFilter === "SELECTED_MEMBERS") {
         items = items.filter((q) => normalizeGroupAudienceMode(q) === "SELECTED_MEMBERS");
-        if (groupMemberUserId != null && Number.isInteger(Number(groupMemberUserId))) {
-          const uid = Number(groupMemberUserId);
+        const enforcedMemberUserId = canFilterGroupAssignees
+          ? groupMemberUserId
+          : Number.isInteger(currentGroupUserId) && currentGroupUserId > 0
+            ? currentGroupUserId
+            : null;
+        if (enforcedMemberUserId != null && Number.isInteger(Number(enforcedMemberUserId))) {
+          const uid = Number(enforcedMemberUserId);
           items = items.filter((q) => getQuizAssignedUserIds(q).includes(uid));
         }
       }
     }
     return items;
-  }, [quizzes, searchQuery, filterStatus, isGroupQuizList, groupAudienceFilter, groupMemberUserId]);
+  }, [quizzes, searchQuery, filterStatus, isGroupQuizList, groupAudienceFilter, groupMemberUserId, canFilterGroupAssignees, currentGroupUserId]);
   const useLegacyRoadmapCards = legacyRoadmapUI;
 
   const renderQuizFeedbackAction = (quizId, className = "") => (
@@ -1025,7 +1069,12 @@ function QuizListView({
                     {[
                       { key: "all", label: t("workspace.quiz.groupAudience.all", "Tất cả") },
                       { key: "ALL_MEMBERS", label: t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm") },
-                      { key: "SELECTED_MEMBERS", label: t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng") },
+                      {
+                        key: "SELECTED_MEMBERS",
+                        label: canFilterGroupAssignees
+                          ? t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng")
+                          : t("workspace.quiz.groupAudience.assignedToMe", "Được giao"),
+                      },
                     ].map(({ key, label }) => (
                       <button
                         key={key}
@@ -1044,31 +1093,96 @@ function QuizListView({
                         {label}
                       </button>
                     ))}
-                    {groupAudienceFilter === "SELECTED_MEMBERS" ? (
-                      <select
-                        value={groupMemberUserId ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setGroupMemberUserId(v === "" ? null : Number(v));
-                        }}
-                        disabled={groupMembersLoading}
-                        title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
-                        className={`max-w-[min(200px,100%)] shrink rounded-lg border px-2 py-1 text-[11px] outline-none transition-colors ${
-                          isDarkMode
-                            ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
-                            : "border-slate-200 bg-white text-slate-900 disabled:opacity-50"
-                        }`}
-                      >
-                        <option value="">{t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}</option>
-                        {groupMembers.map((m) => {
-                          const uid = Number(m.userId ?? m.id);
-                          if (!Number.isInteger(uid) || uid <= 0) return null;
-                          const optLabel = m.fullName || m.username || `User ${uid}`;
-                          return (
-                            <option key={uid} value={uid}>{optLabel}</option>
-                          );
-                        })}
-                      </select>
+                    {groupAudienceFilter === "SELECTED_MEMBERS" && canFilterGroupAssignees ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={groupMembersLoading}
+                            title={t("workspace.quiz.groupAudience.pickMemberHint", "Chọn tên để chỉ xem quiz được giao cho người đó")}
+                            className={cn(
+                              "inline-flex min-w-[220px] max-w-full shrink items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-left text-[11px] outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                              isDarkMode
+                                ? "border-slate-600 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                                : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50",
+                            )}
+                          >
+                            <span className="flex min-w-0 flex-1 items-center gap-2">
+                              {selectedGroupAudienceMember ? (
+                                <>
+                                  <GroupMemberAvatar
+                                    member={selectedGroupAudienceMember}
+                                    fallback={resolveMemberDisplayName(groupMemberUserId, groupMembers)}
+                                    isDarkMode={isDarkMode}
+                                    sizeClass="h-6 w-6"
+                                    textClass="text-[10px]"
+                                  />
+                                  <UserDisplayName
+                                    user={selectedGroupAudienceMember}
+                                    fallback={t("workspace.quiz.groupAudience.memberFallback", { id: groupMemberUserId })}
+                                    isDarkMode={isDarkMode}
+                                    className="min-w-0"
+                                  />
+                                </>
+                              ) : (
+                                <span className={cn("truncate", isDarkMode ? "text-slate-300" : "text-slate-600")}>
+                                  {groupMembersLoading
+                                    ? t("workspace.quiz.audience.loadingMembers", "Loading members...")
+                                    : t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}
+                                </span>
+                              )}
+                            </span>
+                            <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", isDarkMode ? "text-slate-500" : "text-slate-400")} />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="start"
+                          className={cn(
+                            "max-h-72 w-72 overflow-y-auto p-1",
+                            isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900",
+                          )}
+                        >
+                          <DropdownMenuItem
+                            className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs"
+                            onSelect={() => setGroupMemberUserId(null)}
+                          >
+                            <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600")}>
+                              <Users className="h-3.5 w-3.5" />
+                            </div>
+                            <span className="min-w-0 flex-1 truncate">
+                              {t("workspace.quiz.groupAudience.pickMemberPlaceholder", "Tất cả quiz giao riêng")}
+                            </span>
+                            {groupMemberUserId == null ? <Check className="h-3.5 w-3.5 shrink-0 text-violet-500" /> : null}
+                          </DropdownMenuItem>
+                          {groupMembers.map((m) => {
+                            const uid = Number(m.userId ?? m.id);
+                            if (!Number.isInteger(uid) || uid <= 0) return null;
+                            const selected = Number(groupMemberUserId) === uid;
+                            return (
+                              <DropdownMenuItem
+                                key={uid}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs"
+                                onSelect={() => setGroupMemberUserId(uid)}
+                              >
+                                <GroupMemberAvatar
+                                  member={m}
+                                  fallback={resolveMemberDisplayName(uid, groupMembers)}
+                                  isDarkMode={isDarkMode}
+                                  sizeClass="h-7 w-7"
+                                  textClass="text-[10px]"
+                                />
+                                <UserDisplayName
+                                  user={m}
+                                  fallback={t("workspace.quiz.groupAudience.memberFallback", { id: uid })}
+                                  isDarkMode={isDarkMode}
+                                  className="min-w-0 flex-1"
+                                />
+                                {selected ? <Check className="h-3.5 w-3.5 shrink-0 text-violet-500" /> : null}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     ) : null}
                   </div>
                 </div>
