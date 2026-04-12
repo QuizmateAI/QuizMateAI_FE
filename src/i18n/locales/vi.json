@@ -4202,7 +4202,14 @@
       "wallet": "Ví group",
       "groupStudy": "Học tập",
       "groupActivity": "Hoạt động",
-      "groupManage": "Quản lý"
+      "groupManage": "Quản lý",
+      "requireUploadBeforeActions": "Vui lòng tải lên ít nhất một tài liệu trong tab Tài liệu trước khi dùng tính năng này."
+    },
+    "forms": {
+      "loadingMaterials": "Đang tải tài liệu dùng chung...",
+      "loadMaterialsError": "Không tải được danh sách tài liệu dùng chung. Vui lòng đóng và mở lại form.",
+      "workspaceMaterialsEmpty": "Nhóm chưa có tài liệu dùng chung. Hãy tải tài liệu ở tab Tài liệu rồi chọn trực tiếp trong form này.",
+      "sourceSelectHint": "Chọn các tài liệu mà AI sẽ dùng để tạo nội dung."
     },
     "upload": {
       "insufficientQmcNeedPlan": "Nhóm không đủ QMC. Vui lòng mua gói để tiếp tục — sau đó bạn có thể mua credit trong ví nhóm.",

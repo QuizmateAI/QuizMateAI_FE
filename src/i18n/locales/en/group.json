@@ -34,6 +34,19 @@
       "yes": "Yes",
       "no": "No",
       "reload": "Reload",
+      "refresh": "Refresh",
+      "headingEyebrow": "Member board",
+      "headingTitle": "Members and roles",
+      "headingDescription": "Manage roles and permissions so everyone knows their responsibility.",
+      "columns": {
+        "member": "Member",
+        "role": "Role",
+        "uploadAccess": "Upload access",
+        "actions": "Actions"
+      },
+      "uploadGranted": "Can upload",
+      "uploadLimited": "Read and participate",
+      "removeConfirmEyebrow": "Confirm action",
       "showing": "Showing {{count}} of {{total}} members"
     },
     "settings": {
@@ -211,16 +224,68 @@
       "title": "Preparing your group workspace",
       "description": "The setup wizard will open as soon as the draft workspace is ready."
     },
+    "header": {
+      "groupPlan": {
+        "viewOrChange": "View or change group plan",
+        "choose": "Choose a group plan",
+        "upgrade": "Upgrade group plan"
+      },
+      "planNames": {
+        "GROUP_BASE": "Group Base"
+      }
+    },
     "studio": {
-      "systemDashboard": "System dashboard",
-      "personalDashboard": "Personal dashboard",
-      "documents": "Document management",
-      "activity": "Group activity",
-      "memberManagement": "Member management",
-      "memberStatus": "Member status",
+      "systemDashboard": "Overview",
+      "personalDashboard": "My overview",
+      "documents": "Documents",
+      "activity": "Activity",
+      "memberManagement": "Members",
+      "memberStatus": "Members",
+      "memberStats": "Member stats",
+      "wallet": "Wallet",
       "groupStudy": "Study",
       "groupActivity": "Activity",
-      "groupManage": "Management"
+      "groupManage": "Manage",
+      "requireUploadBeforeActions": "Upload at least one document in the Documents tab before using this feature."
+    },
+    "memberStats": {
+      "eyebrow": "Member operations",
+      "title": "Member stats",
+      "description": "Track each member and trigger focused actions from one place.",
+      "totalMembers": "{{count}} members",
+      "readOnlyBadge": "Contributor read-only",
+      "empty": "No member data available yet.",
+      "quizDone": "Quiz done",
+      "avgScore": "Avg score",
+      "accuracy": "Accuracy",
+      "aiClass": "AI class",
+      "assignQuiz": "Assign quiz",
+      "assignQuizDisabled": "Assign quiz (leader only)",
+      "roadmapByMember": "Create member roadmap",
+      "roadmapPending": "Member-specific roadmap action is waiting for backend support.",
+      "contributorReadOnly": "Contributors can view member stats only.",
+      "assignRequiredQuiz": "Please choose a quiz first.",
+      "assignMissingMember": "Member was not found. Please reopen this dialog.",
+      "assignSuccess": "Quiz assigned successfully.",
+      "assignFailed": "Could not assign quiz.",
+      "pageInfo": "Page {{page}}/{{totalPages}} · {{count}} members",
+      "prev": "Prev",
+      "next": "Next",
+      "assignDialogTitle": "Assign quiz",
+      "assignDialogDescription": "Choose one quiz to assign to {{name}}.",
+      "pickQuiz": "Choose quiz",
+      "pickQuizPlaceholder": "Select one quiz",
+      "noQuiz": "No group quiz found yet.",
+      "openQuizTab": "Open quiz tab",
+      "cancel": "Cancel",
+      "confirmAssign": "Assign now",
+      "assigning": "Assigning..."
+    },
+    "forms": {
+      "loadingMaterials": "Loading shared documents...",
+      "loadMaterialsError": "Unable to load shared documents. Please close and reopen this form.",
+      "workspaceMaterialsEmpty": "No shared documents yet. Upload files in the Documents tab, then select them directly in this form.",
+      "sourceSelectHint": "Choose the documents AI should use for this creation."
     },
     "challenge": {
       "title": "Challenge",

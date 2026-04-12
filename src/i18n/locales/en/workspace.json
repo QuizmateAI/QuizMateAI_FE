@@ -401,6 +401,11 @@
       "previewTitle": "Document preview",
       "loadingContent": "Loading content...",
       "loadingSummary": "Loading summary...",
+      "generatingSummary": "Generating document summary...",
+      "generateSummary": "Generate summary",
+      "retrySummary": "Retry",
+      "summaryOnDemandHint": "Summary is generated only when you press the button.",
+      "summaryFeatureLocked": "Document summary is a paid feature. Please upgrade your plan to use it.",
       "noContent": "No content to display.",
       "noSummary": "No AI summary available for this document yet.",
       "loadError": "Failed to load content.",
@@ -772,6 +777,11 @@
         "statusSection": "Status",
         "groupSection": "Group"
       },
+      "list": {
+        "pagination": {
+          "showing": "Showing {{from}}-{{to}} / {{total}} quizzes"
+        }
+      },
       "groupAudience": {
         "filterLabel": "Group visibility",
         "filterLabelShort": "Group",
@@ -783,6 +793,30 @@
         "pickMemberHint": "Pick someone to see only quizzes assigned to them",
         "badgeWholeGroup": "Whole group",
         "badgeAssigned": "Assigned"
+      },
+      "bulk": {
+        "selectedCount": "Selected {{count}} quizzes",
+        "assign": "Assign",
+        "changeStatus": "Change status",
+        "delete": "Delete",
+        "clear": "Clear",
+        "confirmAssignTitle": "Assign selected quizzes",
+        "confirmAssignDescription": "Choose assignment mode for {{count}} selected quizzes.",
+        "assignModeAll": "Assign to whole group",
+        "assignModeMember": "Assign to specific member",
+        "pickMember": "Pick a member",
+        "pickMemberPlaceholder": "Pick a member",
+        "confirmStatusTitle": "Change quiz status",
+        "confirmStatusDescription": "Choose a new status for {{count}} selected quizzes.",
+        "statusDraft": "Draft",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "confirmDeleteTitle": "Delete selected quizzes",
+        "confirmDeleteDescription": "Are you sure you want to delete {{count}} selected quizzes?",
+        "apply": "Apply",
+        "cancel": "Cancel",
+        "memberRequired": "Please select a member before assigning quizzes.",
+        "failed": "Bulk action could not complete fully. Succeeded {{success}}/{{total}} quizzes."
       },
       "communityRecommendations": {
         "title": "Matching quizzes for this workspace",
@@ -1582,6 +1616,7 @@
       "aiSuggestTitle": "Ai Suggest Title",
       "createKnowledgeAndPostLearning": "Create Knowledge And Post Learning",
       "createPhaseButton": "Create phases",
+      "createRoadmapButton": "Create roadmap",
       "emptyRoadmapDescription": "Generate phases with AI to start your learning roadmap from selected materials.",
       "emptyRoadmapTitle": "Welcome to roadmap",
       "generatingKnowledge": "Generating Knowledge",

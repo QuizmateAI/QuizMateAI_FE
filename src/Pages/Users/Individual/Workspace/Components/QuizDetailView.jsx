@@ -635,6 +635,35 @@ function QuizDetailView({
   }, [questionsById]);
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
+  const sourceTypeLabel = String(effectiveQuiz?.createVia || "").toUpperCase() === "AI"
+    ? t("workspace.quiz.cardAiLabel", "QUIZMATE AI")
+    : t("workspace.quiz.cardManualLabel", "Quiz thủ công");
+  const overviewIntentLabel = effectiveQuiz?.quizIntent
+    ? t(`workspace.quiz.intentLabels.${effectiveQuiz.quizIntent}`, effectiveQuiz.quizIntent)
+    : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
+  const overviewTimerModeLabel = typeof effectiveQuiz?.timerMode === "boolean"
+    ? (
+      effectiveQuiz.timerMode
+        ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
+        : t("workspace.quiz.examModeType2Short", "Theo từng câu")
+    )
+    : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
+  const attemptedLabel = effectiveQuiz?.myAttempted === true
+    ? (effectiveQuiz?.myPassed === true
+      ? t("workspace.quiz.myPassedTrue", "Đã đậu")
+      : t("workspace.quiz.myPassedFalse", "Chưa đậu"))
+    : t("workspace.quiz.myAttemptedFalse", "Chưa làm");
+  const overviewAudienceLabel = _contextType === "GROUP"
+    ? (
+      String(effectiveQuiz?.groupAudienceMode || "").toUpperCase() === "SELECTED_MEMBERS"
+        ? t("workspace.quiz.groupAudience.assignedMembers", "Giao riêng")
+        : t("workspace.quiz.groupAudience.wholeGroup", "Chung cả nhóm")
+    )
+    : (
+      effectiveQuiz?.communityShared === true
+        ? t("workspace.quiz.communityPublic", "Công khai")
+        : t("workspace.quiz.privateShort", "Riêng tư")
+    );
   /** Nhóm + leader: tab Kiểm tra. Snapshot challenge (mở từ «Xem quiz»): cả reviewer (member) cũng cần tab Kiểm tra để xem đủ đáp án. */
   // "Kiểm tra" tab: leader sees it only while quiz is DRAFT (to review before publishing).
   // Snapshot-reviewers (contributors invited to check) always see it regardless of status.
@@ -963,7 +992,11 @@ function QuizDetailView({
               )}
 
               {/* Thẻ thông tin dạng grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 mb-4">
+                <InfoChip icon={Sparkles} label={t("workspace.quiz.list.labels.sourceType", "Nguồn") } value={sourceTypeLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={Users} label={t("workspace.quiz.groupAudience.filterLabelShort", "Nhóm") } value={overviewAudienceLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={BadgeCheck} label={t("workspace.quiz.list.labels.intent", "Mục đích") } value={overviewIntentLabel} isDarkMode={isDarkMode} />
+                <InfoChip icon={Clock} label={t("workspace.quiz.list.labels.timerMode", "Kiểu thời gian") } value={overviewTimerModeLabel} isDarkMode={isDarkMode} />
                 {durationInMinutes > 0 && (
                   <InfoChip icon={Timer} label={t("workspace.quiz.timeDuration")} value={`${durationInMinutes} ${t("workspace.quiz.minutes")}`} isDarkMode={isDarkMode} />
                 )}
@@ -976,6 +1009,7 @@ function QuizDetailView({
                 {effectiveQuiz?.maxAttempt != null && (
                   <InfoChip icon={Hash} label={t("workspace.quiz.maxAttempt")} value={effectiveQuiz.maxAttempt} isDarkMode={isDarkMode} />
                 )}
+                <InfoChip icon={CheckCircle2} label={t("workspace.quiz.list.labels.result", "Kết quả") } value={attemptedLabel} isDarkMode={isDarkMode} />
                 {sections.length > 0 && (
                   <InfoChip icon={BookOpen} label={t("workspace.quiz.tabs.questions", "Câu hỏi")} value={sections.reduce((acc, s) => acc + (questionsMap[s.sectionId]?.length || 0), 0)} isDarkMode={isDarkMode} />
                 )}

@@ -135,6 +135,7 @@ function UploadSourceDialogBase({
   const [webUrl, setWebUrl] = useState("");
   const [showWebInput, setShowWebInput] = useState(false);
   const fileInputRef = useRef(null);
+  const uploadActionLockRef = useRef(false);
 
   const [planBlockedModalOpen, setPlanBlockedModalOpen] = useState(false);
   const [planBlockedFeature, setPlanBlockedFeature] = useState(null);
@@ -286,10 +287,14 @@ function UploadSourceDialogBase({
   };
 
   const handleUploadUserFiles = async () => {
+    if (!hasUserSelectedFiles || importingSuggestions || uploadActionLockRef.current) return;
+
+    const filesToUpload = [...selectedFiles];
+    uploadActionLockRef.current = true;
     setUploading(true);
     try {
-      if (selectedFiles.length > 0) {
-        await onUploadFiles?.(selectedFiles);
+      if (filesToUpload.length > 0) {
+        await onUploadFiles?.(filesToUpload);
         setSelectedFiles([]);
       }
       onOpenChange(false);
@@ -298,16 +303,19 @@ function UploadSourceDialogBase({
         showError(error?.message || t("workspace.upload.uploadError"));
       }
     } finally {
+      uploadActionLockRef.current = false;
       setUploading(false);
     }
   };
 
   const handleUploadAllSources = async () => {
-    if (!canUploadAllSources || uploading || importingSuggestions) return;
+    if (!canUploadAllSources || uploading || importingSuggestions || uploadActionLockRef.current) return;
 
+    const filesToUpload = [...selectedFiles];
+    uploadActionLockRef.current = true;
     setUploading(true);
     try {
-      await onUploadFiles?.(selectedFiles);
+      await onUploadFiles?.(filesToUpload);
       setSelectedFiles([]);
       await handleImportSuggestions({ closeAfterImport: false });
       showSuccess(t("workspace.upload.uploadAllSuccess"));
@@ -317,6 +325,7 @@ function UploadSourceDialogBase({
         showError(error?.message || t("workspace.upload.uploadError"));
       }
     } finally {
+      uploadActionLockRef.current = false;
       setUploading(false);
     }
   };

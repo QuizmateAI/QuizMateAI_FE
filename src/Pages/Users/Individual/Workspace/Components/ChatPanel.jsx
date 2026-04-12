@@ -90,6 +90,7 @@ function ChatPanel({
   onEditRoadmapConfig,
   planEntitlements = null,
   onToggleMaterialSelection,
+  onRoadmapCanvasViewChange,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -141,6 +142,11 @@ function ChatPanel({
     if (!roadmapCanvasStorageKey || !roadmapCanvasView) return;
     localStorage.setItem(roadmapCanvasStorageKey, roadmapCanvasView);
   }, [roadmapCanvasStorageKey, roadmapCanvasView]);
+
+  React.useEffect(() => {
+    if (activeView !== "roadmap") return;
+    onRoadmapCanvasViewChange?.(roadmapCanvasView);
+  }, [activeView, onRoadmapCanvasViewChange, roadmapCanvasView]);
 
   const renderContent = () => {
     switch (activeView) {

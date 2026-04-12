@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, Compass, Eye, FileText, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Pencil, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
+import { BookOpen, CheckCircle2, Eye, FileText, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
-import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
 import RoadmapCanvasView2 from "./RoadmapCanvasView2";
 import RoadmapCanvasViewStage from "./RoadmapCanvasViewStage";
@@ -992,6 +991,7 @@ function RoadmapCanvasView({
         handleKnowledgeDragStart={handleKnowledgeDragStart}
         onShareRoadmap={onShareRoadmap}
         renderRoadmapConfigActionButtons={renderRoadmapConfigActionButtons}
+        onSelectCenterRoadmap={() => handleSelectCanvasView("view2")}
       />
     );
   }

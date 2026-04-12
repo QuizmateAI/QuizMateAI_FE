@@ -408,12 +408,15 @@ export default function WalletPage() {
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
-  const { showSuccess, showError } = useToast();
-  const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
-  const currentLang = i18n.language;
+  const { showError } = useToast();
+  const resolvedLanguage = String(i18n.resolvedLanguage || i18n.language || "vi").toLowerCase();
+  const isVietnamese = resolvedLanguage.startsWith("vi");
+  const currentLang = isVietnamese ? "vi" : "en";
+  const numberLocale = isVietnamese ? "vi-VN" : "en-US";
+  const fontClass = isVietnamese ? "font-sans" : "font-poppins";
 
   const toggleLanguage = () => {
-    const newLang = currentLang === "vi" ? "en" : "vi";
+    const newLang = isVietnamese ? "en" : "vi";
     i18n.changeLanguage(newLang);
   };
 
@@ -649,7 +652,7 @@ export default function WalletPage() {
                 <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>{t("wallet.totalAvailable")}</p>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className={`text-4xl font-extrabold tracking-tight ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                    {formatNumber(walletSummary.totalAvailableCredits, currentLang === "vi" ? "vi-VN" : "en-US")}
+                    {formatNumber(walletSummary.totalAvailableCredits, numberLocale)}
                   </span>
                   <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-600"}`}>
                     {t("wallet.creditsUnit")}
@@ -667,7 +670,7 @@ export default function WalletPage() {
                       {t("wallet.regularCredits")}
                     </p>
                     <p className={`mt-2 text-2xl font-bold tabular-nums ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                      {formatNumber(walletSummary.regularCreditBalance, currentLang === "vi" ? "vi-VN" : "en-US")}
+                      {formatNumber(walletSummary.regularCreditBalance, numberLocale)}
                     </p>
                   </div>
                   {walletSummary.hasActivePlan && (
@@ -678,7 +681,7 @@ export default function WalletPage() {
                         {t("wallet.planCredits")}
                       </p>
                       <p className={`mt-2 text-2xl font-bold tabular-nums ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                        {formatNumber(walletSummary.planCreditBalance, currentLang === "vi" ? "vi-VN" : "en-US")}
+                        {formatNumber(walletSummary.planCreditBalance, numberLocale)}
                       </p>
                       {walletSummary.planCreditExpiresAt && (
                         <p className={`mt-2 text-xs ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
@@ -696,7 +699,7 @@ export default function WalletPage() {
                       isDarkMode ? "border-slate-600 bg-slate-900 text-slate-100 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
                     }`}
                   >
-                    Pricing Guide
+                    {t("wallet.pricingGuide")}
                   </Button>
                 </div>
               </div>
@@ -718,7 +721,7 @@ export default function WalletPage() {
             <CardContent className="space-y-3">
               {!canBuyCredit && (
                 <p className={`text-sm py-2 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                  {t("wallet.cannotBuyCredit", { defaultValue: "Gói hiện tại của bạn không hỗ trợ mua credit. Hãy nâng cấp gói để tiếp tục." })}
+                  {t("wallet.cannotBuyCredit")}
                 </p>
               )}
 
@@ -771,7 +774,7 @@ export default function WalletPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-50" : "text-slate-900"}`}>
-                        {formatVnd(pkg.price ?? 0, currentLang === "vi" ? "vi-VN" : "en-US")}
+                        {formatVnd(pkg.price ?? 0, numberLocale)}
                       </p>
                     </div>
                   </div>
@@ -801,14 +804,14 @@ export default function WalletPage() {
                   <TableRow className={isDarkMode ? "border-slate-800" : "border-slate-200"}>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.time")}</TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-                      {currentLang === "vi" ? "Hoạt động" : "Activity"}
+                      {t("wallet.table.activity")}
                     </TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-                      {currentLang === "vi" ? "Workspace" : "Workspace"}
+                      {t("wallet.table.workspace")}
                     </TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>{t("wallet.table.amount")}</TableHead>
                     <TableHead className={isDarkMode ? "text-slate-300" : "text-slate-600"}>
-                      {currentLang === "vi" ? "Nguồn" : "Source"}
+                      {t("wallet.table.source")}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -862,7 +865,7 @@ export default function WalletPage() {
                           </p>
                         </TableCell>
                         <TableCell className={`font-bold tabular-nums ${tx.amount >= 0 ? (isDarkMode ? "text-emerald-400" : "text-emerald-700") : (isDarkMode ? "text-amber-400" : "text-amber-700")}`}>
-                          {tx.amount >= 0 ? "+" : ""}{formatNumber(tx.amount, currentLang === "vi" ? "vi-VN" : "en-US")}
+                          {tx.amount >= 0 ? "+" : ""}{formatNumber(tx.amount, numberLocale)}
                         </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${getTransactionSourceBadgeClass(tx.source, isDarkMode)}`}>

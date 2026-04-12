@@ -52,6 +52,7 @@ function getPricingGuideCopy(t) {
     examplesNote: t("pricingGuide.examplesNote"),
     creditCardDescription: t("pricingGuide.creditCardDescription"),
     startingPointLabel: t("pricingGuide.startingPointLabel"),
+    lightRequestHint: t("pricingGuide.lightRequestHint"),
     examplePrefix: t("pricingGuide.examplePrefix"),
     quickMathLabel: t("pricingGuide.quickMathLabel"),
   };
@@ -77,17 +78,19 @@ export default function PricingGuidePage() {
   const navigate = useNavigate();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const { i18n, t } = useTranslation();
-  const currentLang = i18n.language === "en" ? "en" : "vi";
-  const copy = useMemo(() => getPricingGuideCopy(t), [t, currentLang]);
+  const resolvedLanguage = String(i18n.resolvedLanguage || i18n.language || "vi").toLowerCase();
+  const isVietnamese = resolvedLanguage.startsWith("vi");
+  const currentLang = isVietnamese ? "vi" : "en";
+  const copy = useMemo(() => getPricingGuideCopy(t), [t]);
   const user = useMemo(() => getStoredUser(), []);
   const isLoggedIn = !!user && !!window.localStorage.getItem("accessToken");
   const isEndUser = user?.role === "USER";
-  const fontClass = currentLang === "en" ? "font-poppins" : "font-sans";
+  const fontClass = isVietnamese ? "font-sans" : "font-poppins";
   const homeTarget = getHomeTarget(user);
   const [selectedPersonalization, setSelectedPersonalization] = useState(null);
 
   const toggleLanguage = () => {
-    const nextLanguage = currentLang === "vi" ? "en" : "vi";
+    const nextLanguage = isVietnamese ? "en" : "vi";
     i18n.changeLanguage(nextLanguage);
   };
 
@@ -174,7 +177,7 @@ export default function PricingGuidePage() {
               className={`rounded-full ${isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-slate-700 hover:bg-slate-100"}`}
             >
               {isDarkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-              {isDarkMode ? "Light" : "Dark"}
+              {isDarkMode ? t("common.light") : t("common.dark")}
             </Button>
             <Button
               variant="outline"
