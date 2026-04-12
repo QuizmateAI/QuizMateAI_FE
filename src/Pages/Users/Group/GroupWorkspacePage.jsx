@@ -24,6 +24,7 @@ import {
   Sparkles,
   Sun,
   Swords,
+  Trophy,
   Users,
 } from 'lucide-react';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
@@ -68,6 +69,7 @@ const LazyGroupMembersTab = React.lazy(loadGroupMembersTab);
 const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
 const LazyGroupChatPanel = React.lazy(loadGroupChatPanel);
 const LazyChallengeTab = React.lazy(loadChallengeTab);
+const LazyGroupRankingTab = React.lazy(() => import("./Components/GroupRankingTab"));
 React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
 React.lazy(loadPlanUpgradeModal);
 const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
@@ -254,6 +256,7 @@ const GROUP_WORKSPACE_VALID_SECTIONS = [
   'roadmap',
   'mockTest',
   'challenge',
+  'ranking',
   'wallet',
   'settings',
 ];
@@ -702,7 +705,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (['flashcard', 'quiz', 'roadmap', 'mockTest'].includes(activeSection)) {
+    if (['flashcard', 'quiz', 'roadmap', 'mockTest', 'challenge', 'ranking'].includes(activeSection)) {
       void loadGroupChatPanel();
     }
   }, [activeSection, isLeader, isMember]);
@@ -2482,6 +2485,7 @@ function GroupWorkspacePage() {
     flashcard: t('workspace.studio.actions.flashcard'),
     mockTest: t('workspace.studio.actions.mockTest'),
     challenge: 'Challenge',
+    ranking: 'Xếp hạng',
     notifications: t('groupWorkspace.studio.activity'),
     members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
     wallet: t('groupWorkspace.studio.wallet', 'Group wallet'),
@@ -2543,6 +2547,7 @@ function GroupWorkspacePage() {
     { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard },
     { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest },
     { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge },
+    { key: 'ranking', icon: Trophy, color: 'text-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-500/20', label: sectionLabels.ranking },
     { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionLabels.notifications, disabled: false },
     { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: sectionLabels.members, disabled: isMember },
     { key: 'wallet', icon: CreditCard, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.wallet, disabled: !isLeader || !canManageGroup },
@@ -2551,7 +2556,7 @@ function GroupWorkspacePage() {
 
   const groupStudioActionGroups = [
     { label: t('groupWorkspace.studio.groupStudy', 'Học tập'), keys: ['documents', 'roadmap', 'quiz', 'flashcard', 'mockTest'] },
-    { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'notifications'] },
+    { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'ranking', 'notifications'] },
     { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'wallet', 'settings'] },
   ];
 
@@ -3106,6 +3111,18 @@ function GroupWorkspacePage() {
               isDarkMode={isDarkMode}
               isLeader={isLeader}
               currentUserId={currentUser?.userID}
+              />
+            </React.Suspense>
+          </div>
+        );
+
+      case 'ranking':
+        return (
+          <div className="h-full p-2 md:p-3 overflow-y-auto">
+            <React.Suspense fallback={renderSectionFallback(320)}>
+              <LazyGroupRankingTab
+                workspaceId={workspaceId}
+                isDarkMode={isDarkMode}
               />
             </React.Suspense>
           </div>

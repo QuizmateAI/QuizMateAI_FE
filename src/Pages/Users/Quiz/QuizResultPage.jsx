@@ -303,7 +303,12 @@ export default function QuizResultPage() {
     sourceWorkspaceId,
   ]);
 
-  const directQuizDetailBackPath = Number.isInteger(resolvedWorkspaceIdForBack) && resolvedWorkspaceIdForBack > 0 && hasQuizIdForBack
+  // When returnToQuizPath is already a group-workspace path, skip constructing an individual
+  // workspace path here — canUseReturnPathAsQuizDetail + returnToQuizPath will handle it below.
+  const directQuizDetailBackPath = Number.isInteger(resolvedWorkspaceIdForBack)
+    && resolvedWorkspaceIdForBack > 0
+    && hasQuizIdForBack
+    && !isGroupWorkspacePath(returnToQuizPath)
     ? (sourceView === 'roadmap'
       ? buildWorkspaceRoadmapQuizPath(resolvedWorkspaceIdForBack, {
         roadmapId: sourceRoadmapId,
@@ -1108,7 +1113,12 @@ handleBack,
     try {
       await generateQuizFromWorkspaceAssessment(assessmentId);
       showSuccess(t('workspace.quiz.result.generateFromAssessmentSuccess', 'Đã tạo quiz từ đánh giá AI thành công'));
-      navigate(buildWorkspacePath(workspaceId, 'quizzes'), { replace: true });
+      // Navigate back to the correct workspace type (group or individual)
+      if (isGroupWorkspacePath(returnToQuizPath)) {
+        navigate(returnToQuizPath, { replace: true });
+      } else {
+        navigate(buildWorkspacePath(workspaceId, 'quizzes'), { replace: true });
+      }
     } catch (err) {
       showError(err?.message || t('workspace.quiz.result.generateFromAssessmentFail', 'Tạo quiz từ đánh giá AI thất bại'));
     } finally {

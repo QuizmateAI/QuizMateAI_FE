@@ -15,10 +15,7 @@ import { getQuizFullForAttempt, startQuizAttempt, submitAttempt, updateQuiz } fr
 import { buildSubmitPayload, getAttemptRemainingSeconds, hasAnswerValue, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
-import {
-  buildQuizResultPath,
-  buildWorkspaceQuizPath,
-} from '@/lib/routePaths';
+import { buildQuizResultPath } from '@/lib/routePaths';
 
 export default function ExamQuizPage() {
   const { quizId } = useParams();
@@ -95,9 +92,9 @@ export default function ExamQuizPage() {
     return correctedTimeoutAt;
   }, []);
 
-  const returnToQuizPath = location.state?.returnToQuizPath
-    || (quiz?.workspaceId ? buildWorkspaceQuizPath(quiz.workspaceId, quizId) : null)
-    || '/home';
+  // Use the path passed in location state. Do NOT fall back to buildWorkspaceQuizPath — that
+  // always generates an individual workspace path which breaks group-workspace flows.
+  const returnToQuizPath = location.state?.returnToQuizPath || '/home';
 
   const isPerQuestionMode = quiz?.timerMode === 'PER_QUESTION';
 

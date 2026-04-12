@@ -1,11 +1,3 @@
-/**
- * GroupDiscussionAPI — localStorage stub.
- * Drop-in replaceable with real REST/WebSocket calls once the backend is ready.
- *
- * Thread scopes:
- *  - quiz-level  : questionId = null
- *  - question    : questionId = <number>
- */
 
 const STORE_KEY = 'qm_group_discussions_v1';
 
@@ -31,20 +23,12 @@ function threadKey(workspaceId, quizId, questionId) {
     : `w${workspaceId}:q${quizId}`;
 }
 
-/**
- * Get all messages for a thread.
- * @returns {{ messages: Message[] }}
- */
 export async function getThreadMessages(workspaceId, quizId, questionId = null) {
   const store = readStore();
   const key = threadKey(workspaceId, quizId, questionId);
   return { messages: store[key]?.messages || [] };
 }
 
-/**
- * Post a new message.
- * @returns {Message}
- */
 export async function postMessage(workspaceId, quizId, questionId = null, { body, authorId, authorName, authorRole }) {
   const store = readStore();
   const key = threadKey(workspaceId, quizId, questionId);
@@ -64,9 +48,6 @@ export async function postMessage(workspaceId, quizId, questionId = null, { body
   return msg;
 }
 
-/**
- * Delete a message (hard delete).
- */
 export async function deleteMessage(workspaceId, quizId, questionId = null, messageId) {
   const store = readStore();
   const key = threadKey(workspaceId, quizId, questionId);
@@ -75,11 +56,6 @@ export async function deleteMessage(workspaceId, quizId, questionId = null, mess
   writeStore(store);
 }
 
-/**
- * Get message counts per scope for a quiz — used to render badges on the navigator.
- * @param {number[]} questionIds
- * @returns {{ quiz: number, questions: Record<string, number> }}
- */
 export async function getThreadCounts(workspaceId, quizId, questionIds = []) {
   const store = readStore();
 

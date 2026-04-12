@@ -65,9 +65,11 @@ export const deleteQuiz = async (quizId) => {
   return response;
 };
 
-/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE. */
-export const publishGroupQuiz = async (quizId) => {
-  const response = await api.post(`/quiz/${quizId}/group/publish`);
+/** Leader: xuất bản quiz nhóm từ DRAFT → ACTIVE.
+ *  options.leaderJoinsRanking = true → leader phải hoàn thành trước khi members làm được.
+ */
+export const publishGroupQuiz = async (quizId, options = {}) => {
+  const response = await api.post(`/quiz/${quizId}/group/publish`, Object.keys(options).length ? options : undefined);
   return response;
 };
 
