@@ -21,10 +21,7 @@ import {
 } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
-import {
-  buildQuizResultPath,
-  buildWorkspaceQuizPath,
-} from '@/lib/routePaths';
+import { buildQuizResultPath } from '@/lib/routePaths';
 
 function normalizeTextValue(value) {
   return String(value || '')
@@ -322,9 +319,9 @@ export default function PracticeQuizPage() {
     retry: (failureCount, error) => Number(error?.statusCode) >= 500 && failureCount < 1,
   });
 
-  const returnToQuizPath = location.state?.returnToQuizPath
-    || (quiz?.workspaceId ? buildWorkspaceQuizPath(quiz.workspaceId, quizId) : null)
-    || '/home';
+  // Use the path passed in location state. Do NOT fall back to buildWorkspaceQuizPath — that
+  // always generates an individual workspace path which breaks group-workspace flows.
+  const returnToQuizPath = location.state?.returnToQuizPath || '/home';
 
   const questions = quiz?.questions || [];
   const total = questions.length;

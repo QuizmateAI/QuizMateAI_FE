@@ -7,8 +7,24 @@ import ERROR_CODES from '@/Constants/errorCodes';
  * @param {object} error - Axios-style error object { statusCode, message, data }
  * @returns {{ key: string|null, fallbackMessage: string }} Resolved i18n key and fallback message
  */
+/**
+ * BE ApiResponse often puts the business error code in `data.statusCode` (e.g. 1036), not `data.code`.
+ */
+function resolveBusinessErrorCode(error) {
+  const body = error?.data;
+  const fromBody = body?.statusCode;
+  if (typeof fromBody === 'number' && fromBody >= 1000 && fromBody < 10000) {
+    return fromBody;
+  }
+  const fromCode = body?.code ?? error?.code;
+  if (typeof fromCode === 'number' && fromCode >= 1000 && fromCode < 10000) {
+    return fromCode;
+  }
+  return null;
+}
+
 export function getErrorInfo(error) {
-  const code = error?.data?.code;
+  const code = resolveBusinessErrorCode(error);
   const serverMessage = error?.data?.message || error?.message;
   const key = code && ERROR_CODES[code] ? ERROR_CODES[code] : null;
 
@@ -26,7 +42,7 @@ export function getErrorMessage(t, error) {
   const { key, fallbackMessage } = getErrorInfo(error);
   const rawMessage = String(fallbackMessage || '').trim();
   const lowerMessage = rawMessage.toLowerCase();
-  const statusCode = Number(error?.statusCode || error?.data?.statusCode || error?.status || error?.data?.status);
+  const httpStatus = Number(error?.statusCode);
 
   if (key) {
     const translated = t(key);
@@ -35,7 +51,7 @@ export function getErrorMessage(t, error) {
   }
 
   // Normalize common BE/HTTP technical errors to a friendlier message.
-  if (!Number.isNaN(statusCode) && statusCode >= 500) {
+  if (!Number.isNaN(httpStatus) && httpStatus >= 500) {
     return t('error.internalServer');
   }
 

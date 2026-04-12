@@ -39,6 +39,8 @@ import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
+import { getUserDisplayLabel } from '@/Utils/userProfile';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 import {
   deleteMaterial,
   getExtractedSummary,
@@ -918,10 +920,10 @@ export default function GroupReviewWorkspaceShell() {
     try {
       if (member?.canUpload) {
         await revokeUpload(resolvedWorkspaceId, member.userId);
-        showSuccess(`Đã thu hồi quyền upload của ${member.fullName}.`);
+        showSuccess(`Đã thu hồi quyền upload của ${getUserDisplayLabel(member, 'thành viên')}.`);
       } else {
         await grantUpload(resolvedWorkspaceId, member.userId);
-        showSuccess(`Đã cấp quyền upload cho ${member.fullName}.`);
+        showSuccess(`Đã cấp quyền upload cho ${getUserDisplayLabel(member, 'thành viên')}.`);
       }
       await loadMembers();
     } catch (error) {
@@ -933,7 +935,7 @@ export default function GroupReviewWorkspaceShell() {
     if (!resolvedWorkspaceId || !nextRole || nextRole === member.role) return;
     try {
       await updateMemberRole(resolvedWorkspaceId, member.userId, nextRole);
-      showSuccess(`Đã cập nhật vai trò của ${member.fullName}.`);
+      showSuccess(`Đã cập nhật vai trò của ${getUserDisplayLabel(member, 'thành viên')}.`);
       await loadMembers();
     } catch (error) {
       showError(error?.message || 'Không thể cập nhật vai trò.');
@@ -942,10 +944,10 @@ export default function GroupReviewWorkspaceShell() {
 
   const handleRemoveMember = useCallback(async (member) => {
     if (!resolvedWorkspaceId) return;
-    if (!window.confirm(`Xóa ${member.fullName} khỏi nhóm?`)) return;
+    if (!window.confirm(`Xóa ${getUserDisplayLabel(member, 'thành viên')} khỏi nhóm?`)) return;
     try {
       await removeMember(resolvedWorkspaceId, member.userId);
-      showSuccess(`Đã xóa ${member.fullName} khỏi nhóm.`);
+      showSuccess(`Đã xóa ${getUserDisplayLabel(member, 'thành viên')} khỏi nhóm.`);
       await Promise.all([loadMembers(), loadGroupLogs()]);
     } catch (error) {
       showError(error?.message || 'Không thể xóa thành viên khỏi nhóm.');
@@ -1473,7 +1475,9 @@ export default function GroupReviewWorkspaceShell() {
                 <CardContent className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-base font-semibold">{member.fullName}</p>
+                      <p className="text-base font-semibold">
+                        <UserDisplayName user={member} fallback="Thành viên" isDarkMode={isDarkMode} />
+                      </p>
                       <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{member.email}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1559,7 +1563,9 @@ export default function GroupReviewWorkspaceShell() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold">{member.fullName}</p>
+                    <p className="font-semibold">
+                      <UserDisplayName user={member} fallback="Thành viên" isDarkMode={isDarkMode} />
+                    </p>
                     <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                       {formatRoleLabel(member.role)} • {member.currentStreak} ngày streak
                     </p>
@@ -1862,7 +1868,13 @@ export default function GroupReviewWorkspaceShell() {
               {discussionThread.messages.map((message) => (
                 <div key={message.messageId} className={`rounded-2xl border p-4 ${isDarkMode ? 'border-white/10 bg-slate-950/60' : 'border-slate-200 bg-slate-50/80'}`}>
                   <div>
-                    <p className="font-semibold">{message.authorName}</p>
+                    <p className="font-semibold">
+                      <UserDisplayName
+                        user={{ fullName: message.authorName, username: message.authorUserName }}
+                        fallback={message.authorName || 'Thành viên'}
+                        isDarkMode={isDarkMode}
+                      />
+                    </p>
                     <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatRoleLabel(message.authorRole)} • {formatDateTime(message.createdAt, currentLang)}</p>
                   </div>
                   <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{message.body}</p>

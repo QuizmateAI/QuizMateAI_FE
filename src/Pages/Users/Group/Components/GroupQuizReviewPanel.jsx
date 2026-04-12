@@ -1,8 +1,22 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer, BadgeCheck } from "lucide-react";
 import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
+import {
+  getMyQuizReviewContributor,
+  setQuizReviewCompleteOk,
+} from "@/api/ChallengeAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/Components/ui/dialog";
+import { Button } from "@/Components/ui/button";
 
 const BLOOM_KEYS = ["remember", "understand", "apply", "analyze", "evaluate"];
 
@@ -12,8 +26,63 @@ function getBloomKey(bloomId) {
   return BLOOM_KEYS[n - 1] || "remember";
 }
 
-function GroupQuizReviewPanel({ isDarkMode, sections = [], questionsMap = {}, answersMap = {}, loading = false }) {
+function GroupQuizReviewPanel({
+  isDarkMode,
+  sections = [],
+  questionsMap = {},
+  answersMap = {},
+  loading = false,
+  quizId,
+  workspaceId,
+  isLeader = false,
+  isReviewer = false,
+}) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [reviewCompleteOkAt, setReviewCompleteOkAt] = useState(null);
+  const [ackLoading, setAckLoading] = useState(false);
+  const [confirmReviewOpen, setConfirmReviewOpen] = useState(false);
+
+  const canInteract = isLeader || isReviewer;
+
+  const fetchMyReviewRow = useCallback(async () => {
+    if (!quizId || !workspaceId || !isReviewer) return;
+    try {
+      const res = await getMyQuizReviewContributor(workspaceId, quizId);
+      const row = res.data?.data ?? res.data;
+      setReviewCompleteOkAt(row?.reviewCompleteOkAt ?? null);
+    } catch {
+      setReviewCompleteOkAt(null);
+    }
+  }, [quizId, workspaceId, isReviewer]);
+
+  useEffect(() => {
+    fetchMyReviewRow();
+  }, [fetchMyReviewRow]);
+
+  const invalidateChallengeCaches = useCallback(() => {
+    queryClient.invalidateQueries({
+      predicate: (q) => Array.isArray(q.queryKey)
+        && q.queryKey[0] === "challenge-detail"
+        && (workspaceId == null || q.queryKey[1] === workspaceId),
+    });
+  }, [queryClient, workspaceId]);
+
+  const submitReviewConfirmation = useCallback(async () => {
+    if (!quizId || !workspaceId || !isReviewer) return;
+    setAckLoading(true);
+    try {
+      const res = await setQuizReviewCompleteOk(workspaceId, quizId, true);
+      const row = res.data?.data ?? res.data;
+      setReviewCompleteOkAt(row?.reviewCompleteOkAt ?? null);
+      invalidateChallengeCaches();
+      setConfirmReviewOpen(false);
+    } catch {
+      /* toast / global */
+    } finally {
+      setAckLoading(false);
+    }
+  }, [quizId, workspaceId, isReviewer, invalidateChallengeCaches]);
 
   const flatItems = useMemo(() => {
     const out = [];
@@ -192,10 +261,15 @@ function GroupQuizReviewPanel({ isDarkMode, sections = [], questionsMap = {}, an
       >
         <ClipboardCheck className={`mt-0.5 h-5 w-5 shrink-0 ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
         <p className={`text-sm leading-relaxed ${isDarkMode ? "text-blue-100" : "text-blue-950"}`}>
-          {t(
-            "workspace.quiz.detail.reviewHint",
-            "Each card shows question type, difficulty, cognitive level, and all answer options. Correct options are highlighted.",
-          )}
+          {canInteract
+            ? t(
+                "workspace.quiz.detail.reviewHintCheckTab",
+                "Xem từng câu. Khi cả đề đã ổn, xác nhận ở cuối trang (nếu bạn là reviewer được mời).",
+              )
+            : t(
+                "workspace.quiz.detail.reviewHint",
+                "Each card shows question type, difficulty, cognitive level, and all answer options. Correct options are highlighted.",
+              )}
         </p>
       </div>
 
@@ -203,7 +277,6 @@ function GroupQuizReviewPanel({ isDarkMode, sections = [], questionsMap = {}, an
         const { section, sIdx, question } = item;
         const answers = answersMap[question.questionId] || [];
         const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
-
         return (
           <article
             key={`${section.sectionId}-${question.questionId}`}
@@ -297,6 +370,91 @@ function GroupQuizReviewPanel({ isDarkMode, sections = [], questionsMap = {}, an
           </article>
         );
       })}
+
+      {isReviewer && !loading && flatItems.length > 0 && (
+        <div
+          className={`mt-6 rounded-2xl border px-4 py-4 ${
+            isDarkMode ? "border-emerald-800/50 bg-emerald-950/25" : "border-emerald-200 bg-emerald-50/90"
+          }`}
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2">
+              <BadgeCheck className={`mt-0.5 h-5 w-5 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-700"}`} />
+              <div>
+                <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-100" : "text-emerald-950"}`}>
+                  {t("workspace.quiz.reviewQuizOkTitle", "Xác nhận toàn bộ đề")}
+                </p>
+                <p className={`mt-0.5 text-xs ${isDarkMode ? "text-emerald-200/85" : "text-emerald-900/80"}`}>
+                  {t(
+                    "workspace.quiz.reviewQuizOkHint",
+                    "Khi đã xem hết và thấy đề ổn, bấm xác nhận bên dưới.",
+                  )}
+                </p>
+                {reviewCompleteOkAt ? (
+                  <p className={`mt-2 text-xs ${isDarkMode ? "text-emerald-300/90" : "text-emerald-800"}`}>
+                    {t("workspace.quiz.reviewQuizOkDoneAt", "Đã xác nhận lúc {{time}}", {
+                      time: new Date(reviewCompleteOkAt).toLocaleString(),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:shrink-0">
+              {!reviewCompleteOkAt ? (
+                <button
+                  type="button"
+                  disabled={ackLoading}
+                  onClick={() => setConfirmReviewOpen(true)}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50 ${
+                    isDarkMode ? "bg-emerald-600 hover:bg-emerald-500" : "bg-emerald-600 hover:bg-emerald-700"
+                  }`}
+                >
+                  {ackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {t("workspace.quiz.reviewQuizOkButton", "Tôi xác nhận — đề này ổn")}
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={confirmReviewOpen} onOpenChange={setConfirmReviewOpen}>
+        <DialogContent
+          className={isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100" : ""}
+          hideClose={false}
+        >
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? "text-white" : ""}>
+              {t("workspace.quiz.reviewQuizOkConfirmTitle", "Xác nhận đề đã ổn?")}
+            </DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-slate-400" : ""}>
+              {t(
+                "workspace.quiz.reviewQuizOkConfirmDescription",
+                "Sau khi xác nhận bạn không thể hoàn tác. Chỉ bấm tiếp tục khi đã xem kỹ toàn bộ đề.",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={ackLoading}
+              onClick={() => setConfirmReviewOpen(false)}
+            >
+              {t("workspace.quiz.reviewQuizOkConfirmCancel", "Hủy")}
+            </Button>
+            <Button
+              type="button"
+              className="bg-emerald-600 hover:bg-emerald-700"
+              disabled={ackLoading}
+              onClick={() => submitReviewConfirmation()}
+            >
+              {ackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {t("workspace.quiz.reviewQuizOkConfirmSubmit", "Xác nhận")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

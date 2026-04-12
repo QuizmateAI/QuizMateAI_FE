@@ -51,7 +51,7 @@ export default function CircularProgressLoader({
 						fill="none"
 						stroke="currentColor"
 						strokeWidth="3"
-						className="text-gray-200 dark:text-slate-700"
+						className="text-blue-100 dark:text-blue-900"
 					/>
 					{/* Progress circle */}
 					<circle
@@ -78,7 +78,7 @@ export default function CircularProgressLoader({
 
 			{/* Label */}
 			{label && (
-				<p className="text-xs text-gray-600 dark:text-slate-400 text-center max-w-xs line-clamp-2">
+				<p className="text-xs text-blue-500 dark:text-blue-400 text-center max-w-xs line-clamp-2">
 					{label}
 				</p>
 			)}

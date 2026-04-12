@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,31 +18,30 @@ import {
 } from 'lucide-react';
 import { getDurationInMinutes } from '@/lib/quizDurationDisplay';
 import {
+  combineToBackendPayload,
+  getScheduleValidationIssues,
+  isoToDateTimeParts,
+} from '@/lib/challengeSchedule';
+import ChallengeScheduleFields from './ChallengeScheduleFields';
+import {
   getChallengeDetail, registerForChallenge, acceptChallengeInvitation,
   startChallengeAttempt, cancelChallenge, updateChallenge,
   addQuizReviewContributor, removeQuizReviewContributor,
 } from '../../../../api/ChallengeAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
+import { getUserDisplayLabel } from '@/Utils/userProfile';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 import ChallengeLeaderboard from './ChallengeLeaderboard';
+
+/** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS) */
+const MAX_SNAPSHOT_REVIEW_INVITES = 20;
 
 function formatDateTime(dt) {
   if (!dt) return '-';
   const d = new Date(dt);
   return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
     + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-}
-
-function toLocalDatetimeString(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function datetimeLocalValueToBackendPayload(value) {
-  if (!value || typeof value !== 'string') return value;
-  return value.length === 16 ? `${value}:00` : value;
 }
 
 export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, isLeader, currentUserId, onBack }) {
@@ -54,8 +54,11 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [editStart, setEditStart] = useState('');
-  const [editEnd, setEditEnd] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editScheduleIssues, setEditScheduleIssues] = useState([]);
   const [reviewerPick, setReviewerPick] = useState('');
 
   const { data: detail, isLoading } = useQuery({
@@ -116,11 +119,11 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
       await action();
       invalidate();
     } catch (err) {
-      setError(err?.message || 'Có lỗi xảy ra');
+      setError(getErrorMessage(t, err) || err?.message || 'Có lỗi xảy ra');
     } finally {
       setActionLoading(null);
     }
-  }, [invalidate]);
+  }, [invalidate, t]);
 
   const handleRegister = () => handleAction(
     () => registerForChallenge(workspaceId, eventId), 'register');
@@ -136,23 +139,31 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const openEditDialog = useCallback(() => {
     setEditTitle(detail?.title || '');
     setEditDescription(detail?.description || '');
-    setEditStart(toLocalDatetimeString(detail?.startTime));
-    setEditEnd(toLocalDatetimeString(detail?.endTime));
+    const s = isoToDateTimeParts(detail?.startTime);
+    const e = isoToDateTimeParts(detail?.endTime);
+    setEditStartDate(s.dateStr);
+    setEditStartTime(s.timeStr);
+    setEditEndDate(e.dateStr);
+    setEditEndTime(e.timeStr);
+    setEditScheduleIssues([]);
     setEditDialogOpen(true);
   }, [detail?.title, detail?.description, detail?.startTime, detail?.endTime]);
 
   const handleSaveChallengeEdit = useCallback(() => {
+    const issues = getScheduleValidationIssues(editStartDate, editStartTime, editEndDate, editEndTime);
+    setEditScheduleIssues(issues);
+    if (issues.length > 0 || !editTitle.trim()) return;
     handleAction(async () => {
       await updateChallenge(workspaceId, eventId, {
         title: editTitle.trim(),
         description: editDescription.trim() || null,
-        startTime: datetimeLocalValueToBackendPayload(editStart),
-        endTime: datetimeLocalValueToBackendPayload(editEnd),
+        startTime: combineToBackendPayload(editStartDate, editStartTime),
+        endTime: combineToBackendPayload(editEndDate, editEndTime),
         registrationMode: detail?.registrationMode || 'PUBLIC_GROUP',
       });
       setEditDialogOpen(false);
     }, 'edit');
-  }, [handleAction, workspaceId, eventId, editTitle, editDescription, editStart, editEnd, detail?.registrationMode]);
+  }, [handleAction, workspaceId, eventId, editTitle, editDescription, editStartDate, editStartTime, editEndDate, editEndTime, detail?.registrationMode]);
 
   const handleStartAttempt = useCallback(async () => {
     setActionLoading('start');
@@ -193,8 +204,14 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const handleViewSnapshotQuiz = useCallback(() => {
     const qid = detail?.snapshotQuizId;
     if (!qid) return;
-    navigate(buildGroupWorkspaceSectionPath(workspaceId, 'quiz', { viewQuizId: qid }));
-  }, [navigate, workspaceId, detail?.snapshotQuizId]);
+    navigate(
+      buildGroupWorkspaceSectionPath(workspaceId, 'quiz', {
+        viewQuizId: qid,
+        challengeEventId: eventId,
+      }),
+      { state: { restoreGroupWorkspace: { section: 'challenge', challengeEventId: eventId } } },
+    );
+  }, [navigate, workspaceId, detail?.snapshotQuizId, eventId]);
 
   const handleAddReviewer = useCallback(() => {
     const qid = detail?.snapshotQuizId;
@@ -251,23 +268,45 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
 
   const canCancel = isLeader && detail.status === 'SCHEDULED';
 
-  const snapshotStatusKey = String(detail.snapshotQuizStatus || '').toUpperCase();
-  const snapshotStatusLabel = snapshotStatusKey
-    ? t(`groupWorkspace.challenge.quizStatus.${snapshotStatusKey}`, snapshotStatusKey)
+  const snapshotStatusKeyRaw = String(detail.snapshotQuizStatus || '').toUpperCase();
+  const hasAssignedReviewers = (detail.reviewContributors || []).length > 0;
+  const reviewNotReadyForLive = detail.challengeReviewReadyForLive === false;
+  /** Quiz đã ACTIVE trên server nhưng chưa đủ xác nhận reviewer → không hiển thị «Sẵn sàng» */
+  const snapshotAwaitingReviewerConfirm =
+    detail.status === 'SCHEDULED'
+    && hasAssignedReviewers
+    && reviewNotReadyForLive
+    && snapshotStatusKeyRaw === 'ACTIVE';
+
+  const snapshotStatusKey = snapshotAwaitingReviewerConfirm ? 'REVIEW_PENDING' : snapshotStatusKeyRaw;
+  const snapshotStatusLabel = snapshotStatusKeyRaw
+    ? (snapshotAwaitingReviewerConfirm
+      ? t('groupWorkspace.challenge.quizStatus.REVIEW_PENDING')
+      : t(`groupWorkspace.challenge.quizStatus.${snapshotStatusKeyRaw}`, snapshotStatusKeyRaw))
     : null;
 
   const hasSnapshotQuiz = Number(detail.snapshotQuizId) > 0;
-  /** Sau khi xuất bản (ACTIVE), leader chọn tham gia thi thì không xem trước đề / không soạn thêm */
-  const leaderFairPlayBlind = Boolean(detail.leaderParticipates) && snapshotStatusKey === 'ACTIVE';
+  /** Sau khi xuất bản (ACTIVE), chỉ leader có tham gia thi mới bị chặn xem trước đề — reviewer vẫn xem được để góp ý */
+  const leaderFairPlayBlind = Boolean(detail.leaderParticipates)
+    && snapshotStatusKeyRaw === 'ACTIVE'
+    && !snapshotAwaitingReviewerConfirm
+    && isLeader;
 
   const showDraftQuizCta = isLeader
     && detail.status === 'SCHEDULED'
     && detail.sourceMode === 'NEW_CHALLENGE_QUIZ'
     && Number(detail.snapshotQuizId) > 0
-    && snapshotStatusKey !== 'ACTIVE'
+    && snapshotStatusKeyRaw !== 'ACTIVE'
     && !leaderFairPlayBlind;
 
-  const canPreviewSnapshotQuiz = (isLeader || isChallengeCreator) && hasSnapshotQuiz && !leaderFairPlayBlind;
+  const canReviewerPreviewSnapshotQuiz = Boolean(detail.myReviewContributorForSnapshot)
+    && detail.status === 'SCHEDULED'
+    && hasSnapshotQuiz
+    && !leaderFairPlayBlind;
+
+  const canPreviewSnapshotQuiz = hasSnapshotQuiz
+    && !leaderFairPlayBlind
+    && (isLeader || isChallengeCreator || canReviewerPreviewSnapshotQuiz);
 
   const showLeaderboard = detail.status === 'LIVE' || detail.status === 'FINISHED';
 
@@ -385,13 +424,15 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               {snapshotStatusLabel && (
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                    snapshotStatusKey === 'ACTIVE'
-                      ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-200' : 'bg-emerald-100 text-emerald-800')
-                      : snapshotStatusKey === 'PROCESSING'
-                        ? (isDarkMode ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-100 text-amber-900')
-                        : snapshotStatusKey === 'ERROR'
-                          ? (isDarkMode ? 'bg-red-500/20 text-red-200' : 'bg-red-100 text-red-800')
-                          : (isDarkMode ? 'bg-slate-600 text-slate-200' : 'bg-gray-200 text-gray-800')
+                    snapshotStatusKey === 'REVIEW_PENDING'
+                      ? (isDarkMode ? 'bg-orange-500/25 text-orange-200' : 'bg-orange-100 text-orange-900')
+                      : snapshotStatusKey === 'ACTIVE'
+                        ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-200' : 'bg-emerald-100 text-emerald-800')
+                        : snapshotStatusKey === 'PROCESSING'
+                          ? (isDarkMode ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-100 text-amber-900')
+                          : snapshotStatusKey === 'ERROR'
+                            ? (isDarkMode ? 'bg-red-500/20 text-red-200' : 'bg-red-100 text-red-800')
+                            : (isDarkMode ? 'bg-slate-600 text-slate-200' : 'bg-gray-200 text-gray-800')
                   }`}
                 >
                   {snapshotStatusLabel}
@@ -442,7 +483,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                 {t('groupWorkspace.challenge.snapshotQuizHint')}
               </p>
             )}
-            {Boolean(detail.leaderParticipates) && snapshotStatusKey !== 'ACTIVE' && (
+            {Boolean(detail.leaderParticipates) && snapshotStatusKeyRaw !== 'ACTIVE' && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-800'}`}>
                 {t('groupWorkspace.challenge.leaderFairPlayQuizHint')}
               </p>
@@ -457,7 +498,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
             <div className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
               {t('groupWorkspace.challenge.reviewContributorsTitle')}
             </div>
-            <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
               {t('groupWorkspace.challenge.reviewContributorsHint')}
             </p>
             {(detail.reviewContributors || []).length > 0 && (
@@ -465,24 +506,29 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                 {(detail.reviewContributors || []).map((c) => (
                   <li
                     key={c.userId}
-                    className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 ${
+                    className={`flex items-start justify-between gap-2 rounded-lg px-2 py-1.5 ${
                       isDarkMode ? 'bg-slate-800/60' : 'bg-white'
                     }`}
                   >
-                    <div className="flex min-w-0 items-center gap-2">
-                      {c.avatar ? (
-                        <img src={c.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
-                      ) : (
-                        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                          isDarkMode ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-600'
-                        }`}
-                        >
-                          {(c.fullName || c.username || '?')[0].toUpperCase()}
-                        </div>
-                      )}
-                      <span className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        {c.fullName || c.username || `#${c.userId}`}
-                      </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {c.avatar ? (
+                          <img src={c.avatar} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                        ) : (
+                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                            isDarkMode ? 'bg-orange-500/20 text-orange-300' : 'bg-orange-100 text-orange-600'
+                          }`}
+                          >
+                            {(c.fullName || c.username || '?')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                          <UserDisplayName user={c} fallback={`#${c.userId}`} isDarkMode={isDarkMode} />
+                        </span>
+                      </div>
+                      <p className={`mt-1 pl-9 text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
+                        {c.lastViewedAt ? `Đã mở xem đề: ${formatDateTime(c.lastViewedAt)}` : 'Chưa ghi nhận mở xem đề'}
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -513,6 +559,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                 <select
                   value={reviewerPick}
                   onChange={(e) => setReviewerPick(e.target.value)}
+                  disabled={(detail.reviewContributors || []).length >= MAX_SNAPSHOT_REVIEW_INVITES}
                   className={`w-full rounded-xl border px-3 py-2 text-sm ${
                     isDarkMode
                       ? 'border-slate-600 bg-slate-800 text-white'
@@ -522,7 +569,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                   <option value="">{t('groupWorkspace.challenge.reviewContributorPickPlaceholder')}</option>
                   {addableReviewMembers.map((m) => {
                     const id = String(m.userId ?? m.groupMemberId);
-                    const label = m.fullName || m.username || m.email || id;
+                    const label = getUserDisplayLabel(m, m.email || id);
                     return (
                       <option key={id} value={id}>
                         {label}
@@ -534,13 +581,43 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               <button
                 type="button"
                 onClick={handleAddReviewer}
-                disabled={!reviewerPick || !!actionLoading}
+                disabled={
+                  !reviewerPick
+                  || !!actionLoading
+                  || (detail.reviewContributors || []).length >= MAX_SNAPSHOT_REVIEW_INVITES
+                }
                 className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
               >
                 {actionLoading === 'addReviewer' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
                 {t('groupWorkspace.challenge.reviewContributorAdd')}
               </button>
             </div>
+          </div>
+        )}
+
+        {detail.myReviewContributorForSnapshot && !isLeader && detail.status === 'SCHEDULED' && Number(detail.snapshotQuizId) > 0 && (
+          <div
+            className={`mt-3 rounded-xl border px-4 py-3 ${
+              isDarkMode ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-950'
+            }`}
+          >
+            <p className="text-sm leading-relaxed">
+              {t('groupWorkspace.challenge.reviewInviteeNotice')}
+            </p>
+            <p className={`mt-2 text-xs ${isDarkMode ? 'text-cyan-200/90' : 'text-cyan-900/80'}`}>
+              {t(
+                'groupWorkspace.challenge.reviewInviteeShortHint',
+                'Chỉ cần bấm «Xem quiz» ở khối Quiz challenge phía trên, rồi mở tab «Kiểm tra».',
+              )}
+            </p>
+            {!canPreviewSnapshotQuiz && (
+              <p className={`mt-2 text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-900'}`}>
+                {t(
+                  'groupWorkspace.challenge.reviewQuizNotReadyHint',
+                  'Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau.',
+                )}
+              </p>
+            )}
           </div>
         )}
 
@@ -643,7 +720,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                     </div>
                   )}
                   <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {p.fullName || p.username}
+                    <UserDisplayName user={p} fallback="Thành viên" isDarkMode={isDarkMode} />
                   </span>
                 </div>
                 <span className={`text-xs ${
@@ -702,34 +779,18 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                 }`}
               />
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className={`mb-1 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                  {t('groupWorkspace.challenge.editStartLabel')}
-                </label>
-                <input
-                  type="datetime-local"
-                  value={editStart}
-                  onChange={(e) => setEditStart(e.target.value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm ${
-                    isDarkMode ? 'border-slate-600 bg-slate-800 text-white' : 'border-gray-200 bg-white'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className={`mb-1 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                  {t('groupWorkspace.challenge.editEndLabel')}
-                </label>
-                <input
-                  type="datetime-local"
-                  value={editEnd}
-                  onChange={(e) => setEditEnd(e.target.value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-sm ${
-                    isDarkMode ? 'border-slate-600 bg-slate-800 text-white' : 'border-gray-200 bg-white'
-                  }`}
-                />
-              </div>
-            </div>
+            <ChallengeScheduleFields
+              isDarkMode={isDarkMode}
+              startDate={editStartDate}
+              startTime={editStartTime}
+              endDate={editEndDate}
+              endTime={editEndTime}
+              onStartDateChange={setEditStartDate}
+              onStartTimeChange={setEditStartTime}
+              onEndDateChange={setEditEndDate}
+              onEndTimeChange={setEditEndTime}
+              validationIssues={editScheduleIssues}
+            />
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
@@ -743,7 +804,11 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
             <Button
               type="button"
               onClick={handleSaveChallengeEdit}
-              disabled={!!actionLoading || !editTitle.trim()}
+              disabled={
+                !!actionLoading
+                || !editTitle.trim()
+                || getScheduleValidationIssues(editStartDate, editStartTime, editEndDate, editEndTime).length > 0
+              }
             >
               {actionLoading === 'edit' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {t('groupWorkspace.challenge.editSave')}

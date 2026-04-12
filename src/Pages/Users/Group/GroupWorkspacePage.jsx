@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
 import ListSpinner from '@/Components/ui/ListSpinner';
@@ -23,6 +24,7 @@ import {
   Sparkles,
   Sun,
   Swords,
+  Trophy,
   Users,
 } from 'lucide-react';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
@@ -37,6 +39,8 @@ import GroupWorkspaceCreditGateModal from './Components/GroupWorkspaceCreditGate
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
+import { getUserDisplayLabel } from '@/Utils/userProfile';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 import {
   createRoadmap,
   setupGroupRoadmapConfig,
@@ -69,8 +73,9 @@ const LazyGroupMemberStatsTab = React.lazy(loadGroupMemberStatsTab);
 const LazyGroupSettingsTab = React.lazy(loadGroupSettingsTab);
 const LazyGroupChatPanel = React.lazy(loadGroupChatPanel);
 const LazyChallengeTab = React.lazy(loadChallengeTab);
-const LazyWorkspaceOnboardingUpdateGuardDialog = React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
-const LazyPlanUpgradeModal = React.lazy(loadPlanUpgradeModal);
+const LazyGroupRankingTab = React.lazy(() => import("./Components/GroupRankingTab"));
+React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
+React.lazy(loadPlanUpgradeModal);
 const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
 const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigSummaryDialog"));
 const LazyRoadmapJourPanel = React.lazy(() => import("./Components/RoadmapJourPanel"));
@@ -88,7 +93,7 @@ import { unwrapApiData } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
-import { buildGroupWorkspacePath } from '@/lib/routePaths';
+import { buildGroupWorkspacePath, buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { generateRoadmap } from '@/api/AIAPI';
@@ -256,6 +261,7 @@ const GROUP_WORKSPACE_VALID_SECTIONS = [
   'roadmap',
   'mockTest',
   'challenge',
+  'ranking',
   'wallet',
   'settings',
 ];
@@ -511,6 +517,7 @@ function getLogLabel(action, lang = 'vi') {
 }
 
 function GroupWorkspacePage() {
+  const queryClient = useQueryClient();
   const { workspaceId } = useParams();
   const location = useLocation();
   const navigate = useNavigateWithLoading();
@@ -757,7 +764,7 @@ function GroupWorkspacePage() {
       return;
     }
 
-    if (['flashcard', 'quiz', 'roadmap', 'mockTest'].includes(activeSection)) {
+    if (['flashcard', 'quiz', 'roadmap', 'mockTest', 'challenge', 'ranking'].includes(activeSection)) {
       void loadGroupChatPanel();
     }
   }, [activeSection, isLeader, isMember]);
@@ -973,6 +980,7 @@ function GroupWorkspacePage() {
         setQuizDetailFromChallengeReview(true);
         const next = new URLSearchParams(searchParams);
         next.delete('viewQuizId');
+        /* Giữ challengeEventId trên URL (nếu có) để nút quay lại từ quiz snapshot về đúng challenge */
         setSearchParams(next, { replace: true });
       } catch (e) {
         console.error('viewQuizId', e);
@@ -1658,6 +1666,13 @@ function GroupWorkspacePage() {
     refreshGroupMaterialViews,
   ]);
 
+  const handleChallengeRealtime = useCallback(() => {
+    if (isCreating || !workspaceId || workspaceId === 'new') return;
+    void queryClient.invalidateQueries({ queryKey: ['challenges'] });
+    void queryClient.invalidateQueries({ queryKey: ['challenge-detail'] });
+    void queryClient.invalidateQueries({ queryKey: ['challenge-leaderboard'] });
+  }, [isCreating, queryClient, workspaceId]);
+
   const { isConnected: wsConnected, lastMessage: wsLastMessage } = useWebSocket({
     workspaceId: !isCreating ? workspaceId : null,
     enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
@@ -1667,6 +1682,7 @@ function GroupWorkspacePage() {
     },
     onMaterialUpdated: handleRealtimeMaterialUpdate,
     onProgress: handleRealtimeProgress,
+    onChallengeUpdate: handleChallengeRealtime,
   });
 
   const { refreshActiveTaskSnapshot } = useActiveTaskFallback({
@@ -2520,6 +2536,23 @@ function GroupWorkspacePage() {
   }, []);
 
   const handleBackFromForm = useCallback(() => {
+    const restore = location.state?.restoreGroupWorkspace;
+    if (activeView === 'quizDetail' && quizDetailFromChallengeReview) {
+      const fromState = restore?.challengeEventId != null ? Number(restore.challengeEventId) : NaN;
+      const fromQuery = Number(searchParams.get('challengeEventId'));
+      const eid = Number.isInteger(fromState) && fromState > 0 ? fromState : fromQuery;
+      if (Number.isInteger(eid) && eid > 0) {
+        setQuizDetailFromChallengeReview(false);
+        setSelectedQuiz(null);
+        setActiveView(null);
+        navigate(
+          buildGroupWorkspaceSectionPath(resolvedWorkspaceId || workspaceId, 'challenge', { challengeEventId: eid }),
+          { replace: true, state: {} },
+        );
+        return;
+      }
+    }
+
     const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
     const nextView = formToList[activeView] || null;
     if ((activeView === 'editQuiz' || activeView === 'createQuiz') && searchParams.get('challengeDraft') === '1') {
@@ -2534,7 +2567,16 @@ function GroupWorkspacePage() {
     if (nextView !== 'flashcardDetail') setSelectedFlashcard(null);
     if (nextView !== 'mockTestDetail' && nextView !== 'editMockTest') setSelectedMockTest(null);
     setActiveView(nextView);
-  }, [activeView, searchParams, setSearchParams]);
+  }, [
+    activeView,
+    quizDetailFromChallengeReview,
+    location.state,
+    navigate,
+    resolvedWorkspaceId,
+    workspaceId,
+    searchParams,
+    setSearchParams,
+  ]);
 
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
@@ -2549,7 +2591,8 @@ function GroupWorkspacePage() {
     quiz: t('workspace.studio.actions.quiz'),
     flashcard: t('workspace.studio.actions.flashcard'),
     mockTest: t('workspace.studio.actions.mockTest'),
-    challenge: t('groupWorkspace.challenge.title'),
+    challenge: 'Challenge',
+    ranking: 'Xếp hạng',
     notifications: t('groupWorkspace.studio.activity'),
     members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
     memberStats: t('groupWorkspace.studio.memberStats'),
@@ -2607,11 +2650,12 @@ function GroupWorkspacePage() {
       ? [{ key: 'dashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.dashboard, disabled: false }]
       : [{ key: 'personalDashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.personalDashboard, disabled: false }]),
     { key: 'documents', icon: FolderOpen, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-500/20', label: sectionLabels.documents },
-    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.roadmap, disabled: !hasUploadedMaterials },
-    { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionLabels.quiz, disabled: !hasUploadedMaterials },
-    { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard, disabled: !hasUploadedMaterials },
-    { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest, disabled: !hasUploadedMaterials },
-    { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge, disabled: !hasUploadedMaterials },
+    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.roadmap },
+    { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionLabels.quiz },
+    { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard },
+    { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest },
+    { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge },
+    { key: 'ranking', icon: Trophy, color: 'text-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-500/20', label: sectionLabels.ranking },
     { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionLabels.notifications, disabled: false },
     { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: sectionLabels.members, disabled: isMember },
     { key: 'memberStats', icon: Activity, color: 'text-teal-500', bg: 'bg-teal-100 dark:bg-teal-500/20', label: sectionLabels.memberStats, disabled: isMember },
@@ -2621,8 +2665,8 @@ function GroupWorkspacePage() {
 
   const groupStudioActionGroups = [
     { label: t('groupWorkspace.studio.groupStudy', 'Học tập'), keys: ['documents', 'roadmap', 'quiz', 'flashcard', 'mockTest'] },
-    { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'notifications'] },
-    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'memberStats', 'wallet', 'settings'] },
+    { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'ranking', 'notifications'] },
+    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'wallet', 'settings'] },
   ];
 
   const renderActivityFeed = (compact = false) => (
@@ -2682,7 +2726,7 @@ function GroupWorkspacePage() {
       || members.find((member) => String(member.userId) === String(currentUser?.userID))
       || members[0]
       || null;
-    const safeMemberName = currentMember?.fullName || currentMember?.username || (currentLang === 'en' ? 'Member' : 'Thành viên');
+    const safeMemberName = getUserDisplayLabel(currentMember, currentLang === 'en' ? 'Member' : 'Thành viên');
     const joinedAt = currentMember?.joinedAt || welcomePayload?.joinedAt || null;
     const currentRoleLabel = formatGroupRole(currentRoleKey, currentLang);
     const learningModeLabel = formatGroupLearningMode(resolvedGroupData.learningMode, currentLang);
@@ -2900,7 +2944,7 @@ function GroupWorkspacePage() {
                     </div>
                     <div className="min-w-0">
                       <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        {member.fullName || member.username}
+                        <UserDisplayName user={member} fallback={currentLang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
                       </p>
                       <p className={`truncate text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {member.email || `@${member.username}`}
@@ -3192,6 +3236,18 @@ function GroupWorkspacePage() {
               isDarkMode={isDarkMode}
               isLeader={isLeader}
               currentUserId={currentUser?.userID}
+              />
+            </React.Suspense>
+          </div>
+        );
+
+      case 'ranking':
+        return (
+          <div className="h-full p-2 md:p-3 overflow-y-auto">
+            <React.Suspense fallback={renderSectionFallback(320)}>
+              <LazyGroupRankingTab
+                workspaceId={workspaceId}
+                isDarkMode={isDarkMode}
               />
             </React.Suspense>
           </div>
