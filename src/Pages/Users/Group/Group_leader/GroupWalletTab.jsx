@@ -27,9 +27,13 @@ const toSafeDate = (value) => {
   return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
 };
 
-function formatDateTime(value, lang, withTime = false) {
+function formatDateTime(value, lang, withTime = false, t) {
   const date = toSafeDate(value);
-  if (!date) return lang === 'en' ? 'No date' : 'Chưa có ngày';
+  if (!date) {
+    return t
+      ? t('groupWalletTab.noDate', 'No date')
+      : (lang === 'en' ? 'No date' : 'Chưa có ngày');
+  }
   return new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'vi-VN', {
     day: '2-digit',
     month: '2-digit',
@@ -76,8 +80,8 @@ function extractPageItems(pageData) {
   return [];
 }
 
-function creditTransactionLabel(type, lang) {
-  const labels = {
+function creditTransactionLabel(type, lang, t) {
+  const fallbackLabels = {
     WELCOME: lang === 'en' ? 'Welcome credits' : 'QMC chào mừng',
     TOPUP: lang === 'en' ? 'Top up' : 'Nạp QMC',
     CONSUME: lang === 'en' ? 'Consume' : 'Tiêu hao',
@@ -88,11 +92,28 @@ function creditTransactionLabel(type, lang) {
     PLAN_BONUS: lang === 'en' ? 'Plan bonus' : 'QMC từ gói',
     PLAN_EXPIRE_RESET: lang === 'en' ? 'Plan reset' : 'Đặt lại QMC gói',
   };
-  return labels[String(type || '').toUpperCase()] || (type || '—');
+  const enFallback = {
+    WELCOME: 'Welcome credits',
+    TOPUP: 'Top up',
+    CONSUME: 'Consume',
+    RESERVE: 'Reserved',
+    RESERVE_CANCELLED: 'Reserve released',
+    REFUND: 'Refund',
+    ADJUST: 'Adjustment',
+    PLAN_BONUS: 'Plan bonus',
+    PLAN_EXPIRE_RESET: 'Plan reset',
+  };
+  const key = String(type || '').toUpperCase();
+  if (fallbackLabels[key]) {
+    return t
+      ? t(`groupWalletTab.creditLabels.${key}`, enFallback[key])
+      : fallbackLabels[key];
+  }
+  return type || '—';
 }
 
-function creditSourceLabel(type, lang) {
-  const labels = {
+function creditSourceLabel(type, lang, t) {
+  const fallbackLabels = {
     SYSTEM: lang === 'en' ? 'System' : 'Hệ thống',
     PAYMENT: lang === 'en' ? 'Payment' : 'Thanh toán',
     AI_USAGE: lang === 'en' ? 'AI usage' : 'Sử dụng AI',
@@ -100,7 +121,21 @@ function creditSourceLabel(type, lang) {
     WORKSPACE_PLAN: lang === 'en' ? 'Group plan' : 'Gói nhóm',
     ADMIN: lang === 'en' ? 'Admin' : 'Quản trị',
   };
-  return labels[String(type || '').toUpperCase()] || (type || '—');
+  const enFallback = {
+    SYSTEM: 'System',
+    PAYMENT: 'Payment',
+    AI_USAGE: 'AI usage',
+    USER_PLAN: 'User plan',
+    WORKSPACE_PLAN: 'Group plan',
+    ADMIN: 'Admin',
+  };
+  const key = String(type || '').toUpperCase();
+  if (fallbackLabels[key]) {
+    return t
+      ? t(`groupWalletTab.creditSources.${key}`, enFallback[key])
+      : fallbackLabels[key];
+  }
+  return type || '—';
 }
 
 function sanitizeActivityNote(note) {
@@ -141,66 +176,103 @@ function parseUiActivityNote(note) {
   };
 }
 
-function formatUiActivityTitle(actionKey, target, lang) {
+function formatUiActivityTitle(actionKey, target, lang, t) {
   const safeTarget = String(target || '').trim();
-  const withTarget = (viPrefix, enPrefix, fallback) =>
-    safeTarget ? `${lang === 'en' ? enPrefix : viPrefix}${safeTarget}` : fallback;
-
-  const fallback = lang === 'en' ? 'Used an AI feature' : 'Đã dùng một tính năng AI';
-  const titleMap = {
-    PROCESS_PDF: withTarget('Đã tải lên PDF: ', 'Uploaded PDF: ', lang === 'en' ? 'Uploaded a PDF' : 'Đã tải lên PDF'),
-    PROCESS_DOCX: withTarget('Đã tải lên file Word: ', 'Uploaded Word file: ', lang === 'en' ? 'Uploaded a Word file' : 'Đã tải lên file Word'),
-    PROCESS_PPTX: withTarget('Đã tải lên slide: ', 'Uploaded slides: ', lang === 'en' ? 'Uploaded slides' : 'Đã tải lên slide'),
-    PROCESS_XLSX: withTarget('Đã tải lên file Excel: ', 'Uploaded Excel file: ', lang === 'en' ? 'Uploaded an Excel file' : 'Đã tải lên file Excel'),
-    PROCESS_IMAGE: withTarget('Đã tải lên ảnh: ', 'Uploaded image: ', lang === 'en' ? 'Uploaded an image' : 'Đã tải lên ảnh'),
-    PROCESS_AUDIO: withTarget('Đã tải lên audio: ', 'Uploaded audio: ', lang === 'en' ? 'Uploaded audio' : 'Đã tải lên audio'),
-    PROCESS_VIDEO: withTarget('Đã tải lên video: ', 'Uploaded video: ', lang === 'en' ? 'Uploaded a video' : 'Đã tải lên video'),
-    GENERATE_QUIZ: withTarget('Đã tạo quiz: ', 'Generated quiz: ', lang === 'en' ? 'Generated a quiz' : 'Đã tạo quiz'),
-    GENERATE_FLASHCARDS: withTarget('Đã tạo flashcard từ: ', 'Generated flashcards from: ', lang === 'en' ? 'Generated flashcards' : 'Đã tạo flashcard'),
-    GENERATE_MOCK_TEST: withTarget('Đã tạo mock test: ', 'Generated mock test: ', lang === 'en' ? 'Generated a mock test' : 'Đã tạo mock test'),
+  const withTarget = (viPrefix, enPrefix, fallback, prefixKey, fallbackKey) => {
+    const prefix = t && prefixKey
+      ? t(`groupWalletTab.uiActivity.${prefixKey}`, enPrefix)
+      : (lang === 'en' ? enPrefix : viPrefix);
+    const fallbackLabel = t && fallbackKey
+      ? t(`groupWalletTab.uiActivity.${fallbackKey}`, fallback)
+      : fallback;
+    return safeTarget ? `${prefix}${safeTarget}` : fallbackLabel;
   };
 
-  return titleMap[actionKey] || withTarget('Đã dùng AI cho: ', 'Used AI for: ', fallback);
+  const fallback = t
+    ? t('groupWalletTab.uiActivity.fallback', 'Used an AI feature')
+    : (lang === 'en' ? 'Used an AI feature' : 'Đã dùng một tính năng AI');
+  const titleMap = {
+    PROCESS_PDF: withTarget('Đã tải lên PDF: ', 'Uploaded PDF: ', lang === 'en' ? 'Uploaded a PDF' : 'Đã tải lên PDF', 'processPdfPrefix', 'processPdfFallback'),
+    PROCESS_DOCX: withTarget('Đã tải lên file Word: ', 'Uploaded Word file: ', lang === 'en' ? 'Uploaded a Word file' : 'Đã tải lên file Word', 'processDocxPrefix', 'processDocxFallback'),
+    PROCESS_PPTX: withTarget('Đã tải lên slide: ', 'Uploaded slides: ', lang === 'en' ? 'Uploaded slides' : 'Đã tải lên slide', 'processPptxPrefix', 'processPptxFallback'),
+    PROCESS_XLSX: withTarget('Đã tải lên file Excel: ', 'Uploaded Excel file: ', lang === 'en' ? 'Uploaded an Excel file' : 'Đã tải lên file Excel', 'processXlsxPrefix', 'processXlsxFallback'),
+    PROCESS_IMAGE: withTarget('Đã tải lên ảnh: ', 'Uploaded image: ', lang === 'en' ? 'Uploaded an image' : 'Đã tải lên ảnh', 'processImagePrefix', 'processImageFallback'),
+    PROCESS_AUDIO: withTarget('Đã tải lên audio: ', 'Uploaded audio: ', lang === 'en' ? 'Uploaded audio' : 'Đã tải lên audio', 'processAudioPrefix', 'processAudioFallback'),
+    PROCESS_VIDEO: withTarget('Đã tải lên video: ', 'Uploaded video: ', lang === 'en' ? 'Uploaded a video' : 'Đã tải lên video', 'processVideoPrefix', 'processVideoFallback'),
+    GENERATE_QUIZ: withTarget('Đã tạo quiz: ', 'Generated quiz: ', lang === 'en' ? 'Generated a quiz' : 'Đã tạo quiz', 'generateQuizPrefix', 'generateQuizFallback'),
+    GENERATE_FLASHCARDS: withTarget('Đã tạo flashcard từ: ', 'Generated flashcards from: ', lang === 'en' ? 'Generated flashcards' : 'Đã tạo flashcard', 'generateFlashcardsPrefix', 'generateFlashcardsFallback'),
+    GENERATE_MOCK_TEST: withTarget('Đã tạo mock test: ', 'Generated mock test: ', lang === 'en' ? 'Generated a mock test' : 'Đã tạo mock test', 'generateMockTestPrefix', 'generateMockTestFallback'),
+  };
+
+  if (titleMap[actionKey]) return titleMap[actionKey];
+  const defaultPrefix = t
+    ? t('groupWalletTab.uiActivity.defaultPrefix', 'Used AI for: ')
+    : (lang === 'en' ? 'Used AI for: ' : 'Đã dùng AI cho: ');
+  return safeTarget ? `${defaultPrefix}${safeTarget}` : fallback;
 }
 
-function formatUiActivitySubtitle(workspaceName, lang) {
+function formatUiActivitySubtitle(workspaceName, lang, t) {
   const safeWorkspaceName = String(workspaceName || '').trim();
   if (!safeWorkspaceName) return '';
 
+  if (t) {
+    return t('groupWalletTab.uiActivity.inWorkspace', 'In workspace: {{name}}', { name: safeWorkspaceName });
+  }
   return lang === 'en'
     ? `In workspace: ${safeWorkspaceName}`
     : `Trong workspace: ${safeWorkspaceName}`;
 }
 
-function paymentTargetLabel(type, lang) {
-  const labels = {
+function paymentTargetLabel(type, lang, t) {
+  const fallbackLabels = {
     WORKSPACE_PLAN: lang === 'en' ? 'Group plan' : 'Gói nhóm',
     WORKSPACE_CREDIT: lang === 'en' ? 'Group credits' : 'QMC nhóm',
     WORKSPACE_SLOT: lang === 'en' ? 'Seat slot' : 'Slot thành viên',
     USER_PLAN: lang === 'en' ? 'User plan' : 'Gói cá nhân',
     USER_CREDIT: lang === 'en' ? 'User credits' : 'QMC cá nhân',
   };
-  return labels[String(type || '').toUpperCase()] || (type || '—');
+  const enFallback = {
+    WORKSPACE_PLAN: 'Group plan',
+    WORKSPACE_CREDIT: 'Group credits',
+    WORKSPACE_SLOT: 'Seat slot',
+    USER_PLAN: 'User plan',
+    USER_CREDIT: 'User credits',
+  };
+  const key = String(type || '').toUpperCase();
+  if (fallbackLabels[key]) {
+    return t
+      ? t(`groupWalletTab.paymentTargets.${key}`, enFallback[key])
+      : fallbackLabels[key];
+  }
+  return type || '—';
 }
 
-function paymentStatusMeta(status, lang, isDarkMode) {
+function paymentStatusMeta(status, lang, isDarkMode, t) {
   const normalized = String(status || '').toUpperCase();
   if (normalized === 'COMPLETED') {
     return {
-      label: lang === 'en' ? 'Completed' : 'Hoàn tất',
+      label: t
+        ? t('groupWalletTab.paymentStatus.completed', 'Completed')
+        : (lang === 'en' ? 'Completed' : 'Hoàn tất'),
       className: isDarkMode ? 'bg-emerald-400/10 text-emerald-100' : 'bg-emerald-50 text-emerald-700',
     };
   }
   if (normalized === 'PENDING') {
     return {
-      label: lang === 'en' ? 'Pending' : 'Đang chờ',
+      label: t
+        ? t('groupWalletTab.paymentStatus.pending', 'Pending')
+        : (lang === 'en' ? 'Pending' : 'Đang chờ'),
       className: isDarkMode ? 'bg-amber-400/10 text-amber-100' : 'bg-amber-50 text-amber-700',
     };
   }
+  const failedLabel = t
+    ? t('groupWalletTab.paymentStatus.failed', 'Failed')
+    : (lang === 'en' ? 'Failed' : 'Thất bại');
+  const cancelledLabel = t
+    ? t('groupWalletTab.paymentStatus.cancelled', 'Cancelled')
+    : (lang === 'en' ? 'Cancelled' : 'Đã hủy');
   return {
-    label: normalized === 'FAILED'
-      ? (lang === 'en' ? 'Failed' : 'Thất bại')
-      : (lang === 'en' ? 'Cancelled' : 'Đã hủy'),
+    label: normalized === 'FAILED' ? failedLabel : cancelledLabel,
     className: isDarkMode ? 'bg-rose-400/10 text-rose-100' : 'bg-rose-50 text-rose-700',
   };
 }
@@ -211,7 +283,7 @@ export default function GroupWalletTab({
   groupSubscription = null,
   canManage = false,
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const lang = i18n.language;
@@ -219,7 +291,7 @@ export default function GroupWalletTab({
   const fontClass = lang === 'en' ? 'font-poppins' : 'font-sans';
   const [renderTimestamp] = useState(() => Date.now());
   const workspaceId = group?.workspaceId;
-  const groupName = group?.groupName || group?.displayTitle || group?.name || (lang === 'en' ? 'Group' : 'Nhóm');
+  const groupName = group?.groupName || group?.displayTitle || group?.name || t('groupWalletTab.group', 'Group');
   const currentGroupPlanName = String(groupSubscription?.plan?.displayName || groupSubscription?.plan?.code || '').trim();
   const canBuyGroupCredits = groupSubscription?.plan?.entitlement?.canBuyCredit !== false;
 
@@ -260,10 +332,10 @@ export default function GroupWalletTab({
   const displayPlanLabel = useMemo(() => {
     if (currentGroupPlanName) return currentGroupPlanName;
     if (walletSummary.hasActivePlan) {
-      return lang === 'en' ? 'Paid plan active' : 'Gói trả phí đang hiệu lực';
+      return t('groupWalletTab.paidPlanActive', 'Paid plan active');
     }
     return '';
-  }, [currentGroupPlanName, walletSummary.hasActivePlan, lang]);
+  }, [currentGroupPlanName, walletSummary.hasActivePlan, t]);
 
   const walletTransactions = useMemo(
     () => extractPageItems(walletTransactionsPage),
@@ -298,7 +370,7 @@ export default function GroupWalletTab({
   );
 
   const groupPlanExpiryLabel = groupSubscription?.expiresAt
-    ? formatDateTime(groupSubscription.expiresAt, lang, true)
+    ? formatDateTime(groupSubscription.expiresAt, lang, true, t)
     : '';
 
   const openGroupPlanManager = () => {
@@ -333,15 +405,13 @@ export default function GroupWalletTab({
             </div>
             <div>
               <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
-                {lang === 'en' ? 'Group wallet' : 'Ví nhóm'}
+                {t('groupWalletTab.leaderOnlyEyebrow', 'Group wallet')}
               </p>
               <h2 className={`mt-2 text-2xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {lang === 'en' ? 'Leader access only' : 'Chỉ trưởng nhóm quản lý'}
+                {t('groupWalletTab.leaderOnlyTitle', 'Leader access only')}
               </h2>
               <p className={`mt-3 max-w-2xl text-sm leading-6 ${subtleTextClass}`}>
-                {lang === 'en'
-                  ? 'Only the group leader can manage the shared wallet, top up credits, and inspect purchase history for this workspace.'
-                  : 'Chỉ trưởng nhóm mới quản lý được ví dùng chung, nạp thêm QMC và xem lịch sử thanh toán của workspace này.'}
+                {t('groupWalletTab.leaderOnlyDescription', 'Only the group leader can manage the shared wallet, top up credits, and inspect purchase history for this workspace.')}
               </p>
             </div>
           </div>
@@ -356,22 +426,20 @@ export default function GroupWalletTab({
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)] lg:items-start">
           <div className="min-w-0 flex-1">
             <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${eyebrowClass}`}>
-              {lang === 'en' ? 'Group wallet' : 'Ví nhóm'}
+              {t('groupWalletTab.groupWalletEyebrow', 'Group wallet')}
             </p>
             <h2 className={`mt-1 truncate text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
               {groupName}
             </h2>
             <p className={`mt-2 max-w-xl text-sm leading-relaxed ${subtleTextClass}`}>
-              {lang === 'en'
-                ? 'QMC means QuizMate Credit — the shared credit unit this group uses for quiz, flashcard, roadmap, and other AI actions.'
-                : 'QMC là QuizMate Credit — đơn vị QMC dùng chung để tạo quiz, flashcard, roadmap và các tác vụ AI khác trong nhóm.'}
+              {t('groupWalletTab.qmcDescription', 'QMC means QuizMate Credit — the shared credit unit this group uses for quiz, flashcard, roadmap, and other AI actions.')}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${isDarkMode ? 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700'}`}>
-                QMC = QuizMate Credit
+                {t('groupWalletTab.qmcBadge', 'QMC = QuizMate Credit')}
               </span>
               <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${isDarkMode ? 'border-white/12 bg-white/[0.05] text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
-                {lang === 'en' ? 'Shared by the whole group' : 'Dùng chung cho cả nhóm'}
+                {t('groupWalletTab.sharedByGroup', 'Shared by the whole group')}
               </span>
             </div>
           </div>
@@ -389,10 +457,10 @@ export default function GroupWalletTab({
               </span>
               <div className="min-w-0">
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
-                  {lang === 'en' ? 'Group wallet balance' : 'Số dư ví nhóm'}
+                  {t('groupWalletTab.balanceEyebrow', 'Group wallet balance')}
                 </p>
                 <p className={`mt-1 text-xs leading-relaxed ${subtleTextClass}`}>
-                  {lang === 'en' ? 'Available now for shared AI actions.' : 'Sẵn sàng dùng cho các thao tác AI chung.'}
+                  {t('groupWalletTab.balanceSubtitle', 'Available now for shared AI actions.')}
                 </p>
               </div>
             </div>
@@ -413,12 +481,12 @@ export default function GroupWalletTab({
             }`}
             title={displayPlanLabel || undefined}
           >
-            {displayPlanLabel || (lang === 'en' ? 'No paid plan' : 'Chưa có gói trả phí')}
+            {displayPlanLabel || t('groupWalletTab.noPaidPlan', 'No paid plan')}
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {groupPlanExpiryLabel ? (
               <p className={`text-right text-xs ${subtleTextClass}`}>
-                {lang === 'en' ? 'Expires' : 'Hết hạn'}: {groupPlanExpiryLabel}
+                {t('groupWalletTab.expires', 'Expires')}: {groupPlanExpiryLabel}
               </p>
             ) : null}
             <Button
@@ -432,8 +500,8 @@ export default function GroupWalletTab({
               onClick={openGroupPlanManager}
             >
               {displayPlanLabel
-                ? (lang === 'en' ? 'Manage plan' : 'Quản lý gói')
-                : (lang === 'en' ? 'Choose plan' : 'Chọn gói')}
+                ? t('groupWalletTab.managePlan', 'Manage plan')
+                : t('groupWalletTab.choosePlan', 'Choose plan')}
             </Button>
           </div>
         </div>
@@ -441,7 +509,7 @@ export default function GroupWalletTab({
 
       {(walletError || workspacePaymentsError || walletTransactionsError) ? (
         <p className={`rounded-2xl border px-4 py-3 text-sm ${isDarkMode ? 'border-rose-400/30 bg-rose-400/10 text-rose-100' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
-          {lang === 'en' ? 'Some wallet data could not be loaded. Refresh to try again.' : 'Một phần dữ liệu ví chưa tải được. Hãy tải lại để thử lại.'}
+          {t('groupWalletTab.dataError', 'Some wallet data could not be loaded. Refresh to try again.')}
         </p>
       ) : null}
 
@@ -450,13 +518,13 @@ export default function GroupWalletTab({
           <div className="flex items-center gap-2">
             <CreditCard className={cn('h-4 w-4', isDarkMode ? 'text-blue-300' : 'text-blue-600')} />
             <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
-              {lang === 'en' ? 'Balance breakdown' : 'Chi tiết số dư'}
+              {t('groupWalletTab.balanceBreakdown', 'Balance breakdown')}
             </p>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <div className={cn('rounded-2xl border px-4 py-3', innerCardClass)}>
               <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${eyebrowClass}`}>
-                {lang === 'en' ? 'Regular credits' : 'QMC thường'}
+                {t('groupWalletTab.regularCredits', 'Regular credits')}
               </p>
               <p className={cn('mt-2 text-xl font-bold tabular-nums tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
                 {walletLoading ? '…' : formatNumber(walletSummary.regularCreditBalance, locale)}
@@ -464,7 +532,7 @@ export default function GroupWalletTab({
             </div>
             <div className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-blue-400/20 bg-blue-400/10' : 'border-blue-200 bg-blue-50')}>
               <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? 'text-blue-200' : 'text-blue-700'}`}>
-                {lang === 'en' ? 'Plan credits' : 'QMC từ gói'}
+                {t('groupWalletTab.planCredits', 'Plan credits')}
               </p>
               <p className={cn('mt-2 text-xl font-bold tabular-nums tracking-tight', isDarkMode ? 'text-white' : 'text-slate-900')}>
                 {walletLoading ? '…' : formatNumber(walletSummary.planCreditBalance, locale)}
@@ -474,13 +542,13 @@ export default function GroupWalletTab({
 
           <div className={`mt-4 flex flex-wrap items-center gap-3 text-xs ${subtleTextClass}`}>
             <span>
-              {lang === 'en' ? 'Wallet updated' : 'Ví cập nhật'}:{' '}
-              {walletSummary.updatedAt ? formatDateTime(walletSummary.updatedAt, lang, true) : '—'}
+              {t('groupWalletTab.walletUpdated', 'Wallet updated')}:{' '}
+              {walletSummary.updatedAt ? formatDateTime(walletSummary.updatedAt, lang, true, t) : '—'}
             </span>
             {walletSummary.planCreditExpiresAt ? (
               <span>
-                {lang === 'en' ? 'Plan credits expire' : 'QMC gói hết hạn'}:{' '}
-                {formatDateTime(walletSummary.planCreditExpiresAt, lang, true)}
+                {t('groupWalletTab.planCreditsExpire', 'Plan credits expire')}:{' '}
+                {formatDateTime(walletSummary.planCreditExpiresAt, lang, true, t)}
               </span>
             ) : null}
           </div>
@@ -490,25 +558,21 @@ export default function GroupWalletTab({
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className={cn('h-4 w-4', isDarkMode ? 'text-cyan-300' : 'text-cyan-600')} />
             <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {lang === 'en' ? 'Top up credits' : 'Nạp thêm QMC'}
+              {t('groupWalletTab.topUpCredits', 'Top up credits')}
             </h3>
           </div>
           <p className={`text-xs leading-relaxed ${subtleTextClass}`}>
-            {lang === 'en'
-              ? 'Add more QMC to this shared wallet.'
-              : 'Bổ sung thêm QMC vào ví dùng chung của nhóm.'}
+            {t('groupWalletTab.topUpDescription', 'Add more QMC to this shared wallet.')}
           </p>
           {!canBuyGroupCredits ? (
             <div className={`mt-4 rounded-xl border px-4 py-4 text-sm ${isDarkMode ? 'border-amber-400/20 bg-amber-400/10 text-amber-100' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-              {lang === 'en'
-                ? 'This plan currently does not allow buying extra credits for the group.'
-                : 'Gói hiện tại chưa cho phép mua thêm QMC cho nhóm.'}
+              {t('groupWalletTab.notAllowedBuyCredits', 'This plan currently does not allow buying extra credits for the group.')}
             </div>
           ) : creditPackagesLoading && featuredCreditPackages.length === 0 ? (
             <div className={`mt-4 rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>…</div>
           ) : featuredCreditPackages.length === 0 ? (
             <div className={`mt-4 rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>
-              {lang === 'en' ? 'No credit packages are available right now.' : 'Hiện chưa có gói QMC khả dụng.'}
+              {t('groupWalletTab.noCreditPackages', 'No credit packages are available right now.')}
             </div>
           ) : (
             <div className="mt-3 space-y-2">
@@ -530,10 +594,8 @@ export default function GroupWalletTab({
                       </p>
                       <p className={`mt-1 text-xs ${subtleTextClass}`}>
                         {Number(pkg?.bonusCredit ?? 0) > 0
-                          ? (lang === 'en'
-                            ? `Includes +${formatNumber(pkg.bonusCredit, locale)} bonus QMC`
-                            : `Bao gồm +${formatNumber(pkg.bonusCredit, locale)} QMC thưởng`)
-                          : (lang === 'en' ? 'Top up the shared wallet' : 'Nạp vào ví dùng chung')}
+                          ? t('groupWalletTab.bonusIncluded', 'Includes +{{amount}} bonus QMC', { amount: formatNumber(pkg.bonusCredit, locale) })
+                          : t('groupWalletTab.topUpSharedWallet', 'Top up the shared wallet')}
                       </p>
                     </div>
                     <div className="text-right">
@@ -541,7 +603,7 @@ export default function GroupWalletTab({
                         {formatCurrency(pkg?.price, locale)}
                       </p>
                       <p className={`mt-1 text-[11px] font-semibold ${isDarkMode ? 'text-cyan-300' : 'text-cyan-700'}`}>
-                        {lang === 'en' ? 'Buy now' : 'Mua ngay'}
+                        {t('groupWalletTab.buyNow', 'Buy now')}
                       </p>
                     </div>
                   </button>
@@ -557,27 +619,27 @@ export default function GroupWalletTab({
           <div className="mb-1 flex items-center gap-2">
             <ReceiptText className={cn('h-4 w-4', isDarkMode ? 'text-violet-300' : 'text-violet-600')} />
             <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {lang === 'en' ? 'Purchase history' : 'Lịch sử mua'}
+              {t('groupWalletTab.purchaseHistory', 'Purchase history')}
             </h3>
           </div>
           <p className={`text-xs ${subtleTextClass}`}>
-            {lang === 'en' ? 'Recent payments for this workspace plan and shared credits.' : 'Các thanh toán gần đây cho gói và QMC dùng chung của không gian này.'}
+            {t('groupWalletTab.purchaseHistoryDescription', 'Recent payments for this workspace plan and shared credits.')}
           </p>
           <div className="mt-4 space-y-3">
             {workspacePaymentsLoading ? (
               <div className={`rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>…</div>
             ) : purchaseHistory.length === 0 ? (
               <div className={`rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>
-                {lang === 'en' ? 'No purchase records yet.' : 'Chưa có lịch sử mua.'}
+                {t('groupWalletTab.noPurchaseRecords', 'No purchase records yet.')}
               </div>
             ) : purchaseHistory.map((payment) => {
-              const statusMeta = paymentStatusMeta(payment.paymentStatus, lang, isDarkMode);
+              const statusMeta = paymentStatusMeta(payment.paymentStatus, lang, isDarkMode, t);
               return (
                 <div key={payment.paymentId || payment.orderId} className={cn('rounded-2xl border px-4 py-3', isDarkMode ? 'border-white/12 bg-black/20' : 'border-slate-200/90 bg-white/94')}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-                        {paymentTargetLabel(payment.paymentTargetType, lang)}
+                        {paymentTargetLabel(payment.paymentTargetType, lang, t)}
                       </p>
                       <p className={`mt-1 text-xs text-slate-500`}>
                         {payment.orderId || `#${payment.paymentId}`}
@@ -592,7 +654,7 @@ export default function GroupWalletTab({
                       {formatCurrency(payment.amount, locale)}
                     </p>
                     <p className={`text-xs ${subtleTextClass}`}>
-                      {formatDateTime(payment.paidAt || payment.createdAt, lang, true)}
+                      {formatDateTime(payment.paidAt || payment.createdAt, lang, true, t)}
                     </p>
                   </div>
                 </div>
@@ -605,18 +667,18 @@ export default function GroupWalletTab({
           <div className="mb-1 flex items-center gap-2">
             <BarChart3 className={cn('h-4 w-4', isDarkMode ? 'text-emerald-300' : 'text-emerald-600')} />
             <h3 className={cn('text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
-              {lang === 'en' ? 'Usage history' : 'Lịch sử sử dụng'}
+              {t('groupWalletTab.usageHistory', 'Usage history')}
             </h3>
           </div>
           <p className={`text-xs ${subtleTextClass}`}>
-            {lang === 'en' ? 'Recent shared-wallet activity triggered by AI usage and credit movements.' : 'Các biến động gần đây của ví dùng chung do AI và các thao tác QMC tạo ra.'}
+            {t('groupWalletTab.usageHistoryDescription', 'Recent shared-wallet activity triggered by AI usage and credit movements.')}
           </p>
           <div className="mt-4 space-y-3">
             {walletTransactionsLoading ? (
               <div className={`rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>…</div>
             ) : usageHistory.length === 0 ? (
               <div className={`rounded-xl border px-4 py-4 text-sm ${subtleTextClass} ${innerCardClass}`}>
-                {lang === 'en' ? 'No usage records yet.' : 'Chưa có lịch sử sử dụng.'}
+                {t('groupWalletTab.noUsageRecords', 'No usage records yet.')}
               </div>
             ) : usageHistory.map((tx) => {
               const totalChange = Number(tx.creditChange ?? 0) + Number(tx.planCreditChange ?? 0);
@@ -625,10 +687,10 @@ export default function GroupWalletTab({
               const isRecent = recentAt > 0 && renderTimestamp - recentAt <= 3 * DAY_MS;
               const uiActivity = parseUiActivityNote(tx.note);
               const activityTitle = uiActivity
-                ? formatUiActivityTitle(uiActivity.actionKey, uiActivity.target, lang)
-                : creditTransactionLabel(tx.transactionType, lang);
+                ? formatUiActivityTitle(uiActivity.actionKey, uiActivity.target, lang, t)
+                : creditTransactionLabel(tx.transactionType, lang, t);
               const activityNote = uiActivity
-                ? formatUiActivitySubtitle(uiActivity.workspaceName, lang)
+                ? formatUiActivitySubtitle(uiActivity.workspaceName, lang, t)
                 : sanitizeActivityNote(tx.note);
 
               return (
@@ -641,12 +703,12 @@ export default function GroupWalletTab({
                         </p>
                         {isRecent ? (
                           <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDarkMode ? 'bg-cyan-400/10 text-cyan-200' : 'bg-cyan-50 text-cyan-700'}`}>
-                            {lang === 'en' ? 'Recent' : 'Gần đây'}
+                            {t('groupWalletTab.recent', 'Recent')}
                           </span>
                         ) : null}
                       </div>
                       <p className={`mt-1 text-xs ${subtleTextClass}`}>
-                        {creditSourceLabel(tx.sourceType, lang)}
+                        {creditSourceLabel(tx.sourceType, lang, t)}
                         {activityNote ? ` · ${activityNote}` : ''}
                       </p>
                     </div>
@@ -663,9 +725,9 @@ export default function GroupWalletTab({
                   </div>
                   <div className={`mt-3 flex flex-wrap items-center justify-between gap-3 text-xs ${subtleTextClass}`}>
                     <span>
-                      {lang === 'en' ? 'Balance after' : 'Số dư sau'}: {formatNumber(tx.balanceAfter, locale)}
+                      {t('groupWalletTab.balanceAfter', 'Balance after')}: {formatNumber(tx.balanceAfter, locale)}
                     </span>
-                    <span>{formatDateTime(tx.createdAt, lang, true)}</span>
+                    <span>{formatDateTime(tx.createdAt, lang, true, t)}</span>
                   </div>
                 </div>
               );

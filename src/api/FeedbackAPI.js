@@ -1,4 +1,5 @@
 import api from './api';
+import i18n from '@/i18n';
 
 const MANAGEMENT_FEEDBACK_LOG_LIST_ENDPOINTS = [
   '/management/feedback/requests',
@@ -47,7 +48,7 @@ async function requestFirstAvailableEndpoint(paths) {
         lastNotFoundError = {
           ...error,
           statusCode: 404,
-          message: error?.message || 'Không tìm thấy endpoint feedback log',
+          message: error?.message || i18n.t('error.missingFeedbackLogEndpoint'),
         };
         continue;
       }

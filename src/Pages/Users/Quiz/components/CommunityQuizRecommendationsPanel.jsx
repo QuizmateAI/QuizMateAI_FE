@@ -106,20 +106,20 @@ function RecommendationCard({
                 isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
               }`}>
                 <Users className="h-3.5 w-3.5" />
-                {t('workspace.quiz.communityRecommendations.cloneCount', '{{count}} lượt clone', { count: cloneCount })}
+                {t('workspace.quiz.communityRecommendations.cloneCount', '{{count}} clones', { count: cloneCount })}
               </span>
             ) : null}
           </div>
 
           <p className={`mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
-            {item?.title || t('workspace.quiz.communityRecommendations.defaultQuizTitle', 'Quiz cộng đồng')}
+            {item?.title || t('workspace.quiz.communityRecommendations.defaultQuizTitle', 'Community quiz')}
           </p>
 
           <div className={`mt-2 flex flex-wrap items-center gap-2 text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
             {duration ? (
               <span className="inline-flex items-center gap-1">
                 <Clock3 className="h-3.5 w-3.5" />
-                {t('workspace.quiz.communityRecommendations.durationMinutes', '{{count}} phút', { count: duration })}
+                {t('workspace.quiz.communityRecommendations.durationMinutes', '{{count}} min', { count: duration })}
               </span>
             ) : null}
             {difficultyLabel ? (
@@ -171,7 +171,7 @@ function RecommendationCard({
         >
           {isCloning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           <span className={`ml-1 ${fontClass}`}>
-            {t('workspace.quiz.communityRecommendations.cloneAction', 'Clone về workspace này')}
+            {t('workspace.quiz.communityRecommendations.cloneAction', 'Clone to this workspace')}
           </span>
         </Button>
       </div>
@@ -290,7 +290,7 @@ export default function CommunityQuizRecommendationsPanel({
         recommendationRank: item?.recommendationRank,
         recommendationScore: item?.recommendationScore,
       });
-      showSuccess(t('workspace.quiz.communityRecommendations.cloneSuccess', 'Đã clone quiz vào workspace này.'));
+      showSuccess(t('workspace.quiz.communityRecommendations.cloneSuccess', 'Quiz cloned into this workspace.'));
       await loadRecommendations();
       if (typeof onAnalyticsChanged === 'function') {
         onAnalyticsChanged();
@@ -299,7 +299,7 @@ export default function CommunityQuizRecommendationsPanel({
         await onCloneSuccess(item);
       }
     } catch (cloneError) {
-      showError(cloneError?.message || t('workspace.quiz.communityRecommendations.cloneError', 'Clone quiz thất bại.'));
+      showError(cloneError?.message || t('workspace.quiz.communityRecommendations.cloneError', 'Unable to clone this quiz right now.'));
     } finally {
       setCloningQuizId(null);
     }
@@ -329,12 +329,10 @@ export default function CommunityQuizRecommendationsPanel({
             </div>
             <div>
               <p className={`text-base font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
-                {t('workspace.quiz.communityRecommendations.title', 'Quiz phù hợp cho workspace này')}
+                {t('workspace.quiz.communityRecommendations.title', 'Matching quizzes for this workspace')}
               </p>
               <p className={`mt-1 text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'} ${fontClass}`}>
-                {t(
-                  'workspace.quiz.communityRecommendations.description',
-                  'Quizmate AI đã tìm thấy vài quiz cộng đồng đang khá khớp với hành vi học hiện tại. Nếu thấy hợp, bạn có thể clone thẳng về workspace này.'
+                {t('workspace.quiz.communityRecommendations.description', 'Quizmate AI found a few community quizzes that fit the current learning behavior here. If one looks right, you can clone it straight into this workspace.'
                 )}
               </p>
             </div>
@@ -345,7 +343,7 @@ export default function CommunityQuizRecommendationsPanel({
           <span className={`rounded-full px-3 py-1.5 text-xs font-medium ${
             isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-white text-slate-700'
           }`}>
-            {t('workspace.quiz.communityRecommendations.recommendationCount', '{{count}} quiz phù hợp', {
+            {t('workspace.quiz.communityRecommendations.recommendationCount', '{{count}} matching quizzes', {
               count: flattenRecommendations(data).length,
             })}
           </span>
@@ -353,7 +351,7 @@ export default function CommunityQuizRecommendationsPanel({
             <span className={`rounded-full px-3 py-1.5 text-xs font-medium ${
               isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-white text-slate-700'
             }`}>
-              {t('workspace.quiz.communityRecommendations.moreCount', '+{{count}} gợi ý khác', { count: remainingCount })}
+              {t('workspace.quiz.communityRecommendations.moreCount', '+{{count}} more suggestions', { count: remainingCount })}
             </span>
           ) : null}
         </div>

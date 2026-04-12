@@ -536,7 +536,7 @@ export default function QuizResultPage() {
 
       return {
         id: attemptQuestion.questionId,
-        content: detailQuestion?.content || `Question ${index + 1}`,
+        content: detailQuestion?.content || t('quizResultPage.questionFallback', 'Question {{index}}', { index: index + 1 }),
         type: detailQuestion?.type || attemptQuestion.questionType || 'SINGLE_CHOICE',
         difficulty: detailQuestion?.difficulty || 'MEDIUM',
         explanation: detailQuestion?.explanation || '',
@@ -833,7 +833,7 @@ export default function QuizResultPage() {
       }
 
       setKnowledgeGenerationTriggered(true);
-      showSuccess(t('workspace.quiz.result.generateKnowledgeSuccess', 'Đã gửi yêu cầu tạo knowledge cho phase này.'));
+      showSuccess(t('quizResultPage.generateKnowledgeSuccess', 'Knowledge generation request sent for this phase.'));
       const normalizedWorkspaceId = Number(workspaceId);
 const normalizedPhaseId = Number(phaseId);
 if (
@@ -851,7 +851,7 @@ handleBack();
     } catch (error) {
       unmarkPhaseContentGenerating(workspaceId, phaseId);
       console.error('Failed to generate roadmap phase content after pre-learning:', error);
-      showError(error?.message || t('workspace.quiz.result.generateKnowledgeFail', 'Tạo knowledge thất bại. Vui lòng thử lại.'));
+      showError(error?.message || t('quizResultPage.generateKnowledgeFail', 'Failed to generate knowledge. Please try again.'));
     } finally {
       setGeneratingKnowledge(false);
     }
@@ -900,7 +900,7 @@ handleBack,
 
     const phaseId = Number(currentPhaseProgress?.phaseId ?? preLearningGenerationContext.phaseId);
     if (!Number.isInteger(phaseId) || phaseId <= 0) {
-      showError(t('workspace.quiz.result.skipDecisionMissingPhase', 'Không xác định được phase để cập nhật quyết định.'));
+      showError(t('quizResultPage.skipDecisionMissingPhase', 'Cannot determine the phase for this decision.'));
       return;
     }
 
@@ -909,7 +909,7 @@ handleBack,
       await submitRoadmapPhaseSkipDecision(phaseId, skipped);
 
       if (skipped) {
-        showSuccess(t('workspace.quiz.result.skipPhaseSuccess', 'Đã bỏ qua phase hiện tại.')); 
+        showSuccess(t('quizResultPage.skipPhaseSuccess', 'Current phase has been skipped successfully.'));
         const latestCurrent = await fetchCurrentRoadmapPhase();
         const nextPhaseId = Number(latestCurrent?.phaseId);
         const workspaceId = Number(preLearningGenerationContext.workspaceId);
@@ -926,7 +926,7 @@ handleBack,
       await handleGenerateKnowledgeAfterPreLearning();
     } catch (error) {
       console.error('Failed to submit skip decision:', error);
-      showError(error?.message || t('workspace.quiz.result.skipPhaseFail', 'Không thể cập nhật quyết định skip phase.'));
+      showError(error?.message || t('quizResultPage.skipPhaseFail', 'Could not update skip decision for this phase.'));
     } finally {
       setSubmittingSkipDecision(false);
     }
@@ -1000,8 +1000,8 @@ handleBack,
           <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
           <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
             {retryCount > 0
-              ? t('workspace.quiz.result.waitingForResult', 'Đang chờ hệ thống trả kết quả bài làm...')
-              : t('workspace.quiz.result.loading', 'Đang tải kết quả...')}
+              ? t('quizResultPage.waitingForResult', 'Waiting for your result...')
+              : t('quizResultPage.loading', 'Loading result...')}
           </p>
         </div>
       </div>
@@ -1013,16 +1013,16 @@ handleBack,
     const isIncompleteAttempt = Boolean(activeResultError?.isIncompleteAttempt)
       || isIncompleteAttemptResultError(activeResultError);
     const resultErrorMessage = isIncompleteAttempt
-      ? t('workspace.quiz.result.incompleteAttempt', 'Lượt làm quiz này chưa hoàn thành. Hãy quay lại để tiếp tục làm bài hoặc nộp bài trước khi xem kết quả.')
+      ? t('quizResultPage.incompleteAttempt', 'This quiz attempt is not complete yet. Return to continue or submit before viewing the result.')
       : activeResultError?.statusCode === 404 || activeResultError?.statusCode === 409
-      ? t('workspace.quiz.result.pendingOrMissing', 'Kết quả bài làm này chưa sẵn sàng hoặc không còn tồn tại.')
-      : t('workspace.quiz.result.unavailable', 'Hiện chưa lấy được kết quả bài làm này. Vui lòng thử lại.');
+      ? t('quizResultPage.pendingOrMissing', 'This attempt result is not ready yet or no longer exists.')
+      : t('quizResultPage.unavailable', 'This attempt result is currently unavailable. Please try again.');
 
     return (
       <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center', fontClass)} style={quizFontStyle}>
         <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-6 text-center">
           <h2 className="text-2xl font-semibold text-slate-700 dark:text-slate-100">
-            {t('workspace.quiz.result.notFound', 'Không tìm thấy kết quả')}
+            {t('quizResultPage.notFound', 'Result not found')}
           </h2>
           <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
             {resultErrorMessage}
@@ -1031,16 +1031,16 @@ handleBack,
             {isIncompleteAttempt && resumeAttemptPath && (
               <Button type="button" onClick={handleResumeAttempt} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
                 <ArrowLeft className="h-4 w-4" />
-                {t('workspace.quiz.result.resumeAttempt', 'Tiếp tục làm bài')}
+                {t('quizResultPage.resumeAttempt', 'Resume attempt')}
               </Button>
             )}
             <Button type="button" onClick={retryLoadResult} className="gap-2 bg-blue-600 text-white hover:bg-blue-700">
               <RefreshCw className="h-4 w-4" />
-              {t('workspace.quiz.result.retryLoad', 'Thử lại')}
+              {t('quizResultPage.retryLoad', 'Retry')}
             </Button>
             <Button type="button" variant="outline" onClick={handleBack} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              {t('workspace.quiz.result.backToQuiz', 'Back to Quiz')}
+              {t('quizResultPage.backToQuiz', 'Back to Quiz')}
             </Button>
           </div>
         </div>
@@ -1068,7 +1068,7 @@ handleBack,
   const scoreValue = Number(result.maxScore) > 0 ? `${result.score ?? 0}/${result.maxScore}` : `${result.score ?? 0}`;
   const correctValue = `${correctQuestion}/${totalQuestion}`;
   const answeredValue = `${result.answeredQuestion ?? 0}/${totalQuestion}`;
-  const gradingProgressText = t('workspace.quiz.result.gradingProgress', 'Đang chấm: {{pending}}/{{total}}', {
+  const gradingProgressText = t('quizResultPage.gradingProgress', 'Grading: {{pending}}/{{total}}', {
     pending: pendingGradingCount,
     total: totalQuestion,
   });
@@ -1079,12 +1079,12 @@ handleBack,
   const navQuestions = reviewQuestions.slice(navStartIndex, navStartIndex + itemsPerPage);
   const resolvedPassed = isGradingPending ? null : passed;
   const resultTitle = isGradingPending
-    ? t('workspace.quiz.result.gradingTitle', 'AI đang chấm điểm')
+    ? t('quizResultPage.gradingTitle', 'AI is grading')
     : resolvedPassed == null
-      ? t('workspace.quiz.result.quizCompleted', 'Quiz Completed')
+      ? t('quizResultPage.quizCompleted', 'Quiz Completed')
       : resolvedPassed
-        ? t('workspace.quiz.result.congratulations', 'Congratulations!')
-        : t('workspace.quiz.result.keepTrying', 'Keep Trying!');
+        ? t('quizResultPage.congratulations', 'Congratulations!')
+        : t('quizResultPage.keepTrying', 'Keep Trying!');
   const aiSummary = assessmentData?.summary;
   const strengths = Array.isArray(assessmentData?.strengths) ? assessmentData.strengths.filter(Boolean) : [];
   const weaknesses = Array.isArray(assessmentData?.weaknesses) ? assessmentData.weaknesses.filter(Boolean) : [];
@@ -1100,7 +1100,7 @@ handleBack,
     .filter(Boolean)
     .join(', ');
   const recommendationFootnote = profileReadiness?.remainingQuizCount > 0
-    ? t('workspace.quiz.result.profileResultPending', 'Hệ thống sẽ gợi ý chính xác hơn sau thêm vài bài quiz nữa.')
+    ? t('quizResultPage.profileResultPending', 'The system will suggest more accurately after a few more quizzes.')
     : '';
   const canGenerateRecommendedQuiz = assessmentData?.recommendationStatus === 'PENDING' && Number(assessmentData?.assessmentId) > 0;
 
@@ -1112,7 +1112,7 @@ handleBack,
     setGeneratingQuiz(true);
     try {
       await generateQuizFromWorkspaceAssessment(assessmentId);
-      showSuccess(t('workspace.quiz.result.generateFromAssessmentSuccess', 'Đã tạo quiz từ đánh giá AI thành công'));
+      showSuccess(t('quizResultPage.generateFromAssessmentSuccess', 'Quiz generated from AI assessment successfully.'));
       // Navigate back to the correct workspace type (group or individual)
       if (isGroupWorkspacePath(returnToQuizPath)) {
         navigate(returnToQuizPath, { replace: true });
@@ -1120,7 +1120,7 @@ handleBack,
         navigate(buildWorkspacePath(workspaceId, 'quizzes'), { replace: true });
       }
     } catch (err) {
-      showError(err?.message || t('workspace.quiz.result.generateFromAssessmentFail', 'Tạo quiz từ đánh giá AI thất bại'));
+      showError(err?.message || t('quizResultPage.generateFromAssessmentFail', 'Failed to generate quiz from AI assessment.'));
     } finally {
       setGeneratingQuiz(false);
     }
@@ -1130,7 +1130,7 @@ handleBack,
     <div className={cn('min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col', fontClass)} style={quizFontStyle}>
       <QuizHeader
         onBack={reviewMode ? () => setReviewMode(false) : handleBack}
-        title={quizDetails?.title || t('workspace.quiz.result.title', 'Result')}
+        title={quizDetails?.title || t('quizResultPage.title', 'Result')}
         showConfirm={false}
       />
       <div className="flex-1 p-4 md:p-8">
@@ -1170,54 +1170,54 @@ handleBack,
               {/* Score display */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto">
                 {/* <ScoreStat label="Score" value={scoreValue} icon={BarChart3} /> */}
-                <ScoreStat label={t('workspace.quiz.result.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
-                <ScoreStat label={t('workspace.quiz.result.answered', 'Answered')} value={answeredValue} icon={Eye} />
-                <ScoreStat label={t('workspace.quiz.result.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
+                <ScoreStat label={t('quizResultPage.correct', 'Correct')} value={correctValue} icon={CheckCircle2} />
+                <ScoreStat label={t('quizResultPage.answered', 'Answered')} value={answeredValue} icon={Eye} />
+                <ScoreStat label={t('quizResultPage.time', 'Time')} value={formatDuration(timeTakenSeconds)} icon={Clock3} />
               </div>
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 {/* <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Status: {result.status || 'UNKNOWN'}</span>
                 <span className="px-2.5 py-1 rounded-full bg-white/60 dark:bg-slate-800/60">Mode: {result.isPracticeMode ? 'Practice' : 'Exam'}</span> */}
-                {result.passScore != null && <span className="rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-300">{t('workspace.quiz.result.passScore', 'Pass Score')}: {result.passScore}</span>}
+                {result.passScore != null && <span className="rounded-full border border-slate-200/80 bg-white/90 px-3 py-1.5 font-medium text-slate-600 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/80 dark:text-slate-300">{t('quizResultPage.passScore', 'Pass Score')}: {result.passScore}</span>}
               </div>
             </div>
 
             {shouldShowAssessmentSection && (
               <>
-                <SectionDivider label={t('workspace.quiz.result.assessmentSection', 'Nhận xét của Quizmate AI')} />
+                <SectionDivider label={t('quizResultPage.assessmentSection', 'AI insights')} />
 
                 <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/70 bg-white/80 dark:bg-slate-800/40 p-5 mb-6 text-left">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <h3 className="flex items-center gap-2 text-base font-semibold text-violet-700 dark:text-violet-300">
                   <Sparkles className="w-4 h-4" />
-                  {t('workspace.quiz.result.aiAssessment', 'Đánh giá của AI')}
+                  {t('quizResultPage.aiAssessment', 'AI Assessment')}
                 </h3>
                 <Button variant="outline" size="sm" onClick={fetchAssessment} disabled={assessmentLoading} className="gap-2">
                   <RefreshCw className={cn('w-4 h-4', assessmentLoading && 'animate-spin')} />
-                  {t('workspace.quiz.result.refreshAssessment', 'Refresh')}
+                  {t('quizResultPage.refreshAssessment', 'Refresh')}
                 </Button>
               </div>
 
               {(assessmentLoading && !assessmentData) && (
-                <div className="text-sm text-slate-500 dark:text-slate-400">{t('workspace.quiz.result.assessmentLoading', 'Đang tải đánh giá AI...')}</div>
+                <div className="text-sm text-slate-500 dark:text-slate-400">{t('quizResultPage.assessmentLoading', 'Loading AI assessment...')}</div>
               )}
 
               {assessmentStatus === 'PROCESSING' && (
                 <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 p-4 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-950/20 dark:text-amber-300">
-                  {t('workspace.quiz.result.assessmentProcessing', 'Đánh giá AI đang được xử lý. Trang sẽ tự cập nhật.')}
+                  {t('quizResultPage.assessmentProcessing', 'AI assessment is still processing. This page will refresh automatically.')}
                 </div>
               )}
 
               {assessmentStatus === 'FAILED' && (
                 <div className="rounded-lg border border-rose-200/80 bg-rose-50/80 p-4 text-sm text-rose-700 dark:border-rose-700/60 dark:bg-rose-950/20 dark:text-rose-300">
-                  {assessmentData?.message || t('workspace.quiz.result.assessmentFailed', 'Đánh giá AI chưa thể hoàn tất. Hãy thử refresh lại sau khi hệ thống xử lý xong grading.')}
+                  {assessmentData?.message || t('quizResultPage.assessmentFailed', 'AI assessment could not be completed yet. Try refreshing after grading finishes.')}
                 </div>
               )}
 
                 {assessmentStatus === 'READY' && assessmentData && (
                   <div className="space-y-4">
                     <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                      {aiSummary || t('workspace.quiz.result.assessmentNoSummary', 'Chưa có tóm tắt đánh giá AI.')}
+                      {aiSummary || t('quizResultPage.assessmentNoSummary', 'No AI assessment summary yet.')}
                     </p>
 
                     {(strengths.length > 0 || weaknesses.length > 0) && (
@@ -1225,7 +1225,7 @@ handleBack,
                         {strengths.length > 0 && (
                           <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 dark:border-emerald-800/70 dark:bg-emerald-950/20">
                             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-700 dark:text-emerald-300 mb-2">
-                              {t('workspace.quiz.result.strengths', 'Điểm mạnh')}
+                              {t('quizResultPage.strengths', 'Strengths')}
                             </p>
                             <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-200">
                               {strengths.map((item, idx) => (
@@ -1240,7 +1240,7 @@ handleBack,
                         {weaknesses.length > 0 && (
                           <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 dark:border-amber-800/70 dark:bg-amber-950/20">
                             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300 mb-2">
-                              {t('workspace.quiz.result.weaknesses', 'Cần củng cố')}
+                              {t('quizResultPage.weaknesses', 'Needs improvement')}
                             </p>
                             <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-200">
                               {weaknesses.map((item, idx) => (
@@ -1258,13 +1258,13 @@ handleBack,
                     {(recommendedQuizTitle || recommendedQuizGoal || communitySuggestionText || recommendationFootnote) && (
                       <div className="rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 dark:border-violet-800/70 dark:bg-violet-950/20">
                         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-violet-700 dark:text-violet-300">
-                          {t('workspace.quiz.result.nextResultSummary', 'Đề xuất tiếp theo')}
+                          {t('quizResultPage.nextResultSummary', 'Next suggestion')}
                         </p>
                         <div className="mt-3 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
                           {recommendedQuizTitle && (
                             <p>
                               <span className="font-semibold text-violet-700 dark:text-violet-300">
-                                {t('workspace.quiz.result.recommendedQuizTitle', 'Quiz nên làm tiếp')}:
+                                {t('quizResultPage.recommendedQuizTitle', 'Recommended next quiz')}:
                               </span>{' '}
                               {recommendedQuizTitle}
                             </p>
@@ -1272,7 +1272,7 @@ handleBack,
                           {recommendedQuizGoal && (
                             <p>
                               <span className="font-semibold text-violet-700 dark:text-violet-300">
-                                {t('workspace.quiz.result.recommendedQuizGoal', 'Mục tiêu')}:
+                                {t('quizResultPage.recommendedQuizGoal', 'Goal')}:
                               </span>{' '}
                               {recommendedQuizGoal}
                             </p>
@@ -1280,7 +1280,7 @@ handleBack,
                           {communitySuggestionText && (
                             <p>
                               <span className="font-semibold text-violet-700 dark:text-violet-300">
-                                {t('workspace.quiz.result.communitySuggestionTitle', 'Quiz cộng đồng phù hợp')}:
+                                {t('quizResultPage.communitySuggestionTitle', 'Relevant community quiz')}:
                               </span>{' '}
                               {communitySuggestionText}
                             </p>
@@ -1298,7 +1298,7 @@ handleBack,
                     <div className="pt-1">
                       <Button onClick={handleGenerateQuizFromAssessment} disabled={generatingQuiz || !quizDetails?.workspaceId} className="gap-2 bg-violet-600 hover:bg-violet-700 text-white">
                         {generatingQuiz ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
-                        {t('workspace.quiz.result.generateQuizFromAssessment', 'Tạo quiz dựa trên đánh giá AI')}
+                        {t('quizResultPage.generateQuizFromAssessment', 'Generate quiz from AI assessment')}
                       </Button>
                     </div>
                   )}
@@ -1311,19 +1311,19 @@ handleBack,
             {canTriggerKnowledgeAfterPreLearning && isAssessmentReady && (
               <div className="rounded-xl border border-blue-200/80 dark:border-blue-700/70 bg-blue-50/70 dark:bg-blue-900/20 p-4 mb-6 text-left space-y-3">
                 <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                  {t('workspace.quiz.result.preLearningDecisionTitle', 'Quyết định sau Pre-learning')}
+                  {t('quizResultPage.preLearningDecisionTitle', 'Decision after Pre-learning')}
                 </p>
 
                 {loadingCurrentPhase && (
                   <p className="text-sm text-blue-700/90 dark:text-blue-300/90">
-                    {t('workspace.quiz.result.loadingCurrentPhase', 'Đang kiểm tra phase hiện tại...')}
+                    {t('quizResultPage.loadingCurrentPhase', 'Checking your current phase...')}
                   </p>
                 )}
 
                 {!loadingCurrentPhase && canShowSkipDecision && (
                   <div className="space-y-3">
                     <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                      {t('workspace.quiz.result.skipPhaseEligibleHint', 'Bạn đã đủ điều kiện để bỏ qua giai đoạn này. Bạn muốn bỏ qua hay tiếp tục luyện tập?')}
+                      {t('quizResultPage.skipPhaseEligibleHint', 'You are eligible to skip this phase. Do you want to skip or continue practicing?')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Button
@@ -1335,7 +1335,7 @@ handleBack,
                         {(submittingSkipDecision && !generatingKnowledge)
                           ? <Loader2 className="w-4 h-4 animate-spin" />
                           : <CheckCircle2 className="w-4 h-4" />}
-                        {t('workspace.quiz.result.skipPhaseAction', 'Bỏ qua phase')}
+                        {t('quizResultPage.skipPhaseAction', 'Skip this phase')}
                       </Button>
                       <Button
                         type="button"
@@ -1348,8 +1348,8 @@ handleBack,
                           ? <Loader2 className="w-4 h-4 animate-spin" />
                           : <WandSparkles className="w-4 h-4" />}
                         {knowledgeGenerationTriggered
-                          ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
-                          : t('workspace.quiz.result.continuePracticeAction', 'Tiếp tục luyện tập')}
+                          ? t('quizResultPage.generateKnowledgeDone', 'Knowledge request sent')
+                          : t('quizResultPage.continuePracticeAction', 'Continue practicing')}
                       </Button>
                     </div>
                   </div>
@@ -1364,8 +1364,8 @@ handleBack,
                   >
                     {generatingKnowledge ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
                     {knowledgeGenerationTriggered
-                      ? t('workspace.quiz.result.generateKnowledgeDone', 'Đã tạo knowledge')
-                      : t('workspace.quiz.result.generateKnowledgeAction', 'Tạo knowledge luyện tập')}
+                      ? t('quizResultPage.generateKnowledgeDone', 'Knowledge request sent')
+                      : t('quizResultPage.generateKnowledgeAction', 'Generate practice knowledge')}
                   </Button>
                 )}
               </div>
@@ -1375,13 +1375,13 @@ handleBack,
             <SectionDivider />
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button onClick={() => setReviewMode(true)} variant="outline" className="min-w-[180px] gap-2" disabled={reviewQuestions.length === 0}>
-                <Eye className="w-4 h-4" /> {t('workspace.quiz.result.reviewAnswers', 'Review Answers')}
+                <Eye className="w-4 h-4" /> {t('quizResultPage.reviewAnswers', 'Review Answers')}
               </Button>
               {hasQuizIdForBack ? (
                 <DirectFeedbackButton
                   targetType="QUIZ"
                   targetId={normalizedQuizIdForBack}
-                  label={t('workspace.quiz.result.feedbackAction', 'Feedback')}
+                  label={t('quizResultPage.feedbackAction', 'Feedback')}
                   className="min-w-[180px] gap-2"
                 />
               ) : null}
@@ -1393,7 +1393,7 @@ handleBack,
         {reviewMode && (
           <>
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('workspace.quiz.result.reviewAnswersTitle', 'Review Answers')}</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">{t('quizResultPage.reviewAnswersTitle', 'Review Answers')}</h2>
             </div>
 
             {isGradingPending && (
@@ -1431,20 +1431,20 @@ handleBack,
                 {reviewQuestions.length > itemsPerPage && (
                   <div className="mt-6 flex items-center justify-between p-4">
                     <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage((p) => p - 1); scrollToTop(); }}>
-                      {t('workspace.quiz.pagination.prev', 'Previous page')}
+                      {t('quizResultPage.paginationPrev', 'Previous page')}
                     </Button>
                     <span className="text-sm font-medium text-slate-500">
-                      {t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}
+                      {t('quizResultPage.paginationPage', 'Page')} {currentPage} / {totalPages}
                     </span>
                     <Button variant="outline" disabled={currentPage === totalPages} onClick={() => { setCurrentPage((p) => p + 1); scrollToTop(); }}>
-                      {t('workspace.quiz.pagination.next', 'Next page')}
+                      {t('quizResultPage.paginationNext', 'Next page')}
                     </Button>
                   </div>
                 )}
 
                 {reviewQuestions.length === 0 && (
                   <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                    {t('workspace.quiz.result.noReviewData', 'No detailed data available to review this attempt.')}
+                    {t('quizResultPage.noReviewData', 'No detailed data available to review this attempt.')}
                   </div>
                 )}
               </div>
@@ -1457,18 +1457,18 @@ handleBack,
                     <div className="mb-3 flex items-start justify-between gap-2.5">
                       <div className="space-y-1">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-600 dark:text-sky-300">
-                          {t('workspace.quiz.result.reviewAnswersTitle', 'Review Answers')}
+                          {t('quizResultPage.reviewAnswersTitle', 'Review Answers')}
                         </p>
                         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-50">
-                          {t('workspace.quiz.result.questionList', 'Question list')}
+                          {t('quizResultPage.questionList', 'Question list')}
                         </h3>
                         <p className="max-w-[150px] text-[11px] leading-4 text-slate-500 dark:text-slate-400">
-                          {t('workspace.quiz.result.questionListHint', 'Click a number to jump straight to that question.')}
+                          {t('quizResultPage.questionListHint', 'Click a number to jump straight to that question.')}
                         </p>
                       </div>
                       <div className="min-w-[62px] rounded-[20px] border border-slate-200/80 bg-white/80 px-2.5 py-2 text-right shadow-sm dark:border-slate-700/80 dark:bg-slate-950/60">
                         <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
-                          {t('workspace.quiz.result.total', 'Total')}
+                          {t('quizResultPage.total', 'Total')}
                         </p>
                         <p className="text-[26px] font-bold leading-none text-slate-900 dark:text-slate-50">
                           {reviewSummary.total}
@@ -1481,7 +1481,7 @@ handleBack,
                         <div className="mb-1 flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-                            {t('workspace.quiz.result.correct', 'Correct')}
+                            {t('quizResultPage.correct', 'Correct')}
                           </span>
                         </div>
                         <p className="text-lg font-bold text-emerald-700 dark:text-emerald-200">{reviewSummary.correct}</p>
@@ -1490,7 +1490,7 @@ handleBack,
                         <div className="mb-1 flex items-center gap-2 text-rose-700 dark:text-rose-300">
                           <XCircle className="h-3.5 w-3.5" />
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-                            {t('workspace.quiz.result.wrong', 'Wrong')}
+                            {t('quizResultPage.wrong', 'Wrong')}
                           </span>
                         </div>
                         <p className="text-lg font-bold text-rose-700 dark:text-rose-200">{reviewSummary.wrong}</p>
@@ -1500,7 +1500,7 @@ handleBack,
                           <div className="mb-1 flex items-center gap-2 text-amber-700 dark:text-amber-300">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-                              {t('workspace.quiz.result.pending', 'Pending')}
+                              {t('quizResultPage.pending', 'Pending')}
                             </span>
                           </div>
                           <p className="text-base font-bold text-amber-700 dark:text-amber-200">{reviewSummary.pending}</p>
@@ -1511,11 +1511,11 @@ handleBack,
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
-                          {t('workspace.quiz.result.questionList', 'Question list')}
+                          {t('quizResultPage.questionList', 'Question list')}
                         </span>
                         {totalPages > 1 && (
                           <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
-                            {t('workspace.quiz.pagination.page', 'Page')} {safeNavPage}/{totalPages}
+                            {t('quizResultPage.paginationPage', 'Page')} {safeNavPage}/{totalPages}
                           </span>
                         )}
                       </div>
@@ -1560,10 +1560,10 @@ handleBack,
                               scrollToTop();
                             }}
                           >
-                            {t('workspace.quiz.pagination.prev', 'Previous page')}
+                            {t('quizResultPage.paginationPrev', 'Previous page')}
                           </Button>
                           <span className="text-xs text-slate-500 dark:text-slate-400">
-                            {t('workspace.quiz.pagination.page', 'Page')} {safeNavPage}/{totalPages}
+                            {t('quizResultPage.paginationPage', 'Page')} {safeNavPage}/{totalPages}
                           </span>
                           <Button
                             variant="outline"
@@ -1574,7 +1574,7 @@ handleBack,
                               scrollToTop();
                             }}
                           >
-                            {t('workspace.quiz.pagination.next', 'Next page')}
+                            {t('quizResultPage.paginationNext', 'Next page')}
                           </Button>
                         </div>
                       )}

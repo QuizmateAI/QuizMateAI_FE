@@ -69,23 +69,27 @@ function GroupSettingsTab({
   const confirmationPhrase = useMemo(() => `delete ${group?.groupName || ''}`, [group?.groupName]);
   const governanceSignals = [
     {
-      label: currentLang === 'en' ? 'Identity state' : 'Trạng thái nhận diện',
-      value: group?.groupName ? (currentLang === 'en' ? 'Aligned' : 'Ổn định') : (currentLang === 'en' ? 'Needs setup' : 'Cần thiết lập'),
-      note: currentLang === 'en' ? 'the group name anchors this room' : 'tên nhóm là dấu hiệu nhận diện chính của không gian',
+      label: t('groupSettingsTab.identityState', 'Identity state'),
+      value: group?.groupName
+        ? t('groupSettingsTab.identityAligned', 'Aligned')
+        : t('groupSettingsTab.identityNeedsSetup', 'Needs setup'),
+      note: t('groupSettingsTab.identityNote', 'the group name anchors this room'),
       icon: Fingerprint,
       tone: isDarkMode ? 'text-cyan-200 bg-cyan-400/10' : 'text-cyan-700 bg-cyan-50',
     },
     {
-      label: currentLang === 'en' ? 'Governance lane' : 'Làn quản trị',
-      value: isLeader ? (currentLang === 'en' ? 'Leader access' : 'Quyền trưởng nhóm') : (currentLang === 'en' ? 'Read only' : 'Chỉ theo dõi'),
-      note: currentLang === 'en' ? 'who can actively reshape the group' : 'ai đang có quyền thay đổi nhóm',
+      label: t('groupSettingsTab.governanceLane', 'Governance lane'),
+      value: isLeader
+        ? t('groupSettingsTab.governanceLeader', 'Leader access')
+        : t('groupSettingsTab.governanceReadOnly', 'Read only'),
+      note: t('groupSettingsTab.governanceNote', 'who can actively reshape the group'),
       icon: ShieldCheck,
       tone: isDarkMode ? 'text-emerald-200 bg-emerald-400/10' : 'text-emerald-700 bg-emerald-50',
     },
     {
-      label: currentLang === 'en' ? 'Subject axis' : 'Trục nội dung',
+      label: t('groupSettingsTab.subjectAxis', 'Subject axis'),
       value: group?.subjectName || group?.topicName || '—',
-      note: currentLang === 'en' ? 'the academic direction of this room' : 'hướng nội dung chính của không gian này',
+      note: t('groupSettingsTab.subjectNote', 'the academic direction of this room'),
       icon: Radar,
       tone: isDarkMode ? 'text-amber-200 bg-amber-400/10' : 'text-amber-700 bg-amber-50',
       isText: true,
@@ -102,17 +106,17 @@ function GroupSettingsTab({
       setIsPublic(newValue);
       setVisibilityMsg(
         newValue
-          ? (currentLang === 'en' ? 'Group is now Public' : 'Nhóm đã chuyển sang Công khai')
-          : (currentLang === 'en' ? 'Group is now Private' : 'Nhóm đã chuyển sang Riêng tư'),
+          ? t('groupSettingsTab.visibilityPublic', 'Group is now Public')
+          : t('groupSettingsTab.visibilityPrivate', 'Group is now Private'),
       );
       setTimeout(() => setVisibilityMsg(''), 3000);
     } catch {
-      setVisibilityMsg(currentLang === 'en' ? 'Failed to update visibility' : 'Cập nhật thất bại');
+      setVisibilityMsg(t('groupSettingsTab.visibilityFailed', 'Failed to update visibility'));
       setTimeout(() => setVisibilityMsg(''), 3000);
     } finally {
       setVisibilityLoading(false);
     }
-  }, [group, isPublic, visibilityLoading, currentLang]);
+  }, [group, isPublic, visibilityLoading, t]);
 
   const handleSave = useCallback(async () => {
     if (!groupName.trim()) {
@@ -181,7 +185,7 @@ function GroupSettingsTab({
 
         <section className={`rounded-2xl border p-5 ${shellClass}`}>
           <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            {currentLang === 'en' ? 'General group information' : 'Thông tin chung nhóm'}
+            {t('groupSettingsTab.generalInfo', 'General group information')}
           </h3>
 
           <div className="mt-4 space-y-3">
@@ -237,7 +241,7 @@ function GroupSettingsTab({
                   ? <Globe className="h-4 w-4 text-emerald-500" />
                   : <Lock className={`h-4 w-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />}
                 <h3 className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {currentLang === 'en' ? 'Group Visibility' : 'Chế độ hiển thị nhóm'}
+                  {t('groupSettingsTab.groupVisibility', 'Group Visibility')}
                 </h3>
               </div>
               <button
@@ -259,8 +263,8 @@ function GroupSettingsTab({
             </div>
             <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {isPublic
-                ? (currentLang === 'en' ? 'Anyone can discover this group.' : 'Mọi người có thể tìm thấy nhóm này.')
-                : (currentLang === 'en' ? 'Only invited members can join.' : 'Chỉ thành viên được mời mới có thể tham gia.')}
+                ? t('groupSettingsTab.compactPublicHint', 'Anyone can discover this group.')
+                : t('groupSettingsTab.compactPrivateHint', 'Only invited members can join.')}
             </p>
             {visibilityMsg && (
               <p className={`mt-2 text-xs font-medium ${isPublic ? 'text-emerald-500' : (isDarkMode ? 'text-slate-400' : 'text-slate-500')}`}>
@@ -311,20 +315,21 @@ function GroupSettingsTab({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
               <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] ${isDarkMode ? 'border-cyan-400/25 bg-cyan-400/10 text-cyan-100' : 'border-cyan-200 bg-cyan-50 text-cyan-700'}`}>
-                {currentLang === 'en' ? 'Governance deck' : 'Boong quản trị'}
+                {t('groupSettingsTab.governanceDeck', 'Governance deck')}
               </span>
               <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] ${isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-200' : 'border-white/80 bg-white/80 text-slate-700'}`}>
-                {currentLang === 'en' ? 'Identity and guardrails' : 'Nhận diện và quy chuẩn'}
+                {t('groupSettingsTab.identityAndGuardrails', 'Identity and guardrails')}
               </span>
             </div>
 
             <h2 className={`mt-4 text-3xl font-black tracking-[-0.04em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {currentLang === 'en' ? 'Shape the room without breaking the rhythm' : 'Tinh chỉnh không gian mà vẫn giữ đúng nhịp vận hành'}
+              {t('groupSettingsTab.heroTitle', 'Shape the room without breaking the rhythm')}
             </h2>
             <p className={`mt-3 max-w-3xl text-sm leading-6 ${subtleTextClass}`}>
-              {currentLang === 'en'
-                ? 'This surface is for naming the collective, clarifying its purpose, and protecting the lifecycle of the workspace.'
-                : 'Đây là nơi định danh nhóm, làm rõ mục đích hoạt động và giữ các quyết định quan trọng của không gian học tập thật có kiểm soát.'}
+              {t(
+                'groupSettingsTab.heroDescription',
+                'This surface is for naming the collective, clarifying its purpose, and protecting the lifecycle of the workspace.',
+              )}
             </p>
 
             <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -357,22 +362,24 @@ function GroupSettingsTab({
               <div className="flex items-center gap-2">
                 <Sparkles className={`h-4 w-4 ${isDarkMode ? 'text-cyan-200' : 'text-cyan-700'}`} />
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
-                  {currentLang === 'en' ? 'Control note' : 'Ghi chú điều phối'}
+                  {t('groupSettingsTab.controlNote', 'Control note')}
                 </p>
               </div>
               <p className={`mt-4 text-sm leading-6 ${subtleTextClass}`}>
                 {isLeader
-                  ? (currentLang === 'en'
-                    ? 'Edit only what improves clarity. The best group settings feel invisible because everyone understands the room instantly.'
-                    : 'Chỉ thay đổi những gì giúp nhóm rõ ràng hơn. Một cấu hình tốt là khi mọi người hiểu không gian này gần như ngay lập tức.')
-                  : (currentLang === 'en'
-                    ? 'You can review how the group is configured here, while structural edits stay with the leader.'
-                    : 'Bạn có thể theo dõi cấu hình nhóm tại đây, còn các thay đổi cấu trúc vẫn thuộc quyền của trưởng nhóm.')}
+                  ? t(
+                      'groupSettingsTab.controlNoteLeader',
+                      'Edit only what improves clarity. The best group settings feel invisible because everyone understands the room instantly.',
+                    )
+                  : t(
+                      'groupSettingsTab.controlNoteMember',
+                      'You can review how the group is configured here, while structural edits stay with the leader.',
+                    )}
               </p>
 
               <div className={`mt-5 rounded-[22px] border px-4 py-4 ${isDarkMode ? 'border-white/10 bg-black/20' : 'border-white/80 bg-white'}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
-                  {currentLang === 'en' ? 'Workspace fingerprint' : 'Dấu vân tay không gian'}
+                  {t('groupSettingsTab.workspaceFingerprint', 'Workspace fingerprint')}
                 </p>
                 <p className={`mt-3 break-all text-sm ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                   #{group?.workspaceId || '—'}
@@ -405,21 +412,23 @@ function GroupSettingsTab({
               </span>
               <div>
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
-                  {currentLang === 'en' ? 'Group Visibility' : 'Chế độ hiển thị nhóm'}
+                  {t('groupSettingsTab.groupVisibility', 'Group Visibility')}
                 </p>
                 <h3 className={`mt-1.5 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                   {isPublic
-                    ? (currentLang === 'en' ? 'Public — open to discovery' : 'Công khai — mọi người có thể tìm thấy')
-                    : (currentLang === 'en' ? 'Private — invite only' : 'Riêng tư — chỉ được mời')}
+                    ? t('groupSettingsTab.publicHeading', 'Public — open to discovery')
+                    : t('groupSettingsTab.privateHeading', 'Private — invite only')}
                 </h3>
                 <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                   {isPublic
-                    ? (currentLang === 'en'
-                      ? 'Anyone can discover this group and request to join.'
-                      : 'Mọi người có thể tìm thấy và yêu cầu tham gia nhóm này.')
-                    : (currentLang === 'en'
-                      ? 'Only members with a direct invitation can access this group.'
-                      : 'Chỉ thành viên có lời mời trực tiếp mới có thể truy cập nhóm này.')}
+                    ? t(
+                        'groupSettingsTab.publicDescription',
+                        'Anyone can discover this group and request to join.',
+                      )
+                    : t(
+                        'groupSettingsTab.privateDescription',
+                        'Only members with a direct invitation can access this group.',
+                      )}
                 </p>
                 {visibilityMsg && (
                   <p className={`mt-2 text-sm font-medium ${isPublic ? 'text-emerald-500' : (isDarkMode ? 'text-slate-400' : 'text-slate-500')}`}>
@@ -436,7 +445,9 @@ function GroupSettingsTab({
                   : (isDarkMode ? 'border-white/10 bg-white/[0.05] text-slate-300' : 'border-gray-200 bg-gray-50 text-gray-600')
               }`}>
                 {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                {isPublic ? (currentLang === 'en' ? 'Public' : 'Công khai') : (currentLang === 'en' ? 'Private' : 'Riêng tư')}
+                {isPublic
+                  ? t('groupSettingsTab.publicBadge', 'Public')
+                  : t('groupSettingsTab.privateBadge', 'Private')}
               </span>
               <button
                 type="button"
@@ -467,7 +478,7 @@ function GroupSettingsTab({
                   {t('groupManage.settings.groupInfo')}
                 </h3>
                 <p className={`mt-1 text-sm ${subtleTextClass}`}>
-                  {currentLang === 'en' ? 'Name and identity markers' : 'Tên gọi và các dấu hiệu nhận diện'}
+                  {t('groupSettingsTab.nameIdentityMarkers', 'Name and identity markers')}
                 </p>
               </div>
             </div>
@@ -538,10 +549,13 @@ function GroupSettingsTab({
               <Settings className={`h-5 w-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
               <div>
                 <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                  {currentLang === 'en' ? 'Guardrails' : 'Hàng rào vận hành'}
+                  {t('groupSettingsTab.guardrails', 'Guardrails')}
                 </h3>
                 <p className={`mt-1 text-sm ${subtleTextClass}`}>
-                  {currentLang === 'en' ? 'Stable metadata that frames how the group is understood' : 'Các dữ liệu ổn định định nghĩa cách mọi người hiểu về nhóm'}
+                  {t(
+                    'groupSettingsTab.guardrailsDescription',
+                    'Stable metadata that frames how the group is understood',
+                  )}
                 </p>
               </div>
             </div>
@@ -567,14 +581,17 @@ function GroupSettingsTab({
 
               <div className={`rounded-[22px] border p-4 ${softCardClass}`}>
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] ${eyebrowClass}`}>
-                  {currentLang === 'en' ? 'Change authority' : 'Quyền thay đổi'}
+                  {t('groupSettingsTab.changeAuthority', 'Change authority')}
                 </p>
                 <p className={`mt-3 text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                   {isLeader ? t('home.group.leader') : t('home.group.member')}
                 </p>
                 <p className={`mt-2 text-sm ${subtleTextClass}`}>
                   {isLeader
-                    ? (currentLang === 'en' ? 'You can rename, reposition, or remove this group.' : 'Bạn có thể đổi tên, tinh chỉnh hoặc xóa nhóm này.')
+                    ? t(
+                        'groupSettingsTab.leaderAuthorityNote',
+                        'You can rename, reposition, or remove this group.',
+                      )
                     : t('groupManage.settings.leaderOnly')}
                 </p>
               </div>
@@ -592,7 +609,7 @@ function GroupSettingsTab({
                     {t('groupManage.settings.dangerZone')}
                   </p>
                   <h3 className={`mt-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-red-800'}`}>
-                    {currentLang === 'en' ? 'Retire this group carefully' : 'Kết thúc nhóm này một cách có kiểm soát'}
+                    {t('groupSettingsTab.retireHeading', 'Retire this group carefully')}
                   </h3>
                   <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-red-100/85' : 'text-red-700'}`}>
                     {t('groupManage.settings.deleteWarning')}
@@ -616,9 +633,9 @@ function GroupSettingsTab({
                     {t('groupManage.settings.deleteConfirm')}
                   </p>
                   <p className={`mt-2 text-sm leading-6 ${isDarkMode ? 'text-red-100/80' : 'text-slate-600'}`}>
-                    {currentLang === 'en'
-                      ? <>Type <span className="font-bold">{confirmationPhrase}</span> to confirm permanent removal.</>
-                      : <>Nhập <span className="font-bold">{confirmationPhrase}</span> để xác nhận xóa vĩnh viễn.</>}
+                    {t('groupSettingsTab.confirmTypePrefix', 'Type')}{' '}
+                    <span className="font-bold">{confirmationPhrase}</span>{' '}
+                    {t('groupSettingsTab.confirmTypeSuffix', 'to confirm permanent removal.')}
                   </p>
 
                   <input
@@ -661,7 +678,7 @@ function GroupSettingsTab({
             <div className={`rounded-[30px] border p-6 text-center ${shellClass}`}>
               <ShieldCheck className={`mx-auto h-10 w-10 ${isDarkMode ? 'text-slate-600' : 'text-slate-300'}`} />
               <p className={`mt-4 text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                {currentLang === 'en' ? 'Leader-only controls' : 'Khu vực dành cho trưởng nhóm'}
+                {t('groupSettingsTab.leaderOnlyControls', 'Leader-only controls')}
               </p>
               <p className={`mt-2 text-sm leading-6 ${subtleTextClass}`}>
                 {t('groupManage.settings.leaderOnly')}

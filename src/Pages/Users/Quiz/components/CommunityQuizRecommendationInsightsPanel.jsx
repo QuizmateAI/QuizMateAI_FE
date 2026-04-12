@@ -61,14 +61,14 @@ function buildMetricItems(t) {
     },
     {
       key: 'startedCount',
-      label: t('workspace.quiz.communityRecommendations.metrics.started', 'Bắt đầu làm'),
+      label: t('workspace.quiz.communityRecommendations.metrics.started', 'Started'),
       icon: PlayCircle,
       lightClassName: 'bg-amber-100 text-amber-700',
       darkClassName: 'bg-amber-950/40 text-amber-300',
     },
     {
       key: 'passedCount',
-      label: t('workspace.quiz.communityRecommendations.metrics.passed', 'Đã đậu'),
+      label: t('workspace.quiz.communityRecommendations.metrics.passed', 'Passed'),
       icon: CheckCircle2,
       lightClassName: 'bg-emerald-100 text-emerald-700',
       darkClassName: 'bg-emerald-950/40 text-emerald-300',
@@ -149,12 +149,12 @@ export default function CommunityQuizRecommendationInsightsPanel({
     },
     {
       key: 'cloneToStartedRate',
-      label: t('workspace.quiz.communityRecommendations.metrics.cloneToStarted', 'Clone -> Bắt đầu'),
+      label: t('workspace.quiz.communityRecommendations.metrics.cloneToStarted', 'Clone -> Started'),
       value: metrics?.cloneToStartedRate,
     },
     {
       key: 'startedToPassedRate',
-      label: t('workspace.quiz.communityRecommendations.metrics.startedToPassed', 'Bắt đầu -> Đậu'),
+      label: t('workspace.quiz.communityRecommendations.metrics.startedToPassed', 'Started -> Passed'),
       value: metrics?.startedToPassedRate,
     },
   ];
@@ -169,7 +169,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
     },
     {
       key: 'started',
-      label: t('workspace.quiz.communityRecommendations.metrics.comparison.startedLabel', 'Bắt đầu'),
+      label: t('workspace.quiz.communityRecommendations.metrics.comparison.startedLabel', 'Started'),
       hybridValue: Number(comparison?.hybridStartedCount || 0),
       lexicalValue: Number(comparison?.lexicalShadowStartedCount || 0),
       rescuedValue: Number(comparison?.semanticRescuedStartedCount || 0),
@@ -177,7 +177,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
     },
     {
       key: 'passed',
-      label: t('workspace.quiz.communityRecommendations.metrics.comparison.passedLabel', 'Đậu'),
+      label: t('workspace.quiz.communityRecommendations.metrics.comparison.passedLabel', 'Passed'),
       hybridValue: Number(comparison?.hybridPassedCount || 0),
       lexicalValue: Number(comparison?.lexicalShadowPassedCount || 0),
       rescuedValue: Number(comparison?.semanticRescuedPassedCount || 0),
@@ -186,26 +186,26 @@ export default function CommunityQuizRecommendationInsightsPanel({
   ];
   const outcomeMeta = {
     NONE: {
-      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.none', 'Chưa convert'),
+      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.none', 'Not converted'),
       className: isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600',
     },
     CLONED: {
-      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.cloned', 'Đã clone'),
+      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.cloned', 'Cloned'),
       className: isDarkMode ? 'bg-indigo-950/40 text-indigo-300' : 'bg-indigo-100 text-indigo-700',
     },
     STARTED: {
-      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.started', 'Đã bắt đầu'),
+      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.started', 'Started'),
       className: isDarkMode ? 'bg-amber-950/40 text-amber-300' : 'bg-amber-100 text-amber-700',
     },
     PASSED: {
-      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.passed', 'Đã đậu'),
+      label: t('workspace.quiz.communityRecommendations.metrics.samples.outcome.passed', 'Passed'),
       className: isDarkMode ? 'bg-emerald-950/40 text-emerald-300' : 'bg-emerald-100 text-emerald-700',
     },
   };
   const sampleFilterOptions = [
     {
       key: 'all',
-      label: t('workspace.quiz.communityRecommendations.metrics.samples.filters.all', 'Tất cả'),
+      label: t('workspace.quiz.communityRecommendations.metrics.samples.filters.all', 'All'),
     },
     {
       key: 'rescued',
@@ -251,10 +251,10 @@ export default function CommunityQuizRecommendationInsightsPanel({
             </div>
             <div>
               <p className={`text-sm font-semibold text-slate-900 dark:text-slate-100 ${fontClass}`}>
-                {t('workspace.quiz.communityRecommendations.metrics.title', 'Hiệu quả gợi ý quiz')}
+                {t('workspace.quiz.communityRecommendations.metrics.title', 'Recommendation effectiveness')}
               </p>
               <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} ${fontClass}`}>
-                {t('workspace.quiz.communityRecommendations.metrics.description', 'Funnel 30 ngày gần đây của quiz được gợi ý trong workspace này.')}
+                {t('workspace.quiz.communityRecommendations.metrics.description', 'Thirty-day funnel for quizzes recommended in this workspace.')}
               </p>
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
           isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-700'
         }`}>
-          {t('workspace.quiz.communityRecommendations.metrics.windowDays', '{{count}} ngày gần đây', {
+          {t('workspace.quiz.communityRecommendations.metrics.windowDays', 'Last {{count}} days', {
             count: Number(metrics?.windowDays) || 30,
           })}
         </span>
@@ -327,19 +327,17 @@ export default function CommunityQuizRecommendationInsightsPanel({
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'} ${fontClass}`}>
-                {t('workspace.quiz.communityRecommendations.metrics.comparison.title', 'So sánh offline lexical vs semantic')}
+                {t('workspace.quiz.communityRecommendations.metrics.comparison.title', 'Offline lexical vs semantic comparison')}
               </p>
               <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} ${fontClass}`}>
-                {t(
-                  'workspace.quiz.communityRecommendations.metrics.comparison.description',
-                  'Dựa trên request snapshot đã serve: lexical-only sẽ giữ lại được bao nhiêu positive outcome, và semantic đã cứu thêm bao nhiêu.'
+                {t('workspace.quiz.communityRecommendations.metrics.comparison.description', 'Based on served recommendation snapshots: how many positive outcomes lexical-only would keep, and how many semantic signals actually rescued.'
                 )}
               </p>
             </div>
             <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
               isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-white text-slate-700'
             }`}>
-              {t('workspace.quiz.communityRecommendations.metrics.comparison.requests', '{{count}} request đã đo', {
+              {t('workspace.quiz.communityRecommendations.metrics.comparison.requests', '{{count}} measured requests', {
                 count: Number(comparison?.requestCount) || 0,
               })}
             </span>
@@ -375,7 +373,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
                   </div>
                   <div>
                     <p className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      {t('workspace.quiz.communityRecommendations.metrics.comparison.semanticRescued', 'Semantic cứu thêm')}
+                      {t('workspace.quiz.communityRecommendations.metrics.comparison.semanticRescued', 'Semantic rescued')}
                     </p>
                     <p className={`mt-1 text-xl font-bold ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
                       {item.rescuedValue}
@@ -384,7 +382,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
                 </div>
 
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
-                  <span>{t('workspace.quiz.communityRecommendations.metrics.comparison.captureRate', 'Lexical giữ lại')}</span>
+                  <span>{t('workspace.quiz.communityRecommendations.metrics.comparison.captureRate', 'Lexical keeps')}</span>
                   <span className="font-semibold">{formatRate(item.captureRate)}</span>
                 </div>
               </div>
@@ -400,19 +398,17 @@ export default function CommunityQuizRecommendationInsightsPanel({
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'} ${fontClass}`}>
-                {t('workspace.quiz.communityRecommendations.metrics.samples.title', 'Sample requests gần đây')}
+                {t('workspace.quiz.communityRecommendations.metrics.samples.title', 'Recent sample requests')}
               </p>
               <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} ${fontClass}`}>
-                {t(
-                  'workspace.quiz.communityRecommendations.metrics.samples.description',
-                  'Soi từng request cụ thể để xem quiz nào được semantic kéo lên, lexical rank bao nhiêu và conversion đi đến stage nào.'
+                {t('workspace.quiz.communityRecommendations.metrics.samples.description', 'Inspect concrete requests to see which quizzes semantic rescued, what the lexical rank was, and how far each one converted.'
                 )}
               </p>
             </div>
             <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
               isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-white text-slate-700'
             }`}>
-              {t('workspace.quiz.communityRecommendations.metrics.samples.requests', '{{count}} request gần đây', {
+              {t('workspace.quiz.communityRecommendations.metrics.samples.requests', '{{count}} recent requests', {
                 count: Number(filteredSampleRequests.length) || 0,
               })}
             </span>
@@ -439,7 +435,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
             {filteredSampleRequests.length > 0 ? filteredSampleRequests.map((requestSample) => {
               const requestId = String(requestSample?.requestId || '');
               const shortRequestId = requestId ? requestId.slice(0, 8) : 'request';
-              const lexicalRankFallback = t('workspace.quiz.communityRecommendations.metrics.samples.lexicalOutsideTop', 'ngoài top lexical');
+              const lexicalRankFallback = t('workspace.quiz.communityRecommendations.metrics.samples.lexicalOutsideTop', 'outside lexical top');
               return (
                 <details
                   key={requestId || `request-${requestSample?.createdAt || shortRequestId}`}
@@ -464,7 +460,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
                             isDarkMode ? 'bg-blue-950/40 text-blue-300' : 'bg-blue-100 text-blue-700'
                           }`}>
-                            {t('workspace.quiz.communityRecommendations.metrics.samples.servedCount', '{{count}} quiz đã serve', {
+                            {t('workspace.quiz.communityRecommendations.metrics.samples.servedCount', '{{count}} quizzes served', {
                               count: Number(requestSample?.servedCandidateCount) || 0,
                             })}
                           </span>
@@ -478,14 +474,14 @@ export default function CommunityQuizRecommendationInsightsPanel({
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
                             isDarkMode ? 'bg-amber-950/40 text-amber-300' : 'bg-amber-100 text-amber-700'
                           }`}>
-                            {t('workspace.quiz.communityRecommendations.metrics.samples.startedCount', '{{count}} bắt đầu', {
+                            {t('workspace.quiz.communityRecommendations.metrics.samples.startedCount', '{{count}} started', {
                               count: Number(requestSample?.startedCount) || 0,
                             })}
                           </span>
                           <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
                             isDarkMode ? 'bg-emerald-950/40 text-emerald-300' : 'bg-emerald-100 text-emerald-700'
                           }`}>
-                            {t('workspace.quiz.communityRecommendations.metrics.samples.passedCount', '{{count}} đậu', {
+                            {t('workspace.quiz.communityRecommendations.metrics.samples.passedCount', '{{count}} passed', {
                               count: Number(requestSample?.passedCount) || 0,
                             })}
                           </span>
@@ -493,7 +489,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
                       </div>
 
                       <span className={`text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {t('workspace.quiz.communityRecommendations.metrics.samples.expandHint', 'Mở để xem chi tiết')}
+                        {t('workspace.quiz.communityRecommendations.metrics.samples.expandHint', 'Open for details')}
                       </span>
                     </div>
                   </summary>
@@ -518,7 +514,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                                    {candidate?.quizTitle || t('workspace.quiz.communityRecommendations.defaultQuizTitle', 'Quiz cộng đồng')}
+                                    {candidate?.quizTitle || t('workspace.quiz.communityRecommendations.defaultQuizTitle', 'Community quiz')}
                                   </span>
                                   <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
                                     rescuedBySemantic
@@ -527,7 +523,7 @@ export default function CommunityQuizRecommendationInsightsPanel({
                                   }`}>
                                     {rescuedBySemantic
                                       ? t('workspace.quiz.communityRecommendations.metrics.samples.rescued', 'Semantic rescued')
-                                      : t('workspace.quiz.communityRecommendations.metrics.samples.retained', 'Lexical cũng giữ lại')}
+                                      : t('workspace.quiz.communityRecommendations.metrics.samples.retained', 'Lexical also retained')}
                                   </span>
                                   <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${outcome.className}`}>
                                     {outcome.label}
@@ -567,17 +563,13 @@ export default function CommunityQuizRecommendationInsightsPanel({
 
                                 <p className={`mt-3 text-xs leading-6 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                                   {rescuedBySemantic
-                                    ? t(
-                                      'workspace.quiz.communityRecommendations.metrics.samples.rescuedExplanation',
-                                      'Quiz này được semantic kéo lên vì lexical rank {{lexicalRank}} sẽ nằm ngoài {{servedCount}} slot đã serve.',
+                                    ? t('workspace.quiz.communityRecommendations.metrics.samples.rescuedExplanation', 'Semantic lifted this quiz because lexical rank {{lexicalRank}} would sit outside the {{servedCount}} served slots.',
                                       {
                                         lexicalRank: formatRankValue(lexicalRank, lexicalRankFallback),
                                         servedCount,
                                       }
                                     )
-                                    : t(
-                                      'workspace.quiz.communityRecommendations.metrics.samples.retainedExplanation',
-                                      'Quiz này vẫn nằm trong top lexical ở rank {{lexicalRank}}, nên lexical-only cũng có thể hiển thị nó.',
+                                    : t('workspace.quiz.communityRecommendations.metrics.samples.retainedExplanation', 'This quiz stayed inside lexical top at rank {{lexicalRank}}, so lexical-only could also have shown it.',
                                       {
                                         lexicalRank: formatRankValue(lexicalRank, lexicalRankFallback),
                                       }
@@ -586,12 +578,12 @@ export default function CommunityQuizRecommendationInsightsPanel({
 
                                 <p className={`mt-1 text-xs leading-6 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                                   {candidate?.passed
-                                    ? t('workspace.quiz.communityRecommendations.metrics.samples.convertPassed', 'Downstream outcome: đã clone, bắt đầu làm và đậu.')
+                                    ? t('workspace.quiz.communityRecommendations.metrics.samples.convertPassed', 'Downstream outcome: cloned, started, and passed.')
                                     : candidate?.started
-                                      ? t('workspace.quiz.communityRecommendations.metrics.samples.convertStarted', 'Downstream outcome: đã clone và bắt đầu làm, nhưng chưa có pass event.')
+                                      ? t('workspace.quiz.communityRecommendations.metrics.samples.convertStarted', 'Downstream outcome: cloned and started, but no pass event yet.')
                                       : candidate?.cloned
-                                        ? t('workspace.quiz.communityRecommendations.metrics.samples.convertCloned', 'Downstream outcome: đã clone, nhưng chưa có start event.')
-                                        : t('workspace.quiz.communityRecommendations.metrics.samples.convertNone', 'Chưa ghi nhận downstream conversion cho quiz này.')
+                                        ? t('workspace.quiz.communityRecommendations.metrics.samples.convertCloned', 'Downstream outcome: cloned, but no start event yet.')
+                                        : t('workspace.quiz.communityRecommendations.metrics.samples.convertNone', 'No downstream conversion has been recorded for this quiz yet.')
                                   }
                                 </p>
                               </div>
@@ -627,8 +619,8 @@ export default function CommunityQuizRecommendationInsightsPanel({
                 isDarkMode ? 'border-slate-800 bg-slate-950/70 text-slate-300' : 'border-slate-200 bg-white text-slate-600'
               }`}>
                 {sampleFilter === 'rescued'
-                  ? t('workspace.quiz.communityRecommendations.metrics.samples.emptyRescued', 'Chưa có request nào có semantic rescued trong khoảng thời gian này.')
-                  : t('workspace.quiz.communityRecommendations.metrics.samples.emptyConverted', 'Chưa có request nào có downstream conversion trong khoảng thời gian này.')}
+                  ? t('workspace.quiz.communityRecommendations.metrics.samples.emptyRescued', 'No requests with semantic rescued candidates were found in this time window.')
+                  : t('workspace.quiz.communityRecommendations.metrics.samples.emptyConverted', 'No requests with downstream conversion were found in this time window.')}
               </div>
             )}
           </div>

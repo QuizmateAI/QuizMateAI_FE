@@ -52,7 +52,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       });
     return () => { cancelled = true; };
   }, [activeRoadmapId]);
-  const documentsHubLabel = i18n.language === "en" ? "Open documents hub" : "Mở trung tâm tài liệu";
+  const documentsHubLabel = t("groupWorkspace.chatPanel.openDocumentsHub", "Open documents hub");
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState(() => {
     if (!workspaceId) return "view2";

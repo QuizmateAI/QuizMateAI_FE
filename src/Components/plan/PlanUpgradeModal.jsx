@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Crown, Sparkles } from "lucide-react";
 import { Dialog, DialogContent } from "@/Components/ui/dialog";
 
@@ -22,6 +23,7 @@ export default function PlanUpgradeModal({
   upgradeState,
 }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleUpgrade = () => {
     onOpenChange(false);
@@ -49,14 +51,14 @@ export default function PlanUpgradeModal({
           {/* Title */}
           <div className="space-y-1.5">
             <h2 className="text-base font-bold">
-              Tính năng giới hạn
+              {t("planUpgradeModal.title")}
             </h2>
             <p className={`text-sm leading-relaxed ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
               {featureName
-                ? `Tính năng "${featureName}" không có trong gói hiện tại của bạn.`
-                : "Gói hiện tại của bạn không bao gồm tính năng này."}
+                ? t("planUpgradeModal.descriptionWithFeature", { featureName })
+                : t("planUpgradeModal.descriptionDefault")}
               <br />
-              Vui lòng nâng cấp để sử dụng.
+              {t("planUpgradeModal.upgradeHint")}
             </p>
           </div>
 
@@ -72,7 +74,7 @@ export default function PlanUpgradeModal({
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              Nâng cấp ngay
+              {t("planUpgradeModal.upgradeNow")}
             </button>
             <button
               type="button"
@@ -83,7 +85,7 @@ export default function PlanUpgradeModal({
                   : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
               }`}
             >
-              Để sau
+              {t("planUpgradeModal.later")}
             </button>
           </div>
         </div>

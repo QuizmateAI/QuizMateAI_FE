@@ -34,64 +34,54 @@ function RoadmapConfigEditDialog({
   const [errors, setErrors] = useState({});
   const [saveError, setSaveError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const closeLabel = t('common.close', i18n.language === 'en' ? 'Close' : 'Đóng');
+  const closeLabel = t('roadmapConfigEditDialog.close', 'Close');
   const saveLabel = isSetupMode
-    ? t('workspace.roadmap.setupButton', i18n.language === 'en' ? 'Set up roadmap' : 'Thiết lập lộ trình')
-    : t('common.save', i18n.language === 'en' ? 'Save changes' : 'Lưu thay đổi');
-  const savingLabel = t('common.saving', i18n.language === 'en' ? 'Saving...' : 'Đang lưu...');
-  const confirmBackLabel = t('workspace.roadmap.updateConfirmBack', i18n.language === 'en' ? 'Go back' : 'Quay lại');
+    ? t('roadmapConfigEditDialog.setupButton', 'Set up roadmap')
+    : t('roadmapConfigEditDialog.saveChanges', 'Save changes');
+  const savingLabel = t('roadmapConfigEditDialog.saving', 'Saving...');
+  const confirmBackLabel = t('roadmapConfigEditDialog.confirmBack', 'Go back');
   const confirmActionLabel = isSetupMode
-    ? t('workspace.roadmap.setupConfirmAction', i18n.language === 'en' ? 'Confirm setup' : 'Xác nhận thiết lập')
-    : t('workspace.roadmap.updateConfirmAction', i18n.language === 'en' ? 'Confirm update' : 'Xác nhận cập nhật');
+    ? t('roadmapConfigEditDialog.setupConfirmAction', 'Confirm setup')
+    : t('roadmapConfigEditDialog.updateConfirmAction', 'Confirm update');
   const dialogTitle = isSetupMode
-    ? t('workspace.roadmap.setupConfigTitle', i18n.language === 'en' ? 'Set up roadmap' : 'Thiết lập lộ trình')
-    : t('workspace.roadmap.editConfigTitle', i18n.language === 'en' ? 'Edit roadmap' : 'Chỉnh sửa lộ trình');
+    ? t('roadmapConfigEditDialog.setupTitle', 'Set up roadmap')
+    : t('roadmapConfigEditDialog.editTitle', 'Edit roadmap');
   const dialogDescription = isSetupMode
     ? t(
-      'workspace.roadmap.setupConfigDescription',
-      i18n.language === 'en'
-        ? 'Set the knowledge amount, pacing, total days, and daily study time before creating phases for this roadmap.'
-        : 'Thiết lập lượng kiến thức, nhịp học, số ngày dự kiến và số phút mỗi ngày trước khi tạo phase cho lộ trình này.'
+      'roadmapConfigEditDialog.setupDescription',
+      'Set the knowledge amount, pacing, total days, and daily study time before creating phases for this roadmap.'
     )
     : t(
-      'workspace.roadmap.editConfigDescription',
-      i18n.language === 'en'
-        ? 'Update the knowledge amount, pacing, total days, and daily study time for the current roadmap.'
-        : 'Cập nhật lượng kiến thức, nhịp học, số ngày dự kiến và số phút mỗi ngày cho lộ trình hiện tại.'
+      'roadmapConfigEditDialog.editDescription',
+      'Update the knowledge amount, pacing, total days, and daily study time for the current roadmap.'
     );
   const confirmTitle = isSetupMode
     ? t(
-      'workspace.roadmap.setupConfirmTitle',
-      i18n.language === 'en' ? 'Confirm roadmap setup' : 'Xác nhận thiết lập lộ trình'
+      'roadmapConfigEditDialog.setupConfirmTitle',
+      'Confirm roadmap setup'
     )
     : hasExistingRoadmap
       ? t(
-        'workspace.roadmap.updateExistingConfirmTitle',
-        i18n.language === 'en' ? 'You already have a roadmap in use' : 'Bạn đang có lộ trình đang sử dụng'
+        'roadmapConfigEditDialog.updateExistingConfirmTitle',
+        'You already have a roadmap in use'
       )
       : t(
-        'workspace.roadmap.updateConfirmTitle',
-        i18n.language === 'en' ? 'Confirm roadmap update' : 'Xác nhận cập nhật lộ trình'
+        'roadmapConfigEditDialog.updateConfirmTitle',
+        'Confirm roadmap update'
       );
   const confirmDescription = isSetupMode
     ? t(
-      'workspace.roadmap.setupConfirmDescription',
-      i18n.language === 'en'
-        ? 'Are you sure you want to save this roadmap configuration for the group?'
-        : 'Bạn có chắc chắn muốn lưu cấu hình lộ trình này cho nhóm không?'
+      'roadmapConfigEditDialog.setupConfirmDescription',
+      'Are you sure you want to save this roadmap configuration for the group?'
     )
     : hasExistingRoadmap
       ? t(
-        'workspace.roadmap.updateExistingConfirmDescription',
-        i18n.language === 'en'
-          ? 'If you update these values, the roadmap currently in use will be removed. Are you sure you want to update the roadmap information?'
-          : 'Nếu cập nhật, lộ trình đang sử dụng sẽ bị mất đi. Bạn chắc chắn với quyết định cập nhật thông tin lộ trình không?'
+        'roadmapConfigEditDialog.updateExistingConfirmDescription',
+        'If you update these values, the roadmap currently in use will be removed. Are you sure you want to update the roadmap information?'
       )
       : t(
-        'workspace.roadmap.updateConfirmDescription',
-        i18n.language === 'en'
-          ? 'Are you sure you want to update the roadmap information?'
-          : 'Bạn có chắc chắn muốn cập nhật thông tin lộ trình không?'
+        'roadmapConfigEditDialog.updateConfirmDescription',
+        'Are you sure you want to update the roadmap information?'
       );
 
   useEffect(() => {
@@ -136,10 +126,8 @@ function RoadmapConfigEditDialog({
       setSaveError(
         error?.message
         || t(
-          'workspace.profileConfig.validation.saveFailed',
-          i18n.language === 'en'
-            ? 'Save failed. Please try again.'
-            : 'Lưu thất bại. Vui lòng thử lại.'
+          'roadmapConfigEditDialog.saveFailed',
+          'Save failed. Please try again.'
         )
       );
     } finally {

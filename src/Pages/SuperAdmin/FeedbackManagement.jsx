@@ -391,12 +391,12 @@ function FeedbackManagement() {
 
   const handleSave = async () => {
     if (draft.triggerType === 'AFTER_TIME' && Number(draft.configValues?.daysAfter) <= 0) {
-      showError(isEnglish ? 'Please enter the number of days before sending feedback.' : 'Vui lòng nhập số ngày trước khi gửi phản hồi.');
+      showError(t('feedbackManagement.validation.daysAfterRequired', 'Please enter the number of days before sending feedback.'));
       return;
     }
 
     if (draft.triggerType === 'AFTER_N_COMPLETIONS' && Number(draft.configValues?.minCompletedQuizCount) <= 0) {
-      showError(isEnglish ? 'Please enter the minimum completed quiz count.' : 'Vui lòng nhập số bài quiz hoàn thành tối thiểu.');
+      showError(t('feedbackManagement.validation.minCompletedQuizRequired', 'Please enter the minimum completed quiz count.'));
       return;
     }
 
@@ -411,9 +411,7 @@ function FeedbackManagement() {
     });
 
     if (invalidChoiceQuestion) {
-      showError(isEnglish
-        ? 'Choice questions must have at least 2 options.'
-        : 'Câu hỏi lựa chọn phải có ít nhất 2 đáp án.');
+      showError(t('feedbackManagement.validation.choiceMinOptions', 'Choice questions must have at least 2 options.'));
       return;
     }
 
@@ -439,10 +437,10 @@ function FeedbackManagement() {
 
       if (draft.formId) {
         await updateManagementFeedbackForm(draft.formId, payload);
-        showSuccess(isEnglish ? 'Feedback form updated.' : 'Đã cập nhật form phản hồi.');
+        showSuccess(t('feedbackManagement.toast.formUpdated', 'Feedback form updated.'));
       } else {
         await createManagementFeedbackForm(payload);
-        showSuccess(isEnglish ? 'Feedback form created.' : 'Đã tạo form phản hồi.');
+        showSuccess(t('feedbackManagement.toast.formCreated', 'Feedback form created.'));
       }
 
       setEditorOpen(false);
@@ -459,16 +457,14 @@ function FeedbackManagement() {
       return (
         <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
           <div className="mb-4">
-            <h3 className="text-sm font-semibold">{isEnglish ? 'Schedule configuration' : 'Cấu hình lịch gửi'}</h3>
+            <h3 className="text-sm font-semibold">{t('feedbackManagement.formConfig.scheduleTitle', 'Schedule configuration')}</h3>
             <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-              {isEnglish
-                ? 'Enter the schedule normally. The system will store the correct JSON automatically.'
-                : 'Nhập lịch gửi theo cách thông thường. Hệ thống sẽ tự lưu JSON đúng định dạng.'}
+              {t('feedbackManagement.formConfig.scheduleDescription', 'Enter the schedule normally. The system will store the correct JSON automatically.')}
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Send after (days)' : 'Gửi sau (ngày)'}</label>
+              <label className="text-sm font-medium">{t('feedbackManagement.formConfig.daysAfterLabel', 'Send after (days)')}</label>
               <Input
                 type="number"
                 min="1"
@@ -479,7 +475,7 @@ function FeedbackManagement() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Repeat every (days)' : 'Lặp lại mỗi (ngày)'}</label>
+              <label className="text-sm font-medium">{t('feedbackManagement.formConfig.recurrenceLabel', 'Repeat every (days)')}</label>
               <Input
                 type="number"
                 min="1"
@@ -489,7 +485,7 @@ function FeedbackManagement() {
                 placeholder="90"
               />
               <p className={cn('text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                {isEnglish ? 'Leave empty if this should only happen once.' : 'Để trống nếu chỉ muốn gửi một lần.'}
+                {t('feedbackManagement.formConfig.recurrenceHelper', 'Leave empty if this should only happen once.')}
               </p>
             </div>
           </div>
@@ -501,15 +497,13 @@ function FeedbackManagement() {
       return (
         <div className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
           <div className="mb-4">
-            <h3 className="text-sm font-semibold">{isEnglish ? 'Milestone configuration' : 'Cấu hình mốc kích hoạt'}</h3>
+            <h3 className="text-sm font-semibold">{t('feedbackManagement.formConfig.milestoneTitle', 'Milestone configuration')}</h3>
             <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-              {isEnglish
-                ? 'The current backend uses this trigger for completed quiz count milestones.'
-                : 'Backend hiện tại dùng trigger này cho mốc số bài quiz đã hoàn thành.'}
+              {t('feedbackManagement.formConfig.milestoneDescription', 'The current backend uses this trigger for completed quiz count milestones.')}
             </p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">{isEnglish ? 'Minimum completed quizzes' : 'Số bài quiz hoàn thành tối thiểu'}</label>
+            <label className="text-sm font-medium">{t('feedbackManagement.formConfig.minCompletedQuizLabel', 'Minimum completed quizzes')}</label>
             <Input
               type="number"
               min="1"
@@ -526,12 +520,8 @@ function FeedbackManagement() {
     return (
       <div className={cn('rounded-[24px] border border-dashed px-4 py-3 text-sm', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-600')}>
         {draft.triggerType === 'AFTER_COMPLETION'
-          ? (isEnglish
-              ? 'No extra configuration is needed. The system will create feedback after the target is completed.'
-              : 'Không cần cấu hình thêm. Hệ thống sẽ tạo phản hồi sau khi đối tượng được hoàn thành.')
-          : (isEnglish
-              ? 'No extra configuration is needed for manual feedback.'
-              : 'Không cần cấu hình thêm cho phản hồi thủ công.')}
+          ? t('feedbackManagement.formConfig.afterCompletionHelper', 'No extra configuration is needed. The system will create feedback after the target is completed.')
+          : t('feedbackManagement.formConfig.manualHelper', 'No extra configuration is needed for manual feedback.')}
       </div>
     );
   };
@@ -542,7 +532,7 @@ function FeedbackManagement() {
         <div className="space-y-4 md:col-span-2">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Minimum star' : 'Số sao thấp nhất'}</label>
+              <label className="text-sm font-medium">{t('feedbackManagement.question.minStarLabel', 'Minimum star')}</label>
               <Input
                 type="number"
                 min="1"
@@ -553,7 +543,7 @@ function FeedbackManagement() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{isEnglish ? 'Maximum star' : 'Số sao cao nhất'}</label>
+              <label className="text-sm font-medium">{t('feedbackManagement.question.maxStarLabel', 'Maximum star')}</label>
               <Input
                 type="number"
                 min="1"
@@ -565,7 +555,7 @@ function FeedbackManagement() {
             </div>
           </div>
           <p className={cn('text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-            {isEnglish ? 'The current backend supports a rating range between 1 and 5.' : 'Backend hiện tại hỗ trợ thang điểm từ 1 đến 5 sao.'}
+            {t('feedbackManagement.question.starRangeHelper', 'The current backend supports a rating range between 1 and 5.')}
           </p>
         </div>
       );
@@ -576,11 +566,11 @@ function FeedbackManagement() {
         <div className="space-y-3 md:col-span-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <label className="text-sm font-medium">{isEnglish ? 'Answer options' : 'Danh sách đáp án'}</label>
+              <label className="text-sm font-medium">{t('feedbackManagement.question.optionsLabel', 'Answer options')}</label>
               <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
                 {question.questionType === 'SINGLE_CHOICE'
-                  ? (isEnglish ? 'Users can choose exactly one answer.' : 'Người dùng chỉ được chọn đúng một đáp án.')
-                  : (isEnglish ? 'Users can choose multiple answers.' : 'Người dùng có thể chọn nhiều đáp án.')}
+                  ? t('feedbackManagement.question.singleChoiceHelper', 'Users can choose exactly one answer.')
+                  : t('feedbackManagement.question.multipleChoiceHelper', 'Users can choose multiple answers.')}
               </p>
             </div>
             <Button
@@ -591,7 +581,7 @@ function FeedbackManagement() {
               className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}
             >
               <Plus className="h-4 w-4" />
-              <span>{isEnglish ? 'Add option' : 'Thêm đáp án'}</span>
+              <span>{t('feedbackManagement.question.addOption', 'Add option')}</span>
             </Button>
           </div>
 
@@ -608,7 +598,7 @@ function FeedbackManagement() {
                   value={option}
                   onChange={(event) => updateQuestionOption(index, optionIndex, event.target.value)}
                   className={fieldClass}
-                  placeholder={isEnglish ? `Option ${optionIndex + 1}` : `Đáp án ${optionIndex + 1}`}
+                  placeholder={t('feedbackManagement.question.optionPlaceholder', 'Option {{index}}', { index: optionIndex + 1 })}
                 />
                 <Button
                   type="button"
@@ -629,8 +619,8 @@ function FeedbackManagement() {
     return (
       <div className={cn('rounded-2xl border border-dashed px-4 py-3 text-sm md:col-span-2', isDarkMode ? 'border-slate-800 bg-slate-950 text-slate-400' : 'border-slate-200 bg-white text-slate-600')}>
         {question.questionType === 'YES_NO'
-          ? (isEnglish ? 'No extra configuration is needed for yes/no questions.' : 'Không cần cấu hình thêm cho câu hỏi có/không.')
-          : (isEnglish ? 'No extra configuration is needed for free-text questions.' : 'Không cần cấu hình thêm cho câu hỏi nhập văn bản tự do.')}
+          ? t('feedbackManagement.question.yesNoHelper', 'No extra configuration is needed for yes/no questions.')
+          : t('feedbackManagement.question.textHelper', 'No extra configuration is needed for free-text questions.')}
       </div>
     );
   };
@@ -646,12 +636,10 @@ function FeedbackManagement() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">
-                  {isEnglish ? 'Feedback Management' : 'Quản lý phản hồi'}
+                  {t('feedbackManagement.header.title', 'Feedback Management')}
                 </h1>
                 <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish
-                    ? 'Manage feedback forms and monitor response KPIs.'
-                    : 'Quản lý form phản hồi và theo dõi các KPI phản hồi.'}
+                  {t('feedbackManagement.header.subtitle', 'Manage feedback forms and monitor response KPIs.')}
                 </p>
               </div>
             </div>
@@ -664,14 +652,14 @@ function FeedbackManagement() {
                 onClick={refreshPage}
                 disabled={loading}
                 className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}
-                aria-label={isEnglish ? 'Refresh' : 'Làm mới'}
-                title={isEnglish ? 'Refresh' : 'Làm mới'}
+                aria-label={t('feedbackManagement.header.refresh', 'Refresh')}
+                title={t('feedbackManagement.header.refresh', 'Refresh')}
               >
                 <RefreshCw className={cn('h-4 w-4', loading ? 'animate-spin' : '')} />
               </Button>
               <Button type="button" onClick={openCreateEditor}>
                 <Plus className="h-4 w-4" />
-                <span>{isEnglish ? 'New form' : 'Tạo form mới'}</span>
+                <span>{t('feedbackManagement.header.newForm', 'New form')}</span>
               </Button>
             </div>
           </div>
@@ -679,30 +667,30 @@ function FeedbackManagement() {
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
-            title={isEnglish ? 'Total requests' : 'Tổng yêu cầu'}
+            title={t('feedbackManagement.metrics.totalRequests', 'Total requests')}
             value={overview?.totalRequests ?? 0}
-            helper={isEnglish ? 'All generated feedback requests' : 'Tất cả yêu cầu phản hồi đã được tạo'}
+            helper={t('feedbackManagement.metrics.totalRequestsHelper', 'All generated feedback requests')}
             icon={ClipboardList}
             isDarkMode={isDarkMode}
           />
           <MetricCard
-            title={isEnglish ? 'Pending requests' : 'Yêu cầu đang chờ'}
+            title={t('feedbackManagement.metrics.pendingRequests', 'Pending requests')}
             value={overview?.pendingRequests ?? 0}
-            helper={isEnglish ? 'Waiting for user responses' : 'Đang chờ người dùng phản hồi'}
+            helper={t('feedbackManagement.metrics.pendingRequestsHelper', 'Waiting for user responses')}
             icon={Sparkles}
             isDarkMode={isDarkMode}
           />
           <MetricCard
-            title={isEnglish ? 'Average rating' : 'Điểm trung bình'}
+            title={t('feedbackManagement.metrics.averageRating', 'Average rating')}
             value={formatRating(overview?.averageRating)}
-            helper={isEnglish ? 'Across submitted feedback' : 'Tính trên các phản hồi đã gửi'}
+            helper={t('feedbackManagement.metrics.averageRatingHelper', 'Across submitted feedback')}
             icon={BarChart3}
             isDarkMode={isDarkMode}
           />
           <MetricCard
-            title={isEnglish ? 'Satisfaction rate' : 'Tỷ lệ hài lòng'}
+            title={t('feedbackManagement.metrics.satisfactionRate', 'Satisfaction rate')}
             value={formatPercent(overview?.satisfactionRate)}
-            helper={`${formatPercent(overview?.responseRate)} ${isEnglish ? 'response rate' : 'tỷ lệ phản hồi'}`}
+            helper={`${formatPercent(overview?.responseRate)} ${t('feedbackManagement.metrics.responseRateSuffix', 'response rate')}`}
             icon={MessageSquareText}
             isDarkMode={isDarkMode}
           />
@@ -712,9 +700,9 @@ function FeedbackManagement() {
           <section className={cn('rounded-[28px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.18)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold">{isEnglish ? 'Feedback forms' : 'Danh sách form phản hồi'}</h2>
+                <h2 className="text-lg font-semibold">{t('feedbackManagement.forms.sectionTitle', 'Feedback forms')}</h2>
                 <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish ? 'Select a form to inspect or edit it.' : 'Chọn một form để xem chi tiết hoặc chỉnh sửa.'}
+                  {t('feedbackManagement.forms.sectionSubtitle', 'Select a form to inspect or edit it.')}
                 </p>
               </div>
               <Badge variant="secondary">{forms.length}</Badge>
@@ -724,18 +712,18 @@ function FeedbackManagement() {
               <TableHeader>
                 <TableRow className={isDarkMode ? 'border-slate-800' : ''}>
                   <TableHead>Code</TableHead>
-                  <TableHead>{isEnglish ? 'Target' : 'Đối tượng'}</TableHead>
-                  <TableHead>{isEnglish ? 'Trigger' : 'Kích hoạt'}</TableHead>
-                  <TableHead>{isEnglish ? 'Questions' : 'Câu hỏi'}</TableHead>
-                  <TableHead>{isEnglish ? 'Status' : 'Trạng thái'}</TableHead>
-                  <TableHead className="text-right">{isEnglish ? 'Actions' : 'Thao tác'}</TableHead>
+                  <TableHead>{t('feedbackManagement.forms.tableTarget', 'Target')}</TableHead>
+                  <TableHead>{t('feedbackManagement.forms.tableTrigger', 'Trigger')}</TableHead>
+                  <TableHead>{t('feedbackManagement.forms.tableQuestions', 'Questions')}</TableHead>
+                  <TableHead>{t('feedbackManagement.forms.tableStatus', 'Status')}</TableHead>
+                  <TableHead className="text-right">{t('feedbackManagement.forms.tableActions', 'Actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow className={isDarkMode ? 'border-slate-800' : ''}>
                     <TableCell colSpan={6} className="py-12 text-center text-sm text-slate-500">
-                      {isEnglish ? 'Loading feedback forms...' : 'Đang tải form phản hồi...'}
+                      {t('feedbackManagement.forms.loading', 'Loading feedback forms...')}
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -743,7 +731,7 @@ function FeedbackManagement() {
                 {!loading && forms.length === 0 ? (
                   <TableRow className={isDarkMode ? 'border-slate-800' : ''}>
                     <TableCell colSpan={6} className="py-12 text-center text-sm text-slate-500">
-                      {isEnglish ? 'No feedback forms found.' : 'Chưa có form phản hồi nào.'}
+                      {t('feedbackManagement.forms.empty', 'No feedback forms found.')}
                     </TableCell>
                   </TableRow>
                 ) : null}
@@ -793,15 +781,15 @@ function FeedbackManagement() {
           <section className={cn('rounded-[28px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.18)]', isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white')}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold">{isEnglish ? 'Selected form' : 'Form đang chọn'}</h2>
+                  <h2 className="text-lg font-semibold">{t('feedbackManagement.selected.title', 'Selected form')}</h2>
                   <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                    {isEnglish ? 'Review the current structure before editing.' : 'Xem nhanh cấu trúc hiện tại trước khi chỉnh sửa.'}
+                    {t('feedbackManagement.selected.subtitle', 'Review the current structure before editing.')}
                   </p>
                 </div>
                 {selectedForm ? (
                   <Button type="button" variant="outline" onClick={() => openEditEditor(selectedForm)} className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}>
                     <Edit2 className="h-4 w-4" />
-                    <span>{isEnglish ? 'Edit' : 'Sửa'}</span>
+                    <span>{t('feedbackManagement.selected.edit', 'Edit')}</span>
                   </Button>
                 ) : null}
               </div>
@@ -819,7 +807,7 @@ function FeedbackManagement() {
                   <div>
                     <h3 className="text-base font-semibold">{selectedForm.title}</h3>
                     <p className={cn('mt-1 text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                      {selectedForm.description || (isEnglish ? 'No description.' : 'Chưa có mô tả.')}
+                      {selectedForm.description || t('feedbackManagement.selected.noDescription', 'No description.')}
                     </p>
                   </div>
                   <div className="space-y-3">
@@ -842,7 +830,7 @@ function FeedbackManagement() {
                 </div>
               ) : (
                 <p className={cn('mt-4 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                  {isEnglish ? 'Select a form from the table to inspect it.' : 'Chọn một form ở bảng bên trái để xem chi tiết.'}
+                  {t('feedbackManagement.selected.empty', 'Select a form from the table to inspect it.')}
                 </p>
               )}
           </section>
@@ -853,13 +841,11 @@ function FeedbackManagement() {
             <DialogHeader>
               <DialogTitle>
                 {draft.formId
-                  ? (isEnglish ? 'Edit feedback form' : 'Chỉnh sửa form phản hồi')
-                  : (isEnglish ? 'Create feedback form' : 'Tạo form phản hồi')}
+                  ? t('feedbackManagement.editor.editTitle', 'Edit feedback form')
+                  : t('feedbackManagement.editor.createTitle', 'Create feedback form')}
               </DialogTitle>
               <DialogDescription className={isDarkMode ? 'text-slate-400' : ''}>
-                {isEnglish
-                  ? 'Configure the form metadata, trigger logic, and question list.'
-                  : 'Cấu hình thông tin form, điều kiện kích hoạt và danh sách câu hỏi.'}
+                {t('feedbackManagement.editor.description', 'Configure the form metadata, trigger logic, and question list.')}
               </DialogDescription>
             </DialogHeader>
 
@@ -870,11 +856,11 @@ function FeedbackManagement() {
                   <Input value={draft.code} onChange={(event) => updateDraft('code', event.target.value)} className={fieldClass} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{isEnglish ? 'Title' : 'Tiêu đề'}</label>
+                  <label className="text-sm font-medium">{t('feedbackManagement.editor.titleLabel', 'Title')}</label>
                   <Input value={draft.title} onChange={(event) => updateDraft('title', event.target.value)} className={fieldClass} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{isEnglish ? 'Target type' : 'Loại đối tượng'}</label>
+                  <label className="text-sm font-medium">{t('feedbackManagement.editor.targetTypeLabel', 'Target type')}</label>
                   <select value={draft.targetType} onChange={(event) => updateDraft('targetType', event.target.value)} className={cn('h-10 w-full rounded-md border px-3 text-sm outline-none', fieldClass)}>
                     {TARGET_OPTIONS.map((option) => (
                       <option key={option} value={option}>{getFeedbackTargetLabel(option, currentLang)}</option>
@@ -882,7 +868,7 @@ function FeedbackManagement() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{isEnglish ? 'Trigger type' : 'Loại kích hoạt'}</label>
+                  <label className="text-sm font-medium">{t('feedbackManagement.editor.triggerTypeLabel', 'Trigger type')}</label>
                   <select value={draft.triggerType} onChange={(event) => updateDraft('triggerType', event.target.value)} className={cn('h-10 w-full rounded-md border px-3 text-sm outline-none', fieldClass)}>
                     {TRIGGER_OPTIONS.map((option) => (
                       <option key={option} value={option}>{getFeedbackTriggerLabel(option, currentLang)}</option>
@@ -893,26 +879,26 @@ function FeedbackManagement() {
 
               <div className="mt-4 grid gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{isEnglish ? 'Description' : 'Mô tả'}</label>
+                  <label className="text-sm font-medium">{t('feedbackManagement.editor.descriptionLabel', 'Description')}</label>
                   <textarea value={draft.description} onChange={(event) => updateDraft('description', event.target.value)} className={cn('min-h-[90px] w-full rounded-2xl border px-4 py-3 text-sm outline-none', fieldClass)} />
                 </div>
                 {renderFormConfigFields()}
                 <div className="flex items-center gap-3">
                   <Switch checked={draft.active} onCheckedChange={(checked) => updateDraft('active', checked)} />
-                  <span className="text-sm font-medium">{isEnglish ? 'Form is active' : 'Bật form này'}</span>
+                  <span className="text-sm font-medium">{t('feedbackManagement.editor.activeLabel', 'Form is active')}</span>
                 </div>
               </div>
 
               <div className="mt-6 flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-semibold">{isEnglish ? 'Questions' : 'Danh sách câu hỏi'}</h3>
+                  <h3 className="text-base font-semibold">{t('feedbackManagement.editor.questionsTitle', 'Questions')}</h3>
                   <p className={cn('mt-1 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-                    {isEnglish ? 'Arrange the form questions in the order you want them displayed.' : 'Sắp xếp bộ câu hỏi theo đúng thứ tự muốn hiển thị.'}
+                    {t('feedbackManagement.editor.questionsSubtitle', 'Arrange the form questions in the order you want them displayed.')}
                   </p>
                 </div>
                 <Button type="button" variant="outline" onClick={addQuestion} className={isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-800' : ''}>
                   <Plus className="h-4 w-4" />
-                  <span>{isEnglish ? 'Add question' : 'Thêm câu hỏi'}</span>
+                  <span>{t('feedbackManagement.editor.addQuestion', 'Add question')}</span>
                 </Button>
               </div>
 
@@ -921,9 +907,9 @@ function FeedbackManagement() {
                   <div key={`${question.questionId ?? 'new'}-${index}`} className={cn('rounded-[24px] border p-4', isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50')}>
                     <div className="mb-4 flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold">{isEnglish ? 'Question' : 'Câu hỏi'} {index + 1}</p>
+                        <p className="text-sm font-semibold">{t('feedbackManagement.editor.questionLabel', 'Question')} {index + 1}</p>
                         <p className={cn('mt-1 text-xs', isDarkMode ? 'text-slate-500' : 'text-slate-500')}>
-                          {isEnglish ? 'Fine-tune type, order, and validation.' : 'Điều chỉnh kiểu câu hỏi, thứ tự hiển thị và quy tắc bắt buộc.'}
+                          {t('feedbackManagement.editor.questionHelper', 'Fine-tune type, order, and validation.')}
                         </p>
                       </div>
                       {draft.questions.length > 1 ? (
@@ -935,11 +921,11 @@ function FeedbackManagement() {
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2 md:col-span-2">
-                        <label className="text-sm font-medium">{isEnglish ? 'Question text' : 'Nội dung câu hỏi'}</label>
+                        <label className="text-sm font-medium">{t('feedbackManagement.editor.questionTextLabel', 'Question text')}</label>
                         <Input value={question.questionText} onChange={(event) => updateQuestion(index, { questionText: event.target.value })} className={fieldClass} />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">{isEnglish ? 'Question type' : 'Loại câu hỏi'}</label>
+                        <label className="text-sm font-medium">{t('feedbackManagement.editor.questionTypeLabel', 'Question type')}</label>
                         <select value={question.questionType} onChange={(event) => updateQuestionType(index, event.target.value)} className={cn('h-10 w-full rounded-md border px-3 text-sm outline-none', fieldClass)}>
                           {QUESTION_TYPE_OPTIONS.map((option) => (
                             <option key={option} value={option}>{getFeedbackQuestionTypeLabel(option, currentLang)}</option>
@@ -947,13 +933,13 @@ function FeedbackManagement() {
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">{isEnglish ? 'Display order' : 'Thứ tự hiển thị'}</label>
+                        <label className="text-sm font-medium">{t('feedbackManagement.editor.displayOrderLabel', 'Display order')}</label>
                         <Input type="number" min="1" value={question.displayOrder} onChange={(event) => updateQuestion(index, { displayOrder: event.target.value })} className={fieldClass} />
                       </div>
                       {renderQuestionConfigFields(question, index)}
                       <div className="flex items-center gap-3 md:col-span-2">
                         <Checkbox checked={Boolean(question.required)} onCheckedChange={(checked) => updateQuestion(index, { required: checked === true })} />
-                        <span className="text-sm font-medium">{isEnglish ? 'Required question' : 'Câu hỏi bắt buộc'}</span>
+                        <span className="text-sm font-medium">{t('feedbackManagement.editor.requiredLabel', 'Required question')}</span>
                       </div>
                     </div>
                   </div>
@@ -964,11 +950,11 @@ function FeedbackManagement() {
             <DialogFooter className="gap-2">
               <Button type="button" variant="outline" onClick={() => setEditorOpen(false)} disabled={saving} className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
                 <X className="h-4 w-4" />
-                <span>{isEnglish ? 'Cancel' : 'Hủy'}</span>
+                <span>{t('feedbackManagement.editor.cancel', 'Cancel')}</span>
               </Button>
               <Button type="button" onClick={handleSave} disabled={saving}>
                 {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                <span>{saving ? (isEnglish ? 'Saving...' : 'Đang lưu...') : (isEnglish ? 'Save form' : 'Lưu form')}</span>
+                <span>{saving ? t('feedbackManagement.editor.saving', 'Saving...') : t('feedbackManagement.editor.save', 'Save form')}</span>
               </Button>
             </DialogFooter>
           </DialogContent>

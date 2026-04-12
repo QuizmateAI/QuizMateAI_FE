@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   CheckCircle2,
   Loader2,
@@ -29,11 +30,12 @@ function readCurrentUser() {
   }
 }
 
-function formatDateTime(value) {
-  if (!value) return 'Không có';
+function formatDateTime(value, t, locale = 'vi-VN') {
+  const emptyLabel = t ? t('acceptInvitationPage.empty', 'N/A') : 'N/A';
+  if (!value) return emptyLabel;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Không có';
-  return new Intl.DateTimeFormat('vi-VN', {
+  if (Number.isNaN(date.getTime())) return emptyLabel;
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -57,6 +59,9 @@ function getWelcomeStorageKey(workspaceId) {
 }
 
 const AcceptInvitationPage = () => {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language === 'en' ? 'en' : 'vi';
+  const dateLocale = currentLang === 'en' ? 'en-US' : 'vi-VN';
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const navigate = useNavigate();
@@ -76,7 +81,7 @@ const AcceptInvitationPage = () => {
   useEffect(() => {
     if (!token) {
       setLoadingPreview(false);
-      setErrorMessage('Liên kết mời không hợp lệ. Vui lòng kiểm tra lại email.');
+      setErrorMessage(t('acceptInvitationPage.invalidLink', 'The invitation link is invalid. Please double-check your email.'));
       return;
     }
 
@@ -92,7 +97,7 @@ const AcceptInvitationPage = () => {
         setPreview(unwrapApiData(response));
       } catch (error) {
         if (!isMounted) return;
-        setErrorMessage(error?.message || 'Không thể tải thông tin lời mời này.');
+        setErrorMessage(error?.message || t('acceptInvitationPage.loadFail', 'Unable to load this invitation.'));
       } finally {
         if (isMounted) {
           setLoadingPreview(false);
@@ -105,7 +110,7 @@ const AcceptInvitationPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [token, t]);
 
   const invitationStatus = String(preview?.status || '').toUpperCase();
   const currentEmail = String(currentUser?.email || '').trim().toLowerCase();
@@ -117,23 +122,23 @@ const AcceptInvitationPage = () => {
   const groupPath = workspaceId
     ? withQueryParams(buildGroupWorkspacePath(workspaceId), { welcome: 1 })
     : '/home';
-  const learningModeLabel = formatGroupLearningMode(preview?.learningMode, 'vi');
+  const learningModeLabel = formatGroupLearningMode(preview?.learningMode, currentLang);
 
   const infoRows = [
-    { label: 'Nhóm', value: preview?.groupName },
-    { label: 'Mô tả', value: preview?.groupDescription },
-    { label: 'Leader mời', value: preview?.invitedByFullName || preview?.invitedByUsername },
-    { label: 'Email được mời', value: preview?.invitedEmail },
-    { label: 'Lĩnh vực', value: preview?.domain },
-    { label: 'Chế độ học', value: learningModeLabel },
-    { label: 'Kỳ thi', value: preview?.examName },
-    { label: 'Mục tiêu nhóm', value: preview?.groupLearningGoal },
-    { label: 'Hạn xác nhận', value: formatDateTime(preview?.expiredDate) },
+    { label: t('acceptInvitationPage.infoLabels.group', 'Group'), value: preview?.groupName },
+    { label: t('acceptInvitationPage.infoLabels.description', 'Description'), value: preview?.groupDescription },
+    { label: t('acceptInvitationPage.infoLabels.invitedBy', 'Invited by'), value: preview?.invitedByFullName || preview?.invitedByUsername },
+    { label: t('acceptInvitationPage.infoLabels.invitedEmail', 'Invited email'), value: preview?.invitedEmail },
+    { label: t('acceptInvitationPage.infoLabels.domain', 'Domain'), value: preview?.domain },
+    { label: t('acceptInvitationPage.infoLabels.learningMode', 'Learning mode'), value: learningModeLabel },
+    { label: t('acceptInvitationPage.infoLabels.exam', 'Exam'), value: preview?.examName },
+    { label: t('acceptInvitationPage.infoLabels.groupGoal', 'Group goal'), value: preview?.groupLearningGoal },
+    { label: t('acceptInvitationPage.infoLabels.expiresAt', 'Confirm by'), value: formatDateTime(preview?.expiredDate, t, dateLocale) },
   ].filter((row) => row.value);
 
   const detailRows = [
-    { label: 'Nội dung kiến thức', value: preview?.knowledge },
-    { label: 'Nội quy nhóm', value: preview?.rules },
+    { label: t('acceptInvitationPage.detailLabels.knowledge', 'Knowledge content'), value: preview?.knowledge },
+    { label: t('acceptInvitationPage.detailLabels.rules', 'Group rules'), value: preview?.rules },
   ].filter((row) => row.value);
 
   const handleLogin = () => {
@@ -168,12 +173,12 @@ const AcceptInvitationPage = () => {
         );
       }
 
-      showSuccess(response?.message || 'Chào mừng bạn đã vào nhóm!');
+      showSuccess(response?.message || t('acceptInvitationPage.welcomeToast', 'Welcome! You have joined the group.'));
       navigate(withQueryParams(buildGroupWorkspacePath(payload?.workspaceId || workspaceId), { welcome: 1 }), {
         replace: true,
       });
     } catch (error) {
-      const nextMessage = error?.message || 'Không thể xác nhận lời mời này.';
+      const nextMessage = error?.message || t('acceptInvitationPage.acceptFail', 'Unable to confirm this invitation.');
       setErrorMessage(nextMessage);
       showError(nextMessage);
     } finally {
@@ -186,8 +191,8 @@ const AcceptInvitationPage = () => {
       <div className="min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#eef8f3_100%)] flex items-center justify-center px-4">
         <div className="w-full max-w-lg rounded-[28px] border border-white/80 bg-white/95 p-10 text-center shadow-2xl shadow-slate-200/50">
           <Loader2 className="mx-auto h-12 w-12 animate-spin text-cyan-600" />
-          <h1 className="mt-5 text-2xl font-bold text-slate-900">Đang tải lời mời nhóm</h1>
-          <p className="mt-2 text-sm text-slate-600">Thông tin nhóm sẽ hiện ra trước khi bạn xác nhận tham gia.</p>
+          <h1 className="mt-5 text-2xl font-bold text-slate-900">{t('acceptInvitationPage.loading.title', 'Loading group invitation')}</h1>
+          <p className="mt-2 text-sm text-slate-600">{t('acceptInvitationPage.loading.subtitle', 'Group details will appear before you confirm joining.')}</p>
         </div>
       </div>
     );
@@ -198,7 +203,7 @@ const AcceptInvitationPage = () => {
       <div className="min-h-screen bg-[linear-gradient(180deg,#fff7f7_0%,#fff 100%)] flex items-center justify-center px-4">
         <div className="w-full max-w-lg rounded-[28px] border border-rose-100 bg-white p-10 text-center shadow-2xl shadow-rose-100/50">
           <XCircle className="mx-auto h-14 w-14 text-rose-500" />
-          <h1 className="mt-5 text-2xl font-bold text-slate-900">Không thể mở lời mời</h1>
+          <h1 className="mt-5 text-2xl font-bold text-slate-900">{t('acceptInvitationPage.errorState.title', 'Unable to open the invitation')}</h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">{errorMessage}</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button
@@ -206,14 +211,14 @@ const AcceptInvitationPage = () => {
               onClick={() => navigate('/home')}
               className="rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Về trang chủ
+              {t('acceptInvitationPage.errorState.backHome', 'Back to home')}
             </button>
             <button
               type="button"
               onClick={handleRegister}
               className="rounded-full bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-700"
             >
-              Đăng ký tài khoản
+              {t('acceptInvitationPage.errorState.registerAccount', 'Create an account')}
             </button>
           </div>
         </div>
@@ -230,16 +235,16 @@ const AcceptInvitationPage = () => {
               <MailCheck className="h-6 w-6" />
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Lời mời vào nhóm</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{t('acceptInvitationPage.hero.eyebrow', 'Group invitation')}</p>
               <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] text-slate-900">
-                {preview?.groupName || 'Lời mời tham gia nhóm'}
+                {preview?.groupName || t('acceptInvitationPage.hero.fallbackTitle', 'Group join invitation')}
               </h1>
             </div>
           </div>
 
           <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-600">
             {preview?.groupDescription
-              || 'Bạn đã được mời vào một workspace nhóm trên QuizMate AI. Xem thông tin bên dưới và xác nhận trước khi vào nhóm.'}
+              || t('acceptInvitationPage.hero.fallbackDescription', 'You have been invited to a group workspace on QuizMate AI. Review the details below and confirm before joining.')}
           </p>
 
           <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -270,19 +275,19 @@ const AcceptInvitationPage = () => {
                 <Users className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Luồng tham gia</p>
-                <h2 className="mt-1 text-xl font-bold text-slate-900">Xác nhận trước khi vào nhóm</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t('acceptInvitationPage.sidebar.eyebrow', 'Join flow')}</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900">{t('acceptInvitationPage.sidebar.title', 'Confirm before joining the group')}</h2>
               </div>
             </div>
 
             <div className="mt-5 space-y-3">
               <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
-                <p className="text-sm font-semibold text-slate-900">1. Kiểm tra đúng email được mời</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">Tài khoản xác nhận phải trùng với email nhận lời mời để hệ thống đưa bạn vào đúng nhóm.</p>
+                <p className="text-sm font-semibold text-slate-900">{t('acceptInvitationPage.sidebar.step1Title', '1. Check you are using the invited email')}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{t('acceptInvitationPage.sidebar.step1Description', 'The account you confirm with must match the email that received the invitation so the system puts you in the correct group.')}</p>
               </div>
               <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
-                <p className="text-sm font-semibold text-slate-900">2. Bấm xác nhận trên web</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">Sau khi xác nhận, bạn sẽ vào thẳng workspace và nhìn thấy màn hình chào mừng cùng thông tin nhóm.</p>
+                <p className="text-sm font-semibold text-slate-900">{t('acceptInvitationPage.sidebar.step2Title', '2. Confirm on the web')}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{t('acceptInvitationPage.sidebar.step2Description', 'After confirming, you will go straight to the workspace and see the welcome screen with the group information.')}</p>
               </div>
             </div>
 
@@ -297,8 +302,8 @@ const AcceptInvitationPage = () => {
                 <div className="flex items-start gap-3">
                   <XCircle className="mt-0.5 h-5 w-5 text-amber-700" />
                   <div>
-                    <p className="text-sm font-semibold text-amber-800">Lời mời đã hết hạn</p>
-                    <p className="mt-1 text-sm leading-6 text-amber-700">Leader cần gửi lại một lời mời mới nếu bạn vẫn cần tham gia nhóm này.</p>
+                    <p className="text-sm font-semibold text-amber-800">{t('acceptInvitationPage.expired.title', 'The invitation has expired')}</p>
+                    <p className="mt-1 text-sm leading-6 text-amber-700">{t('acceptInvitationPage.expired.description', 'The leader needs to send a new invitation if you still want to join this group.')}</p>
                   </div>
                 </div>
               </div>
@@ -310,8 +315,16 @@ const AcceptInvitationPage = () => {
                   <div className="flex items-start gap-3">
                     <ShieldCheck className="mt-0.5 h-5 w-5 text-cyan-700" />
                     <div>
-                      <p className="text-sm font-semibold text-cyan-900">Đăng nhập để xác nhận</p>
-                      <p className="mt-1 text-sm leading-6 text-cyan-800">Bạn cần đăng nhập tài khoản có email <strong>{preview?.invitedEmail}</strong> để tiếp tục.</p>
+                      <p className="text-sm font-semibold text-cyan-900">{t('acceptInvitationPage.guest.title', 'Sign in to confirm')}</p>
+                      <p className="mt-1 text-sm leading-6 text-cyan-800">
+                        <Trans
+                          i18nKey="acceptInvitationPage.guest.description"
+                          t={t}
+                          values={{ email: preview?.invitedEmail || '' }}
+                          defaults="You need to sign in with the account that uses email <1>{{email}}</1> to continue."
+                          components={[<strong key="email" />]}
+                        />
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -322,7 +335,7 @@ const AcceptInvitationPage = () => {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700"
                 >
                   <LogIn className="h-4 w-4" />
-                  Đăng nhập để xác nhận
+                  {t('acceptInvitationPage.guest.loginButton', 'Sign in to confirm')}
                 </button>
 
                 <button
@@ -331,15 +344,21 @@ const AcceptInvitationPage = () => {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                   <UserPlus className="h-4 w-4" />
-                  Tạo tài khoản mới
+                  {t('acceptInvitationPage.guest.registerButton', 'Create a new account')}
                 </button>
               </div>
             ) : isEmailMismatch ? (
               <div className="mt-5 space-y-3">
                 <div className="rounded-[22px] border border-rose-100 bg-rose-50 px-4 py-4">
-                  <p className="text-sm font-semibold text-rose-800">Bạn đang đăng nhập sai tài khoản</p>
+                  <p className="text-sm font-semibold text-rose-800">{t('acceptInvitationPage.mismatch.title', 'You are signed in to the wrong account')}</p>
                   <p className="mt-1 text-sm leading-6 text-rose-700">
-                    Hiện tại là <strong>{currentUser?.email}</strong>, trong khi lời mời này dành cho <strong>{preview?.invitedEmail}</strong>.
+                    <Trans
+                      i18nKey="acceptInvitationPage.mismatch.description"
+                      t={t}
+                      values={{ currentEmail: currentUser?.email || '', invitedEmail: preview?.invitedEmail || '' }}
+                      defaults="You are currently signed in as <1>{{currentEmail}}</1>, but this invitation is for <3>{{invitedEmail}}</3>."
+                      components={[<strong key="current" />, <span key="sep" />, <strong key="invited" />]}
+                    />
                   </p>
                 </div>
                 <button
@@ -348,7 +367,7 @@ const AcceptInvitationPage = () => {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                 >
                   <LogIn className="h-4 w-4" />
-                  Đăng nhập lại đúng email
+                  {t('acceptInvitationPage.mismatch.switchButton', 'Sign in with the correct email')}
                 </button>
               </div>
             ) : isAccepted ? (
@@ -357,8 +376,8 @@ const AcceptInvitationPage = () => {
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-700" />
                     <div>
-                      <p className="text-sm font-semibold text-emerald-900">Bạn đã ở trong nhóm này</p>
-                      <p className="mt-1 text-sm leading-6 text-emerald-800">Workspace sẵn sàng để bạn vào đọc thông tin nhóm và bắt đầu học.</p>
+                      <p className="text-sm font-semibold text-emerald-900">{t('acceptInvitationPage.accepted.title', 'You are already in this group')}</p>
+                      <p className="mt-1 text-sm leading-6 text-emerald-800">{t('acceptInvitationPage.accepted.description', 'The workspace is ready for you to open the group info and start learning.')}</p>
                     </div>
                   </div>
                 </div>
@@ -369,14 +388,14 @@ const AcceptInvitationPage = () => {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
                 >
                   <Users className="h-4 w-4" />
-                  Mở workspace nhóm
+                  {t('acceptInvitationPage.accepted.openButton', 'Open group workspace')}
                 </button>
               </div>
             ) : (
               <div className="mt-5 space-y-3">
                 <div className="rounded-[22px] border border-emerald-100 bg-emerald-50 px-4 py-4">
-                  <p className="text-sm font-semibold text-emerald-900">Tài khoản hợp lệ, sẵn sàng vào nhóm</p>
-                  <p className="mt-1 text-sm leading-6 text-emerald-800">Sau khi bấm xác nhận, bạn sẽ vào thẳng trang chào mừng của nhóm này.</p>
+                  <p className="text-sm font-semibold text-emerald-900">{t('acceptInvitationPage.ready.title', 'Account is valid, ready to join')}</p>
+                  <p className="mt-1 text-sm leading-6 text-emerald-800">{t('acceptInvitationPage.ready.description', "After confirming, you will go straight to this group's welcome page.")}</p>
                 </div>
 
                 <button
@@ -386,15 +405,15 @@ const AcceptInvitationPage = () => {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
-                  Xác nhận vào nhóm
+                  {t('acceptInvitationPage.ready.confirmButton', 'Confirm and join group')}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => showInfo('Bạn có thể quay lại email này bất cứ lúc nào để mở lại liên kết mời.')}
+                  onClick={() => showInfo(t('acceptInvitationPage.ready.laterToast', 'You can return to this email any time to reopen the invitation link.'))}
                   className="inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
-                  Để sau
+                  {t('acceptInvitationPage.ready.laterButton', 'Later')}
                 </button>
               </div>
             )}

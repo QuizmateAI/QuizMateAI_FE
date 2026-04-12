@@ -119,7 +119,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
       await action();
       invalidate();
     } catch (err) {
-      setError(getErrorMessage(t, err) || err?.message || 'Có lỗi xảy ra');
+      setError(getErrorMessage(t, err) || err?.message || t('challengeDetailView.errors.generic', 'Something went wrong'));
     } finally {
       setActionLoading(null);
     }
@@ -190,10 +190,10 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
         },
       });
     } catch (err) {
-      setError(err?.message || 'Không thể bắt đầu làm bài');
+      setError(err?.message || t('challengeDetailView.errors.cannotStartAttempt', 'Cannot start the attempt'));
       setActionLoading(null);
     }
-  }, [workspaceId, eventId, navigate]);
+  }, [workspaceId, eventId, navigate, t]);
 
   const handleOpenDraftQuizEditor = useCallback(() => {
     const qid = detail?.snapshotQuizId;
@@ -258,7 +258,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   }
 
   if (detailError || !detail) {
-    const detailErrorMessage = getErrorMessage(t, detailError) || 'Không thể tải chi tiết challenge';
+    const detailErrorMessage = getErrorMessage(t, detailError) || t('challengeDetailView.errors.cannotLoadDetail', 'Cannot load challenge detail');
     return (
       <div className={`rounded-2xl border p-6 ${
         isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'
@@ -266,7 +266,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
         <div className="flex flex-col gap-4">
           <div>
             <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              Không mở được challenge
+              {t('challengeDetailView.cannotOpenTitle', 'Cannot open challenge')}
             </h3>
             <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-600'}`}>
               {detailErrorMessage}
@@ -274,7 +274,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
           </div>
           <div>
             <Button type="button" variant="outline" onClick={onBack}>
-              Quay lại
+              {t('challengeDetailView.back', 'Back')}
             </Button>
           </div>
         </div>
@@ -330,7 +330,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const snapshotStatusKey = snapshotAwaitingReviewerConfirm ? 'REVIEW_PENDING' : snapshotStatusKeyRaw;
   const snapshotStatusLabel = snapshotStatusKeyRaw
     ? (snapshotAwaitingReviewerConfirm
-      ? 'Chờ reviewer xác nhận'
+      ? t('challengeDetailView.waitingReviewerConfirm', 'Waiting for reviewer confirmation')
       : t(`groupWorkspace.challenge.quizStatus.${snapshotStatusKeyRaw}`, snapshotStatusKeyRaw))
     : null;
 
@@ -377,20 +377,20 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const publishRequirementHint = !showPublishChallengeAction
     ? ''
     : !hasSnapshotQuizContent
-      ? 'Leader phải soạn nội dung quiz trước.'
+      ? t('challengeDetailView.publishHints.needDraftQuizContent', 'The leader must compose the quiz content first.')
       : snapshotStatusKeyRaw !== 'ACTIVE'
-        ? 'Quiz challenge phải được chuyển từ draft sang active trước khi xuất bản challenge.'
+        ? t('challengeDetailView.publishHints.needActiveQuiz', 'The challenge quiz must be moved from draft to active before publishing the challenge.')
         : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && reviewContributors.length < MAX_SNAPSHOT_REVIEW_INVITES
-          ? 'Cần đủ reviewer chính và reviewer phụ trước khi xuất bản challenge.'
+          ? t('challengeDetailView.publishHints.needBothReviewers', 'A primary and an assistant reviewer are required before publishing the challenge.')
           : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !hasPrimaryReviewer
-            ? 'Cần có reviewer chính cho quiz challenge trước khi xuất bản.'
+            ? t('challengeDetailView.publishHints.needPrimaryReviewer', 'A primary reviewer for the challenge quiz is required before publishing.')
             : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !hasAssistantReviewer
-              ? 'Cần có reviewer phụ cho quiz challenge trước khi xuất bản.'
+              ? t('challengeDetailView.publishHints.needAssistantReviewer', 'An assistant reviewer for the challenge quiz is required before publishing.')
               : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !everyoneConfirmedReviewOk && !detail.leaderPublishBypass
-                ? 'Reviewer chính/phụ phải xác nhận đề ổn trước khi leader xuất bản challenge.'
+                ? t('challengeDetailView.publishHints.needReviewersConfirm', 'The primary/assistant reviewer must confirm the quiz is OK before the leader can publish the challenge.')
                 : new Date(detail.startTime).getTime() <= Date.now()
-                  ? 'Challenge đã tới giờ bắt đầu nên không thể xuất bản.'
-                  : 'Sau khi xuất bản, member mới thấy challenge và được đăng ký tham gia.';
+                  ? t('challengeDetailView.publishHints.startTimePassed', 'The challenge has reached its start time, so it can no longer be published.')
+                  : t('challengeDetailView.publishHints.afterPublishInfo', 'After publishing, members will see the challenge and be able to register.');
 
   const cardCls = `rounded-2xl border p-6 ${
     isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'
@@ -433,7 +433,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                 <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                   isDarkMode ? 'bg-amber-500/20 text-amber-200' : 'bg-amber-100 text-amber-900'
                 }`}>
-                  Chưa publish
+                  {t('challengeDetailView.notPublishedBadge', 'Not published')}
                 </span>
               )}
             </div>
@@ -474,24 +474,24 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 flex-shrink-0" />
             <div>
-              <div className="text-xs opacity-60">Bắt đầu</div>
+              <div className="text-xs opacity-60">{t('challengeDetailView.startLabel', 'Start')}</div>
               <div className={isDarkMode ? 'text-white' : 'text-slate-900'}>{formatDateTime(detail.startTime)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 flex-shrink-0" />
             <div>
-              <div className="text-xs opacity-60">Kết thúc</div>
+              <div className="text-xs opacity-60">{t('challengeDetailView.endLabel', 'End')}</div>
               <div className={isDarkMode ? 'text-white' : 'text-slate-900'}>{formatDateTime(detail.endTime)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 flex-shrink-0" />
-            <span>{detail.participantCount} người tham gia</span>
+            <span>{t('challengeDetailView.participantCount', '{{count}} participants', { count: detail.participantCount })}</span>
           </div>
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 flex-shrink-0" />
-            <span>{detail.registrationMode === 'INVITE_ONLY' ? 'Mời riêng' : 'Công khai'}</span>
+            <span>{detail.registrationMode === 'INVITE_ONLY' ? t('challengeDetailView.registrationMode.inviteOnly', 'Invite only') : t('challengeDetailView.registrationMode.public', 'Public')}</span>
           </div>
         </div>
 
@@ -501,7 +501,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
           }`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className={`text-xs font-medium uppercase tracking-wide ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                Quiz challenge
+                {t('challengeDetailView.quizChallengeLabel', 'Challenge quiz')}
               </div>
               {snapshotStatusLabel && (
                 <span
@@ -525,9 +525,9 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               {detail.snapshotQuizTitle || t('groupWorkspace.challenge.snapshotQuizDefaultTitle')}
             </div>
             <div className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-              {snapshotDurationMinutes > 0 ? `${snapshotDurationMinutes} phút` : '—'}
+              {snapshotDurationMinutes > 0 ? t('challengeDetailView.minutesShort', '{{count}} minutes', { count: snapshotDurationMinutes }) : '—'}
               {' · '}
-              {Number(detail.snapshotQuizTotalQuestion) || 0} câu hỏi
+              {Number(detail.snapshotQuizTotalQuestion) || 0} {t('challengeDetailView.questionsShort', 'questions')}
             </div>
 
             {(canPreviewSnapshotQuiz || showDraftQuizCta) && (
@@ -557,7 +557,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                     }`}
                   >
                     <PenLine className="h-4 w-4" />
-                    Soạn đề challenge
+                    {t('challengeDetailView.composeChallengeQuiz', 'Compose challenge quiz')}
                   </button>
                 )}
               </div>
@@ -569,7 +569,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
             )}
             {!canPreviewSnapshotQuiz && showDraftQuizCta && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                Tạo nội dung quiz trước, sau đó mới xem lại được đề challenge.
+                {t('challengeDetailView.draftQuizHint', 'Create the quiz content first, then you can preview the challenge quiz.')}
               </p>
             )}
             {Boolean(detail.leaderParticipates) && snapshotStatusKeyRaw !== 'ACTIVE' && (
@@ -579,9 +579,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
             )}
             {isLeader && !isPublished && detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && (
               <p className={`mt-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
-                Flow challenge: leader tạo challenge và soạn quiz, reviewer chính/phụ kiểm tra đề,
-                khi đề ổn thì chuyển quiz sang ACTIVE, sau đó leader mới xuất bản challenge.
-                Chỉ sau khi xuất bản thì member mới thấy challenge và đăng ký tham gia.
+                {t('challengeDetailView.leaderSetupFlowHint', 'Challenge flow: the leader creates the challenge and composes the quiz, the primary/assistant reviewer checks it, once the quiz is OK it is moved to ACTIVE, and then the leader publishes the challenge. Only after publishing will members see the challenge and be able to register.')}
               </p>
             )}
           </div>
@@ -598,7 +596,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               {t('groupWorkspace.challenge.reviewContributorsHint')}
             </p>
             <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-              Người đầu tiên được thêm sẽ là reviewer chính. Người thứ hai là reviewer phụ.
+              {t('challengeDetailView.reviewerPanel.orderHint', 'The first person added becomes the primary reviewer. The second becomes the assistant reviewer.')}
             </p>
             {(detail.reviewContributors || []).length > 0 && (
               <ul className="mt-3 flex flex-col gap-2">
@@ -629,14 +627,18 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                             ? (isDarkMode ? 'bg-orange-500/15 text-orange-200' : 'bg-orange-100 text-orange-800')
                             : (isDarkMode ? 'bg-cyan-500/15 text-cyan-200' : 'bg-cyan-100 text-cyan-800')
                         }`}>
-                          {c.primaryReviewer ? 'Reviewer chính' : 'Reviewer phụ'}
+                          {c.primaryReviewer ? t('challengeDetailView.reviewerPanel.primaryBadge', 'Primary reviewer') : t('challengeDetailView.reviewerPanel.assistantBadge', 'Assistant reviewer')}
                         </span>
                       </div>
                       <p className={`mt-1 pl-9 text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                        {c.lastViewedAt ? `Đã mở xem đề: ${formatDateTime(c.lastViewedAt)}` : 'Chưa ghi nhận mở xem đề'}
+                        {c.lastViewedAt
+                          ? t('challengeDetailView.reviewerPanel.lastViewedAt', 'Opened the quiz at: {{time}}', { time: formatDateTime(c.lastViewedAt) })
+                          : t('challengeDetailView.reviewerPanel.lastViewedEmpty', 'Has not opened the quiz yet')}
                       </p>
                       <p className={`mt-1 pl-9 text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-gray-500'}`}>
-                        {c.reviewCompleteOkAt ? `Đã xác nhận đề ổn: ${formatDateTime(c.reviewCompleteOkAt)}` : 'Chưa xác nhận đề ổn'}
+                        {c.reviewCompleteOkAt
+                          ? t('challengeDetailView.reviewerPanel.confirmedOkAt', 'Confirmed quiz is OK at: {{time}}', { time: formatDateTime(c.reviewCompleteOkAt) })
+                          : t('challengeDetailView.reviewerPanel.confirmedOkEmpty', 'Has not confirmed the quiz yet')}
                       </p>
                     </div>
                     <button
@@ -703,7 +705,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
             </div>
             {detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                Cần đủ 2 reviewer để leader có thể xuất bản challenge sau khi quiz đã ACTIVE.
+                {t('challengeDetailView.reviewerPanel.needTwoReviewersHint', 'Two reviewers are required so the leader can publish the challenge once the quiz is ACTIVE.')}
               </p>
             )}
           </div>
@@ -719,16 +721,12 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               {t('groupWorkspace.challenge.reviewInviteeNotice')}
             </p>
             <p className={`mt-2 text-xs ${isDarkMode ? 'text-cyan-200/90' : 'text-cyan-900/80'}`}>
-              {t(
-                'groupWorkspace.challenge.reviewInviteeShortHint',
-                'Chỉ cần bấm «Xem quiz» ở khối Quiz challenge phía trên, rồi mở tab «Kiểm tra».',
+              {t('groupWorkspace.challenge.reviewInviteeShortHint', 'Click “View quiz” in the Quiz challenge block above, then open the “Check” tab.',
               )}
             </p>
             {!canPreviewSnapshotQuiz && (
               <p className={`mt-2 text-xs ${isDarkMode ? 'text-amber-200/90' : 'text-amber-900'}`}>
-                {t(
-                  'groupWorkspace.challenge.reviewQuizNotReadyHint',
-                  'Đề chưa sẵn sàng để xem (ví dụ đang tạo hoặc đang xử lý). Thử lại sau.',
+                {t('groupWorkspace.challenge.reviewQuizNotReadyHint', 'The exam is not ready to preview yet (for example still generating). Please try again later.',
                 )}
               </p>
             )}
@@ -758,7 +756,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               }`}
             >
               {actionLoading === 'publish' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-              Xuất bản challenge
+              {t('challengeDetailView.actions.publish', 'Publish challenge')}
             </button>
           )}
 
@@ -769,7 +767,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
             >
               {actionLoading === 'register' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-              Đăng ký
+              {t('challengeDetailView.actions.register', 'Register')}
             </button>
           )}
 
@@ -780,7 +778,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
             >
               {actionLoading === 'accept' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-              Chấp nhận lời mời
+              {t('challengeDetailView.actions.acceptInvite', 'Accept invitation')}
             </button>
           )}
 
@@ -791,7 +789,9 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               className="inline-flex items-center gap-2 rounded-xl bg-green-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-600 disabled:opacity-50"
             >
               {actionLoading === 'start' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              {detail.myParticipantStatus === 'PLAYING' ? 'Tiếp tục làm bài' : 'Bắt đầu làm bài'}
+              {detail.myParticipantStatus === 'PLAYING'
+                ? t('challengeDetailView.actions.continueAttempt', 'Continue attempt')
+                : t('challengeDetailView.actions.startAttempt', 'Start attempt')}
             </button>
           )}
 
@@ -807,7 +807,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               }`}
             >
               {actionLoading === 'cancel' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-              Huỷ challenge
+              {t('challengeDetailView.actions.cancel', 'Cancel challenge')}
             </button>
           )}
         </div>
@@ -834,7 +834,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
       {detail.participants && detail.participants.length > 0 && (
         <div className={cardCls}>
           <h3 className={`mb-3 text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            Người tham gia ({detail.participants.length})
+            {t('challengeDetailView.participantsTitle', 'Participants ({{count}})', { count: detail.participants.length })}
           </h3>
           <div className="flex flex-col gap-2">
             {detail.participants.map((p) => (
@@ -855,13 +855,17 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
                     </div>
                   )}
                   <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    <UserDisplayName user={p} fallback="Thành viên" isDarkMode={isDarkMode} />
+                    <UserDisplayName user={p} fallback={t('challengeDetailView.memberFallback', 'Member')} isDarkMode={isDarkMode} />
                   </span>
                 </div>
                 <span className={`text-xs ${
                   p.status === 'FINISHED' ? 'text-green-500' : p.status === 'PLAYING' ? 'text-blue-500' : (isDarkMode ? 'text-slate-500' : 'text-gray-400')
                 }`}>
-                  {p.status === 'FINISHED' ? 'Hoàn thành' : p.status === 'PLAYING' ? 'Đang làm' : 'Chờ'}
+                  {p.status === 'FINISHED'
+                    ? t('challengeDetailView.participantStatus.finished', 'Finished')
+                    : p.status === 'PLAYING'
+                      ? t('challengeDetailView.participantStatus.playing', 'In progress')
+                      : t('challengeDetailView.participantStatus.waiting', 'Waiting')}
                 </span>
               </div>
             ))}

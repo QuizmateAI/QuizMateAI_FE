@@ -54,6 +54,9 @@
   },
   "error": {
     "unknown": "An error occurred. Please try again.",
+    "requestTimeout": "The request is taking longer than expected. Please wait a moment and try again.",
+    "missingAuthToken": "Authentication token is missing",
+    "missingFeedbackLogEndpoint": "Feedback log endpoint not found",
     "internalServer": "The system is busy or unavailable. Please try again later.",
     "userNotExisted": "User does not exist.",
     "wrongPass": "Incorrect password.",
@@ -487,5 +490,37 @@
     "selectGroup": "Select a group to apply",
     "noLeaderGroups": "You are not a leader of any group.",
     "upgradeBtn": "Upgrade"
+  },
+  "planUpgradeModal": {
+    "title": "Feature not available",
+    "descriptionWithFeature": "The feature \"{{featureName}}\" is not included in your current plan.",
+    "descriptionDefault": "Your current plan does not include this feature.",
+    "upgradeHint": "Please upgrade to continue.",
+    "upgradeNow": "Upgrade now",
+    "later": "Later"
+  },
+  "feedbackDialog": {
+    "errors": {
+      "requiredQuestions": "Please answer all required questions."
+    },
+    "placeholders": {
+      "share": "Share your thoughts..."
+    }
+  },
+  "feedbackTicket": {
+    "dialogTitle": "Send feedback ticket",
+    "dialogDescription": "Send product or system feedback and track the handling status from the feedback center.",
+    "category": "Category",
+    "title": "Title",
+    "details": "Details",
+    "placeholders": {
+      "systemDescription": "Describe the incident, where it happened, and what is currently blocked.",
+      "productDescription": "Describe the bug, support need, or product issue you want the team to handle.",
+      "titleShort": "Short summary of the issue"
+    },
+    "errors": {
+      "titleAndContentRequired": "Please enter both title and content."
+    },
+    "successSent": "Feedback ticket sent."
   }
 }

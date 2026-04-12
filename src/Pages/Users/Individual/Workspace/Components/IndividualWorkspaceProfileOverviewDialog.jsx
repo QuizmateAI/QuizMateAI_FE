@@ -123,16 +123,16 @@ function normalizeKnowledgeLoadValue(value) {
   return value === 'BASIC' ? 'BASIC' : '';
 }
 
-function formatRoadmapSpeedModeLabel(value, t, language) {
+function formatRoadmapSpeedModeLabel(value, t) {
   const normalizedValue = value === 'MEDIUM' ? 'STANDARD' : value;
   if (!normalizedValue) {
-    return language === 'en' ? 'Not configured' : 'Chưa cấu hình';
+    return t('individualWorkspaceProfileOverviewDialog.notConfigured', 'Not configured');
   }
 
   const fallbackLabels = {
-    FAST: language === 'en' ? 'Fast' : 'Nhanh',
-    STANDARD: language === 'en' ? 'Standard' : 'Tiêu chuẩn',
-    SLOW: language === 'en' ? 'Slow' : 'Chậm',
+    FAST: t('individualWorkspaceProfileOverviewDialog.speedMode.FAST', 'Fast'),
+    STANDARD: t('individualWorkspaceProfileOverviewDialog.speedMode.STANDARD', 'Standard'),
+    SLOW: t('individualWorkspaceProfileOverviewDialog.speedMode.SLOW', 'Slow'),
   };
 
   return translateOrFallback(
@@ -151,16 +151,16 @@ function normalizeAdaptationModeValue(value) {
   return normalizedValue;
 }
 
-function formatAdaptationModeLabel(value, t, language) {
+function formatAdaptationModeLabel(value, t) {
   const normalizedValue = normalizeAdaptationModeValue(value);
   if (!normalizedValue) {
-    return language === 'en' ? 'Not configured' : 'Chưa cấu hình';
+    return t('individualWorkspaceProfileOverviewDialog.notConfigured', 'Not configured');
   }
 
   const fallbackLabels = {
-    BALANCED: language === 'en' ? 'Fixed' : 'Cố định',
-    FLEXIBLE: language === 'en' ? 'Flexible' : 'Linh hoạt',
-    INTENSIVE: language === 'en' ? 'Intensive' : 'Tăng tốc',
+    BALANCED: t('individualWorkspaceProfileOverviewDialog.adaptationMode.BALANCED', 'Fixed'),
+    FLEXIBLE: t('individualWorkspaceProfileOverviewDialog.adaptationMode.FLEXIBLE', 'Flexible'),
+    INTENSIVE: t('individualWorkspaceProfileOverviewDialog.adaptationMode.INTENSIVE', 'Intensive'),
   };
 
   return translateOrFallback(
@@ -327,7 +327,7 @@ function IndividualWorkspaceProfileOverviewDialog({
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
-  const fallbackEmpty = translateOrFallback(t, 'workspace.profileOverview.empty', i18n.language === 'en' ? 'Not configured' : 'Chưa cấu hình');
+  const fallbackEmpty = translateOrFallback(t, 'workspace.profileOverview.empty', t('individualWorkspaceProfileOverviewDialog.notConfigured', 'Not configured'));
   const purpose = profile?.workspacePurpose || profile?.learningMode || '';
   const examName = profile?.mockExamName || profile?.examName || '';
   const roadmapEnabled = purpose === 'STUDY_NEW' ? true : Boolean(profile?.enableRoadmap ?? profile?.roadmapEnabled);
@@ -339,9 +339,9 @@ function IndividualWorkspaceProfileOverviewDialog({
   const normalizedKnowledgeLoad = normalizeKnowledgeLoadValue(profile?.knowledgeLoad);
   const speedSummary = roadmapSpeedModeKey
     ? t(`workspace.profileConfig.roadmapSpeedMode.${roadmapSpeedModeKey}.title`)
-    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'));
-  const roadmapSpeedLabel = formatRoadmapSpeedModeLabel(roadmapSpeedModeKey, t, i18n.language);
-  const roadmapAdaptationLabel = formatAdaptationModeLabel(profile?.adaptationMode, t, i18n.language);
+    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', t('individualWorkspaceProfileOverviewDialog.roadmapDisabled', 'Disabled')));
+  const roadmapSpeedLabel = formatRoadmapSpeedModeLabel(roadmapSpeedModeKey, t);
+  const roadmapAdaptationLabel = formatAdaptationModeLabel(profile?.adaptationMode, t);
   const recommendedMinutesValue =
     profile?.recommendedMinutesPerDay
     ?? profile?.estimatedMinutesPerDay
@@ -349,10 +349,10 @@ function IndividualWorkspaceProfileOverviewDialog({
       ? getRecommendedRoadmapMinutesPerDay(normalizedKnowledgeLoad, profile.estimatedTotalDays)
       : null);
   const minutesSummary = recommendedMinutesValue
-    ? `${recommendedMinutesValue} ${i18n.language === 'en' ? 'minutes/day' : 'phút/ngày'}`
-    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', i18n.language === 'en' ? 'Disabled' : 'Đang tắt'));
+    ? `${recommendedMinutesValue} ${t('individualWorkspaceProfileOverviewDialog.minutesPerDay', 'minutes/day')}`
+    : (roadmapEnabled ? fallbackEmpty : translateOrFallback(t, 'workspace.profileOverview.roadmapDisabled', t('individualWorkspaceProfileOverviewDialog.roadmapDisabled', 'Disabled')));
   const estimatedDaysSummary = profile?.estimatedTotalDays
-    ? `${profile.estimatedTotalDays} ${i18n.language === 'en' ? 'days' : 'ngày'}`
+    ? `${profile.estimatedTotalDays} ${t('individualWorkspaceProfileOverviewDialog.daysUnit', 'days')}`
     : fallbackEmpty;
   const knowledgeLoadSummary = normalizedKnowledgeLoad
     ? translateOrFallback(
@@ -373,14 +373,12 @@ function IndividualWorkspaceProfileOverviewDialog({
   const title = translateOrFallback(
     t,
     'workspace.profileOverview.title',
-    i18n.language === 'en' ? 'Workspace profile overview' : 'Tổng quan thiết lập không gian học tập'
+    t('individualWorkspaceProfileOverviewDialog.title', 'Workspace profile overview')
   );
   const description = translateOrFallback(
     t,
     'workspace.profileOverview.description',
-    i18n.language === 'en'
-      ? 'A short summary of the key configuration saved for this workspace.'
-      : 'Tóm tắt ngắn các cấu hình chính đã lưu cho workspace này.'
+    t('individualWorkspaceProfileOverviewDialog.description', 'A short summary of the key configuration saved for this workspace.')
   );
 
   return (
@@ -411,7 +409,7 @@ function IndividualWorkspaceProfileOverviewDialog({
                   isDarkMode ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 )}
               >
-                {translateOrFallback(t, 'workspace.profileOverview.badge', i18n.language === 'en' ? 'PROFILE OVERVIEW' : 'PROFILE OVERVIEW')}
+                {translateOrFallback(t, 'workspace.profileOverview.badge', t('individualWorkspaceProfileOverviewDialog.badge', 'PROFILE OVERVIEW'))}
               </div>
               <DialogTitle className="text-[clamp(1.55rem,1.8vw,1.95rem)] font-bold tracking-tight">{title}</DialogTitle>
               <DialogDescription className={cn('mt-2 max-w-4xl text-sm leading-6', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
@@ -420,8 +418,8 @@ function IndividualWorkspaceProfileOverviewDialog({
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {purpose ? <OverviewChip isDarkMode={isDarkMode} tone="info" label={t(`workspace.profileConfig.purpose.${purpose}.title`)} /> : null}
-                <OverviewChip isDarkMode={isDarkMode} tone="success" label={translateOrFallback(t, 'workspace.profileOverview.done', i18n.language === 'en' ? 'Profile completed' : 'Hồ sơ đã hoàn tất')} />
-                {roadmapEnabled ? <OverviewChip isDarkMode={isDarkMode} tone="warning" label={translateOrFallback(t, 'workspace.profileOverview.roadmapEnabled', i18n.language === 'en' ? 'Roadmap enabled' : 'Có Lộ trình')} /> : null}
+                <OverviewChip isDarkMode={isDarkMode} tone="success" label={translateOrFallback(t, 'workspace.profileOverview.done', t('individualWorkspaceProfileOverviewDialog.done', 'Profile completed'))} />
+                {roadmapEnabled ? <OverviewChip isDarkMode={isDarkMode} tone="warning" label={translateOrFallback(t, 'workspace.profileOverview.roadmapEnabled', t('individualWorkspaceProfileOverviewDialog.roadmapEnabled', 'Roadmap enabled'))} /> : null}
               </div>
             </div>
 
@@ -442,8 +440,8 @@ function IndividualWorkspaceProfileOverviewDialog({
         <div className="overflow-y-auto px-5 py-5 sm:px-6">
           <div className="grid items-stretch gap-6 xl:grid-cols-2">
             <OverviewSection
-              title={translateOrFallback(t, 'workspace.profileOverview.learningSummaryTitle', i18n.language === 'en' ? 'Learning workspace summary' : 'Tóm tắt không gian học tập')}
-              description={translateOrFallback(t, 'workspace.profileOverview.learningSummaryDescription', i18n.language === 'en' ? 'The key learning configuration saved for this workspace.' : 'Các cấu hình học tập chính đã lưu cho workspace này.')}
+              title={translateOrFallback(t, 'workspace.profileOverview.learningSummaryTitle', t('individualWorkspaceProfileOverviewDialog.learningSummaryTitle', 'Learning workspace summary'))}
+              description={translateOrFallback(t, 'workspace.profileOverview.learningSummaryDescription', t('individualWorkspaceProfileOverviewDialog.learningSummaryDescription', 'The key learning configuration saved for this workspace.'))}
               icon={CheckCircle2}
               iconClassName={isDarkMode ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-50 text-emerald-600'}
               isDarkMode={isDarkMode}
@@ -455,7 +453,7 @@ function IndividualWorkspaceProfileOverviewDialog({
                   label={translateOrFallback(
                     t,
                     `workspace.profileConfig.fields.learningGoalByPurpose.${purpose}`,
-                    translateOrFallback(t, 'workspace.profileConfig.fields.learningGoal', i18n.language === 'en' ? 'Learning goal' : 'Mục tiêu học tập')
+                    translateOrFallback(t, 'workspace.profileConfig.fields.learningGoal', t('individualWorkspaceProfileOverviewDialog.learningGoal', 'Learning goal'))
                   )}
                   value={learningGoalSummary}
                   isDarkMode={isDarkMode}
@@ -464,13 +462,13 @@ function IndividualWorkspaceProfileOverviewDialog({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileOverview.summaryFocusLabel', i18n.language === 'en' ? 'Main focus' : 'Trọng tâm chính')}
+                    label={translateOrFallback(t, 'workspace.profileOverview.summaryFocusLabel', t('individualWorkspaceProfileOverviewDialog.summaryFocusLabel', 'Main focus'))}
                     value={summaryFocusLabel}
                     isDarkMode={isDarkMode}
                     tone="summary"
                   />
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileOverview.summaryPaceLabel', i18n.language === 'en' ? 'Learning pace' : 'Nhịp học')}
+                    label={translateOrFallback(t, 'workspace.profileOverview.summaryPaceLabel', t('individualWorkspaceProfileOverviewDialog.summaryPaceLabel', 'Learning pace'))}
                     value={summaryPaceLabel}
                     isDarkMode={isDarkMode}
                     tone="summary"
@@ -481,16 +479,16 @@ function IndividualWorkspaceProfileOverviewDialog({
                   {purpose ? <OverviewChip isDarkMode={isDarkMode} tone="info" label={t(`workspace.profileConfig.purpose.${purpose}.title`)} /> : null}
                   {currentLevelSummary !== fallbackEmpty ? <OverviewChip isDarkMode={isDarkMode} label={currentLevelSummary} /> : null}
                   {materials.length > 0
-                    ? <OverviewChip isDarkMode={isDarkMode} tone="warning" label={`${materials.length} ${i18n.language === 'en' ? 'materials' : 'tài liệu'}`} />
+                    ? <OverviewChip isDarkMode={isDarkMode} tone="warning" label={`${materials.length} ${t('individualWorkspaceProfileOverviewDialog.materialsUnit', 'materials')}`} />
                     : null}
-                  <OverviewChip isDarkMode={isDarkMode} tone="success" label={translateOrFallback(t, 'workspace.profileOverview.ready', i18n.language === 'en' ? 'Ready to use' : 'Sẵn sàng sử dụng')} />
+                  <OverviewChip isDarkMode={isDarkMode} tone="success" label={translateOrFallback(t, 'workspace.profileOverview.ready', t('individualWorkspaceProfileOverviewDialog.ready', 'Ready to use'))} />
                 </div>
               </div>
             </OverviewSection>
 
             <OverviewSection
-              title={translateOrFallback(t, 'workspace.profileOverview.personalStrengthsTitle', i18n.language === 'en' ? 'Strengths and focus areas' : 'Điểm mạnh và điểm cần cải thiện')}
-              description={translateOrFallback(t, 'workspace.profileOverview.personalStrengthsDescription', i18n.language === 'en' ? 'Learner context configured for this workspace.' : 'Các thông tin năng lực nền đã cấu hình cho workspace này.')}
+              title={translateOrFallback(t, 'workspace.profileOverview.personalStrengthsTitle', t('individualWorkspaceProfileOverviewDialog.personalStrengthsTitle', 'Strengths and focus areas'))}
+              description={translateOrFallback(t, 'workspace.profileOverview.personalStrengthsDescription', t('individualWorkspaceProfileOverviewDialog.personalStrengthsDescription', 'Learner context configured for this workspace.'))}
               icon={CheckCircle2}
               iconClassName={isDarkMode ? 'bg-sky-500/15 text-sky-300' : 'bg-sky-50 text-sky-600'}
               isDarkMode={isDarkMode}
@@ -499,25 +497,25 @@ function IndividualWorkspaceProfileOverviewDialog({
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <OverviewField
-                  label={translateOrFallback(t, 'workspace.profileOverview.strongAreas', i18n.language === 'en' ? 'Strong areas' : 'Điểm mạnh')}
+                  label={translateOrFallback(t, 'workspace.profileOverview.strongAreas', t('individualWorkspaceProfileOverviewDialog.strongAreas', 'Strong areas'))}
                   value={strongAreasSummary}
                   isDarkMode={isDarkMode}
                   tone="personal"
                 />
                 <OverviewField
-                  label={translateOrFallback(t, 'workspace.profileOverview.weakAreas', i18n.language === 'en' ? 'Areas to improve' : 'Điểm cần cải thiện')}
+                  label={translateOrFallback(t, 'workspace.profileOverview.weakAreas', t('individualWorkspaceProfileOverviewDialog.weakAreas', 'Areas to improve'))}
                   value={weakAreasSummary}
                   isDarkMode={isDarkMode}
                   tone="personal"
                 />
                 <OverviewField
-                  label={translateOrFallback(t, 'workspace.profileOverview.currentLevel', i18n.language === 'en' ? 'Current level' : 'Trình độ hiện tại')}
+                  label={translateOrFallback(t, 'workspace.profileOverview.currentLevel', t('individualWorkspaceProfileOverviewDialog.currentLevel', 'Current level'))}
                   value={currentLevelSummary}
                   isDarkMode={isDarkMode}
                   tone="personal"
                 />
                 <OverviewField
-                  label={translateOrFallback(t, 'workspace.profileOverview.knowledgeInput', i18n.language === 'en' ? 'Knowledge input' : 'Nguồn kiến thức')}
+                  label={translateOrFallback(t, 'workspace.profileOverview.knowledgeInput', t('individualWorkspaceProfileOverviewDialog.knowledgeInput', 'Knowledge input'))}
                   value={knowledgeSummary}
                   isDarkMode={isDarkMode}
                   tone="personal"
@@ -527,8 +525,8 @@ function IndividualWorkspaceProfileOverviewDialog({
 
             {roadmapEnabled ? (
               <OverviewSection
-                title={translateOrFallback(t, 'workspace.profileOverview.roadmapTitle', i18n.language === 'en' ? 'Roadmap configuration' : 'Cấu hình lộ trình')}
-                description={translateOrFallback(t, 'workspace.profileOverview.roadmapDescription', i18n.language === 'en' ? 'Roadmap settings currently applied to this workspace.' : 'Các thiết lập lộ trình hiện đang áp dụng cho workspace này.')}
+                title={translateOrFallback(t, 'workspace.profileOverview.roadmapTitle', t('individualWorkspaceProfileOverviewDialog.roadmapTitle', 'Roadmap configuration'))}
+                description={translateOrFallback(t, 'workspace.profileOverview.roadmapDescription', t('individualWorkspaceProfileOverviewDialog.roadmapDescription', 'Roadmap settings currently applied to this workspace.'))}
                 icon={CheckCircle2}
                 iconClassName={isDarkMode ? 'bg-violet-500/15 text-violet-300' : 'bg-violet-50 text-violet-600'}
                 isDarkMode={isDarkMode}
@@ -537,31 +535,31 @@ function IndividualWorkspaceProfileOverviewDialog({
               >
                 <div className="grid gap-4 md:grid-cols-2">
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeLoad', i18n.language === 'en' ? 'Knowledge amount' : 'Lượng kiến thức cần học')}
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.knowledgeLoad', t('individualWorkspaceProfileOverviewDialog.knowledgeLoadLabel', 'Knowledge amount'))}
                     value={knowledgeLoadSummary}
                     isDarkMode={isDarkMode}
                     tone="roadmap"
                   />
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', i18n.language === 'en' ? 'Adaptation mode' : 'Loại Lộ trình')}
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.adaptationMode', t('individualWorkspaceProfileOverviewDialog.adaptationModeLabel', 'Adaptation mode'))}
                     value={roadmapAdaptationLabel}
                     isDarkMode={isDarkMode}
                     tone="roadmap"
                   />
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', i18n.language === 'en' ? 'Roadmap speed mode' : 'Tốc độ Lộ trình')}
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.roadmapSpeedMode', t('individualWorkspaceProfileOverviewDialog.roadmapSpeedModeLabel', 'Roadmap speed mode'))}
                     value={roadmapSpeedLabel}
                     isDarkMode={isDarkMode}
                     tone="roadmap"
                   />
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', i18n.language === 'en' ? 'Estimated total days' : 'Số ngày dự kiến')}
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.estimatedTotalDays', t('individualWorkspaceProfileOverviewDialog.estimatedTotalDays', 'Estimated total days'))}
                     value={estimatedDaysSummary}
                     isDarkMode={isDarkMode}
                     tone="roadmap"
                   />
                   <OverviewField
-                    label={translateOrFallback(t, 'workspace.profileConfig.fields.recommendedMinutesPerDay', i18n.language === 'en' ? 'Suggested minutes per day' : 'Số phút học gợi ý mỗi ngày')}
+                    label={translateOrFallback(t, 'workspace.profileConfig.fields.recommendedMinutesPerDay', t('individualWorkspaceProfileOverviewDialog.recommendedMinutesPerDay', 'Suggested minutes per day'))}
                     value={minutesSummary}
                     isDarkMode={isDarkMode}
                     tone="roadmap"
@@ -572,8 +570,8 @@ function IndividualWorkspaceProfileOverviewDialog({
 
             {purpose === 'MOCK_TEST' ? (
               <OverviewSection
-                title={translateOrFallback(t, 'workspace.profileOverview.mockTitle', i18n.language === 'en' ? 'Mock-test setup' : 'Thiết lập mock test')}
-                description={translateOrFallback(t, 'workspace.profileOverview.mockDescription', i18n.language === 'en' ? 'Keep only the exam settings you still need to remember.' : 'Chỉ giữ lại các thiết lập mock test cần nhớ.')}
+                title={translateOrFallback(t, 'workspace.profileOverview.mockTitle', t('individualWorkspaceProfileOverviewDialog.mockTitle', 'Mock-test setup'))}
+                description={translateOrFallback(t, 'workspace.profileOverview.mockDescription', t('individualWorkspaceProfileOverviewDialog.mockDescription', 'Keep only the exam settings you still need to remember.'))}
                 icon={ScrollText}
                 iconClassName={isDarkMode ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-50 text-amber-600'}
                 isDarkMode={isDarkMode}
@@ -581,11 +579,11 @@ function IndividualWorkspaceProfileOverviewDialog({
                 className="xl:col-span-2"
               >
                 <div className="grid gap-4 md:grid-cols-3">
-                  <OverviewField label={translateOrFallback(t, 'workspace.profileOverview.examName', i18n.language === 'en' ? 'Exam name' : 'Tên kỳ thi')} value={formatProfileValue(examName, fallbackEmpty)} isDarkMode={isDarkMode} tone="mock" />
+                  <OverviewField label={translateOrFallback(t, 'workspace.profileOverview.examName', t('individualWorkspaceProfileOverviewDialog.examName', 'Exam name'))} value={formatProfileValue(examName, fallbackEmpty)} isDarkMode={isDarkMode} tone="mock" />
                   <OverviewField label={translateOrFallback(t, 'workspace.profileConfig.fields.templateFormat', 'Template format')} value={profile?.templateFormat ? t(`workspace.profileConfig.templateFormat.${profile.templateFormat}`) : fallbackEmpty} isDarkMode={isDarkMode} tone="mock" />
-                  <OverviewField label={translateOrFallback(t, 'workspace.profileOverview.templateVolume', i18n.language === 'en' ? 'Template volume' : 'Khối lượng template')} value={
+                  <OverviewField label={translateOrFallback(t, 'workspace.profileOverview.templateVolume', t('individualWorkspaceProfileOverviewDialog.templateVolume', 'Template volume'))} value={
                     profile?.templateDurationMinutes || profile?.templateQuestionCount
-                      ? `${profile?.templateDurationMinutes || 0} phút • ${profile?.templateQuestionCount || 0} câu`
+                      ? t('individualWorkspaceProfileOverviewDialog.templateVolumeValue', '{{minutes}} min • {{questions}} questions', { minutes: profile?.templateDurationMinutes || 0, questions: profile?.templateQuestionCount || 0 })
                       : fallbackEmpty
                   } isDarkMode={isDarkMode} tone="mock" />
                 </div>
@@ -602,12 +600,8 @@ function IndividualWorkspaceProfileOverviewDialog({
         >
           <div className={cn('text-xs leading-5', isDarkMode ? 'text-slate-400' : 'text-slate-500')}>
             {editLocked
-              ? (i18n.language === 'en'
-                ? 'This workspace already has materials. Remove them before updating onboarding again.'
-                : 'Workspace này đã có tài liệu. Hãy xóa tài liệu trước khi cập nhật onboarding lại.')
-              : (i18n.language === 'en'
-                ? 'You can update profile workspace when has no materials.'
-                : 'Bạn có thể cập nhật hồ sơ không gian học tập khi chưa có tài liệu.')}
+              ? t('individualWorkspaceProfileOverviewDialog.editLockedHint', 'This workspace already has materials. Remove them before updating onboarding again.')
+              : t('individualWorkspaceProfileOverviewDialog.editUnlockHint', 'You can update profile workspace when has no materials.')}
           </div>
           <div className="flex items-center gap-3">
             {onEditProfile ? (
@@ -617,7 +611,7 @@ function IndividualWorkspaceProfileOverviewDialog({
                 onClick={onEditProfile}
                 className="rounded-full px-6"
               >
-                {i18n.language === 'en' ? 'Edit ' : 'Chỉnh sửa'}
+                {t('individualWorkspaceProfileOverviewDialog.edit', 'Edit')}
               </Button>
             ) : null}
             <Button
