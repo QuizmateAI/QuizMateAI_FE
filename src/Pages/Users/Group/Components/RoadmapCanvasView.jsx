@@ -961,6 +961,7 @@ function RoadmapCanvasView({
         roadmap={roadmap}
         isDarkMode={isDarkMode}
         fontClass={fontClass}
+        sidebarSelectedPhaseId={selectedPhaseId}
         onViewQuiz={onViewQuiz}
         isStudyNewRoadmap={isStudyNewRoadmap}
         adaptationMode={adaptationMode}

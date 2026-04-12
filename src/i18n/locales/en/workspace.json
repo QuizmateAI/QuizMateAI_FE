@@ -1587,6 +1587,7 @@
       "aiSuggestTitle": "Ai Suggest Title",
       "createKnowledgeAndPostLearning": "Create Knowledge And Post Learning",
       "createPhaseButton": "Create phases",
+      "createRoadmapButton": "Create roadmap",
       "emptyRoadmapDescription": "Generate phases with AI to start your learning roadmap from selected materials.",
       "emptyRoadmapTitle": "Welcome to roadmap",
       "generatingKnowledge": "Generating Knowledge",
