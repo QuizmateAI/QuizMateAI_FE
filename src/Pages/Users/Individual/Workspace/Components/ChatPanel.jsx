@@ -96,6 +96,7 @@ function ChatPanel({
   selectedSourceIds = [],
   onSelectedSourceIdsChange,
   selectedRoadmapPhaseId = null,
+  selectedRoadmapKnowledgeId = null,
   onRoadmapPhaseFocus,
   onCreatePhaseKnowledge,
   onCreateKnowledgeQuizForKnowledge,

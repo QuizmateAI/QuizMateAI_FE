@@ -2084,6 +2084,7 @@ function WorkspacePage() {
     onSelectedSourceIdsChange: setSelectedSourceIds,
     onToggleMaterialSelection: handleToggleMaterialSelection,
     selectedRoadmapPhaseId,
+    selectedRoadmapKnowledgeId,
     activeView,
     onUploadClick: handleUploadClickSafe,
     onChangeView: handleStudioAction,
