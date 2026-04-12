@@ -1,4 +1,4 @@
-﻿import React, {
+﻿﻿import React, {
   useEffect,
   useRef,
   useState,
@@ -7,11 +7,9 @@
 } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/Components/ui/button";
-import WorkspaceHeader from "@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader";
-import SourcesPanel from "@/Pages/Users/Individual/Workspace/Components/SourcesPanel";
+import { Menu } from "lucide-react";
 import ChatPanel from "@/Pages/Users/Individual/Workspace/Components/ChatPanel";
-import StudioPanel from "@/Pages/Users/Individual/Workspace/Components/StudioPanel";
-import { Moon, Sun, UserCircle } from "lucide-react";
+import PersonalWorkspaceSidebar from "@/Pages/Users/Individual/Workspace/Components/PersonalWorkspaceSidebar";
 import { useTranslation } from "react-i18next";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -64,21 +62,10 @@ import {
 } from "@/Pages/Users/Individual/Workspace/utils/viewRouting";
 import { useWorkspaceMockTestGeneration } from "@/Pages/Users/Individual/Workspace/hooks/useWorkspaceMockTestGeneration";
 import { useWorkspaceRoadmapManager } from "@/Pages/Users/Individual/Workspace/hooks/useWorkspaceRoadmapManager";
-import ListSpinner from "@/Components/ui/ListSpinner";
 
-const LazyRoadmapJourPanel = React.lazy(
-  () =>
-    import("@/Pages/Users/Individual/Workspace/Components/RoadmapJourPanel"),
-);
 const LazyUploadSourceDialog = React.lazy(
   () =>
     import("@/Pages/Users/Individual/Workspace/Components/UploadSourceDialog"),
-);
-const LazyRoadmapPhaseGenerateDialog = React.lazy(
-  () =>
-    import(
-      "@/Pages/Users/Individual/Workspace/Components/RoadmapPhaseGenerateDialog"
-    ),
 );
 const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(
   () =>
@@ -147,16 +134,6 @@ function translateOrFallback(t, key, fallback) {
   return translated === key ? fallback : translated;
 }
 
-function DeferredWorkspacePanel({ children }) {
-  return (
-    <React.Suspense
-      fallback={<ListSpinner variant="section" className="h-full" />}
-    >
-      {children}
-    </React.Suspense>
-  );
-}
-
 function DeferredWorkspaceDialog({ children }) {
   return <React.Suspense fallback={null}>{children}</React.Suspense>;
 }
@@ -190,28 +167,27 @@ function WorkspacePage() {
   const progressTracking = useProgressTracking({
     scopeKey: workspaceId ? `workspace:${workspaceId}` : null,
   });
+  const personalWorkspaceIsDark = false;
 
   const reconcileMaterialProgress = progressTracking.reconcileMaterialProgress;
 
   // Source state. Still mock-data-friendly, but wired to API fetches.
 
   const [sources, setSources] = useState([]);
+  const sourcesRef = useRef([]);
+  const hasLoadedSourcesSuccessfullyRef = useRef(false);
+  const lastLoadedSourcesWorkspaceIdRef = useRef(null);
   const [selectedSourceIds, setSelectedSourceIds] = useState([]); // Selected sources from SourcesPanel
   const [accessHistory, setAccessHistory] = useState([]);
 
   // Upload dialog state. Auto-open only when the first fetch returns no materials.
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
-  const [isStudioCollapsed, setIsStudioCollapsed] = useState(false);
-  const [hasStudioManualPreference, setHasStudioManualPreference] =
-    useState(false);
-  const [isMaterialDetailOpen, setIsMaterialDetailOpen] = useState(false);
-  const workspaceLayoutRef = useRef(null);
-  const [workspaceLayoutWidth, setWorkspaceLayoutWidth] = useState(0);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Main content state. Prefer the current route instead of sessionStorage.
   const [activeView, setActiveView] = useState(() => {
-    if (!workspaceId) return null;
+    if (!workspaceId) return "sources";
 
     const prefix = buildWorkspacePath(workspaceId);
 
@@ -225,7 +201,7 @@ function WorkspacePage() {
       }
     }
 
-    return null;
+    return "sources";
   });
 
   // Selected quiz state for detail and edit flows
@@ -245,94 +221,10 @@ function WorkspacePage() {
   const [hasExistingWorkspaceQuiz, setHasExistingWorkspaceQuiz] =
     useState(false);
   const [completedQuizCount, setCompletedQuizCount] = useState(0);
+  const [totalQuizCount, setTotalQuizCount] = useState(0);
   const [hasExistingWorkspaceFlashcard, setHasExistingWorkspaceFlashcard] =
     useState(false);
-
-  // Side-panel sizing constants
-  const COLLAPSED_WIDTH = 56;
-  const PANEL_GAP = 16;
-  const SOURCES_PANEL_MIN_WIDTH = 320;
-  const SOURCES_PANEL_DETAIL_WIDTH = 380;
-  const STUDIO_PANEL_MIN_WIDTH = 288;
-  const CHAT_PANEL_MIN_WIDTH = 760;
-  const CHAT_PANEL_COMFORT_WIDTH = 840;
-  const [hasActivatedRoadmapPanel, setHasActivatedRoadmapPanel] =
-    useState(false);
-  const [roadmapCanvasView, setRoadmapCanvasView] = useState("view2");
-
-  const isRoadmapJourActive =
-    activeView === "roadmap" ||
-    (quizBackTarget?.view === "roadmap" &&
-      (activeView === "quizDetail" || activeView === "editQuiz"));
-  const shouldHideRoadmapJourOnOverview =
-    activeView === "roadmap" && roadmapCanvasView === "overview";
-  const shouldProtectSourcesSpace =
-    isMaterialDetailOpen ||
-    (isRoadmapJourActive && !shouldHideRoadmapJourOnOverview);
-  const sourcesPanelTargetWidth = useMemo(
-    () =>
-      shouldProtectSourcesSpace
-        ? SOURCES_PANEL_DETAIL_WIDTH
-        : SOURCES_PANEL_MIN_WIDTH,
-    [shouldProtectSourcesSpace],
-  );
-  const bothExpandedHardMinLayoutWidth =
-    sourcesPanelTargetWidth +
-    STUDIO_PANEL_MIN_WIDTH +
-    CHAT_PANEL_MIN_WIDTH +
-    PANEL_GAP * 2;
-  const bothExpandedPreferredLayoutWidth =
-    sourcesPanelTargetWidth +
-    STUDIO_PANEL_MIN_WIDTH +
-    CHAT_PANEL_COMFORT_WIDTH +
-    PANEL_GAP * 2;
-  const sourcesPriorityMinLayoutWidth =
-    sourcesPanelTargetWidth +
-    COLLAPSED_WIDTH +
-    CHAT_PANEL_MIN_WIDTH +
-    PANEL_GAP * 2;
-  const railsOnlyMinLayoutWidth =
-    COLLAPSED_WIDTH * 2 + CHAT_PANEL_MIN_WIDTH + PANEL_GAP * 2;
-  const shouldStackSidePanels =
-    workspaceLayoutWidth > 0 &&
-    (workspaceLayoutWidth < railsOnlyMinLayoutWidth ||
-      (shouldProtectSourcesSpace &&
-        workspaceLayoutWidth < sourcesPriorityMinLayoutWidth));
-
-  const shouldPreferStudioCollapse =
-    !shouldStackSidePanels &&
-    workspaceLayoutWidth > 0 &&
-    workspaceLayoutWidth < bothExpandedPreferredLayoutWidth;
-  const shouldForceStudioCollapse =
-    !shouldStackSidePanels &&
-    workspaceLayoutWidth > 0 &&
-    workspaceLayoutWidth < bothExpandedHardMinLayoutWidth;
-  const shouldForceSourcesCollapse =
-    !shouldStackSidePanels &&
-    workspaceLayoutWidth > 0 &&
-    workspaceLayoutWidth < sourcesPriorityMinLayoutWidth;
-
-  const effectiveSourcesCollapsed =
-    !shouldStackSidePanels &&
-    (isSourcesCollapsed || shouldForceSourcesCollapse);
-  const effectiveStudioCollapsed =
-    !shouldStackSidePanels &&
-    (shouldForceStudioCollapse ||
-      (hasStudioManualPreference
-        ? isStudioCollapsed
-        : shouldPreferStudioCollapse));
-
-  const effectiveLeftBaseWidth = effectiveSourcesCollapsed
-    ? COLLAPSED_WIDTH
-    : sourcesPanelTargetWidth;
-  const effectiveLeftWidth = shouldHideRoadmapJourOnOverview
-    ? 0
-    : effectiveLeftBaseWidth;
-  const shouldShowLeftSeparator =
-    !shouldHideRoadmapJourOnOverview && !effectiveSourcesCollapsed;
-  const effectiveRightWidth = effectiveStudioCollapsed
-    ? COLLAPSED_WIDTH
-    : STUDIO_PANEL_MIN_WIDTH;
+  const [totalFlashcardCount, setTotalFlashcardCount] = useState(0);
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
     return new RegExp(
@@ -340,26 +232,40 @@ function WorkspacePage() {
     ).test(location.pathname);
   }, [location.pathname, workspaceId]);
 
-  const focusRoadmapViewSafely = useCallback(() => {
-    if (isOnWorkspaceQuizRoute) return;
-    setActiveView("roadmap");
-  }, [isOnWorkspaceQuizRoute]);
+  const getCurrentWorkspaceRouteView = useCallback(() => {
+    const subPath = extractWorkspaceSubPath(location.pathname, workspaceId);
+    const { view } = resolveWorkspaceViewFromSubPath(subPath);
+    return view || null;
+  }, [location.pathname, workspaceId]);
 
-  const shouldRenderRoadmapJourPanel =
-    (hasActivatedRoadmapPanel || isRoadmapJourActive) &&
-    !shouldHideRoadmapJourOnOverview;
+  const canAutoFocusRoadmap = useCallback(() => {
+    const routeView = getCurrentWorkspaceRouteView();
+    return routeView === "roadmap";
+  }, [getCurrentWorkspaceRouteView]);
+
+  const focusRoadmapViewSafely = useCallback(() => {
+    if (isOnWorkspaceQuizRoute || !canAutoFocusRoadmap()) return;
+    React.startTransition(() => {
+      setActiveView((prev) => (prev === "roadmap" ? prev : "roadmap"));
+    });
+  }, [canAutoFocusRoadmap, isOnWorkspaceQuizRoute]);
 
   useEffect(() => {
-    if (isRoadmapJourActive) {
-      setHasActivatedRoadmapPanel(true);
-    }
-  }, [isRoadmapJourActive]);
+    sourcesRef.current = sources;
+  }, [sources]);
+
+  useEffect(() => {
+    hasLoadedSourcesSuccessfullyRef.current = false;
+    lastLoadedSourcesWorkspaceIdRef.current = null;
+  }, [workspaceId]);
 
   useEffect(() => {
     if (!workspaceId) {
       setHasExistingWorkspaceQuiz(false);
       setCompletedQuizCount(0);
+      setTotalQuizCount(0);
       setHasExistingWorkspaceFlashcard(false);
+      setTotalFlashcardCount(0);
       return;
     }
 
@@ -403,15 +309,15 @@ function WorkspacePage() {
 
         setHasExistingWorkspaceQuiz(workspaceQuizzes.length > 0);
         setCompletedQuizCount(completedCount);
+        setTotalQuizCount(workspaceQuizzes.length);
         setHasExistingWorkspaceFlashcard(workspaceFlashcards.length > 0);
+        setTotalFlashcardCount(workspaceFlashcards.length);
       } catch (error) {
         if (!cancelled) {
           console.error(
             "Không thể đồng bộ trạng thái quiz/flashcard workspace:",
             error,
           );
-          setHasExistingWorkspaceQuiz(false);
-          setHasExistingWorkspaceFlashcard(false);
         }
       }
     };
@@ -471,31 +377,11 @@ function WorkspacePage() {
   const passRoadmapCondition1 = resolvedRoadmapEnabled;
   const passRoadmapCondition2 = hasAtLeastOneActiveSource;
   const passRoadmapCondition3 = !isRoadmapStructureMissing;
-  const shouldShowRoadmapAction =
-    hasRoadmapPhases ||
-    (passRoadmapCondition1 && passRoadmapCondition2 && passRoadmapCondition3);
-  const shouldDisableRoadmap = !shouldShowRoadmapAction;
-  // Riêng nút roadmap ở Studio: kiểm tra theo thứ tự
-
-  // 0) Nếu đã có phase thì luôn hiện bình thường (không disable)
-
-  // 1) Phải có tài liệu ACTIVE
-
-  // 2) roadmapEnabled từ profile phải là true
-
-  // 3) roadmap structure không bị missing
-
   const shouldDisableRoadmapForStudio = hasRoadmapPhases
     ? false
     : !hasAtLeastOneActiveSource ||
       !passRoadmapCondition1 ||
       !passRoadmapCondition3;
-
-  // Compute which Studio Panel actions are plan-locked (show crown icon)
-
-  const studioPlanLockedActions = [
-    ...(!planEntitlements.hasWorkspaceAnalytics ? ["questionStats"] : []),
-  ];
 
   const isStudyNewRoadmap = getProfilePurpose(workspaceProfile) === "STUDY_NEW";
 
@@ -531,46 +417,12 @@ function WorkspacePage() {
     [workspaceProfile, workspaceAdaptationMode],
   );
 
-  const handleToggleSourcesCollapse = useCallback(() => {
-    setIsSourcesCollapsed(effectiveSourcesCollapsed ? false : true);
-  }, [effectiveSourcesCollapsed]);
-
-  const handleToggleStudioCollapse = useCallback(() => {
-    setHasStudioManualPreference(true);
-
-    setIsStudioCollapsed(effectiveStudioCollapsed ? false : true);
-  }, [effectiveStudioCollapsed]);
-
-  useEffect(() => {
-    if (!isRoadmapJourActive) return;
-
-    setIsMaterialDetailOpen(false);
-  }, [isRoadmapJourActive]);
-
-  useEffect(() => {
-    const container = workspaceLayoutRef.current;
-
-    if (!container || typeof ResizeObserver === "undefined") return undefined;
-
-    const observer = new ResizeObserver((entries) => {
-      const width = entries?.[0]?.contentRect?.width || 0;
-
-      setWorkspaceLayoutWidth(width);
-    });
-
-    observer.observe(container);
-
-    return () => observer.disconnect();
-  }, []);
-
   const getWorkspaceSubPath = useCallback(() => {
     return extractWorkspaceSubPath(location.pathname, workspaceId);
   }, [location.pathname, workspaceId]);
 
   useEffect(() => {
     const subPath = getWorkspaceSubPath();
-
-    if (!subPath) return;
 
     if (subPath === workspaceRoadmapsPath) {
       const phaseParam = new URLSearchParams(location.search).get("phaseId");
@@ -669,8 +521,6 @@ function WorkspacePage() {
   useEffect(() => {
     if (!workspaceId) return;
 
-    if (!activeView) return;
-
     let mappedPath = buildWorkspacePathForView(
       activeView,
       selectedQuiz,
@@ -699,7 +549,7 @@ function WorkspacePage() {
       }
     }
 
-    if (!mappedPath) return;
+    if (mappedPath == null) return;
 
     const currentSubPath = getWorkspaceSubPath();
 
@@ -881,6 +731,22 @@ function WorkspacePage() {
     i18n.changeLanguage(newLang);
   };
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 1024;
+      setIsMobileViewport(isMobile);
+      if (!isMobile) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Fetch materials list
 
   const fetchSources = useCallback(async () => {
@@ -926,10 +792,16 @@ function WorkspacePage() {
       reconcileMaterialProgress(processingMaterialIds);
 
       setSources(visibleSources);
+      hasLoadedSourcesSuccessfullyRef.current = true;
+      lastLoadedSourcesWorkspaceIdRef.current = workspaceId;
 
       return visibleSources;
     } catch (err) {
       console.error("[fetchSources] Failed to fetch materials:", err);
+
+      if (lastLoadedSourcesWorkspaceIdRef.current === workspaceId) {
+        return sourcesRef.current;
+      }
 
       return [];
     }
@@ -942,8 +814,17 @@ function WorkspacePage() {
   }, []);
 
   const openRoadmapWorkspaceView = useCallback(() => {
-    setActiveView("roadmap");
-  }, []);
+    const routeView = getCurrentWorkspaceRouteView();
+    if (
+      routeView &&
+      !["overview", "sources", "roadmap"].includes(routeView)
+    ) {
+      return;
+    }
+    React.startTransition(() => {
+      setActiveView((prev) => (prev === "roadmap" ? prev : "roadmap"));
+    });
+  }, [getCurrentWorkspaceRouteView]);
 
   const clearRoadmapPhaseSelection = useCallback(() => {
     setSelectedRoadmapPhaseId(null);
@@ -963,12 +844,6 @@ function WorkspacePage() {
 
     trackQuizGenerationStart,
 
-    phaseGenerateDialogOpen,
-
-    setPhaseGenerateDialogOpen,
-
-    phaseGenerateDialogDefaultIds,
-
     isGeneratingRoadmapPhases,
 
     effectiveRoadmapPhaseGenerationProgress,
@@ -986,8 +861,6 @@ function WorkspacePage() {
     generatingPreLearningPhaseIds,
 
     skipPreLearningPhaseIds,
-
-    handleOpenRoadmapPhaseDialog,
 
     handleSubmitRoadmapPhaseDialog,
 
@@ -1095,7 +968,10 @@ function WorkspacePage() {
             setProfileOverviewOpen(false);
 
             setUploadDialogOpen(false);
-          } else if (initialSources.length === 0) {
+          } else if (
+            hasLoadedSourcesSuccessfullyRef.current &&
+            initialSources.length === 0
+          ) {
             setUploadDialogOpen(true);
           }
 
@@ -1368,7 +1244,11 @@ function WorkspacePage() {
 
       setCompletedQuizCount(0);
 
+      setTotalQuizCount(0);
+
       setHasExistingWorkspaceFlashcard(false);
+
+      setTotalFlashcardCount(0);
 
       setRoadmapHasPhases(false);
 
@@ -1681,6 +1561,8 @@ function WorkspacePage() {
 
   const handleStudioAction = useCallback(
     (actionKey) => {
+      setIsMobileSidebarOpen(false);
+
       if (actionKey === "roadmap" && shouldDisableRoadmapForStudio) {
         return;
       }
@@ -1701,6 +1583,8 @@ function WorkspacePage() {
       // Track access history when the user opens a list view
 
       const viewTypeMap = {
+        overview: "overview",
+        sources: "sources",
         roadmap: "roadmap",
         quiz: "quiz",
         flashcard: "flashcard",
@@ -1717,7 +1601,9 @@ function WorkspacePage() {
         );
       }
 
-      setActiveView(actionKey);
+      React.startTransition(() => {
+        setActiveView(actionKey);
+      });
 
       if (
         actionKey !== "quiz" &&
@@ -1852,8 +1738,19 @@ function WorkspacePage() {
 
   // Move from quiz detail to edit mode
 
-  const handleEditQuiz = useCallback((quiz) => {
+  const handleEditQuiz = useCallback((quiz, options = null) => {
+    const backTarget = options?.backTarget || null;
+
     setSelectedQuiz(quiz);
+    setQuizBackTarget(backTarget);
+
+    if (
+      backTarget?.view === "roadmap" &&
+      Number.isInteger(Number(backTarget?.phaseId)) &&
+      Number(backTarget.phaseId) > 0
+    ) {
+      setSelectedRoadmapPhaseId(Number(backTarget.phaseId));
+    }
 
     setActiveView("editQuiz");
   }, []);
@@ -2107,58 +2004,6 @@ function WorkspacePage() {
     setProfileOverviewOpen(false);
   }, [isProfileConfigured]);
 
-  const headerActionClass = `app-topbar-action gap-1.5 ${
-    isDarkMode
-      ? "border-white/10 bg-slate-900/85 text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_10px_24px_rgba(2,6,23,0.32)] hover:border-cyan-400/30 hover:bg-slate-800/95 hover:text-white"
-      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-  }`;
-
-  const settingsMenu = (
-    <div className="flex items-center gap-3">
-      <Button
-        variant="outline"
-        type="button"
-        onClick={handleWorkspaceProfileClick}
-        className={`${headerActionClass} h-9 px-3 justify-center`}
-        title={t("workspace.settingsMenu.workspaceProfile")}
-        aria-label={t("workspace.settingsMenu.workspaceProfile")}
-      >
-        <UserCircle className="h-4 w-4 shrink-0" />
-        <span className="app-topbar-action-label hidden lg:inline">
-          {currentLang === "vi" ? "Hồ sơ" : "Profile"}
-        </span>
-      </Button>
-
-      <Button
-        variant="outline"
-        type="button"
-        onClick={toggleLanguage}
-        className={`${headerActionClass} h-9 w-9 justify-center`}
-        title={t("common.language")}
-        aria-label={t("common.language")}
-      >
-        <span className="text-base leading-none" aria-hidden="true">
-          {currentLang === "vi" ? "VN" : "EN"}
-        </span>
-      </Button>
-
-      <Button
-        variant="outline"
-        type="button"
-        onClick={toggleDarkMode}
-        className={`${headerActionClass} h-9 w-9 justify-center`}
-        title={t("common.theme")}
-        aria-label={t("common.theme")}
-      >
-        {isDarkMode ? (
-          <Sun className="h-4 w-4 shrink-0" />
-        ) : (
-          <Moon className="h-4 w-4 shrink-0" />
-        )}
-      </Button>
-    </div>
-  );
-
   // Open the upload dialog only after the profile passes validation
 
   const handleUploadClickSafe = useCallback(() => {
@@ -2183,6 +2028,38 @@ function WorkspacePage() {
     );
   }, []);
 
+  const activeSourceIds = useMemo(
+    () =>
+      sources
+        .filter(
+          (source) => String(source?.status || "").toUpperCase() === "ACTIVE",
+        )
+        .map((source) => Number(source?.id))
+        .filter((id) => Number.isInteger(id) && id > 0),
+    [sources],
+  );
+
+  const handleGenerateRoadmapPhases = useCallback(async () => {
+    if (isSubmittingRoadmapPhaseRequest) return;
+
+    if (!planEntitlements.canCreateRoadmap) {
+      setPlanUpgradeFeatureName("Tạo lộ trình học tập");
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
+
+    await handleSubmitRoadmapPhaseDialog({
+      materialIds:
+        selectedSourceIds.length > 0 ? selectedSourceIds : activeSourceIds,
+    });
+  }, [
+    activeSourceIds,
+    handleSubmitRoadmapPhaseDialog,
+    isSubmittingRoadmapPhaseRequest,
+    planEntitlements.canCreateRoadmap,
+    selectedSourceIds,
+  ]);
+
   const handleToggleMaterialSelection = useCallback((sourceId, isSelected) => {
     setSelectedSourceIds((prev) => {
       if (isSelected) {
@@ -2193,406 +2070,224 @@ function WorkspacePage() {
   }, []);
 
   const chatPanelProps = {
-    isDarkMode,
-
+    isDarkMode: personalWorkspaceIsDark,
     sources,
-
+    accessHistory,
+    workspaceTitle:
+      currentWorkspace?.displayTitle ||
+      currentWorkspace?.title ||
+      currentWorkspace?.name ||
+      "",
+    workspacePurpose: getProfilePurpose(workspaceProfile),
     selectedSourceIds,
-
+    onSelectedSourceIdsChange: setSelectedSourceIds,
     onToggleMaterialSelection: handleToggleMaterialSelection,
-
     selectedRoadmapPhaseId,
-
-    selectedRoadmapKnowledgeId,
-
     activeView,
-
     onUploadClick: handleUploadClickSafe,
-
     onChangeView: handleStudioAction,
-
     onCreateQuiz: handleCreateQuiz,
-
     onCreateFlashcard: handleCreateFlashcard,
-
     onCreateRoadmap: handleCreateRoadmap,
-
-    onCreateRoadmapPhases: handleOpenRoadmapPhaseDialog,
-
+    onGenerateRoadmapPhases: handleGenerateRoadmapPhases,
+    onNavigateHome: () => navigate("/home"),
     onRoadmapPhaseFocus: handleSelectRoadmapPhase,
-
     onCreatePhaseKnowledge: handleCreatePhaseKnowledge,
-
     onCreateKnowledgeQuizForKnowledge: handleCreateKnowledgeQuizForKnowledge,
-
     onCreatePhasePreLearning: handleCreatePhasePreLearning,
-
     isStudyNewRoadmap,
-
     adaptationMode: workspaceAdaptationMode,
-
     isGeneratingRoadmapPhases,
-
     roadmapPhaseGenerationProgress: effectiveRoadmapPhaseGenerationProgress,
-
     generatingKnowledgePhaseIds,
-
     generatingKnowledgeQuizPhaseIds,
-
     generatingKnowledgeQuizKnowledgeKeys,
-
     knowledgeQuizRefreshByKey,
-
     generatingPreLearningPhaseIds,
-
     skipPreLearningPhaseIds,
-
     roadmapReloadToken,
-
     onReloadRoadmap: bumpRoadmapReloadToken,
-
     onCreateMockTest: handleCreateMockTest,
-
     onCreatePostLearning: handleCreatePostLearning,
-
     onBack: handleBackFromForm,
-
     workspaceId,
-
     selectedQuiz,
-
     onViewQuiz: handleViewQuiz,
-
     onViewPostLearning: handleViewPostLearning,
-
     onEditQuiz: handleEditQuiz,
-
     onSaveQuiz: handleSaveQuiz,
-
     onShareQuiz: handleShareQuiz,
-
     selectedFlashcard,
-
     onViewFlashcard: handleViewFlashcard,
-
     onDeleteFlashcard: handleDeleteFlashcard,
-
     selectedMockTest,
-
     onViewMockTest: handleViewMockTest,
-
     onEditMockTest: handleEditMockTest,
-
     onSaveMockTest: handleSaveMockTest,
-
+    onAddSource: handleUploadClickSafe,
+    onRemoveSource: handleRemoveSource,
+    onRemoveMultiple: handleRemoveMultipleSources,
+    onSourceUpdated: handleSourceUpdated,
     shouldDisableQuiz,
-
     shouldDisableFlashcard,
-
     shouldDisableRoadmap: shouldDisableRoadmapForStudio,
-
-    showRoadmapAction: shouldShowRoadmapAction,
-
     shouldDisableCreateQuiz,
-
     shouldDisableCreateFlashcard,
-
     progressTracking,
-
+    roadmapHasPhases,
+    completedQuizCount,
     quizGenerationTaskByQuizId,
-
     quizGenerationProgressByQuizId,
-
     planEntitlements,
-
-    onRoadmapCanvasViewChange: setRoadmapCanvasView,
-
     onEditRoadmapConfig: () => setRoadmapConfigEditOpen(true),
+    isSubmittingRoadmapPhaseGeneration: isSubmittingRoadmapPhaseRequest,
+    roadmapConfigSummary: roadmapConfigInitialValues,
+    activeSourceCount: activeSourceIds.length,
   };
-
-  const renderSourceWorkspacePanel = (isCollapsed) => (
-    <div className="relative h-full overflow-hidden">
-      <div
-        className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}
-      >
-        <SourcesPanel
-          isDarkMode={isDarkMode}
-          sources={sources}
-          onAddSource={handleUploadClickSafe}
-          onRemoveSource={handleRemoveSource}
-          onRemoveMultiple={handleRemoveMultipleSources}
-          selectedIds={selectedSourceIds}
-          onSelectionChange={setSelectedSourceIds}
-          onSourceUpdated={handleSourceUpdated}
-          onDetailViewChange={setIsMaterialDetailOpen}
-          forceCloseDetail={isRoadmapJourActive}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={handleToggleSourcesCollapse}
-          progressTracking={progressTracking}
-        />
-      </div>
-
-      {shouldRenderRoadmapJourPanel ? (
-        <div
-          className={`absolute inset-0 transition-all duration-300 ${isRoadmapJourActive ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}
-        >
-          <DeferredWorkspacePanel>
-            <LazyRoadmapJourPanel
-              isDarkMode={isDarkMode}
-              workspaceId={workspaceId}
-              isStudyNewRoadmap={isStudyNewRoadmap}
-              selectedPhaseId={selectedRoadmapPhaseId}
-              selectedKnowledgeId={selectedRoadmapKnowledgeId}
-              onSelectPhase={handleSelectRoadmapPhase}
-              reloadToken={roadmapReloadToken}
-              isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
-              roadmapPhaseGenerationProgress={
-                effectiveRoadmapPhaseGenerationProgress
-              }
-              progressTracking={progressTracking}
-              generatingKnowledgePhaseIds={generatingKnowledgePhaseIds}
-              generatingKnowledgeQuizPhaseIds={generatingKnowledgeQuizPhaseIds}
-              generatingKnowledgeQuizKnowledgeKeys={
-                generatingKnowledgeQuizKnowledgeKeys
-              }
-              generatingPreLearningPhaseIds={generatingPreLearningPhaseIds}
-              isCollapsed={isCollapsed}
-              onToggleCollapse={handleToggleSourcesCollapse}
-            />
-          </DeferredWorkspacePanel>
-        </div>
-      ) : null}
-    </div>
-  );
-
-  const renderStudioWorkspacePanel = (isCollapsed) => (
-    <StudioPanel
-      isDarkMode={isDarkMode}
-      onAction={handleStudioAction}
-      onEditRoadmapConfig={
-        extractRoadmapIdFromProfile(workspaceProfile)
-          ? () => setRoadmapConfigEditOpen(true)
-          : undefined
-      }
-      accessHistory={accessHistory}
-      isCollapsed={isCollapsed}
-      onToggleCollapse={handleToggleStudioCollapse}
-      activeView={activeView}
-      canEditRoadmapConfig={Boolean(
-        extractRoadmapIdFromProfile(workspaceProfile),
-      )}
-      shouldDisableQuiz={shouldDisableQuiz}
-      shouldDisableFlashcard={shouldDisableFlashcard}
-      shouldDisableRoadmap={shouldDisableRoadmapForStudio}
-      showRoadmapAction={shouldShowRoadmapAction}
-      planLockedActions={studioPlanLockedActions}
-      completedQuizCount={completedQuizCount}
-    />
-  );
 
   return (
     <div
-      className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDarkMode ? "bg-slate-950" : "bg-[#F7FBFF]"}`}
+      className="h-screen overflow-hidden bg-[#f5f7fb] text-slate-900"
     >
-      <WorkspaceHeader
-        workspaceId={
-          currentWorkspace?.workspaceId ||
-          (workspaceId && workspaceId !== "new" ? Number(workspaceId) : null)
-        }
-        settingsMenu={settingsMenu}
-        isDarkMode={isDarkMode}
-        workspaceTitle={
-          currentWorkspace?.displayTitle ||
-          currentWorkspace?.title ||
-          currentWorkspace?.name ||
-          ""
-        }
-        workspaceName={currentWorkspace?.title || currentWorkspace?.name || ""}
-        workspaceSubtitle={
-          currentWorkspace?.topic?.title || currentWorkspace?.subject?.title
-        }
-        workspaceDescription={currentWorkspace?.description || ""}
-        onEditWorkspace={async (data) => {
-          await editWorkspace(Number(workspaceId), data);
-        }}
-        wsConnected={wsConnected}
-      />
+      <div className="flex h-full min-h-0 overflow-hidden">
+        <PersonalWorkspaceSidebar
+          isDarkMode={isDarkMode}
+          workspaceTitle={
+            currentWorkspace?.displayTitle ||
+            currentWorkspace?.title ||
+            currentWorkspace?.name ||
+            ""
+          }
+          activeView={activeView || "sources"}
+          onNavigate={handleStudioAction}
+          onOpenProfile={handleWorkspaceProfileClick}
+          onToggleLanguage={toggleLanguage}
+          onToggleDarkMode={toggleDarkMode}
+          onEditWorkspace={async (data) => {
+            await editWorkspace(Number(workspaceId), data);
+          }}
+          wsConnected={wsConnected}
+          disabledMap={{
+            roadmap: shouldDisableRoadmapForStudio,
+            quiz: shouldDisableQuiz,
+            flashcard: shouldDisableFlashcard,
+            questionStats: !planEntitlements.hasWorkspaceAnalytics,
+          }}
+          badgeMap={{
+            sources: sources.length || undefined,
+            quiz: totalQuizCount || undefined,
+            flashcard: totalFlashcardCount || undefined,
+          }}
+          isMobile={isMobileViewport}
+          mobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        />
 
-      {mockTestGenerationState !== "idle" ? (
-        <div className="px-4 pt-4">
-          <div
-            className={`max-w-[1740px] mx-auto rounded-2xl border px-4 py-3 ${
-              mockTestGenerationState === "ready"
-                ? isDarkMode
-                  ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : isMockTestTakingLongerThanExpected
-                  ? isDarkMode
-                    ? "border-amber-400/20 bg-amber-500/10 text-amber-100"
-                    : "border-amber-200 bg-amber-50 text-amber-800"
-                  : mockTestGenerationState === "error"
-                    ? isDarkMode
-                      ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-                      : "border-rose-200 bg-rose-50 text-rose-800"
-                    : isDarkMode
-                      ? "border-cyan-400/20 bg-cyan-500/10 text-cyan-100"
-                      : "border-cyan-200 bg-cyan-50 text-cyan-800"
-            }`}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm font-semibold ${fontClass}`}>
-                  {mockTestGenerationDisplayMessage}
-                </p>
+        <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+          {mockTestGenerationState !== "idle" ? (
+            <div className="px-4 pt-4 sm:px-5 lg:px-6">
+              <div
+                className={`mx-auto max-w-[1740px] rounded-[24px] border px-4 py-3 ${
+                  mockTestGenerationState === "ready"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : isMockTestTakingLongerThanExpected
+                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                      : mockTestGenerationState === "error"
+                        ? "border-rose-200 bg-rose-50 text-rose-800"
+                        : "border-cyan-200 bg-cyan-50 text-cyan-800"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-semibold ${fontClass}`}>
+                      {mockTestGenerationDisplayMessage}
+                    </p>
 
-                <div
-                  className={`mt-2 h-2 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-900/70" : "bg-white/80"}`}
-                >
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      mockTestGenerationState === "ready"
-                        ? "bg-emerald-500"
-                        : isMockTestAwaitingBackend
-                          ? "bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#22d3ee)] bg-[length:200%_100%] animate-pulse"
-                          : mockTestGenerationState === "error"
-                            ? "bg-rose-500"
-                            : "bg-cyan-500"
-                    }`}
-                    style={{
-                      width: `${Math.max(0, Math.min(100, Number(mockTestGenerationProgress) || 0))}%`,
-                    }}
-                  />
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/80">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          mockTestGenerationState === "ready"
+                            ? "bg-emerald-500"
+                            : isMockTestAwaitingBackend
+                              ? "bg-[linear-gradient(90deg,#22d3ee,#38bdf8,#22d3ee)] bg-[length:200%_100%] animate-pulse"
+                              : mockTestGenerationState === "error"
+                                ? "bg-rose-500"
+                                : "bg-cyan-500"
+                        }`}
+                        style={{
+                          width: `${Math.max(
+                            0,
+                            Math.min(
+                              100,
+                              Number(mockTestGenerationProgress) || 0,
+                            ),
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-semibold ${fontClass}`}>
+                      {mockTestGenerationDisplayLabel}
+                    </span>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        if (mockTestGenerationState === "ready") {
+                          resetMockTestGenerationStatus();
+
+                          handleStudioAction("mockTest");
+
+                          return;
+                        }
+
+                        if (mockTestGenerationState === "pending") {
+                          checkMockTestGenerationStatusNow();
+
+                          return;
+                        }
+
+                        setProfileConfigOpen(true);
+
+                        setProfileOverviewOpen(false);
+                      }}
+                      className="rounded-full border-white bg-white text-slate-700 hover:bg-slate-100"
+                    >
+                      {mockTestGenerationState === "ready"
+                        ? "Mở Mock test"
+                        : mockTestGenerationState === "pending"
+                          ? "Kiểm tra lại ngay"
+                          : "Xem trạng thái"}
+                    </Button>
+                  </div>
                 </div>
               </div>
+            </div>
+          ) : null}
 
-              <div className="flex items-center gap-1">
-                <span className={`text-xs font-semibold ${fontClass}`}>
-                  {mockTestGenerationDisplayLabel}
-                </span>
-
+          {isMobileViewport ? (
+            <div className="px-4 pt-4 sm:px-5 lg:px-6">
+              <div className="mx-auto flex max-w-[1740px] items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    if (mockTestGenerationState === "ready") {
-                      resetMockTestGenerationStatus();
-
-                      handleStudioAction("mockTest");
-
-                      return;
-                    }
-
-                    if (mockTestGenerationState === "pending") {
-                      checkMockTestGenerationStatusNow();
-
-                      return;
-                    }
-
-                    setProfileConfigOpen(true);
-
-                    setProfileOverviewOpen(false);
-                  }}
-                  className={`rounded-full ${isDarkMode ? "border-white/10 bg-slate-950/40 text-white hover:bg-slate-900" : "border-white bg-white text-slate-700 hover:bg-slate-100"}`}
+                  size="icon"
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  className="h-11 w-11 shrink-0 rounded-2xl border-slate-200 bg-white text-slate-700 shadow-[0_16px_36px_rgba(15,23,42,0.12)]"
+                  aria-label={t("workspace.shell.openSidebar", "Open sidebar")}
                 >
-                  {mockTestGenerationState === "ready"
-                    ? "Mở Mock test"
-                    : mockTestGenerationState === "pending"
-                      ? "Kiểm tra lại ngay"
-                      : "Xem trạng thái"}
+                  <Menu className="h-4 w-4" />
                 </Button>
               </div>
             </div>
+          ) : null}
+
+          <div className="min-h-0 flex-1 px-4 pb-4 pt-3 sm:px-5 sm:pb-5 lg:px-6 lg:pb-6">
+            <ChatPanel {...chatPanelProps} />
           </div>
-        </div>
-      ) : null}
-
-      <div className="flex-1 min-h-0">
-        <div
-          ref={workspaceLayoutRef}
-          className="max-w-[1740px] mx-auto px-4 py-4 h-full"
-        >
-          {/* Layout workspace: bình thường là 3 cột, màn hình quá nhỏ thì đưa sources + studio xuống dưới */}
-
-          {shouldStackSidePanels ? (
-            <div className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,40%)] gap-1">
-              <div className="min-h-0">
-                <ChatPanel {...chatPanelProps} />
-              </div>
-
-              <div className="grid min-h-0 grid-cols-2 gap-1">
-                <div className="min-w-0 min-h-0">
-                  {renderSourceWorkspacePanel(false)}
-                </div>
-
-                <div className="min-w-0 min-h-0">
-                  {renderStudioWorkspacePanel(false)}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-full gap-1">
-              {/* Source panel (left) */}
-
-              <div
-                style={{
-                  width: effectiveLeftWidth,
-                  minWidth: effectiveLeftWidth,
-                }}
-                className="shrink-0 h-full overflow-hidden transition-[width,min-width] duration-300 ease-in-out"
-              >
-                {!shouldHideRoadmapJourOnOverview
-                  ? renderSourceWorkspacePanel(effectiveSourcesCollapsed)
-                  : null}
-              </div>
-
-              {/* Left panel separator */}
-
-              <div
-                aria-hidden="true"
-                className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${shouldShowLeftSeparator ? "w-4" : "w-0"}`}
-              >
-                {shouldShowLeftSeparator && (
-                  <div
-                    className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`}
-                  />
-                )}
-              </div>
-
-              {/* Learning area panel (center) */}
-
-              <div
-                style={{ minWidth: CHAT_PANEL_MIN_WIDTH }}
-                className="flex-1 min-w-0 h-full"
-              >
-                <ChatPanel {...chatPanelProps} />
-              </div>
-
-              {/* Right panel separator */}
-
-              <div
-                aria-hidden="true"
-                className={`shrink-0 flex items-center justify-center transition-all duration-300 ease-in-out ${effectiveStudioCollapsed ? "w-2" : "w-4"}`}
-              >
-                {!effectiveStudioCollapsed && (
-                  <div
-                    className={`w-0.5 h-8 rounded-full opacity-40 ${isDarkMode ? "bg-slate-600" : "bg-gray-300"}`}
-                  />
-                )}
-              </div>
-
-              {/* Studio panel (right) */}
-
-              <div
-                style={{
-                  width: effectiveRightWidth,
-                  minWidth: effectiveRightWidth,
-                }}
-                className="shrink-0 h-full transition-[width,min-width] duration-300 ease-in-out"
-              >
-                {renderStudioWorkspacePanel(effectiveStudioCollapsed)}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -2603,25 +2298,11 @@ function WorkspacePage() {
           <LazyUploadSourceDialog
             open={uploadDialogOpen}
             onOpenChange={setUploadDialogOpen}
-            isDarkMode={isDarkMode}
+            isDarkMode={personalWorkspaceIsDark}
             onUploadFiles={handleUploadFiles}
             workspaceId={workspaceId}
             onSuggestedImported={fetchSources}
             planEntitlements={planEntitlements}
-          />
-        </DeferredWorkspaceDialog>
-      ) : null}
-
-      {phaseGenerateDialogOpen ? (
-        <DeferredWorkspaceDialog>
-          <LazyRoadmapPhaseGenerateDialog
-            open={phaseGenerateDialogOpen}
-            onOpenChange={setPhaseGenerateDialogOpen}
-            isDarkMode={isDarkMode}
-            materials={sources}
-            defaultSelectedMaterialIds={phaseGenerateDialogDefaultIds}
-            submitting={isSubmittingRoadmapPhaseRequest}
-            onSubmit={handleSubmitRoadmapPhaseDialog}
           />
         </DeferredWorkspaceDialog>
       ) : null}
@@ -2635,7 +2316,7 @@ function WorkspacePage() {
             onSave={handleSaveProfileConfig}
             onConfirm={handleConfirmProfileConfig}
             onUploadFiles={handleUploadFiles}
-            isDarkMode={isDarkMode}
+            isDarkMode={personalWorkspaceIsDark}
             uploadedMaterials={sources}
             workspaceId={workspaceId}
             forceStartAtStepOne={
@@ -2653,7 +2334,7 @@ function WorkspacePage() {
           <LazyIndividualWorkspaceProfileOverviewDialog
             open={profileOverviewOpen}
             onOpenChange={handleProfileOverviewChange}
-            isDarkMode={isDarkMode}
+            isDarkMode={personalWorkspaceIsDark}
             profile={workspaceProfile}
             personalization={workspacePersonalization}
             materials={sources}
@@ -2668,7 +2349,7 @@ function WorkspacePage() {
           <LazyWorkspaceOnboardingUpdateGuardDialog
             open={profileUpdateGuardOpen}
             onOpenChange={setProfileUpdateGuardOpen}
-            isDarkMode={isDarkMode}
+            isDarkMode={personalWorkspaceIsDark}
             currentLang={i18n.language?.startsWith("en") ? "en" : "vi"}
             materialCount={materialCountForProfile}
             hasLearningData={hasWorkspaceLearningDataAtRisk}
@@ -2682,14 +2363,14 @@ function WorkspacePage() {
         open={planUpgradeModalOpen}
         onOpenChange={setPlanUpgradeModalOpen}
         featureName={planUpgradeFeatureName}
-        isDarkMode={isDarkMode}
+        isDarkMode={personalWorkspaceIsDark}
       />
 
       <React.Suspense fallback={null}>
         <LazyRoadmapConfigEditDialog
           open={roadmapConfigEditOpen}
           onOpenChange={setRoadmapConfigEditOpen}
-          isDarkMode={isDarkMode}
+          isDarkMode={personalWorkspaceIsDark}
           initialValues={roadmapConfigInitialValues}
           hasExistingRoadmap={Boolean(
             extractRoadmapIdFromProfile(workspaceProfile),

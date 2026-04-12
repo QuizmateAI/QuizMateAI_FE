@@ -224,14 +224,24 @@
       "title": "Preparing your group workspace",
       "description": "The setup wizard will open as soon as the draft workspace is ready."
     },
-    "header": {
-      "groupPlan": {
-        "viewOrChange": "View or change group plan",
-        "choose": "Choose a group plan",
-        "upgrade": "Upgrade group plan"
-      },
-      "planNames": {
-        "GROUP_BASE": "Group Base"
+    "shell": {
+      "defaultGroupName": "Group workspace",
+      "memberCount": "{{count}} members",
+      "openSidebar": "Open sidebar",
+      "closeSidebar": "Close sidebar",
+      "nav": {
+        "dashboard": "Dashboard",
+        "personalDashboard": "Personal dashboard",
+        "documents": "Documents",
+        "roadmap": "Roadmap",
+        "quiz": "Quiz",
+        "flashcard": "Flashcard",
+        "mockTest": "Mock test",
+        "challenge": "Challenge",
+        "notifications": "Notifications",
+        "members": "Members",
+        "wallet": "Wallet",
+        "settings": "Settings"
       }
     },
     "studio": {

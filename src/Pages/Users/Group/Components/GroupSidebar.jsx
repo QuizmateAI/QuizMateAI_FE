@@ -1,28 +1,37 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LayoutDashboard,
-  Users,
-  FolderOpen,
+  Bell,
   BookOpen,
-  PenLine,
-  Map,
   ClipboardList,
-  Swords,
+  FolderOpen,
+  Globe,
+  LayoutDashboard,
+  Map,
+  Moon,
+  PenLine,
   Settings,
+  Sun,
+  Swords,
+  Users,
+  Wallet,
+  X,
 } from 'lucide-react';
-import LogoLight from '@/assets/LightMode_Logo.webp';
-import LogoDark from '@/assets/DarkMode_Logo.webp';
+import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', icon: LayoutDashboard, labelVi: 'Dashboard', labelEn: 'Dashboard', color: 'text-cyan-500', activeBg: 'bg-cyan-500/10' },
-  { id: 'members', icon: Users, labelVi: 'Quản lý thành viên', labelEn: 'Members', color: 'text-violet-500', activeBg: 'bg-violet-500/10' },
-  { id: 'documents', icon: FolderOpen, labelVi: 'Quản lý tài liệu', labelEn: 'Documents', color: 'text-amber-500', activeBg: 'bg-amber-500/10' },
-  { id: 'flashcard', icon: BookOpen, labelVi: 'Flashcard', labelEn: 'Flashcard', color: 'text-emerald-500', activeBg: 'bg-emerald-500/10' },
-  { id: 'quiz', icon: PenLine, labelVi: 'Quiz', labelEn: 'Quiz', color: 'text-sky-500', activeBg: 'bg-sky-500/10' },
-  { id: 'roadmap', icon: Map, labelVi: 'Roadmap', labelEn: 'Roadmap', color: 'text-fuchsia-500', activeBg: 'bg-fuchsia-500/10' },
-  { id: 'mockTest', icon: ClipboardList, labelVi: 'Mock Test', labelEn: 'Mock Test', color: 'text-rose-500', activeBg: 'bg-rose-500/10' },
-  { id: 'challenge', icon: Swords, labelVi: 'Challenge', labelEn: 'Challenge', color: 'text-orange-500', activeBg: 'bg-orange-500/10' },
+  { id: 'dashboard', icon: LayoutDashboard },
+  { id: 'personalDashboard', icon: LayoutDashboard },
+  { id: 'documents', icon: FolderOpen },
+  { id: 'roadmap', icon: Map },
+  { id: 'quiz', icon: PenLine },
+  { id: 'flashcard', icon: BookOpen },
+  { id: 'mockTest', icon: ClipboardList },
+  { id: 'challenge', icon: Swords },
+  { id: 'notifications', icon: Bell },
+  { id: 'members', icon: Users },
+  { id: 'wallet', icon: Wallet },
+  { id: 'settings', icon: Settings },
 ];
 
 function GroupSidebar({
@@ -33,191 +42,167 @@ function GroupSidebar({
   groupName = '',
   wsConnected = false,
   memberCount = 0,
-  isCollapsed = false,
-  onToggleCollapse,
+  disabledMap = {},
+  badgeMap = {},
+  isMobile = false,
+  mobileOpen = false,
+  onCloseMobile,
+  onToggleLanguage,
+  onToggleDarkMode,
+  currentLang = 'vi',
 }) {
-  const { i18n } = useTranslation();
-  const currentLang = i18n.language;
-  const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
+  const { t, i18n } = useTranslation();
+  const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
+  const isMember = String(role || '').toUpperCase() === 'MEMBER';
+  const resolvedActiveSection = isMember && activeSection === 'dashboard'
+    ? 'personalDashboard'
+    : activeSection;
 
-  // Filter nav items based on role
-  const filteredNavItems = NAV_ITEMS.filter((item) => {
-    // If you're a MEMBER, you don't need 'members' management, maybe just viewing so you could keep it or hide it.
-    // For now, let's say MEMBER cannot see 'members'.
-    if (role === 'MEMBER') {
-      return !['members'].includes(item.id);
-    }
+  const filteredItems = NAV_ITEMS.filter((item) => {
+    if (item.id === 'dashboard') return !isMember;
+    if (item.id === 'personalDashboard') return isMember;
     return true;
   });
 
-  const canSeeSettings = role === 'LEADER';
+  const handleNavigate = (section) => {
+    if (disabledMap?.[section]) return;
+    onSectionChange?.(section);
+    if (isMobile) {
+      onCloseMobile?.();
+    }
+  };
 
-  const shellClass = isDarkMode
-    ? 'bg-[#0a1620]/95 border-white/10 text-white'
-    : 'bg-white/80 border-white/60 text-slate-900';
-
-  const hoverClass = isDarkMode
-    ? 'hover:bg-white/[0.06]'
-    : 'hover:bg-slate-50';
-
-  const activeItemClass = isDarkMode
-    ? 'bg-white/[0.08] border-cyan-400/30'
-    : 'bg-gradient-to-r from-cyan-50 to-white border-cyan-200';
-
-  const idleItemClass = isDarkMode
-    ? 'border-transparent'
-    : 'border-transparent';
-
-  const mutedClass = isDarkMode ? 'text-slate-400' : 'text-slate-500';
-
-  if (isCollapsed) {
-    return (
-      <aside className={`flex flex-col items-center w-[68px] shrink-0 h-full rounded-[28px] border backdrop-blur-xl py-4 gap-2 transition-all duration-300 ${shellClass} ${fontClass}`}>
-        {/* Logo */}
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          className={`flex items-center justify-center w-11 h-11 rounded-2xl transition-colors ${hoverClass}`}
-          title={currentLang === 'en' ? 'Expand sidebar' : 'Mở rộng sidebar'}
-        >
-          <img src={isDarkMode ? LogoDark : LogoLight} alt="Logo" className="h-6 w-6 object-contain" />
-        </button>
-
-        <div className={`w-8 h-px my-1 ${isDarkMode ? 'bg-white/10' : 'bg-slate-200'}`} />
-
-        {/* Nav items */}
-        {filteredNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeSection === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSectionChange?.(item.id)}
-              title={currentLang === 'en' ? item.labelEn : item.labelVi}
-              className={`flex items-center justify-center w-11 h-11 rounded-2xl border transition-all duration-200 ${
-                isActive
-                  ? `${activeItemClass} ${item.activeBg}`
-                  : `${idleItemClass} ${hoverClass}`
-              }`}
-            >
-              <Icon className={`h-5 w-5 ${isActive ? item.color : mutedClass}`} />
-            </button>
-          );
-        })}
-
-        <div className="flex-1" />
-
-        {/* Settings */}
-        {canSeeSettings && (
-          <button
-            type="button"
-            onClick={() => onSectionChange?.('settings')}
-            title={currentLang === 'en' ? 'Settings' : 'Cài đặt'}
-            className={`flex items-center justify-center w-11 h-11 rounded-2xl border transition-all duration-200 ${
-              activeSection === 'settings'
-                ? `${activeItemClass} bg-slate-500/10`
-                : `${idleItemClass} ${hoverClass}`
-            }`}
-          >
-            <Settings className={`h-5 w-5 ${activeSection === 'settings' ? 'text-slate-500' : mutedClass}`} />
-          </button>
-        )}
-      </aside>
-    );
-  }
+  const asideClassName = cn(
+    'z-40 flex h-full w-[236px] shrink-0 flex-col border-r border-slate-200/80 bg-white transition-transform duration-300',
+    isMobile
+      ? cn(
+          'fixed inset-y-0 left-0 shadow-[0_28px_80px_rgba(15,23,42,0.14)]',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        )
+      : 'relative',
+  );
 
   return (
-    <aside className={`flex flex-col w-[260px] shrink-0 h-full rounded-[28px] border backdrop-blur-xl transition-all duration-300 ${shellClass} ${fontClass}`}>
-      {/* Group header — click to collapse */}
-      <button
-        type="button"
-        onClick={onToggleCollapse}
-        className={`w-full px-5 pt-5 pb-4 text-left transition-colors rounded-t-[28px] cursor-pointer ${hoverClass}`}
-        title={currentLang === 'en' ? 'Collapse sidebar' : 'Thu gọn sidebar'}
-      >
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden ${isDarkMode ? 'bg-white/[0.08]' : 'bg-slate-100'}`}>
-            <img src={isDarkMode ? LogoDark : LogoLight} alt="Logo" className="h-6 w-6 object-contain" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h2 className="truncate text-base font-bold tracking-tight">{groupName || 'Group'}</h2>
-              <span className={`inline-flex h-2 w-2 shrink-0 rounded-full ${wsConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+    <>
+      {isMobile && mobileOpen ? (
+        <button
+          type="button"
+          aria-label={t('groupWorkspace.shell.closeSidebar', 'Đóng sidebar')}
+          className="fixed inset-0 z-30 bg-slate-950/20 backdrop-blur-[2px]"
+          onClick={onCloseMobile}
+        />
+      ) : null}
+
+      <aside className={asideClassName}>
+        <div className="border-b border-slate-200/80 px-4 pb-3.5 pt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className={cn('truncate text-[18px] font-semibold leading-tight text-slate-950', fontClass)}>
+                {groupName || t('groupWorkspace.shell.defaultGroupName')}
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className={cn('inline-flex h-2 w-2 rounded-full', wsConnected ? 'bg-emerald-500' : 'bg-amber-400')} />
+                <p className={cn('text-xs text-slate-500', fontClass)}>
+                  {t('groupWorkspace.shell.memberCount', { count: Number(memberCount) || 0 })}
+                </p>
+              </div>
             </div>
-            <p className={`text-xs ${mutedClass}`}>
-              {memberCount} {currentLang === 'en' ? 'members' : 'thành viên'}
-            </p>
+
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                aria-label={t('groupWorkspace.shell.closeSidebar', 'Đóng sidebar')}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
           </div>
         </div>
-      </button>
 
-      <div className={`mx-4 h-px ${isDarkMode ? 'bg-white/10' : 'bg-slate-100'}`} />
+        <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3">
+          <div className="space-y-1">
+            {filteredItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = resolvedActiveSection === item.id;
+              const isDisabled = Boolean(disabledMap?.[item.id]);
+              const badgeValue = badgeMap?.[item.id];
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-        {filteredNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeSection === item.id;
-          const label = currentLang === 'en' ? item.labelEn : item.labelVi;
-          return (
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleNavigate(item.id)}
+                  disabled={isDisabled}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded-[16px] border px-2.5 py-2 text-left transition-all',
+                    isDisabled
+                      ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300'
+                      : isActive
+                        ? 'border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]'
+                        : 'border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border',
+                      isActive
+                        ? 'border-blue-500 bg-blue-500 text-white'
+                        : 'border-slate-200 bg-white text-slate-600',
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+
+                  <span className={cn('min-w-0 flex-1 truncate text-[14px] font-semibold', fontClass)}>
+                    {t(`groupWorkspace.shell.nav.${item.id}`)}
+                  </span>
+
+                  {badgeValue ? (
+                    <span
+                      className={cn(
+                        'inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                        isActive ? 'bg-white text-blue-700' : 'bg-slate-900 text-white',
+                      )}
+                    >
+                      {badgeValue}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200/80 px-3.5 pb-3 pt-2.5">
+          <div className="flex items-center gap-1.5">
             <button
-              key={item.id}
               type="button"
-              onClick={() => onSectionChange?.(item.id)}
-              className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all duration-200 group ${
-                isActive
-                  ? activeItemClass
-                  : `${idleItemClass} ${hoverClass}`
-              }`}
+              onClick={onToggleLanguage}
+              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-slate-600 transition-colors hover:bg-slate-50"
             >
-              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors ${
-                isActive ? item.activeBg : (isDarkMode ? 'bg-white/[0.04]' : 'bg-slate-50')
-              }`}>
-                <Icon className={`h-[18px] w-[18px] ${isActive ? item.color : mutedClass}`} />
-              </span>
-              <span className={`text-sm font-medium truncate ${
-                isActive
-                  ? (isDarkMode ? 'text-white' : 'text-slate-900')
-                  : (isDarkMode ? 'text-slate-300' : 'text-slate-600')
-              }`}>
-                {label}
+              <Globe className="h-4 w-4" />
+              <span className={cn('text-[13px] font-semibold uppercase', fontClass)}>
+                {currentLang === 'vi' ? 'VI' : 'EN'}
               </span>
             </button>
-          );
-        })}
-      </nav>
 
-      <div className={`mx-4 h-px ${isDarkMode ? 'bg-white/10' : 'bg-slate-100'}`} />
-
-      {/* Bottom: Settings */}
-      {canSeeSettings && (
-        <div className="px-3 py-3">
-          <button
-            type="button"
-            onClick={() => onSectionChange?.('settings')}
-            className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all duration-200 ${
-              activeSection === 'settings'
-                ? activeItemClass
-                : `${idleItemClass} ${hoverClass}`
-            }`}
-          >
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-              activeSection === 'settings' ? 'bg-slate-500/10' : (isDarkMode ? 'bg-white/[0.04]' : 'bg-slate-50')
-            }`}>
-              <Settings className={`h-[18px] w-[18px] ${activeSection === 'settings' ? 'text-slate-500' : mutedClass}`} />
-            </span>
-            <span className={`text-sm font-medium ${
-              activeSection === 'settings'
-                ? (isDarkMode ? 'text-white' : 'text-slate-900')
-                : (isDarkMode ? 'text-slate-300' : 'text-slate-600')
-            }`}>
-              {currentLang === 'en' ? 'Settings' : 'Cài đặt'}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={onToggleDarkMode}
+              className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-slate-600 transition-colors hover:bg-slate-50"
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span className={cn('text-[12px] font-semibold', fontClass)}>
+                {isDarkMode ? t('common.dark') : t('common.light')}
+              </span>
+            </button>
+          </div>
         </div>
-      )}
-    </aside>
+      </aside>
+    </>
   );
 }
 
