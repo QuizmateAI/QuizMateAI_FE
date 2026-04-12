@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SourcesPanel from '@/Pages/Users/Individual/Workspace/Components/SourcesPanel';
 import { renameMaterial } from '@/api/MaterialAPI';
@@ -29,26 +29,15 @@ vi.mock('@/context/ToastContext', () => ({
 }));
 
 vi.mock('@/Pages/Users/Individual/Workspace/Components/SourceDetailView', () => ({
-  default: () => <div data-testid="source-detail-view" />,
+  default: () => <div data-testid="source-detail-view">detail-preview</div>,
 }));
-
-class ResizeObserverMock {
-  constructor() {}
-
-  observe() {}
-
-  unobserve() {}
-
-  disconnect() {}
-}
 
 describe('SourcesPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    globalThis.ResizeObserver = ResizeObserverMock;
   });
 
-  it('selects only eligible sources when select-all is triggered', () => {
+  it('selects only eligible active sources when select-all is triggered', () => {
     const onSelectionChange = vi.fn();
 
     render(
@@ -67,9 +56,46 @@ describe('SourcesPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByText('workspace.sources.selectAll'));
+    fireEvent.click(screen.getByRole('button', { name: 'workspace.sources.selectAll' }));
 
     expect(onSelectionChange).toHaveBeenCalledWith([1, 5]);
+  });
+
+  it('opens the source preview dialog through the dedicated preview action', async () => {
+    const onDetailViewChange = vi.fn();
+
+    render(
+      <SourcesPanel
+        isDarkMode={false}
+        sources={[
+          { id: 9, name: 'Original Name.pdf', type: 'application/pdf', status: 'ACTIVE' },
+        ]}
+        onAddSource={vi.fn()}
+        onRemoveSource={vi.fn()}
+        onDetailViewChange={onDetailViewChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+
+    expect(await screen.findByTestId('source-detail-view')).toBeInTheDocument();
+    expect(onDetailViewChange).toHaveBeenCalledWith(true);
+  });
+
+  it('renders processing sources with the amber processing badge', () => {
+    render(
+      <SourcesPanel
+        isDarkMode={false}
+        sources={[
+          { id: 9, name: 'processing.pdf', type: 'application/pdf', status: 'PROCESSING' },
+        ]}
+        onAddSource={vi.fn()}
+        onRemoveSource={vi.fn()}
+      />,
+    );
+
+    const processingBadge = screen.getByText('PROCESSING');
+    expect(processingBadge.className).toContain('amber');
   });
 
   it('renames a source and emits the normalized updated source payload', async () => {
@@ -95,12 +121,13 @@ describe('SourcesPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'common.options' }));
     fireEvent.click(screen.getByRole('button', { name: 'workspace.sources.menuRename' }));
 
-    const renameInput = screen.getByRole('textbox');
-    fireEvent.change(renameInput, { target: { value: 'Renamed Material' } });
-    fireEvent.click(screen.getByRole('button', { name: 'workspace.sources.saveBtn' }));
+    const renameDialog = await screen.findByRole('dialog');
+    fireEvent.change(within(renameDialog).getByRole('textbox'), {
+      target: { value: 'Renamed Material' },
+    });
+    fireEvent.click(within(renameDialog).getByRole('button', { name: 'workspace.sources.saveBtn' }));
 
     await waitFor(() => {
       expect(renameMaterial).toHaveBeenCalledWith(9, 'Renamed Material.pdf');
@@ -112,5 +139,32 @@ describe('SourcesPanel', () => {
       status: 'ACTIVE',
     }));
     expect(toastSpy.showSuccess).toHaveBeenCalledWith('workspace.sources.renameSuccess');
+  });
+
+  it('bulk deletes the currently selected sources', async () => {
+    const onRemoveMultiple = vi.fn().mockResolvedValue(undefined);
+    const onSelectionChange = vi.fn();
+
+    render(
+      <SourcesPanel
+        isDarkMode={false}
+        sources={[
+          { id: 1, name: 'active-one.pdf', type: 'application/pdf', status: 'ACTIVE' },
+          { id: 5, name: 'active-two.docx', type: 'application/msword', status: 'ACTIVE' },
+        ]}
+        onAddSource={vi.fn()}
+        onRemoveSource={vi.fn()}
+        onRemoveMultiple={onRemoveMultiple}
+        selectedIds={[1, 5]}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete selected' }));
+
+    await waitFor(() => {
+      expect(onRemoveMultiple).toHaveBeenCalledWith([1, 5]);
+    });
+    expect(onSelectionChange).toHaveBeenCalledWith([]);
   });
 });

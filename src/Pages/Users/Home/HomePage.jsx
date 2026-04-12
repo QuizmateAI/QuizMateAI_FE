@@ -399,13 +399,8 @@ function HomePage() {
             }`}>
               <CreditIconImage alt="Quizmate Credit" className="h-6 w-6 rounded-full" />
             </span>
-            <span className="flex flex-col leading-none">
-              <span className="text-sm font-semibold">
-                {loadingWallet ? '—' : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
-              </span>
-              <span className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                {t('wallet.creditsUnit', 'Credit')}
-              </span>
+            <span className="text-sm font-semibold leading-none">
+              {loadingWallet ? '—' : formatNumber(walletSummary.totalAvailableCredits, walletLocale)}
             </span>
           </Button>
           <div ref={settingsRef} className="relative">

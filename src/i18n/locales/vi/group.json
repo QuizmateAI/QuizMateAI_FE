@@ -188,6 +188,27 @@
       "title": "Đang chuẩn bị không gian nhóm",
       "description": "Trình hướng dẫn thiết lập sẽ mở ngay khi không gian nháp sẵn sàng."
     },
+    "shell": {
+      "defaultGroupName": "Không gian nhóm",
+      "memberCount": "{{count}} thành viên",
+      "openSidebar": "Mở sidebar",
+      "closeSidebar": "Đóng sidebar",
+      "nav": {
+        "dashboard": "Tổng quan",
+        "personalDashboard": "Dashboard cá nhân",
+        "documents": "Tài liệu",
+        "roadmap": "Roadmap",
+        "quiz": "Quiz",
+        "flashcard": "Flashcard",
+        "mockTest": "Mock test",
+        "challenge": "Challenge",
+        "ranking": "Xếp hạng",
+        "notifications": "Thông báo",
+        "members": "Thành viên",
+        "wallet": "Ví",
+        "settings": "Cài đặt"
+      }
+    },
     "header": {
       "groupPlan": {
         "viewOrChange": "Xem / đổi gói nhóm",
@@ -195,7 +216,7 @@
         "upgrade": "Nâng cấp gói nhóm"
       },
       "planNames": {
-        "GROUP_BASE": "Gói cơ bản"
+        "GROUP_BASE": "Gói nhóm cơ bản"
       }
     },
     "studio": {
@@ -302,6 +323,28 @@
     "members": {
       "loading": "Đang tải danh sách thành viên...",
       "empty": "Chưa có dữ liệu thành viên."
+    },
+    "ranking": {
+      "title": "Bảng xếp hạng nhóm",
+      "description": "Xếp hạng tổng hợp toàn nhóm. Ranking theo từng quiz riêng xem trong tab \"Xếp hạng\" của từng bài.",
+      "loading": "Đang tổng hợp dữ liệu từ tất cả các quiz…",
+      "error": "Không thể tải dữ liệu xếp hạng.",
+      "retry": "Thử lại",
+      "refresh": "Làm mới",
+      "empty": "Chưa có thành viên nào hoàn thành quiz nào cả.",
+      "noData": "Chưa có dữ liệu.",
+      "meta": "Tổng hợp từ {{quizCount}} quiz đang hoạt động · {{memberCount}} thành viên tham gia",
+      "metrics": {
+        "accuracy": {
+          "title": "Độ chính xác lần đầu",
+          "subtitle": "Mỗi quiz lấy kết quả của lần kiểm tra đầu tiên, rồi tính trung bình"
+        },
+        "completion": {
+          "title": "Hoàn thành quiz",
+          "subtitle": "Xếp hạng theo số lượng quiz đã hoàn thành ít nhất 1 lần",
+          "value": "{{count}} quiz"
+        }
+      }
     },
     "profile": {
       "noRules": "Chưa có nội quy bổ sung."
