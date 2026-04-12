@@ -188,6 +188,8 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             hideCreateButton={false}
             disableCreate={readOnly}
             refreshToken={quizListRefreshToken}
+            groupRole={role}
+            groupCurrentUserId={groupWorkspaceCurrentUserId}
           />
         );
       case "flashcard":
