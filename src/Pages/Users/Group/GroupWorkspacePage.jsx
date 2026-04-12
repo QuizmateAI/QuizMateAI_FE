@@ -38,6 +38,8 @@ import GroupWorkspaceCreditGateModal from './Components/GroupWorkspaceCreditGate
 import { useGroup } from '@/hooks/useGroup';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useActiveTaskFallback } from '@/hooks/useActiveTaskFallback';
+import { getUserDisplayLabel } from '@/Utils/userProfile';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 import {
   createRoadmap,
   setupGroupRoadmapConfig,
@@ -2612,7 +2614,7 @@ function GroupWorkspacePage() {
       || members.find((member) => String(member.userId) === String(currentUser?.userID))
       || members[0]
       || null;
-    const safeMemberName = currentMember?.fullName || currentMember?.username || (currentLang === 'en' ? 'Member' : 'Thành viên');
+    const safeMemberName = getUserDisplayLabel(currentMember, currentLang === 'en' ? 'Member' : 'Thành viên');
     const joinedAt = currentMember?.joinedAt || welcomePayload?.joinedAt || null;
     const currentRoleLabel = formatGroupRole(currentRoleKey, currentLang);
     const learningModeLabel = formatGroupLearningMode(resolvedGroupData.learningMode, currentLang);
@@ -2833,7 +2835,7 @@ function GroupWorkspacePage() {
                     </div>
                     <div className="min-w-0">
                       <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                        {member.fullName || member.username}
+                        <UserDisplayName user={member} fallback={currentLang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
                       </p>
                       <p className={`truncate text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                         {member.email || `@${member.username}`}
