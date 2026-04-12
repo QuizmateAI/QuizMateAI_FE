@@ -37,6 +37,7 @@ function GroupMembersTab({
   onOpenInvite,
 }) {
   const { t, i18n } = useTranslation();
+  const currentLang = i18n.language;
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [searchQuery, setSearchQuery] = useState('');

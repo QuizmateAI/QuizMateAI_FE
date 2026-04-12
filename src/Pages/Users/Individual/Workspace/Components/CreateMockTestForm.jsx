@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/Components/ui/button";
 import { Plus, Trash2, Loader2, ClipboardList, ArrowLeft, RefreshCw, Rocket, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { createFullQuiz, getQuizzesByScope } from "@/api/QuizAPI";
 import { getRoadmapsByWorkspace } from "@/api/RoadmapAPI";
+import { Checkbox } from "@/Components/ui/checkbox";
+import useWorkspaceMaterialSelection from "./useWorkspaceMaterialSelection";
 
 // Danh sách dạng câu hỏi và độ khó
 const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
@@ -20,7 +22,16 @@ const BLOOM_LEVELS = [
  * Form tạo Mock Test — tạo quiz với contextType=ROADMAP
  * Mỗi roadmap chỉ được có tối đa 1 mock test
  */
-function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, contextType = "WORKSPACE", contextId }) {
+function CreateMockTestForm({
+  isDarkMode = false,
+  onCreateMockTest,
+  onBack,
+  contextType = "WORKSPACE",
+  contextId,
+  sources,
+  selectedSourceIds,
+  onToggleMaterialSelection,
+}) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [tab, setTab] = useState("manual");
@@ -51,6 +62,29 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
   const [aiTotalQuestions, setAiTotalQuestions] = useState(30);
   const [aiDuration, setAiDuration] = useState(60);
   const [aiPrompt, setAiPrompt] = useState("");
+
+  const {
+    allSelected,
+    clearSelectedSources,
+    materialsError,
+    materialsLoading,
+    normalizedSources,
+    selectAllSources,
+    selectedIdSet,
+    selectedIds: effectiveSelectedSourceIds,
+    toggleSourceSelection,
+  } = useWorkspaceMaterialSelection({
+    contextId,
+    onToggleMaterialSelection,
+    selectedSourceIds,
+    sources,
+    t,
+  });
+
+  const selectedSourceItems = useMemo(
+    () => normalizedSources.filter((item) => selectedIdSet.has(item.id)),
+    [normalizedSources, selectedIdSet],
+  );
 
   // Tải danh sách roadmap
   const loadRoadmaps = useCallback(async () => {
@@ -137,7 +171,15 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
         });
         await onCreateMockTest?.({ quizId: result.quizId, title: result.title, ...result });
       } else {
-        const data = { mode: "ai", name: aiName, difficulty: aiDifficulty, totalQuestions: aiTotalQuestions, duration: aiDuration, prompt: aiPrompt };
+        const data = {
+          mode: "ai",
+          name: aiName,
+          difficulty: aiDifficulty,
+          totalQuestions: aiTotalQuestions,
+          duration: aiDuration,
+          prompt: aiPrompt,
+          materialIds: effectiveSelectedSourceIds,
+        };
         await onCreateMockTest?.(data);
       }
     } catch (err) {
@@ -185,6 +227,83 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
         <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
           <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("workspace.quiz.tabManual")}</button>
           <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("workspace.quiz.tabAI")}</button>
+        </div>
+
+        <div className={`rounded-xl border p-3 space-y-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-gray-200 bg-white"}`}>
+          <div className="flex items-start justify-between gap-2">
+            <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
+              {t("workspace.quiz.aiConfig.selectedMaterials")}
+            </p>
+            {normalizedSources.length > 0 && (
+              <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                {t("workspace.quiz.aiConfig.materialsSelectedSummary", {
+                  selected: selectedSourceItems.length,
+                  total: normalizedSources.length,
+                })}
+              </span>
+            )}
+          </div>
+
+          {materialsLoading && (
+            <div className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {t("workspace.quiz.aiConfig.materialsLoading", "Đang tải danh sách tài liệu...")}
+            </div>
+          )}
+
+          {materialsError && !materialsLoading && (
+            <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/20 text-red-400 border border-red-900/30" : "bg-red-50 text-red-700 border border-red-200"}`}>
+              {materialsError}
+            </div>
+          )}
+
+          {normalizedSources.length > 0 && !materialsLoading && (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+                  onClick={selectAllSources}
+                  disabled={allSelected}
+                >
+                  {t("workspace.sources.selectAll")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+                  onClick={clearSelectedSources}
+                  disabled={selectedSourceItems.length === 0}
+                >
+                  {t("workspace.sources.deselectAll")}
+                </Button>
+              </div>
+
+              <div className={`max-h-36 overflow-y-auto rounded-lg border ${isDarkMode ? "border-slate-800 divide-y divide-slate-800" : "border-gray-200 divide-y divide-gray-100"}`}>
+                {normalizedSources.map((item) => (
+                  <label key={item.id} className={`flex items-start gap-3 px-3 py-2 text-xs cursor-pointer ${isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50"}`}>
+                    <Checkbox
+                      checked={selectedIdSet.has(item.id)}
+                      onCheckedChange={(checked) => toggleSourceSelection(item.id, checked === true)}
+                      className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" : "border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"}`}
+                    />
+                    <span className={`min-w-0 flex-1 break-words ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                      {item.name || t("workspace.quiz.aiConfig.materialFallback", { id: item.id })}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+
+          {normalizedSources.length === 0 && !materialsLoading && (
+            <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+              {t("workspace.quiz.aiConfig.workspaceMaterialsEmpty")}
+            </p>
+          )}
         </div>
 
         {tab === "manual" ? (

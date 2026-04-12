@@ -7,29 +7,18 @@ import GroupWalletTab from './Group_leader/GroupWalletTab';
 import WorkspaceOnboardingUpdateGuardDialog from '@/Components/workspace/WorkspaceOnboardingUpdateGuardDialog';
 import {
   Activity,
-  Bell,
-  BookOpen,
   CalendarDays,
   CheckCircle2,
-  ClipboardList,
-  CreditCard,
   FileText,
   FolderOpen,
-  Globe,
   Map as MapIcon,
-  Moon,
-  PenLine,
-  Settings,
+  Menu,
   ShieldCheck,
   Sparkles,
-  Sun,
-  Swords,
-  Trophy,
   Users,
 } from 'lucide-react';
 import { formatGroupLogDescription } from '@/lib/groupWorkspaceLogDisplay';
-import WorkspaceHeader from '@/Pages/Users/Individual/Workspace/Components/WorkspaceHeader';
-import StudioPanel from '@/Pages/Users/Individual/Workspace/Components/StudioPanel';
+import GroupSidebar from './Components/GroupSidebar';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
@@ -290,12 +279,48 @@ function canonicalPlanNameToken(value) {
   return normalizedValue;
 }
 
-function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t }) {
+function normalizePlanLookupText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_-]+/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function inferGroupPlanTokenFromDisplayName(planDisplayName) {
+  const normalized = normalizePlanLookupText(planDisplayName);
+  if (!normalized) return '';
+
+  if (
+    normalized.includes('group base')
+    || normalized.includes('goi nhom co ban')
+    || normalized === 'goi co ban'
+  ) {
+    return 'GROUP_BASE';
+  }
+
+  return '';
+}
+
+const GROUP_PLAN_NAME_FALLBACKS = {
+  GROUP_BASE: {
+    en: 'Group Base',
+    vi: 'Gói nhóm cơ bản',
+  },
+};
+
+function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t, lang = 'vi' }) {
+  const normalizedLang = String(lang || 'vi').toLowerCase().startsWith('en') ? 'en' : 'vi';
   const normalizedPlanCode = canonicalPlanNameToken(planCode);
   const normalizedDisplayName = canonicalPlanNameToken(planDisplayName);
   const normalizedDisplayNameCompact = normalizedDisplayName.replace(/_/g, '');
+  const inferredDisplayToken = inferGroupPlanTokenFromDisplayName(planDisplayName);
 
   const keyCandidates = [
+    inferredDisplayToken,
     normalizedPlanCode,
     normalizedDisplayName,
     canonicalPlanNameToken(normalizedDisplayNameCompact),
@@ -309,6 +334,11 @@ function resolveLocalizedGroupPlanName({ planDisplayName, planCode, t }) {
     if (localized) {
       return localized;
     }
+  }
+
+  for (const candidate of keyCandidates) {
+    const fallbackLabel = GROUP_PLAN_NAME_FALLBACKS?.[candidate]?.[normalizedLang] || GROUP_PLAN_NAME_FALLBACKS?.[candidate]?.en;
+    if (fallbackLabel) return fallbackLabel;
   }
 
   return String(planDisplayName || planCode || '').trim();
@@ -537,8 +567,8 @@ function GroupWorkspacePage() {
   const { showError, showInfo, showSuccess, showWarning } = useToast();
   const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [studioCollapsed, setStudioCollapsed] = useState(false);
   const [mobilePanel, setMobilePanel] = useState(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Section navigation via URL
   const legacySectionMap = { flashcardQuiz: 'quiz' };
@@ -570,9 +600,6 @@ function GroupWorkspacePage() {
 
   // Create mode
   const isCreating = workspaceId === 'new';
-  const studioPlanLockedActions = [
-    ...(!planEntitlements.hasWorkspaceAnalytics ? ['questionStats'] : []),
-  ];
   const openProfileConfig = Boolean(location.state?.openProfileConfig);
   const [profileConfigOpen, setProfileConfigOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
@@ -600,6 +627,7 @@ function GroupWorkspacePage() {
   const [createdItems, setCreatedItems] = useState([]);
   const [groupProfile, setGroupProfile] = useState(null);
   const [groupSubscription, setGroupSubscription] = useState(null);
+  const [hasLoadedGroupSubscription, setHasLoadedGroupSubscription] = useState(isCreating);
   const [groupBuyCreditModalOpen, setGroupBuyCreditModalOpen] = useState(false);
   const [groupRoadmapConfig, setGroupRoadmapConfig] = useState(null);
   const [groupProfileLoading, setGroupProfileLoading] = useState(false);
@@ -803,6 +831,15 @@ function GroupWorkspacePage() {
     [location.pathname, location.search],
   );
   const canManageGroup = Boolean(resolvedWorkspaceId && workspaceId !== 'new');
+  const groupSidebarDisabledMap = useMemo(() => ({
+    members: isMember,
+    wallet: !isLeader || !canManageGroup,
+    settings: !isLeader || !canManageGroup,
+  }), [canManageGroup, isLeader, isMember]);
+  const groupSidebarBadgeMap = useMemo(() => ({
+    documents: sources.length || undefined,
+    notifications: pendingReviewMaterials.length || undefined,
+  }), [pendingReviewMaterials.length, sources.length]);
   const groupDescription = groupProfile?.groupLearningGoal
     || currentGroupWorkspace?.description
     || currentGroupFromGroups?.description
@@ -832,20 +869,6 @@ function GroupWorkspacePage() {
     || (isLeader && canManageGroup && !isCreating && hasLoadedGroupProfile && !groupProfile && !hasCompletedGroupProfile)
     || (hasLoadedGroupProfile && openProfileConfig && !hasCompletedGroupProfile)
   );
-  const rawGroupPlanDisplayName = String(groupSubscription?.plan?.displayName || '').trim();
-  const rawGroupPlanCode = String(groupSubscription?.plan?.code || '').trim();
-  const currentGroupPlanName = useMemo(
-    () => resolveLocalizedGroupPlanName({
-      planDisplayName: rawGroupPlanDisplayName,
-      planCode: rawGroupPlanCode,
-      t,
-    }),
-    [rawGroupPlanCode, rawGroupPlanDisplayName, t]
-  );
-  /** Subtitle tránh trùng với nút header đang hiển thị tên gói */
-  const groupHeaderSubtitle = currentGroupPlanName
-    ? ''
-    : (currentLang === 'en' ? 'Group workspace' : 'Không gian nhóm');
   const profileEditLocked = hasUploadedMaterials && hasCompletedGroupProfile;
   // Tính toán xem workspace có dữ liệu học tập chưa hoàn thành không (quiz/roadmap)
   // Sẽ được cập nhật khi fetch quiz và roadmap từ API trong quá trình xóa
@@ -1134,9 +1157,11 @@ function GroupWorkspacePage() {
   useEffect(() => {
     if (!resolvedWorkspaceId || isCreating) {
       setGroupSubscription(null);
+      setHasLoadedGroupSubscription(true);
       return undefined;
     }
 
+    setHasLoadedGroupSubscription(false);
     let cancelled = false;
 
     const loadGroupSubscription = async () => {
@@ -1148,6 +1173,10 @@ function GroupWorkspacePage() {
       } catch {
         if (!cancelled) {
           setGroupSubscription(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setHasLoadedGroupSubscription(true);
         }
       }
     };
@@ -2583,23 +2612,6 @@ function GroupWorkspacePage() {
     i18n.changeLanguage(newLang);
   };
 
-  const sectionLabels = {
-    dashboard: t('groupWorkspace.studio.systemDashboard'),
-    personalDashboard: t('groupWorkspace.studio.personalDashboard'),
-    documents: t('groupWorkspace.studio.documents'),
-    roadmap: t('workspace.studio.actions.roadmap'),
-    quiz: t('workspace.studio.actions.quiz'),
-    flashcard: t('workspace.studio.actions.flashcard'),
-    mockTest: t('workspace.studio.actions.mockTest'),
-    challenge: 'Challenge',
-    ranking: 'Xếp hạng',
-    notifications: t('groupWorkspace.studio.activity'),
-    members: isLeader ? t('groupWorkspace.studio.memberManagement') : t('groupWorkspace.studio.memberStatus'),
-    memberStats: t('groupWorkspace.studio.memberStats'),
-    wallet: t('groupWorkspace.studio.wallet', currentLang === 'en' ? 'Group wallet' : 'Ví nhóm'),
-    settings: t('workspaceSettings'),
-  };
-
   const resolvedGroupData = {
     ...(currentGroupWorkspace || {}),
     ...(currentGroupFromGroups || {}),
@@ -2645,30 +2657,6 @@ function GroupWorkspacePage() {
       ?? welcomePayload?.preLearningRequired
       ?? null,
   };
-  const groupStudioActions = [
-    ...(isLeader
-      ? [{ key: 'dashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.dashboard, disabled: false }]
-      : [{ key: 'personalDashboard', icon: Globe, color: 'text-purple-500', bg: 'bg-purple-100 dark:bg-purple-500/20', label: sectionLabels.personalDashboard, disabled: false }]),
-    { key: 'documents', icon: FolderOpen, color: 'text-cyan-500', bg: 'bg-cyan-100 dark:bg-cyan-500/20', label: sectionLabels.documents },
-    { key: 'roadmap', icon: MapIcon, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.roadmap },
-    { key: 'quiz', icon: PenLine, color: 'text-rose-500', bg: 'bg-rose-100 dark:bg-rose-500/20', label: sectionLabels.quiz },
-    { key: 'flashcard', icon: BookOpen, color: 'text-amber-500', bg: 'bg-amber-100 dark:bg-amber-500/20', label: sectionLabels.flashcard },
-    { key: 'mockTest', icon: ClipboardList, color: 'text-emerald-500', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: sectionLabels.mockTest },
-    { key: 'challenge', icon: Swords, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-500/20', label: sectionLabels.challenge },
-    { key: 'ranking', icon: Trophy, color: 'text-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-500/20', label: sectionLabels.ranking },
-    { key: 'notifications', icon: Bell, color: 'text-violet-500', bg: 'bg-violet-100 dark:bg-violet-500/20', label: sectionLabels.notifications, disabled: false },
-    { key: 'members', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-100 dark:bg-indigo-500/20', label: sectionLabels.members, disabled: isMember },
-    { key: 'memberStats', icon: Activity, color: 'text-teal-500', bg: 'bg-teal-100 dark:bg-teal-500/20', label: sectionLabels.memberStats, disabled: isMember },
-    { key: 'wallet', icon: CreditCard, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-500/20', label: sectionLabels.wallet, disabled: !isLeader || !canManageGroup },
-    { key: 'settings', icon: Settings, color: 'text-gray-500', bg: 'bg-gray-100 dark:bg-gray-500/20', label: sectionLabels.settings, disabled: !isLeader || !canManageGroup }
-  ];
-
-  const groupStudioActionGroups = [
-    { label: t('groupWorkspace.studio.groupStudy', 'Học tập'), keys: ['documents', 'roadmap', 'quiz', 'flashcard', 'mockTest'] },
-    { label: t('groupWorkspace.studio.groupActivity', 'Hoạt động'), keys: ['challenge', 'ranking', 'notifications'] },
-    { label: t('groupWorkspace.studio.groupManage', 'Quản lý'), keys: ['members', 'wallet', 'settings'] },
-  ];
-
   const renderActivityFeed = (compact = false) => (
     <section className={`rounded-[28px] border p-5 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
       <div className="flex items-center gap-2">
@@ -3273,7 +3261,6 @@ function GroupWorkspacePage() {
     }
   };
 
-  // ——— TOP BAR ———
   const dismissProfileConfig = useCallback(() => {
     setProfileConfigOpen(false);
     if (location.state?.openProfileConfig) {
@@ -3291,68 +3278,6 @@ function GroupWorkspacePage() {
     }
     setProfileConfigOpen(true);
   }, [dismissProfileConfig, shouldForceProfileSetup]);
-
-  const openGroupPlanUpgrade = () => {
-    navigate(groupPlanUpgradePath, { state: groupPlanUpgradeState });
-  };
-
-  const headerActionClass = `rounded-full h-9 px-4 flex items-center gap-2 ${
-    isDarkMode ? 'border-slate-700 text-slate-200 hover:bg-slate-900' : 'border-gray-200'
-  }`;
-  const headerPlanActionClass = `rounded-full h-9 px-4 flex items-center gap-2 transition-colors ${
-    isDarkMode
-      ? 'bg-cyan-400 text-slate-950 hover:bg-cyan-300'
-      : 'bg-cyan-600 text-white hover:bg-cyan-700'
-  }`;
-
-  const settingsMenu = (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        type="button"
-        onClick={toggleLanguage}
-        className={`${headerActionClass} min-w-[4.25rem] justify-center`}
-        title={t('common.language')}
-      >
-        <Globe className="h-4 w-4 shrink-0" />
-        <span className="hidden min-w-[1.75rem] uppercase sm:inline">
-          {currentLang === 'vi' ? 'VI' : 'EN'}
-        </span>
-      </Button>
-
-      <Button
-        variant="outline"
-        type="button"
-        onClick={toggleDarkMode}
-        className={`${headerActionClass} min-w-[6rem] justify-center`}
-        title={t('common.theme')}
-      >
-        {isDarkMode ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
-        <span className="hidden min-w-[3.25rem] md:inline">
-          {isDarkMode ? t('common.dark') : t('common.light')}
-        </span>
-      </Button>
-
-      {isLeader && canManageGroup ? (
-        <Button
-          type="button"
-          onClick={openGroupPlanUpgrade}
-          className={headerPlanActionClass}
-          title={
-            currentGroupPlanName
-              ? t('groupWorkspace.header.groupPlan.viewOrChange')
-              : t('groupWorkspace.header.groupPlan.choose')
-          }
-        >
-          <Sparkles className="h-4 w-4 shrink-0" />
-          <span className={`${fontClass} max-w-[10rem] truncate sm:max-w-[14rem] md:max-w-[18rem]`}>
-            {currentGroupPlanName
-              || t('groupWorkspace.header.groupPlan.upgrade')}
-          </span>
-        </Button>
-      ) : null}
-    </div>
-  );
 
   if (isCreating && isBootstrappingGroup) {
     return (
@@ -3378,23 +3303,45 @@ function GroupWorkspacePage() {
   }
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${pageShellClass}`}>
-      {/* Header */}
-      <WorkspaceHeader
-          workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? Number(workspaceId) : null)}
-          workspaceTitle={currentGroupName}
-          workspaceName={currentGroupName}
-          workspaceSubtitle={groupHeaderSubtitle}
-          settingsMenu={settingsMenu}
-          wsConnected={wsConnected}
-          isDarkMode={isDarkMode}
-          showWalletSummary={false}
-      />
+    <div className={`h-screen overflow-hidden transition-colors duration-300 ${pageShellClass}`}>
+      <div className="flex h-full min-h-0 w-full gap-2 px-2 py-2">
+        <div className="hidden lg:flex h-full">
+          <GroupSidebar
+            role={currentRoleKey}
+            isDarkMode={isDarkMode}
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+            groupName={currentGroupName}
+            wsConnected={wsConnected}
+            memberCount={members.length}
+            disabledMap={groupSidebarDisabledMap}
+            badgeMap={groupSidebarBadgeMap}
+            onToggleLanguage={toggleLanguage}
+            onToggleDarkMode={toggleDarkMode}
+            currentLang={currentLang}
+          />
+        </div>
 
-      {/* Main Workspace Area */}
-      <div className="flex flex-1 min-h-0 w-full px-0 py-2 gap-2">
+        <GroupSidebar
+          role={currentRoleKey}
+          isDarkMode={isDarkMode}
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+          groupName={currentGroupName}
+          wsConnected={wsConnected}
+          memberCount={members.length}
+          disabledMap={groupSidebarDisabledMap}
+          badgeMap={groupSidebarBadgeMap}
+          isMobile
+          mobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          onToggleLanguage={toggleLanguage}
+          onToggleDarkMode={toggleDarkMode}
+          currentLang={currentLang}
+        />
+
         {!shouldForceProfileSetup && isRoadmapJourActive && hasTriggeredGroupRoadmap ? (
-          <div className={`${isRoadmapJourCollapsed ? 'w-[84px]' : 'w-[320px]'} hidden xl:flex flex-shrink-0 flex-col h-full transition-all duration-300`}>
+          <div className={`${isRoadmapJourCollapsed ? 'w-[84px]' : 'w-[320px]'} hidden 2xl:flex flex-shrink-0 flex-col h-full transition-all duration-300`}>
             {renderRoadmapJourPanel(false)}
           </div>
         ) : null}
@@ -3404,11 +3351,15 @@ function GroupWorkspacePage() {
           <div className="flex-1 overflow-y-auto w-full hide-scrollbar">
             {!shouldForceProfileSetup ? (
             <div className="xl:hidden sticky top-0 z-20 p-2 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur flex items-center gap-2">
-              <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => handleStudioAction('documents')}>
-                {currentLang === 'en' ? 'Documents' : 'Tài liệu'}
-              </Button>
-              <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => setMobilePanel('studio')}>
-                {t('workspace.studio.title')}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                aria-label={t('groupWorkspace.shell.openSidebar')}
+                onClick={() => setIsMobileSidebarOpen(true)}
+              >
+                <Menu className="h-4 w-4" />
               </Button>
               {isRoadmapJourActive && hasTriggeredGroupRoadmap ? (
                 <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => setMobilePanel('roadmapJour')}>
@@ -3423,48 +3374,7 @@ function GroupWorkspacePage() {
             </div>
           </div>
         </main>
-
-        {/* Right Panel: Studio Tools */}
-        {shouldForceProfileSetup ? null : (
-        <div className={`${studioCollapsed ? 'w-[84px]' : 'w-[260px]'} hidden xl:flex flex-shrink-0 flex-col h-full transition-all duration-300`}>
-            <StudioPanel
-                customActions={groupStudioActions}
-                actionGroups={groupStudioActionGroups}
-                activeView={activeSection}
-                onAction={handleStudioAction}
-                shouldDisableQuiz={isCreating}
-                shouldDisableFlashcard={isCreating}
-                shouldDisableRoadmap={isCreating}
-            isCollapsed={studioCollapsed}
-            onToggleCollapse={() => setStudioCollapsed((prev) => !prev)}
-                isDarkMode={isDarkMode}
-                hideAccessHistory={true}
-                planLockedActions={studioPlanLockedActions}
-            />
-        </div>
-        )}
       </div>
-
-      {mobilePanel === 'studio' && !shouldForceProfileSetup && (
-        <div className="xl:hidden fixed inset-0 z-[150] bg-black/45 backdrop-blur-sm" onClick={() => setMobilePanel(null)}>
-          <div className="absolute right-0 top-0 h-full w-[88%] max-w-[340px] p-2" onClick={(event) => event.stopPropagation()}>
-            <StudioPanel
-              customActions={groupStudioActions}
-              actionGroups={groupStudioActionGroups}
-              activeView={activeSection}
-              onAction={handleStudioAction}
-              shouldDisableQuiz={isCreating}
-              shouldDisableFlashcard={isCreating}
-              shouldDisableRoadmap={isCreating}
-              isCollapsed={false}
-              onToggleCollapse={() => setMobilePanel(null)}
-              isDarkMode={isDarkMode}
-              hideAccessHistory={true}
-              planLockedActions={studioPlanLockedActions}
-            />
-          </div>
-        </div>
-      )}
 
       {mobilePanel === 'roadmapJour' && !shouldForceProfileSetup && isRoadmapJourActive && hasTriggeredGroupRoadmap && (
         <div className="xl:hidden fixed inset-0 z-[150] bg-black/45 backdrop-blur-sm" onClick={() => setMobilePanel(null)}>

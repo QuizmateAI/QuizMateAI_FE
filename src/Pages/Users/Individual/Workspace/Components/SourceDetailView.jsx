@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ArrowLeft, FileText, Image, Film, Link2, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import HomeButton from "@/Components/ui/HomeButton";
 import { getExtractedText, getExtractedSummary, getModerationReportDetail, getTaskStatusByTaskId, reviewMaterial } from "@/api/MaterialAPI";
 import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
 
@@ -529,10 +530,15 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
   return (
     <div className="flex flex-col h-full">
       {/* Header với nút quay lại */}
-      <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      <div className={`px-4 min-h-12 border-b flex items-center gap-3 py-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
           <ArrowLeft className="w-4 h-4" />
         </button>
+        <HomeButton
+          size="sm"
+          rounded
+          className="h-8 border-slate-200 bg-white px-3 text-slate-700 hover:bg-slate-50"
+        />
         {getDetailIcon(currentSource.type)}
         <p className={`text-base font-medium truncate flex-1 ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
           {currentSource.name}
@@ -540,8 +546,8 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
       </div>
 
       {/* Nội dung chi tiết */}
-      <div className="flex-1 overflow-hidden px-6 py-4">
-        <div className="h-full min-h-0 flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex flex-col gap-4">
           {(moderationLoading || hasModerationContent || reviewMessage || reviewError) && (
             <div
               className={`shrink-0 rounded-xl border px-4 py-3 ${
@@ -772,8 +778,8 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
           {/* Divider */}
           <div className={`shrink-0 border-t ${isDarkMode ? "border-slate-800" : "border-gray-200"}`} />
 
-          {/* Nội dung extracted text — cuộn độc lập */}
-          <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+          {/* Nội dung extracted text */}
+          <div className="space-y-4">
             {textLoading ? (
               <div className="flex items-center justify-center gap-2 py-16">
                 <InlineSpinner className={`h-5 w-5 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />

@@ -307,8 +307,8 @@ function GroupDashboardTab({
     watchlist.push(member);
   });
 
-  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-white/12 bg-[#08131a]/92 shadow-[0_18px_36px_rgba(0,0,0,0.24)]' : 'border-slate-200 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.05)]'}`;
-  const innerCardClass = isDarkMode ? 'border-white/12 bg-white/[0.04]' : 'border-slate-200 bg-slate-50/80';
+  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-slate-700/70 bg-[#08131a]/92' : 'border-slate-200/80 bg-white/90'}`;
+  const innerCardClass = isDarkMode ? 'border-slate-700/60 bg-white/[0.04]' : 'border-slate-200/70 bg-white/85';
   const subtleTextClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const eyebrowClass = 'text-slate-500';
 
@@ -407,6 +407,11 @@ function GroupDashboardTab({
     ];
 
     const memberCardTotalElements = Number(memberCardsPage?.totalElements) || 0;
+    const memberCardTotalPages = Math.max(
+      1,
+      Number(memberCardsPage?.totalPages) || Math.ceil(memberCardTotalElements / MEMBER_CARD_PAGE_SIZE) || 1,
+    );
+    const showMemberCardPagination = memberCardTotalElements > MEMBER_CARD_PAGE_SIZE || typeof onOpenMemberStats === 'function';
 
     return (
       <div className={`space-y-4 animate-in fade-in duration-300 ${fontClass}`}>
@@ -560,32 +565,93 @@ function GroupDashboardTab({
                 </div>
               </div>
 
-              <div className={cn('rounded-[22px] border p-4', innerCardClass)}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
-                      {lang === 'en' ? 'Member stats page' : 'Trang thống kê thành viên'}
-                    </p>
-                    <p className={`mt-2 text-sm ${subtleTextClass}`}>
-                      {cardsLoading
-                        ? (lang === 'en' ? 'Preparing member insights...' : 'Đang chuẩn bị thống kê thành viên...')
-                        : (lang === 'en'
-                          ? `${memberCardTotalElements} members are ready for drill-down actions.`
-                          : `${memberCardTotalElements} thành viên đã sẵn sàng để xem chi tiết và thao tác.`)}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    className={cn('rounded-full px-4 font-semibold', isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : '')}
-                    onClick={() => {
-                      if (typeof onOpenMemberStats === 'function') {
-                        onOpenMemberStats();
-                      }
-                    }}
-                  >
-                    {lang === 'en' ? 'Open member stats' : 'Mở thống kê thành viên'}
-                  </Button>
+              <div>
+                <p className={`mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] ${eyebrowClass}`}>
+                  {lang === 'en' ? 'Member intelligence cards' : 'Thẻ thông minh thành viên'}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {cardsLoading ? (
+                    <div className={`col-span-full rounded-[22px] border px-4 py-8 text-center text-sm ${innerCardClass} ${subtleTextClass}`}>…</div>
+                  ) : memberLearningCards.length === 0 ? (
+                    <div className={`col-span-full rounded-[22px] border px-4 py-8 text-center text-sm ${innerCardClass} ${subtleTextClass}`}>
+                      {lang === 'en' ? 'No active members to analyze.' : 'Không có thành viên hoạt động.'}
+                    </div>
+                  ) : (
+                    memberLearningCards.map((m) => (
+                      <button
+                        key={m.userId ?? m.workspaceMemberId}
+                        type="button"
+                        onClick={() => {
+                          setDetailAttemptMode('ALL');
+                          setDetailUserId(m.userId);
+                        }}
+                        className={cn(
+                          'rounded-[22px] border p-4 text-left transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60',
+                          innerCardClass,
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={cn(
+                              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold',
+                              isDarkMode ? 'bg-white/10 text-white' : 'bg-slate-200 text-slate-800',
+                            )}
+                          >
+                            {(m.fullName || m.username || '?').trim().slice(0, 1).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className={cn('truncate font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                              <UserDisplayName user={m} fallback={lang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
+                            </p>
+                            <p className={`mt-0.5 text-xs ${eyebrowClass}`}>{m.email || (m.username ? `@${m.username}` : '')}</p>
+                            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                              <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
+                                <p className={cn('text-sm font-bold', isDarkMode ? 'text-cyan-200' : 'text-cyan-700')}>{m.quizCompletedCount ?? 0}</p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'done' : 'xong'}</p>
+                              </div>
+                              <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
+                                <p className={cn('text-sm font-bold', isDarkMode ? 'text-violet-200' : 'text-violet-700')}>
+                                  {m.averageScore != null ? Math.round(Number(m.averageScore) * 10) / 10 : '—'}
+                                </p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'avg' : 'TB'}</p>
+                              </div>
+                              <div className={cn('rounded-xl border px-1 py-2', isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200/80 bg-white/60')}>
+                                <p className={cn('text-sm font-bold', isDarkMode ? 'text-amber-200' : 'text-amber-700')}>{formatPctRatio(m.accuracy)}</p>
+                                <p className={`text-[10px] uppercase tracking-wide ${subtleTextClass}`}>{lang === 'en' ? 'acc' : 'đúng'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
+
+                {showMemberCardPagination ? (
+                  <div
+                    className={cn(
+                      'mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4',
+                      isDarkMode ? 'border-white/10' : 'border-slate-200',
+                    )}
+                  >
+                    <p className={`text-xs ${subtleTextClass}`}>
+                      {lang === 'en'
+                        ? `Page ${memberCardPage + 1} of ${memberCardTotalPages} · ${memberCardTotalElements} members`
+                        : `Trang ${memberCardPage + 1} / ${memberCardTotalPages} · ${memberCardTotalElements} thành viên`}
+                    </p>
+                    <Button
+                      type="button"
+                      className={cn('rounded-full px-4 font-semibold', isDarkMode ? 'bg-cyan-500 text-slate-950 hover:bg-cyan-400' : '')}
+                      onClick={() => {
+                        if (typeof onOpenMemberStats === 'function') {
+                          onOpenMemberStats();
+                        }
+                      }}
+                    >
+                      {lang === 'en' ? 'Open member stats' : 'Mở thống kê thành viên'}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </section>

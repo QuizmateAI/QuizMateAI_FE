@@ -333,18 +333,9 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
           />
         ) : null;
       case "createMockTest":
-        return (
-          <LazyCreateGroupMockTestForm
-            isDarkMode={isDarkMode}
-            workspaceId={workspaceId}
-            onBack={onBack}
-            onCreated={(quiz) => {
-              onCreateMockTest?.(quiz);
-            }}
-          />
-        );
+        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "createPostLearning":
-        return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
+        return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} sources={sources} selectedSourceIds={selectedSourceIds} onToggleMaterialSelection={onToggleMaterialSelection} />;
       case "mockTestDetail":
         return selectedMockTest ? <LazyMockTestDetailView isDarkMode={isDarkMode} quiz={selectedMockTest} onBack={onBack} onEdit={readOnly ? undefined : onEditMockTest} hideEditButton={readOnly} contextType="GROUP" /> : null;
       case "editMockTest":

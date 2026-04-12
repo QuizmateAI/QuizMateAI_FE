@@ -133,3 +133,31 @@ Tom tat dot refactor va bug-fix da thuc hien cho `WorkspacePage` va cac file lie
 - Neu dong vao `postLearning` sau nay, nen quyet dinh ro:
   - giu no nhu list/detail quiz theo `PHASE`
   - hay tao flow detail rieng thay vi dung chung quiz detail
+
+## Cap nhat 2026-04-09
+
+- Personal workspace da duoc doi shell hoan toan:
+  - bo layout 3 cot co dinh
+  - them `PersonalWorkspaceSidebar`
+  - them `PersonalWorkspaceTopbar`
+  - route goc `/workspaces/:workspaceId` hien thi `overview`
+  - `sources` tro thanh mot workspace view rieng
+- Roadmap personal workspace da doi sang mot surface duy nhat:
+  - `RoadmapCanvasView.jsx` duoc viet lai thanh fishbone roadmap dark immersive
+  - bo hoan toan personal `canvasView`
+  - bo localStorage state cho `roadmapCanvasView`
+- Legacy personal files da xoa:
+  - `WorkspaceHeader.jsx`
+  - `StudioPanel.jsx`
+  - `RoadmapCanvasView2.jsx`
+  - `RoadmapJourPanel.jsx`
+  - `RoadmapListView.jsx`
+  - `RoadmapPhaseGenerateDialog.jsx`
+- Test shell moi da duoc thay:
+  - `WorkspacePage.test.jsx`
+  - `ChatPanel.test.jsx`
+  - `RoadmapCanvasView.test.jsx`
+  - `SourcesPanel.test.jsx`
+  - `viewRouting.test.js`
+  - them `PersonalWorkspaceTopbar.test.jsx`
+- Locale `workspace.json` cho `en` va `vi` da duoc bo sung namespace `workspace.shell` de support shell moi.
