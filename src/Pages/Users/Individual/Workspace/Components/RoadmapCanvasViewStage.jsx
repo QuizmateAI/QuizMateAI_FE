@@ -647,7 +647,7 @@ function RoadmapCanvasViewStage({
     }
 
     if (selectedType !== "phase" && selectedType !== "knowledge") {
-      return { left: timelineElement.scrollLeft, top: 0 };
+      return { left: 0, top: 0 };
     }
 
     const knowledgeBranchElement = knowledgeBranchRef.current;
@@ -697,6 +697,13 @@ function RoadmapCanvasViewStage({
       return;
     }
 
+    if (selectedPhaseIdProp === null && selectedKnowledgeIdProp === null) {
+      setSelectedType("roadmap");
+      setSelectedPhaseId(null);
+      setSelectedKnowledgeId(null);
+      return;
+    }
+
     if (normalizedSelectedPhaseIdProp) {
       const hasExternalPhase = phases.some(
         (phase) => normalizePositiveId(phase?.phaseId) === normalizedSelectedPhaseIdProp,
@@ -739,6 +746,8 @@ function RoadmapCanvasViewStage({
     normalizedSelectedKnowledgeIdProp,
     normalizedSelectedPhaseIdProp,
     phases,
+    selectedKnowledgeIdProp,
+    selectedPhaseIdProp,
     selectedPhaseId,
   ]);
 
@@ -841,6 +850,10 @@ function RoadmapCanvasViewStage({
     if (!phaseId) return;
 
     setOptimisticUnlockedPhaseIds((current) => (current.includes(phaseId) ? current : [...current, phaseId]));
+
+    if (isStudyNewRoadmap) {
+      return;
+    }
 
     if (typeof onCreatePhasePreLearning !== "function") {
       return;
