@@ -68,8 +68,8 @@ export function buildWalletsPath() {
   return buildAppPath(APP_ROUTE_SEGMENTS.wallets);
 }
 
-export function buildFeedbacksPath() {
-  return buildAppPath(APP_ROUTE_SEGMENTS.feedbacks);
+export function buildFeedbacksPath(subPath = "") {
+  return buildAppPath(APP_ROUTE_SEGMENTS.feedbacks, subPath);
 }
 
 export function buildWorkspacePath(workspaceId, subPath = "") {

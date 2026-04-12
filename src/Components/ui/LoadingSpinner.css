@@ -1,8 +1,8 @@
 .loader {
   --main-size: 4em;
-  --text-color: #2f4a89;
+  --text-color: #0455bf;
   --shine-color: #ffffff40;
-  --shadow-color: #aaaaaa;
+  --shadow-color: #93c5fd;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -20,9 +20,9 @@
 
 /* Dark mode overrides */
 .dark .loader {
-  --text-color: #7eb4ff;
+  --text-color: #60a5fa;
   --shine-color: #ffffff20;
-  --shadow-color: #555555;
+  --shadow-color: #1e40af;
 }
 
 .loader .text {

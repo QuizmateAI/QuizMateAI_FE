@@ -7,6 +7,6 @@
 
 /* Dark theme: select dropdown options (Plan scope, etc.) */
 .plan-scope-select-dark option {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: #0c2a6e;
+  color: #eff6ff;
 }

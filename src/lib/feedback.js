@@ -33,6 +33,7 @@ const FEEDBACK_TARGET_LABELS = {
     ROADMAP: 'Lộ trình',
     WORKSPACE: 'Workspace',
     SYSTEM_MILESTONE: 'Mốc hệ thống',
+    SUPPORT: 'Hỗ trợ',
   },
   en: {
     QUIZ: 'Quiz',
@@ -41,6 +42,20 @@ const FEEDBACK_TARGET_LABELS = {
     ROADMAP: 'Roadmap',
     WORKSPACE: 'Workspace',
     SYSTEM_MILESTONE: 'System milestone',
+    SUPPORT: 'Support',
+  },
+};
+
+const FEEDBACK_CHANNEL_LABELS = {
+  vi: {
+    PRODUCT: 'Sản phẩm',
+    SYSTEM: 'Hệ thống',
+    GROUP: 'Nhóm',
+  },
+  en: {
+    PRODUCT: 'Product',
+    SYSTEM: 'System',
+    GROUP: 'Group',
   },
 };
 
@@ -95,8 +110,27 @@ const FEEDBACK_REQUEST_STATUS_LABELS = {
   },
 };
 
+const FEEDBACK_RESOLUTION_STATUS_LABELS = {
+  vi: {
+    OPEN: 'Mới tạo',
+    IN_PROGRESS: 'Đang xử lý',
+    RESOLVED: 'Đã giải quyết',
+    CLOSED: 'Đã đóng',
+  },
+  en: {
+    OPEN: 'Open',
+    IN_PROGRESS: 'In progress',
+    RESOLVED: 'Resolved',
+    CLOSED: 'Closed',
+  },
+};
+
 export function getFeedbackTargetLabel(targetType, language = 'vi') {
   return getLocalizedEnumLabel(targetType, FEEDBACK_TARGET_LABELS, language);
+}
+
+export function getFeedbackChannelLabel(channelType, language = 'vi') {
+  return getLocalizedEnumLabel(channelType, FEEDBACK_CHANNEL_LABELS, language);
 }
 
 export function getFeedbackTriggerLabel(triggerType, language = 'vi') {
@@ -109,6 +143,10 @@ export function getFeedbackQuestionTypeLabel(questionType, language = 'vi') {
 
 export function getFeedbackRequestStatusLabel(status, language = 'vi') {
   return getLocalizedEnumLabel(status, FEEDBACK_REQUEST_STATUS_LABELS, language);
+}
+
+export function getFeedbackResolutionStatusLabel(status, language = 'vi') {
+  return getLocalizedEnumLabel(status, FEEDBACK_RESOLUTION_STATUS_LABELS, language);
 }
 
 export function getFeedbackStatusLabel(active, language = 'vi') {
@@ -170,6 +208,32 @@ export function getFeedbackRequestStatusBadgeClass(status, isDarkMode = false) {
     return isDarkMode
       ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
       : 'border-rose-200 bg-rose-50 text-rose-700';
+  }
+
+  return isDarkMode
+    ? 'border-slate-700 bg-slate-800 text-slate-300'
+    : 'border-slate-200 bg-slate-100 text-slate-700';
+}
+
+export function getFeedbackResolutionStatusBadgeClass(status, isDarkMode = false) {
+  const normalizedStatus = String(status || '').toUpperCase();
+
+  if (normalizedStatus === 'RESOLVED' || normalizedStatus === 'CLOSED') {
+    return isDarkMode
+      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+      : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+  }
+
+  if (normalizedStatus === 'IN_PROGRESS') {
+    return isDarkMode
+      ? 'border-blue-500/30 bg-blue-500/10 text-blue-300'
+      : 'border-blue-200 bg-blue-50 text-blue-700';
+  }
+
+  if (normalizedStatus === 'OPEN') {
+    return isDarkMode
+      ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+      : 'border-amber-200 bg-amber-50 text-amber-700';
   }
 
   return isDarkMode

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus,
+  Share2, UserPlus, MessageSquare, Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
@@ -12,11 +13,19 @@ import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory,
+  getGroupQuizHistory,
   publishGroupQuiz, setGroupQuizAudience,
 } from "@/api/QuizAPI";
+import { recordQuizReviewView } from "@/api/ChallengeAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
+import { getUserDisplayLabel } from "@/Utils/userProfile";
+import UserDisplayName from "@/Components/users/UserDisplayName";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
+import GroupDiscussionPanel from "@/Pages/Users/Group/Components/GroupDiscussionPanel";
+import QuestionInlineDiscussion from "@/Pages/Users/Group/Components/QuestionInlineDiscussion";
+import GroupQuizRankingPanel from "@/Pages/Users/Group/Components/GroupQuizRankingPanel";
+import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 import {
@@ -27,6 +36,33 @@ import {
 
 const QUIZ_DETAIL_CACHE_TTL_MS = 15000;
 const quizDetailCache = new Map();
+
+function HistoryMemberAvatar({ src, name, isDarkMode, sizeClass = "w-6 h-6", textClass = "text-[10px]" }) {
+  const [failed, setFailed] = useState(false);
+  const avatarSrc = typeof src === "string" ? src.trim() : "";
+  const showImage = avatarSrc && !failed;
+  const initial = String(name || "?").trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <div className={cn(
+      "rounded-full flex items-center justify-center text-white font-bold shrink-0 overflow-hidden",
+      sizeClass,
+      textClass,
+      showImage ? "bg-transparent" : isDarkMode ? "bg-blue-600" : "bg-blue-500",
+    )}>
+      {showImage ? (
+        <img
+          src={avatarSrc}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  );
+}
 const quizDetailInFlight = new Map();
 
 // Cấu hình màu badge trạng thái quiz
@@ -104,6 +140,7 @@ function QuizDetailView({
   challengeSnapshotReviewMode = false,
 }) {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -125,6 +162,11 @@ function QuizDetailView({
   const [examStartOpen, setExamStartOpen] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  // Leader participation dialog (xuất bản → hỏi ranking)
+  const [leaderParticipationOpen, setLeaderParticipationOpen] = useState(false);
+  // Per-question discussion popup
+  const [discussionOpenQId, setDiscussionOpenQId] = useState(null);
+  const [qCommentCounts, setQCommentCounts] = useState({});
   const [audienceSaving, setAudienceSaving] = useState(false);
   const [audienceMode, setAudienceMode] = useState("ALL_MEMBERS");
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
@@ -145,6 +187,22 @@ function QuizDetailView({
   useEffect(() => {
     setCurrentStatus(quizMeta?.status || quiz?.status || "DRAFT");
   }, [quizMeta?.status, quiz?.status]);
+
+  /** Reviewer challenge: ghi nhận đã mở xem snapshot (phục vụ nhắc mail & nghiệp vụ gỡ reviewer). */
+  useEffect(() => {
+    if (!challengeSnapshotReviewMode || _contextType !== "GROUP" || !_contextId || !quiz?.quizId) return;
+    const ws = Number(_contextId);
+    const qid = Number(quiz.quizId);
+    if (!Number.isFinite(ws) || !Number.isFinite(qid)) return;
+    void (async () => {
+      try {
+        await recordQuizReviewView(ws, qid);
+        queryClient.invalidateQueries({ queryKey: ["challenge-detail", ws] });
+      } catch {
+        /* Chỉ reviewer mới thành công; lỗi khác không chặn xem đề */
+      }
+    })();
+  }, [challengeSnapshotReviewMode, _contextType, _contextId, quiz?.quizId, queryClient]);
 
   // Lấy toàn bộ dữ liệu quiz chi tiết: sections → questions → answers
   const fetchFullDetail = useCallback(async () => {
@@ -302,14 +360,21 @@ function QuizDetailView({
     if (!quiz?.quizId) return;
     setLoadingHistory(true);
     try {
-      const res = await getQuizHistory(quiz.quizId);
+      let res;
+      if (_contextType === "GROUP" && isGroupLeader && _contextId) {
+        // Leader: lấy lịch sử của tất cả members
+        res = await getGroupQuizHistory(_contextId, quiz.quizId);
+      } else {
+        // Member: chỉ lấy lịch sử của bản thân
+        res = await getQuizHistory(quiz.quizId);
+      }
       setHistory(res?.data || []);
     } catch (err) {
       console.error("Lỗi khi tải lịch sử quiz:", err);
     } finally {
       setLoadingHistory(false);
     }
-  }, [quiz?.quizId]);
+  }, [quiz?.quizId, _contextType, isGroupLeader, _contextId]);
 
   useEffect(() => {
     if (activeTab === "history" && history.length === 0) {
@@ -437,11 +502,19 @@ function QuizDetailView({
     };
   }, [audienceOpen, _contextId, groupAudiencePickerExcludeUserId]);
 
-  const handlePublishGroupQuiz = useCallback(async () => {
+  // Bước 1: Leader nhấn Xuất bản → mở dialog hỏi có tham gia ranking không
+  const handlePublishGroupQuiz = useCallback(() => {
     if (!quiz?.quizId) return;
+    setLeaderParticipationOpen(true);
+  }, [quiz?.quizId]);
+
+  // Bước 2a: Leader KHÔNG tham gia ranking → xuất bản trực tiếp
+  const handlePublishDirect = useCallback(async () => {
+    if (!quiz?.quizId) return;
+    setLeaderParticipationOpen(false);
     setPublishing(true);
     try {
-      const res = await publishGroupQuiz(quiz.quizId);
+      const res = await publishGroupQuiz(quiz.quizId, { leaderJoinsRanking: false });
       const next = unwrapApiData(res);
       if (next?.status) setCurrentStatus(next.status);
       setQuizMeta((m) => ({ ...(m || {}), ...next }));
@@ -455,6 +528,38 @@ function QuizDetailView({
       setPublishing(false);
     }
   }, [quiz?.quizId, fetchFullDetail, onGroupQuizUpdated, t]);
+
+  // Bước 2b: Leader THAM GIA ranking → xuất bản với cờ leaderJoinsRanking=true
+  //          Backend giữ quiz ở trạng thái PENDING_LEADER (hoặc DRAFT) cho đến khi leader hoàn thành.
+  //          FE sau khi publish → điều hướng leader làm bài ngay.
+  const handlePublishWithRanking = useCallback(async () => {
+    if (!quiz?.quizId) return;
+    setLeaderParticipationOpen(false);
+    setPublishing(true);
+    try {
+      const res = await publishGroupQuiz(quiz.quizId, { leaderJoinsRanking: true });
+      const next = unwrapApiData(res);
+      if (next?.status) setCurrentStatus(next.status);
+      setQuizMeta((m) => ({ ...(m || {}), ...next }));
+      onGroupQuizUpdated?.(next);
+      quizDetailCache.clear();
+      await fetchFullDetail();
+      // Điều hướng leader vào làm bài — khi hoàn thành backend sẽ tự kích hoạt quiz
+      const attemptPath = buildQuizAttemptPath("exam", quiz.quizId);
+      navigate(attemptPath, {
+        state: {
+          returnToQuizPath: location.pathname + location.search,
+          workspaceId: _contextId,
+          leaderRankingAttempt: true,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      window.alert(err?.message || t("workspace.quiz.detail.publishFailed", "Could not publish quiz."));
+    } finally {
+      setPublishing(false);
+    }
+  }, [quiz?.quizId, _contextId, fetchFullDetail, location, navigate, onGroupQuizUpdated, t]);
 
   const handleSaveAudience = useCallback(async () => {
     if (!quiz?.quizId) return;
@@ -490,21 +595,90 @@ function QuizDetailView({
 
   const isActiveQuiz = currentStatus === "ACTIVE";
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
+
+  // ── Flat question list + lookup map — used by Discussion tab
+  const allQuestionsFlat = React.useMemo(() => {
+    let globalIdx = 0;
+    return sections.flatMap((s) =>
+      (questionsMap[s.sectionId] || []).map((q) => ({
+        ...q,
+        index: ++globalIdx,
+        sectionId: s.sectionId,
+      })),
+    );
+  }, [sections, questionsMap]);
+
+  const questionsById = React.useMemo(
+    () => Object.fromEntries(allQuestionsFlat.map((q) => [String(q.questionId), q])),
+    [allQuestionsFlat],
+  );
+
+  // Load per-question comment counts for badge display
+  useEffect(() => {
+    if (!_contextId || !quiz?.quizId || !allQuestionsFlat.length || _contextType !== "GROUP") return;
+    const qIds = allQuestionsFlat.map((q) => q.questionId);
+    getThreadCounts(_contextId, quiz.quizId, qIds)
+      .then(({ questions }) => setQCommentCounts(questions))
+      .catch(() => {});
+  }, [_contextId, quiz?.quizId, allQuestionsFlat, _contextType]);
+
+  /** Navigate from Discussion tab to a specific question in the Questions tab. */
+  const handleNavigateToQuestion = React.useCallback((questionId) => {
+    const q = questionsById[String(questionId)];
+    if (!q) return;
+    setActiveTab("questions");
+    setExpandedSections((prev) => ({ ...prev, [q.sectionId]: true }));
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-question-id="${questionId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [questionsById]);
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
-  /** Nhóm + leader: tab Kiểm tra (duyệt câu + đáp án). Member nhóm: tab Câu hỏi như workspace cá nhân. */
-  const showGroupReviewTab = _contextType === "GROUP" && isGroupLeader && !fairPlayRestricts;
-  const showQuestionsTab = !showGroupReviewTab;
+  /** Nhóm + leader: tab Kiểm tra. Snapshot challenge (mở từ «Xem quiz»): cả reviewer (member) cũng cần tab Kiểm tra để xem đủ đáp án. */
+  // "Kiểm tra" tab: leader sees it only while quiz is DRAFT (to review before publishing).
+  // Snapshot-reviewers (contributors invited to check) always see it regardless of status.
+  const showGroupReviewTab =
+    _contextType === "GROUP"
+    && !fairPlayRestricts
+    && (
+      (isGroupLeader && currentStatus === "DRAFT")
+      || challengeSnapshotReviewMode
+    );
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
+  // Leaders see both Check tab AND Questions tab (to access per-question discussion)
+  // Only challenge-snapshot reviewers (non-leader members) skip the Questions tab
+  const showQuestionsTab = !isChallengeSnapshotReview;
+  // Ranking tab: GROUP + ACTIVE + leader + not challenge snapshot
+  const showRankingTab = _contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview;
+
+  const snapshotReviewPreferCheckTabRef = React.useRef(false);
+  useEffect(() => {
+    if (snapshotReviewPreferCheckTabRef.current) return;
+    if (
+      !challengeSnapshotReviewMode
+      || !showGroupReviewTab
+      || fairPlayRestricts
+      || isGroupLeader
+    ) {
+      return;
+    }
+    snapshotReviewPreferCheckTabRef.current = true;
+    setActiveTab("review");
+  }, [challengeSnapshotReviewMode, showGroupReviewTab, fairPlayRestricts, isGroupLeader]);
 
   useEffect(() => {
-    if (showGroupReviewTab && activeTab === "questions") {
+    // Only redirect away from "questions" for snapshot-reviewers who can't see that tab
+    if (!showQuestionsTab && activeTab === "questions") {
       setActiveTab("overview");
     }
     if (!showGroupReviewTab && activeTab === "review") {
       setActiveTab("overview");
     }
-  }, [showGroupReviewTab, activeTab]);
+    if (!showRankingTab && activeTab === "ranking") {
+      setActiveTab("overview");
+    }
+  }, [showQuestionsTab, showGroupReviewTab, showRankingTab, activeTab]);
 
   useEffect(() => {
     if (isChallengeSnapshotReview && activeTab === "history") {
@@ -678,9 +852,63 @@ function QuizDetailView({
             <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
           </button>
         )}
+        {_contextType === "GROUP" && !isChallengeSnapshotReview && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("discussion")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "discussion"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" /> Thảo luận
+          </button>
+        )}
+        {showRankingTab && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("ranking")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "ranking"
+                ? "border-yellow-500 text-yellow-600 dark:text-yellow-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <Trophy className="w-4 h-4" /> Xếp hạng
+          </button>
+        )}
       </div>
 
-      {/* Nội dung chi tiết */}
+      {/* Tab Thảo luận — full-height, không padding wrapper */}
+      {activeTab === "discussion" && _contextType === "GROUP" && (
+        <div className="flex-1 min-h-0 overflow-hidden px-2 py-2">
+          <GroupDiscussionPanel
+            isDarkMode={isDarkMode}
+            workspaceId={_contextId}
+            quizId={quiz?.quizId}
+            isLeader={isGroupLeader}
+            hasAttempted={hasQuizCompleted(quiz?.quizId)}
+            allQuestions={allQuestionsFlat}
+            questionsById={questionsById}
+            onNavigateToQuestion={handleNavigateToQuestion}
+          />
+        </div>
+      )}
+
+      {/* Tab Xếp hạng — per-quiz ranking */}
+      {activeTab === "ranking" && showRankingTab && (
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
+          <GroupQuizRankingPanel
+            workspaceId={_contextId}
+            quizId={quiz?.quizId}
+            isDarkMode={isDarkMode}
+          />
+        </div>
+      )}
+
+      {/* Nội dung chi tiết (các tab khác) */}
+      {activeTab !== "discussion" && (
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Group — tab Kiểm tra: câu hỏi + đáp án + config */}
         {activeTab === "review" && showGroupReviewTab && (
@@ -690,6 +918,10 @@ function QuizDetailView({
             questionsMap={questionsMap}
             answersMap={answersMap}
             loading={loading}
+            quizId={quiz?.quizId}
+            workspaceId={_contextId}
+            isLeader={isGroupLeader}
+            isReviewer={challengeSnapshotReviewMode && !isGroupLeader}
           />
         )}
 
@@ -850,7 +1082,7 @@ function QuizDetailView({
                         const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
 
                         return (
-                          <div key={question.questionId} className={`px-4 py-3 ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
+                          <div key={question.questionId} data-question-id={question.questionId} className={`px-4 py-3 ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
                             {/* Question header */}
                             <div className="flex items-start gap-3">
                               <span className={`text-xs font-bold mt-0.5 shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isDarkMode ? "bg-blue-950/50 text-blue-400" : "bg-blue-100 text-blue-600"}`}>
@@ -1006,6 +1238,33 @@ function QuizDetailView({
                                 )}
                               </div>
                             </div>
+
+                            {/* Per-question discussion trigger — GROUP + ACTIVE only */}
+                            {_contextType === "GROUP" && isActiveQuiz && !isChallengeSnapshotReview && (
+                              <div className="px-4 pb-3 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setDiscussionOpenQId(question.questionId)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium",
+                                    isDarkMode
+                                      ? "text-blue-400 hover:bg-blue-900/30 bg-slate-800/50 border border-blue-900/40"
+                                      : "text-blue-600 hover:bg-blue-100 bg-blue-50 border border-blue-200",
+                                  )}
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  <span>Thảo luận</span>
+                                  {(qCommentCounts[String(question.questionId)] ?? 0) > 0 && (
+                                    <span className={cn(
+                                      "px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+                                      isDarkMode ? "bg-blue-900 text-blue-300" : "bg-blue-600 text-white",
+                                    )}>
+                                      {qCommentCounts[String(question.questionId)]}
+                                    </span>
+                                  )}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })
@@ -1034,30 +1293,90 @@ function QuizDetailView({
               </div>
             ) : (
               <div className="grid gap-4">
-                {history.map((attempt) => (
-                  <div key={attempt.attemptId} className={`rounded-xl p-4 border transition-colors cursor-pointer ${
-                    isDarkMode ? "bg-slate-800/50 border-slate-800 hover:bg-slate-800/80" : "bg-white border-slate-200 hover:bg-slate-50"
-                  }`} onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
-                          {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                        </div>
-                        <div>
-                          <h4 className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                            {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
-                          </h4>
-                          <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                            {formatDate(attempt.startedAt)}
-                          </p>
-                        </div>
+                {/* Leader: group attempts by member */}
+                {_contextType === "GROUP" && isGroupLeader ? (() => {
+                  // Group by memberId
+                  const byMember = {};
+                  history.forEach((attempt) => {
+                    const key = String(attempt.userId ?? attempt.memberId ?? attempt.attemptId);
+                    if (!byMember[key]) {
+                      byMember[key] = {
+                        user: {
+                          fullName: attempt.memberName ?? attempt.userFullName,
+                          username: attempt.userName,
+                        },
+                        name: getUserDisplayLabel({
+                          fullName: attempt.memberName ?? attempt.userFullName,
+                          username: attempt.userName,
+                        }, `User ${key}`),
+                        avatar: attempt.avatar ?? attempt.authorAvatar ?? attempt.avatarUrl ?? "",
+                        attempts: [],
+                      };
+                    } else if (!byMember[key].avatar) {
+                      byMember[key].avatar = attempt.avatar ?? attempt.authorAvatar ?? attempt.avatarUrl ?? "";
+                    }
+                    byMember[key].attempts.push(attempt);
+                  });
+                  return Object.entries(byMember).map(([memberId, { name, user, avatar, attempts: memberAttempts }]) => (
+                    <div key={memberId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-slate-200 bg-white"}`}>
+                      {/* Member header */}
+                      <div className={`px-4 py-2.5 flex items-center gap-2 border-b ${isDarkMode ? "bg-slate-800/60 border-slate-700/60" : "bg-slate-50 border-slate-100"}`}>
+                        <HistoryMemberAvatar src={avatar} name={name} isDarkMode={isDarkMode} />
+                        <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                          <UserDisplayName user={user} fallback={name} isDarkMode={isDarkMode} />
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
+                          {memberAttempts.length} lần
+                        </span>
                       </div>
-                      <div className="text-right">
-                        
-                        <div className="flex gap-2 justify-end mt-1">
+                      {/* Member's attempts */}
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {memberAttempts.map((attempt) => (
+                          <div key={attempt.attemptId} className={`px-4 py-3 flex items-center justify-between transition-colors cursor-pointer ${isDarkMode ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}
+                            onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
+                            <div className="flex items-center gap-3">
+                              <div className={`p-1.5 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
+                                {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                              </div>
+                              <div>
+                                <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                                  {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
+                                </p>
+                                <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatDate(attempt.startedAt)}</p>
+                              </div>
+                            </div>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-md ${attempt.isPracticeMode ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")}`}>
+                              {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })() : (
+                  /* Member: own attempts */
+                  history.map((attempt) => (
+                    <div key={attempt.attemptId} className={`rounded-xl p-4 border transition-colors cursor-pointer ${
+                      isDarkMode ? "bg-slate-800/50 border-slate-800 hover:bg-slate-800/80" : "bg-white border-slate-200 hover:bg-slate-50"
+                    }`} onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
+                            {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <h4 className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                              {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
+                            </h4>
+                            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                              {formatDate(attempt.startedAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
                           <span className={`text-[10px] px-2 py-0.5 rounded-md ${
-                            attempt.isPracticeMode 
-                              ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") 
+                            attempt.isPracticeMode
+                              ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700")
                               : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")
                           }`}>
                             {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
@@ -1065,13 +1384,55 @@ function QuizDetailView({
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>
         )}
       </div>
+      )}
+
+      {/* Per-question discussion popup */}
+      {discussionOpenQId != null && (
+        <Dialog open onOpenChange={(open) => { if (!open) { setDiscussionOpenQId(null); // refresh counts after closing
+            if (_contextId && quiz?.quizId && allQuestionsFlat.length) {
+              const qIds = allQuestionsFlat.map((q) => q.questionId);
+              getThreadCounts(_contextId, quiz.quizId, qIds).then(({ questions }) => setQCommentCounts(questions)).catch(() => {});
+            }
+          }
+        }}>
+          <DialogContent className={cn(
+            "sm:max-w-lg w-full p-0 gap-0 overflow-hidden rounded-2xl",
+            isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white",
+          )}>
+            <DialogHeader className={cn(
+              "px-4 pt-4 pb-3 border-b shrink-0 flex flex-row items-center gap-2",
+              isDarkMode ? "border-slate-700/60" : "border-blue-100",
+            )}>
+              <MessageSquare className={cn("w-4 h-4 shrink-0", isDarkMode ? "text-blue-400" : "text-blue-500")} />
+              <DialogTitle className={cn("text-sm font-semibold flex-1", isDarkMode ? "text-slate-100" : "text-gray-800")}>
+                Thảo luận — Câu {questionsById[String(discussionOpenQId)]?.index ?? ""}
+              </DialogTitle>
+              <DialogDescription className="sr-only">Thảo luận về câu hỏi này</DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[70vh]">
+              <div className="p-3">
+                <QuestionInlineDiscussion
+                  questionId={discussionOpenQId}
+                  questionIndex={questionsById[String(discussionOpenQId)]?.index ?? 1}
+                  workspaceId={_contextId}
+                  quizId={quiz?.quizId}
+                  isLeader={isGroupLeader}
+                  hasAttempted={hasQuizCompleted(quiz?.quizId)}
+                  isDarkMode={isDarkMode}
+                  inDialog
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Dialog open={audienceOpen} onOpenChange={setAudienceOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col gap-0 rounded-2xl border-0 p-0 shadow-2xl shadow-slate-900/15">
@@ -1231,8 +1592,7 @@ function QuizDetailView({
                     groupMembers.map((m) => {
                       const uid = Number(m.userId ?? m.id);
                       if (!Number.isInteger(uid) || uid <= 0) return null;
-                      const label = m.fullName || m.username || t("workspace.quiz.audience.memberFallback", { id: uid });
-                      const initial = String(label).trim().charAt(0).toUpperCase() || "?";
+                      const label = getUserDisplayLabel(m, t("workspace.quiz.audience.memberFallback", { id: uid }));
                       const checked = selectedAudienceUserIds.includes(uid);
                       return (
                         <label
@@ -1246,18 +1606,21 @@ function QuizDetailView({
                               : isDarkMode
                                 ? "hover:bg-slate-800/60"
                                 : "hover:bg-white",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                              isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gradient-to-br from-slate-200 to-slate-300 text-slate-700",
                             )}
                           >
-                            {initial}
-                          </div>
+                          <HistoryMemberAvatar
+                            src={m.avatar ?? m.avatarUrl}
+                            name={label}
+                            isDarkMode={isDarkMode}
+                            sizeClass="h-9 w-9"
+                            textClass="text-xs"
+                          />
                           <span className={cn("min-w-0 flex-1 text-sm font-medium", isDarkMode ? "text-slate-100" : "text-slate-800")}>
-                            {label}
+                            <UserDisplayName
+                              user={m}
+                              fallback={t("workspace.quiz.audience.memberFallback", { id: uid })}
+                              isDarkMode={isDarkMode}
+                            />
                           </span>
                           <Checkbox
                             checked={checked}
@@ -1290,6 +1653,67 @@ function QuizDetailView({
             >
               {audienceSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {t("workspace.quiz.save", "Save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leader Participation Dialog — xuất bản quiz: có tham gia ranking không? */}
+      <Dialog open={leaderParticipationOpen} onOpenChange={setLeaderParticipationOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">🏆</span>
+              Bạn có muốn tham gia ranking?
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-1">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Chọn hình thức tham gia của leader trước khi xuất bản bài kiểm tra cho nhóm.
+              </p>
+              <div className="space-y-2">
+                <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/50" : "border-[#BFDBFE] bg-[#EFF6FF]/60"}`}>
+                  <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-100" : "text-[#0455BF]"}`}>
+                    ✅ Tham gia ranking
+                  </p>
+                  <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                    Leader làm bài trước. Sau khi hoàn thành, bài sẽ được kích hoạt cho các thành viên. Điểm của leader sẽ được tính vào bảng xếp hạng.
+                  </p>
+                </div>
+                <div className={`rounded-xl border p-3 text-sm ${isDarkMode ? "border-slate-700 bg-slate-800/40" : "border-gray-200 bg-gray-50"}`}>
+                  <p className={`font-semibold mb-0.5 ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
+                    ⏭️ Không tham gia
+                  </p>
+                  <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                    Xuất bản ngay cho các thành viên. Leader vẫn có thể làm bài nhưng kết quả không vào ranking.
+                  </p>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setLeaderParticipationOpen(false)}
+              disabled={publishing}
+              className={isDarkMode ? "border-slate-700 text-slate-300" : ""}
+            >
+              Huỷ
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handlePublishDirect}
+              disabled={publishing}
+              className={isDarkMode ? "border-slate-600 text-slate-200" : "border-gray-300"}
+            >
+              Không tham gia
+            </Button>
+            <Button
+              onClick={handlePublishWithRanking}
+              disabled={publishing}
+              className="bg-[#0455BF] hover:bg-blue-700 text-white"
+            >
+              {publishing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+              Tham gia ranking &amp; làm bài
             </Button>
           </DialogFooter>
         </DialogContent>

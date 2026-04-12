@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Swords } from 'lucide-react';
 import { listChallenges } from '../../../../api/ChallengeAPI';
@@ -14,9 +15,20 @@ const SUB_TABS = [
 
 export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, currentUserId }) {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const challengeEventIdFromUrl = searchParams.get('challengeEventId');
+
   const [activeSubTab, setActiveSubTab] = useState('SCHEDULED');
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
+
+  /** Mở thẳng chi tiết challenge khi quay lại từ xem quiz snapshot (URL ?challengeEventId=) */
+  useEffect(() => {
+    const raw = Number(challengeEventIdFromUrl);
+    if (Number.isInteger(raw) && raw > 0) {
+      setSelectedEventId(raw);
+    }
+  }, [challengeEventIdFromUrl]);
 
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['challenges', workspaceId, activeSubTab],
@@ -34,8 +46,13 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
 
   const handleBackToList = useCallback(() => {
     setSelectedEventId(null);
+    if (challengeEventIdFromUrl) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('challengeEventId');
+      setSearchParams(next, { replace: true });
+    }
     queryClient.invalidateQueries({ queryKey: ['challenges', workspaceId] });
-  }, [queryClient, workspaceId]);
+  }, [challengeEventIdFromUrl, queryClient, searchParams, setSearchParams, workspaceId]);
 
   const handleChallengeCreated = useCallback(() => {
     setShowCreateWizard(false);
