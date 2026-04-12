@@ -1,4 +1,4 @@
-﻿import React, {
+﻿﻿import React, {
   useEffect,
   useRef,
   useState,
@@ -2078,6 +2078,22 @@ function WorkspacePage() {
     });
   }, []);
 
+  const handleCreateRoadmapPhases = useCallback(() => {
+    if (isSubmittingRoadmapPhaseRequest) return;
+
+    if (!planEntitlements.canCreateRoadmap) {
+      setPlanUpgradeFeatureName("Tạo lộ trình học tập");
+      setPlanUpgradeModalOpen(true);
+      return;
+    }
+
+    handleOpenRoadmapPhaseDialog();
+  }, [
+    handleOpenRoadmapPhaseDialog,
+    isSubmittingRoadmapPhaseRequest,
+    planEntitlements.canCreateRoadmap,
+  ]);
+
   const chatPanelProps = {
     isDarkMode: personalWorkspaceIsDark,
     sources,
@@ -2099,7 +2115,7 @@ function WorkspacePage() {
     onCreateQuiz: handleCreateQuiz,
     onCreateFlashcard: handleCreateFlashcard,
     onCreateRoadmap: handleCreateRoadmap,
-    onCreateRoadmapPhases: handleOpenRoadmapPhaseDialog,
+    onCreateRoadmapPhases: handleCreateRoadmapPhases,
     onNavigateHome: () => navigate("/home"),
     onRoadmapPhaseFocus: handleSelectRoadmapPhase,
     onCreatePhaseKnowledge: handleCreatePhaseKnowledge,
