@@ -1,4 +1,4 @@
-﻿﻿import React, {
+﻿import React, {
   useEffect,
   useRef,
   useState,
@@ -2084,6 +2084,7 @@ function WorkspacePage() {
     onSelectedSourceIdsChange: setSelectedSourceIds,
     onToggleMaterialSelection: handleToggleMaterialSelection,
     selectedRoadmapPhaseId,
+    selectedRoadmapKnowledgeId,
     activeView,
     onUploadClick: handleUploadClickSafe,
     onChangeView: handleStudioAction,
