@@ -6,6 +6,7 @@ import HomeButton from "@/Components/ui/HomeButton";
 import { Input } from "@/Components/ui/input";
 import { renameMaterial } from "@/api/MaterialAPI";
 import { useToast } from "@/context/ToastContext";
+import { cn } from "@/lib/utils";
 import SourceDetailView from "./SourceDetailView";
 import {
   Check,
@@ -59,22 +60,30 @@ function canDeleteSource(source) {
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
-function getSourceStatusTone(status) {
+function getSourceStatusTone(status, isDarkMode = false) {
   const normalizedStatus = String(status || "ACTIVE").toUpperCase();
 
   if (normalizedStatus === "ACTIVE") {
-    return "border border-emerald-200 bg-emerald-50 text-emerald-700";
+    return isDarkMode
+      ? "border border-emerald-700/60 bg-emerald-950/35 text-emerald-200"
+      : "border border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
   if (["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(normalizedStatus)) {
-    return "border border-amber-200 bg-amber-50 text-amber-700";
+    return isDarkMode
+      ? "border border-amber-700/60 bg-amber-950/35 text-amber-200"
+      : "border border-amber-200 bg-amber-50 text-amber-700";
   }
 
   if (["ERROR", "REJECT", "REJECTED", "WARN", "WARNED"].includes(normalizedStatus)) {
-    return "border border-rose-200 bg-rose-50 text-rose-700";
+    return isDarkMode
+      ? "border border-rose-700/60 bg-rose-950/35 text-rose-200"
+      : "border border-rose-200 bg-rose-50 text-rose-700";
   }
 
-  return "border border-slate-200 bg-slate-100 text-slate-600";
+  return isDarkMode
+    ? "border border-slate-700 bg-slate-900 text-slate-300"
+    : "border border-slate-200 bg-slate-100 text-slate-600";
 }
 
 function getSourceStatusLabel(status, t) {
@@ -119,6 +128,24 @@ function SourcesPanel({
     controlledSelectedIds !== undefined
       ? controlledSelectedIds
       : internalSelectedIds;
+  const toolbarButtonClass = cn(
+    "h-11 rounded-full border px-4 transition-colors duration-200 ease-out",
+    isDarkMode
+      ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white"
+      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  );
+  const actionButtonClass = cn(
+    "h-10 rounded-full border px-4 transition-colors duration-200 ease-out",
+    isDarkMode
+      ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white"
+      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  );
+  const iconButtonClass = cn(
+    "h-10 w-10 rounded-full border transition-colors duration-200 ease-out",
+    isDarkMode
+      ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 hover:text-white"
+      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+  );
 
   const filteredSources = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
@@ -215,18 +242,39 @@ function SourcesPanel({
   };
 
   return (
-    <section className="h-full overflow-y-auto px-6 pb-8 pt-6">
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 pb-5">
+    <section
+      className={cn(
+        "h-full overflow-y-auto px-6 pb-8 pt-6 transition-colors duration-200",
+        isDarkMode ? "text-slate-100" : "text-slate-900",
+      )}
+    >
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3 border-b pb-5 transition-colors duration-200",
+          isDarkMode ? "border-slate-700/80" : "border-slate-200",
+        )}
+      >
         <HomeButton
           size="sm"
           rounded
-          className="h-11 border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50"
+          className={cn(
+            "h-11 px-4 transition-colors duration-200 ease-out",
+            isDarkMode
+              ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+          )}
         />
         <div className="min-w-0 flex-1">
-          <h2 className={`truncate text-2xl font-semibold text-slate-900 ${fontClass}`}>
+          <h2
+            className={cn(
+              "truncate text-2xl font-semibold",
+              isDarkMode ? "text-slate-100" : "text-slate-900",
+              fontClass,
+            )}
+          >
             {t("workspace.shell.sourcesHeadline", "Source library for this workspace")}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className={cn("mt-1 text-sm", isDarkMode ? "text-slate-400" : "text-slate-500")}>
             {t(
               "workspace.shell.sourcesHint",
               "Search, preview, select, and curate the exact materials that power roadmap, quiz, and flashcard generation.",
@@ -237,21 +285,43 @@ function SourcesPanel({
         <Button
           type="button"
           onClick={onAddSource}
-          className="h-11 rounded-full bg-slate-900 px-5 text-white hover:bg-slate-800"
+          className={cn(
+            "h-11 rounded-full px-5 transition-colors duration-200 ease-out",
+            isDarkMode
+              ? "bg-slate-100 text-slate-900 hover:bg-white"
+              : "bg-slate-900 text-white hover:bg-slate-800",
+          )}
         >
           <Plus className="mr-2 h-4 w-4" />
           {t("workspace.shell.addSource", "Add source")}
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 py-4">
-        <div className="flex min-w-[280px] flex-1 items-center gap-3 rounded-full border border-slate-200 bg-white px-4">
-          <Search className="h-4 w-4 text-slate-400" />
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3 border-b py-4 transition-colors duration-200",
+          isDarkMode ? "border-slate-700/80" : "border-slate-200",
+        )}
+      >
+        <div
+          className={cn(
+            "flex min-w-[280px] flex-1 items-center gap-3 rounded-full border px-4 transition-colors duration-200",
+            isDarkMode
+              ? "border-slate-700 bg-slate-900"
+              : "border-slate-200 bg-white",
+          )}
+        >
+          <Search className={cn("h-4 w-4", isDarkMode ? "text-slate-500" : "text-slate-400")} />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t("workspace.sources.searchPlaceholder", "Search sources...")}
-            className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+            className={cn(
+              "border-0 bg-transparent px-0 shadow-none focus-visible:ring-0",
+              isDarkMode
+                ? "text-slate-100 placeholder:text-slate-500"
+                : "text-slate-900 placeholder:text-slate-400",
+            )}
           />
         </div>
 
@@ -259,7 +329,7 @@ function SourcesPanel({
           <Button
             type="button"
             variant="outline"
-            className="h-11 rounded-full border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50"
+            className={toolbarButtonClass}
             onClick={selectAll}
           >
             {t("workspace.sources.selectAll")}
@@ -270,7 +340,7 @@ function SourcesPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-full border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50"
+                className={toolbarButtonClass}
                 onClick={clearSelection}
               >
                 <X className="mr-2 h-4 w-4" />
@@ -280,7 +350,7 @@ function SourcesPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-full border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50"
+                className={toolbarButtonClass}
                 onClick={handleDeleteSelected}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -291,7 +361,7 @@ function SourcesPanel({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-full border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50"
+                  className={toolbarButtonClass}
                   onClick={() => onShareSource?.(selectedIds)}
                 >
                   <Share2 className="mr-2 h-4 w-4" />
@@ -303,14 +373,19 @@ function SourcesPanel({
         </div>
       </div>
 
-      <div className="py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+      <div
+        className={cn(
+          "py-3 text-xs font-semibold uppercase tracking-[0.18em]",
+          isDarkMode ? "text-slate-500" : "text-slate-400",
+        )}
+      >
         {selectedIds.length > 0
           ? `${selectedIds.length} ${t("workspace.shell.selectedBadge", "Selected")}`
           : t("workspace.sources.title", "Sources")}
       </div>
 
       {filteredSources.length > 0 ? (
-        <div className="divide-y divide-slate-200">
+        <div className={cn("divide-y", isDarkMode ? "divide-slate-800" : "divide-slate-200")}>
           {filteredSources.map((source, index) => {
             const sourceId = Number(source?.id ?? source?.materialId);
             const isSelected =
@@ -329,11 +404,14 @@ function SourcesPanel({
                     type="button"
                     disabled={!isSelectable}
                     onClick={() => isSelectable && toggleSelection(sourceId)}
-                    className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                    className={cn(
+                      "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ease-out",
                       isSelected
                         ? "border-emerald-500 bg-emerald-500 text-white"
-                        : "border-slate-300 bg-white text-slate-400"
-                    }`}
+                        : isDarkMode
+                          ? "border-slate-700 bg-slate-900 text-slate-500"
+                          : "border-slate-300 bg-white text-slate-400",
+                    )}
                     aria-label={
                       isSelected
                         ? t("workspace.shell.unselectSource", "Unselect source")
@@ -343,27 +421,47 @@ function SourcesPanel({
                     {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
                   </button>
 
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700">
+                  <div
+                    className={cn(
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-colors duration-200",
+                      isDarkMode
+                        ? "border-slate-700 bg-slate-900 text-slate-300"
+                        : "border-slate-200 bg-slate-50 text-slate-700",
+                    )}
+                  >
                     <Icon className="h-4.5 w-4.5" />
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className={`truncate text-base font-semibold text-slate-900 ${fontClass}`}>
+                      <p
+                        className={cn(
+                          "truncate text-base font-semibold",
+                          isDarkMode ? "text-slate-100" : "text-slate-900",
+                          fontClass,
+                        )}
+                      >
                         {source?.name ||
                           source?.title ||
                           t("workspace.shell.untitledSource", "Untitled source")}
                       </p>
-                      <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                      <span
+                        className={cn(
+                          "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors duration-200",
+                          isDarkMode
+                            ? "border-slate-700 bg-slate-900 text-slate-300"
+                            : "border-slate-200 bg-slate-100 text-slate-600",
+                        )}
+                      >
                         {formatFileType(source?.type ?? source?.materialType)}
                       </span>
                       <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSourceStatusTone(source?.status)}`}
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getSourceStatusTone(source?.status, isDarkMode)}`}
                       >
                         {getSourceStatusLabel(source?.status, t)}
                       </span>
                     </div>
-                    <p className="mt-2 line-clamp-2 text-sm text-slate-600">
+                    <p className={cn("mt-2 line-clamp-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-600")}>
                       {source?.description ||
                         source?.summary ||
                         t(
@@ -378,7 +476,7 @@ function SourcesPanel({
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-10 rounded-full border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50"
+                    className={actionButtonClass}
                     onClick={() =>
                       canOpenSourceDetail(source) && setViewingSource(source)
                     }
@@ -392,7 +490,7 @@ function SourcesPanel({
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-10 w-10 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    className={iconButtonClass}
                     onClick={() => openRenameDialog(source)}
                     aria-label={t("workspace.sources.menuRename")}
                   >
@@ -404,7 +502,7 @@ function SourcesPanel({
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-10 w-10 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      className={iconButtonClass}
                       onClick={() => onShareSource?.(source)}
                       aria-label={t("workspace.shell.shareSource", "Share source")}
                     >
@@ -416,7 +514,7 @@ function SourcesPanel({
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="h-10 w-10 rounded-full border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    className={iconButtonClass}
                     aria-label={t("workspace.shell.deleteSourceTitle", "Delete source")}
                     disabled={!canDeleteSource(source)}
                     onClick={() =>
@@ -435,11 +533,11 @@ function SourcesPanel({
         </div>
       ) : (
         <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
-          <FileText className="mb-3 h-12 w-12 text-slate-300" />
-          <p className={`text-base font-semibold text-slate-900 ${fontClass}`}>
+          <FileText className={cn("mb-3 h-12 w-12", isDarkMode ? "text-slate-600" : "text-slate-300")} />
+          <p className={cn("text-base font-semibold", isDarkMode ? "text-slate-100" : "text-slate-900", fontClass)}>
             {t("workspace.shell.noSourcesFound", "No sources match this filter")}
           </p>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className={cn("mt-2 text-sm", isDarkMode ? "text-slate-400" : "text-slate-500")}>
             {t(
               "workspace.shell.noSourcesFoundHint",
               "Try another keyword or upload a new document.",

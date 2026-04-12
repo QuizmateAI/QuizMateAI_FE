@@ -4,9 +4,12 @@ import {
   CreditCard,
   Files,
   GraduationCap,
+  Home,
+  Moon,
   NotebookTabs,
   Pencil,
   ScrollText,
+  Sun,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -111,10 +114,15 @@ function PersonalWorkspaceSidebar({
   }, []);
 
   const asideClasses = cn(
-    "z-30 flex h-full w-[228px] shrink-0 flex-col border-r border-slate-200/80 bg-white transition-transform duration-300",
+    cn(
+      "z-30 flex h-full w-[228px] shrink-0 flex-col border-r transition-[transform,background-color,border-color,color] duration-300 ease-out",
+      isDarkMode ? "border-slate-700/80 bg-slate-900 text-slate-100" : "border-slate-200/80 bg-white text-slate-900",
+    ),
     isMobile
       ? cn(
-          "fixed inset-y-0 left-0 shadow-[0_28px_80px_rgba(15,23,42,0.14)]",
+          isDarkMode
+            ? "fixed inset-y-0 left-0 shadow-[0_28px_80px_rgba(2,6,23,0.5)]"
+            : "fixed inset-y-0 left-0 shadow-[0_28px_80px_rgba(15,23,42,0.14)]",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )
       : "relative",
@@ -123,6 +131,13 @@ function PersonalWorkspaceSidebar({
   const handleNavigate = (key) => {
     if (disabledMap[key]) return;
     onNavigate?.(key);
+    if (isMobile) {
+      onCloseMobile?.();
+    }
+  };
+
+  const handleGoHome = () => {
+    navigate("/home", { state: { from: location.pathname } });
     if (isMobile) {
       onCloseMobile?.();
     }
@@ -163,20 +178,26 @@ function PersonalWorkspaceSidebar({
         disabled={isDisabled}
         aria-current={isActive ? "page" : undefined}
         className={cn(
-          "flex w-full items-center gap-2 rounded-[16px] border px-2.5 py-2 text-left transition-all",
+          "flex w-full items-center gap-2 rounded-[16px] border px-2.5 py-2 text-left transition-[background-color,border-color,color,box-shadow] duration-200 ease-out",
           isDisabled
-            ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
+            ? isDarkMode
+              ? "cursor-not-allowed border-slate-700 bg-slate-800/70 text-slate-500"
+              : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
             : isActive
               ? "border-blue-600 bg-blue-600 text-white shadow-[0_18px_36px_-24px_rgba(37,99,235,0.55)]"
-              : "border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
+              : isDarkMode
+                ? "border-transparent bg-slate-900 text-slate-300 hover:border-slate-700 hover:bg-slate-800 hover:text-white"
+                : "border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
         )}
       >
         <span
           className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border",
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
             isActive
               ? "border-blue-500 bg-blue-500 text-white"
-              : "border-slate-200 bg-white text-slate-600",
+              : isDarkMode
+                ? "border-slate-700 bg-slate-800 text-slate-300"
+                : "border-slate-200 bg-white text-slate-600",
           )}
         >
           <Icon className="h-4 w-4" />
@@ -188,8 +209,8 @@ function PersonalWorkspaceSidebar({
 
         {badgeValue ? (
           <span className={cn(
-            "inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-            isActive ? "bg-white text-blue-700" : "bg-slate-900 text-white",
+            "inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold transition-colors duration-200 ease-out",
+            isActive ? "bg-white text-blue-700" : isDarkMode ? "bg-slate-200 text-slate-900" : "bg-slate-900 text-white",
           )}>
             {badgeValue}
           </span>
@@ -210,12 +231,46 @@ function PersonalWorkspaceSidebar({
       ) : null}
 
       <aside className={asideClasses}>
-        <div className="border-b border-slate-200/80 px-4 pb-3.5 pt-4">
+        <div className={cn("border-b px-4 pb-3.5 pt-4", isDarkMode ? "border-slate-700/80" : "border-slate-200/80")}>
+          <div className="mb-3 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleGoHome}
+              className={cn(
+                "inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
+                isDarkMode
+                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
+                  : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+              )}
+              aria-label={t("common.home", "Home")}
+              title={t("common.home", "Home")}
+            >
+              <Home className="h-4 w-4" />
+            </button>
+
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                className={cn(
+                  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
+                  isDarkMode
+                    ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                )}
+                aria-label={t("common.close", "Close")}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : <span className="h-9 w-9" />}
+          </div>
+
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p
                 className={cn(
-                  "truncate text-[18px] font-semibold leading-tight text-slate-950",
+                  "truncate text-[18px] font-semibold leading-tight",
+                  isDarkMode ? "text-slate-100" : "text-slate-950",
                   fontClass,
                 )}
               >
@@ -231,20 +286,15 @@ function PersonalWorkspaceSidebar({
                 <button
                   type="button"
                   onClick={openEditDialog}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                  className={cn(
+                    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ease-out",
+                    isDarkMode
+                      ? "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
+                      : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                  )}
                   aria-label={t("common.edit", "Edit")}
                 >
                   <Pencil className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
-              {isMobile ? (
-                <button
-                  type="button"
-                  onClick={onCloseMobile}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                  aria-label={t("common.close", "Close")}
-                >
-                  <X className="h-3.5 w-3.5" />
                 </button>
               ) : null}
             </div>
@@ -256,18 +306,24 @@ function PersonalWorkspaceSidebar({
           </div>
         </div>
 
-        <div className="border-t border-slate-200/80 px-3.5 pb-3 pt-2.5">
+        <div className={cn("border-t px-3.5 pb-3 pt-2.5", isDarkMode ? "border-slate-700/80" : "border-slate-200/80")}>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() =>
                 navigate("/wallets", { state: { from: location.pathname } })
               }
-              className={workspaceSurface(
-                "flex h-14 min-w-0 flex-1 items-center gap-2.5 rounded-2xl px-2.5 pr-3 text-left transition-colors hover:bg-slate-50",
+              className={cn(
+                "flex h-14 min-w-0 flex-1 items-center gap-2.5 rounded-2xl border px-2.5 pr-3 text-left transition-colors duration-200 ease-out",
+                isDarkMode
+                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                  : workspaceSurface("hover:bg-slate-50"),
               )}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
+              <span className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border",
+                isDarkMode ? "border-slate-700 bg-slate-900" : "border-slate-200 bg-slate-50",
+              )}>
                 <CreditIconImage
                   alt="QuizMate Credits"
                   className="h-4 w-4 rounded-full"
@@ -275,7 +331,8 @@ function PersonalWorkspaceSidebar({
               </span>
               <span
                 className={cn(
-                  "block min-w-0 flex-1 truncate text-base font-semibold tabular-nums text-slate-900",
+                  "block min-w-0 flex-1 truncate text-base font-semibold tabular-nums",
+                  isDarkMode ? "text-slate-100" : "text-slate-900",
                   fontClass,
                 )}
               >
@@ -291,7 +348,12 @@ function PersonalWorkspaceSidebar({
             <button
               type="button"
               onClick={onToggleLanguage}
-              className="flex h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 text-slate-600 transition-colors hover:bg-slate-50"
+              className={cn(
+                "flex h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 transition-colors duration-200 ease-out",
+                isDarkMode
+                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              )}
             >
               <img 
                 src={i18n.language === "vi" ? VietnamFlag : EnglishFlag}
@@ -301,6 +363,20 @@ function PersonalWorkspaceSidebar({
               <span className={cn("text-[13px] font-semibold", fontClass)}>
                 {i18n.language === "vi" ? "VI" : "EN"}
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onToggleDarkMode}
+              className={cn(
+                "flex h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 transition-colors duration-200 ease-out",
+                isDarkMode
+                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              )}
+              aria-label={isDarkMode ? t("common.light", "Light") : t("common.dark", "Dark")}
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         </div>
