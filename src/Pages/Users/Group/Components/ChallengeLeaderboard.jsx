@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getChallengeLeaderboard } from '../../../../api/ChallengeAPI';
 import { Trophy, Medal, Clock } from 'lucide-react';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 
 function formatTime(seconds) {
   if (seconds == null) return '-';
@@ -80,7 +81,7 @@ export default function ChallengeLeaderboard({ workspaceId, eventId, isDarkMode 
                       </div>
                     )}
                     <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {entry.fullName || entry.username}
+                      <UserDisplayName user={entry} fallback="Thành viên" isDarkMode={isDarkMode} />
                     </span>
                   </div>
                 </td>

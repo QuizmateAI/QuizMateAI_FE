@@ -41,7 +41,8 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
     try {
       if (contextType === "WORKSPACE") {
         const quizRes = await getQuizzesByScope("WORKSPACE", contextId);
-        const quizzes = quizRes.data || [];
+        const rawQuizzes = quizRes.data ?? [];
+        const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : [];
         setMockTests(
           quizzes.map((item) => ({
             ...item,
@@ -57,7 +58,8 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
       }
 
       const roadmapRes = await getRoadmapsByWorkspace(contextId, 0, 100);
-      const roadmaps = roadmapRes.data?.content || roadmapRes.data || [];
+      const rawRoadmaps = roadmapRes.data?.content ?? roadmapRes.data;
+      const roadmaps = Array.isArray(rawRoadmaps) ? rawRoadmaps : [];
       const allRoadmapIds = roadmaps.map((roadmap) => roadmap.roadmapId || roadmap.id);
       setRoadmapIds(allRoadmapIds);
 
@@ -66,7 +68,8 @@ function MockTestListView({ isDarkMode, onCreateMockTest, onViewMockTest, contex
         const roadmapId = roadmap.roadmapId || roadmap.id;
         try {
           const quizRes = await getQuizzesByScope("ROADMAP", roadmapId);
-          const quizzes = quizRes.data || [];
+          const rawList = quizRes.data ?? [];
+          const quizzes = Array.isArray(rawList) ? rawList : [];
           quizzes.forEach((quiz) => {
             allMockTests.push({
               ...quiz,

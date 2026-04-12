@@ -170,42 +170,80 @@ function getOutputTokens(row) {
   return Number(row?.completionTokens || 0) + Number(row?.thoughtTokens || 0);
 }
 
-function tokenBoxClass(isDarkMode) {
+function getTokenTone(kind, isDarkMode) {
+  if (kind === 'input') {
+    return isDarkMode
+      ? {
+        box: 'border-slate-600 bg-slate-900/60',
+        label: 'text-slate-200',
+        value: 'text-white',
+      }
+      : {
+        box: 'border-slate-300 bg-white',
+        label: 'text-slate-700',
+        value: 'text-slate-900',
+      };
+  }
+
+  if (kind === 'output') {
+    return isDarkMode
+      ? {
+        box: 'border-slate-600 bg-slate-900/60',
+        label: 'text-slate-200',
+        value: 'text-white',
+      }
+      : {
+        box: 'border-slate-300 bg-white',
+        label: 'text-slate-700',
+        value: 'text-slate-900',
+      };
+  }
+
   return isDarkMode
-    ? 'border-2 border-slate-600 bg-slate-900/50'
-    : 'border-2 border-slate-300 bg-white';
+    ? {
+      box: 'border-slate-600 bg-slate-900/60',
+      label: 'text-slate-200',
+      value: 'text-white',
+    }
+    : {
+      box: 'border-slate-300 bg-white',
+      label: 'text-slate-700',
+      value: 'text-slate-900',
+    };
 }
 
 function TokenBreakdownCell({ row, isDarkMode, t }) {
   const outputTokens = getOutputTokens(row);
-  const box = tokenBoxClass(isDarkMode);
-  const labelCls = `text-[11px] font-extrabold uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`;
+  const inputTone = getTokenTone('input', isDarkMode);
+  const outputTone = getTokenTone('output', isDarkMode);
+  const totalTone = getTokenTone('total', isDarkMode);
+  const labelCls = 'text-[11px] font-semibold uppercase tracking-[0.18em]';
 
   return (
     <div className="mx-auto min-w-[240px]">
       <div className="grid grid-cols-2 gap-2">
-        <div className={`rounded-2xl px-3 py-3 text-center ${box}`}>
-          <p className={labelCls}>
+        <div className={`rounded-2xl border px-3 py-3 text-center ${inputTone.box}`}>
+          <p className={`${labelCls} ${inputTone.label}`}>
             {t('aiCosts.tokens.input', { defaultValue: 'Input' })}
           </p>
-          <p className={`mt-1 text-base font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          <p className={`mt-1 text-base font-semibold tabular-nums ${inputTone.value}`}>
             {formatInteger(row?.promptTokens)}
           </p>
         </div>
-        <div className={`rounded-2xl px-3 py-3 text-center ${box}`}>
-          <p className={labelCls}>
+        <div className={`rounded-2xl border px-3 py-3 text-center ${outputTone.box}`}>
+          <p className={`${labelCls} ${outputTone.label}`}>
             {t('aiCosts.tokens.output', { defaultValue: 'Output' })}
           </p>
-          <p className={`mt-1 text-base font-black tabular-nums ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          <p className={`mt-1 text-base font-semibold tabular-nums ${outputTone.value}`}>
             {formatInteger(outputTokens)}
           </p>
         </div>
       </div>
-      <div className={`mt-2 rounded-2xl px-3 py-3 text-center ${box}`}>
-        <p className={labelCls}>
+      <div className={`mt-2 rounded-2xl border px-3 py-3 text-center ${totalTone.box}`}>
+        <p className={`${labelCls} ${totalTone.label}`}>
           {t('aiCosts.tokens.total', { defaultValue: 'Total' })}
         </p>
-        <p className={`mt-1 text-lg font-black tabular-nums tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+        <p className={`mt-1 text-lg font-bold tabular-nums tracking-tight ${totalTone.value}`}>
           {formatInteger(row?.totalTokens)}
         </p>
       </div>
@@ -506,40 +544,39 @@ function AiCostManagement() {
                 return (
                   <TableRow key={row.aiUsageId} className={`border-b ${tableStroke} ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800/40' : 'bg-white hover:bg-slate-50/80'}`}>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
-                      <p className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{getAiActionLabel(row.actionKey, t)}</p>
-                      <p className={`mt-1 font-mono text-xs font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{row.taskId || '-'}</p>
-                      <p className={`mt-1 text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatDateTime(row.createdAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}</p>
+                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{getAiActionLabel(row.actionKey, t)}</p>
+                      <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{row.taskId || '-'}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatDateTime(row.createdAt, i18n.language === 'vi' ? 'vi-VN' : 'en-US')}</p>
                     </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
-                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.planDisplayName || '-'}</p>
-                      <p className={`mt-1 text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-700'}`}>{row.planCode || '-'}</p>
+                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.planDisplayName || '-'}</p>
                     </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
-                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.provider || '-'}</p>
-                      <p className={`mt-1 font-mono text-xs font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{row.modelCode || '-'}</p>
-                      <p className={`mt-1 text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{getAiModelGroupLabel(row.modelGroup, t)}</p>
+                      <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{row.provider || '-'}</p>
+                      <p className={`mt-1 font-mono text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{row.modelCode || '-'}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{getAiModelGroupLabel(row.modelGroup, t)}</p>
                     </TableCell>
                     <TableCell className={`py-4 text-center align-middle border-r ${tableStroke}`}>
                       <TokenBreakdownCell row={row} isDarkMode={isDarkMode} t={t} />
                     </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
-                      <p className={`text-base font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      <p className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                         {formatVnd(row.chargedVnd)}
                       </p>
-                      <p className={`mt-1 text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <p className={`mt-1 text-xs font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                         {formatInteger(row.chargedCredit)} {t('aiCosts.units.credit')}
                       </p>
                     </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
-                      <p className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      <p className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                         {formatEquivalentToken(actualTokenEquivalent, numberLocale)} {t('aiCosts.units.tokenEquivalent', { defaultValue: 'token' })}
                       </p>
-                      <p className={`mt-1 text-xs font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{formatVnd(row.providerCostVnd)}</p>
-                      <p className={`mt-1 text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatUsd(row.providerCostUsd)}</p>
+                      <p className={`mt-1 text-xs font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{formatVnd(row.providerCostVnd)}</p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{formatUsd(row.providerCostUsd)}</p>
                     </TableCell>
                     <TableCell className={`py-4 align-middle border-r ${tableStroke}`}>
                       <p
-                        className={`text-sm font-bold ${
+                        className={`text-sm font-semibold ${
                           isProfitPositive
                             ? (isDarkMode ? 'text-emerald-400' : 'text-emerald-700')
                             : (isDarkMode ? 'text-rose-400' : 'text-rose-700')
@@ -548,7 +585,7 @@ function AiCostManagement() {
                         {formatVnd(row.profitVnd)}
                       </p>
                       <p
-                        className={`mt-1 text-xs font-semibold ${
+                        className={`mt-1 text-xs font-medium ${
                           isProfitPositive
                             ? (isDarkMode ? 'text-emerald-500/95' : 'text-emerald-800')
                             : (isDarkMode ? 'text-rose-400/95' : 'text-rose-800')

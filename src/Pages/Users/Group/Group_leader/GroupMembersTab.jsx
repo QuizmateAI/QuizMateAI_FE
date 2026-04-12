@@ -20,6 +20,8 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/Components/ui/dropdown-menu';
+import { getUserDisplayLabel } from '@/Utils/userProfile';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 
 function GroupMembersTab({
   isDarkMode,
@@ -248,7 +250,7 @@ function GroupMembersTab({
                   </div>
                   <div className="min-w-0">
                     <p className={`truncate text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {member.fullName || member.username}
+                      <UserDisplayName user={member} fallback={currentLang === 'en' ? 'Member' : 'Thành viên'} isDarkMode={isDarkMode} />
                     </p>
                     <p className={`truncate text-xs ${eyebrowClass}`}>{member.email || `@${member.username}`}</p>
                   </div>
@@ -335,7 +337,7 @@ function GroupMembersTab({
               {t('home.group.removeMember')}
             </h3>
             <p className={`mt-3 text-sm leading-6 ${subtleTextClass}`}>
-              {t('home.group.removeConfirm')} <strong>{confirmRemove.fullName || confirmRemove.username}</strong>?
+              {t('home.group.removeConfirm')} <strong>{getUserDisplayLabel(confirmRemove, currentLang === 'en' ? 'Member' : 'Thành viên')}</strong>?
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button

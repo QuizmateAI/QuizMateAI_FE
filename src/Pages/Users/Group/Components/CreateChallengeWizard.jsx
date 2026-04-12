@@ -2,13 +2,21 @@ import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   X, ChevronRight, ChevronLeft, Check, Clock, Users,
-  FileText, Loader2, Search, Calendar, Shield,
+  FileText, Loader2, Search, Shield,
   ListChecks,
 } from 'lucide-react';
 import { getQuizzesByScope } from '../../../../api/QuizAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { createChallenge } from '../../../../api/ChallengeAPI';
 import { getDurationInMinutes } from '@/lib/quizDurationDisplay';
+import {
+  combineToBackendPayload,
+  defaultEndPartsFromStart,
+  defaultStartParts,
+  getScheduleValidationIssues,
+} from '@/lib/challengeSchedule';
+import UserDisplayName from '@/Components/users/UserDisplayName';
+import ChallengeScheduleFields from './ChallengeScheduleFields';
 
 function getQuizSummaryLine(q) {
   const questionCount = Number(q?.totalQuestion ?? q?.totalQuestions ?? q?.questionCount ?? 0) || 0;
@@ -62,38 +70,11 @@ function StepIndicator({ currentStep, isDarkMode }) {
   );
 }
 
-function toLocalDatetimeString(date) {
-  if (!date) return '';
-  const d = new Date(date);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** Giá trị từ input datetime-local — gửi nguyên wall-clock cho BE (LocalDateTime), không dùng toISOString (lệch múi giờ). */
-function datetimeLocalValueToBackendPayload(value) {
-  if (!value || typeof value !== 'string') return value;
-  return value.length === 16 ? `${value}:00` : value;
-}
-
 function formatDateTime(dt) {
   if (!dt) return '-';
   const d = new Date(dt);
   return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
     + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-}
-
-function getScheduleIssues(sourceMode, startTime, endTime) {
-  const issues = [];
-  const startMs = new Date(startTime).getTime();
-  const endMs = new Date(endTime).getTime();
-  const minLeadMin = sourceMode === 'NEW_CHALLENGE_QUIZ' ? 25 : 5;
-  const minDurMin = 5;
-  if (!startTime || !endTime) return issues;
-  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return issues;
-  if (endMs <= startMs) issues.push('endBeforeStart');
-  else if ((endMs - startMs) / 60000 < minDurMin) issues.push('shortWindow');
-  if (startMs < Date.now() + minLeadMin * 60 * 1000) issues.push('startTooSoon');
-  return issues;
 }
 
 export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose, onCreated, currentUserId }) {
@@ -109,15 +90,15 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   // Step 2: Schedule
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [startTime, setStartTime] = useState(() => {
-    const now = new Date();
-    now.setHours(now.getHours() + 1, 0, 0, 0);
-    return toLocalDatetimeString(now);
+  const [startDate, setStartDate] = useState(() => defaultStartParts().dateStr);
+  const [startTime, setStartTime] = useState(() => defaultStartParts().timeStr);
+  const [endDate, setEndDate] = useState(() => {
+    const s = defaultStartParts();
+    return defaultEndPartsFromStart(s.dateStr, s.timeStr).dateStr;
   });
   const [endTime, setEndTime] = useState(() => {
-    const now = new Date();
-    now.setHours(now.getHours() + 3, 0, 0, 0);
-    return toLocalDatetimeString(now);
+    const s = defaultStartParts();
+    return defaultEndPartsFromStart(s.dateStr, s.timeStr).timeStr;
   });
 
   // Step 3: Registration
@@ -194,8 +175,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     switch (step) {
       case 0: return sourceMode === 'NEW_CHALLENGE_QUIZ' || validSelectedQuizId != null;
       case 1: {
-        if (!title.trim() || !startTime || !endTime) return false;
-        return getScheduleIssues(sourceMode, startTime, endTime).length === 0;
+        if (!title.trim() || !startDate || !startTime || !endDate || !endTime) return false;
+        return getScheduleValidationIssues(startDate, startTime, endDate, endTime).length === 0;
       }
       case 2: return registrationMode === 'PUBLIC_GROUP' || sanitizedSelectedUserIds.length > 0;
       case 3: return true;
@@ -212,8 +193,8 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         description: description.trim() || null,
         registrationMode,
         sourceMode,
-        startTime: datetimeLocalValueToBackendPayload(startTime),
-        endTime: datetimeLocalValueToBackendPayload(endTime),
+        startTime: combineToBackendPayload(startDate, startTime),
+        endTime: combineToBackendPayload(endDate, endTime),
         sourceQuizId: sourceMode === 'EXISTING_SNAPSHOT' ? validSelectedQuizId : null,
         invitedUserIds: registrationMode === 'INVITE_ONLY' ? sanitizedSelectedUserIds : [],
         leaderParticipates,
@@ -410,7 +391,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   Sau khi tạo challenge, vào chi tiết challenge và bấm <strong className="font-medium">Soạn đề</strong> để mở trình soạn quiz (tab Quiz).
                 </p>
                 <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
-                  Lịch bắt đầu nên cách hiện tại ít nhất 25 phút để kịp hoàn thiện câu hỏi.
+                  Lịch bắt đầu phải cách hiện tại ít nhất 3 ngày; sau khi tạo, vào chi tiết challenge để soạn đề trước khi challenge diễn ra.
                 </p>
               </div>
             )}
@@ -418,7 +399,12 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         );
 
       case 1: // Schedule
-        { const schedIssues = getScheduleIssues(sourceMode, startTime, endTime);
+        { const schedIssues = getScheduleValidationIssues(startDate, startTime, endDate, endTime);
+        const bumpEndToWindow = (dStr, tStr) => {
+          const next = defaultEndPartsFromStart(dStr, tStr);
+          setEndDate(next.dateStr);
+          setEndTime(next.timeStr);
+        };
         return (
           <div className="flex flex-col gap-4">
             <div>
@@ -449,46 +435,24 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className={`mb-1.5 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                  <Calendar className="mr-1 inline h-3.5 w-3.5" />
-                  Bắt đầu *
-                </label>
-                <input
-                  type="datetime-local"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <label className={`mb-1.5 block text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-                  <Clock className="mr-1 inline h-3.5 w-3.5" />
-                  Kết thúc *
-                </label>
-                <input
-                  type="datetime-local"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-            </div>
-
-            {schedIssues.includes('endBeforeStart') && (
-              <p className="text-xs text-red-500">Thời gian kết thúc phải sau thời gian bắt đầu</p>
-            )}
-            {schedIssues.includes('shortWindow') && (
-              <p className="text-xs text-red-500">Khoảng từ bắt đầu đến kết thúc phải ít nhất 5 phút</p>
-            )}
-            {schedIssues.includes('startTooSoon') && (
-              <p className="text-xs text-red-500">
-                {sourceMode === 'NEW_CHALLENGE_QUIZ'
-                  ? 'Với quiz mới, thời gian bắt đầu phải cách hiện tại ít nhất 25 phút (để soạn đề).'
-                  : 'Thời gian bắt đầu phải cách hiện tại ít nhất 5 phút.'}
-              </p>
-            )}
+            <ChallengeScheduleFields
+              isDarkMode={isDarkMode}
+              startDate={startDate}
+              startTime={startTime}
+              endDate={endDate}
+              endTime={endTime}
+              onStartDateChange={(v) => {
+                setStartDate(v);
+                bumpEndToWindow(v, startTime);
+              }}
+              onStartTimeChange={(v) => {
+                setStartTime(v);
+                bumpEndToWindow(startDate, v);
+              }}
+              onEndDateChange={setEndDate}
+              onEndTimeChange={setEndTime}
+              validationIssues={schedIssues}
+            />
 
             <label
               className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${
@@ -587,7 +551,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                           )}
                           <div className="min-w-0 flex-1">
                             <div className={`truncate text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                              {m.fullName || m.username}
+                              <UserDisplayName user={m} fallback="Thành viên" isDarkMode={isDarkMode} />
                             </div>
                             {m.email && (
                               <div className={`truncate text-xs ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{m.email}</div>
@@ -630,11 +594,11 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                 )}
                 <div className="flex items-start justify-between gap-4">
                   <dt className="opacity-60">Bắt đầu:</dt>
-                  <dd className="text-right">{formatDateTime(startTime)}</dd>
+                  <dd className="text-right">{formatDateTime(combineToBackendPayload(startDate, startTime))}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-4">
                   <dt className="opacity-60">Kết thúc:</dt>
-                  <dd className="text-right">{formatDateTime(endTime)}</dd>
+                  <dd className="text-right">{formatDateTime(combineToBackendPayload(endDate, endTime))}</dd>
                 </div>
               </dl>
             </div>

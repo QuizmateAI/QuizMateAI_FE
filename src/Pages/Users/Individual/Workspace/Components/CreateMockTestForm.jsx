@@ -58,7 +58,7 @@ function CreateMockTestForm({ isDarkMode = false, onCreateMockTest, onBack, cont
     setRoadmapLoading(true);
     try {
       const res = await getRoadmapsByWorkspace(contextId, 0, 100);
-      setRoadmaps(res.data?.content || res.data || []);
+      setRoadmaps(res?.data?.data?.content || res?.data?.content || []);
     } catch (e) {
       console.error("Lỗi tải roadmaps:", e);
     } finally {

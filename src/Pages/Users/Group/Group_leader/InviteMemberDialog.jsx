@@ -10,6 +10,7 @@ import {
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { Loader2, Mail } from 'lucide-react';
+import { getErrorMessage } from '@/Utils/getErrorMessage';
 
 // Dialog mời thành viên bằng email
 function InviteMemberDialog({ open, onOpenChange, onInvite, isDarkMode }) {
@@ -42,8 +43,7 @@ function InviteMemberDialog({ open, onOpenChange, onInvite, isDarkMode }) {
       await onInvite(email.trim());
       onOpenChange(false);
     } catch (err) {
-      const serverMsg = err?.response?.data?.message || err?.message;
-      setError(serverMsg || t('home.group.inviteError'));
+      setError(getErrorMessage(t, err) || t('home.group.inviteError'));
     } finally {
       setSubmitting(false);
     }

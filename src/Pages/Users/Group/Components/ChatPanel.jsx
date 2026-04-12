@@ -15,7 +15,8 @@ const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyFlashcardListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/FlashcardDetailView"));
 const LazyMockTestListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/MockTestListView"));
-const LazyCreateMockTestForm = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/CreateMockTestForm"));
+const LazyCreateGroupMockTestForm = React.lazy(() => import("./CreateGroupMockTestForm"));
+const LazyGroupRankingTab = React.lazy(() => import("./GroupRankingTab"));
 const LazyMockTestDetailView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/MockTestDetailView"));
 const LazyEditMockTestForm = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/EditMockTestForm"));
 const LazyPostLearningListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/PostLearningListView"));
@@ -177,11 +178,26 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
       case "roadmap":
         return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={setActiveRoadmapId} />;
       case "quiz":
-        return <LazyQuizListView isDarkMode={isDarkMode} onCreateQuiz={() => onChangeView?.("createQuiz")} onViewQuiz={onViewQuiz} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} refreshToken={quizListRefreshToken} />;
+        return (
+          <LazyQuizListView
+            isDarkMode={isDarkMode}
+            onCreateQuiz={() => onChangeView?.("createQuiz")}
+            onViewQuiz={onViewQuiz}
+            contextType="GROUP"
+            contextId={workspaceId}
+            hideCreateButton={false}
+            disableCreate={readOnly}
+            refreshToken={quizListRefreshToken}
+            groupRole={role}
+            groupCurrentUserId={groupWorkspaceCurrentUserId}
+          />
+        );
       case "flashcard":
         return <LazyFlashcardListView isDarkMode={isDarkMode} onCreateFlashcard={() => onChangeView?.("createFlashcard")} onViewFlashcard={onViewFlashcard} onDeleteFlashcard={onDeleteFlashcard} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
       case "mockTest":
         return <LazyMockTestListView isDarkMode={isDarkMode} onCreateMockTest={() => onChangeView?.("createMockTest")} onViewMockTest={onViewMockTest} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
+      case "ranking":
+        return <LazyGroupRankingTab workspaceId={workspaceId} isDarkMode={isDarkMode} />;
       case "postLearning":
         return <LazyPostLearningListView isDarkMode={isDarkMode} onCreatePostLearning={() => onChangeView?.("createPostLearning")} onViewPostLearning={onViewPostLearning} contextType="GROUP" contextId={workspaceId} hideCreateButton={readOnly} disableCreate={readOnly} />;
       default:
@@ -317,7 +333,16 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
           />
         ) : null;
       case "createMockTest":
-        return <LazyCreateMockTestForm isDarkMode={isDarkMode} onCreateMockTest={onCreateMockTest} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
+        return (
+          <LazyCreateGroupMockTestForm
+            isDarkMode={isDarkMode}
+            workspaceId={workspaceId}
+            onBack={onBack}
+            onCreated={(quiz) => {
+              onCreateMockTest?.(quiz);
+            }}
+          />
+        );
       case "createPostLearning":
         return <LazyCreatePostLearningForm isDarkMode={isDarkMode} onCreatePostLearning={onCreatePostLearning} onBack={onBack} contextType="GROUP" contextId={workspaceId} />;
       case "mockTestDetail":
