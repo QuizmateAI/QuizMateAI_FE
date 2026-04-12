@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, BadgeCheck, Timer, BarChart3, Clock, Loader2, Star,
   ChevronDown, ChevronRight, Target, BookOpen, Hash, CheckCircle2, Play, ClipboardCheck, History, Info, List, Users, Sparkles,
-  Share2, UserPlus,
+  Share2, UserPlus, MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/Components/ui/button";
@@ -13,12 +13,16 @@ import { Checkbox } from "@/Components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/Components/ui/dialog";
 import {
   getSectionsByQuiz, getQuestionsBySection, getAnswersByQuestion, toggleStarQuestion, QUESTION_TYPE_ID_MAP, getQuizFull, getQuizHistory,
+  getGroupQuizHistory,
   publishGroupQuiz, setGroupQuizAudience,
 } from "@/api/QuizAPI";
 import { recordQuizReviewView } from "@/api/ChallengeAPI";
 import { getGroupMembers } from "@/api/GroupAPI";
 import { unwrapApiData } from "@/Utils/apiResponse";
 import GroupQuizReviewPanel from "@/Pages/Users/Group/Components/GroupQuizReviewPanel";
+import GroupDiscussionPanel from "@/Pages/Users/Group/Components/GroupDiscussionPanel";
+import QuestionInlineDiscussion from "@/Pages/Users/Group/Components/QuestionInlineDiscussion";
+import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
 import { hasQuizCompleted } from "@/Utils/quizAttemptTracker";
 import {
@@ -128,6 +132,9 @@ function QuizDetailView({
   const [examStartOpen, setExamStartOpen] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  // Per-question discussion popup
+  const [discussionOpenQId, setDiscussionOpenQId] = useState(null);
+  const [qCommentCounts, setQCommentCounts] = useState({});
   const [audienceSaving, setAudienceSaving] = useState(false);
   const [audienceMode, setAudienceMode] = useState("ALL_MEMBERS");
   const [selectedAudienceUserIds, setSelectedAudienceUserIds] = useState([]);
@@ -321,14 +328,21 @@ function QuizDetailView({
     if (!quiz?.quizId) return;
     setLoadingHistory(true);
     try {
-      const res = await getQuizHistory(quiz.quizId);
+      let res;
+      if (_contextType === "GROUP" && isGroupLeader && _contextId) {
+        // Leader: lấy lịch sử của tất cả members
+        res = await getGroupQuizHistory(_contextId, quiz.quizId);
+      } else {
+        // Member: chỉ lấy lịch sử của bản thân
+        res = await getQuizHistory(quiz.quizId);
+      }
       setHistory(res?.data || []);
     } catch (err) {
       console.error("Lỗi khi tải lịch sử quiz:", err);
     } finally {
       setLoadingHistory(false);
     }
-  }, [quiz?.quizId]);
+  }, [quiz?.quizId, _contextType, isGroupLeader, _contextId]);
 
   useEffect(() => {
     if (activeTab === "history" && history.length === 0) {
@@ -509,15 +523,60 @@ function QuizDetailView({
 
   const isActiveQuiz = currentStatus === "ACTIVE";
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
+
+  // ── Flat question list + lookup map — used by Discussion tab
+  const allQuestionsFlat = React.useMemo(() => {
+    let globalIdx = 0;
+    return sections.flatMap((s) =>
+      (questionsMap[s.sectionId] || []).map((q) => ({
+        ...q,
+        index: ++globalIdx,
+        sectionId: s.sectionId,
+      })),
+    );
+  }, [sections, questionsMap]);
+
+  const questionsById = React.useMemo(
+    () => Object.fromEntries(allQuestionsFlat.map((q) => [String(q.questionId), q])),
+    [allQuestionsFlat],
+  );
+
+  // Load per-question comment counts for badge display
+  useEffect(() => {
+    if (!_contextId || !quiz?.quizId || !allQuestionsFlat.length || _contextType !== "GROUP") return;
+    const qIds = allQuestionsFlat.map((q) => q.questionId);
+    getThreadCounts(_contextId, quiz.quizId, qIds)
+      .then(({ questions }) => setQCommentCounts(questions))
+      .catch(() => {});
+  }, [_contextId, quiz?.quizId, allQuestionsFlat, _contextType]);
+
+  /** Navigate from Discussion tab to a specific question in the Questions tab. */
+  const handleNavigateToQuestion = React.useCallback((questionId) => {
+    const q = questionsById[String(questionId)];
+    if (!q) return;
+    setActiveTab("questions");
+    setExpandedSections((prev) => ({ ...prev, [q.sectionId]: true }));
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-question-id="${questionId}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [questionsById]);
   const is = INTENT_STYLES[effectiveQuiz?.quizIntent] || {};
   const durationInMinutes = getDurationInMinutes(effectiveQuiz);
   /** Nhóm + leader: tab Kiểm tra. Snapshot challenge (mở từ «Xem quiz»): cả reviewer (member) cũng cần tab Kiểm tra để xem đủ đáp án. */
+  // "Kiểm tra" tab: leader sees it only while quiz is DRAFT (to review before publishing).
+  // Snapshot-reviewers (contributors invited to check) always see it regardless of status.
   const showGroupReviewTab =
     _contextType === "GROUP"
     && !fairPlayRestricts
-    && (isGroupLeader || challengeSnapshotReviewMode);
-  const showQuestionsTab = !showGroupReviewTab;
+    && (
+      (isGroupLeader && currentStatus === "DRAFT")
+      || challengeSnapshotReviewMode
+    );
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
+  // Leaders see both Check tab AND Questions tab (to access per-question discussion)
+  // Only challenge-snapshot reviewers (non-leader members) skip the Questions tab
+  const showQuestionsTab = !isChallengeSnapshotReview;
 
   const snapshotReviewPreferCheckTabRef = React.useRef(false);
   useEffect(() => {
@@ -535,13 +594,14 @@ function QuizDetailView({
   }, [challengeSnapshotReviewMode, showGroupReviewTab, fairPlayRestricts, isGroupLeader]);
 
   useEffect(() => {
-    if (showGroupReviewTab && activeTab === "questions") {
+    // Only redirect away from "questions" for snapshot-reviewers who can't see that tab
+    if (!showQuestionsTab && activeTab === "questions") {
       setActiveTab("overview");
     }
     if (!showGroupReviewTab && activeTab === "review") {
       setActiveTab("overview");
     }
-  }, [showGroupReviewTab, activeTab]);
+  }, [showQuestionsTab, showGroupReviewTab, activeTab]);
 
   useEffect(() => {
     if (isChallengeSnapshotReview && activeTab === "history") {
@@ -715,9 +775,38 @@ function QuizDetailView({
             <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
           </button>
         )}
+        {_contextType === "GROUP" && !isChallengeSnapshotReview && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("discussion")}
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === "discussion"
+                ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" /> Thảo luận
+          </button>
+        )}
       </div>
 
-      {/* Nội dung chi tiết */}
+      {/* Tab Thảo luận — full-height, không padding wrapper */}
+      {activeTab === "discussion" && _contextType === "GROUP" && (
+        <div className="flex-1 min-h-0 overflow-hidden px-2 py-2">
+          <GroupDiscussionPanel
+            isDarkMode={isDarkMode}
+            workspaceId={_contextId}
+            quizId={quiz?.quizId}
+            isLeader={isGroupLeader}
+            allQuestions={allQuestionsFlat}
+            questionsById={questionsById}
+            onNavigateToQuestion={handleNavigateToQuestion}
+          />
+        </div>
+      )}
+
+      {/* Nội dung chi tiết (các tab khác) */}
+      {activeTab !== "discussion" && (
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Group — tab Kiểm tra: câu hỏi + đáp án + config */}
         {activeTab === "review" && showGroupReviewTab && (
@@ -891,7 +980,7 @@ function QuizDetailView({
                         const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
 
                         return (
-                          <div key={question.questionId} className={`px-4 py-3 ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
+                          <div key={question.questionId} data-question-id={question.questionId} className={`px-4 py-3 ${isDarkMode ? "bg-slate-900/50" : "bg-white"}`}>
                             {/* Question header */}
                             <div className="flex items-start gap-3">
                               <span className={`text-xs font-bold mt-0.5 shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isDarkMode ? "bg-blue-950/50 text-blue-400" : "bg-blue-100 text-blue-600"}`}>
@@ -1047,6 +1136,33 @@ function QuizDetailView({
                                 )}
                               </div>
                             </div>
+
+                            {/* Per-question discussion trigger — GROUP + ACTIVE only */}
+                            {_contextType === "GROUP" && isActiveQuiz && !isChallengeSnapshotReview && (
+                              <div className="px-4 pb-3 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setDiscussionOpenQId(question.questionId)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium",
+                                    isDarkMode
+                                      ? "text-blue-400 hover:bg-blue-900/30 bg-slate-800/50 border border-blue-900/40"
+                                      : "text-blue-600 hover:bg-blue-100 bg-blue-50 border border-blue-200",
+                                  )}
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5" />
+                                  <span>Thảo luận</span>
+                                  {(qCommentCounts[String(question.questionId)] ?? 0) > 0 && (
+                                    <span className={cn(
+                                      "px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+                                      isDarkMode ? "bg-blue-900 text-blue-300" : "bg-blue-600 text-white",
+                                    )}>
+                                      {qCommentCounts[String(question.questionId)]}
+                                    </span>
+                                  )}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         );
                       })
@@ -1075,30 +1191,75 @@ function QuizDetailView({
               </div>
             ) : (
               <div className="grid gap-4">
-                {history.map((attempt) => (
-                  <div key={attempt.attemptId} className={`rounded-xl p-4 border transition-colors cursor-pointer ${
-                    isDarkMode ? "bg-slate-800/50 border-slate-800 hover:bg-slate-800/80" : "bg-white border-slate-200 hover:bg-slate-50"
-                  }`} onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
-                          {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                {/* Leader: group attempts by member */}
+                {_contextType === "GROUP" && isGroupLeader ? (() => {
+                  // Group by memberId
+                  const byMember = {};
+                  history.forEach((attempt) => {
+                    const key = String(attempt.userId ?? attempt.memberId ?? attempt.attemptId);
+                    if (!byMember[key]) byMember[key] = { name: attempt.memberName ?? attempt.userName ?? attempt.userFullName ?? `User ${key}`, attempts: [] };
+                    byMember[key].attempts.push(attempt);
+                  });
+                  return Object.entries(byMember).map(([memberId, { name, attempts: memberAttempts }]) => (
+                    <div key={memberId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-700 bg-slate-800/30" : "border-slate-200 bg-white"}`}>
+                      {/* Member header */}
+                      <div className={`px-4 py-2.5 flex items-center gap-2 border-b ${isDarkMode ? "bg-slate-800/60 border-slate-700/60" : "bg-slate-50 border-slate-100"}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 bg-blue-500`}>
+                          {String(name).trim().charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <h4 className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                            {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
-                          </h4>
-                          <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                            {formatDate(attempt.startedAt)}
-                          </p>
-                        </div>
+                        <span className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>{name}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-100 text-gray-500"}`}>
+                          {memberAttempts.length} lần
+                        </span>
                       </div>
-                      <div className="text-right">
-                        
-                        <div className="flex gap-2 justify-end mt-1">
+                      {/* Member's attempts */}
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        {memberAttempts.map((attempt) => (
+                          <div key={attempt.attemptId} className={`px-4 py-3 flex items-center justify-between transition-colors cursor-pointer ${isDarkMode ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}
+                            onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
+                            <div className="flex items-center gap-3">
+                              <div className={`p-1.5 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
+                                {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                              </div>
+                              <div>
+                                <p className={`text-xs font-medium ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                                  {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
+                                </p>
+                                <p className={`text-[11px] ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{formatDate(attempt.startedAt)}</p>
+                              </div>
+                            </div>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-md ${attempt.isPracticeMode ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")}`}>
+                              {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })() : (
+                  /* Member: own attempts */
+                  history.map((attempt) => (
+                    <div key={attempt.attemptId} className={`rounded-xl p-4 border transition-colors cursor-pointer ${
+                      isDarkMode ? "bg-slate-800/50 border-slate-800 hover:bg-slate-800/80" : "bg-white border-slate-200 hover:bg-slate-50"
+                    }`} onClick={() => navigate(buildQuizResultPath(attempt.attemptId), { state: { quizId: effectiveQuiz?.quizId, returnToQuizPath: `${location.pathname}${location.search || ""}`, ...resultSourceState } })}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-lg ${attempt.status === 'COMPLETED' ? (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-600") : (isDarkMode ? "bg-amber-900/30 text-amber-400" : "bg-amber-100 text-amber-600")}`}>
+                            {attempt.status === 'COMPLETED' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <h4 className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                              {t("workspace.quiz.history.attempt", "Lần làm bài")} #{attempt.attemptId}
+                            </h4>
+                            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                              {formatDate(attempt.startedAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
                           <span className={`text-[10px] px-2 py-0.5 rounded-md ${
-                            attempt.isPracticeMode 
-                              ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700") 
+                            attempt.isPracticeMode
+                              ? (isDarkMode ? "bg-blue-900/30 text-blue-400" : "bg-blue-100 text-blue-700")
                               : (isDarkMode ? "bg-emerald-900/30 text-emerald-400" : "bg-emerald-100 text-emerald-700")
                           }`}>
                             {attempt.isPracticeMode ? t("workspace.quiz.practice", "Practice") : t("workspace.quiz.exam", "Exam")}
@@ -1106,13 +1267,55 @@ function QuizDetailView({
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>
         )}
       </div>
+      )}
+
+      {/* Per-question discussion popup */}
+      {discussionOpenQId != null && (
+        <Dialog open onOpenChange={(open) => { if (!open) { setDiscussionOpenQId(null); // refresh counts after closing
+            if (_contextId && quiz?.quizId && allQuestionsFlat.length) {
+              const qIds = allQuestionsFlat.map((q) => q.questionId);
+              getThreadCounts(_contextId, quiz.quizId, qIds).then(({ questions }) => setQCommentCounts(questions)).catch(() => {});
+            }
+          }
+        }}>
+          <DialogContent className={cn(
+            "sm:max-w-lg w-full p-0 gap-0 overflow-hidden rounded-2xl",
+            isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white",
+          )}>
+            <DialogHeader className={cn(
+              "px-4 pt-4 pb-3 border-b shrink-0 flex flex-row items-center gap-2",
+              isDarkMode ? "border-slate-700/60" : "border-blue-100",
+            )}>
+              <MessageSquare className={cn("w-4 h-4 shrink-0", isDarkMode ? "text-blue-400" : "text-blue-500")} />
+              <DialogTitle className={cn("text-sm font-semibold flex-1", isDarkMode ? "text-slate-100" : "text-gray-800")}>
+                Thảo luận — Câu {questionsById[String(discussionOpenQId)]?.index ?? ""}
+              </DialogTitle>
+              <DialogDescription className="sr-only">Thảo luận về câu hỏi này</DialogDescription>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[70vh]">
+              <div className="p-3">
+                <QuestionInlineDiscussion
+                  questionId={discussionOpenQId}
+                  questionIndex={questionsById[String(discussionOpenQId)]?.index ?? 1}
+                  workspaceId={_contextId}
+                  quizId={quiz?.quizId}
+                  isLeader={isGroupLeader}
+                  hasAttempted={hasQuizCompleted(quiz?.quizId)}
+                  isDarkMode={isDarkMode}
+                  inDialog
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Dialog open={audienceOpen} onOpenChange={setAudienceOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col gap-0 rounded-2xl border-0 p-0 shadow-2xl shadow-slate-900/15">
