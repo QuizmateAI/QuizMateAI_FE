@@ -135,8 +135,6 @@ function CreateQuizAiFormContent({
     handleCustomDifficultyChange,
     handleDifficultyChange,
     handleQTypeRatioChange,
-    handleSelectAllBloomSkills,
-    handleSelectAllQuestionTypes,
     handleToggleBloomLock,
     handleToggleBloomSelection,
     handleToggleDifficultyLock,
@@ -176,16 +174,6 @@ function CreateQuizAiFormContent({
   const selectableQuestionTypes = qTypes.filter((questionType) => (
     hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(questionType?.questionType)
   ));
-  const hasSelectedQuestionTypes = selectedQTypes.length > 0;
-  const areAllQuestionTypesSelected = selectableQuestionTypes.length > 0
-    && selectableQuestionTypes.every((questionType) => (
-      selectedQTypes.some((item) => item.questionTypeId === questionType.questionTypeId)
-    ));
-  const hasSelectedBloomSkills = selectedBloomSkills.length > 0;
-  const areAllBloomSkillsSelected = bloomSkills.length > 0
-    && bloomSkills.every((skill) => (
-      selectedBloomSkills.some((item) => item.bloomId === skill.bloomId)
-    ));
   const bulkActionButtonClass = isDarkMode
     ? "h-7 border-slate-700 bg-slate-900/60 px-2.5 text-[11px] text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
     : "h-7 border-gray-200 bg-white px-2.5 text-[11px] text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
@@ -377,14 +365,14 @@ function CreateQuizAiFormContent({
                 })}
               </p>
             ) : null}
-            {selectableMaterialIds.length > 0 && typeof onToggleAllMaterialSelection === "function" && !readOnly ? (
+            {selectableMaterialIds.length > 0 && !readOnly ? (
               <>
                 <Button
                   type="button"
                   variant="outline"
                   className={bulkActionButtonClass}
-                  disabled={areAllMaterialsSelected}
-                  onClick={() => onToggleAllMaterialSelection(true)}
+                  disabled={areAllMaterialsSelected || typeof onSelectAllMaterials !== "function"}
+                  onClick={() => onSelectAllMaterials?.()}
                 >
                   {t("workspace.sources.selectAll")}
                 </Button>
@@ -392,8 +380,8 @@ function CreateQuizAiFormContent({
                   type="button"
                   variant="outline"
                   className={bulkActionButtonClass}
-                  disabled={!hasSelectedMaterialInList}
-                  onClick={() => onToggleAllMaterialSelection(false)}
+                  disabled={!hasSelectedMaterialInList || typeof onClearSelectedMaterials !== "function"}
+                  onClick={() => onClearSelectedMaterials?.()}
                 >
                   {t("workspace.sources.deselectAll")}
                 </Button>
