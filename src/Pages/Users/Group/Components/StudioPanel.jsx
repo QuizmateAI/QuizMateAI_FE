@@ -1,8 +1,22 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitBranch, BadgeCheck, CreditCard, ClipboardList, GraduationCap, ChevronRight, ChevronsRight, LayoutGrid, FileCheck, BookMarked, Map, Clock, History, Pencil } from "lucide-react";
+import {
+  GitBranch,
+  BadgeCheck,
+  CreditCard,
+  ClipboardList,
+  GraduationCap,
+  ChevronRight,
+  ChevronsRight,
+  LayoutGrid,
+  FileCheck,
+  BookMarked,
+  Map,
+  Clock,
+  History,
+  Pencil,
+} from "lucide-react";
 
-// Lấy icon và màu theo loại output đã tạo
 function getOutputIcon(type) {
   if (type === "Quiz") return { icon: BadgeCheck, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-950/40" };
   if (type === "Flashcard") return { icon: CreditCard, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-950/40" };
@@ -10,7 +24,6 @@ function getOutputIcon(type) {
   return { icon: FileCheck, color: "text-gray-500", bg: "bg-gray-100 dark:bg-gray-800" };
 }
 
-// Danh sách hành động chính trong Studio — dùng key giống Individual
 const STUDIO_ACTIONS = [
   { key: "roadmap", icon: GitBranch, color: "text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-950/40" },
   { key: "quiz", icon: BadgeCheck, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-950/40" },
@@ -20,14 +33,18 @@ const STUDIO_ACTIONS = [
   { key: "prelearning", icon: GraduationCap, color: "text-rose-500", bg: "bg-rose-100 dark:bg-rose-950/40" },
 ];
 
-// Lấy action key đang active từ activeView
 function getActiveKey(view) {
   if (!view) return null;
-  const map = { createRoadmap: "roadmap", createQuiz: "quiz", createFlashcard: "flashcard", createMockTest: "mockTest", createPostLearning: "postLearning" };
+  const map = {
+    createRoadmap: "roadmap",
+    createQuiz: "quiz",
+    createFlashcard: "flashcard",
+    createMockTest: "mockTest",
+    createPostLearning: "postLearning",
+  };
   return map[view] || view;
 }
 
-// Hàm format thời gian truy cập gần đây
 function formatAccessTime(dateStr, t) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
@@ -42,7 +59,12 @@ function formatAccessTime(dateStr, t) {
   return `${diffDay}d`;
 }
 
-// Panel chứa các nút chức năng chính của workspace — đồng bộ thiết kế với Individual
+function getActionLabel(action, t) {
+  const explicitLabel = String(action?.label || "").trim();
+  if (explicitLabel) return explicitLabel;
+  return t(`workspace.studio.actions.${action?.key}`, action?.key || "");
+}
+
 function StudioPanel({
   isDarkMode = false,
   onAction,
@@ -52,15 +74,65 @@ function StudioPanel({
   onToggleCollapse,
   activeView = null,
   canEditRoadmapConfig = false,
+  customActions = [],
+  actionGroups = [],
+  hideAccessHistory = false,
+  planLockedActions = [],
+  shouldDisableQuiz = false,
+  shouldDisableFlashcard = false,
+  shouldDisableRoadmap = false,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const [canShowTooltip, setCanShowTooltip] = useState(false);
   const highlightKey = getActiveKey(activeView);
+  const lockedActionKeys = new Set(Array.isArray(planLockedActions) ? planLockedActions : []);
+  const baseActions = Array.isArray(customActions) && customActions.length > 0 ? customActions : STUDIO_ACTIONS;
+  const resolvedActions = baseActions.map((action) => ({
+    ...action,
+    label: getActionLabel(action, t),
+    disabled: Boolean(
+      action?.disabled
+      || lockedActionKeys.has(action?.key)
+      || (action?.key === "quiz" && shouldDisableQuiz)
+      || (action?.key === "flashcard" && shouldDisableFlashcard)
+      || (action?.key === "roadmap" && shouldDisableRoadmap)
+    ),
+  }));
+  const groupedActionSections = (() => {
+    if (!Array.isArray(actionGroups) || actionGroups.length === 0) {
+      return [{ id: "default", label: "", actions: resolvedActions }];
+    }
 
-  const canRenderRoadmapEditAction = (actionKey) => (
-    actionKey === "roadmap"
+    const usedKeys = new Set();
+    const sections = actionGroups
+      .map((group, index) => {
+        const keys = Array.isArray(group?.keys) ? group.keys : [];
+        const actions = resolvedActions.filter((action) => {
+          const isIncluded = keys.includes(action.key);
+          if (isIncluded) usedKeys.add(action.key);
+          return isIncluded;
+        });
+
+        return {
+          id: `${String(group?.label || "group")}-${index}`,
+          label: String(group?.label || "").trim(),
+          actions,
+        };
+      })
+      .filter((group) => group.actions.length > 0);
+
+    const fallbackActions = resolvedActions.filter((action) => !usedKeys.has(action.key));
+    if (fallbackActions.length > 0) {
+      sections.push({ id: "ungrouped", label: "", actions: fallbackActions });
+    }
+    return sections;
+  })();
+
+  const canRenderRoadmapEditAction = (action) => (
+    action?.key === "roadmap"
+    && !action?.disabled
     && canEditRoadmapConfig
     && typeof onEditRoadmapConfig === "function"
   );
@@ -83,35 +155,54 @@ function StudioPanel({
     setHoverTooltip({ text, x: rect.left - 10, y: rect.top + rect.height / 2 });
   };
 
+  const handleActionClick = (action) => {
+    setHoverTooltip(null);
+    if (action?.disabled) return;
+    onAction?.(action.key);
+  };
+
   if (isCollapsed) {
     return (
       <aside className={`rounded-2xl border h-full flex flex-col items-center transition-colors duration-300 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
         <div className={`w-full h-12 px-2 border-b flex items-center justify-center transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-          <button type="button" onClick={() => { setHoverTooltip(null); onToggleCollapse(); }}
+          <button
+            type="button"
+            onClick={() => { setHoverTooltip(null); onToggleCollapse(); }}
             onMouseEnter={(event) => showTooltip(event, t("workspace.studio.title"))}
             onMouseLeave={() => setHoverTooltip(null)}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-700"}`}>
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-700"}`}
+          >
             <LayoutGrid className="w-4 h-4" />
           </button>
         </div>
+
         <div className="w-full flex-1 overflow-y-auto scrollbar-hide p-2 flex flex-col items-center gap-2">
-          {STUDIO_ACTIONS.map((action) => {
+          {resolvedActions.map((action) => {
             const Icon = action.icon;
-            const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key);
+            const canRenderRoadmapEdit = canRenderRoadmapEditAction(action);
+
             return (
               <div key={action.key} className="relative">
-                <button type="button"
-                  onClick={() => { setHoverTooltip(null); onAction?.(action.key); }}
-                  onMouseEnter={(event) => showTooltip(event, t(`workspace.studio.actions.${action.key}`))}
+                <button
+                  type="button"
+                  onClick={() => handleActionClick(action)}
+                  disabled={action.disabled}
+                  onMouseEnter={(event) => showTooltip(event, action.label)}
                   onMouseLeave={() => setHoverTooltip(null)}
                   className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                    highlightKey === action.key
-                      ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
-                      : isDarkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                  }`}>
+                    action.disabled
+                      ? isDarkMode
+                        ? "cursor-not-allowed bg-slate-900 text-slate-600 opacity-70"
+                        : "cursor-not-allowed bg-gray-100 text-gray-300 opacity-70"
+                      : highlightKey === action.key
+                        ? isDarkMode ? "bg-slate-700 ring-1 ring-blue-500/40" : "bg-blue-50 ring-1 ring-blue-300"
+                        : isDarkMode ? "bg-slate-800 text-slate-200 hover:bg-slate-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
                   <Icon className={`w-4.5 h-4.5 ${action.color}`} />
                 </button>
-                {canRenderRoadmapEdit && (
+
+                {canRenderRoadmapEdit ? (
                   <button
                     type="button"
                     onClick={(event) => {
@@ -128,36 +219,42 @@ function StudioPanel({
                   >
                     <Pencil className="h-2.5 w-2.5" />
                   </button>
-                )}
+                ) : null}
               </div>
             );
           })}
-          {accessHistory.length > 0 && (
+
+          {!hideAccessHistory && accessHistory.length > 0 ? (
             <>
               <div className={`w-8 border-t my-1 ${isDarkMode ? "border-slate-700" : "border-gray-200"}`} />
-              {accessHistory.slice(0, 5).map((item, i) => {
+              {accessHistory.slice(0, 5).map((item, index) => {
                 const { icon: OutputIcon, color } = getOutputIcon(item.type);
                 return (
-                  <div key={i}
+                  <div
+                    key={`${item?.actionKey || item?.name || "history"}-${index}`}
                     onMouseEnter={(event) => showTooltip(event, item.name)}
                     onMouseLeave={() => setHoverTooltip(null)}
                     onClick={() => onAction?.(item.actionKey)}
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer transition-colors ${
                       isDarkMode ? "bg-slate-800 hover:bg-slate-700" : "bg-gray-50 hover:bg-gray-100"
-                    }`}>
+                    }`}
+                  >
                     <OutputIcon className={`w-4 h-4 ${color}`} />
                   </div>
                 );
               })}
             </>
-          )}
+          ) : null}
         </div>
-        {hoverTooltip && (
-          <div className="fixed z-[120] px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-100 shadow-lg pointer-events-none transition-all duration-200 opacity-100 scale-100"
-            style={{ left: hoverTooltip.x, top: hoverTooltip.y, transform: "translate(-100%, -50%)" }}>
+
+        {hoverTooltip ? (
+          <div
+            className="fixed z-[120] px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-100 shadow-lg pointer-events-none transition-all duration-200 opacity-100 scale-100"
+            style={{ left: hoverTooltip.x, top: hoverTooltip.y, transform: "translate(-100%, -50%)" }}
+          >
             {hoverTooltip.text}
           </div>
-        )}
+        ) : null}
       </aside>
     );
   }
@@ -166,90 +263,126 @@ function StudioPanel({
     <aside className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"}`}>
       <div className={`px-4 h-12 border-b transition-colors duration-300 flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <p className={`text-base font-medium text-left ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>{t("workspace.studio.title")}</p>
-        <button type="button" onClick={onToggleCollapse}
+        <button
+          type="button"
+          onClick={onToggleCollapse}
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-700"}`}
-          title={t("workspace.studio.title")}>
+          title={t("workspace.studio.title")}
+        >
           <ChevronsRight className="w-4 h-4" />
         </button>
       </div>
-      <div className="p-3 space-y-2">
-        {STUDIO_ACTIONS.map((action) => {
-          const Icon = action.icon;
-          const canRenderRoadmapEdit = canRenderRoadmapEditAction(action.key);
-          return (
-            <div key={action.key} className="relative">
-              <button onClick={() => onAction?.(action.key)}
-                className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${canRenderRoadmapEdit ? "pr-12" : ""} ${
-                  highlightKey === action.key
-                    ? isDarkMode ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20" : "bg-blue-50 border border-blue-200"
-                    : isDarkMode ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700" : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
-                }`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.bg}`}>
-                  <Icon className={`w-4.5 h-4.5 ${action.color}`} />
-                </div>
-                <span className={`text-sm font-medium flex-1 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                  {t(`workspace.studio.actions.${action.key}`)}
-                </span>
-                <ChevronRight className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-              </button>
-              {canRenderRoadmapEdit && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onEditRoadmapConfig();
-                  }}
-                  className={`absolute right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors ${
-                    isDarkMode
-                      ? "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                      : "bg-white text-gray-400 hover:bg-gray-50 hover:text-gray-700"
-                  }`}
-                  aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div className={`flex-1 px-4 pb-4 overflow-y-auto border-t mt-1 pt-3 ${isDarkMode ? "border-slate-800" : "border-gray-100"}`}>
-        <div className="flex items-center gap-1.5 mb-2">
-          <History className={`w-3.5 h-3.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
-          <p className={`text-xs font-semibold uppercase tracking-wide text-left ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-            {t("workspace.studio.accessHistory")}
-          </p>
-        </div>
-        {accessHistory.length === 0 ? (
-          <div className="text-center py-6">
-            <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-              {t("workspace.studio.noHistory")}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {accessHistory.map((item, i) => {
-              const { icon: OutputIcon, color, bg } = getOutputIcon(item.type);
+
+      <div className="p-3 space-y-4">
+        {groupedActionSections.map((group) => (
+          <div key={group.id} className="space-y-2">
+            {group.label ? (
+              <p className={`px-1 text-[11px] font-semibold uppercase tracking-[0.22em] ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
+                {group.label}
+              </p>
+            ) : null}
+
+            {group.actions.map((action) => {
+              const Icon = action.icon;
+              const canRenderRoadmapEdit = canRenderRoadmapEditAction(action);
+
               return (
-                <div key={i} onClick={() => onAction?.(item.actionKey)} className={`rounded-lg px-3 py-2.5 flex items-center gap-3 text-sm cursor-pointer transition-colors ${
-                  isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-                }`}>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
-                    <OutputIcon className={`w-4 h-4 ${color}`} />
-                  </div>
-                  <div className="min-w-0 flex-1 text-left">
-                    <p className={`font-medium truncate ${fontClass}`}>{item.name}</p>
-                    <p className={`text-xs mt-0.5 flex items-center gap-1 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
-                      <Clock className="w-3 h-3" />
-                      {formatAccessTime(item.accessedAt, t)}
-                    </p>
-                  </div>
+                <div key={action.key} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => handleActionClick(action)}
+                    disabled={action.disabled}
+                    className={`w-full rounded-xl px-4 py-3 flex items-center gap-3 text-left transition-all group ${canRenderRoadmapEdit ? "pr-12" : ""} ${
+                      action.disabled
+                        ? isDarkMode
+                          ? "cursor-not-allowed border border-slate-800 bg-slate-900/70 text-slate-500 opacity-80"
+                          : "cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400 opacity-80"
+                        : highlightKey === action.key
+                          ? isDarkMode ? "bg-slate-800 border border-blue-500/40 ring-1 ring-blue-500/20" : "bg-blue-50 border border-blue-200"
+                          : isDarkMode ? "bg-slate-800/60 hover:bg-slate-800 border border-slate-800 hover:border-slate-700" : "bg-gray-50 hover:bg-gray-100 border border-gray-100 hover:border-gray-200"
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${action.bg}`}>
+                      <Icon className={`w-4.5 h-4.5 ${action.color}`} />
+                    </div>
+                    <span className={`text-sm font-medium flex-1 ${
+                      action.disabled
+                        ? (isDarkMode ? "text-slate-500" : "text-gray-400")
+                        : (isDarkMode ? "text-slate-200" : "text-gray-700")
+                    } ${fontClass}`}>
+                      {action.label}
+                    </span>
+                    <ChevronRight className={`w-4 h-4 transition-opacity ${action.disabled ? "opacity-30" : "opacity-0 group-hover:opacity-100"} ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+                  </button>
+
+                  {canRenderRoadmapEdit ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEditRoadmapConfig();
+                      }}
+                      className={`absolute right-3 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors ${
+                        isDarkMode
+                          ? "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                          : "bg-white text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                      }`}
+                      aria-label={t("workspace.roadmap.editConfig", "Edit roadmap config")}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
           </div>
-        )}
+        ))}
       </div>
+
+      {!hideAccessHistory ? (
+        <div className={`flex-1 px-4 pb-4 overflow-y-auto border-t mt-1 pt-3 ${isDarkMode ? "border-slate-800" : "border-gray-100"}`}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <History className={`w-3.5 h-3.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`} />
+            <p className={`text-xs font-semibold uppercase tracking-wide text-left ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
+              {t("workspace.studio.accessHistory")}
+            </p>
+          </div>
+
+          {accessHistory.length === 0 ? (
+            <div className="text-center py-6">
+              <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
+                {t("workspace.studio.noHistory")}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {accessHistory.map((item, index) => {
+                const { icon: OutputIcon, color, bg } = getOutputIcon(item.type);
+                return (
+                  <div
+                    key={`${item?.actionKey || item?.name || "history"}-${index}`}
+                    onClick={() => onAction?.(item.actionKey)}
+                    className={`rounded-lg px-3 py-2.5 flex items-center gap-3 text-sm cursor-pointer transition-colors ${
+                      isDarkMode ? "bg-slate-800 hover:bg-slate-700 text-slate-300" : "bg-gray-50 hover:bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
+                      <OutputIcon className={`w-4 h-4 ${color}`} />
+                    </div>
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className={`font-medium truncate ${fontClass}`}>{item.name}</p>
+                      <p className={`text-xs mt-0.5 flex items-center gap-1 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+                        <Clock className="w-3 h-3" />
+                        {formatAccessTime(item.accessedAt, t)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : null}
     </aside>
   );
 }

@@ -307,8 +307,8 @@ function GroupDashboardTab({
     watchlist.push(member);
   });
 
-  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-white/12 bg-[#08131a]/92 shadow-[0_18px_36px_rgba(0,0,0,0.24)]' : 'border-slate-200 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.05)]'}`;
-  const innerCardClass = isDarkMode ? 'border-white/12 bg-white/[0.04]' : 'border-slate-200 bg-slate-50/80';
+  const cardClass = `rounded-[28px] border ${isDarkMode ? 'border-slate-700/70 bg-[#08131a]/92' : 'border-slate-200/80 bg-white/90'}`;
+  const innerCardClass = isDarkMode ? 'border-slate-700/60 bg-white/[0.04]' : 'border-slate-200/70 bg-white/85';
   const subtleTextClass = isDarkMode ? 'text-slate-400' : 'text-slate-600';
   const eyebrowClass = 'text-slate-500';
 

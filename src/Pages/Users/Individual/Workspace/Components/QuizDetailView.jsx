@@ -71,6 +71,7 @@ const STATUS_STYLES = {
   DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
   COMPLETED: { light: "bg-blue-100 text-blue-700", dark: "bg-blue-950/50 text-blue-400" },
   INACTIVE: { light: "bg-slate-100 text-slate-500", dark: "bg-slate-800 text-slate-400" },
+  PENDING_LEADER: { light: "bg-violet-100 text-violet-700", dark: "bg-violet-950/50 text-violet-400" },
 };
 
 const INTENT_STYLES = {
@@ -191,6 +192,8 @@ function QuizDetailView({
   const [activeTab, setActiveTab] = useState(() => (_contextType === "GROUP" ? "overview" : "questions")); // overview, review (group), questions, history
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  // Personal history (bản thân) — dùng để gate chế độ luyện tập: null = đang tải
+  const [personalHistory, setPersonalHistory] = useState(null);
   const [examStartOpen, setExamStartOpen] = useState(false);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -429,32 +432,6 @@ function QuizDetailView({
     }
   }, [activeTab, fetchHistoryData, history.length]);
 
-  useEffect(() => {
-    if (
-      _contextType !== "GROUP"
-      || isGroupLeader
-      || !quiz?.quizId
-      || hasCurrentUserCompletedQuiz
-    ) {
-      return;
-    }
-
-    const probeKey = `${_contextType}:${_contextId ?? ""}:${quiz.quizId}`;
-    if (attemptHistoryProbeKeyRef.current === probeKey) {
-      return;
-    }
-
-    attemptHistoryProbeKeyRef.current = probeKey;
-    void fetchHistoryData();
-  }, [
-    _contextType,
-    _contextId,
-    isGroupLeader,
-    quiz?.quizId,
-    hasCurrentUserCompletedQuiz,
-    fetchHistoryData,
-  ]);
-
   // Toggle mở rộng/thu gọn section
   const toggleSection = (sectionId) => {
     setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
@@ -667,6 +644,9 @@ function QuizDetailView({
   }, []);
 
   const isActiveQuiz = currentStatus === "ACTIVE";
+  // Gate luyện tập: chỉ hiện sau khi user hoàn thành ít nhất 1 lần kiểm tra chính thức
+  const hasCompletedOfficialAttempt = personalHistory !== null &&
+    personalHistory.some(a => a.isPracticeMode === false && Boolean(a.completedAt));
   const ss = STATUS_STYLES[currentStatus] || STATUS_STYLES.DRAFT;
 
   // ── Flat question list + lookup map — used by Discussion tab
@@ -1113,13 +1093,28 @@ function QuizDetailView({
               {/* Action Buttons in Overview — quiz challenge snapshot: không làm bài từ đây */}
               {isActiveQuiz && !isChallengeSnapshotReview && (
                 <div className={`mt-4 pt-4 border-t flex flex-row items-center gap-3 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-                  {!isRoadmapQuizSource ? (
-                    <Button onClick={() => handleStartQuiz('practice')} variant="outline"
-                      className={`flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl transition-all active:scale-95 ${isDarkMode ? "border-blue-800/60 bg-blue-900/20 text-blue-400 hover:bg-blue-900/40" : "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"}`}>
-                      <Play className="w-4 h-4" />
-                      <span className="font-medium">{t("workspace.quiz.practice", "Practice mode")}</span>
-                    </Button>
-                  ) : null}
+                  {!isRoadmapQuizSource && (
+                    <div className="flex flex-1 flex-col gap-1">
+                      <Button
+                        onClick={hasCompletedOfficialAttempt ? () => handleStartQuiz('practice') : undefined}
+                        disabled={!hasCompletedOfficialAttempt}
+                        variant="outline"
+                        className={`h-10 w-full px-4 flex items-center justify-center gap-2 rounded-xl transition-all active:scale-95 ${
+                          hasCompletedOfficialAttempt
+                            ? (isDarkMode ? "border-blue-800/60 bg-blue-900/20 text-blue-400 hover:bg-blue-900/40" : "border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100")
+                            : (isDarkMode ? "border-slate-700/50 bg-slate-800/30 text-slate-500 cursor-not-allowed" : "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed")
+                        }`}
+                      >
+                        <Play className="w-4 h-4" />
+                        <span className="font-medium">{t("workspace.quiz.practice", "Luyện tập")}</span>
+                      </Button>
+                      {!hasCompletedOfficialAttempt && (
+                        <p className={`text-center text-[11px] leading-snug ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                          {t("workspace.quiz.practiceRequiresAttempt", "Hoàn thành 1 lần kiểm tra để mở")}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <Button onClick={() => setExamStartOpen(true)} className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all active:scale-95 shadow-sm">
                     <ClipboardCheck className="w-4 h-4" />
                     <span className="font-medium">{t("workspace.quiz.exam", "Exam mode")}</span>

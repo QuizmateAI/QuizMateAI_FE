@@ -1514,6 +1514,25 @@ describe('IndividualWorkspaceProfileConfigDialog', () => {
     expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).toBeInTheDocument();
   });
 
+  it('keeps the wizard on step 1 when BASIC_DONE is missing the required domain context', async () => {
+    renderDialog({
+      initialData: {
+        profileStatus: 'BASIC_DONE',
+        learningMode: 'REVIEW',
+        knowledge: 'xac suat thong ke co ban',
+        roadmapEnabled: false,
+      },
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1200);
+      await vi.runAllTimersAsync();
+    });
+
+    expect(screen.getByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.knowledgeInput'))).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(i18n.t('workspace.profileConfig.placeholders.currentLevel'))).not.toBeInTheDocument();
+  });
+
   it('stays on step 1 for a newly created workspace when the backend only returns status metadata', async () => {
     renderDialog({
       initialData: {
