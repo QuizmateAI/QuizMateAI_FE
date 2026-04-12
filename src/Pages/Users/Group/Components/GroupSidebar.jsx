@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  BarChart3,
   Bell,
   BookOpen,
   ClipboardList,
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { id: 'flashcard', icon: BookOpen },
   { id: 'mockTest', icon: ClipboardList },
   { id: 'challenge', icon: Swords },
+  { id: 'ranking', icon: BarChart3 },
   { id: 'notifications', icon: Bell },
   { id: 'members', icon: Users },
   { id: 'wallet', icon: Wallet },

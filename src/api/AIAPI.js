@@ -1,8 +1,14 @@
 import api from './api';
 
-// Tạo Mock Test thông qua AI
+// Tạo Mock Test thông qua AI (endpoint cũ — async, trả về taskId)
 export const generateMockTest = async (data) => {
   const response = await api.post('/mocktest:generated', data);
+  return response;
+};
+
+// Tạo Mock Test preview cho group (đồng bộ) — trả về template với sections + questions
+export const generateGroupMockTestPreview = async (data) => {
+  const response = await api.post('/ai/mocktest/group:preview', data);
   return response;
 };
 

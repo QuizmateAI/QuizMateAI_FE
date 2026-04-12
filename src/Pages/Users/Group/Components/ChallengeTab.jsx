@@ -27,8 +27,6 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const activeEventId = challengeEventIdFromRoute ?? selectedEventId;
 
-  const effectiveSelectedEventId = selectedEventId ?? selectedEventIdFromUrl;
-
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['challenges', workspaceId, activeSubTab],
     queryFn: async () => {

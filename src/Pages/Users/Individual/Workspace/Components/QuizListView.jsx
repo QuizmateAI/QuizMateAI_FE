@@ -1518,6 +1518,17 @@ function QuizListView({
               const myAttempted = quiz?.myAttempted === true;
               const myPassed = quiz?.myPassed === true;
               const hasSubmittedFeedback = feedbackStatusByQuizId[resolvedQuizId]?.submitted === true;
+              const intentValue = quiz?.quizIntent
+                ? t(`workspace.quiz.intentLabels.${quiz.quizIntent}`, quiz.quizIntent)
+                : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
+              const timerValue = typeof quiz.timerMode === "boolean"
+                ? (quiz.timerMode
+                  ? t("workspace.quiz.examModeType1Short", "Giới hạn thời gian tổng")
+                  : t("workspace.quiz.examModeType2Short", "Theo từng câu"))
+                : t("workspace.quiz.list.labels.notAvailable", "Chưa có");
+              const showPracticeAction = normalizedStatus === "ACTIVE" && !isRoadmapContextQuiz && myAttempted;
+              const showExamAction = normalizedStatus === "ACTIVE";
+              const showFeedbackAction = myAttempted && !hasSubmittedFeedback && resolvedQuizId != null && resolvedQuizId !== "";
               const showShareAction = onShareQuiz && !shouldHideRoadmapVisibility && !isProcessing;
               const questionCount = Number(quiz?.questionCount ?? quiz?.totalQuestion ?? quiz?.totalQuestions ?? 0) || 0;
               const scoreValue = Number(quiz?.latestScore ?? quiz?.score ?? quiz?.myScore ?? quiz?.marksScored ?? quiz?.markScored);
