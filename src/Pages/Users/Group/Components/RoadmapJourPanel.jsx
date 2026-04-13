@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, ChevronDown, ChevronsLeft, Loader2, Map } from "lucide-react";
+import { CheckCircle2, Loader2, Map } from "lucide-react";
 import { getCurrentRoadmapKnowledgeProgress, getRoadmapGraph } from "@/api/RoadmapAPI";
 import { getCurrentRoadmapPhaseProgress } from "@/api/RoadmapPhaseAPI";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
@@ -9,6 +9,7 @@ import HoverMarqueeText from "@/Components/ui/HoverMarqueeText";
 function RoadmapJourPanel({
   isDarkMode = false,
   workspaceId = null,
+  isStudyNewRoadmap = false,
   isCollapsed = false,
   onToggleCollapse,
   selectedPhaseId: selectedPhaseIdProp = null,
@@ -29,23 +30,46 @@ function RoadmapJourPanel({
   const [roadmap, setRoadmap] = useState(null);
   const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
   const [currentKnowledgePayload, setCurrentKnowledgePayload] = useState(null);
-  const [isPhaseOpen, setIsPhaseOpen] = useState(true);
   const [selectedPhaseId, setSelectedPhaseId] = useState(null);
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(null);
   const selectedPhaseRef = useRef(null);
+  const selectPhaseDebounceRef = useRef(null);
+  const onSelectPhaseRef = useRef(onSelectPhase);
+
+  useEffect(() => {
+    onSelectPhaseRef.current = onSelectPhase;
+  }, [onSelectPhase]);
 
   const queueSelectPhase = useCallback((phaseId, options = { preserveActiveView: false }) => {
-    const normalizedPhaseId = Number(phaseId);
-    const normalizedKnowledgeId = Number(options?.knowledgeId);
-    const hasKnowledgeSelection = Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0;
-    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
-    if (Number(selectedPhaseRef.current) === normalizedPhaseId && !hasKnowledgeSelection) return;
-    onSelectPhase?.(normalizedPhaseId, options);
-  }, [onSelectPhase]);
+    if (options?.focusRoadmapCenter) {
+      onSelectPhaseRef.current?.(phaseId, options);
+      return;
+    }
+
+    if (selectPhaseDebounceRef.current) {
+      window.clearTimeout(selectPhaseDebounceRef.current);
+    }
+
+    selectPhaseDebounceRef.current = window.setTimeout(() => {
+      onSelectPhaseRef.current?.(phaseId, options);
+      selectPhaseDebounceRef.current = null;
+    }, 180);
+  }, []);
 
   useEffect(() => {
     selectedPhaseRef.current = selectedPhaseIdProp ?? selectedPhaseId;
   }, [selectedPhaseId, selectedPhaseIdProp]);
+
+  useEffect(() => {
+    const normalizedPhaseId = Number(selectedPhaseIdProp);
+    if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+      setSelectedPhaseId(normalizedPhaseId);
+      return;
+    }
+    if (selectedPhaseIdProp === null) {
+      setSelectedPhaseId(null);
+    }
+  }, [selectedPhaseIdProp]);
 
   useEffect(() => {
     const normalizedKnowledgeId = Number(selectedKnowledgeIdProp);
@@ -70,7 +94,7 @@ function RoadmapJourPanel({
       const response = await getRoadmapGraph({ workspaceId });
       const nextRoadmap = response?.data?.data ?? null;
       setRoadmap(nextRoadmap);
-      
+
       const normalizedRoadmapId = Number(nextRoadmap?.roadmapId);
       if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
         try {
@@ -98,7 +122,15 @@ function RoadmapJourPanel({
     } finally {
       setLoading(false);
     }
-  }, [queueSelectPhase, workspaceId]);
+  }, [workspaceId]);
+
+  useEffect(() => {
+    return () => {
+      if (selectPhaseDebounceRef.current) {
+        window.clearTimeout(selectPhaseDebounceRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     loadRoadmap();
@@ -129,14 +161,34 @@ function RoadmapJourPanel({
     }
     const unlockedByStatusIndex = Math.min(phases.length - 1, contiguousFinishedCount);
 
+    if (isStudyNewRoadmap) {
+      const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
+        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
+        const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
+        const isFinished = isPhaseFinishedStatus(phase?.status);
+
+        if (hasPreLearning || hasKnowledge || hasPostLearning || isFinished) {
+          return Math.max(maxIndex, index);
+        }
+
+        return maxIndex;
+      }, 0);
+
+      return Math.max(0, unlockedByManualProgressIndex);
+    }
+
     return Math.max(0, globalCurrentIndex, unlockedByStatusIndex);
-  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, phases]);
+  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, isStudyNewRoadmap, phases]);
 
   const isCurrentPayloadFinished = useMemo(() => {
     return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
   }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
-  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+    ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+    : -1;
   const currentKnowledgePhaseId = Number(currentKnowledgePayload?.phaseId);
   const currentKnowledgeId = Number(currentKnowledgePayload?.knowledgeId);
   const currentKnowledgeStatus = String(currentKnowledgePayload?.status || "").toUpperCase();
@@ -181,7 +233,7 @@ function RoadmapJourPanel({
 
   if (isCollapsed) {
     return (
-      <aside className={`rounded-2xl border h-full flex flex-col items-center ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+      <aside className={`w-full min-w-0 rounded-2xl border h-full flex flex-col items-center ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
         <div className={`w-full h-12 px-2 border-b flex items-center justify-center ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
           <button
             type="button"
@@ -197,8 +249,8 @@ function RoadmapJourPanel({
   }
 
   return (
-    <aside className={`rounded-2xl border h-full overflow-hidden flex flex-col ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
-      <div className={`px-4 h-12 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
+    <aside className={`w-full min-w-0 rounded-2xl border h-full overflow-hidden flex flex-col ${isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
+      {/* <div className={`px-4 h-12 border-b flex items-center justify-between ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
         <p className={`text-base font-medium ${isDarkMode ? "text-slate-100" : "text-slate-800"} ${fontClass}`}>
           {t("workspace.roadmap.title", "Roadmap")}
         </p>
@@ -209,14 +261,14 @@ function RoadmapJourPanel({
         >
           <ChevronsLeft className="w-4 h-4" />
         </button>
-      </div>
+      </div> */}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className={loading ? "flex-1 p-4" : "flex-1 overflow-y-auto p-4 space-y-4"}>
         {loading ? (
-          <div className="py-10 flex flex-col items-center justify-center gap-3">
+          <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-3">
             <Loader2 className={`w-6 h-6 animate-spin ${isDarkMode ? "text-blue-400" : "text-blue-600"}`} />
             <p className={`text-sm text-center ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-              {t("workspace.roadmap.loading.title", "Loading roadmap")}
+              {t("workspace.roadmap.loading.title", "Đang tải roadmap")}
             </p>
           </div>
         ) : isGeneratingRoadmapPhases ? (
@@ -228,21 +280,30 @@ function RoadmapJourPanel({
                 color="blue"
               />
               <p className={`text-sm ${fontClass} ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
-                {t("workspace.roadmap.phaseGenerating.title", "Please wait while AI generates phases")}
+                {t("workspace.roadmap.phaseGenerating.title", "Vui lòng đợi\n Quizmate AI tạo phase")}
               </p>
             </div>
           </div>
         ) : !roadmap ? (
           <div className={`rounded-2xl border px-4 py-5 ${isDarkMode ? "border-slate-800 bg-slate-950/60 text-slate-400" : "border-slate-300 bg-slate-200 text-slate-600"}`}>
-            <p className={`text-sm ${fontClass}`}>{t("workspace.roadmap.noRoadmapYet", "No Roadmap Yet")}</p>
+            <p className={`text-sm ${fontClass}`}>{t("workspace.roadmap.noRoadmapYet", "Chưa có roadmap")}</p>
           </div>
         ) : (
           <>
             <button
               type="button"
               onClick={() => {
+                const normalizedRoadmapId = Number(roadmap?.roadmapId ?? roadmap?.id);
                 setSelectedPhaseId(null);
                 setSelectedKnowledgeId(null);
+                queueSelectPhase(null, {
+                  preserveActiveView: false,
+                  knowledgeId: null,
+                  focusRoadmapCenter: true,
+                  roadmapId: Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+                    ? normalizedRoadmapId
+                    : null,
+                });
               }}
               className={`w-full relative overflow-hidden rounded-xl border px-4 py-4 text-left transition-all active:scale-[0.995] ${isDarkMode
                 ? "border-slate-700 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950/40 hover:border-slate-600"
@@ -270,44 +331,17 @@ function RoadmapJourPanel({
               </div>
             </button>
 
-            <div className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white"}`}>
-              <button
-                type="button"
-                onClick={() => setIsPhaseOpen((prev) => !prev)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50"
-              >
-                <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                  {t("workspace.roadmap.canvas.phase", "Phase")}
-                </p>
-                <ChevronDown className={`w-4 h-4 transition-transform ${isPhaseOpen ? "rotate-180" : "rotate-0"} ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
-              </button>
-
-              {isPhaseOpen ? (
-                <div className={`border-t ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
-                  <div className="px-2 py-2 space-y-1">
-                    {phases.map((phase, index) => {
+            <div className="space-y-2">
+              <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                {t("workspace.roadmap.canvas.phase", "Phase")}
+              </p>
+              <div className="py-1 space-y-1">
+                {phases.map((phase, index) => {
                       const normalizedPhaseId = Number(phase?.phaseId);
                       const active = effectiveSelectedPhaseId === phase.phaseId;
                       const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
                         && phase.preLearningQuizzes.length > 0;
                       const isLockedPhase = index > maxUnlockedPhaseIndex && !hasExistingPreLearning;
-                      const previousPhaseCompleted = index > 0
-                        ? (() => {
-                          const previousPhase = phases[index - 1] || null;
-                          const previousPhaseId = Number(previousPhase?.phaseId);
-                          const previousFromPhaseList = isPhaseFinishedStatus(previousPhase?.status);
-                          const previousFromCurrentPayloadById = isCurrentPayloadFinished
-                            && Number.isInteger(currentPayloadPhaseId)
-                            && currentPayloadPhaseId > 0
-                            && currentPayloadPhaseId === previousPhaseId;
-                          const previousFromCurrentPayloadByIndex = isCurrentPayloadFinished
-                            && Number.isFinite(currentPayloadPhaseIndex)
-                            && currentPayloadPhaseIndex >= 0
-                            && currentPayloadPhaseIndex >= (index - 1);
-
-                          return previousFromPhaseList || previousFromCurrentPayloadById || previousFromCurrentPayloadByIndex;
-                        })()
-                        : true;
                       const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
                       const isCompletedPhase = isPhaseVisuallyCompleted(phase, index);
                       const isGeneratingByClientState = generatingKnowledgePhaseIds.includes(normalizedPhaseId)
@@ -324,27 +358,25 @@ function RoadmapJourPanel({
                         || normalizedPhaseStatus === "ONGOING"
                       );
 
-                      // Determine specific status string
-                      let statusText = t("workspace.quiz.statusLabels.ACTIVE", "Active");
+                      let statusText = t("workspace.quiz.statusLabels.ACTIVE", "Đang hoạt động");
                       let statusColorClass = "text-blue-600 dark:text-blue-400";
-                      
+
                       if (isCompletedPhase) {
-                        statusText = t("workspace.quiz.statusLabels.COMPLETED", "Completed");
+                        statusText = t("workspace.quiz.statusLabels.COMPLETED", "Hoàn thành");
                         statusColorClass = "text-green-600";
                       } else if (isProcessingPhase) {
-                        statusText = t("workspace.quiz.statusLabels.PROCESSING", "Processing");
+                        statusText = t("workspace.quiz.statusLabels.PROCESSING", "Đang xử lý");
                         statusColorClass = "text-yellow-500";
                       } else if (isInProgressPhase) {
-                        statusText = t("workspace.quiz.statusLabels.IN_PROGRESS", "In progress");
+                        statusText = t("workspace.quiz.statusLabels.IN_PROGRESS", "Đang học");
                         statusColorClass = "text-blue-600 dark:text-blue-400";
                       } else if (isLockedPhase) {
-                        statusText = t("workspace.quiz.statusLabels.LOCKED", "Locked");
+                        statusText = t("workspace.quiz.statusLabels.LOCKED", "Đã khóa");
                         statusColorClass = "text-slate-500 dark:text-slate-400";
                       }
 
                       return (
                         <div key={phase.phaseId} className="relative w-full">
-                          {/* Main line connecting phases */}
                           {index < phases.length - 1 && (
                             <div className={`absolute left-[26px] top-[42px] bottom-[-24px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-slate-200"} z-0`} />
                           )}
@@ -353,24 +385,25 @@ function RoadmapJourPanel({
                             <button
                               type="button"
                               onClick={() => {
-                                if (Number(effectiveSelectedPhaseId) === Number(phase.phaseId)) {
-                                  return;
-                                }
+                                const normalizedRoadmapId = Number(roadmap?.roadmapId ?? roadmap?.id);
                                 setSelectedPhaseId(phase.phaseId);
                                 setSelectedKnowledgeId(null);
-                                queueSelectPhase(phase.phaseId, { preserveActiveView: false });
+                                queueSelectPhase(phase.phaseId, {
+                                  preserveActiveView: false,
+                                  roadmapId: Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+                                    ? normalizedRoadmapId
+                                    : null,
+                                });
                               }}
-                              className={`w-full rounded-xl px-4 py-3 text-left flex items-center gap-4 transition-all ${
-                                active
-                                  ? isDarkMode
-                                    ? "bg-slate-800"
-                                    : "bg-[#E5F0FF]"
-                                  : isDarkMode
-                                    ? "bg-transparent hover:bg-slate-800/30"
-                                    : "bg-transparent hover:bg-slate-50"
+                              className={`w-full rounded-xl px-4 py-3 text-left flex items-center gap-4 transition-all ${active
+                                ? isDarkMode
+                                  ? "bg-slate-800"
+                                  : "bg-[#E5F0FF]"
+                                : isDarkMode
+                                  ? "bg-transparent hover:bg-slate-800/30"
+                                  : "bg-transparent hover:bg-slate-50"
                               }`}
                             >
-                              {/* Phase Icon */}
                               <div className="shrink-0 flex items-center justify-center">
                                 {isCompletedPhase ? (
                                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
@@ -397,7 +430,6 @@ function RoadmapJourPanel({
                                 )}
                               </div>
 
-                              {/* Phase Meta */}
                               <div className="flex-1 flex flex-col justify-center min-w-0 overflow-hidden">
                                 <HoverMarqueeText
                                   text={phase.title || `${t("workspace.roadmap.canvas.phase", "Phase")} ${index + 1}`}
@@ -414,8 +446,7 @@ function RoadmapJourPanel({
                                 </span>
                               </div>
                             </button>
-                            
-                            {/* Knowledges Section (Only if Active) */}
+
                             {active && phase.knowledges?.length > 0 && (
                               <div className="mt-2 relative pl-[44px] pr-2 space-y-1 pb-1 z-10 w-full overflow-hidden">
                                 {phase.knowledges.map((knowledge) => {
@@ -462,18 +493,22 @@ function RoadmapJourPanel({
                                   );
                                   const isKnowledgeActive = Number(selectedKnowledgeId) === normalizedKnowledgeId;
                                   const knowledgeOrder = knowledgeIndex >= 0 ? knowledgeIndex + 1 : null;
-                                  
+
                                   return (
                                     <button
                                       key={knowledge.knowledgeId}
                                       type="button"
                                       onClick={() => {
                                         if (!Number.isInteger(normalizedKnowledgeId) || normalizedKnowledgeId <= 0) return;
+                                        const normalizedRoadmapId = Number(roadmap?.roadmapId ?? roadmap?.id);
                                         setSelectedPhaseId(phase.phaseId);
                                         setSelectedKnowledgeId(normalizedKnowledgeId);
                                         queueSelectPhase(phase.phaseId, {
                                           preserveActiveView: false,
                                           knowledgeId: normalizedKnowledgeId,
+                                          roadmapId: Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+                                            ? normalizedRoadmapId
+                                            : null,
                                         });
                                       }}
                                       className={`w-full rounded-xl px-3.5 py-2.5 text-left flex items-center gap-3 transition-all ${
@@ -486,7 +521,6 @@ function RoadmapJourPanel({
                                             : "bg-transparent hover:bg-slate-50"
                                       }`}
                                     >
-                                      {/* Small icons for knowledges */}
                                       {isKnowledgeCompleted ? (
                                         <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                                           <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
@@ -510,7 +544,7 @@ function RoadmapJourPanel({
                                           </span>
                                         </div>
                                       )}
-                                      
+
                                       <HoverMarqueeText
                                         text={knowledge.title}
                                         containerClassName="flex-1 min-w-0"
@@ -530,9 +564,7 @@ function RoadmapJourPanel({
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-              ) : null}
+              </div>
             </div>
           </>
         )}

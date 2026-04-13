@@ -89,6 +89,13 @@ export function buildGroupWorkspaceSectionPath(
   section = null,
   queryParams = {},
 ) {
+  if (section === "roadmap") {
+    return withQueryParams(
+      buildGroupWorkspacePath(workspaceId, WORKSPACE_ROUTE_SEGMENTS.roadmaps),
+      queryParams,
+    );
+  }
+
   return withQueryParams(
     buildGroupWorkspacePath(workspaceId),
     section ? { section, ...queryParams } : queryParams,
@@ -119,6 +126,77 @@ export function extractGroupWorkspaceSubPath(pathname, workspaceId) {
   if (!String(pathname).startsWith(prefix)) return "";
 
   return String(pathname).slice(prefix.length).replace(/^\/+/, "");
+}
+
+export function resolveGroupWorkspaceSectionFromSubPath(subPath = "") {
+  const normalizedSubPath = normalizeSubPath(subPath);
+  if (!normalizedSubPath) return null;
+
+  if (
+    normalizedSubPath === WORKSPACE_ROUTE_SEGMENTS.roadmaps
+    || normalizedSubPath.startsWith(`${WORKSPACE_ROUTE_SEGMENTS.roadmaps}/`)
+  ) {
+    return "roadmap";
+  }
+
+  return null;
+}
+
+export function buildGroupWorkspaceRoadmapPath(
+  workspaceId,
+  {
+    roadmapId = null,
+    phaseId = null,
+    knowledgeId = null,
+  } = {},
+) {
+  const basePath = buildGroupWorkspacePath(workspaceId, WORKSPACE_ROUTE_SEGMENTS.roadmaps);
+  const normalizedRoadmapId = Number(roadmapId);
+  const normalizedPhaseId = Number(phaseId);
+  const normalizedKnowledgeId = Number(knowledgeId);
+
+  if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+    return basePath;
+  }
+
+  let mappedPath = `${basePath}/${normalizedRoadmapId}`;
+
+  if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+    mappedPath += `/${WORKSPACE_ROUTE_SEGMENTS.phases}/${normalizedPhaseId}`;
+    if (Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0) {
+      mappedPath += `/${WORKSPACE_ROUTE_SEGMENTS.knowledges}/${normalizedKnowledgeId}`;
+    }
+  }
+
+  return mappedPath;
+}
+
+export function resolveGroupRoadmapPathParams(subPath = "") {
+  const normalizedSubPath = normalizeSubPath(subPath);
+  if (!normalizedSubPath) return { roadmapId: null, phaseId: null, knowledgeId: null };
+
+  const roadmapRegex = new RegExp(
+    `^${WORKSPACE_ROUTE_SEGMENTS.roadmaps}`
+      + `(?:/(\\d+)(?:/${WORKSPACE_ROUTE_SEGMENTS.phases}/(\\d+)(?:/${WORKSPACE_ROUTE_SEGMENTS.knowledges}/(\\d+))?)?)?$`,
+  );
+  const matched = normalizedSubPath.match(roadmapRegex);
+  if (!matched) return { roadmapId: null, phaseId: null, knowledgeId: null };
+
+  const normalizedRoadmapId = Number(matched[1]);
+  const normalizedPhaseId = Number(matched[2]);
+  const normalizedKnowledgeId = Number(matched[3]);
+
+  return {
+    roadmapId: Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+      ? normalizedRoadmapId
+      : null,
+    phaseId: Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0
+      ? normalizedPhaseId
+      : null,
+    knowledgeId: Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
+      ? normalizedKnowledgeId
+      : null,
+  };
 }
 
 export function buildWorkspaceRoadmapsPath(workspaceId, phaseId = null) {

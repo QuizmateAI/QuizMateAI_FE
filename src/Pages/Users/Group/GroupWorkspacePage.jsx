@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import GroupWalletTab from './Group_leader/GroupWalletTab';
@@ -68,7 +68,6 @@ React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
 React.lazy(loadPlanUpgradeModal);
 const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
 const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigSummaryDialog"));
-const LazyRoadmapJourPanel = React.lazy(() => import("./Components/RoadmapJourPanel"));
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import {
   deleteMaterial,
@@ -83,7 +82,14 @@ import { unwrapApiData } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
 import { useToast } from '@/context/ToastContext';
 import { useSequentialProgressMap } from '@/hooks/useSequentialProgressMap';
-import { buildGroupWorkspacePath, buildGroupWorkspaceSectionPath } from '@/lib/routePaths';
+import {
+  buildGroupWorkspacePath,
+  buildGroupWorkspaceRoadmapPath,
+  buildGroupWorkspaceSectionPath,
+  extractGroupWorkspaceSubPath,
+  resolveGroupRoadmapPathParams,
+  resolveGroupWorkspaceSectionFromSubPath,
+} from '@/lib/routePaths';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
 import { generateRoadmap } from '@/api/AIAPI';
@@ -544,6 +550,7 @@ function GroupWorkspacePage() {
   const { workspaceId } = useParams();
   const location = useLocation();
   const navigate = useNavigateWithLoading();
+  const navigateInstant = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
@@ -560,26 +567,42 @@ function GroupWorkspacePage() {
   const { showError, showInfo, showSuccess, showWarning } = useToast();
   const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [mobilePanel, setMobilePanel] = useState(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Section navigation via URL
   const legacySectionMap = { flashcardQuiz: 'quiz' };
   const sectionFromUrl = searchParams.get('section');
   const resolvedSection = legacySectionMap[sectionFromUrl] || sectionFromUrl;
-  const activeSection = GROUP_WORKSPACE_VALID_SECTIONS.includes(resolvedSection) ? resolvedSection : 'dashboard';
-  const isRoadmapJourActive = activeSection === 'roadmap';
+  const groupWorkspaceSubPath = extractGroupWorkspaceSubPath(location.pathname, workspaceId);
+  const pathSection = resolveGroupWorkspaceSectionFromSubPath(groupWorkspaceSubPath);
+  const roadmapPathParams = useMemo(
+    () => resolveGroupRoadmapPathParams(groupWorkspaceSubPath),
+    [groupWorkspaceSubPath],
+  );
+  const querySection = GROUP_WORKSPACE_VALID_SECTIONS.includes(resolvedSection)
+    ? resolvedSection
+    : null;
+  const activeSection = querySection && querySection !== 'roadmap'
+    ? querySection
+    : pathSection || querySection || 'dashboard';
 
   const setActiveSection = (section) => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set('section', section);
-    setSearchParams(nextParams, { replace: true });
+    const preservedQuery = {};
+    for (const [key, value] of searchParams.entries()) {
+      if (!key || key === 'section') continue;
+      preservedQuery[key] = value;
+    }
+
+    navigateInstant(buildGroupWorkspaceSectionPath(workspaceId, section, preservedQuery), { replace: true });
+
     // Reset sub-views when changing sections
     setActiveView(null);
     setSelectedQuiz(null);
     setQuizDetailFromChallengeReview(false);
     setSelectedFlashcard(null);
     setSelectedMockTest(null);
+    setSelectedRoadmapPhaseId(null);
+    setSelectedRoadmapKnowledgeId(null);
   };
 
   const bumpRoadmapReloadToken = useCallback(() => {
@@ -612,7 +635,9 @@ function GroupWorkspacePage() {
   const [selectedFlashcard, setSelectedFlashcard] = useState(null);
   const [selectedMockTest, setSelectedMockTest] = useState(null);
   const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
-  const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = useState(false);
+  const [selectedRoadmapKnowledgeId, setSelectedRoadmapKnowledgeId] = useState(null);
+  const [runtimeRoadmapId, setRuntimeRoadmapId] = useState(null);
+  const [roadmapCenterFocusToken, setRoadmapCenterFocusToken] = useState(0);
   const [hasTriggeredGroupRoadmap, setHasTriggeredGroupRoadmap] = useState(false);
   const [sources, setSources] = useState([]);
   const [selectedSourceIds, setSelectedSourceIds] = useState([]);
@@ -642,6 +667,32 @@ function GroupWorkspacePage() {
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const currentUser = readCurrentUser();
+
+  useEffect(() => {
+    if (activeSection !== 'roadmap') return;
+
+    const pathRoadmapId = Number(roadmapPathParams?.roadmapId);
+    if (Number.isInteger(pathRoadmapId) && pathRoadmapId > 0) {
+      setRuntimeRoadmapId(pathRoadmapId);
+    }
+
+    const pathPhaseId = Number(roadmapPathParams?.phaseId);
+    const pathKnowledgeId = Number(roadmapPathParams?.knowledgeId);
+
+    if (Number.isInteger(pathPhaseId) && pathPhaseId > 0) {
+      setSelectedRoadmapPhaseId(pathPhaseId);
+      setSelectedRoadmapKnowledgeId(
+        Number.isInteger(pathKnowledgeId) && pathKnowledgeId > 0
+          ? pathKnowledgeId
+          : null,
+      );
+    }
+  }, [
+    activeSection,
+    roadmapPathParams?.roadmapId,
+    roadmapPathParams?.knowledgeId,
+    roadmapPathParams?.phaseId,
+  ]);
 
   const renderSectionFallback = useCallback((minHeight = 320) => (
     <div
@@ -708,6 +759,25 @@ function GroupWorkspacePage() {
     groupProfile?.data?.roadmapId,
   ]);
 
+  const resolvedRoadmapRouteId = useMemo(() => {
+    const normalizedCurrentRoadmapId = Number(currentRoadmapId);
+    if (Number.isInteger(normalizedCurrentRoadmapId) && normalizedCurrentRoadmapId > 0) {
+      return normalizedCurrentRoadmapId;
+    }
+
+    const normalizedRuntimeRoadmapId = Number(runtimeRoadmapId);
+    if (Number.isInteger(normalizedRuntimeRoadmapId) && normalizedRuntimeRoadmapId > 0) {
+      return normalizedRuntimeRoadmapId;
+    }
+
+    const normalizedPathRoadmapId = Number(roadmapPathParams?.roadmapId);
+    if (Number.isInteger(normalizedPathRoadmapId) && normalizedPathRoadmapId > 0) {
+      return normalizedPathRoadmapId;
+    }
+
+    return null;
+  }, [currentRoadmapId, roadmapPathParams?.roadmapId, runtimeRoadmapId]);
+
   const groupProfileRoadmapConfig = useMemo(
     () => extractRoadmapConfigValues(groupProfile || {}),
     [groupProfile]
@@ -735,6 +805,37 @@ function GroupWorkspacePage() {
       setHasTriggeredGroupRoadmap(true);
     }
   }, [currentRoadmapId]);
+
+  useEffect(() => {
+    if (activeSection !== 'roadmap' || !workspaceId) return;
+
+    const hasSelectedPhase = Number.isInteger(Number(selectedRoadmapPhaseId)) && Number(selectedRoadmapPhaseId) > 0;
+    const hasSelectedKnowledge = Number.isInteger(Number(selectedRoadmapKnowledgeId)) && Number(selectedRoadmapKnowledgeId) > 0;
+    const hasResolvedRoadmapId = Number.isInteger(Number(resolvedRoadmapRouteId)) && Number(resolvedRoadmapRouteId) > 0;
+
+    if ((hasSelectedPhase || hasSelectedKnowledge) && !hasResolvedRoadmapId) {
+      return;
+    }
+
+    const canonicalRoadmapPath = buildGroupWorkspaceRoadmapPath(workspaceId, {
+      roadmapId: resolvedRoadmapRouteId,
+      phaseId: selectedRoadmapPhaseId,
+      knowledgeId: selectedRoadmapKnowledgeId,
+    });
+
+    const currentPath = buildGroupWorkspacePath(workspaceId, groupWorkspaceSubPath);
+    if (canonicalRoadmapPath === currentPath) return;
+
+    navigateInstant(canonicalRoadmapPath, { replace: true });
+  }, [
+    activeSection,
+    groupWorkspaceSubPath,
+    navigateInstant,
+    resolvedRoadmapRouteId,
+    selectedRoadmapKnowledgeId,
+    selectedRoadmapPhaseId,
+    workspaceId,
+  ]);
 
   const currentGroupFromGroups = groups.find((g) => String(g.workspaceId) === String(workspaceId));
 
@@ -2108,8 +2209,13 @@ function GroupWorkspacePage() {
     if (GROUP_WORKSPACE_VALID_SECTIONS.includes(actionKey)) {
       setActiveSection(actionKey);
     }
+
+    if (actionKey !== 'roadmap') {
+      setSelectedRoadmapPhaseId(null);
+      setSelectedRoadmapKnowledgeId(null);
+    }
+
     setActiveView(actionKey);
-    setMobilePanel(null);
   }, [
     setActiveSection,
     currentRoleKey,
@@ -2527,11 +2633,67 @@ function GroupWorkspacePage() {
   const handleEditMockTest = useCallback((mt) => { setSelectedMockTest(mt); setActiveView('editMockTest'); }, []);
   const handleSaveMockTest = useCallback((updatedMt) => { setSelectedMockTest((p) => ({ ...p, ...updatedMt })); setActiveView('mockTestDetail'); }, []);
   const handleSelectRoadmapPhase = useCallback((phaseId, _options = {}) => {
+    const normalizedRoadmapId = Number(_options?.roadmapId);
+    const resolvedSelectionRoadmapId = Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+      ? normalizedRoadmapId
+      : resolvedRoadmapRouteId;
+
+    if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
+      setRuntimeRoadmapId(normalizedRoadmapId);
+    }
+
+    if (_options?.focusRoadmapCenter) {
+      setSelectedRoadmapPhaseId(null);
+      setSelectedRoadmapKnowledgeId(null);
+      setRoadmapCenterFocusToken((current) => current + 1);
+
+      if (workspaceId) {
+        navigateInstant(
+          buildGroupWorkspaceRoadmapPath(workspaceId, {
+            roadmapId: resolvedSelectionRoadmapId,
+          }),
+          { replace: true },
+        );
+      }
+
+      if (_options?.preserveActiveView) return;
+
+      setSelectedQuiz(null);
+      setActiveView('roadmap');
+      return;
+    }
+
     const normalizedPhaseId = Number(phaseId);
+    const normalizedKnowledgeId = Number(_options?.knowledgeId);
     if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+
     setSelectedRoadmapPhaseId(normalizedPhaseId);
+    setSelectedRoadmapKnowledgeId(
+      Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
+        ? normalizedKnowledgeId
+        : null,
+    );
+
+    if (workspaceId) {
+      const hasResolvedRoadmapId = Number.isInteger(Number(resolvedSelectionRoadmapId)) && Number(resolvedSelectionRoadmapId) > 0;
+      if (hasResolvedRoadmapId) {
+        navigateInstant(
+          buildGroupWorkspaceRoadmapPath(workspaceId, {
+            roadmapId: resolvedSelectionRoadmapId,
+            phaseId: normalizedPhaseId,
+            knowledgeId: Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
+              ? normalizedKnowledgeId
+              : null,
+          }),
+          { replace: true },
+        );
+      }
+    }
+
+    if (_options?.preserveActiveView) return;
+
     setActiveView('roadmap');
-  }, []);
+  }, [navigateInstant, resolvedRoadmapRouteId, workspaceId]);
 
   const handleBackFromForm = useCallback(() => {
     const restore = location.state?.restoreGroupWorkspace;
@@ -2925,9 +3087,13 @@ function GroupWorkspacePage() {
     );
   };
 
-  const renderStudioPanel = (defaultView) => (
-    <div className={`rounded-[28px] border overflow-hidden ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-white/80 bg-white/82'}`} style={{ minHeight: 500 }}>
-      <React.Suspense fallback={<div className="flex h-full min-h-[500px] items-center justify-center"><ListSpinner variant="section" className="h-full" /></div>}>
+  const renderStudioPanel = (defaultView, options = {}) => {
+    const { unstyled = false } = options;
+    const suspenseFallbackClass = unstyled
+      ? "flex h-full min-h-0 items-center justify-center"
+      : "flex h-full min-h-[500px] items-center justify-center";
+    const panelContent = (
+      <React.Suspense fallback={<div className={suspenseFallbackClass}><ListSpinner variant="section" className="h-full" /></div>}>
         <LazyGroupChatPanel
         isDarkMode={isDarkMode}
         sources={sources}
@@ -2945,6 +3111,13 @@ function GroupWorkspacePage() {
         onCreateQuiz={handleCreateQuiz}
         onCreateFlashcard={handleCreateFlashcard}
         onCreateRoadmap={handleCreateRoadmap}
+        onRoadmapPhaseFocus={handleSelectRoadmapPhase}
+        onRoadmapLoad={(roadmapId) => {
+          const normalizedRoadmapId = normalizePositiveId(roadmapId);
+          if (normalizedRoadmapId) {
+            setRuntimeRoadmapId((prev) => (prev === normalizedRoadmapId ? prev : normalizedRoadmapId));
+          }
+        }}
         onCreateMockTest={handleCreateMockTest}
         onBack={handleBackFromForm}
         workspaceId={workspaceId}
@@ -2953,6 +3126,8 @@ function GroupWorkspacePage() {
         isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
         roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
         selectedRoadmapPhaseId={selectedRoadmapPhaseId}
+        selectedRoadmapKnowledgeId={selectedRoadmapKnowledgeId}
+        roadmapCenterFocusToken={roadmapCenterFocusToken}
         selectedQuiz={selectedQuiz}
         onViewQuiz={handleViewQuiz}
         onEditQuiz={handleEditQuiz}
@@ -2993,30 +3168,18 @@ function GroupWorkspacePage() {
         challengeSnapshotReviewMode={quizDetailFromChallengeReview}
         />
       </React.Suspense>
-    </div>
-  );
+    );
 
-  const renderRoadmapJourPanel = (isMobile = false) => (
-    <React.Suspense fallback={<ListSpinner variant="section" className="h-full" />}>
-      <LazyRoadmapJourPanel
-        isDarkMode={isDarkMode}
-        workspaceId={workspaceId}
-        selectedPhaseId={selectedRoadmapPhaseId}
-        onSelectPhase={handleSelectRoadmapPhase}
-        reloadToken={roadmapReloadToken}
-        isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
-        roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
-        isCollapsed={!isMobile && isRoadmapJourCollapsed}
-        onToggleCollapse={() => {
-          if (isMobile) {
-            setMobilePanel(null);
-            return;
-          }
-          setIsRoadmapJourCollapsed((current) => !current);
-        }}
-      />
-    </React.Suspense>
-  );
+    if (unstyled) {
+      return <div className="h-full min-h-0">{panelContent}</div>;
+    }
+
+    return (
+      <div className={`rounded-[28px] border overflow-hidden ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-white/80 bg-white/82'}`} style={{ minHeight: 500 }}>
+        {panelContent}
+      </div>
+    );
+  };
 
   const renderProfileSetupGate = () => (
     <div className={`relative overflow-hidden rounded-[32px] border p-8 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
@@ -3171,7 +3334,7 @@ function GroupWorkspacePage() {
         return <div className="h-full p-2 md:p-3">{renderStudioPanel('quiz')}</div>;
 
       case 'roadmap':
-        return <div className="h-full p-2 md:p-3">{renderStudioPanel('roadmap')}</div>;
+        return <div className="h-full">{renderStudioPanel('roadmap', { unstyled: true })}</div>;
 
       case 'mockTest':
         return <div className="h-full p-2 md:p-3">{renderStudioPanel('mockTest')}</div>;
@@ -3301,15 +3464,9 @@ function GroupWorkspacePage() {
           currentLang={currentLang}
         />
 
-        {!shouldForceProfileSetup && isRoadmapJourActive && hasTriggeredGroupRoadmap ? (
-          <div className={`${isRoadmapJourCollapsed ? 'w-[84px]' : 'w-[320px]'} hidden 2xl:flex flex-shrink-0 flex-col h-full transition-all duration-300`}>
-            {renderRoadmapJourPanel(false)}
-          </div>
-        ) : null}
-
         {/* Center Content Area */}
-        <main className="flex-1 flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden relative">
-          <div className="flex-1 overflow-y-auto w-full hide-scrollbar">
+        <main className={`flex-1 flex flex-col overflow-hidden relative ${activeSection === 'roadmap' ? 'bg-transparent border-0 shadow-none rounded-none' : 'bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800'}`}>
+          <div className={`flex-1 w-full hide-scrollbar ${activeSection === 'roadmap' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
             {!shouldForceProfileSetup ? (
             <div className="xl:hidden sticky top-0 z-20 p-2 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur flex items-center gap-2">
               <Button
@@ -3322,28 +3479,15 @@ function GroupWorkspacePage() {
               >
                 <Menu className="h-4 w-4" />
               </Button>
-              {isRoadmapJourActive && hasTriggeredGroupRoadmap ? (
-                <Button type="button" variant="outline" className="h-8 px-3 text-xs" onClick={() => setMobilePanel('roadmapJour')}>
-                  {t('groupWorkspacePage.roadmap.panelButton', 'Roadmap panel')}
-                </Button>
-              ) : null}
               <span className={`ml-auto text-[11px] font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{currentRoleLabel}</span>
             </div>
             ) : null}
-            <div className="p-4 md:p-5 lg:p-6">
+            <div className={activeSection === 'roadmap' ? 'h-full p-0 overflow-hidden' : 'p-4 md:p-5 lg:p-6'}>
               {renderContent()}
             </div>
           </div>
         </main>
       </div>
-
-      {mobilePanel === 'roadmapJour' && !shouldForceProfileSetup && isRoadmapJourActive && hasTriggeredGroupRoadmap && (
-        <div className="xl:hidden fixed inset-0 z-[150] bg-black/45 backdrop-blur-sm" onClick={() => setMobilePanel(null)}>
-          <div className="absolute left-0 top-0 h-full w-[88%] max-w-[340px] p-2" onClick={(event) => event.stopPropagation()}>
-            {renderRoadmapJourPanel(true)}
-          </div>
-        </div>
-      )}
 
       {/* Dialogs */}
       {uploadDialogOpen ? (
