@@ -146,7 +146,7 @@ export default function PaymentPage() {
             />
             <button
               type="button"
-              onClick={() => navigate('/plan')}
+              onClick={() => navigate(backToPlansUrl)}
               className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-xl transition-colors cursor-pointer ${
                 isDarkMode
                   ? 'text-slate-300 hover:text-slate-100 hover:bg-slate-800'
@@ -162,7 +162,7 @@ export default function PaymentPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/plan')}
+              onClick={() => navigate(backToPlansUrl)}
               className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               <CreditCard className="w-4 h-4" />
@@ -235,7 +235,7 @@ export default function PaymentPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
             <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{t('payment.noPlanId')}</p>
-            <Button variant="outline" onClick={() => navigate('/plan')}
+            <Button variant="outline" onClick={() => navigate(backToPlansUrl)}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
               <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
             </Button>
@@ -246,7 +246,7 @@ export default function PaymentPage() {
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <AlertCircle className={`w-10 h-10 ${isDarkMode ? 'text-red-400' : 'text-red-500'}`} />
             <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>{error || t('payment.fetchError')}</p>
-            <Button variant="outline" onClick={() => navigate('/plan')}
+            <Button variant="outline" onClick={() => navigate(backToPlansUrl)}
               className={isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : ''}>
               <ArrowLeft className="w-4 h-4 mr-2" />{t('payment.backToPlans')}
             </Button>

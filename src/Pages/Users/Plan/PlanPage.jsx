@@ -657,10 +657,10 @@ export default function PlanPage() {
         if (scopedWorkspaceId != null) {
           params.set("workspaceId", String(scopedWorkspaceId));
         }
-        navigate(`/payment?${params.toString()}`);
+        navigate(`/payments?${params.toString()}`);
         return;
       }
-      navigate(`/payment?planId=${plan.planId}`);
+      navigate(`/payments?planId=${plan.planId}`);
     },
     [navigate, scopedWorkspaceId],
   );

@@ -95,6 +95,12 @@ function MainRoutes() {
 
       {/* Route cần đăng nhập (User) - Super Admin, Admin không được vào */}
       <Route element={<ProtectedRoute allowedRoles={['USER']} />}>
+        <Route path="/payment" element={<LegacyPathRedirect to="/payments" />} />
+        <Route path="/payment/credits" element={<LegacyPathRedirect to="/payments/credits" />} />
+        <Route path="/payment/result" element={<LegacyPathRedirect to="/payments/results" />} />
+        <Route path="/payment/results" element={<LegacyPathRedirect to="/payments/results" />} />
+        <Route path="/payments/result" element={<LegacyPathRedirect to="/payments/results" />} />
+        <Route path="/plan" element={<LegacyPathRedirect to="/plans" />} />
         <Route path="/payments" element={<PaymentPage />} />
         <Route path="/payments/credits" element={<CreditPaymentPage />} />
         <Route path="/payments/results" element={<PaymentResultPage />} />
@@ -165,6 +171,11 @@ function MainRoutes() {
       </Route>
     </Routes>
   );
+}
+
+function LegacyPathRedirect({ to }) {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}${location.hash}`} replace />;
 }
 
 function RouteNamespaceGate({ children }) {
