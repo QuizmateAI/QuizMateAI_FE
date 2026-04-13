@@ -10,6 +10,7 @@ import { useToast } from "@/context/ToastContext";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
+import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;
@@ -207,6 +208,10 @@ function RoadmapCanvasViewStage({
   );
   const hasRoadmapLevelPreLearningQuiz = roadmapLevelPreLearningQuizzes.length > 0;
   const isRoadmapLevelPreLearningLoading = isGeneratingRoadmapPreLearning || submittingRoadmapPreLearning;
+  const currentPhaseIdSignal = Number(globalCurrentPhasePayload?.phaseId);
+  const hasGlobalCurrentPhaseSignal = Number.isInteger(currentPhaseIdSignal) && currentPhaseIdSignal > 0;
+  const isRoadmapCurrentGateActive = hasRoadmapLevelPreLearningQuiz
+    && !hasGlobalCurrentPhaseSignal;
 
   useEffect(() => {
     if (!hasRoadmapLevelPreLearningQuiz) return;
@@ -250,6 +255,10 @@ function RoadmapCanvasViewStage({
     return phaseIndex >= 0 ? Math.max(maxIndex, phaseIndex) : maxIndex;
   }, -1);
   const maxUnlockedPhaseIndex = useMemo(() => {
+    if (isRoadmapCurrentGateActive) {
+      return -1;
+    }
+
     if (isStudyNewRoadmap) {
       const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
         const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
@@ -268,7 +277,7 @@ function RoadmapCanvasViewStage({
     }
 
     return Math.max(unlockedByStatusIndex, unlockedByOptimisticIndex, globalCurrentIndex, 0);
-  }, [globalCurrentIndex, isStudyNewRoadmap, phases, unlockedByOptimisticIndex, unlockedByStatusIndex]);
+  }, [globalCurrentIndex, isRoadmapCurrentGateActive, isStudyNewRoadmap, phases, unlockedByOptimisticIndex, unlockedByStatusIndex]);
 
   const isCurrentPayloadFinished = isFinishedPhaseStatus(globalCurrentPhasePayload?.status);
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
@@ -330,6 +339,7 @@ function RoadmapCanvasViewStage({
   const isSelectedPhaseUnlockable = isSelectedPhaseLocked
     && selectedPhaseIndex === maxUnlockedPhaseIndex + 1
     && selectedPreviousPhaseCompleted
+    && !isRoadmapCurrentGateActive
     && !isSelectedPhaseUnlocking;
 
   const currentKnowledgePhaseId = Number(currentKnowledgePayload?.phaseId);
@@ -1568,6 +1578,10 @@ function RoadmapCanvasViewStage({
             {roadmap?.description}
           </p>
         </div>
+
+        {normalizedRoadmapId && (
+          <RoadmapReviewPanel roadmapId={normalizedRoadmapId} isDarkMode={isDarkMode} />
+        )}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {summaryChips.map((chip) => {

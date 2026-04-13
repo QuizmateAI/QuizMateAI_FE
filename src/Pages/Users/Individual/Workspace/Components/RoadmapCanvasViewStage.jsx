@@ -10,6 +10,7 @@ import { useToast } from "@/context/ToastContext";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
+import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;
@@ -1509,6 +1510,10 @@ function RoadmapCanvasViewStage({
             {roadmap?.description}
           </p>
         </div>
+
+        {Number.isInteger(Number(roadmap?.roadmapId ?? roadmap?.id)) && Number(roadmap?.roadmapId ?? roadmap?.id) > 0 && (
+          <RoadmapReviewPanel roadmapId={Number(roadmap?.roadmapId ?? roadmap?.id)} isDarkMode={isDarkMode} />
+        )}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {summaryChips.map((chip) => {
