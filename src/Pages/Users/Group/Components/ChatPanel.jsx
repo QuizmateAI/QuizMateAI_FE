@@ -11,7 +11,7 @@ import CreateQuizForm from "./CreateQuizForm";
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
 const LazyRoadmapCanvasView = React.lazy(() => import("./RoadmapCanvasView"));
 const LazyQuizListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/QuizListView"));
-const LazyQuizDetailView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/QuizDetailView"));
+const LazyQuizDetailView = React.lazy(() => import("@/Pages/Users/Group/Components/QuizDetailView"));
 const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyFlashcardListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/FlashcardListView"));
 const LazyFlashcardDetailView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/FlashcardDetailView"));
@@ -32,7 +32,7 @@ function DeferredPanel({ children }) {
 }
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER", planEntitlements = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad }) {
+function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onRefreshRoadmapPhases, onCreateRoadmapPreLearning, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER", planEntitlements = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, isGeneratingRoadmapPhases = false, isGeneratingRoadmapPreLearning = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad, hasRoadmap = false }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -178,7 +178,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
     switch (activeView) {
       case "roadmap":
-        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} />;
+        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} onCreateRoadmapPreLearning={onCreateRoadmapPreLearning} onViewQuiz={onViewQuiz} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} />;
       case "quiz":
         return (
           <LazyQuizListView
@@ -209,6 +209,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
   const listContent = renderListView();
   const shouldHideRoadmapJour = roadmapCanvasView === "overview";
+  const shouldRenderRoadmapJour = !shouldHideRoadmapJour && (Boolean(hasRoadmap) || Boolean(isGeneratingRoadmapPhases));
 
   if (activeView === "roadmap" && listContent) {
     return (
@@ -224,7 +225,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
               type="button"
               size="sm"
               variant="outline"
-              onClick={() => onCreateRoadmapPhases?.()}
+              onClick={() => onRefreshRoadmapPhases?.()}
               title={t("workspace.roadmap.refreshPhasesTooltip", "Làm mới phase roadmap")}
               className={`h-8 rounded-full px-3 min-w-[110px] ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
             >
@@ -289,28 +290,30 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
             <DeferredPanel>{listContent}</DeferredPanel>
           </div>
 
-          <div
-            className={`hidden xl:flex min-h-0 overflow-hidden transition-all duration-500 ease-out ${shouldHideRoadmapJour ? "w-0 opacity-0 translate-x-3 pointer-events-none" : `${isRoadmapJourCollapsed ? "w-[92px]" : "w-[clamp(280px,22vw,360px)]"} opacity-100 translate-x-0`}`}
-            aria-hidden={shouldHideRoadmapJour}
-          >
-            <RoadmapJourPanel
-              isDarkMode={isDarkMode}
-              workspaceId={workspaceId}
-              isCollapsed={isRoadmapJourCollapsed}
-              onToggleCollapse={() => setIsRoadmapJourCollapsed((prev) => !prev)}
-              selectedPhaseId={selectedRoadmapPhaseId}
-              selectedKnowledgeId={selectedRoadmapKnowledgeId}
-              onSelectPhase={(phaseId, options) => {
-                if (roadmapCanvasView === "overview") {
-                  handleSwitchRoadmapView("view2");
-                }
-                onRoadmapPhaseFocus?.(phaseId, options);
-              }}
-              reloadToken={roadmapReloadToken}
-              isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
-              roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
-            />
-          </div>
+          {shouldRenderRoadmapJour ? (
+            <div
+              className={`hidden xl:flex min-h-0 overflow-hidden transition-all duration-500 ease-out ${isRoadmapJourCollapsed ? "w-[92px]" : "w-[clamp(280px,22vw,360px)]"} opacity-100 translate-x-0`}
+              aria-hidden={false}
+            >
+              <RoadmapJourPanel
+                isDarkMode={isDarkMode}
+                workspaceId={workspaceId}
+                isCollapsed={isRoadmapJourCollapsed}
+                onToggleCollapse={() => setIsRoadmapJourCollapsed((prev) => !prev)}
+                selectedPhaseId={selectedRoadmapPhaseId}
+                selectedKnowledgeId={selectedRoadmapKnowledgeId}
+                onSelectPhase={(phaseId, options) => {
+                  if (roadmapCanvasView === "overview") {
+                    handleSwitchRoadmapView("view2");
+                  }
+                  onRoadmapPhaseFocus?.(phaseId, options);
+                }}
+                reloadToken={roadmapReloadToken}
+                isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+                roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
+              />
+            </div>
+          ) : null}
         </div>
       </section>
     );

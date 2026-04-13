@@ -148,12 +148,14 @@ export function buildGroupWorkspaceRoadmapPath(
     roadmapId = null,
     phaseId = null,
     knowledgeId = null,
+    quizId = null,
   } = {},
 ) {
   const basePath = buildGroupWorkspacePath(workspaceId, WORKSPACE_ROUTE_SEGMENTS.roadmaps);
   const normalizedRoadmapId = Number(roadmapId);
   const normalizedPhaseId = Number(phaseId);
   const normalizedKnowledgeId = Number(knowledgeId);
+  const normalizedQuizId = Number(quizId);
 
   if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
     return basePath;
@@ -168,34 +170,62 @@ export function buildGroupWorkspaceRoadmapPath(
     }
   }
 
+  if (Number.isInteger(normalizedQuizId) && normalizedQuizId > 0) {
+    mappedPath += `/${WORKSPACE_ROUTE_SEGMENTS.quizzes}/${normalizedQuizId}`;
+  }
+
   return mappedPath;
 }
 
 export function resolveGroupRoadmapPathParams(subPath = "") {
   const normalizedSubPath = normalizeSubPath(subPath);
-  if (!normalizedSubPath) return { roadmapId: null, phaseId: null, knowledgeId: null };
+  if (!normalizedSubPath) return { roadmapId: null, phaseId: null, knowledgeId: null, quizId: null };
 
-  const roadmapRegex = new RegExp(
-    `^${WORKSPACE_ROUTE_SEGMENTS.roadmaps}`
-      + `(?:/(\\d+)(?:/${WORKSPACE_ROUTE_SEGMENTS.phases}/(\\d+)(?:/${WORKSPACE_ROUTE_SEGMENTS.knowledges}/(\\d+))?)?)?$`,
-  );
-  const matched = normalizedSubPath.match(roadmapRegex);
-  if (!matched) return { roadmapId: null, phaseId: null, knowledgeId: null };
+  const parts = normalizedSubPath.split("/").filter(Boolean);
+  if (parts[0] !== WORKSPACE_ROUTE_SEGMENTS.roadmaps) {
+    return { roadmapId: null, phaseId: null, knowledgeId: null, quizId: null };
+  }
 
-  const normalizedRoadmapId = Number(matched[1]);
-  const normalizedPhaseId = Number(matched[2]);
-  const normalizedKnowledgeId = Number(matched[3]);
+  const readPositiveId = (value) => {
+    const normalizedValue = Number(value);
+    return Number.isInteger(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+  };
+
+  const roadmapId = readPositiveId(parts[1]);
+  if (!roadmapId) {
+    return { roadmapId: null, phaseId: null, knowledgeId: null, quizId: null };
+  }
+
+  let phaseId = null;
+  let knowledgeId = null;
+  let quizId = null;
+  let cursor = 2;
+
+  while (cursor < parts.length) {
+    const segment = parts[cursor];
+    if (segment === WORKSPACE_ROUTE_SEGMENTS.phases) {
+      phaseId = readPositiveId(parts[cursor + 1]);
+      cursor += 2;
+      continue;
+    }
+    if (segment === WORKSPACE_ROUTE_SEGMENTS.knowledges) {
+      knowledgeId = readPositiveId(parts[cursor + 1]);
+      cursor += 2;
+      continue;
+    }
+    if (segment === WORKSPACE_ROUTE_SEGMENTS.quizzes) {
+      quizId = readPositiveId(parts[cursor + 1]);
+      cursor += 2;
+      continue;
+    }
+    cursor += 1;
+  }
 
   return {
-    roadmapId: Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
-      ? normalizedRoadmapId
-      : null,
-    phaseId: Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0
-      ? normalizedPhaseId
-      : null,
-    knowledgeId: Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
-      ? normalizedKnowledgeId
-      : null,
+    roadmapId,
+    phaseId,
+    knowledgeId,
+    quizId,
   };
 }
 
