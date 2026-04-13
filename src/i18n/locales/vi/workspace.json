@@ -1221,6 +1221,8 @@
         "skipPhaseEligibleHint": "Bạn đã đủ điều kiện để bỏ qua giai đoạn này. Bạn muốn bỏ qua hay tiếp tục luyện tập?",
         "skipPhaseAction": "Bỏ qua phase",
         "continuePracticeAction": "Tiếp tục luyện tập",
+        "remedialDecisionTitle": "Điều chỉnh lộ trình học",
+        "remedialDecisionDescription": "Kết quả hiện tại cho thấy bạn nên điều chỉnh roadmap. Hãy chọn một phương án.",
         "remedialDecisionHint": "Bạn chưa đạt post-learning. Chọn cách thêm giai đoạn cải thiện cho roadmap của bạn.",
         "remedialCompressAction": "Tạo giai đoạn cải thiện và giữ nguyên deadline",
         "remedialExtendAction": "Tạo giai đoạn cải thiện và dời deadline",

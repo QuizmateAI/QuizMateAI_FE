@@ -5,6 +5,7 @@ import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import { getRoadmapReview } from "@/api/RoadmapAPI";
 import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
+import RoadmapJourPanel from "./RoadmapJourPanel";
 import CreateQuizForm from "./CreateQuizForm";
 
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
@@ -31,7 +32,7 @@ function DeferredPanel({ children }) {
 }
 
 // Panel chính hiển thị nội dung workspace: list views, create forms, trạng thái trống...
-function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER", planEntitlements = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false }) {
+function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], onToggleMaterialSelection, activeView = null, createdItems = [], onUploadClick, onChangeView, onCreateQuiz, onCreateFlashcard, onCreateRoadmap, onCreateRoadmapPhases, onCreateMockTest, onCreatePostLearning, onBack, workspaceId = null, selectedQuiz = null, onViewQuiz, onEditQuiz, onSaveQuiz, selectedFlashcard = null, onViewFlashcard, onDeleteFlashcard, selectedMockTest = null, onViewMockTest, onEditMockTest, onSaveMockTest, selectedPostLearning = null, onViewPostLearning, readOnly = false, role = "MEMBER", planEntitlements = null, onViewRoadmapConfig, onEditRoadmapConfig, roadmapEmptyStateTitle = "", roadmapEmptyStateDescription = "", roadmapEmptyStateActionLabel = "", roadmapReloadToken = 0, quizListRefreshToken = 0, isGeneratingRoadmapPhases = false, roadmapPhaseGenerationProgress = 0, selectedRoadmapPhaseId = null, selectedRoadmapKnowledgeId = null, roadmapCenterFocusToken = 0, roadmapSelectableMaterials = [], selectedRoadmapMaterialIds = [], onToggleRoadmapMaterial, onToggleAllRoadmapMaterials, onRoadmapPhaseFocus, isGroupLeader = false, groupWorkspaceCurrentUserId = null, onGroupQuizUpdated, challengeDraftQuizEditor = false, challengeDraftTargetQuizId = null, challengeSnapshotReviewMode = false, onRoadmapLoad }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
   const hasSources = sources.length > 0;
@@ -59,6 +60,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
     const saved = localStorage.getItem(`workspace_${workspaceId}_roadmap_canvas_view`);
     return saved === "view1" || saved === "view2" || saved === "overview" ? saved : "view2";
   });
+  const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
 
   React.useEffect(() => {
     if (!workspaceId) {
@@ -176,7 +178,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
     switch (activeView) {
       case "roadmap":
-        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={setActiveRoadmapId} />;
+        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} />;
       case "quiz":
         return (
           <LazyQuizListView
@@ -206,67 +208,119 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   };
 
   const listContent = renderListView();
+  const shouldHideRoadmapJour = roadmapCanvasView === "overview";
+
+  if (activeView === "roadmap" && listContent) {
+    return (
+      <section className={`flex h-full min-h-0 flex-col overflow-hidden rounded-[32px] border transition-colors duration-300 ${
+        isDarkMode ? "border-white/10 bg-white/[0.04]" : "border-slate-200/80 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.05)]"
+      }`}>
+        <div className={`px-6 pb-5 pt-6 border-b flex flex-wrap items-center justify-between gap-3 ${isDarkMode ? "border-slate-700/80" : "border-slate-200"}`}>
+          <p className={`text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
+            {t("workspace.roadmap.title", "Roadmap")}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onCreateRoadmapPhases?.()}
+              title={t("workspace.roadmap.refreshPhasesTooltip", "Làm mới phase roadmap")}
+              className={`h-8 rounded-full px-3 min-w-[110px] ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className={`text-xs ml-1 ${fontClass}`}>{t("common.refresh", "Làm mới")}</span>
+            </Button>
+
+            {typeof onEditRoadmapConfig === "function" ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onEditRoadmapConfig}
+                className={`h-8 rounded-full px-3 min-w-[110px] ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+              >
+                <PenLine className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>{t("workspace.roadmap.editConfigAction", "Edit")}</span>
+              </Button>
+            ) : null}
+
+            <div className={`inline-flex items-center gap-1 rounded-full border p-1 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-gray-200 bg-white"}`}>
+              <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
+                onClick={() => handleSwitchRoadmapView("view2")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Rows3 className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
+                onClick={() => handleSwitchRoadmapView("overview")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "overview" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Map className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
+                onClick={() => handleSwitchRoadmapView("view1")}
+                className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
+              >
+                <Eye className="w-4 h-4 mr-1.5" />
+                <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <RoadmapReviewPanel review={roadmapReview} isDarkMode={isDarkMode} />
+
+        <div className="min-h-0 flex-1 flex gap-3 p-3 overflow-hidden">
+          <div className="min-h-0 min-w-0 flex-1 rounded-[24px] overflow-y-auto overflow-x-hidden border border-slate-200 dark:border-slate-800 transition-all duration-500 ease-out">
+            <DeferredPanel>{listContent}</DeferredPanel>
+          </div>
+
+          <div
+            className={`hidden xl:flex min-h-0 overflow-hidden transition-all duration-500 ease-out ${shouldHideRoadmapJour ? "w-0 opacity-0 translate-x-3 pointer-events-none" : `${isRoadmapJourCollapsed ? "w-[92px]" : "w-[clamp(280px,22vw,360px)]"} opacity-100 translate-x-0`}`}
+            aria-hidden={shouldHideRoadmapJour}
+          >
+            <RoadmapJourPanel
+              isDarkMode={isDarkMode}
+              workspaceId={workspaceId}
+              isCollapsed={isRoadmapJourCollapsed}
+              onToggleCollapse={() => setIsRoadmapJourCollapsed((prev) => !prev)}
+              selectedPhaseId={selectedRoadmapPhaseId}
+              selectedKnowledgeId={selectedRoadmapKnowledgeId}
+              onSelectPhase={(phaseId, options) => {
+                if (roadmapCanvasView === "overview") {
+                  handleSwitchRoadmapView("view2");
+                }
+                onRoadmapPhaseFocus?.(phaseId, options);
+              }}
+              reloadToken={roadmapReloadToken}
+              isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+              roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
+            />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (listContent) {
     return (
       <section className={`rounded-2xl border h-full overflow-hidden flex flex-col transition-colors duration-300 ${
         isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-gray-200"
       }`}>
-        {activeView === "roadmap" ? (
-          <div className={`px-4 py-3 border-b flex items-center justify-between gap-3 ${isDarkMode ? "border-slate-800 bg-slate-950/50" : "border-gray-200 bg-slate-50"}`}>
-            <p className={`text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-800"} ${fontClass}`}>
-              {t("workspace.roadmap.title", "Roadmap")}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => onCreateRoadmapPhases?.()}
-                title="Refresh roadmap phases"
-                className={`h-8 rounded-full px-3 ${isDarkMode ? "border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700" : "border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200"} border`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span className={`text-xs ml-1 ${fontClass}`}>Refresh</span>
-              </Button>
-              <div className="inline-flex items-center gap-1 rounded-full border p-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={roadmapCanvasView === "view2" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view2")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view2" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-                >
-                  <Eye className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>{t("workspace.roadmap.canvasView2Title")}</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={roadmapCanvasView === "overview" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("overview")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "overview" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-                >
-                  <Rows3 className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>{t("workspace.roadmap.canvasOverviewTitle")}</span>
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={roadmapCanvasView === "view1" ? "default" : "ghost"}
-                  onClick={() => handleSwitchRoadmapView("view1")}
-                  className={`h-8 rounded-full px-3 min-w-[86px] ${roadmapCanvasView === "view1" ? "bg-blue-600 hover:bg-blue-700 text-white" : isDarkMode ? "text-slate-200 hover:bg-slate-800" : "text-gray-700 hover:bg-gray-100"}`}
-                >
-                  <Map className="w-4 h-4 mr-1.5" />
-                  <span className={fontClass}>{t("workspace.roadmap.canvasView1Title")}</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-        {activeView === "roadmap" ? (
-          <RoadmapReviewPanel review={roadmapReview} isDarkMode={isDarkMode} />
-        ) : null}
         <DeferredPanel>{listContent}</DeferredPanel>
       </section>
     );

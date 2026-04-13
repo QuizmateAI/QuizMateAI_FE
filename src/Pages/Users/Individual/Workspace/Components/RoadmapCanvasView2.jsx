@@ -249,6 +249,8 @@ function RoadmapCanvasView2({
   }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
 
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
+  const currentPayloadStatus = String(globalCurrentPhasePayload?.status || "").toUpperCase();
+  const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
   const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
   const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
     ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
@@ -934,7 +936,17 @@ function RoadmapCanvasView2({
 
           const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
             && phase.preLearningQuizzes.length > 0;
-          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+          const phaseId = Number(phase?.phaseId);
+          const isCurrentPhaseByPayload = isStudyNewRoadmap
+            && isCurrentPayloadActiveStatus
+            && Number.isInteger(currentPayloadPhaseId)
+            && currentPayloadPhaseId > 0
+            && Number.isInteger(phaseId)
+            && phaseId > 0
+            && currentPayloadPhaseId === phaseId;
+          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex
+            && !hasExistingPreLearning
+            && !isCurrentPhaseByPayload;
           const previousPhaseCompleted = phaseIndex > 0
             ? (() => {
               const previousPhase = phases[phaseIndex - 1] || null;

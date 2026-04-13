@@ -6,7 +6,7 @@ import ChatPanel from '@/Pages/Users/Group/Components/ChatPanel';
 
 const roadmapCanvasSpy = vi.fn();
 
-vi.mock('@/Pages/Users/Individual/Workspace/Components/RoadmapCanvasView', () => ({
+vi.mock('@/Pages/Users/Group/Components/RoadmapCanvasView', () => ({
   default: (props) => {
     roadmapCanvasSpy(props);
     return <div data-testid="group-roadmap-canvas-view">Roadmap canvas mock</div>;

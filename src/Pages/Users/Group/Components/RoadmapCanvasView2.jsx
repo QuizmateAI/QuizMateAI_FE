@@ -11,10 +11,7 @@ import {
   submitRoadmapPhaseRemedialDecision,
 } from "@/api/RoadmapPhaseAPI";
 import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
-import { generateRoadmapGroupPreLearning } from "@/api/AIAPI";
-import { getQuizzesByScope } from "@/api/QuizAPI";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
-import { buildGroupWorkspaceSectionPath } from "@/lib/routePaths";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -27,6 +24,7 @@ import {
   Lock,
   Unlock,
 } from "lucide-react";
+import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
 
 function RoadmapCanvasView2({
   roadmap,
@@ -54,7 +52,7 @@ function RoadmapCanvasView2({
   onViewRoadmapConfig,
   onEditRoadmapConfig,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showError, showSuccess } = useToast();
   const [openPhaseId, setOpenPhaseId] = useState(null);
   const [submittingRemedialDecision, setSubmittingRemedialDecision] = useState(false);
@@ -68,20 +66,9 @@ function RoadmapCanvasView2({
   const [loadingGlobalCurrentPhase, setLoadingGlobalCurrentPhase] = useState(false);
   const [optimisticUnlockedPhaseIds, setOptimisticUnlockedPhaseIds] = useState([]);
   const [unlockingPhaseIds, setUnlockingPhaseIds] = useState([]);
-  const [groupPreLearningQuestionCount, setGroupPreLearningQuestionCount] = useState(20);
-  const [isCreatingGroupPreLearning, setIsCreatingGroupPreLearning] = useState(false);
-  const [groupPreLearningRefreshToken, setGroupPreLearningRefreshToken] = useState(0);
-  const [hasRoadmapLevelPreLearning, setHasRoadmapLevelPreLearning] = useState(false);
-  const [roadmapPreLearningCheckDone, setRoadmapPreLearningCheckDone] = useState(false);
   const progressSyncDebounceRef = useRef(null);
+  const phaseFocusDebounceRef = useRef(null);
   const previousKnowledgeGenerationRef = useRef(false);
-  const canShowRoadmapLevelFeedback = useRef(false);
-
-  const normalizeGroupPreLearningQuestionCount = useCallback((value) => {
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) return 20;
-    return Math.max(20, Math.min(25, Math.round(numericValue)));
-  }, []);
 
   const loadGlobalCurrentPhaseProgress = useCallback(async () => {
     const normalizedRoadmapId = Number(roadmap?.roadmapId);
@@ -131,43 +118,6 @@ function RoadmapCanvasView2({
 
   const hasKnowledgeGenerationRunning = knowledgeGenerationSignature.length > 0;
 
-  const handleCreateGroupPreLearning = useCallback(async () => {
-    const normalizedRoadmapId = Number(roadmap?.roadmapId);
-    if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0 || isCreatingGroupPreLearning) {
-      return;
-    }
-
-    const totalQuestion = normalizeGroupPreLearningQuestionCount(groupPreLearningQuestionCount);
-    setGroupPreLearningQuestionCount(totalQuestion);
-    setIsCreatingGroupPreLearning(true);
-
-    try {
-      await generateRoadmapGroupPreLearning({
-        roadmapId: normalizedRoadmapId,
-        totalQuestion,
-      });
-      showSuccess(t("roadmapCanvasView2.groupPreLearningCreateSuccess", "Pre-learning creation request for the group roadmap has been submitted."));
-      setGroupPreLearningRefreshToken((current) => current + 1);
-      await onReloadRoadmap?.();
-      await loadGlobalCurrentPhaseProgress();
-    } catch (error) {
-      console.error("Failed to create group roadmap pre-learning:", error);
-      showError(error?.message || t("roadmapCanvasView2.groupPreLearningCreateFail", "Unable to create pre-learning for the group roadmap."));
-    } finally {
-      setIsCreatingGroupPreLearning(false);
-    }
-  }, [
-    groupPreLearningQuestionCount,
-    isCreatingGroupPreLearning,
-    loadGlobalCurrentPhaseProgress,
-    normalizeGroupPreLearningQuestionCount,
-    onReloadRoadmap,
-    roadmap?.roadmapId,
-    showError,
-    showSuccess,
-    t,
-  ]);
-
   useEffect(() => {
     if (progressSyncDebounceRef.current) {
       window.clearTimeout(progressSyncDebounceRef.current);
@@ -188,6 +138,7 @@ function RoadmapCanvasView2({
     knowledgeGenerationSignature,
     loadGlobalCurrentPhaseProgress,
     loadCurrentKnowledgeProgress,
+    openPhaseId,
     quizRefreshToken,
     roadmap?.roadmapId,
     selectedPhaseId,
@@ -201,56 +152,6 @@ function RoadmapCanvasView2({
     }
     previousKnowledgeGenerationRef.current = hasKnowledgeGenerationRunning;
   }, [hasKnowledgeGenerationRunning, loadGlobalCurrentPhaseProgress, loadCurrentKnowledgeProgress]);
-
-  useEffect(() => {
-    const roadmapScopeId = Number(roadmap?.roadmapId);
-    setRoadmapPreLearningCheckDone(false);
-
-    if (!Number.isInteger(roadmapScopeId) || roadmapScopeId <= 0) {
-      setHasRoadmapLevelPreLearning(false);
-      setRoadmapPreLearningCheckDone(true);
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await getQuizzesByScope("ROADMAP", roadmapScopeId);
-        if (cancelled) return;
-
-        const payload = response?.data?.data ?? response?.data ?? response;
-        const quizList = Array.isArray(payload) ? payload : [];
-        const hasAnyRoadmapPreLearning = quizList.some((quiz) => {
-          const quizIntent = String(quiz?.quizIntent || "").toUpperCase();
-          const contextType = String(quiz?.contextType || "").toUpperCase();
-          const quizRoadmapId = Number(quiz?.roadmapId);
-          const quizPhaseId = Number(quiz?.phaseId);
-          const quizKnowledgeId = Number(quiz?.knowledgeId);
-          const isRoadmapScopedByIds = (
-            (!Number.isInteger(quizPhaseId) || quizPhaseId <= 0)
-            && (!Number.isInteger(quizKnowledgeId) || quizKnowledgeId <= 0)
-          );
-
-          return quizIntent === "PRE_LEARNING" && (
-            contextType === "ROADMAP"
-            || quizRoadmapId === roadmapScopeId
-            || isRoadmapScopedByIds
-          );
-        });
-
-        setHasRoadmapLevelPreLearning(hasAnyRoadmapPreLearning);
-        setRoadmapPreLearningCheckDone(true);
-      } catch (error) {
-        console.error("Failed to load roadmap pre-learning visibility state:", error);
-        if (!cancelled) setRoadmapPreLearningCheckDone(true);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [groupPreLearningRefreshToken, quizRefreshToken, roadmap?.roadmapId]);
-
   const [phaseReviewState, setPhaseReviewState] = useState({
     loading: false,
     data: null,
@@ -317,15 +218,43 @@ function RoadmapCanvasView2({
       return Math.max(maxIndex, phaseIndex);
     }, -1);
 
+    if (isStudyNewRoadmap) {
+      const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
+        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
+        const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
+        const isFinished = isPhaseFinishedStatus(phase?.status);
+
+        if (hasPreLearning || hasKnowledge || hasPostLearning || isFinished) {
+          return Math.max(maxIndex, index);
+        }
+
+        return maxIndex;
+      }, 0);
+
+      return Math.max(0, unlockedByManualProgressIndex, unlockedByOptimisticIndex);
+    }
+
     return Math.max(0, globalCurrentIndex, unlockedByStatusIndex, unlockedByOptimisticIndex);
-  }, [globalCurrentPhasePayload?.phaseId, isPhaseFinishedStatus, optimisticUnlockedPhaseIds, phases]);
+  }, [
+    globalCurrentPhasePayload?.phaseId,
+    isPhaseFinishedStatus,
+    isStudyNewRoadmap,
+    optimisticUnlockedPhaseIds,
+    phases,
+  ]);
 
   const isCurrentPayloadFinished = useMemo(() => {
     return isPhaseFinishedStatus(globalCurrentPhasePayload?.status);
   }, [globalCurrentPhasePayload?.status, isPhaseFinishedStatus]);
 
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
-  const currentPayloadPhaseIndex = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadStatus = String(globalCurrentPhasePayload?.status || "").toUpperCase();
+  const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
+  const currentPayloadPhaseIndexRaw = Number(globalCurrentPhasePayload?.phaseIndex);
+  const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
+    ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
+    : -1;
   const currentKnowledgePhaseId = Number(currentKnowledgePayload?.phaseId);
   const currentKnowledgeId = Number(currentKnowledgePayload?.knowledgeId);
   const currentKnowledgeStatus = String(currentKnowledgePayload?.status || "").toUpperCase();
@@ -419,20 +348,14 @@ function RoadmapCanvasView2({
     [defaultOpenKnowledgeMap, persistedKnowledgeMap]
   );
 
-  const normalizedSelectedPhaseId = Number(selectedPhaseId);
-  const normalizedOpenPhaseId = Number(openPhaseId);
   const fallbackPhaseId = phases[0]?.phaseId ?? null;
-  const hasSelectedPhaseFromSidebar = Number.isInteger(normalizedSelectedPhaseId)
-    && normalizedSelectedPhaseId > 0
-    && phases.some((phase) => Number(phase?.phaseId) === normalizedSelectedPhaseId);
+  const hasSelectedPhaseFromSidebar = phases.some((phase) => phase.phaseId === selectedPhaseId);
   const effectiveOpenPhaseId = hasSelectedPhaseFromSidebar
-    ? normalizedSelectedPhaseId
-    : Number.isInteger(normalizedOpenPhaseId)
-    && normalizedOpenPhaseId > 0
-    && phases.some((phase) => Number(phase?.phaseId) === normalizedOpenPhaseId)
-    ? normalizedOpenPhaseId
+    ? selectedPhaseId
+    : phases.some((phase) => phase.phaseId === openPhaseId)
+    ? openPhaseId
     : fallbackPhaseId;
-  const activePhase = phases.find((phase) => Number(phase?.phaseId) === Number(effectiveOpenPhaseId)) || null;
+  const activePhase = phases.find((phase) => phase.phaseId === effectiveOpenPhaseId) || null;
 
   const {
     decisionState,
@@ -469,6 +392,20 @@ function RoadmapCanvasView2({
     const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
     return postLearningQuizzes.some((quiz) => quiz?.myPassed === true);
   }, []);
+
+  const canShowRoadmapLevelFeedback = useMemo(() => {
+    if (!Array.isArray(phases) || phases.length === 0) return false;
+
+    const allPhasesFinished = phases.every((phase) => isPhaseFinishedStatus(phase?.status));
+
+    const postLearningSatisfied = phases.every((phase) => {
+      const pl = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+      if (pl.length === 0) return true;
+      return hasCompletedPostLearning(phase);
+    });
+
+    return allPhasesFinished && postLearningSatisfied;
+  }, [phases, isPhaseFinishedStatus, hasCompletedPostLearning]);
 
   const resolvePostLearningReviewEligibility = useCallback((phase) => {
     if (!phase) return false;
@@ -630,9 +567,14 @@ function RoadmapCanvasView2({
     setOpenPhaseId((current) => {
       const next = current === phaseId ? null : phaseId;
       if (next) {
-        if (Number(selectedPhaseId) !== Number(next)) {
-          onPhaseFocus?.(next, { preserveActiveView: true });
+        if (phaseFocusDebounceRef.current) {
+          window.clearTimeout(phaseFocusDebounceRef.current);
         }
+
+        phaseFocusDebounceRef.current = window.setTimeout(() => {
+          onPhaseFocus?.(next, { preserveActiveView: true });
+          phaseFocusDebounceRef.current = null;
+        }, 180);
       }
       return next;
     });
@@ -640,6 +582,9 @@ function RoadmapCanvasView2({
 
   useEffect(() => {
     return () => {
+      if (phaseFocusDebounceRef.current) {
+        window.clearTimeout(phaseFocusDebounceRef.current);
+      }
       if (progressSyncDebounceRef.current) {
         window.clearTimeout(progressSyncDebounceRef.current);
       }
@@ -771,6 +716,7 @@ function RoadmapCanvasView2({
     const canCreateKnowledgeQuiz = Number.isInteger(knowledgeId) && knowledgeId > 0;
     const quizzes = knowledge?.quizzes || [];
     const hasQuizzes = quizzes.length > 0;
+    const shouldShowCreateKnowledgeQuizButton = canCreateKnowledgeQuiz && !hasQuizzes;
     const shouldRenderKnowledgeQuizList = hasQuizzes || targetedKnowledgeRefreshToken > 0;
     const flashcards = knowledge?.flashcards || [];
     const hasFlashcards = flashcards.length > 0;
@@ -784,7 +730,7 @@ function RoadmapCanvasView2({
               <h5 className={`text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
                 {t("workspace.roadmap.canvas.quiz", "Quiz")}
               </h5>
-              {canCreateKnowledgeQuiz ? (
+              {shouldShowCreateKnowledgeQuizButton ? (
                 <Button
                   type="button"
                   size="sm"
@@ -827,7 +773,7 @@ function RoadmapCanvasView2({
                       hideCreateButton
                       title={t("workspace.roadmap.canvas.quiz", "Quiz")}
                       refreshToken={(Number(quizRefreshToken) || 0) + targetedKnowledgeRefreshToken}
-                      returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
+                      returnToPath={roadmap?.workspaceId ? buildWorkspaceRoadmapsPath(roadmap.workspaceId, phase.phaseId) : null}
                     />
                   ) : !isGeneratingKnowledgeQuiz ? (
                     <p className={`px-1 py-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
@@ -920,10 +866,10 @@ function RoadmapCanvasView2({
                 <DirectFeedbackButton
                   targetType="ROADMAP"
                   targetId={roadmap.roadmapId}
-                  label={t("roadmapCanvasView2.feedbackLabel", "Feedback")}
+                  label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
                   isDarkMode={isDarkMode}
                   className={`shrink-0 rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
-                  title={t("roadmapCanvasView2.roadmapFeedbackTitle", "Roadmap feedback")}
+                  title={i18n.language === "en" ? "Roadmap feedback" : "Phản hồi lộ trình"}
                 />
               ) : null}
               {onViewRoadmapConfig ? (
@@ -967,7 +913,7 @@ function RoadmapCanvasView2({
           <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-emerald-800/70 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50"}`}>
             <div className="flex items-center justify-between gap-3">
               <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
-                {t("roadmapCanvasView2.phaseReviewTitle", "AI review for the current phase")}
+                {t("workspace.roadmap.phaseReviewTitle", "Đánh giá AI cho phase hiện tại")}
               </p>
             </div>
             <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
@@ -977,20 +923,30 @@ function RoadmapCanvasView2({
             {phaseReviewAssessedAtLabel ? (
               <div className="mt-3 text-right">
                 <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
-                  {t("roadmapCanvasView2.phaseReviewAssessedAt", "Assessed at")}: {phaseReviewAssessedAtLabel}
+                  {t("workspace.roadmap.phaseReviewAssessedAt", "Đánh giá lúc")}: {phaseReviewAssessedAtLabel}
                 </span>
               </div>
             ) : null}
           </div>
         ) : null}
         {activePhase ? [activePhase].map((phase) => {
-          const isOpen = Number(effectiveOpenPhaseId) === Number(phase.phaseId);
+          const isOpen = effectiveOpenPhaseId === phase.phaseId;
           const normalizedPhaseId = Number(phase.phaseId);
           const phaseIndex = phases.findIndex((p) => Number(p.phaseId) === normalizedPhaseId);
 
           const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes)
             && phase.preLearningQuizzes.length > 0;
-          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+          const phaseId = Number(phase?.phaseId);
+          const isCurrentPhaseByPayload = isStudyNewRoadmap
+            && isCurrentPayloadActiveStatus
+            && Number.isInteger(currentPayloadPhaseId)
+            && currentPayloadPhaseId > 0
+            && Number.isInteger(phaseId)
+            && phaseId > 0
+            && currentPayloadPhaseId === phaseId;
+          const isLockedPhase = phaseIndex > maxUnlockedPhaseIndex
+            && !hasExistingPreLearning
+            && !isCurrentPhaseByPayload;
           const previousPhaseCompleted = phaseIndex > 0
             ? (() => {
               const previousPhase = phases[phaseIndex - 1] || null;
@@ -1042,8 +998,6 @@ function RoadmapCanvasView2({
           const hasKnowledge = (phase.knowledges || []).length > 0;
           const knowledgeItems = phase.knowledges || [];
           const hasPreLearning = (phase.preLearningQuizzes || []).length > 0;
-          const hasAnyPreLearning = hasPreLearning || hasRoadmapLevelPreLearning;
-          const shouldShowGroupPreLearningCreate = roadmapPreLearningCheckDone && !hasRoadmapLevelPreLearning;
           const hasPostLearning = (phase.postLearningQuizzes || []).length > 0;
           const totalKnowledgeCount = knowledgeItems.length;
           const isSkipPreLearningPhase = skipPreLearningPhaseIds.includes(normalizedPhaseId);
@@ -1056,11 +1010,11 @@ function RoadmapCanvasView2({
             && decisionState.phaseId === normalizedPhaseId
             && !isGeneratingKnowledgeForPhase;
           const shouldShowPreLearningDecision = isStudyNewRoadmap
-            && !hasAnyPreLearning
+            && !hasPreLearning
             && !hasKnowledge
             && !isSkipPreLearningPhase;
           const shouldShowKnowledgePlaceholder = !hasKnowledge && isGeneratingPhaseContent;
-          const shouldShowPreLearningPlaceholder = !hasAnyPreLearning
+          const shouldShowPreLearningPlaceholder = !hasPreLearning
             && isGeneratingPreLearning
             && !isGeneratingPhaseContent
             && !isSkipPreLearningPhase
@@ -1093,8 +1047,6 @@ function RoadmapCanvasView2({
             && Number.isInteger(currentRemedialPhaseId)
             && currentRemedialPhaseId === normalizedPhaseId
             && remedialState?.currentPhaseProgress?.needsRemedialDecision === true;
-          const roadmapScopeId = Number(roadmap?.roadmapId);
-          const canRenderRoadmapPreLearningList = Number.isInteger(roadmapScopeId) && roadmapScopeId > 0;
           return (
             <div key={phase.phaseId} className={`rounded-lg border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white"}`}>
               <button
@@ -1152,10 +1104,10 @@ function RoadmapCanvasView2({
                           <Lock className={`w-6 h-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />
                         </div>
                         <h4 className={`text-base font-semibold mb-1 ${fontClass} ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>
-                          {t("roadmapCanvasView2.phaseLockedTitle", "This phase is locked")}
+                          {t("workspace.roadmap.canvas.phaseLockedTitle", "Phase này đang bị khóa")}
                         </h4>
                         <p className={`text-sm mb-4 ${fontClass} ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>
-                          {t("roadmapCanvasView2.phaseLockedDesc", "Please unlock to continue")}
+                          {t("workspace.roadmap.canvas.phaseLockedDesc", "Vui lòng mở khóa")}
                         </p>
                         <Button 
                           type="button"
@@ -1182,7 +1134,7 @@ function RoadmapCanvasView2({
                               void loadGlobalCurrentPhaseProgress();
                             } catch (error) {
                               setOptimisticUnlockedPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
-                              showError(error?.message || t("roadmapCanvasView2.phaseUnlockFailed", "Unable to unlock this phase."));
+                              showError(error?.message || t("workspace.roadmap.phaseUnlockFailed", "Không thể mở khóa phase này."));
                             } finally {
                               setUnlockingPhaseIds((current) => current.filter((id) => id !== normalizedPhaseId));
                             }
@@ -1196,8 +1148,8 @@ function RoadmapCanvasView2({
                         >
                           {isUnlockingPhase ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}
                           {isUnlockingPhase
-                            ? t("roadmapCanvasView2.unlockingPhaseBtn", "Unlocking...")
-                            : t("roadmapCanvasView2.unlockPhaseBtn", "Unlock Phase")}
+                            ? t("workspace.roadmap.canvas.unlockingPhaseBtn", "Đang mở khóa...")
+                            : t("workspace.roadmap.canvas.unlockPhaseBtn", "Mở khóa Phase")}
                         </Button>
                       </div>
                     </div>
@@ -1206,10 +1158,10 @@ function RoadmapCanvasView2({
                     <DirectFeedbackButton
                       targetType="PHASE"
                       targetId={phase.phaseId}
-                      label={t("roadmapCanvasView2.feedbackLabel", "Feedback")}
+                      label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
                       isDarkMode={isDarkMode}
                       className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-slate-200 bg-slate-50 text-gray-700 hover:bg-slate-100"}`}
-                      title={t("roadmapCanvasView2.phaseFeedbackTitle", "Phase feedback")}
+                      title={i18n.language === "en" ? "Phase feedback" : "Phản hồi phase"}
                     />
                   </div>
                   <div className={`px-4 py-3 space-y-4 ${isLockedPhase ? "opacity-30 pointer-events-none select-none blur-sm" : ""}`}>
@@ -1218,7 +1170,7 @@ function RoadmapCanvasView2({
                         <summary className="list-none cursor-pointer">
                           <div className="flex items-center justify-between gap-2">
                             <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-800"} ${fontClass}`}>
-                              {t("workspace.roadmap.phaseDescriptionDropdown", "Phase Description Dropdown")}
+                              {t("workspace.roadmap.phaseDescriptionDropdown", "Mô tả phase")}
                             </p>
                             <ChevronDown className={`w-4 h-4 transition-transform group-open:rotate-180 ${isDarkMode ? "text-slate-400" : "text-slate-600"}`} />
                           </div>
@@ -1241,77 +1193,29 @@ function RoadmapCanvasView2({
                       </details>
                     ) : null}
 
-                    {hasAnyPreLearning && !isSkipPreLearningPhase ? (
+                    {hasPreLearning && !isSkipPreLearningPhase ? (
                     <div>
                       <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                         {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
                       </h4>
-                      {shouldShowGroupPreLearningCreate ? (
-                        <div className={`mb-3 rounded-lg border p-3 ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-200 bg-slate-50"}`}>
-                          <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
-                            {t("roadmapCanvasView2.groupPreLearningQuestionCountLabel", "Number of pre-learning questions (20-25)")}
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                            <input
-                              type="number"
-                              min={20}
-                              max={25}
-                              value={groupPreLearningQuestionCount}
-                              onChange={(event) => setGroupPreLearningQuestionCount(normalizeGroupPreLearningQuestionCount(event.target.value))}
-                              className={`h-10 w-full sm:w-28 rounded-lg border px-3 text-sm outline-none ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100 focus:border-blue-500" : "border-slate-300 bg-white text-slate-900 focus:border-blue-500"}`}
-                            />
-                            <Button
-                              type="button"
-                              onClick={() => void handleCreateGroupPreLearning()}
-                              disabled={isCreatingGroupPreLearning}
-                              className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-95"
-                            >
-                              {isCreatingGroupPreLearning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                              {t("roadmapCanvasView2.groupPreLearningCreateButton", "Create pre-learning")}
-                            </Button>
-                          </div>
-                        </div>
-                      ) : null}
                       <p className={`text-xs mb-2 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
                         {t("workspace.roadmap.preLearningHelper", "Please complete pre-learning so AI can tailor the roadmap to your level.")}
                       </p>
-                      {hasPreLearning ? (
-                        <QuizListView
-                          isDarkMode={isDarkMode}
-                          contextType="PHASE"
-                          contextId={phase.phaseId}
-                          onCreateQuiz={() => onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false })}
-                          onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", roadmapId: Number(roadmap?.roadmapId), phaseId: Number(phase.phaseId) } })}
-                          onShareQuiz={onShareQuiz}
-                          embedded
-                          legacyRoadmapUI
-                          hideCreateButton
-                          title={t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
-                          intentFilter={["PRE_LEARNING"]}
-                          refreshToken={quizRefreshToken}
-                          returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
-                        />
-                      ) : null}
-
-                      {canRenderRoadmapPreLearningList ? (
-                        <div className="mt-3">
-                          <QuizListView
-                            isDarkMode={isDarkMode}
-                            contextType="ROADMAP"
-                            contextId={roadmapScopeId}
-                            onCreateQuiz={() => void handleCreateGroupPreLearning()}
-                            onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", roadmapId: Number(roadmap?.roadmapId), phaseId: Number(phase.phaseId) } })}
-                            onShareQuiz={onShareQuiz}
-                            embedded
-                            legacyRoadmapUI
-                            hideCreateButton
-                            title={t("roadmapCanvasView2.groupPreLearningTitle", "Roadmap-wide pre-learning")}
-                            intentFilter={["PRE_LEARNING"]}
-                            refreshToken={(Number(quizRefreshToken) || 0) + groupPreLearningRefreshToken}
-                            returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
-                          />
-                        </div>
-                      ) : null}
+                      <QuizListView
+                        isDarkMode={isDarkMode}
+                        contextType="PHASE"
+                        contextId={phase.phaseId}
+                        onCreateQuiz={() => onCreatePhasePreLearning?.(phase.phaseId, { skipPreLearning: false })}
+                        onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", roadmapId: Number(roadmap?.roadmapId), phaseId: Number(phase.phaseId) } })}
+                        onShareQuiz={onShareQuiz}
+                        embedded
+                        legacyRoadmapUI
+                        hideCreateButton
+                        title={t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
+                        intentFilter={["PRE_LEARNING"]}
+                        refreshToken={quizRefreshToken}
+                        returnToPath={roadmap?.workspaceId ? buildWorkspaceRoadmapsPath(roadmap.workspaceId, phase.phaseId) : null}
+                      />
 
                       {canRenderPreLearningDecisionCard ? (
                         <div className={`mt-3 rounded-lg border p-4 ${isDarkMode ? "border-blue-700/70 bg-blue-900/20" : "border-blue-200 bg-blue-50/70"}`}>
@@ -1408,60 +1312,6 @@ function RoadmapCanvasView2({
                           progressTracking?.getPreLearningProgress(Number(phase?.phaseId)) ?? 0
                         )}
                       </div>
-                    ) : !isSkipPreLearningPhase ? (
-                      <div>
-                        <h4 className={`text-sm font-semibold mb-2 ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-                          {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
-                        </h4>
-                          {shouldShowGroupPreLearningCreate ? (
-                          <div className={`rounded-lg border p-3 ${isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-200 bg-slate-50"}`}>
-                            <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
-                              {t("roadmapCanvasView2.groupPreLearningQuestionCountLabel", "Number of pre-learning questions (20-25)")}
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                              <input
-                                type="number"
-                                min={20}
-                                max={25}
-                                value={groupPreLearningQuestionCount}
-                                onChange={(event) => setGroupPreLearningQuestionCount(normalizeGroupPreLearningQuestionCount(event.target.value))}
-                                className={`h-10 w-full sm:w-28 rounded-lg border px-3 text-sm outline-none ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100 focus:border-blue-500" : "border-slate-300 bg-white text-slate-900 focus:border-blue-500"}`}
-                              />
-                              <Button
-                                type="button"
-                                onClick={() => void handleCreateGroupPreLearning()}
-                                disabled={isCreatingGroupPreLearning}
-                                className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-95"
-                              >
-                                {isCreatingGroupPreLearning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                {t("roadmapCanvasView2.groupPreLearningCreateButton", "Create pre-learning")}
-                              </Button>
-                            </div>
-                            <p className={`mt-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                              {t("roadmapCanvasView2.groupPreLearningEmptyHint", "Create an overall pre-learning quiz for the group roadmap aligned with the shared learning goal.")}
-                            </p>
-                          </div>
-                        ) : null}
-                        {canRenderRoadmapPreLearningList ? (
-                          <div className="mt-3">
-                            <QuizListView
-                              isDarkMode={isDarkMode}
-                              contextType="ROADMAP"
-                              contextId={roadmapScopeId}
-                              onCreateQuiz={() => void handleCreateGroupPreLearning()}
-                              onViewQuiz={(quiz) => onViewQuiz?.(quiz, { backTarget: { view: "roadmap", roadmapId: Number(roadmap?.roadmapId), phaseId: Number(phase.phaseId) } })}
-                              onShareQuiz={onShareQuiz}
-                              embedded
-                              legacyRoadmapUI
-                              hideCreateButton
-                              title={t("roadmapCanvasView2.groupPreLearningTitle", "Roadmap-wide pre-learning")}
-                              intentFilter={["PRE_LEARNING"]}
-                              refreshToken={(Number(quizRefreshToken) || 0) + groupPreLearningRefreshToken}
-                              returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
-                            />
-                          </div>
-                        ) : null}
-                      </div>
                     ) : null}
 
                   </div>
@@ -1482,10 +1332,23 @@ function RoadmapCanvasView2({
                               knowledgeIndex < currentKnowledgeIndexInPhase
                               || (knowledgeIndex === currentKnowledgeIndexInPhase && isCurrentKnowledgeDoneStatus)
                             ));
+                          const shouldUseSequentialFallbackLock = !isPhaseFinishedStatus(phase.status)
+                            && phaseIndex === maxUnlockedPhaseIndex
+                            && currentKnowledgePhaseIndex < 0
+                            && currentKnowledgeIndexInPhase < 0
+                            && knowledgeItems.length > 0;
                           const isKnowledgeLocked = !isPhaseFinishedStatus(phase.status)
-                            && phaseIndex === currentKnowledgePhaseIndex
-                            && currentKnowledgeIndexInPhase >= 0
-                            && knowledgeIndex > currentKnowledgeIndexInPhase + (isCurrentKnowledgeDoneStatus ? 1 : 0);
+                            && (
+                              (
+                                phaseIndex === currentKnowledgePhaseIndex
+                                && currentKnowledgeIndexInPhase >= 0
+                                && knowledgeIndex > currentKnowledgeIndexInPhase + (isCurrentKnowledgeDoneStatus ? 1 : 0)
+                              )
+                              || (
+                                shouldUseSequentialFallbackLock
+                                && knowledgeIndex > 0
+                              )
+                            );
                           const knowledgeTargetDay = Number(knowledge?.targetDayIndex) || 0;
                           const knowledgePlannedMinutes = Number(knowledge?.plannedStudyMinutes) || 0;
                           const knowledgeTimeLabel = knowledgeTargetDay > 0 && knowledgePlannedMinutes > 0
@@ -1602,7 +1465,7 @@ function RoadmapCanvasView2({
                             title={t("workspace.roadmap.canvas.postLearning", "Post-learning")}
                             intentFilter={["POST_LEARNING"]}
                             refreshToken={quizRefreshToken}
-                            returnToPath={roadmap?.workspaceId ? buildGroupWorkspaceSectionPath(roadmap.workspaceId, "roadmap", { phaseId: phase.phaseId }) : null}
+                            returnToPath={roadmap?.workspaceId ? buildWorkspaceRoadmapsPath(roadmap.workspaceId, phase.phaseId) : null}
                           />
                         </div>
 

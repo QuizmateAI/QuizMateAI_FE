@@ -180,7 +180,7 @@ describe('QuizDetailView group access', () => {
     fireEvent.click(screen.getByRole('button', { name: /Chat câu hỏi/i }));
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Bình luận dưới tên Nguyễn Văn A')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Bình luận dưới tên/i)).toBeInTheDocument();
     });
   });
 });

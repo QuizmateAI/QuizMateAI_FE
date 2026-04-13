@@ -1,20 +1,24 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, GitBranch, Layers3, Loader2, Lock, Sparkles, Unlock } from "lucide-react";
+import { BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, GitBranch, Layers3, Loader2, Lock, Pencil, Sparkles, Unlock } from "lucide-react";
 import QuizListView from "./QuizListView";
 import { Button } from "@/Components/ui/button";
 import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
-import { getCurrentRoadmapPhaseProgress } from "@/api/RoadmapPhaseAPI";
+import { getCurrentRoadmapPhaseProgress, getPhaseProgressReview, submitRoadmapPhaseRemedialDecision } from "@/api/RoadmapPhaseAPI";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import { useToast } from "@/context/ToastContext";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
+import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
+import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
 
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;
 const KNOWLEDGE_CARD_WIDTH = 196;
+const TOP_SECTION_CARD_BASE_WIDTH = 100;
 const TOP_SECTION_CARD_MAX_WIDTH = 320;
-const TIMELINE_GAP = 24;
-const TIMELINE_PADDING = 24;
+const TIMELINE_GAP = 20;
+const TIMELINE_PADDING = 20;
+const STAGE_TOP_COMPONENT_SCALE = 1;
 
 function getCanvasContext() {
   if (typeof document === "undefined") return null;
@@ -81,6 +85,7 @@ function normalizeTitleForWidth(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
 
+  // Bo phan tien to giai doan/phase de chi do do dai tieu de noi dung.
   return raw
     .replace(/^giai\s*doan\s*\d+\s*[:\-.)]?\s*/i, "")
     .replace(/^phase\s*\d+\s*[:\-.)]?\s*/i, "")
@@ -106,9 +111,13 @@ function RoadmapCanvasViewStage({
   roadmap,
   isDarkMode = false,
   fontClass = "font-sans",
-  sidebarSelectedPhaseId = null,
+  selectedPhaseId: selectedPhaseIdProp = null,
+  selectedKnowledgeId: selectedKnowledgeIdProp = null,
+  roadmapCenterFocusToken = 0,
+  onPhaseFocus,
   onViewQuiz,
   isStudyNewRoadmap = false,
+  adaptationMode = "",
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
   generatingKnowledgeQuizKnowledgeKeys = [],
@@ -121,22 +130,41 @@ function RoadmapCanvasViewStage({
   onCreateKnowledgeQuizForKnowledge,
   onCreatePhasePreLearning,
   onCreatePhaseKnowledge,
+  onEditRoadmapConfig,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showError, showSuccess } = useToast();
   const timelineRef = useRef(null);
   const knowledgeBranchRef = useRef(null);
   const dragStateRef = useRef(null);
+  const progressSyncDebounceRef = useRef(null);
+  const previousKnowledgeGenerationRef = useRef(false);
+  const phaseReviewInFlightRef = useRef(false);
   const [selectedType, setSelectedType] = useState("roadmap");
   const [selectedPhaseId, setSelectedPhaseId] = useState(normalizePositiveId(roadmap?.phases?.[0]?.phaseId));
   const [selectedKnowledgeId, setSelectedKnowledgeId] = useState(null);
-  const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
   const [globalCurrentPhasePayload, setGlobalCurrentPhasePayload] = useState(null);
   const [currentKnowledgePayload, setCurrentKnowledgePayload] = useState(null);
   const [optimisticUnlockedPhaseIds, setOptimisticUnlockedPhaseIds] = useState([]);
   const [unlockingPhaseIds, setUnlockingPhaseIds] = useState([]);
+  const [submittingRemedialDecision, setSubmittingRemedialDecision] = useState(false);
+  const [remedialState, setRemedialState] = useState({
+    phaseId: null,
+    loadingCurrentPhase: false,
+    currentPhaseProgress: null,
+  });
+  const [phaseReviewState, setPhaseReviewState] = useState({
+    loading: false,
+    data: null,
+    phaseId: null,
+  });
+  const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
 
   const phases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
+  const topComponentScale = Math.min(2, Math.max(0.4, STAGE_TOP_COMPONENT_SCALE));
+  const normalizedAdaptationMode = String(adaptationMode || "").toUpperCase();
+  const normalizedSelectedPhaseIdProp = normalizePositiveId(selectedPhaseIdProp);
+  const normalizedSelectedKnowledgeIdProp = normalizePositiveId(selectedKnowledgeIdProp);
   const normalizedSelectedPhaseId = normalizePositiveId(selectedPhaseId);
   const normalizedSelectedKnowledgeId = normalizePositiveId(selectedKnowledgeId);
   const selectedPhase = selectedPhaseId
@@ -168,6 +196,7 @@ function RoadmapCanvasViewStage({
       maxWidth: TOP_SECTION_CARD_MAX_WIDTH,
     });
   }), [selectedKnowledges]);
+  const normalizedRoadmapId = normalizePositiveId(roadmap?.roadmapId ?? roadmap?.id);
 
   const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
   const globalCurrentIndex = Number.isInteger(globalPhaseId)
@@ -185,7 +214,26 @@ function RoadmapCanvasViewStage({
     const phaseIndex = phases.findIndex((phase) => normalizePositiveId(phase?.phaseId) === normalizedPhaseId);
     return phaseIndex >= 0 ? Math.max(maxIndex, phaseIndex) : maxIndex;
   }, -1);
-  const maxUnlockedPhaseIndex = Math.max(unlockedByStatusIndex, unlockedByOptimisticIndex, globalCurrentIndex, 0);
+  const maxUnlockedPhaseIndex = useMemo(() => {
+    if (isStudyNewRoadmap) {
+      const unlockedByManualProgressIndex = phases.reduce((maxIndex, phase, index) => {
+        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
+        const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
+        const isFinished = isFinishedPhaseStatus(phase?.status);
+
+        if (hasPreLearning || hasKnowledge || hasPostLearning || isFinished) {
+          return Math.max(maxIndex, index);
+        }
+
+        return maxIndex;
+      }, 0);
+
+      return Math.max(unlockedByManualProgressIndex, unlockedByOptimisticIndex, 0);
+    }
+
+    return Math.max(unlockedByStatusIndex, unlockedByOptimisticIndex, globalCurrentIndex, 0);
+  }, [globalCurrentIndex, isStudyNewRoadmap, phases, unlockedByOptimisticIndex, unlockedByStatusIndex]);
 
   const isCurrentPayloadFinished = isFinishedPhaseStatus(globalCurrentPhasePayload?.status);
   const currentPayloadPhaseId = Number(globalCurrentPhasePayload?.phaseId);
@@ -193,6 +241,18 @@ function RoadmapCanvasViewStage({
   const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
     ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
     : -1;
+  const currentPayloadStatus = String(globalCurrentPhasePayload?.status || "").toUpperCase();
+  const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
+  const isCurrentPhaseByPayload = useCallback((phaseId) => {
+    const normalizedPhaseId = Number(phaseId);
+    return isStudyNewRoadmap
+      && isCurrentPayloadActiveStatus
+      && Number.isInteger(currentPayloadPhaseId)
+      && currentPayloadPhaseId > 0
+      && Number.isInteger(normalizedPhaseId)
+      && normalizedPhaseId > 0
+      && currentPayloadPhaseId === normalizedPhaseId;
+  }, [currentPayloadPhaseId, isCurrentPayloadActiveStatus, isStudyNewRoadmap]);
 
   const isPhaseCompleted = (phase, phaseIndex) => {
     if (!phase) return false;
@@ -222,10 +282,12 @@ function RoadmapCanvasViewStage({
 
   const selectedPhaseIndex = phases.findIndex((phase) => normalizePositiveId(phase?.phaseId) === normalizedSelectedPhaseId);
   const selectedPhaseHasExistingPreLearning = Array.isArray(selectedPhase?.preLearningQuizzes) && selectedPhase.preLearningQuizzes.length > 0;
+  const isSelectedPhaseCurrentByPayload = isCurrentPhaseByPayload(selectedPhase?.phaseId);
   const isSelectedPhaseLocked = selectedType === "phase"
     && Boolean(selectedPhase)
     && selectedPhaseIndex > maxUnlockedPhaseIndex
-    && !selectedPhaseHasExistingPreLearning;
+    && !selectedPhaseHasExistingPreLearning
+    && !isSelectedPhaseCurrentByPayload;
   const selectedPreviousPhaseCompleted = selectedPhaseIndex > 0
     ? isPhaseCompleted(phases[selectedPhaseIndex - 1], selectedPhaseIndex - 1)
     : true;
@@ -243,10 +305,27 @@ function RoadmapCanvasViewStage({
     ? phases.findIndex((phase) => normalizePositiveId(phase?.phaseId) === currentKnowledgePhaseId)
     : -1;
 
+  const knowledgeGenerationSignature = useMemo(() => {
+    const normalizedPhaseIds = [
+      ...(Array.isArray(generatingKnowledgePhaseIds) ? generatingKnowledgePhaseIds : []),
+      ...(Array.isArray(generatingKnowledgeQuizPhaseIds) ? generatingKnowledgeQuizPhaseIds : []),
+    ]
+      .map((phaseId) => Number(phaseId))
+      .filter((phaseId) => Number.isInteger(phaseId) && phaseId > 0)
+      .filter((phaseId, index, array) => array.indexOf(phaseId) === index)
+      .sort((a, b) => a - b);
+
+    return normalizedPhaseIds.join(",");
+  }, [generatingKnowledgePhaseIds, generatingKnowledgeQuizPhaseIds]);
+
+  const hasKnowledgeGenerationRunning = knowledgeGenerationSignature.length > 0;
+
   const resolveKnowledgeLockState = (phase, phaseIndex, knowledgeIndex) => {
     const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
     const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
-    const isPhaseLockedForKnowledge = phaseIndex > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+    const isPhaseLockedForKnowledge = phaseIndex > maxUnlockedPhaseIndex
+      && !hasExistingPreLearning
+      && !isCurrentPhaseByPayload(phase?.phaseId);
     const currentKnowledgeIndexInPhase = Number.isInteger(currentKnowledgeId) && currentKnowledgeId > 0
       ? phaseKnowledges.findIndex((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === currentKnowledgeId)
       : -1;
@@ -306,12 +385,38 @@ function RoadmapCanvasViewStage({
   }, [roadmap?.roadmapId]);
 
   useEffect(() => {
-    void loadCurrentKnowledgeProgress();
-  }, [loadCurrentKnowledgeProgress, selectedPhaseId]);
+    if (progressSyncDebounceRef.current) {
+      window.clearTimeout(progressSyncDebounceRef.current);
+    }
+
+    progressSyncDebounceRef.current = window.setTimeout(() => {
+      void loadGlobalCurrentPhaseProgress();
+      void loadCurrentKnowledgeProgress();
+      progressSyncDebounceRef.current = null;
+    }, 220);
+
+    return () => {
+      if (progressSyncDebounceRef.current) {
+        window.clearTimeout(progressSyncDebounceRef.current);
+      }
+    };
+  }, [
+    knowledgeGenerationSignature,
+    loadCurrentKnowledgeProgress,
+    loadGlobalCurrentPhaseProgress,
+    quizRefreshToken,
+    roadmap?.roadmapId,
+    selectedPhaseId,
+  ]);
 
   useEffect(() => {
-    void loadGlobalCurrentPhaseProgress();
-  }, [loadGlobalCurrentPhaseProgress, selectedPhaseId]);
+    const wasGeneratingKnowledge = previousKnowledgeGenerationRef.current;
+    if (wasGeneratingKnowledge && !hasKnowledgeGenerationRunning) {
+      void loadGlobalCurrentPhaseProgress();
+      void loadCurrentKnowledgeProgress();
+    }
+    previousKnowledgeGenerationRef.current = hasKnowledgeGenerationRunning;
+  }, [hasKnowledgeGenerationRunning, loadCurrentKnowledgeProgress, loadGlobalCurrentPhaseProgress]);
 
   const {
     decisionState,
@@ -349,6 +454,174 @@ function RoadmapCanvasViewStage({
       || selectedKnowledgeLockState?.isPhaseLockedForKnowledge
       || selectedKnowledgeLockState?.isKnowledgeLockedBySequence
     );
+
+  const hasCompletedPostLearning = useCallback((phase) => {
+    const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+    return postLearningQuizzes.some((quiz) => {
+      const attempted = quiz?.myAttempted === true;
+      const passed = quiz?.myPassed === true;
+      const status = String(quiz?.status || "").toUpperCase();
+      return attempted || passed || status === "COMPLETED";
+    });
+  }, []);
+
+  const canShowRoadmapLevelFeedback = useMemo(() => {
+    if (!Array.isArray(phases) || phases.length === 0) return false;
+
+    const allPhasesFinished = phases.every((phase) => isFinishedPhaseStatus(phase?.status));
+    const postLearningSatisfied = phases.every((phase) => {
+      const pl = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+      if (pl.length === 0) return true;
+      return hasCompletedPostLearning(phase);
+    });
+
+    return allPhasesFinished && postLearningSatisfied;
+  }, [hasCompletedPostLearning, phases]);
+
+  const activePhase = selectedType === "phase" ? selectedPhase : null;
+
+  const syncPhaseReview = useCallback(async () => {
+    const normalizedRoadmapId = Number(roadmap?.roadmapId);
+    const activePhaseId = Number(activePhase?.phaseId);
+    if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      return;
+    }
+    if (!Number.isInteger(activePhaseId) || activePhaseId <= 0) {
+      setPhaseReviewState({ loading: false, data: null, phaseId: null });
+      return;
+    }
+
+    if (phaseReviewInFlightRef.current) return;
+    phaseReviewInFlightRef.current = true;
+    setPhaseReviewState({ loading: true, data: null, phaseId: activePhaseId });
+
+    try {
+      try {
+        const reviewResponse = await getPhaseProgressReview(activePhaseId);
+        const reviewData = reviewResponse?.data?.data || reviewResponse?.data || null;
+        const reviewPhaseId = Number(reviewData?.phaseId);
+        if (reviewData?.summary && reviewPhaseId === activePhaseId) {
+          setPhaseReviewState({ loading: false, data: reviewData, phaseId: activePhaseId });
+          return;
+        }
+      } catch {
+        // Khong co review la luong hop le, an card.
+      }
+
+      setPhaseReviewState({ loading: false, data: null, phaseId: activePhaseId });
+    } catch (error) {
+      console.error("Failed to sync phase review state:", error);
+      setPhaseReviewState((current) => ({ ...current, loading: false }));
+    } finally {
+      phaseReviewInFlightRef.current = false;
+    }
+  }, [activePhase?.phaseId, roadmap?.roadmapId]);
+
+  useEffect(() => {
+    void syncPhaseReview();
+  }, [activePhase?.phaseId, syncPhaseReview]);
+
+  const phaseReviewAssessedAtLabel = useMemo(() => {
+    const rawValue = phaseReviewState?.data?.assessedAt;
+    if (!rawValue) return null;
+    const parsedDate = new Date(rawValue);
+    if (Number.isNaN(parsedDate.getTime())) return null;
+    return new Intl.DateTimeFormat("vi-VN", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(parsedDate);
+  }, [phaseReviewState?.data?.assessedAt]);
+
+  useEffect(() => {
+    const normalizedRoadmapId = Number(roadmap?.roadmapId);
+    const normalizedPhaseId = Number(activePhase?.phaseId);
+    const hasPostLearning = (activePhase?.postLearningQuizzes || []).length > 0;
+    const canCheckRemedial = Number.isInteger(normalizedRoadmapId)
+      && normalizedRoadmapId > 0
+      && Number.isInteger(normalizedPhaseId)
+      && normalizedPhaseId > 0
+      && hasPostLearning
+      && normalizedAdaptationMode === "FLEXIBLE";
+
+    if (!canCheckRemedial) {
+      setRemedialState({
+        phaseId: normalizedPhaseId,
+        loadingCurrentPhase: false,
+        currentPhaseProgress: null,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setRemedialState({
+      phaseId: normalizedPhaseId,
+      loadingCurrentPhase: true,
+      currentPhaseProgress: null,
+    });
+
+    (async () => {
+      try {
+        const response = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+        if (cancelled) return;
+        const payload = response?.data?.data || response?.data || null;
+        setRemedialState({
+          phaseId: normalizedPhaseId,
+          loadingCurrentPhase: false,
+          currentPhaseProgress: payload,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load remedial decision state:", error);
+        setRemedialState({
+          phaseId: normalizedPhaseId,
+          loadingCurrentPhase: false,
+          currentPhaseProgress: null,
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activePhase?.phaseId,
+    activePhase?.postLearningQuizzes,
+    normalizedAdaptationMode,
+    roadmap?.roadmapId,
+  ]);
+
+  const handleRoadmapRemedialDecision = useCallback(async (phaseId, option) => {
+    const normalizedPhaseId = Number(phaseId);
+    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0 || submittingRemedialDecision) return;
+
+    setSubmittingRemedialDecision(true);
+    try {
+      await submitRoadmapPhaseRemedialDecision(normalizedPhaseId, option);
+      showSuccess(t("workspace.quiz.result.remedialDecisionSuccess", "Remedial roadmap option has been confirmed."));
+      onReloadRoadmap?.();
+
+      const normalizedRoadmapId = Number(roadmap?.roadmapId);
+      if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
+        try {
+          const response = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+          const payload = response?.data?.data || response?.data || null;
+          setRemedialState({
+            phaseId: normalizedPhaseId,
+            loadingCurrentPhase: false,
+            currentPhaseProgress: payload,
+          });
+        } catch (refreshError) {
+          console.error("Failed to refresh remedial decision state:", refreshError);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to submit remedial decision:", error);
+      showError(error?.message || t("workspace.quiz.result.remedialDecisionFail", "Could not update remedial roadmap decision."));
+    } finally {
+      setSubmittingRemedialDecision(false);
+    }
+  }, [onReloadRoadmap, roadmap?.roadmapId, showError, showSuccess, submittingRemedialDecision, t]);
   const branchOffset = selectedPhaseIndex < 0
     ? TIMELINE_PADDING
     : TIMELINE_PADDING
@@ -392,7 +665,7 @@ function RoadmapCanvasViewStage({
     }
 
     if (selectedType !== "phase" && selectedType !== "knowledge") {
-      return { left: timelineElement.scrollLeft, top: 0 };
+      return { left: 0, top: 0 };
     }
 
     const knowledgeBranchElement = knowledgeBranchRef.current;
@@ -425,6 +698,14 @@ function RoadmapCanvasViewStage({
   };
 
   useEffect(() => {
+    if (!Number.isInteger(Number(roadmapCenterFocusToken)) || Number(roadmapCenterFocusToken) <= 0) return;
+    setSelectedType("roadmap");
+    setSelectedPhaseId(null);
+    setSelectedKnowledgeId(null);
+    timelineRef.current?.scrollTo({ left: 0, top: 0, behavior: "smooth" });
+  }, [roadmapCenterFocusToken]);
+
+  useEffect(() => {
     const timelineElement = timelineRef.current;
     if (!timelineElement) {
       return;
@@ -433,6 +714,87 @@ function RoadmapCanvasViewStage({
     timelineElement.scrollLeft = 0;
     timelineElement.scrollTop = 0;
   }, [roadmap?.roadmapId]);
+
+  useEffect(() => {
+    if (!Array.isArray(phases) || phases.length === 0) {
+      setSelectedType("roadmap");
+      setSelectedPhaseId(null);
+      setSelectedKnowledgeId(null);
+      return;
+    }
+
+    if (selectedPhaseIdProp === null && selectedKnowledgeIdProp === null) {
+      const hasLocalPhase = phases.some(
+        (phase) => normalizePositiveId(phase?.phaseId) === normalizePositiveId(selectedPhaseId),
+      );
+      const hasLocalKnowledge = hasLocalPhase && phases.some((phase) => {
+        if (normalizePositiveId(phase?.phaseId) !== normalizePositiveId(selectedPhaseId)) return false;
+        const localKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+        return localKnowledges.some(
+          (knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizePositiveId(selectedKnowledgeId),
+        );
+      });
+
+      if (!hasLocalPhase) {
+        setSelectedType("phase");
+        setSelectedPhaseId(normalizePositiveId(phases[0]?.phaseId));
+        setSelectedKnowledgeId(null);
+      } else if (hasLocalKnowledge) {
+        setSelectedType("knowledge");
+      } else {
+        setSelectedType("phase");
+        setSelectedKnowledgeId(null);
+      }
+      return;
+    }
+
+    if (normalizedSelectedPhaseIdProp) {
+      const hasExternalPhase = phases.some(
+        (phase) => normalizePositiveId(phase?.phaseId) === normalizedSelectedPhaseIdProp,
+      );
+      if (hasExternalPhase) {
+        setSelectedPhaseId(normalizedSelectedPhaseIdProp);
+
+        const externalPhase = phases.find(
+          (phase) => normalizePositiveId(phase?.phaseId) === normalizedSelectedPhaseIdProp,
+        );
+        const externalKnowledges = Array.isArray(externalPhase?.knowledges)
+          ? externalPhase.knowledges
+          : [];
+        const hasExternalKnowledge = externalKnowledges.some(
+          (knowledge) =>
+            normalizePositiveId(knowledge?.knowledgeId) ===
+            normalizedSelectedKnowledgeIdProp,
+        );
+
+        if (hasExternalKnowledge) {
+          setSelectedType("knowledge");
+          setSelectedKnowledgeId(normalizedSelectedKnowledgeIdProp);
+        } else {
+          setSelectedType("phase");
+          setSelectedKnowledgeId(null);
+        }
+        return;
+      }
+    }
+
+    const hasCurrentPhase = phases.some(
+      (phase) => normalizePositiveId(phase?.phaseId) === normalizePositiveId(selectedPhaseId),
+    );
+    if (!hasCurrentPhase) {
+      setSelectedType("phase");
+      setSelectedPhaseId(normalizePositiveId(phases[0]?.phaseId));
+      setSelectedKnowledgeId(null);
+    }
+  }, [
+    normalizedSelectedKnowledgeIdProp,
+    normalizedSelectedPhaseIdProp,
+    phases,
+    selectedKnowledgeId,
+    selectedKnowledgeIdProp,
+    selectedPhaseIdProp,
+    selectedPhaseId,
+  ]);
 
   useEffect(() => {
     const timelineElement = timelineRef.current;
@@ -498,7 +860,14 @@ function RoadmapCanvasViewStage({
 
   const selectRoadmap = () => {
     setSelectedType("roadmap");
+    setSelectedPhaseId(null);
     setSelectedKnowledgeId(null);
+    onPhaseFocus?.(null, {
+      preserveActiveView: false,
+      focusRoadmapCenter: true,
+      knowledgeId: null,
+      roadmapId: normalizedRoadmapId,
+    });
     timelineRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -508,6 +877,11 @@ function RoadmapCanvasViewStage({
     setSelectedType("phase");
     setSelectedPhaseId(normalizedPhaseId);
     setSelectedKnowledgeId(null);
+    onPhaseFocus?.(normalizedPhaseId, {
+      preserveActiveView: false,
+      knowledgeId: null,
+      roadmapId: normalizedRoadmapId,
+    });
   };
 
   const selectKnowledge = (phaseId, knowledgeId) => {
@@ -517,21 +891,12 @@ function RoadmapCanvasViewStage({
     setSelectedType("knowledge");
     setSelectedPhaseId(normalizedPhaseId);
     setSelectedKnowledgeId(normalizedKnowledgeId);
+    onPhaseFocus?.(normalizedPhaseId, {
+      preserveActiveView: false,
+      knowledgeId: normalizedKnowledgeId,
+      roadmapId: normalizedRoadmapId,
+    });
   };
-
-  useEffect(() => {
-    const normalizedSidebarPhaseId = normalizePositiveId(sidebarSelectedPhaseId);
-    if (!normalizedSidebarPhaseId) return;
-    const hasSidebarPhaseInRoadmap = phases.some(
-      (phase) => normalizePositiveId(phase?.phaseId) === normalizedSidebarPhaseId,
-    );
-    if (!hasSidebarPhaseInRoadmap) return;
-    if (normalizedSelectedPhaseId === normalizedSidebarPhaseId && selectedType === "phase") return;
-
-    setSelectedType("phase");
-    setSelectedPhaseId(normalizedSidebarPhaseId);
-    setSelectedKnowledgeId(null);
-  }, [phases, normalizedSelectedPhaseId, sidebarSelectedPhaseId, selectedType]);
 
   const handleUnlockSelectedPhase = async () => {
     if (!isSelectedPhaseUnlockable || !selectedPhase) return;
@@ -539,6 +904,10 @@ function RoadmapCanvasViewStage({
     if (!phaseId) return;
 
     setOptimisticUnlockedPhaseIds((current) => (current.includes(phaseId) ? current : [...current, phaseId]));
+
+    if (isStudyNewRoadmap) {
+      return;
+    }
 
     if (typeof onCreatePhasePreLearning !== "function") {
       return;
@@ -596,6 +965,33 @@ function RoadmapCanvasViewStage({
     );
   };
 
+  const renderFlashcardItem = (flashcard) => {
+    const status = String(flashcard?.status || "DRAFT").toUpperCase();
+    const count = Number(flashcard?.cardCount ?? flashcard?.itemCount ?? 0);
+    const isCompleted = status === "COMPLETED";
+
+    return (
+      <div
+        key={flashcard?.flashcardSetId || flashcard?.id || `${flashcard?.title}-flashcard`}
+        className={`flex items-start gap-3 py-2.5 ${isDarkMode ? "text-slate-100" : "text-gray-900"}`}
+      >
+        {isCompleted ? (
+          <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${isDarkMode ? "text-green-500" : "text-green-600"}`} />
+        ) : (
+          <div className={`w-4 h-4 mt-0.5 shrink-0 rounded border-2 ${isDarkMode ? "border-slate-500" : "border-slate-300"}`} />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+            {flashcard?.title || flashcard?.flashcardSetName}
+          </p>
+          <p className={`mt-1 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
+            {count} {t("workspace.roadmap.canvas.cards")}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const renderDetailContent = () => {
     if (selectedType === "knowledge" && selectedKnowledge && selectedPhase) {
       const normalizedPhaseId = normalizePositiveId(selectedPhase?.phaseId);
@@ -607,6 +1003,8 @@ function RoadmapCanvasViewStage({
       const canCreateKnowledgeQuiz = Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0;
       const shouldShowCreateKnowledgeQuizButton = canCreateKnowledgeQuiz && !hasKnowledgeQuiz;
       const shouldRenderKnowledgeQuizList = hasKnowledgeQuiz || targetedKnowledgeRefreshToken > 0;
+      const flashcards = selectedKnowledge?.flashcards || [];
+      const hasFlashcards = flashcards.length > 0;
       return (
         <div className="relative">
           <div className={`space-y-6 ${isSelectedKnowledgeLocked ? "opacity-40 pointer-events-none select-none" : ""}`}>
@@ -622,7 +1020,7 @@ function RoadmapCanvasViewStage({
                   </span>
                 ) : null}
               </div>
-              <h3 className={`mt-2 text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+              <h3 className={`mt-2 text-xl font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                 {selectedKnowledge.title}
               </h3>
               <p className={`mt-2 text-sm ${isDarkMode ? "text-slate-500" : "text-gray-500"} ${fontClass}`}>
@@ -679,6 +1077,7 @@ function RoadmapCanvasViewStage({
                             view: "roadmap",
                             roadmapId: Number(roadmap?.roadmapId),
                             phaseId: Number(selectedPhase?.phaseId),
+                            knowledgeId: Number(selectedKnowledge?.knowledgeId),
                           },
                         })}
                         embedded
@@ -686,6 +1085,7 @@ function RoadmapCanvasViewStage({
                         hideCreateButton
                         title={t("workspace.roadmap.canvas.quiz")}
                         refreshToken={(Number(quizRefreshToken) || 0) + targetedKnowledgeRefreshToken}
+                        returnToPath={roadmap?.workspaceId ? buildWorkspaceRoadmapsPath(roadmap.workspaceId, selectedPhase?.phaseId) : null}
                       />
                     ) : !isGeneratingKnowledgeQuiz ? (
                       <p className={`px-1 py-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
@@ -696,6 +1096,17 @@ function RoadmapCanvasViewStage({
                 )}
               </div>
             </div>
+
+            {hasFlashcards ? (
+              <div className={`rounded-[26px] border p-4 ${isDarkMode ? "border-amber-900/60 bg-amber-950/25" : "border-amber-100 bg-amber-50"}`}>
+                <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
+                  {t("workspace.roadmap.canvas.flashcard", "Flashcard")}
+                </p>
+                <div className="mt-3 space-y-0.5">
+                  {flashcards.map(renderFlashcardItem)}
+                </div>
+              </div>
+            ) : null}
           </div>
           {isSelectedKnowledgeLocked ? (
             <div className={`absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm rounded-2xl ${isDarkMode ? "bg-slate-900/45" : "bg-white/50"}`}>
@@ -757,6 +1168,16 @@ function RoadmapCanvasViewStage({
         && !isFinishedPhaseStatus(selectedPhase.status)
         && totalKnowledgeCount > 0
         && completedKnowledgeCount < totalKnowledgeCount;
+      const isFlexibleRoadmap = normalizedAdaptationMode === "FLEXIBLE";
+      const isCurrentRemedialPhase = Number(remedialState?.phaseId) === normalizedPhaseId;
+      const currentRemedialPhaseId = Number(remedialState?.currentPhaseProgress?.phaseId);
+      const canShowRemedialDecision = hasPostLearningQuiz
+        && isFlexibleRoadmap
+        && isCurrentRemedialPhase
+        && !remedialState.loadingCurrentPhase
+        && Number.isInteger(currentRemedialPhaseId)
+        && currentRemedialPhaseId === normalizedPhaseId
+        && remedialState?.currentPhaseProgress?.needsRemedialDecision === true;
 
       return (
         <div className="space-y-6">
@@ -764,7 +1185,7 @@ function RoadmapCanvasViewStage({
             <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-sky-300" : "text-sky-700"} ${fontClass}`}>
               {t("workspace.roadmap.canvas.view2PhaseDetail")}
             </p>
-            <h3 className={`mt-2 text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+            <h3 className={`mt-2 text-xl font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
               {selectedPhase.title}
             </h3>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -779,6 +1200,24 @@ function RoadmapCanvasViewStage({
               {selectedPhase.description}
             </p>
           </div>
+
+          {phaseReviewState?.data?.summary && Number(phaseReviewState?.phaseId) === Number(selectedPhase?.phaseId) ? (
+            <div className={`rounded-lg border px-4 py-3 ${isDarkMode ? "border-emerald-800/70 bg-emerald-950/30" : "border-emerald-200 bg-emerald-50"}`}>
+              <p className={`text-sm font-semibold ${isDarkMode ? "text-emerald-200" : "text-emerald-800"} ${fontClass}`}>
+                {t("workspace.roadmap.phaseReviewTitle", "Đánh giá AI cho phase hiện tại")}
+              </p>
+              <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
+                {phaseReviewState.data.summary}
+              </p>
+              {phaseReviewAssessedAtLabel ? (
+                <div className="mt-3 text-right">
+                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
+                    {t("workspace.roadmap.phaseReviewAssessedAt", "Đánh giá lúc")}: {phaseReviewAssessedAtLabel}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {hasPreLearningQuiz ? (
             <div className={`rounded-[26px] border p-4 ${isDarkMode ? "border-cyan-900/60 bg-cyan-950/25" : "border-cyan-100 bg-cyan-50"}`}>
@@ -995,6 +1434,37 @@ function RoadmapCanvasViewStage({
                   title={t("workspace.roadmap.canvas.quiz")}
                 />
               </div>
+              {canShowRemedialDecision ? (
+                <div className={`mt-3 rounded-lg border p-4 ${isDarkMode ? "border-amber-700/70 bg-amber-900/20" : "border-amber-200 bg-amber-50/80"}`}>
+                  <p className={`text-sm font-semibold ${isDarkMode ? "text-amber-200" : "text-amber-800"} ${fontClass}`}>
+                    {t("workspace.quiz.result.remedialDecisionTitle", "Choose your roadmap adjustment")}
+                  </p>
+                  <p className={`mt-2 text-sm ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>
+                    {t("workspace.quiz.result.remedialDecisionDescription", "Your current results suggest adjusting the roadmap. Please choose one option.")}
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      disabled={submittingRemedialDecision}
+                      onClick={() => void handleRoadmapRemedialDecision(normalizedPhaseId, "COMPRESS_TO_KEEP_DEADLINE")}
+                      className="min-w-[200px] gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {submittingRemedialDecision ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      {t("workspace.quiz.result.remedialCompressAction", "Keep deadline (compress)")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={submittingRemedialDecision}
+                      onClick={() => void handleRoadmapRemedialDecision(normalizedPhaseId, "EXTEND_DEADLINE")}
+                      className="min-w-[200px] gap-2"
+                    >
+                      {submittingRemedialDecision ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      {t("workspace.quiz.result.remedialExtendAction", "Extend deadline")}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -1054,11 +1524,23 @@ function RoadmapCanvasViewStage({
 
     return (
       <div className="space-y-6">
+        {roadmap?.roadmapId && canShowRoadmapLevelFeedback ? (
+          <div className="flex justify-end">
+            <DirectFeedbackButton
+              targetType="ROADMAP"
+              targetId={roadmap.roadmapId}
+              label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
+              isDarkMode={isDarkMode}
+              className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+              title={i18n.language === "en" ? "Roadmap feedback" : "Phản hồi lộ trình"}
+            />
+          </div>
+        ) : null}
         <div>
           <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
             {t("workspace.roadmap.canvas.centralRoadmap")}
           </p>
-          <h3 className={`mt-2 text-3xl font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+          <h3 className={`mt-2 text-2xl font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
             {roadmap?.title}
           </h3>
           <p className={`mt-4 text-sm leading-7 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
@@ -1072,10 +1554,10 @@ function RoadmapCanvasViewStage({
             return (
               <div
                 key={chip.key}
-                className={`rounded-2xl border px-4 py-4 ${isDarkMode ? "border-slate-800 bg-slate-950/50" : "border-gray-200 bg-[#F8FBFF]"}`}
+                className={`rounded-2xl border px-3 py-3 ${isDarkMode ? "border-slate-800 bg-slate-950/50" : "border-gray-200 bg-[#F8FBFF]"}`}
               >
                 <Icon className={`h-4 w-4 ${chip.accent}`} />
-                <p className={`mt-3 text-sm font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                <p className={`mt-2 text-xs font-medium ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                   {chip.value}
                 </p>
               </div>
@@ -1083,48 +1565,57 @@ function RoadmapCanvasViewStage({
           })}
         </div>
 
-        <div className={`rounded-[26px] border px-5 py-4 ${isDarkMode ? "border-slate-800 bg-slate-950/50 text-slate-300" : "border-sky-100 bg-sky-50 text-gray-700"}`}>
-          <p className={`text-sm ${fontClass}`}>{t("workspace.roadmap.canvas.view2RoadmapHint")}</p>
+        <div className={`rounded-[22px] border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-950/50 text-slate-300" : "border-sky-100 bg-sky-50 text-gray-700"}`}>
+          <p className={`text-xs ${fontClass}`}>{t("workspace.roadmap.canvas.view2RoadmapHint")}</p>
         </div>
       </div>
     );
   };
 
   return (
-    <div className={`h-full overflow-hidden ${isDarkMode ? "bg-slate-900" : "bg-white"}`}>
-      <div className="flex h-full min-h-0 flex-col p-4">
-        <div className={`shrink-0 overflow-hidden rounded-[30px] border transition-all duration-300 ${isTopSectionCollapsed ? "h-[58px]" : "h-[248px]"} ${isDarkMode ? "border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "border-gray-200 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}>
-          <div className="flex h-full flex-col overflow-hidden rounded-[30px]">
-            <div className={`flex items-center justify-between border-b px-4 py-3 backdrop-blur-sm ${isDarkMode ? "border-slate-800/80" : "border-slate-200/80"}`}>
-              <div className="flex items-center gap-2.5">
-                <span className={`h-2 w-2 rounded-full ${isTopSectionCollapsed
-                  ? (isDarkMode ? "bg-slate-500" : "bg-slate-400")
-                  : "bg-emerald-500"}`}
-                />
-                <p className={`text-xs font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
-                  {t("workspace.roadmap.canvas.view2TopSectionTitle", "Lộ trình theo giai đoạn")}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsTopSectionCollapsed((current) => !current)}
-                className={`h-8 min-w-[132px] gap-2 rounded-full px-3.5 text-xs font-medium shadow-sm transition-all active:scale-95 ${isDarkMode ? "border-slate-600 bg-slate-900/85 text-slate-100 hover:bg-slate-800" : "border-slate-300 bg-white/90 text-slate-700 hover:bg-slate-100"}`}
-              >
-                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}>
-                  {isTopSectionCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-                </span>
-                {isTopSectionCollapsed
-                  ? t("workspace.roadmap.canvas.expandTopSection", "Mở rộng sơ đồ")
-                  : t("workspace.roadmap.canvas.collapseTopSection", "Thu gọn sơ đồ")}
-              </Button>
+    <div className={`h-full overflow-y-auto overflow-x-hidden ${isDarkMode ? "bg-slate-900" : "bg-white"}`}>
+      <div className="flex h-full min-h-0 flex-col p-3">
+        <div
+          className={`shrink-0 overflow-hidden rounded-[26px] border p-2 ${isDarkMode ? "border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "border-gray-200 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}
+        >
+          <div className={`flex items-center justify-between rounded-[18px] border px-3.5 py-2.5 backdrop-blur-sm ${isDarkMode ? "border-slate-700/80 bg-slate-900/65" : "border-slate-200 bg-white/85"}`}>
+            <div className="flex items-center gap-2.5">
+              <span className={`h-2 w-2 rounded-full ${isTopSectionCollapsed
+                ? (isDarkMode ? "bg-slate-500" : "bg-slate-400")
+                : "bg-emerald-500"}`}
+              />
+              <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
+                {t("workspace.roadmap.canvas.view2TopSectionTitle", "Lộ trình theo giai đoạn")}
+              </p>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsTopSectionCollapsed((current) => !current)}
+              className={`h-8 min-w-[132px] gap-2 rounded-full px-3.5 text-xs font-medium shadow-sm transition-all active:scale-95 ${isDarkMode ? "border-slate-600 bg-slate-900/85 text-slate-100 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+            >
+              <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-700"}`}>
+                {isTopSectionCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+              </span>
+              {isTopSectionCollapsed
+                ? t("workspace.roadmap.canvas.expandTopSection", "Mở rộng sơ đồ")
+                : t("workspace.roadmap.canvas.collapseTopSection", "Thu gọn sơ đồ")}
+            </Button>
+          </div>
 
-            {!isTopSectionCollapsed ? (
+          {!isTopSectionCollapsed ? (
+            <div
+              className="mt-2 overflow-hidden rounded-[22px]"
+              style={{
+                transform: `scale(${topComponentScale})`,
+                transformOrigin: "top left",
+                width: `${100 / topComponentScale}%`,
+              }}
+            >
               <div
                 ref={timelineRef}
-                className="relative flex-1 overflow-x-auto overflow-y-auto [scrollbar-gutter:stable_both-edges]"
+                className="relative overflow-x-auto overflow-y-auto [scrollbar-gutter:stable_both-edges]"
                 onScroll={handleTimelineScroll}
                 onPointerDown={startTimelineDrag}
                 onPointerMove={moveTimelineDrag}
@@ -1141,18 +1632,18 @@ function RoadmapCanvasViewStage({
                 }}
               />
 
-              <div className="relative min-w-max pb-8 pl-6 pr-6 pt-7">
+              <div className="relative min-w-max pb-6 pl-4 pr-4 pt-5">
                 <div
-                  className={`absolute left-[52px] top-[70px] h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
+                  className={`absolute left-[44px] top-[58px] h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
                   style={{ width: topPhaseLineWidth }}
                 />
 
-                <div className="relative flex items-start gap-6">
+                <div className="relative flex items-start gap-4">
                   <button
                     type="button"
                     onClick={selectRoadmap}
                     style={{ width: roadmapCardWidth }}
-                    className={`relative z-20 shrink-0 rounded-[28px] border px-5 py-4 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
+                    className={`relative z-20 shrink-0 rounded-[24px] border px-4 py-3 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
                       ? isDarkMode
                         ? "border-emerald-400 bg-emerald-500/10"
                         : "border-emerald-500 bg-emerald-50"
@@ -1163,7 +1654,7 @@ function RoadmapCanvasViewStage({
                     <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-emerald-300" : "text-emerald-700"} ${fontClass}`}>
                       {t("workspace.roadmap.canvas.centralRoadmap")}
                     </p>
-                    <h3 className={`mt-2 text-[clamp(13px,1.2vw,18px)] font-semibold leading-6 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                    <h3 className={`mt-1.5 text-[clamp(12px,1.25vw,16px)] font-semibold leading-5 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                       {roadmap?.title}
                     </h3>
                   </button>
@@ -1171,7 +1662,9 @@ function RoadmapCanvasViewStage({
                   {phases.map((phase, index) => {
                     const active = selectedType !== "roadmap" && normalizedSelectedPhaseId === normalizePositiveId(phase?.phaseId);
                     const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
-                    const isPhaseLocked = index > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+                    const isPhaseLocked = index > maxUnlockedPhaseIndex
+                      && !hasExistingPreLearning
+                      && !isCurrentPhaseByPayload(phase?.phaseId);
                     const isCompletedPhase = isPhaseCompleted(phase, index);
                     return (
                       <button
@@ -1179,7 +1672,7 @@ function RoadmapCanvasViewStage({
                         type="button"
                         onClick={() => selectPhase(phase.phaseId)}
                         style={{ width: phaseCardWidths[index] ?? PHASE_CARD_WIDTH }}
-                        className={`relative z-10 shrink-0 rounded-[26px] border px-4 py-4 text-left shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all ${isPhaseLocked
+                        className={`relative z-10 shrink-0 rounded-[22px] border px-3.5 py-3 text-left shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all ${isPhaseLocked
                           ? isDarkMode
                             ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
                             : "cursor-pointer border-gray-200 bg-gray-100 opacity-80"
@@ -1202,7 +1695,7 @@ function RoadmapCanvasViewStage({
                             {isPhaseLocked ? <Lock className={`h-3.5 w-3.5 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} /> : null}
                           </div>
                         </div>
-                        <h4 className={`mt-2 text-[clamp(12px,1.2vw,16px)] font-semibold leading-5 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
+                        <h4 className={`mt-1.5 text-[clamp(12px,1.2vw,15px)] font-semibold leading-5 whitespace-normal break-words ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                           {phase.title}
                         </h4>
                       </button>
@@ -1211,7 +1704,7 @@ function RoadmapCanvasViewStage({
                 </div>
 
                 {selectedType !== "roadmap" && selectedPhase && hasSelectedPhaseKnowledges ? (
-                  <div ref={knowledgeBranchRef} className="relative mt-7 min-h-[132px] pb-2" style={{ marginLeft: branchOffset }}>
+                  <div ref={knowledgeBranchRef} className="relative mt-5 min-h-[112px] pb-2" style={{ marginLeft: branchOffset }}>
                     <div className={`absolute left-8 top-[-20px] h-[20px] w-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`} />
                     <div
                       className={`absolute left-8 top-0 h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
@@ -1252,7 +1745,7 @@ function RoadmapCanvasViewStage({
                             type="button"
                             onClick={() => selectKnowledge(selectedPhase.phaseId, knowledge.knowledgeId)}
                             style={{ width: selectedKnowledgeCardWidths[knowledgeIndex] ?? KNOWLEDGE_CARD_WIDTH }}
-                            className={`relative shrink-0 rounded-[22px] border px-3.5 py-3.5 text-left shadow-[0_18px_45px_rgba(15,23,42,0.1)] transition-all ${isKnowledgeLocked
+                            className={`relative shrink-0 rounded-[20px] border px-3 py-2.5 text-left shadow-[0_18px_45px_rgba(15,23,42,0.1)] transition-all ${isKnowledgeLocked
                               ? isDarkMode
                                 ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
                                 : "cursor-pointer border-gray-200 bg-gray-100 opacity-80"
@@ -1281,7 +1774,7 @@ function RoadmapCanvasViewStage({
                                 ) : null}
                               </div>
                             </div>
-                            <div className="mt-2">
+                            <div className="mt-1.5">
                               <h5 className={`text-[clamp(11px,1.1vw,15px)] font-semibold leading-5 whitespace-normal break-words ${active
                                 ? isDarkMode ? "text-sky-200" : "text-sky-900"
                                 : isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
@@ -1295,13 +1788,15 @@ function RoadmapCanvasViewStage({
                   </div>
                 ) : null}
               </div>
-              </div>
-            ) : null}
-          </div>
+            </div>
+            </div>
+          ) : null}
         </div>
 
-        <div className={`mt-4 min-h-0 flex flex-1 flex-col overflow-hidden rounded-[30px] border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-gray-200 bg-white"}`}>
-          <div className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+        <div
+          className={`mt-3 flex flex-col rounded-[26px] border ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-gray-200 bg-white"}`}
+        >
+          <div className={`flex items-center justify-between gap-3 border-b px-4 py-3.5 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
             <div>
               <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
                 {t("workspace.roadmap.canvas.view2DetailPanelTitle")}
@@ -1314,18 +1809,26 @@ function RoadmapCanvasViewStage({
                     : t("workspace.roadmap.canvas.view2RoadmapHint")}
               </p>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
-              {selectedType === "knowledge"
-                ? t("workspace.roadmap.canvas.view2KnowledgeDetail")
-                : selectedType === "phase"
-                  ? t("workspace.roadmap.canvas.view2PhaseDetail")
-                  : t("workspace.roadmap.canvas.centralRoadmap")}
-            </span>
+            {selectedType === "phase" && selectedPhase ? (
+              <div className="flex items-center gap-2">
+                {typeof onEditRoadmapConfig === "function" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onEditRoadmapConfig}
+                    className={`h-8 rounded-full px-3 ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-100"}`}
+                  >
+                    <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                    <span className={fontClass}>{t("workspace.roadmap.editConfigAction", "Edit")}</span>
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
-          <div className="relative min-h-0 flex-1 overflow-y-auto px-5 py-5 [scrollbar-gutter:stable_both-edges]">
+          <div className="relative overflow-visible px-4 py-4">
             {isSelectedPhaseLocked ? (
-              <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center backdrop-blur-sm rounded-b-[30px] ${isDarkMode ? "bg-slate-900/55" : "bg-white/55"}`}>
+              <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center backdrop-blur-sm rounded-b-[26px] ${isDarkMode ? "bg-slate-900/55" : "bg-white/55"}`}>
                 <div className={`p-4 rounded-xl shadow-lg border max-w-sm text-center ${isDarkMode ? "bg-slate-800 border-slate-700 shadow-blue-900/50" : "bg-white border-slate-300 shadow-slate-900/10"}`}>
                   <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isDarkMode ? "bg-slate-700" : "bg-slate-100"}`}>
                     <Lock className={`w-6 h-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"}`} />

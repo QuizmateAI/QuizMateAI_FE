@@ -189,7 +189,7 @@ function QuizDetailView({
   const [quizMeta, setQuizMeta] = useState(null);
   
   // Tab states
-  const [activeTab, setActiveTab] = useState(() => (_contextType === "GROUP" ? "overview" : "questions")); // overview, review (group), questions, history
+  const [activeTab, setActiveTab] = useState("overview"); // overview, review (group), questions, history
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   // Personal history (bản thân) — dùng để gate chế độ luyện tập: null = đang tải
@@ -431,6 +431,35 @@ function QuizDetailView({
       fetchHistoryData();
     }
   }, [activeTab, fetchHistoryData, history.length]);
+
+  useEffect(() => {
+    if (!quiz?.quizId || _contextType !== "GROUP" || isGroupLeader) {
+      setPersonalHistory(null);
+      return;
+    }
+
+    const probeKey = `${_contextType}:${_contextId || ""}:${quiz.quizId}`;
+    if (attemptHistoryProbeKeyRef.current === probeKey) return;
+    attemptHistoryProbeKeyRef.current = probeKey;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await getQuizHistory(quiz.quizId);
+        if (cancelled) return;
+        const nextHistory = Array.isArray(res?.data) ? res.data : [];
+        setPersonalHistory(nextHistory);
+        setHistory((prev) => (prev.length === 0 ? nextHistory : prev));
+      } catch (err) {
+        console.error("Lỗi khi kiểm tra lịch sử cá nhân:", err);
+        if (!cancelled) setPersonalHistory([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [quiz?.quizId, _contextType, _contextId, isGroupLeader]);
 
   // Toggle mở rộng/thu gọn section
   const toggleSection = (sectionId) => {
@@ -744,7 +773,6 @@ function QuizDetailView({
   const isChallengeSnapshotReview = _contextType === "GROUP" && challengeSnapshotReviewMode && !fairPlayRestricts;
   const groupMemberCanOpenQuestions = _contextType !== "GROUP" || isGroupLeader || hasCurrentUserCompletedQuiz;
   const showQuestionsTab = !isChallengeSnapshotReview && groupMemberCanOpenQuestions;
-  const isQuestionOnlyDetail = _contextType !== "GROUP";
   // Ranking tab: GROUP + ACTIVE + leader + not challenge snapshot
   const showRankingTab = _contextType === "GROUP" && isGroupLeader && String(currentStatus || "").toUpperCase() === "ACTIVE" && !isChallengeSnapshotReview;
 
@@ -781,12 +809,6 @@ function QuizDetailView({
       setActiveTab("overview");
     }
   }, [isChallengeSnapshotReview, activeTab]);
-
-  useEffect(() => {
-    if (isQuestionOnlyDetail && activeTab !== "questions") {
-      setActiveTab("questions");
-    }
-  }, [activeTab, isQuestionOnlyDetail]);
 
   return (
     <div className={`h-full flex flex-col ${fontClass}`}>
@@ -901,8 +923,7 @@ function QuizDetailView({
       )}
 
       {/* Tabs */}
-      {!isQuestionOnlyDetail && (
-        <div className={`px-4 pt-3 flex items-center gap-4 border-b ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
+      <div className={`px-4 pt-3 flex items-center gap-4 border-b ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button
           onClick={() => setActiveTab("overview")}
           className={`pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
@@ -911,7 +932,7 @@ function QuizDetailView({
               : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
           }`}
         >
-          <Info className="w-4 h-4" /> {t("workspace.quiz.tabs.overview", "Overview")}
+          <Info className="w-4 h-4" /> {t("workspace.quiz.tabs.overview", "Tổng quan")}
         </button>
         {showGroupReviewTab && (
           <button
@@ -937,7 +958,7 @@ function QuizDetailView({
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
             }`}
           >
-            <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Questions")}
+            <List className="w-4 h-4" /> {t("workspace.quiz.tabs.questions", "Câu hỏi")}
           </button>
         )}
         {!isChallengeSnapshotReview && (
@@ -950,7 +971,7 @@ function QuizDetailView({
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-300"
             }`}
           >
-            <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "History")}
+            <History className="w-4 h-4" /> {t("workspace.quiz.tabs.history", "Lịch sử làm bài")}
           </button>
         )}
         {_contextType === "GROUP" && !isChallengeSnapshotReview && String(currentStatus || "").toUpperCase() === "ACTIVE" && (
@@ -979,8 +1000,7 @@ function QuizDetailView({
             <Trophy className="w-4 h-4" /> {t("quizDetailView.tabs.ranking", "Ranking")}
           </button>
         )}
-        </div>
-      )}
+      </div>
 
       {/* Tab Thảo luận — full-height, không padding wrapper */}
       {activeTab === "discussion" && _contextType === "GROUP" && (
@@ -1379,7 +1399,7 @@ function QuizDetailView({
                                       )}
                                     >
                                       <MessageSquare className="h-3.5 w-3.5" />
-                                      <span>{t("quizDetailView.actions.chatQuestion", "Chat")}</span>
+                                      <span>{t("quizDetailView.actions.chatQuestion", "Chat câu hỏi")}</span>
                                       {(qCommentCounts[String(question.questionId)] ?? 0) > 0 && (
                                         <span
                                           className={cn(
