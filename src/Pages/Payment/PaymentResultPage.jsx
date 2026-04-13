@@ -180,7 +180,7 @@ export default function PaymentResultPage() {
         workspaceId: String(pendingPurchase.workspaceId),
       });
       return {
-        to: `/plan?${query.toString()}`,
+        to: `/plans?${query.toString()}`,
         options: {
           state: {
             workspaceId: Number(pendingPurchase.workspaceId),
@@ -191,7 +191,7 @@ export default function PaymentResultPage() {
     }
 
     return {
-      to: '/plan',
+      to: '/plans',
       options: undefined,
     };
   }, [pendingPurchase?.planType, pendingPurchase?.workspaceId]);
@@ -295,7 +295,7 @@ export default function PaymentResultPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/plan')}
+            onClick={() => navigate(plansPath)}
             className={`flex items-center gap-2 rounded-full h-10 px-4 ${isDarkMode ? 'text-slate-200 hover:bg-slate-800' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <CreditCard className="w-4 h-4" />
