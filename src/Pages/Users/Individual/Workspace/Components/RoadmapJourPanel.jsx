@@ -125,6 +125,11 @@ function RoadmapJourPanel({
     return normalizedStatus === "COMPLETED" || normalizedStatus === "SKIPPED";
   }, []);
 
+  const isKnowledgeFinishedStatus = useCallback((knowledgeStatus) => {
+    const normalizedStatus = String(knowledgeStatus || "").toUpperCase();
+    return ["DONE", "COMPLETED", "SKIPPED"].includes(normalizedStatus);
+  }, []);
+
   const maxUnlockedPhaseIndex = useMemo(() => {
     if (!Array.isArray(phases) || phases.length === 0) return 0;
 
@@ -420,7 +425,7 @@ function RoadmapJourPanel({
                               <div className="mt-2 relative pl-[44px] pr-2 space-y-1 pb-1 z-10 w-full overflow-hidden">
                                 {phase.knowledges.map((knowledge) => {
                                   const normalizedKnowledgeStatus = String(knowledge?.status || "").toUpperCase();
-                                  const isKnowledgeCompleted = normalizedKnowledgeStatus === "COMPLETED";
+                                  const isKnowledgeCompletedByStatus = isKnowledgeFinishedStatus(normalizedKnowledgeStatus);
                                   const normalizedKnowledgeId = Number(knowledge?.knowledgeId);
                                   const knowledgeIndex = phase.knowledges.findIndex(
                                     (item) => Number(item?.knowledgeId) === normalizedKnowledgeId,
@@ -429,10 +434,27 @@ function RoadmapJourPanel({
                                   const currentKnowledgeIndexInPhase = Number.isInteger(currentKnowledgeId) && currentKnowledgeId > 0
                                     ? phase.knowledges.findIndex((item) => Number(item?.knowledgeId) === currentKnowledgeId)
                                     : -1;
+                                  const isKnowledgeCompletedByCurrentPayload = !isKnowledgeCompletedByStatus
+                                    && Number.isInteger(knowledgeIndex)
+                                    && knowledgeIndex >= 0
+                                    && Number.isInteger(currentKnowledgePhaseIndex)
+                                    && (
+                                      currentKnowledgePhaseIndex > index
+                                      || (
+                                        currentKnowledgePhaseIndex === index
+                                        && currentKnowledgeIndexInPhase >= 0
+                                        && (
+                                          knowledgeIndex < currentKnowledgeIndexInPhase
+                                          || (isCurrentKnowledgeDoneStatus && knowledgeIndex === currentKnowledgeIndexInPhase)
+                                        )
+                                      )
+                                    );
+                                  const isKnowledgeCompleted = isKnowledgeCompletedByStatus
+                                    || isCompletedPhase
+                                    || isKnowledgeCompletedByCurrentPayload;
                                   let contiguousCompletedKnowledgeCount = 0;
                                   for (let idx = 0; idx < phase.knowledges.length; idx += 1) {
-                                    const status = String(phase.knowledges[idx]?.status || "").toUpperCase();
-                                    if (!["COMPLETED", "DONE", "SKIPPED"].includes(status)) break;
+                                    if (!isKnowledgeFinishedStatus(phase.knowledges[idx]?.status)) break;
                                     contiguousCompletedKnowledgeCount += 1;
                                   }
                                   const shouldUseSequentialFallbackLock = !isLockedPhase
