@@ -54,6 +54,24 @@ export const addQuizReviewContributor = async (workspaceId, quizId, body) => {
   return await api.post(`/group/${workspaceId}/quiz-review-contributors/${quizId}`, body);
 };
 
+/**
+ * Gửi đồng loạt lời mời reviewer (1 chính + tối đa 2 phụ) → BE gửi email song song.
+ * body = { invitations: [{ userId, primaryReviewer }, ...] }
+ */
+export const batchInviteQuizReviewers = async (workspaceId, quizId, invitations) => {
+  return await api.post(
+    `/group/${workspaceId}/quiz-review-contributors/${quizId}/invite-batch`,
+    { invitations },
+  );
+};
+
+/** Hoán đổi reviewer chính: demote primary hiện tại → phụ, promote userId → chính */
+export const setPrimaryQuizReviewer = async (workspaceId, quizId, userId) => {
+  return await api.patch(
+    `/group/${workspaceId}/quiz-review-contributors/${quizId}/set-primary/${userId}`,
+  );
+};
+
 export const removeQuizReviewContributor = async (workspaceId, quizId, userId) => {
   return await api.delete(`/group/${workspaceId}/quiz-review-contributors/${quizId}/${userId}`);
 };

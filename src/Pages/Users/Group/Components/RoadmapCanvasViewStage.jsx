@@ -724,27 +724,13 @@ function RoadmapCanvasViewStage({
     }
 
     if (selectedPhaseIdProp === null && selectedKnowledgeIdProp === null) {
-      const hasLocalPhase = phases.some(
-        (phase) => normalizePositiveId(phase?.phaseId) === normalizePositiveId(selectedPhaseId),
-      );
-      const hasLocalKnowledge = hasLocalPhase && phases.some((phase) => {
-        if (normalizePositiveId(phase?.phaseId) !== normalizePositiveId(selectedPhaseId)) return false;
-        const localKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
-        return localKnowledges.some(
-          (knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizePositiveId(selectedKnowledgeId),
-        );
-      });
-
-      if (!hasLocalPhase) {
-        setSelectedType("phase");
-        setSelectedPhaseId(normalizePositiveId(phases[0]?.phaseId));
-        setSelectedKnowledgeId(null);
-      } else if (hasLocalKnowledge) {
-        setSelectedType("knowledge");
-      } else {
-        setSelectedType("phase");
-        setSelectedKnowledgeId(null);
-      }
+      // Parent signals "focus the central roadmap" by clearing both phase/knowledge
+      // selections. Respect that and render the roadmap overview instead of
+      // auto-selecting the first phase, otherwise the detail panel would never
+      // show the central roadmap even when the user clicks it explicitly.
+      setSelectedType("roadmap");
+      setSelectedPhaseId(null);
+      setSelectedKnowledgeId(null);
       return;
     }
 

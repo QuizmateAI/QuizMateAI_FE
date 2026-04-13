@@ -71,9 +71,47 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
+  			},
+			/**
+			 * Admin/Super-admin palette theo quy tắc 60-30-10:
+			 *   - slate (Tailwind) = 60% (neutral surface/text) — dùng trực tiếp.
+			 *   - ocean  = 30% (xanh nước biển secondary, hover/nav-active).
+			 *   - glitter = 10% (accent key-metric, CTA nhấn + shimmer kim tuyến).
+			 */
+			ocean: {
+				50:  '#f0f7fb',
+				100: '#d9ecf5',
+				200: '#b2d6eb',
+				300: '#7fb9d9',
+				400: '#4a95bf',
+				500: '#1f77a8',
+				600: '#155e87',
+				700: '#104a6b',
+				800: '#0b3750',
+				900: '#07263a',
+				950: '#041827',
+			},
+			glitter: {
+				50:  '#f1fbff',
+				100: '#ddf4ff',
+				200: '#b4e8ff',
+				300: '#80d6ff',
+				400: '#38bdf8',
+				500: '#0ea5e9',
+				600: '#0284c7',
+				700: '#036397',
+				800: '#064b72',
+				900: '#083a5a',
+			},
   		}
       ,
+      backgroundImage: {
+        /** Gradient kim tuyến cho accent — dùng với animate-shimmer để có chuyển động. */
+        'glitter-sheen':
+          'linear-gradient(110deg, rgba(255,255,255,0) 20%, rgba(224,242,254,0.55) 45%, rgba(255,255,255,0) 70%)',
+        /** Gradient ocean chủ đạo cho CTA quan trọng. */
+        'ocean-cta': 'linear-gradient(135deg, #0ea5e9 0%, #1f77a8 100%)',
+      },
       keyframes: {
         floaty: {
           "0%, 100%": { transform: "translateY(0px)" },
@@ -83,10 +121,16 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        /** Kim tuyến: sheen chạy qua bề mặt. */
+        glitterSheen: {
+          "0%": { backgroundPosition: "-150% 0" },
+          "100%": { backgroundPosition: "250% 0" },
+        },
       },
       animation: {
         floaty: "floaty 7s ease-in-out infinite",
         shimmer: "shimmer 2.5s ease-in-out infinite",
+        'glitter-sheen': "glitterSheen 3.5s linear infinite",
       },
   	}
   },
