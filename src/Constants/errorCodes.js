@@ -86,6 +86,7 @@ const ERROR_CODES = {
   1052: 'error.roleInUse',
   1053: 'error.lastSuperAdminProtected',
   1054: 'error.systemRoleProtected',
+  1055: 'error.conflict',
   1056: 'error.planLimitReached',
   1057: 'error.paymentNotPending',
 
@@ -97,7 +98,7 @@ const ERROR_CODES = {
   1066: 'error.planFeatureNotSupported',
   1067: 'error.defaultPlanExistsForType',
 
-  // ========== CHALLENGE ==========
+  // ========== CHALLENGE (legacy) ==========
   1069: 'error.challengeNotFound',
   1070: 'error.invalidChallengeTime',
   // ⚠️ 1071-1078 trùng với QuizAttempt — FE ưu tiên message gốc từ BE
@@ -117,11 +118,113 @@ const ERROR_CODES = {
   1082: 'error.defaultPlanCannotUpdateType',
   1064: 'error.defaultPlanCannotInactive',
 
-  // ========== CREDIT ==========
-  1129: 'error.insufficientCredit',
+  // ========== QUIZ ATTEMPT (lifecycle) ==========
+  1085: 'error.quizAttemptNotFound',
+  1086: 'error.quizAttemptLimitReached',
+  1087: 'error.quizAttemptAlreadyCompleted',
+  1088: 'error.quizAttemptNotInProgress',
+  1092: 'error.quizAttemptTimeExpired',
+  1093: 'error.answerNotBelongToQuestion',
+  1095: 'error.questionAlreadyAnswered',
+  1096: 'error.quizAttemptNotCompleted',
+  1124: 'error.quizAttemptNotPracticeMode',
+  1125: 'error.practiceNeedSubmitPerQuestion',
+  1126: 'error.practiceQuestionAlreadySubmitted',
+  1127: 'error.practiceNeedSelectAnswer',
 
-  // ========== QUIZ REVIEW (CHALLENGE SNAPSHOT) ==========
+  // ========== SYSTEM CONFIG / DOMAIN / KNOWLEDGE ==========
+  1098: 'error.domainOrDifficultyNotFound',
+  1099: 'error.knowledgeNotFound',
+  1100: 'error.schemeNotFound',
+  1101: 'error.schemeLevelNotFound',
+  1102: 'error.domainExisted',
+  1103: 'error.knowledgeExisted',
+  1104: 'error.schemeExisted',
+  1105: 'error.invalidSchemeLevelParent',
+  1106: 'error.invalidLevelSystemType',
+  1107: 'error.invalidSchemeLevelInput',
+  1108: 'error.schemeLevelConflict',
+  1109: 'error.domainInUse',
+  1097: 'error.iwpSchemeRequired',
+
+  // ========== PLAN (extended) ==========
+  1110: 'error.planDefaultAlreadyExists',
+  1111: 'error.planDefaultCannotDeactivate',
+  1112: 'error.planWorkspaceActiveCannotDeactivate',
+  1113: 'error.planLastActiveInLevelRange',
+  1114: 'error.planDefaultCannotDelete',
+  1115: 'error.planActiveCannotDelete',
+  1116: 'error.planInUseCannotDelete',
+  1117: 'error.creditPurchaseNotAllowed',
+
+  // ========== CREDIT PACKAGE ==========
+  1118: 'error.creditPackageNotFound',
+  1119: 'error.creditPackageCodeExisted',
+  1120: 'error.creditPackageNotActive',
+  1121: 'error.invalidCreditPackage',
+  1122: 'error.creditPackagePurchasedCannotDelete',
+  1123: 'error.creditPackageLastActiveCannotDeactivate',
+
+  // ========== CREDIT / AI MODEL ==========
+  1128: 'error.templateNotFound',
+  1129: 'error.aiModelNotFound',
+  1130: 'error.aiModelAlreadyExists',
+  1131: 'error.aiModelInactive',
+  1132: 'error.aiModelInUse',
+  1133: 'error.aiModelPriceVersionInvalid',
+  1134: 'error.insufficientCreditBalance',
+  1135: 'error.aiModelAssignmentInvalid',
+  1136: 'error.currencyExchangeUnavailable',
+  1137: 'error.aiOfficialPricingUnavailable',
+  1139: 'error.insufficientCredit',
+
+  // ========== FEEDBACK ==========
+  1140: 'error.feedbackFormNotFound',
+  1141: 'error.feedbackRequestNotFound',
+  1142: 'error.feedbackAlreadySubmitted',
+  1143: 'error.feedbackQuestionNotFound',
+  1144: 'error.feedbackTargetNotEligible',
+  1145: 'error.invalidFeedbackSubmission',
+
+  // ========== CHALLENGE EVENT ==========
+  1150: 'error.challengeNotFound',
+  1151: 'error.challengeInvalidTime',
+  1152: 'error.challengeTimeMustBeFuture',
+  1153: 'error.challengeAlreadyRegistered',
+  1154: 'error.challengeNotScheduled',
+  1155: 'error.challengeNotJoinable',
+  1156: 'error.challengeNotLive',
+  1157: 'error.challengeAlreadyFinished',
+  1158: 'error.challengeParticipantNotFound',
+  1159: 'error.challengeAlreadySubmitted',
+  1160: 'error.challengeLockedForEdit',
+  1161: 'error.challengeCancelNotAllowed',
+  1162: 'error.challengeInviteOnly',
+  1163: 'error.challengeInvitationNotFound',
+  1164: 'error.challengeAlreadyInvited',
+  1165: 'error.challengeQuizNotSyncGradable',
+  1166: 'error.challengeSourceQuizAssignedPrivately',
+  1167: 'error.challengeWindowTooShort',
+  1168: 'error.challengeStartTooSoon',
+  1169: 'error.challengeEditWindowClosed',
+  1170: 'error.challengeReviewerCannotRegister',
+  1171: 'error.quizReviewContributorExists',
+  1172: 'error.quizReviewContributorInvalid',
+  1173: 'error.quizReviewContributorLimit',
+  1174: 'error.quizReviewContributorCooldown',
+  1175: 'error.quizReviewDecisionInvalid',
+  1176: 'error.quizReviewOnlyAssignedMayDecide',
+  1177: 'error.quizPublishBlockedReview',
+  1178: 'error.quizReviewRevokeRequiresReminders',
   1179: 'error.quizReviewViewRequired',
+  1180: 'error.challengeNotPublished',
+  1181: 'error.challengeCreatorCannotRegister',
+  1182: 'error.quizReviewBatchPrimaryRequired',
+  1183: 'error.quizReviewBatchEmpty',
+
+  // ========== USERNAME / EMAIL VALIDATION ==========
+  2001: 'error.usernameInvalidFormat',
+  2002: 'error.emailInvalidFormat',
 };
 
 export default ERROR_CODES;

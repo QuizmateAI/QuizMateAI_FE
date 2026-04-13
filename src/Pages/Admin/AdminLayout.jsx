@@ -61,13 +61,14 @@ function AdminLayoutContent() {
             </button>
             <div className="text-right hidden sm:block">
                 <p className={`text-sm font-bold font-poppins leading-none ${
-                  isDarkMode ? 'text-white' : 'text-[#313131]'
+                  isDarkMode ? 'text-white' : 'text-slate-900'
                 }`}>{t('adminLayout.brand', 'Admin QuizMate')}</p>
               </div>
-            <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold font-poppins ${
-              isDarkMode ? 'bg-blue-900 border-blue-700 text-blue-300' : 'bg-blue-100 border-blue-200 text-blue-600'
+            <div className={`relative w-10 h-10 rounded-full border flex items-center justify-center font-bold font-poppins overflow-hidden ${
+              isDarkMode ? 'bg-ocean-900 border-ocean-700 text-ocean-200' : 'bg-ocean-100 border-ocean-200 text-ocean-700'
             }`}>
-              AD
+              <span className="pointer-events-none absolute inset-0 bg-glitter-sheen bg-[length:200%_100%] animate-glitter-sheen opacity-60" />
+              <span className="relative">AD</span>
             </div>
           </div>
         </header>

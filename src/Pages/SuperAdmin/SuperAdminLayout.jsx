@@ -77,13 +77,14 @@ function SuperAdminLayoutContent() {
             </button>
             <div className="text-right hidden sm:block">
                 <p className={`text-sm font-bold font-poppins leading-none ${
-                  isDarkMode ? 'text-white' : 'text-[#313131]'
+                  isDarkMode ? 'text-white' : 'text-slate-900'
                 }`}>{t('superAdminLayout.brand', 'Super Admin')}</p>
               </div>
-            <div className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold font-poppins ${
-              isDarkMode ? 'bg-indigo-900 border-indigo-700 text-indigo-300' : 'bg-indigo-100 border-indigo-200 text-indigo-700'
+            <div className={`relative w-10 h-10 rounded-full border flex items-center justify-center font-bold font-poppins overflow-hidden ${
+              isDarkMode ? 'bg-ocean-900 border-glitter-500/40 text-glitter-200' : 'bg-ocean-100 border-glitter-300 text-ocean-800'
             }`}>
-              SA
+              <span className="pointer-events-none absolute inset-0 bg-glitter-sheen bg-[length:200%_100%] animate-glitter-sheen opacity-70" />
+              <span className="relative">SA</span>
             </div>
           </div>
         </header>

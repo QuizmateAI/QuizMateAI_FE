@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, ChevronsLeft, Loader2, Map } from "lucide-react";
+import { CheckCircle2, Loader2, Map } from "lucide-react";
 import { getCurrentRoadmapKnowledgeProgress, getRoadmapGraph } from "@/api/RoadmapAPI";
 import { getCurrentRoadmapPhaseProgress } from "@/api/RoadmapPhaseAPI";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";

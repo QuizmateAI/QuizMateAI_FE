@@ -130,16 +130,16 @@ function AdminSidebar({ collapsed, onToggle }) {
     <div className={cn(
       "border-r h-screen flex flex-col transition-all duration-300",
       collapsed ? "w-20" : "w-64",
-      isDarkMode ? "bg-slate-900 border-slate-800" : "bg-[#204D87]"
+      isDarkMode ? "bg-slate-900 border-slate-800" : "bg-ocean-800 border-ocean-900"
     )}>
       {/* Header: Logo + Toggle Icon */}
       <div className={cn(
         "flex items-center border-b",
-        collapsed ? "flex-col p-3 gap-2" : "justify-between p-4",
+        collapsed ? "flex-col p-2 gap-2" : "justify-between px-3 py-2",
         isDarkMode ? "border-slate-700" : "border-white/10"
       )}>
         {/* Logo - khi collapsed thì hover để mở rộng */}
-        <div 
+        <div
           className={cn(
             "transition-all duration-300",
             collapsed && "cursor-pointer group"
@@ -147,15 +147,15 @@ function AdminSidebar({ collapsed, onToggle }) {
           onClick={collapsed ? onToggle : undefined}
           title={collapsed ? t('common.expandSidebar', 'Expand sidebar') : undefined}
         >
-          <img 
-            src={LogoDark} 
-            alt="Logo" 
+          <img
+            src={LogoDark}
+            alt="Logo"
             className={cn(
               "transition-all duration-300",
-              collapsed 
-                ? "w-12 h-12 group-hover:scale-110 group-hover:brightness-125" 
-                : "w-[120px] h-[120px]"
-            )} 
+              collapsed
+                ? "w-10 h-10 group-hover:scale-110 group-hover:brightness-125"
+                : "w-12 h-12"
+            )}
           />
         </div>
 
@@ -226,27 +226,33 @@ function AdminSidebar({ collapsed, onToggle }) {
 
                 {isSectionOpen && (
                   <div className="space-y-1">
-                    {section.items.map((item) => (
-                      <button
-                        key={item.path}
-                        onClick={() => navigate(item.path)}
-                        title={collapsed ? t(item.labelKey) : undefined}
-                        className={cn(
-                          "w-full flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-colors",
-                          collapsed ? "px-0 justify-center" : "px-4",
-                          isActive(item, location.pathname) 
-                            ? isDarkMode 
-                              ? "bg-slate-700 text-white font-semibold" 
-                              : "bg-[#c0d3fc] text-black font-semibold"
-                            : isDarkMode
-                              ? "text-slate-300 hover:bg-slate-800 hover:text-white"
-                              : "text-[#f1ebeb] hover:bg-[#e5ecf4] hover:text-black"
-                        )}
-                      >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        {!collapsed && <span>{t(item.labelKey)}</span>}
-                      </button>
-                    ))}
+                    {section.items.map((item) => {
+                      const active = isActive(item, location.pathname);
+                      return (
+                        <button
+                          key={item.path}
+                          onClick={() => navigate(item.path)}
+                          title={collapsed ? t(item.labelKey) : undefined}
+                          className={cn(
+                            "relative w-full flex items-center gap-3 py-3 rounded-xl text-sm font-medium transition-colors",
+                            collapsed ? "px-0 justify-center" : "px-4",
+                            active
+                              ? isDarkMode
+                                ? "bg-ocean-700/60 text-white font-semibold ring-1 ring-ocean-500/40"
+                                : "bg-white text-ocean-800 font-semibold shadow-sm ring-1 ring-ocean-200"
+                              : isDarkMode
+                                ? "text-slate-300 hover:bg-ocean-800/40 hover:text-white"
+                                : "text-white/85 hover:bg-white/15 hover:text-white"
+                          )}
+                        >
+                          {active && !collapsed ? (
+                            <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r bg-glitter-400" />
+                          ) : null}
+                          <item.icon className="w-5 h-5 flex-shrink-0" />
+                          {!collapsed && <span>{t(item.labelKey)}</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
