@@ -130,6 +130,8 @@ function RoadmapCanvasViewStage({
   onCreateKnowledgeQuizForKnowledge,
   onCreatePhasePreLearning,
   onCreatePhaseKnowledge,
+  onCreateRoadmapPreLearning,
+  isGeneratingRoadmapPreLearning = false,
   onEditRoadmapConfig,
 }) {
   const { t, i18n } = useTranslation();
@@ -159,6 +161,8 @@ function RoadmapCanvasViewStage({
     phaseId: null,
   });
   const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
+  const [roadmapPreLearningQuestionCount, setRoadmapPreLearningQuestionCount] = useState(20);
+  const [submittingRoadmapPreLearning, setSubmittingRoadmapPreLearning] = useState(false);
 
   const phases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
   const topComponentScale = Math.min(2, Math.max(0.4, STAGE_TOP_COMPONENT_SCALE));
@@ -197,6 +201,37 @@ function RoadmapCanvasViewStage({
     });
   }), [selectedKnowledges]);
   const normalizedRoadmapId = normalizePositiveId(roadmap?.roadmapId ?? roadmap?.id);
+  const roadmapLevelPreLearningQuizzes = useMemo(
+    () => (Array.isArray(roadmap?.preLearningQuizzes) ? roadmap.preLearningQuizzes : []),
+    [roadmap?.preLearningQuizzes],
+  );
+  const hasRoadmapLevelPreLearningQuiz = roadmapLevelPreLearningQuizzes.length > 0;
+  const isRoadmapLevelPreLearningLoading = isGeneratingRoadmapPreLearning || submittingRoadmapPreLearning;
+
+  useEffect(() => {
+    if (!hasRoadmapLevelPreLearningQuiz) return;
+    const suggestedTotalQuestion = Number(roadmapLevelPreLearningQuizzes[0]?.totalQuestion);
+    if (Number.isInteger(suggestedTotalQuestion) && suggestedTotalQuestion > 0) {
+      setRoadmapPreLearningQuestionCount(suggestedTotalQuestion);
+    }
+  }, [hasRoadmapLevelPreLearningQuiz, roadmapLevelPreLearningQuizzes]);
+
+  const handleCreateRoadmapLevelPreLearning = useCallback(async () => {
+    if (typeof onCreateRoadmapPreLearning !== "function") return;
+    if (!normalizedRoadmapId) return;
+
+    const normalizedTotalQuestion = Math.max(1, Math.min(100, Number(roadmapPreLearningQuestionCount) || 20));
+
+    setSubmittingRoadmapPreLearning(true);
+    try {
+      await onCreateRoadmapPreLearning({
+        roadmapId: normalizedRoadmapId,
+        totalQuestion: normalizedTotalQuestion,
+      });
+    } finally {
+      setSubmittingRoadmapPreLearning(false);
+    }
+  }, [onCreateRoadmapPreLearning, normalizedRoadmapId, roadmapPreLearningQuestionCount]);
 
   const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
   const globalCurrentIndex = Number.isInteger(globalPhaseId)
@@ -1553,6 +1588,83 @@ function RoadmapCanvasViewStage({
 
         <div className={`rounded-[22px] border px-4 py-3 ${isDarkMode ? "border-slate-800 bg-slate-950/50 text-slate-300" : "border-sky-100 bg-sky-50 text-gray-700"}`}>
           <p className={`text-xs ${fontClass}`}>{t("workspace.roadmap.canvas.view2RoadmapHint")}</p>
+        </div>
+
+        <div className={`rounded-[26px] border p-4 ${isDarkMode ? "border-cyan-900/60 bg-cyan-950/25" : "border-cyan-100 bg-cyan-50"}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className={`text-xs uppercase tracking-[0.2em] ${isDarkMode ? "text-cyan-300" : "text-cyan-700"} ${fontClass}`}>
+              {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
+            </p>
+            {!hasRoadmapLevelPreLearningQuiz ? (
+              <div className="flex items-center gap-2">
+                <label className={`text-xs ${isDarkMode ? "text-slate-300" : "text-slate-600"} ${fontClass}`}>
+                  {t("workspace.roadmap.groupPreLearning.questionCount", "Số câu")}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  step={1}
+                  value={roadmapPreLearningQuestionCount}
+                  onChange={(event) => {
+                    const nextValue = Number(event.target.value);
+                    if (!Number.isFinite(nextValue)) {
+                      setRoadmapPreLearningQuestionCount(20);
+                      return;
+                    }
+                    setRoadmapPreLearningQuestionCount(Math.max(1, Math.min(100, Math.round(nextValue))));
+                  }}
+                  className={`h-8 w-[88px] rounded-lg border px-2 text-sm outline-none transition-all ${isDarkMode ? "border-slate-700 bg-slate-900 text-slate-100 focus:border-cyan-500" : "border-slate-300 bg-white text-slate-900 focus:border-cyan-500"}`}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => void handleCreateRoadmapLevelPreLearning()}
+                  disabled={isRoadmapLevelPreLearningLoading || typeof onCreateRoadmapPreLearning !== "function" || !normalizedRoadmapId}
+                  className="h-8 bg-[#2563EB] text-white hover:bg-blue-700"
+                >
+                  {isRoadmapLevelPreLearningLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1.5 h-3.5 w-3.5" />}
+                  {t("workspace.roadmap.groupPreLearning.create", "Tạo pre-learning")}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-3">
+            {isRoadmapLevelPreLearningLoading ? (
+              renderLoadingPlaceholder(
+                t("workspace.roadmap.groupPreLearning.generating", "AI đang tạo pre-learning cho roadmap nhóm..."),
+                true,
+                32,
+              )
+            ) : null}
+
+            <div className={isRoadmapLevelPreLearningLoading ? "mt-2 opacity-60" : "mt-0"}>
+              <QuizListView
+                isDarkMode={isDarkMode}
+                contextType="ROADMAP"
+                contextId={normalizedRoadmapId}
+                intentFilter={["PRE_LEARNING"]}
+                onViewQuiz={(quiz) => onViewQuiz?.(quiz, {
+                  backTarget: {
+                    view: "roadmap",
+                    roadmapId: Number(roadmap?.roadmapId),
+                  },
+                })}
+                embedded
+                legacyRoadmapUI
+                hideCreateButton
+                title={t("workspace.roadmap.canvas.quiz")}
+                refreshToken={quizRefreshToken}
+              />
+            </div>
+
+            {!isRoadmapLevelPreLearningLoading && !hasRoadmapLevelPreLearningQuiz ? (
+              <p className={`mt-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
+                {t("workspace.roadmap.groupPreLearning.empty", "Chưa có quiz pre-learning cho roadmap nhóm.")}
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
     );

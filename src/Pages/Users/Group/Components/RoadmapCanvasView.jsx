@@ -184,6 +184,7 @@ function RoadmapCanvasView({
   workspaceId = null,
   onCreateRoadmap,
   onCreateRoadmapPhases,
+  onCreateRoadmapPreLearning,
   onRoadmapPhaseFocus,
   onCreatePhaseKnowledge,
   onCreateKnowledgeQuizForKnowledge,
@@ -192,6 +193,7 @@ function RoadmapCanvasView({
   adaptationMode = "",
   onViewQuiz,
   isGeneratingRoadmapPhases = false,
+  isGeneratingRoadmapPreLearning = false,
   roadmapPhaseGenerationProgress = 0,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
@@ -955,6 +957,8 @@ function RoadmapCanvasView({
         onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
         onCreatePhasePreLearning={onCreatePhasePreLearning}
         onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+        onCreateRoadmapPreLearning={onCreateRoadmapPreLearning}
+        isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning}
         onEditRoadmapConfig={onEditRoadmapConfig}
       />
     );

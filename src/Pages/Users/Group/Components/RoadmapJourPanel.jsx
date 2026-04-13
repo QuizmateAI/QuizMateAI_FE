@@ -112,10 +112,9 @@ function RoadmapJourPanel({
         }
       }
 
-      const firstPhaseId = nextRoadmap?.phases?.[0]?.phaseId ?? null;
       if (!selectedPhaseRef.current) {
-        setSelectedPhaseId(firstPhaseId);
-        queueSelectPhase(firstPhaseId, { preserveActiveView: true });
+        setSelectedPhaseId(null);
+        setSelectedKnowledgeId(null);
       }
     } catch {
       setRoadmap(null);

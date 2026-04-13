@@ -66,6 +66,7 @@ const LazyChallengeTab = React.lazy(loadChallengeTab);
 const LazyGroupRankingTab = React.lazy(() => import("./Components/GroupRankingTab"));
 React.lazy(loadWorkspaceOnboardingUpdateGuardDialog);
 React.lazy(loadPlanUpgradeModal);
+const LazyRoadmapPhaseGenerateDialog = React.lazy(() => import("./Components/RoadmapPhaseGenerateDialog"));
 const LazyRoadmapConfigEditDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigEditDialog"));
 const LazyRoadmapConfigSummaryDialog = React.lazy(() => import("@/Components/workspace/RoadmapConfigSummaryDialog"));
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
@@ -92,7 +93,7 @@ import {
 } from '@/lib/routePaths';
 import { normalizeRuntimeTaskSignal } from '@/lib/runtimeTaskSignal';
 import { formatGroupLearningMode, formatGroupRole } from './utils/groupDisplay';
-import { generateRoadmap } from '@/api/AIAPI';
+import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
@@ -564,6 +565,10 @@ function GroupWorkspacePage() {
   const [isGeneratingRoadmapPhases, setIsGeneratingRoadmapPhases] = useState(false);
   const [roadmapPhaseGenerationProgress, setRoadmapPhaseGenerationProgress] = useState(0);
   const [roadmapPhaseGenerationTaskId, setRoadmapPhaseGenerationTaskId] = useState(null);
+  const [isGeneratingRoadmapPreLearning, setIsGeneratingRoadmapPreLearning] = useState(false);
+  const [phaseGenerateDialogOpen, setPhaseGenerateDialogOpen] = useState(false);
+  const [phaseGenerateDialogDefaultIds, setPhaseGenerateDialogDefaultIds] = useState([]);
+  const [isSubmittingRoadmapPhaseRequest, setIsSubmittingRoadmapPhaseRequest] = useState(false);
   const { showError, showInfo, showSuccess, showWarning } = useToast();
   const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -603,6 +608,7 @@ function GroupWorkspacePage() {
     setSelectedMockTest(null);
     setSelectedRoadmapPhaseId(null);
     setSelectedRoadmapKnowledgeId(null);
+    setSelectedRoadmapQuizId(null);
   };
 
   const bumpRoadmapReloadToken = useCallback(() => {
@@ -636,6 +642,7 @@ function GroupWorkspacePage() {
   const [selectedMockTest, setSelectedMockTest] = useState(null);
   const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
   const [selectedRoadmapKnowledgeId, setSelectedRoadmapKnowledgeId] = useState(null);
+  const [selectedRoadmapQuizId, setSelectedRoadmapQuizId] = useState(null);
   const [runtimeRoadmapId, setRuntimeRoadmapId] = useState(null);
   const [roadmapCenterFocusToken, setRoadmapCenterFocusToken] = useState(0);
   const [hasTriggeredGroupRoadmap, setHasTriggeredGroupRoadmap] = useState(false);
@@ -678,6 +685,7 @@ function GroupWorkspacePage() {
 
     const pathPhaseId = Number(roadmapPathParams?.phaseId);
     const pathKnowledgeId = Number(roadmapPathParams?.knowledgeId);
+    const pathQuizId = Number(roadmapPathParams?.quizId);
 
     if (Number.isInteger(pathPhaseId) && pathPhaseId > 0) {
       setSelectedRoadmapPhaseId(pathPhaseId);
@@ -687,8 +695,15 @@ function GroupWorkspacePage() {
           : null,
       );
     }
+
+    setSelectedRoadmapQuizId(
+      Number.isInteger(pathQuizId) && pathQuizId > 0
+        ? pathQuizId
+        : null,
+    );
   }, [
     activeSection,
+    roadmapPathParams?.quizId,
     roadmapPathParams?.roadmapId,
     roadmapPathParams?.knowledgeId,
     roadmapPathParams?.phaseId,
@@ -811,9 +826,10 @@ function GroupWorkspacePage() {
 
     const hasSelectedPhase = Number.isInteger(Number(selectedRoadmapPhaseId)) && Number(selectedRoadmapPhaseId) > 0;
     const hasSelectedKnowledge = Number.isInteger(Number(selectedRoadmapKnowledgeId)) && Number(selectedRoadmapKnowledgeId) > 0;
+    const hasSelectedQuiz = Number.isInteger(Number(selectedRoadmapQuizId)) && Number(selectedRoadmapQuizId) > 0;
     const hasResolvedRoadmapId = Number.isInteger(Number(resolvedRoadmapRouteId)) && Number(resolvedRoadmapRouteId) > 0;
 
-    if ((hasSelectedPhase || hasSelectedKnowledge) && !hasResolvedRoadmapId) {
+    if ((hasSelectedPhase || hasSelectedKnowledge || hasSelectedQuiz) && !hasResolvedRoadmapId) {
       return;
     }
 
@@ -821,6 +837,7 @@ function GroupWorkspacePage() {
       roadmapId: resolvedRoadmapRouteId,
       phaseId: selectedRoadmapPhaseId,
       knowledgeId: selectedRoadmapKnowledgeId,
+      quizId: selectedRoadmapQuizId,
     });
 
     const currentPath = buildGroupWorkspacePath(workspaceId, groupWorkspaceSubPath);
@@ -832,6 +849,7 @@ function GroupWorkspacePage() {
     groupWorkspaceSubPath,
     navigateInstant,
     resolvedRoadmapRouteId,
+    selectedRoadmapQuizId,
     selectedRoadmapKnowledgeId,
     selectedRoadmapPhaseId,
     workspaceId,
@@ -1115,6 +1133,38 @@ function GroupWorkspacePage() {
       cancelled = true;
     };
   }, [viewQuizIdParam, resolvedWorkspaceId, isCreating, searchParams, setSearchParams, showError, currentLang, t]);
+
+  useEffect(() => {
+    if (activeSection !== 'roadmap') return;
+    const pathQuizId = Number(roadmapPathParams?.quizId);
+    if (!Number.isInteger(pathQuizId) || pathQuizId <= 0) return;
+
+    if (Number(selectedQuiz?.quizId) === pathQuizId && activeView === 'quizDetail') {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getQuizById } = await import('@/api/QuizAPI');
+        const response = await getQuizById(pathQuizId);
+        const payload = unwrapApiData(response);
+        const normalizedQuizId = Number(payload?.quizId ?? payload?.id);
+        if (cancelled || !Number.isInteger(normalizedQuizId) || normalizedQuizId <= 0) return;
+
+        setSelectedQuiz({ ...payload, quizId: normalizedQuizId });
+        setQuizDetailFromChallengeReview(false);
+        setActiveView('quizDetail');
+      } catch (error) {
+        if (cancelled) return;
+        showError(t('groupWorkspacePage.errors.cannotOpenQuiz', 'Could not open this quiz. Check permissions or try again.'));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSection, activeView, roadmapPathParams?.quizId, selectedQuiz?.quizId, showError, t]);
 
   // Fetch materials
   const fetchSources = useCallback(async () => {
@@ -2213,6 +2263,7 @@ function GroupWorkspacePage() {
     if (actionKey !== 'roadmap') {
       setSelectedRoadmapPhaseId(null);
       setSelectedRoadmapKnowledgeId(null);
+      setSelectedRoadmapQuizId(null);
     }
 
     setActiveView(actionKey);
@@ -2386,11 +2437,40 @@ function GroupWorkspacePage() {
     }
     setActiveView('quiz');
   }, [bumpQuizListRefreshToken, canCreateContent, currentLang, showInfo, showSuccess, t]);
-  const handleViewQuiz = useCallback((quiz) => {
+  const handleViewQuiz = useCallback((quiz, options = {}) => {
+    const normalizedQuizId = Number(quiz?.quizId ?? quiz?.id ?? 0);
+    const normalizedQuiz = Number.isInteger(normalizedQuizId) && normalizedQuizId > 0
+      ? { ...quiz, quizId: normalizedQuizId }
+      : quiz;
+
+    const targetRoadmapId = Number(options?.backTarget?.roadmapId);
+    const targetPhaseId = Number(options?.backTarget?.phaseId);
+    const targetKnowledgeId = Number(options?.backTarget?.knowledgeId);
+    const hasRoadmapTarget = Number.isInteger(targetRoadmapId) && targetRoadmapId > 0;
+
+    if (hasRoadmapTarget && workspaceId && Number.isInteger(normalizedQuizId) && normalizedQuizId > 0) {
+      setRuntimeRoadmapId(targetRoadmapId);
+      setSelectedRoadmapPhaseId(Number.isInteger(targetPhaseId) && targetPhaseId > 0 ? targetPhaseId : null);
+      setSelectedRoadmapKnowledgeId(Number.isInteger(targetKnowledgeId) && targetKnowledgeId > 0 ? targetKnowledgeId : null);
+      setSelectedRoadmapQuizId(normalizedQuizId);
+
+      navigateInstant(
+        buildGroupWorkspaceRoadmapPath(workspaceId, {
+          roadmapId: targetRoadmapId,
+          phaseId: Number.isInteger(targetPhaseId) && targetPhaseId > 0 ? targetPhaseId : null,
+          knowledgeId: Number.isInteger(targetKnowledgeId) && targetKnowledgeId > 0 ? targetKnowledgeId : null,
+          quizId: normalizedQuizId,
+        }),
+        { replace: true },
+      );
+    } else {
+      setSelectedRoadmapQuizId(null);
+    }
+
     setQuizDetailFromChallengeReview(false);
-    setSelectedQuiz(quiz);
+    setSelectedQuiz(normalizedQuiz);
     setActiveView('quizDetail');
-  }, []);
+  }, [navigateInstant, workspaceId]);
   const handleEditQuiz = useCallback((quiz) => { setSelectedQuiz(quiz); setActiveView('editQuiz'); }, []);
   const handleSaveQuiz = useCallback((updatedQuiz) => { setSelectedQuiz((p) => ({ ...p, ...updatedQuiz })); setActiveView('quizDetail'); }, []);
 
@@ -2532,6 +2612,49 @@ function GroupWorkspacePage() {
       .filter((materialId, index, array) => Number.isInteger(materialId) && materialId > 0 && array.indexOf(materialId) === index);
   }, [roadmapSelectableSources, selectedRoadmapSourceIds]);
 
+  const startGroupRoadmapPhaseGeneration = useCallback(async (materialIds = []) => {
+    const roadmapId = currentRoadmapId;
+    if (!roadmapId) {
+      showError(t('groupWorkspacePage.toast.noRoadmapConfig', 'No roadmap config found for this group yet.'));
+      return false;
+    }
+
+    const materialIdsToUse = (Array.isArray(materialIds) ? materialIds : [])
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value > 0);
+
+    if (materialIdsToUse.length === 0) {
+      showInfo(t('groupWorkspacePage.toast.selectMaterialBeforeRoadmap', 'Please select at least one material before generating roadmap.'));
+      return false;
+    }
+
+    setIsGeneratingRoadmapPhases(true);
+    setHasTriggeredGroupRoadmap(true);
+    setRoadmapPhaseGenerationProgress(0);
+    setRoadmapPhaseGenerationTaskId(null);
+    const roadmapGenerationResponse = await generateRoadmap({ roadmapId, materialIds: materialIdsToUse });
+    const roadmapGenerationPayload = roadmapGenerationResponse?.data?.data || roadmapGenerationResponse?.data || roadmapGenerationResponse || null;
+    const responseTaskId = String(roadmapGenerationPayload?.websocketTaskId ?? roadmapGenerationPayload?.taskId ?? '').trim();
+    if (responseTaskId) {
+      setRoadmapPhaseGenerationTaskId(responseTaskId);
+    }
+    setRoadmapPhaseGenerationProgress(clampPercent(roadmapGenerationPayload?.percent ?? roadmapGenerationPayload?.progressPercent ?? 0));
+    setActiveView('roadmap');
+    bumpRoadmapReloadToken();
+    showSuccess(
+      t('groupWorkspacePage.toast.roadmapGenerationStarted', 'Roadmap generation has started.')
+    );
+    return true;
+  }, [
+    bumpRoadmapReloadToken,
+    currentRoadmapId,
+    setActiveView,
+    showError,
+    showInfo,
+    showSuccess,
+    t,
+  ]);
+
   const handleCreateGroupRoadmapPhases = useCallback(async () => {
     if (!canCreateContent) {
       showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
@@ -2543,35 +2666,9 @@ function GroupWorkspacePage() {
       return;
     }
 
-    const roadmapId = currentRoadmapId;
-    if (!roadmapId) {
-      showError(t('groupWorkspacePage.toast.noRoadmapConfig', 'No roadmap config found for this group yet.'));
-      return;
-    }
-
     const materialIds = resolveGroupRoadmapMaterialIds();
-    if (materialIds.length === 0) {
-      showInfo(t('groupWorkspacePage.toast.selectMaterialBeforeRoadmap', 'Please select at least one material before generating roadmap.'));
-      return;
-    }
-
     try {
-      setIsGeneratingRoadmapPhases(true);
-      setHasTriggeredGroupRoadmap(true);
-      setRoadmapPhaseGenerationProgress(0);
-      setRoadmapPhaseGenerationTaskId(null);
-      const roadmapGenerationResponse = await generateRoadmap({ roadmapId, materialIds });
-      const roadmapGenerationPayload = roadmapGenerationResponse?.data?.data || roadmapGenerationResponse?.data || roadmapGenerationResponse || null;
-      const responseTaskId = String(roadmapGenerationPayload?.websocketTaskId ?? roadmapGenerationPayload?.taskId ?? '').trim();
-      if (responseTaskId) {
-        setRoadmapPhaseGenerationTaskId(responseTaskId);
-      }
-      setRoadmapPhaseGenerationProgress(clampPercent(roadmapGenerationPayload?.percent ?? roadmapGenerationPayload?.progressPercent ?? 0));
-      setActiveView('roadmap');
-      bumpRoadmapReloadToken();
-      showSuccess(
-        t('groupWorkspacePage.toast.roadmapGenerationStarted', 'Roadmap generation has started.')
-      );
+      await startGroupRoadmapPhaseGeneration(materialIds);
     } catch (error) {
       setIsGeneratingRoadmapPhases(false);
       setRoadmapPhaseGenerationTaskId(null);
@@ -2580,16 +2677,124 @@ function GroupWorkspacePage() {
     }
   }, [
     canCreateContent,
-    currentLang,
-    currentRoadmapId,
     handleOpenRoadmapConfigSetup,
     hasGroupRoadmapConfig,
     resolveGroupRoadmapMaterialIds,
     showError,
     showInfo,
-    showSuccess,
-    setActiveView,
+    startGroupRoadmapPhaseGeneration,
+    t,
+  ]);
+
+  const handleOpenRoadmapPhaseGenerateDialog = useCallback(() => {
+    if (!canCreateContent) {
+      showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
+      return;
+    }
+
+    if (!hasGroupRoadmapConfig) {
+      handleOpenRoadmapConfigSetup();
+      return;
+    }
+
+    const defaultMaterialIds = resolveGroupRoadmapMaterialIds();
+    setPhaseGenerateDialogDefaultIds(defaultMaterialIds);
+    setPhaseGenerateDialogOpen(true);
+  }, [
+    canCreateContent,
+    handleOpenRoadmapConfigSetup,
+    hasGroupRoadmapConfig,
+    resolveGroupRoadmapMaterialIds,
+    showInfo,
+    t,
+  ]);
+
+  const handleSubmitRoadmapPhaseDialog = useCallback(async ({ files = [], materialIds = [] } = {}) => {
+    if (!canCreateContent) {
+      showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
+      return;
+    }
+
+    if (!hasGroupRoadmapConfig) {
+      setPhaseGenerateDialogOpen(false);
+      handleOpenRoadmapConfigSetup();
+      return;
+    }
+
+    try {
+      setIsSubmittingRoadmapPhaseRequest(true);
+
+      const uploadFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+      if (uploadFiles.length > 0) {
+        await handleUploadFiles(uploadFiles);
+        await fetchSources();
+      }
+
+      const didStart = await startGroupRoadmapPhaseGeneration(materialIds);
+      if (!didStart) {
+        return;
+      }
+
+      setPhaseGenerateDialogOpen(false);
+    } catch (error) {
+      setIsGeneratingRoadmapPhases(false);
+      setRoadmapPhaseGenerationTaskId(null);
+      setRoadmapPhaseGenerationProgress(0);
+      showError(error?.message || t('groupWorkspacePage.toast.roadmapGenerationFailed', 'Failed to generate roadmap.'));
+    } finally {
+      setIsSubmittingRoadmapPhaseRequest(false);
+    }
+  }, [
+    canCreateContent,
+    fetchSources,
+    handleUploadFiles,
+    handleOpenRoadmapConfigSetup,
+    hasGroupRoadmapConfig,
+    showError,
+    showInfo,
+    startGroupRoadmapPhaseGeneration,
+    t,
+  ]);
+
+  const handleCreateGroupRoadmapPreLearning = useCallback(async ({ totalQuestion } = {}) => {
+    if (!canCreateContent) {
+      showInfo(t('groupWorkspacePage.toast.memberCannotCreateRoadmapPhases', 'Member cannot create roadmap phases.'));
+      return false;
+    }
+
+    const roadmapId = Number(currentRoadmapId);
+    if (!Number.isInteger(roadmapId) || roadmapId <= 0) {
+      showError(t('groupWorkspacePage.toast.noRoadmapConfig', 'No roadmap config found for this group yet.'));
+      return false;
+    }
+
+    const requestedQuestionCount = Number(totalQuestion);
+    const normalizedQuestionCount = Number.isInteger(requestedQuestionCount) && requestedQuestionCount > 0
+      ? requestedQuestionCount
+      : 20;
+
+    try {
+      setIsGeneratingRoadmapPreLearning(true);
+      await generateRoadmapGroupPreLearning({
+        roadmapId,
+        totalQuestion: normalizedQuestionCount,
+      });
+      bumpRoadmapReloadToken();
+      showSuccess(t('workspace.roadmap.groupPreLearning.started', 'Đã gửi yêu cầu tạo pre-learning cho roadmap nhóm.'));
+      return true;
+    } catch (error) {
+      showError(error?.message || t('workspace.roadmap.groupPreLearning.failed', 'Không thể tạo pre-learning cho roadmap nhóm.'));
+      return false;
+    } finally {
+      setIsGeneratingRoadmapPreLearning(false);
+    }
+  }, [
     bumpRoadmapReloadToken,
+    canCreateContent,
+    currentRoadmapId,
+    showError,
+    showInfo,
+    showSuccess,
     t,
   ]);
 
@@ -2645,6 +2850,7 @@ function GroupWorkspacePage() {
     if (_options?.focusRoadmapCenter) {
       setSelectedRoadmapPhaseId(null);
       setSelectedRoadmapKnowledgeId(null);
+      setSelectedRoadmapQuizId(null);
       setRoadmapCenterFocusToken((current) => current + 1);
 
       if (workspaceId) {
@@ -2673,6 +2879,7 @@ function GroupWorkspacePage() {
         ? normalizedKnowledgeId
         : null,
     );
+    setSelectedRoadmapQuizId(null);
 
     if (workspaceId) {
       const hasResolvedRoadmapId = Number.isInteger(Number(resolvedSelectionRoadmapId)) && Number(resolvedSelectionRoadmapId) > 0;
@@ -2714,6 +2921,9 @@ function GroupWorkspacePage() {
     }
 
     const formToList = { createRoadmap: 'roadmap', createQuiz: 'quiz', createFlashcard: 'flashcard', quizDetail: 'quiz', editQuiz: 'quizDetail', flashcardDetail: 'flashcard', createMockTest: 'mockTest', mockTestDetail: 'mockTest', editMockTest: 'mockTestDetail' };
+    if (activeView === 'quizDetail' && Number.isInteger(Number(selectedRoadmapQuizId)) && Number(selectedRoadmapQuizId) > 0) {
+      formToList.quizDetail = 'roadmap';
+    }
     const nextView = formToList[activeView] || null;
     if ((activeView === 'editQuiz' || activeView === 'createQuiz') && searchParams.get('challengeDraft') === '1') {
       const next = new URLSearchParams(searchParams);
@@ -2723,6 +2933,7 @@ function GroupWorkspacePage() {
     if (nextView !== 'quizDetail' && nextView !== 'editQuiz') {
       setSelectedQuiz(null);
       setQuizDetailFromChallengeReview(false);
+      setSelectedRoadmapQuizId(null);
     }
     if (nextView !== 'flashcardDetail') setSelectedFlashcard(null);
     if (nextView !== 'mockTestDetail' && nextView !== 'editMockTest') setSelectedMockTest(null);
@@ -2733,6 +2944,7 @@ function GroupWorkspacePage() {
     location.state,
     navigate,
     resolvedWorkspaceId,
+    selectedRoadmapQuizId,
     workspaceId,
     searchParams,
     setSearchParams,
@@ -3111,9 +3323,11 @@ function GroupWorkspacePage() {
         onCreateQuiz={handleCreateQuiz}
         onCreateFlashcard={handleCreateFlashcard}
         onCreateRoadmap={handleCreateRoadmap}
+        onRefreshRoadmapPhases={handleOpenRoadmapPhaseGenerateDialog}
+        onCreateRoadmapPreLearning={handleCreateGroupRoadmapPreLearning}
         onRoadmapPhaseFocus={handleSelectRoadmapPhase}
         onRoadmapLoad={(roadmapId) => {
-          const normalizedRoadmapId = normalizePositiveId(roadmapId);
+          const normalizedRoadmapId = Number.isInteger(Number(roadmapId)) && Number(roadmapId) > 0 ? Number(roadmapId) : null;
           if (normalizedRoadmapId) {
             setRuntimeRoadmapId((prev) => (prev === normalizedRoadmapId ? prev : normalizedRoadmapId));
           }
@@ -3121,9 +3335,11 @@ function GroupWorkspacePage() {
         onCreateMockTest={handleCreateMockTest}
         onBack={handleBackFromForm}
         workspaceId={workspaceId}
+        hasRoadmap={Boolean(currentRoadmapId)}
         roadmapReloadToken={roadmapReloadToken}
         quizListRefreshToken={quizListRefreshToken}
         isGeneratingRoadmapPhases={isGeneratingRoadmapPhases}
+        isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning}
         roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress}
         selectedRoadmapPhaseId={selectedRoadmapPhaseId}
         selectedRoadmapKnowledgeId={selectedRoadmapKnowledgeId}
@@ -3500,6 +3716,20 @@ function GroupWorkspacePage() {
             workspaceId={resolvedWorkspaceId || (workspaceId && workspaceId !== 'new' ? workspaceId : null)}
             onSuggestedImported={() => refreshGroupMaterialViews({ silent: true })}
             planEntitlements={planEntitlements}
+          />
+        </React.Suspense>
+      ) : null}
+
+      {phaseGenerateDialogOpen ? (
+        <React.Suspense fallback={null}>
+          <LazyRoadmapPhaseGenerateDialog
+            open={phaseGenerateDialogOpen}
+            onOpenChange={setPhaseGenerateDialogOpen}
+            isDarkMode={isDarkMode}
+            materials={sources}
+            defaultSelectedMaterialIds={phaseGenerateDialogDefaultIds}
+            submitting={isSubmittingRoadmapPhaseRequest}
+            onSubmit={handleSubmitRoadmapPhaseDialog}
           />
         </React.Suspense>
       ) : null}
