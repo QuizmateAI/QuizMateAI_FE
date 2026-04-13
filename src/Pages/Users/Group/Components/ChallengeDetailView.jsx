@@ -26,7 +26,8 @@ import ChallengeScheduleFields from './ChallengeScheduleFields';
 import {
   getChallengeDetail, registerForChallenge, acceptChallengeInvitation,
   startChallengeAttempt, cancelChallenge, updateChallenge,
-  addQuizReviewContributor, removeQuizReviewContributor, publishChallenge,
+  removeQuizReviewContributor, publishChallenge,
+  batchInviteQuizReviewers, setPrimaryQuizReviewer,
 } from '../../../../api/ChallengeAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
 import { buildGroupWorkspaceSectionPath, buildQuizAttemptPath } from '@/lib/routePaths';
@@ -34,8 +35,8 @@ import { getUserDisplayLabel } from '@/Utils/userProfile';
 import UserDisplayName from '@/Components/users/UserDisplayName';
 import ChallengeLeaderboard from './ChallengeLeaderboard';
 
-/** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS) */
-const MAX_SNAPSHOT_REVIEW_INVITES = 2;
+/** Khớp giới hạn BE (QuizReviewContributorService.MAX_INVITED_REVIEWERS): 1 chính + 2 phụ */
+const MAX_SNAPSHOT_REVIEW_INVITES = 3;
 
 function formatDateTime(dt) {
   if (!dt) return '-';
@@ -60,6 +61,8 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const [editEndTime, setEditEndTime] = useState('');
   const [editScheduleIssues, setEditScheduleIssues] = useState([]);
   const [reviewerPick, setReviewerPick] = useState('');
+  /** Staged danh sách mời (chưa gửi) — mỗi phần tử: { userId, primaryReviewer, user } */
+  const [stagedReviewers, setStagedReviewers] = useState([]);
 
   const { data: detail, isLoading, error: detailError } = useQuery({
     queryKey: ['challenge-detail', workspaceId, eventId],
@@ -94,17 +97,25 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     return new Set(list.map((p) => Number(p.userId)).filter((id) => Number.isInteger(id) && id > 0));
   }, [detail?.participants]);
 
+  const stagedUserIds = useMemo(
+    () => new Set(stagedReviewers.map((s) => Number(s.userId)).filter((id) => Number.isInteger(id) && id > 0)),
+    [stagedReviewers],
+  );
+
   const addableReviewMembers = useMemo(() => {
     const selfId = Number(currentUserId);
+    const leaderParticipates = Boolean(detail?.leaderParticipates);
     return reviewMembersRaw.filter((m) => {
       const id = Number(m.userId ?? m.groupMemberId);
       if (!Number.isInteger(id) || id <= 0) return false;
-      if (Number.isInteger(selfId) && selfId > 0 && id === selfId) return false;
+      /* Leader CÓ tham gia challenge → loại leader khỏi danh sách reviewer. */
+      if (leaderParticipates && Number.isInteger(selfId) && selfId > 0 && id === selfId) return false;
       if (reviewerContributorIds.has(id)) return false;
       if (participantUserIds.has(id)) return false;
+      if (stagedUserIds.has(id)) return false;
       return true;
     });
-  }, [reviewMembersRaw, reviewerContributorIds, participantUserIds, currentUserId]);
+  }, [reviewMembersRaw, reviewerContributorIds, participantUserIds, stagedUserIds, currentUserId, detail?.leaderParticipates]);
 
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['challenge-detail', workspaceId, eventId] });
@@ -216,19 +227,69 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     );
   }, [navigate, workspaceId, detail?.snapshotQuizId, eventId]);
 
-  const handleAddReviewer = useCallback(() => {
-    const qid = detail?.snapshotQuizId;
+  const handleStageReviewer = useCallback(() => {
     const id = Number(reviewerPick);
-    if (!qid || !Number.isInteger(id) || id <= 0) return;
-    const hasPrimaryReviewer = (detail?.reviewContributors || []).some((c) => Boolean(c.primaryReviewer));
-    handleAction(async () => {
-      await addQuizReviewContributor(workspaceId, qid, {
+    if (!Number.isInteger(id) || id <= 0) return;
+    const existingContributors = detail?.reviewContributors || [];
+    const totalCount = existingContributors.length + stagedReviewers.length;
+    if (totalCount >= MAX_SNAPSHOT_REVIEW_INVITES) return;
+    const user = reviewMembersRaw.find(
+      (m) => Number(m.userId ?? m.groupMemberId) === id,
+    );
+    if (!user) return;
+    const hasExistingPrimary = existingContributors.some((c) => Boolean(c.primaryReviewer));
+    const hasStagedPrimary = stagedReviewers.some((s) => s.primaryReviewer);
+    setStagedReviewers((prev) => [
+      ...prev,
+      {
         userId: id,
-        primaryReviewer: !hasPrimaryReviewer,
-      });
-      setReviewerPick('');
-    }, 'addReviewer');
-  }, [handleAction, workspaceId, detail?.snapshotQuizId, detail?.reviewContributors, reviewerPick]);
+        user,
+        /* Nếu chưa có primary nào (cả existing lẫn staged), tự động đặt item đầu làm primary. */
+        primaryReviewer: !hasExistingPrimary && !hasStagedPrimary && prev.length === 0,
+      },
+    ]);
+    setReviewerPick('');
+  }, [reviewerPick, detail?.reviewContributors, stagedReviewers, reviewMembersRaw]);
+
+  const handleUnstageReviewer = useCallback((userId) => {
+    setStagedReviewers((prev) => {
+      const removed = prev.find((s) => s.userId === userId);
+      const rest = prev.filter((s) => s.userId !== userId);
+      /* Nếu người bị gỡ là primary staged → chuyển primary cho người staged đầu tiên nếu chưa có primary existing. */
+      if (removed?.primaryReviewer && rest.length > 0) {
+        const hasExistingPrimary = (detail?.reviewContributors || []).some((c) => Boolean(c.primaryReviewer));
+        if (!hasExistingPrimary) {
+          return rest.map((s, idx) => ({ ...s, primaryReviewer: idx === 0 }));
+        }
+      }
+      return rest;
+    });
+  }, [detail?.reviewContributors]);
+
+  const handleToggleStagedPrimary = useCallback((userId) => {
+    const hasExistingPrimary = (detail?.reviewContributors || []).some((c) => Boolean(c.primaryReviewer));
+    if (hasExistingPrimary) return; /* Không được có 2 primary. */
+    setStagedReviewers((prev) => prev.map((s) => ({
+      ...s,
+      primaryReviewer: s.userId === userId,
+    })));
+  }, [detail?.reviewContributors]);
+
+  const handleSendInvitations = useCallback(() => {
+    const qid = detail?.snapshotQuizId;
+    if (!qid || stagedReviewers.length === 0) return;
+    handleAction(async () => {
+      await batchInviteQuizReviewers(
+        workspaceId,
+        qid,
+        stagedReviewers.map((s) => ({
+          userId: s.userId,
+          primaryReviewer: Boolean(s.primaryReviewer),
+        })),
+      );
+      setStagedReviewers([]);
+    }, 'batchInvite');
+  }, [handleAction, workspaceId, detail?.snapshotQuizId, stagedReviewers]);
 
   const handleRemoveReviewer = useCallback((userId) => {
     const qid = detail?.snapshotQuizId;
@@ -236,6 +297,15 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     handleAction(
       () => removeQuizReviewContributor(workspaceId, qid, userId),
       `rev-${userId}`,
+    );
+  }, [handleAction, workspaceId, detail?.snapshotQuizId]);
+
+  const handleSwapPrimary = useCallback((userId) => {
+    const qid = detail?.snapshotQuizId;
+    if (!qid || !userId) return;
+    handleAction(
+      () => setPrimaryQuizReviewer(workspaceId, qid, userId),
+      `setPrim-${userId}`,
     );
   }, [handleAction, workspaceId, detail?.snapshotQuizId]);
 
@@ -285,11 +355,10 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
   const isChallengeCreator = Number(currentUserId) > 0 && Number(detail.creatorId) === Number(currentUserId);
   const isPublished = Boolean(detail.published);
   const reviewContributors = Array.isArray(detail.reviewContributors) ? detail.reviewContributors : [];
-  const hasAssignedReviewers = reviewContributors.length > 0;
   const hasPrimaryReviewer = reviewContributors.some((c) => Boolean(c.primaryReviewer));
-  const hasAssistantReviewer = reviewContributors.some((c) => !c.primaryReviewer);
-  const everyoneConfirmedReviewOk = hasAssignedReviewers
-    && reviewContributors.every((c) => Boolean(c.reviewCompleteOkAt));
+  /** Flow mới: gate publish chỉ cần primary reviewer xác nhận đề ổn. */
+  const primaryReviewerConfirmed = reviewContributors
+    .some((c) => Boolean(c.primaryReviewer) && Boolean(c.reviewCompleteOkAt));
 
   const canRegister = detail.status === 'SCHEDULED'
     && isPublished
@@ -314,12 +383,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
     ? detail.challengePublishReady
     : (detail.sourceMode !== 'NEW_CHALLENGE_QUIZ'
       ? snapshotStatusKeyRaw === 'ACTIVE'
-      : (Boolean(detail.leaderPublishBypass) || (
-        reviewContributors.length === MAX_SNAPSHOT_REVIEW_INVITES
-        && hasPrimaryReviewer
-        && hasAssistantReviewer
-        && everyoneConfirmedReviewOk
-      )));
+      : (Boolean(detail.leaderPublishBypass) || (hasPrimaryReviewer && primaryReviewerConfirmed)));
   /** Quiz đã ACTIVE trên server nhưng chưa đủ xác nhận reviewer → không hiển thị «Sẵn sàng» */
   const snapshotAwaitingReviewerConfirm =
     detail.status === 'SCHEDULED'
@@ -380,17 +444,13 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
       ? t('challengeDetailView.publishHints.needDraftQuizContent', 'The leader must compose the quiz content first.')
       : snapshotStatusKeyRaw !== 'ACTIVE'
         ? t('challengeDetailView.publishHints.needActiveQuiz', 'The challenge quiz must be moved from draft to active before publishing the challenge.')
-        : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && reviewContributors.length < MAX_SNAPSHOT_REVIEW_INVITES
-          ? t('challengeDetailView.publishHints.needBothReviewers', 'A primary and an assistant reviewer are required before publishing the challenge.')
-          : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !hasPrimaryReviewer
-            ? t('challengeDetailView.publishHints.needPrimaryReviewer', 'A primary reviewer for the challenge quiz is required before publishing.')
-            : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !hasAssistantReviewer
-              ? t('challengeDetailView.publishHints.needAssistantReviewer', 'An assistant reviewer for the challenge quiz is required before publishing.')
-              : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !everyoneConfirmedReviewOk && !detail.leaderPublishBypass
-                ? t('challengeDetailView.publishHints.needReviewersConfirm', 'The primary/assistant reviewer must confirm the quiz is OK before the leader can publish the challenge.')
-                : new Date(detail.startTime).getTime() <= Date.now()
-                  ? t('challengeDetailView.publishHints.startTimePassed', 'The challenge has reached its start time, so it can no longer be published.')
-                  : t('challengeDetailView.publishHints.afterPublishInfo', 'After publishing, members will see the challenge and be able to register.');
+        : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !hasPrimaryReviewer
+          ? t('challengeDetailView.publishHints.needPrimaryReviewer', 'A primary reviewer for the challenge quiz is required before publishing.')
+          : detail.sourceMode === 'NEW_CHALLENGE_QUIZ' && !primaryReviewerConfirmed && !detail.leaderPublishBypass
+            ? t('challengeDetailView.publishHints.needReviewersConfirm', 'The primary reviewer must confirm the quiz is OK before the leader can publish the challenge.')
+            : new Date(detail.startTime).getTime() <= Date.now()
+              ? t('challengeDetailView.publishHints.startTimePassed', 'The challenge has reached its start time, so it can no longer be published.')
+              : t('challengeDetailView.publishHints.afterPublishInfo', 'After publishing, members will see the challenge and be able to register.');
 
   const cardCls = `rounded-2xl border p-6 ${
     isDarkMode ? 'border-slate-700 bg-slate-800/60' : 'border-gray-200 bg-white'
@@ -691,7 +751,7 @@ export default function ChallengeDetailView({ workspaceId, eventId, isDarkMode, 
               </div>
               <button
                 type="button"
-                onClick={handleAddReviewer}
+                onClick={handleStageReviewer}
                 disabled={
                   !reviewerPick
                   || !!actionLoading

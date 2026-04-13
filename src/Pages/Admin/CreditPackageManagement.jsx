@@ -16,8 +16,10 @@ import { Label } from '@/Components/ui/label';
 import ListSpinner from '@/Components/ui/ListSpinner';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useAdminPermissions } from '@/hooks/useAdminPermissions';
+import { useFormValidator } from '@/hooks/useFormValidator';
 import { useToast } from '@/context/ToastContext';
-import { getErrorMessage } from '@/Utils/getErrorMessage';
+import { getErrorMessage, buildAdminErrorPayload } from '@/Utils/getErrorMessage';
+import { cn } from '@/lib/utils';
 import {
   getAllCreditPackages,
   createCreditPackage,
@@ -69,6 +71,22 @@ function CreditPackageManagement() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingPackage, setDeletingPackage] = useState(null);
 
+  const validator = useFormValidator({
+    name: {
+      required: true,
+      min: 1,
+      max: 200,
+      message: 'Tên gói phải 1–200 ký tự',
+    },
+    creditAmount: {
+      required: true,
+      kind: 'number',
+      min: 1,
+      max: 100_000_000,
+      message: 'Số Credit phải 1 – 100,000,000',
+    },
+  });
+
   const getFriendlyError = (err, fallbackKey) => {
     const mapped = getErrorMessage(t, err);
     if (mapped && mapped !== 'error.unknown') return mapped;
@@ -96,6 +114,7 @@ function CreditPackageManagement() {
   const openCreateForm = () => {
     setEditingPackage(null);
     setFormData({ ...EMPTY_FORM });
+    validator.reset();
     setIsFormOpen(true);
   };
 
@@ -108,13 +127,14 @@ function CreditPackageManagement() {
       price: String(pkg.price ?? '0'),
       bonusCredit: String(pkg.bonusCredit ?? pkg.bonusPercent ?? '0'),
     });
+    validator.reset();
     setIsFormOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
-      showError(t('creditPackageManagement.nameRequired', 'Please enter a package name.'));
+    if (!validator.validateAll(formData)) {
+      showError(t('common.formHasErrors', 'Vui lòng kiểm tra các trường bị đánh dấu đỏ.'));
       return;
     }
     setIsSubmitting(true);
@@ -140,7 +160,7 @@ function CreditPackageManagement() {
       setIsFormOpen(false);
       fetchPackages();
     } catch (err) {
-      showError(getFriendlyError(err, 'creditPackageManagement.submitError'));
+      showError(buildAdminErrorPayload(t, err, 'Không lưu được gói Credit'));
     } finally {
       setIsSubmitting(false);
     }
@@ -153,7 +173,7 @@ function CreditPackageManagement() {
       showSuccess(t('creditPackageManagement.updateStatusSuccess', 'Credit package status updated successfully.'));
       fetchPackages();
     } catch (err) {
-      showError(getFriendlyError(err, 'creditPackageManagement.submitError'));
+      showError(buildAdminErrorPayload(t, err, 'Không đổi được trạng thái gói'));
     }
   };
 
@@ -170,7 +190,7 @@ function CreditPackageManagement() {
       showSuccess(t('creditPackageManagement.deleteSuccess', 'Credit package deleted successfully.'));
       fetchPackages();
     } catch (err) {
-      showError(getFriendlyError(err, 'creditPackageManagement.deleteError'));
+      showError(buildAdminErrorPayload(t, err, 'Không xoá được gói Credit'));
     } finally {
       setIsDeleteOpen(false);
       setDeletingPackage(null);
@@ -185,8 +205,8 @@ function CreditPackageManagement() {
 
   const inputCls = `mt-1.5 h-10 rounded-lg transition-colors duration-200 ${
     dk
-      ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-500 focus:ring-blue-500/20'
-      : 'bg-white border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-blue-500/20'
+      ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-ocean-500 focus:ring-ocean-500/20'
+      : 'bg-white border-slate-200 text-slate-900 focus:border-ocean-500 focus:ring-ocean-500/20'
   }`;
 
   const sectionCls = `rounded-xl border p-4 ${
@@ -219,7 +239,7 @@ function CreditPackageManagement() {
         {canWrite && (
           <Button
             onClick={openCreateForm}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-11 px-5 rounded-xl shadow-lg shadow-blue-600/25 transition-all active:scale-[0.97] cursor-pointer"
+            className="bg-ocean-cta hover:brightness-110 text-white h-11 px-5 rounded-xl shadow-lg shadow-ocean-500/25 transition-all active:scale-[0.97] cursor-pointer"
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('creditPackageManagement.add', 'Add package')}
@@ -511,8 +531,8 @@ function CreditPackageManagement() {
 
           <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
             <div className={sectionCls}>
-              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-blue-400' : 'text-blue-600'}`}>
-                {t('creditPackageManagement.basicInfo', 'Basic information')}
+              <p className={`text-xs font-bold uppercase tracking-wider mb-4 ${dk ? 'text-ocean-300' : 'text-ocean-700'}`}>
+                {t('creditPackage.basicInfo', 'Thông tin cơ bản')}
               </p>
               <div className="space-y-4">
                         <div>
@@ -520,12 +540,23 @@ function CreditPackageManagement() {
                     {t('creditPackageManagement.form.name', 'Name')} *
                   </Label>
                   <Input
-                    required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder={t('creditPackageManagement.form.namePlaceholder', 'e.g. Starter, Pro, Enterprise...')}
-                    className={inputCls}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setFormData({ ...formData, name: v });
+                      validator.change('name', v, { ...formData, name: v });
+                    }}
+                    onBlur={() => validator.touch('name', formData.name, formData)}
+                    placeholder={t('creditPackage.form.namePlaceholder', 'VD: Starter, Pro, Enterprise...')}
+                    className={cn(
+                      inputCls,
+                      validator.hasError('name') && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30',
+                    )}
+                    aria-invalid={validator.hasError('name')}
                   />
+                  {validator.errorOf('name') ? (
+                    <p className="mt-1 text-xs text-rose-500">{validator.errorOf('name')}</p>
+                  ) : null}
                 </div>
                 <div>
                   <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
@@ -541,35 +572,47 @@ function CreditPackageManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {t('creditPackageManagement.form.creditAmount', 'Credit amount')}
+                      {t('creditPackage.form.creditAmount', 'Số Credit')}
                     </Label>
                     <Input
                       type="number"
-                      min="0"
+                      min="1"
+                      max="100000000"
                       value={formData.creditAmount}
                       onChange={(e) => {
                         const value = e.target.value;
                         const n = parseInt(value, 10) || 0;
                         const bonus = Math.floor(n * 0.1);
-                        setFormData({
+                        const next = {
                           ...formData,
                           creditAmount: value,
                           price: String(n * 200),
                           bonusCredit: String(bonus),
-                        });
+                        };
+                        setFormData(next);
+                        validator.change('creditAmount', value, next);
                       }}
                       onBlur={() => {
                         const n = parseInt(formData.creditAmount, 10) || 0;
                         const bonus = Math.floor(n * 0.1);
-                        setFormData((prev) => ({
-                          ...prev,
+                        const next = {
+                          ...formData,
                           creditAmount: String(n),
                           price: String(n * 200),
                           bonusCredit: String(bonus),
-                        }));
+                        };
+                        setFormData(next);
+                        validator.touch('creditAmount', next.creditAmount, next);
                       }}
-                      className={inputCls}
+                      className={cn(
+                        inputCls,
+                        validator.hasError('creditAmount') && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30',
+                      )}
+                      aria-invalid={validator.hasError('creditAmount')}
                     />
+                    {validator.errorOf('creditAmount') ? (
+                      <p className="mt-1 text-xs text-rose-500">{validator.errorOf('creditAmount')}</p>
+                    ) : null}
                   </div>
                   <div>
                     <Label className={`text-xs font-semibold ${dk ? 'text-slate-300' : 'text-slate-600'}`}>
@@ -616,7 +659,7 @@ function CreditPackageManagement() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-lg shadow-blue-600/25 cursor-pointer"
+                className="bg-ocean-cta hover:brightness-110 text-white rounded-lg shadow-lg shadow-ocean-500/25 cursor-pointer"
               >
                 {isSubmitting
                   ? t('creditPackageManagement.submitting', 'Saving...')

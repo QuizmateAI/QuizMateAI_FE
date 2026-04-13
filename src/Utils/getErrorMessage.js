@@ -1,6 +1,38 @@
 import ERROR_CODES from '@/Constants/errorCodes';
 
 /**
+ * Lookup map: numeric BE error code (HTTP trailer style) → category tiêu đề toast.
+ * Được dùng khi hiển thị toast có structured title để admin biết lỗi thuộc nhóm nào.
+ */
+const CATEGORY_BY_CODE_RANGE = [
+  { min: 1001, max: 1007, category: 'Xác thực' },
+  { min: 1010, max: 1014, category: 'Workspace' },
+  { min: 1015, max: 1023, category: 'Nhóm' },
+  { min: 1024, max: 1031, category: 'Quiz' },
+  { min: 1033, max: 1033, category: 'Mật khẩu' },
+  { min: 1034, max: 1046, category: 'Thanh toán / Gói' },
+  { min: 1047, max: 1047, category: 'Tài khoản' },
+  { min: 1048, max: 1057, category: 'Phân quyền' },
+  { min: 1060, max: 1060, category: 'Phân quyền' },
+  { min: 1065, max: 1066, category: 'Tài liệu' },
+  { min: 1067, max: 1082, category: 'Gói / Challenge (legacy)' },
+  { min: 1083, max: 1088, category: 'Quiz / Quiz Attempt' },
+  { min: 1097, max: 1109, category: 'System Config' },
+  { min: 1110, max: 1117, category: 'Plan nâng cao' },
+  { min: 1118, max: 1127, category: 'Credit Package / Quiz Attempt' },
+  { min: 1128, max: 1139, category: 'AI Model / Credit' },
+  { min: 1140, max: 1149, category: 'Feedback' },
+  { min: 1150, max: 1183, category: 'Challenge / Quiz Review' },
+  { min: 2001, max: 2099, category: 'Validation' },
+];
+
+function resolveCategory(code) {
+  if (!code) return 'Lỗi hệ thống';
+  const match = CATEGORY_BY_CODE_RANGE.find((r) => code >= r.min && code <= r.max);
+  return match ? match.category : 'Lỗi hệ thống';
+}
+
+/**
  * Resolve the i18n key for a BE error code.
  * Priority: mapped i18n key -> original server message -> default fallback.
  *
@@ -66,4 +98,32 @@ export function getErrorMessage(t, error) {
   }
 
   return fallbackMessage;
+}
+
+/**
+ * Build structured toast payload for admin-facing errors.
+ *
+ * Output:
+ *   {
+ *     title:       e.g. "Phân quyền",
+ *     description: e.g. "Vai trò đã tồn tại",
+ *     meta:        e.g. "Mã lỗi #1051" — giúp admin copy cho support,
+ *   }
+ *
+ * Sử dụng:
+ *   showError(buildAdminErrorPayload(t, err, 'Không lưu được gói'))
+ */
+export function buildAdminErrorPayload(t, error, fallbackTitle = 'Thao tác thất bại') {
+  const code = resolveBusinessErrorCode(error);
+  const description = getErrorMessage(t, error);
+  const category = resolveCategory(code);
+  const title = category || fallbackTitle;
+  const meta = code ? `Mã lỗi #${code}` : null;
+
+  return {
+    title,
+    description: description || 'Đã có lỗi xảy ra. Vui lòng thử lại.',
+    meta,
+    code: code || null,
+  };
 }

@@ -239,6 +239,18 @@ function RoadmapCanvasViewStage({
   const currentPayloadPhaseIndex = Number.isInteger(currentPayloadPhaseIndexRaw)
     ? (currentPayloadPhaseIndexRaw > 0 ? currentPayloadPhaseIndexRaw - 1 : currentPayloadPhaseIndexRaw)
     : -1;
+  const currentPayloadStatus = String(globalCurrentPhasePayload?.status || "").toUpperCase();
+  const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
+  const isCurrentPhaseByPayload = useCallback((phaseId) => {
+    const normalizedPhaseId = Number(phaseId);
+    return isStudyNewRoadmap
+      && isCurrentPayloadActiveStatus
+      && Number.isInteger(currentPayloadPhaseId)
+      && currentPayloadPhaseId > 0
+      && Number.isInteger(normalizedPhaseId)
+      && normalizedPhaseId > 0
+      && currentPayloadPhaseId === normalizedPhaseId;
+  }, [currentPayloadPhaseId, isCurrentPayloadActiveStatus, isStudyNewRoadmap]);
 
   const isPhaseCompleted = (phase, phaseIndex) => {
     if (!phase) return false;
@@ -268,10 +280,12 @@ function RoadmapCanvasViewStage({
 
   const selectedPhaseIndex = phases.findIndex((phase) => normalizePositiveId(phase?.phaseId) === normalizedSelectedPhaseId);
   const selectedPhaseHasExistingPreLearning = Array.isArray(selectedPhase?.preLearningQuizzes) && selectedPhase.preLearningQuizzes.length > 0;
+  const isSelectedPhaseCurrentByPayload = isCurrentPhaseByPayload(selectedPhase?.phaseId);
   const isSelectedPhaseLocked = selectedType === "phase"
     && Boolean(selectedPhase)
     && selectedPhaseIndex > maxUnlockedPhaseIndex
-    && !selectedPhaseHasExistingPreLearning;
+    && !selectedPhaseHasExistingPreLearning
+    && !isSelectedPhaseCurrentByPayload;
   const selectedPreviousPhaseCompleted = selectedPhaseIndex > 0
     ? isPhaseCompleted(phases[selectedPhaseIndex - 1], selectedPhaseIndex - 1)
     : true;
@@ -307,7 +321,9 @@ function RoadmapCanvasViewStage({
   const resolveKnowledgeLockState = (phase, phaseIndex, knowledgeIndex) => {
     const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
     const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
-    const isPhaseLockedForKnowledge = phaseIndex > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+    const isPhaseLockedForKnowledge = phaseIndex > maxUnlockedPhaseIndex
+      && !hasExistingPreLearning
+      && !isCurrentPhaseByPayload(phase?.phaseId);
     const currentKnowledgeIndexInPhase = Number.isInteger(currentKnowledgeId) && currentKnowledgeId > 0
       ? phaseKnowledges.findIndex((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === currentKnowledgeId)
       : -1;
@@ -1608,7 +1624,9 @@ function RoadmapCanvasViewStage({
                   {phases.map((phase, index) => {
                     const active = selectedType !== "roadmap" && normalizedSelectedPhaseId === normalizePositiveId(phase?.phaseId);
                     const hasExistingPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
-                    const isPhaseLocked = index > maxUnlockedPhaseIndex && !hasExistingPreLearning;
+                    const isPhaseLocked = index > maxUnlockedPhaseIndex
+                      && !hasExistingPreLearning
+                      && !isCurrentPhaseByPayload(phase?.phaseId);
                     const isCompletedPhase = isPhaseCompleted(phase, index);
                     return (
                       <button

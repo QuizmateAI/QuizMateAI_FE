@@ -300,14 +300,18 @@ function SurfaceCard({ title, description, action, className, darkMode = false, 
   );
 }
 
-function MetricCard({ label, value, helper, icon: Icon, accentClass, darkMode = false }) {
+function MetricCard({ label, value, helper, icon: Icon, accentClass, darkMode = false, highlight = false }) {
   return (
     <div
       className={cn(
-        'rounded-[24px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.16)]',
+        'relative overflow-hidden rounded-[24px] border p-5 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.16)]',
         darkMode ? 'border-slate-800 bg-slate-950/85' : 'border-slate-200/80 bg-white',
+        highlight && (darkMode ? 'ring-1 ring-ocean-600/40' : 'ring-1 ring-ocean-200'),
       )}
     >
+      {highlight ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-ocean-cta bg-[length:200%_100%] animate-glitter-sheen" />
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className={cn('text-sm font-medium', darkMode ? 'text-slate-400' : 'text-slate-600')}>{label}</p>
@@ -601,7 +605,8 @@ function SuperAdminDashboard() {
       value: isLoading ? '...' : formatCurrency(completedRevenue, locale),
       helper: t('dashboard.transactionsCount', { count: completedPayments.length.toLocaleString(locale) }),
       icon: Wallet,
-      accentClass: isDarkMode ? 'bg-emerald-500/14 text-emerald-300' : 'bg-emerald-50 text-emerald-700',
+      accentClass: isDarkMode ? 'bg-ocean-500/15 text-ocean-200' : 'bg-ocean-50 text-ocean-700',
+      highlight: true,
     },
     {
       label: t('dashboard.pendingRevenue'),
@@ -655,6 +660,7 @@ function SuperAdminDashboard() {
             icon={card.icon}
             accentClass={card.accentClass}
             darkMode={isDarkMode}
+            highlight={card.highlight}
           />
         ))}
       </div>

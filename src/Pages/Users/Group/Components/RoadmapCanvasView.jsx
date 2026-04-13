@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpen, BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, Compass, Eye, FileText, GitBranch, GripHorizontal, Layers3, Loader2, Map, Maximize2, Minimize2, Pencil, Share2, TimerReset, ZoomIn, ZoomOut } from "lucide-react";
+import { BookOpen, CheckCircle2, Eye, FileText, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
-import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
 import RoadmapCanvasView2 from "./RoadmapCanvasView2";
 import RoadmapCanvasViewStage from "./RoadmapCanvasViewStage";
+import RoadmapCanvasViewOverview from "./RoadmapCanvasViewOverview";
 
 const CANVAS_WIDTH = 1800;
 const CANVAS_HEIGHT = 1220;
@@ -184,6 +184,7 @@ function RoadmapCanvasView({
   workspaceId = null,
   onCreateRoadmap,
   onCreateRoadmapPhases,
+  onCreateRoadmapPreLearning,
   onRoadmapPhaseFocus,
   onCreatePhaseKnowledge,
   onCreateKnowledgeQuizForKnowledge,
@@ -192,6 +193,7 @@ function RoadmapCanvasView({
   adaptationMode = "",
   onViewQuiz,
   isGeneratingRoadmapPhases = false,
+  isGeneratingRoadmapPreLearning = false,
   roadmapPhaseGenerationProgress = 0,
   generatingKnowledgePhaseIds = [],
   generatingKnowledgeQuizPhaseIds = [],
@@ -204,6 +206,8 @@ function RoadmapCanvasView({
   forcedCanvasView = null,
   onCanvasViewChange,
   selectedPhaseId = null,
+  selectedKnowledgeId = null,
+  roadmapCenterFocusToken = 0,
   disableCreate = false,
   hideCreateButton = false,
   onEmptyStateAction,
@@ -264,36 +268,6 @@ function RoadmapCanvasView({
   const shouldDisableEmptyStateAction = disableCreate
     || (hasEmptyStateMaterialPicker && normalizedEmptyStateMaterialIds.length === 0);
 
-  const canShowRoadmapLevelFeedback = useMemo(() => {
-    const phases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
-    if (phases.length === 0) return false;
-
-    const isPhaseFinishedStatus = (phaseStatus) => {
-      const normalizedStatus = String(phaseStatus || "").toUpperCase();
-      return normalizedStatus === "COMPLETED" || normalizedStatus === "SKIPPED";
-    };
-
-    const hasCompletedPostLearning = (phase) => {
-      const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
-      return postLearningQuizzes.some((quiz) => {
-        const attempted = quiz?.myAttempted === true;
-        const passed = quiz?.myPassed === true;
-        const status = String(quiz?.status || "").toUpperCase();
-        return attempted || passed || status === "COMPLETED";
-      });
-    };
-
-    const allPhasesFinished = phases.every((phase) => isPhaseFinishedStatus(phase?.status));
-
-    const postLearningSatisfied = phases.every((phase) => {
-      const pl = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
-      if (pl.length === 0) return true;
-      return hasCompletedPostLearning(phase);
-    });
-
-    return allPhasesFinished && postLearningSatisfied;
-  }, [roadmap?.phases]);
-
   useEffect(() => {
     roadmapRef.current = roadmap;
   }, [roadmap]);
@@ -312,8 +286,9 @@ function RoadmapCanvasView({
     try {
       const response = await getRoadmapGraph({ workspaceId });
       const nextRoadmap = response?.data?.data ?? null;
-      const storedCanvasView = nextRoadmap?.roadmapId
-        ? localStorage.getItem(`roadmap_${nextRoadmap.roadmapId}_canvasView`)
+      const nextRoadmapId = Number(nextRoadmap?.roadmapId ?? nextRoadmap?.id);
+      const storedCanvasView = Number.isInteger(nextRoadmapId) && nextRoadmapId > 0
+        ? localStorage.getItem(`roadmap_${nextRoadmapId}_canvasView`)
         : null;
       const resolvedCanvasView = forcedCanvasView
         || nextRoadmap?.canvasView
@@ -326,8 +301,8 @@ function RoadmapCanvasView({
       if (mergedRoadmap?.canvasView) {
         onCanvasViewChange?.(mergedRoadmap.canvasView);
       }
-      if (mergedRoadmap?.roadmapId) {
-        onRoadmapLoad?.(mergedRoadmap.roadmapId);
+      if (Number.isInteger(nextRoadmapId) && nextRoadmapId > 0) {
+        onRoadmapLoad?.(nextRoadmapId);
       }
 
       if (!shouldKeepViewportState) {
@@ -354,11 +329,12 @@ function RoadmapCanvasView({
   useEffect(() => {
     if (!forcedCanvasView) return;
     setRoadmap((current) => (current ? { ...current, canvasView: forcedCanvasView } : current));
-    if (roadmap?.roadmapId) {
-      persistCanvasView(roadmap.roadmapId, forcedCanvasView);
+    const activeRoadmapId = Number(roadmap?.roadmapId ?? roadmap?.id);
+    if (Number.isInteger(activeRoadmapId) && activeRoadmapId > 0) {
+      persistCanvasView(activeRoadmapId, forcedCanvasView);
       onCanvasViewChange?.(forcedCanvasView);
     }
-  }, [forcedCanvasView, onCanvasViewChange, persistCanvasView, roadmap?.roadmapId]);
+  }, [forcedCanvasView, onCanvasViewChange, persistCanvasView, roadmap?.id, roadmap?.roadmapId]);
 
   const getFitScaleForBounds = (bounds, rect, padding = FIT_EDGE_PADDING) => {
     const scaleX = (rect.width - padding * 2) / bounds.width;
@@ -504,8 +480,9 @@ function RoadmapCanvasView({
   const handleSelectCanvasView = useCallback(async (canvasView) => {
     if (!canvasView) return;
 
-    if (roadmap?.roadmapId) {
-      persistCanvasView(roadmap.roadmapId, canvasView);
+    const activeRoadmapId = Number(roadmap?.roadmapId ?? roadmap?.id);
+    if (Number.isInteger(activeRoadmapId) && activeRoadmapId > 0) {
+      persistCanvasView(activeRoadmapId, canvasView);
       setRoadmap((current) => (current ? { ...current, canvasView } : current));
       onCanvasViewChange?.(canvasView);
       return;
@@ -520,7 +497,7 @@ function RoadmapCanvasView({
     } finally {
       setIsCreatingRoadmap(false);
     }
-  }, [loadRoadmap, onCanvasViewChange, onCreateRoadmap, persistCanvasView, roadmap?.roadmapId]);
+  }, [loadRoadmap, onCanvasViewChange, onCreateRoadmap, persistCanvasView, roadmap?.id, roadmap?.roadmapId]);
 
   useEffect(() => {
     transformRef.current = transform;
@@ -821,7 +798,7 @@ function RoadmapCanvasView({
               {emptyStateTitle || t("workspace.roadmap.emptyRoadmapTitle", "Welcome to roadmap")}
             </p>
             <p className={`mt-2 text-sm leading-6 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-              {emptyStateDescription || t("workspace.roadmap.emptyRoadmapDescription", "Generate your roadmap with AI to start learning from selected materials.")}
+              {emptyStateDescription || t("workspace.roadmap.emptyRoadmapDescription", "Generate phases with AI to start your learning roadmap from selected materials.")}
             </p>
             {!hideCreateButton && (
               <div className="mt-6 flex items-center justify-center">
@@ -831,7 +808,7 @@ function RoadmapCanvasView({
                   onClick={() => (onEmptyStateAction || onCreateRoadmapPhases)?.()}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
                 >
-                  {emptyStateActionLabel || t("workspace.roadmap.createRoadmapButton", "Create roadmap")}
+                  {emptyStateActionLabel || t("workspace.roadmap.createPhaseButton", "Create phases")}
                 </Button>
               </div>
             )}
@@ -841,10 +818,10 @@ function RoadmapCanvasView({
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-900"} ${fontClass}`}>
-                    {t("workspace.roadmap.materialPicker.title", "Materials for roadmap generation")}
+                    {t("workspace.roadmap.materialPicker.title", "Materials for phase generation")}
                   </p>
                   <p className={`mt-1 text-xs leading-6 ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
-                    {t("workspace.roadmap.materialPicker.description", "Choose the documents AI should use when generating this group roadmap.")}
+                    {t("workspace.roadmap.materialPicker.description", "Choose the documents AI should use when drafting roadmap phases for this group.")}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -916,8 +893,8 @@ function RoadmapCanvasView({
     );
   }
 
-  // Canvas mapping:
-  // view2 -> Stage (Chi tiet), overview -> Overview (Tong quan), view1 -> Kiem thu (RoadmapCanvasView2)
+  // Swapped mapping by request:
+  // view1 -> canvas view 2, view2 -> canvas view 1
   const effectiveCanvasView = roadmap?.canvasView === "overview"
     ? "overview"
     : roadmap?.canvasView === "view2"
@@ -961,7 +938,10 @@ function RoadmapCanvasView({
         roadmap={roadmap}
         isDarkMode={isDarkMode}
         fontClass={fontClass}
-        sidebarSelectedPhaseId={selectedPhaseId}
+        selectedPhaseId={selectedPhaseId}
+        selectedKnowledgeId={selectedKnowledgeId}
+        roadmapCenterFocusToken={roadmapCenterFocusToken}
+        onPhaseFocus={onRoadmapPhaseFocus}
         onViewQuiz={onViewQuiz}
         isStudyNewRoadmap={isStudyNewRoadmap}
         adaptationMode={adaptationMode}
@@ -977,427 +957,56 @@ function RoadmapCanvasView({
         onCreateKnowledgeQuizForKnowledge={onCreateKnowledgeQuizForKnowledge}
         onCreatePhasePreLearning={onCreatePhasePreLearning}
         onCreatePhaseKnowledge={onCreatePhaseKnowledge}
+        onCreateRoadmapPreLearning={onCreateRoadmapPreLearning}
+        isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning}
+        onEditRoadmapConfig={onEditRoadmapConfig}
       />
     );
   }
 
-  // Legacy view2 mindmap block kept as fallback.
-  const content = (
-    <div className={`${isExpandedMode
-      ? `fixed inset-3 sm:inset-5 z-[140] rounded-2xl border shadow-2xl flex flex-col transition-all duration-200 ease-out ${isExpandedClosing ? "animate-[roadmapPopOut_180ms_ease-in_forwards]" : "animate-[roadmapPopIn_180ms_ease-out]"} ${isDarkMode ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"}`
-      : `h-full flex flex-col ${isDarkMode ? "bg-slate-900" : "bg-white"}`}`}
-    >
-      <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-in-out ${isExpandedMode && isExpandedHeaderHidden ? "max-h-0 opacity-0 -translate-y-3 pointer-events-none" : "max-h-[220px] opacity-100 translate-y-0"}`}>
-      <div className={`px-5 py-4 border-b flex items-center justify-between gap-4 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
-        <div>
-          <p className={`text-lg font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-            {roadmap.title}
-          </p>
-          <p className={`text-sm mt-1 ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-            {roadmap.description}
-          </p>
-        </div>
+  if (effectiveCanvasView === "overview") {
+    return (
+      <RoadmapCanvasViewOverview
+        roadmap={roadmap}
+        isDarkMode={isDarkMode}
+        fontClass={fontClass}
+        i18n={i18n}
+        t={t}
+        labels={labels}
+        isExpanded={isExpanded}
+        isExpandedMode={isExpandedMode}
+        isExpandedClosing={isExpandedClosing}
+        isExpandedHeaderHidden={isExpandedHeaderHidden}
+        setIsExpandedHeaderHidden={setIsExpandedHeaderHidden}
+        openExpandedView={openExpandedView}
+        closeExpandedView={closeExpandedView}
+        setIsExpanded={setIsExpanded}
+        resetViewport={resetViewport}
+        adjustZoom={adjustZoom}
+        draggingMode={draggingMode}
+        viewportRef={viewportRef}
+        handlePointerDown={handlePointerDown}
+        handlePointerMove={handlePointerMove}
+        handlePointerUp={handlePointerUp}
+        transform={transform}
+        layout={layout}
+        canvasWidth={CANVAS_WIDTH}
+        canvasHeight={CANVAS_HEIGHT}
+        centerX={CENTER_X}
+        centerY={CENTER_Y}
+        expandedKnowledges={expandedKnowledges}
+        toggleKnowledge={toggleKnowledge}
+        handlePhaseDragStart={handlePhaseDragStart}
+        handleKnowledgeDragStart={handleKnowledgeDragStart}
+        onShareRoadmap={onShareRoadmap}
+        renderRoadmapConfigActionButtons={renderRoadmapConfigActionButtons}
+        onSelectCenterRoadmap={() => handleSelectCanvasView("view2")}
+      />
+    );
+  }
 
-        <div className="flex items-center gap-2">
-          {roadmap?.roadmapId && canShowRoadmapLevelFeedback ? (
-            <DirectFeedbackButton
-              targetType="ROADMAP"
-              targetId={roadmap.roadmapId}
-              label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
-              isDarkMode={isDarkMode}
-              className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
-              title={i18n.language === "en" ? "Roadmap feedback" : "Phản hồi lộ trình"}
-            />
-          ) : null}
-          {renderRoadmapConfigActionButtons()}
-          {onShareRoadmap && roadmap?.roadmapId ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onShareRoadmap(roadmap)}
-              className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              <span className={fontClass}>{t("home.actions.share", "Share")}</span>
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={resetViewport}
-            className={`rounded-full ${isDarkMode ? "border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"}`}
-          >
-            <Compass className="w-4 h-4 mr-2" />
-            <span className={fontClass}>{labels.resetView}</span>
-          </Button>
-        </div>
-      </div>
-
-      <div className={`px-5 py-3 border-b flex flex-wrap items-center gap-2 ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-gray-200 bg-[#F7FBFF]"}`}>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <Layers3 className="w-3.5 h-3.5 text-emerald-500" />
-          <span className={fontClass}>{roadmap.stats?.phaseCount ?? 0} {labels.phases}</span>
-        </div>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <GitBranch className="w-3.5 h-3.5 text-blue-500" />
-          <span className={fontClass}>{roadmap.stats?.knowledgeCount ?? 0} {labels.knowledges}</span>
-        </div>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <BookOpenCheck className="w-3.5 h-3.5 text-amber-500" />
-          <span className={fontClass}>{roadmap.stats?.quizCount ?? 0} {labels.quizzes}</span>
-        </div>
-        <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-white text-gray-700 border border-gray-200"}`}>
-          <TimerReset className="w-3.5 h-3.5 text-violet-500" />
-          <span className={fontClass}>{roadmap.estimatedDuration}</span>
-        </div>
-        <p className={`text-xs ml-auto ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-          {labels.dragHint}
-        </p>
-      </div>
-      </div>
-
-      <div
-        ref={viewportRef}
-        className={`relative flex-1 overflow-hidden touch-none ${draggingMode ? "cursor-grabbing" : "cursor-grab"} ${isDarkMode ? "bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" : "bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),transparent_30%),linear-gradient(180deg,#f8fbff_0%,#eef5ff_100%)]"}`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onDragStart={(event) => event.preventDefault()}
-      >
-        {isExpandedMode ? (
-          <div className="absolute top-3 left-3 z-20">
-            <button
-              type="button"
-              title={isExpandedHeaderHidden ? labels.showTopBar : labels.hideTopBar}
-              aria-label={isExpandedHeaderHidden ? labels.showTopBar : labels.hideTopBar}
-              onClick={() => setIsExpandedHeaderHidden((current) => !current)}
-              className={`inline-flex h-9 items-center gap-2 rounded-full border px-3 ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-100"}`}
-            >
-              {isExpandedHeaderHidden ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-              <span className={`text-xs font-medium ${fontClass}`}>
-                {isExpandedHeaderHidden ? labels.showTopBar : labels.hideTopBar}
-              </span>
-            </button>
-          </div>
-        ) : null}
-
-        <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
-          <button
-            type="button"
-            title={labels.zoomOut}
-            aria-label={labels.zoomOut}
-            onClick={() => adjustZoom("out")}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-100"}`}
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            title={labels.zoomIn}
-            aria-label={labels.zoomIn}
-            onClick={() => adjustZoom("in")}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-100"}`}
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            title={isExpandedMode ? labels.collapse : labels.expand}
-            aria-label={isExpandedMode ? labels.collapse : labels.expand}
-            onClick={() => {
-              if (isExpandedMode) {
-                closeExpandedView();
-                return;
-              }
-              openExpandedView();
-            }}
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-full border ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800" : "border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-100"}`}
-          >
-            {isExpandedMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-        </div>
-
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{
-            backgroundImage: isDarkMode
-              ? "linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)"
-              : "linear-gradient(rgba(148,163,184,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.15) 1px, transparent 1px)",
-            backgroundSize: "44px 44px",
-          }}
-        />
-
-        <div
-          className="absolute left-0 top-0 origin-top-left"
-          style={{
-            width: CANVAS_WIDTH,
-            height: CANVAS_HEIGHT,
-            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-          }}
-        >
-          <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none">
-            {layout.connections.map((connection) => {
-              const controlX = (connection.x1 + connection.x2) / 2;
-              return (
-                <path
-                  d={`M ${connection.x1} ${connection.y1} C ${controlX} ${connection.y1}, ${controlX} ${connection.y2}, ${connection.x2} ${connection.y2}`}
-                  fill="none"
-                  stroke={isDarkMode ? "rgba(96,165,250,0.5)" : "rgba(37,99,235,0.38)"}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={connection.key.startsWith("center") ? "0" : "10 8"}
-                />
-              );
-            })}
-          </svg>
-
-          <div
-            className={`absolute -translate-x-1/2 -translate-y-1/2 w-[330px] rounded-[32px] border px-7 py-6 shadow-[0_30px_80px_rgba(15,23,42,0.2)] select-none ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-100" : "border-white/80 bg-white/95 text-gray-900"}`}
-            style={{ left: CENTER_X, top: CENTER_Y }}
-          >
-            <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-emerald-950/60 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}>
-              <Map className="w-3.5 h-3.5" />
-              <span className={fontClass}>{labels.centralRoadmap}</span>
-            </div>
-            <h2 data-no-pan="true" className={`mt-4 text-2xl font-semibold tracking-tight select-text cursor-text ${fontClass}`}>{roadmap.title}</h2>
-            <p data-no-pan="true" className={`mt-3 text-sm leading-6 select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-              {roadmap.description}
-            </p>
-            {roadmap?.aiSuggest ? (
-              <div className={`mt-4 rounded-2xl border px-4 py-3 ${isDarkMode ? "border-amber-800/60 bg-amber-950/30" : "border-amber-200 bg-amber-50"}`}>
-                <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
-                  {t("workspace.roadmap.aiSuggestTitle", "AI suggestion")}
-                </p>
-                <p data-no-pan="true" className={`mt-1 text-xs leading-5 select-text cursor-text ${isDarkMode ? "text-slate-200" : "text-gray-700"} ${fontClass}`}>
-                  {roadmap.aiSuggest}
-                </p>
-              </div>
-            ) : null}
-            <div className={`mt-5 rounded-2xl px-4 py-3 ${isDarkMode ? "bg-slate-800 text-slate-300" : "bg-[#F7FBFF] text-gray-700 border border-blue-100"}`}>
-              <p data-no-pan="true" className={`text-xs uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-                {labels.estimatedDuration}
-              </p>
-              <p data-no-pan="true" className={`mt-1 text-sm font-medium select-text cursor-text ${fontClass}`}>{roadmap.estimatedDuration}</p>
-              <div className={`mt-2 flex flex-wrap items-center gap-2 text-xs ${fontClass}`}>
-                {Number(roadmap?.estimatedTotalDays) > 0 ? (
-                  <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-700 text-slate-200" : "bg-white border border-slate-200 text-gray-700"}`}>
-                    {t("workspace.roadmap.totalDays", "Total days")}: {Number(roadmap?.estimatedTotalDays)}
-                  </span>
-                ) : null}
-                {Number(roadmap?.estimatedMinutesPerDay) > 0 ? (
-                  <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-700 text-slate-200" : "bg-white border border-slate-200 text-gray-700"}`}>
-                    {t("workspace.roadmap.minutesPerDay", "Minutes/day")}: {Number(roadmap?.estimatedMinutesPerDay)}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          {layout.phaseLayouts.map((phase) => (
-            <React.Fragment key={phase.phaseId}>
-              <div
-                className={`absolute -translate-x-1/2 -translate-y-1/2 w-[290px] rounded-[28px] border px-5 py-5 shadow-lg select-none ${isDarkMode ? "border-slate-700 bg-slate-900/90 text-slate-100" : "border-white/80 bg-white/95 text-gray-900"}`}
-                style={{ left: phase.x, top: phase.y }}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p data-no-pan="true" className={`text-xs uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-                      {labels.phase} {phase.phaseIndex + 1}
-                    </p>
-                    <h3 data-no-pan="true" className={`mt-1 text-lg font-semibold select-text cursor-text ${fontClass}`}>{phase.title}</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <DirectFeedbackButton
-                      targetType="PHASE"
-                      targetId={phase.phaseId}
-                      label={i18n.language === "en" ? "Feedback" : "Phản hồi"}
-                      isDarkMode={isDarkMode}
-                      className={`rounded-full px-3 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700" : "border-slate-200 bg-slate-50 text-gray-700 hover:bg-slate-100"}`}
-                      title={i18n.language === "en" ? "Phase feedback" : "Phản hồi phase"}
-                    />
-                    <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] select-text cursor-text ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
-                      {phase.durationLabel}
-                    </span>
-                    <button
-                      type="button"
-                      title={labels.movePhase}
-                      aria-label={labels.movePhase}
-                      onPointerDown={(event) => handlePhaseDragStart(phase.phaseId, event)}
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-full cursor-grab active:cursor-grabbing ${isDarkMode ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                    >
-                      <GripHorizontal className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                <p data-no-pan="true" className={`mt-3 text-sm leading-6 select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-                  {phase.description}
-                </p>
-                {phase?.aiSuggest ? (
-                  <div className={`mt-3 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-slate-700 bg-slate-900/70" : "border-slate-200 bg-slate-50"}`}>
-                    <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
-                      {t("workspace.roadmap.phaseAiSuggestTitle", "AI suggestion")}
-                    </p>
-                    <p data-no-pan="true" className={`mt-1 text-xs leading-5 select-text cursor-text ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                      {phase.aiSuggest}
-                    </p>
-                  </div>
-                ) : null}
-                <div className={`mt-3 flex flex-wrap items-center gap-2 text-xs ${fontClass}`}>
-                  {Number(phase?.estimatedDays) > 0 ? (
-                    <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-gray-700"}`}>
-                      {t("workspace.roadmap.phaseEstimatedDays", "Days")}: {Number(phase?.estimatedDays)}
-                    </span>
-                  ) : null}
-                  {Number(phase?.estimatedMinutesPerDay) > 0 ? (
-                    <span data-no-pan="true" className={`inline-flex items-center rounded-full px-2 py-0.5 ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-gray-700"}`}>
-                      {t("workspace.roadmap.phaseMinutesPerDay", "Minutes/day")}: {Number(phase?.estimatedMinutesPerDay)}
-                    </span>
-                  ) : null}
-                </div>
-                <div className={`mt-4 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-blue-900/50 bg-blue-950/30" : "border-blue-100 bg-blue-50"}`}>
-                  <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
-                    {t("workspace.roadmap.canvas.preLearning", "Pre-learning")}
-                  </p>
-                  <p data-no-pan="true" className={`mt-1 text-sm font-medium select-text cursor-text ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-                    {phase.preLearning?.title || "-"}
-                  </p>
-                  <p data-no-pan="true" className={`mt-1 text-xs select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                    {phase.preLearning?.questionCount ?? 0} {labels.questions}
-                  </p>
-                </div>
-                <div className={`mt-3 rounded-2xl border px-3.5 py-3 ${isDarkMode ? "border-amber-900/50 bg-amber-950/30" : "border-amber-100 bg-amber-50"}`}>
-                  <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
-                    {labels.postLearning}
-                  </p>
-                  <p data-no-pan="true" className={`mt-1 text-sm font-medium select-text cursor-text ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-                    {phase.postLearning?.title || "-"}
-                  </p>
-                  <p data-no-pan="true" className={`mt-1 text-xs select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                    {phase.postLearning?.questionCount ?? 0} {labels.questions}
-                  </p>
-                </div>
-              </div>
-
-              {(phase.knowledges ?? []).map((knowledge) => {
-                const isExpanded = Boolean(expandedKnowledges[knowledge.knowledgeId]);
-                const knowledgeTargetDay = Number(knowledge?.targetDayIndex) || 0;
-                const knowledgePlannedMinutes = Number(knowledge?.plannedStudyMinutes) || 0;
-                const knowledgeTimeLabel = knowledgeTargetDay > 0 && knowledgePlannedMinutes > 0
-                  ? `${t("workspace.roadmap.day", "Day")} ${knowledgeTargetDay} • ${knowledgePlannedMinutes} ${t("workspace.roadmap.minutes", "min")}`
-                  : knowledgeTargetDay > 0
-                  ? `${t("workspace.roadmap.day", "Day")} ${knowledgeTargetDay}`
-                  : knowledgePlannedMinutes > 0
-                  ? `${knowledgePlannedMinutes} ${t("workspace.roadmap.minutes", "min")}`
-                  : "";
-                return (
-                  <div
-                    key={knowledge.knowledgeId}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 w-[290px]"
-                    style={{ left: knowledge.x, top: knowledge.y }}
-                  >
-                    <div className={`rounded-[24px] border px-4 py-4 shadow-lg select-none ${isDarkMode ? "border-slate-700 bg-slate-950/95 text-slate-100" : "border-white/80 bg-white/95 text-gray-900"}`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleKnowledge(knowledge.knowledgeId)}
-                          className="w-full text-left cursor-pointer"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl ${isDarkMode ? "bg-emerald-950/50 text-emerald-300" : "bg-emerald-50 text-emerald-700"}`}>
-                              <GitBranch className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-3">
-                                <h4 data-no-pan="true" className={`text-sm font-semibold select-text cursor-text ${fontClass}`}>{knowledge.title}</h4>
-                                {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                              </div>
-                              <p data-no-pan="true" className={`mt-1 text-xs leading-5 select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                                {knowledge.description}
-                              </p>
-                              {knowledgeTimeLabel ? (
-                                <span data-no-pan="true" className={`mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
-                                  {knowledgeTimeLabel}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        </button>
-                        <button
-                          type="button"
-                          title={labels.moveKnowledge}
-                          aria-label={labels.moveKnowledge}
-                          onPointerDown={(event) => handleKnowledgeDragStart(phase.phaseId, knowledge.knowledgeId, event)}
-                          className={`mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full cursor-grab active:cursor-grabbing ${isDarkMode ? "bg-slate-800 text-slate-300 hover:bg-slate-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-                        >
-                          <GripHorizontal className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {isExpanded ? (
-                        <div className={`mt-4 space-y-3 border-t pt-4 ${isDarkMode ? "border-slate-800" : "border-gray-100"}`}>
-                          <div>
-                            <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-blue-300" : "text-blue-700"} ${fontClass}`}>
-                              {labels.quiz}
-                            </p>
-                            <div className="mt-2 space-y-2">
-                              {(knowledge.quizzes ?? []).map((quiz) => (
-                                <div
-                                  key={quiz.id}
-                                  className={`rounded-2xl px-3 py-2 text-sm ${isDarkMode ? "bg-slate-900 border border-slate-800 text-slate-200" : "bg-[#F7FBFF] border border-blue-100 text-gray-700"}`}
-                                >
-                                  <p data-no-pan="true" className={`font-medium select-text cursor-text ${fontClass}`}>{quiz.title}</p>
-                                  <p data-no-pan="true" className={`mt-1 text-xs select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                                    {quiz.questionCount} {labels.questions}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div>
-                            <p data-no-pan="true" className={`text-[11px] uppercase tracking-[0.18em] select-text cursor-text ${isDarkMode ? "text-amber-300" : "text-amber-700"} ${fontClass}`}>
-                              {labels.flashcard}
-                            </p>
-                            <div className="mt-2 space-y-2">
-                              {(knowledge.flashcards ?? []).map((flashcard) => (
-                                <div
-                                  key={flashcard.id}
-                                  className={`rounded-2xl px-3 py-2 text-sm ${isDarkMode ? "bg-slate-900 border border-slate-800 text-slate-200" : "bg-[#FFF9ED] border border-amber-100 text-gray-700"}`}
-                                >
-                                  <p data-no-pan="true" className={`font-medium select-text cursor-text ${fontClass}`}>{flashcard.title}</p>
-                                  <p data-no-pan="true" className={`mt-1 text-xs select-text cursor-text ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
-                                    {flashcard.cardCount} {labels.cards}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <>
-      <style>{`@keyframes roadmapFadeIn { from { opacity: 0; } to { opacity: 1; } } @keyframes roadmapFadeOut { from { opacity: 1; } to { opacity: 0; } } @keyframes roadmapPopIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } } @keyframes roadmapPopOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.97); } }`}</style>
-      {isExpanded ? (
-        <div
-          className="fixed inset-0 z-[130] bg-slate-950/60 backdrop-blur-[2px] animate-[roadmapFadeIn_180ms_ease-out]"
-          onClick={() => setIsExpanded(false)}
-        />
-      ) : null}
-      {content}
-    </>
-  );
+  return null;
 }
 
 export default RoadmapCanvasView;
+

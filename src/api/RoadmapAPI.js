@@ -29,6 +29,7 @@ function mapQuizNode(quiz) {
     knowledgeId: quiz?.knowledgeId ?? null,
     title: quiz?.title || 'Quiz',
     questionCount: Number(quiz?.totalQuestion ?? quiz?.questionCount ?? quiz?.totalQuestions ?? 0) || 0,
+    totalQuestion: Number(quiz?.totalQuestion ?? quiz?.questionCount ?? quiz?.totalQuestions ?? 0) || 0,
     duration: Number(quiz?.duration) || 0,
     maxAttempt: quiz?.maxAttempt ?? null,
     passScore: quiz?.passScore ?? null,
@@ -160,6 +161,12 @@ function mergeRoadmapQuizzes(mappedRoadmap, roadmapQuizzes = []) {
   if (!mappedRoadmap) return mappedRoadmap;
 
   const normalizedQuizzes = toArray(roadmapQuizzes).map(mapQuizNode);
+  const rootPreLearningQuizzes = normalizedQuizzes.filter((quiz) => {
+    const intent = String(quiz?.quizIntent || '').toUpperCase();
+    const phaseId = Number(quiz?.phaseId);
+    return intent === 'PRE_LEARNING' && (!Number.isInteger(phaseId) || phaseId <= 0);
+  });
+
   const phaseQuizGroups = normalizedQuizzes.reduce((acc, quiz) => {
     const phaseId = Number(quiz?.phaseId);
     if (!Number.isInteger(phaseId) || phaseId <= 0) return acc;
@@ -221,14 +228,20 @@ function mergeRoadmapQuizzes(mappedRoadmap, roadmapQuizzes = []) {
     return accumulator;
   }, { phaseCount: 0, knowledgeCount: 0, quizCount: 0, flashcardCount: 0 });
 
+  stats.quizCount += rootPreLearningQuizzes.length;
+
   return {
     ...mappedRoadmap,
+    preLearningQuizzes: rootPreLearningQuizzes.length > 0
+      ? rootPreLearningQuizzes
+      : toArray(mappedRoadmap?.preLearningQuizzes),
     phases,
     stats,
   };
 }
 
 function mapRoadmapStructureToCanvas(structure) {
+  const roadmapPreLearningQuizzes = toArray(structure?.preLearningQuizzes).map(mapQuizNode);
   const phases = toArray(structure?.phases).map((phase, index) => {
     const preLearningQuizzes = toArray(phase?.preLearningQuizzes).map(mapQuizNode);
     const postLearningQuizzes = toArray(phase?.postLearningQuizzes).map(mapQuizNode);
@@ -274,6 +287,8 @@ function mapRoadmapStructureToCanvas(structure) {
     return accumulator;
   }, { phaseCount: 0, knowledgeCount: 0, quizCount: 0, flashcardCount: 0 });
 
+  stats.quizCount += roadmapPreLearningQuizzes.length;
+
   return {
     roadmapId: structure?.roadmapId,
     workspaceId: structure?.workspaceId,
@@ -288,6 +303,7 @@ function mapRoadmapStructureToCanvas(structure) {
     knowledgeLoad: structure?.knowledgeLoad || null,
     estimatedDuration: formatEstimatedDuration(structure?.estimatedTotalDays, structure?.estimatedMinutesPerDay),
     canvasView: getCanvasPreference(structure?.roadmapId),
+    preLearningQuizzes: roadmapPreLearningQuizzes,
     phases,
     stats,
   };
