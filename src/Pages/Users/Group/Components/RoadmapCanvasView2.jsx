@@ -189,6 +189,15 @@ function RoadmapCanvasView2({
     return [...rawPhases].sort((a, b) => Number(a?.phaseIndex ?? 0) - Number(b?.phaseIndex ?? 0));
   }, [roadmap?.phases]);
   const normalizedAdaptationMode = String(adaptationMode || "").toUpperCase();
+  const roadmapLevelPreLearningQuizzes = useMemo(
+    () => (Array.isArray(roadmap?.preLearningQuizzes) ? roadmap.preLearningQuizzes : []),
+    [roadmap?.preLearningQuizzes],
+  );
+  const hasRoadmapLevelPreLearningQuiz = roadmapLevelPreLearningQuizzes.length > 0;
+  const currentPhaseIdSignal = Number(globalCurrentPhasePayload?.phaseId);
+  const hasGlobalCurrentPhaseSignal = Number.isInteger(currentPhaseIdSignal) && currentPhaseIdSignal > 0;
+  const isRoadmapCurrentGateActive = hasRoadmapLevelPreLearningQuiz
+    && !hasGlobalCurrentPhaseSignal;
 
   const isPhaseFinishedStatus = useCallback((phaseStatus) => {
     const normalizedStatus = String(phaseStatus || "").toUpperCase();
@@ -197,6 +206,10 @@ function RoadmapCanvasView2({
 
   const maxUnlockedPhaseIndex = useMemo(() => {
     if (!Array.isArray(phases) || phases.length === 0) return 0;
+
+    if (isRoadmapCurrentGateActive) {
+      return -1;
+    }
 
     const globalPhaseId = Number(globalCurrentPhasePayload?.phaseId);
     const globalCurrentIndex = Number.isInteger(globalPhaseId)
@@ -238,6 +251,7 @@ function RoadmapCanvasView2({
     return Math.max(0, globalCurrentIndex, unlockedByStatusIndex, unlockedByOptimisticIndex);
   }, [
     globalCurrentPhasePayload?.phaseId,
+    isRoadmapCurrentGateActive,
     isPhaseFinishedStatus,
     isStudyNewRoadmap,
     optimisticUnlockedPhaseIds,
@@ -970,6 +984,7 @@ function RoadmapCanvasView2({
           const isUnlockable = isLockedPhase
             && phaseIndex === maxUnlockedPhaseIndex + 1
             && previousPhaseCompleted
+            && !isRoadmapCurrentGateActive
             && !isUnlockingPhase;
 
           const normalizedPhaseStatus = String(phase?.status || "").toUpperCase();
