@@ -1,13 +1,12 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer, BadgeCheck, MessageSquare } from "lucide-react";
+import { BookOpen, CheckCircle2, ClipboardCheck, Loader2, Timer, BadgeCheck } from "lucide-react";
 import { QUESTION_TYPE_ID_MAP } from "@/api/QuizAPI";
 import {
   getMyQuizReviewContributor,
   setQuizReviewCompleteOk,
 } from "@/api/ChallengeAPI";
-import { getThreadCounts } from "@/api/GroupDiscussionAPI";
 import MixedMathText from "@/Components/math/MixedMathText";
 import {
   Dialog,
@@ -18,7 +17,6 @@ import {
   DialogTitle,
 } from "@/Components/ui/dialog";
 import { Button } from "@/Components/ui/button";
-import QuestionDiscussionDialog from "@/Pages/Users/Group/Components/QuestionDiscussionDialog";
 
 const BLOOM_KEYS = ["remember", "understand", "apply", "analyze", "evaluate"];
 
@@ -44,8 +42,6 @@ function GroupQuizReviewPanel({
   const [reviewCompleteOkAt, setReviewCompleteOkAt] = useState(null);
   const [ackLoading, setAckLoading] = useState(false);
   const [confirmReviewOpen, setConfirmReviewOpen] = useState(false);
-  const [discussionQuestionId, setDiscussionQuestionId] = useState(null);
-  const [questionCommentCounts, setQuestionCommentCounts] = useState({});
 
   const canInteract = isLeader || isReviewer;
 
@@ -98,32 +94,6 @@ function GroupQuizReviewPanel({
     });
     return out;
   }, [sections, questionsMap]);
-
-  useEffect(() => {
-    if (!workspaceId || !quizId || flatItems.length === 0) return;
-    const questionIds = flatItems.map((item) => item.question.questionId);
-    getThreadCounts(workspaceId, quizId, questionIds)
-      .then(({ questions }) => setQuestionCommentCounts(questions))
-      .catch(() => {});
-  }, [workspaceId, quizId, flatItems]);
-
-  const handleQuestionMessageCountChange = useCallback((questionId, nextCount) => {
-    const questionKey = String(questionId);
-    setQuestionCommentCounts((prev) => {
-      if ((prev?.[questionKey] ?? 0) === nextCount) {
-        return prev;
-      }
-      return {
-        ...prev,
-        [questionKey]: nextCount,
-      };
-    });
-  }, []);
-
-  const discussionItem = useMemo(
-    () => flatItems.find((item) => Number(item.question?.questionId) === Number(discussionQuestionId)) || null,
-    [flatItems, discussionQuestionId],
-  );
 
   const renderAnswers = (question, answers) => {
     const typeName = QUESTION_TYPE_ID_MAP[question.questionTypeId] || "multipleChoice";
@@ -396,34 +366,18 @@ function GroupQuizReviewPanel({
                   ) : null}
 
                   <div
-                    className={`flex flex-wrap items-center justify-between gap-3 rounded-[20px] border px-3 py-2.5 ${
+                    className={`flex flex-wrap items-center gap-2 rounded-[20px] border px-3 py-2.5 text-xs ${
                       isDarkMode ? "border-slate-800 bg-slate-950/70" : "border-slate-200 bg-slate-50/80"
                     }`}
                   >
-                    <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
-                      <span className={`rounded-full px-2.5 py-1 font-medium ${isDarkMode ? "bg-slate-900 text-slate-300" : "bg-white text-slate-600"}`}>
-                        {questionCommentCounts[String(question.questionId)] ?? 0} bình luận
-                      </span>
+                    <span className={`rounded-full px-2.5 py-1 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-slate-500"}`}>
+                      {answers.length} đáp án
+                    </span>
+                    {question.explanation ? (
                       <span className={`rounded-full px-2.5 py-1 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-slate-500"}`}>
-                        {answers.length} đáp án
+                        Có lời giải
                       </span>
-                      {question.explanation ? (
-                        <span className={`rounded-full px-2.5 py-1 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-slate-500"}`}>
-                          Có lời giải
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setDiscussionQuestionId(question.questionId)}
-                      className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
-                        isDarkMode ? "bg-blue-500/15 text-blue-300 hover:bg-blue-500/25" : "bg-blue-600 text-white hover:bg-blue-700"
-                      }`}
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      <span>Mở chat câu hỏi</span>
-                    </button>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -431,27 +385,6 @@ function GroupQuizReviewPanel({
           </article>
         );
       })}
-
-      {discussionItem ? (
-        <QuestionDiscussionDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setDiscussionQuestionId(null);
-          }}
-          isDarkMode={isDarkMode}
-          workspaceId={workspaceId}
-          quizId={quizId}
-          question={discussionItem.question}
-          questionIndex={flatItems.findIndex((item) => Number(item.question?.questionId) === Number(discussionItem.question?.questionId)) + 1}
-          answers={answersMap[discussionItem.question.questionId] || []}
-          isLeader={isLeader}
-          hasAttempted={!isLeader && canInteract}
-          canViewAnswers
-          commentCount={questionCommentCounts[String(discussionItem.question.questionId)] ?? 0}
-          onMessageCountChange={(nextCount) => handleQuestionMessageCountChange(discussionItem.question.questionId, nextCount)}
-          sectionLabel={`${t("workspace.quiz.detail.section", "Section")} ${discussionItem.sIdx + 1}${discussionItem.section?.content ? ` · ${discussionItem.section.content}` : ""}`}
-        />
-      ) : null}
 
       {isReviewer && !loading && flatItems.length > 0 && (
         <div

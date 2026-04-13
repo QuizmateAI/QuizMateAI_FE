@@ -89,6 +89,13 @@ export function buildGroupWorkspaceSectionPath(
   section = null,
   queryParams = {},
 ) {
+  if (section === "roadmap") {
+    return withQueryParams(
+      buildGroupWorkspacePath(workspaceId, WORKSPACE_ROUTE_SEGMENTS.roadmaps),
+      queryParams,
+    );
+  }
+
   return withQueryParams(
     buildGroupWorkspacePath(workspaceId),
     section ? { section, ...queryParams } : queryParams,
@@ -119,6 +126,107 @@ export function extractGroupWorkspaceSubPath(pathname, workspaceId) {
   if (!String(pathname).startsWith(prefix)) return "";
 
   return String(pathname).slice(prefix.length).replace(/^\/+/, "");
+}
+
+export function resolveGroupWorkspaceSectionFromSubPath(subPath = "") {
+  const normalizedSubPath = normalizeSubPath(subPath);
+  if (!normalizedSubPath) return null;
+
+  if (
+    normalizedSubPath === WORKSPACE_ROUTE_SEGMENTS.roadmaps
+    || normalizedSubPath.startsWith(`${WORKSPACE_ROUTE_SEGMENTS.roadmaps}/`)
+  ) {
+    return "roadmap";
+  }
+
+  return null;
+}
+
+export function buildGroupWorkspaceRoadmapPath(
+  workspaceId,
+  {
+    roadmapId = null,
+    phaseId = null,
+    knowledgeId = null,
+    quizId = null,
+  } = {},
+) {
+  const basePath = buildGroupWorkspacePath(workspaceId, WORKSPACE_ROUTE_SEGMENTS.roadmaps);
+  const normalizedRoadmapId = Number(roadmapId);
+  const normalizedPhaseId = Number(phaseId);
+  const normalizedKnowledgeId = Number(knowledgeId);
+  const normalizedQuizId = Number(quizId);
+
+  if (!Number.isInteger(normalizedRoadmapId) || normalizedRoadmapId <= 0) {
+    return basePath;
+  }
+
+  let mappedPath = `${basePath}/${normalizedRoadmapId}`;
+
+  if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+    mappedPath += `/${WORKSPACE_ROUTE_SEGMENTS.phases}/${normalizedPhaseId}`;
+    if (Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0) {
+      mappedPath += `/${WORKSPACE_ROUTE_SEGMENTS.knowledges}/${normalizedKnowledgeId}`;
+    }
+  }
+
+  if (Number.isInteger(normalizedQuizId) && normalizedQuizId > 0) {
+    mappedPath += `/${WORKSPACE_ROUTE_SEGMENTS.quizzes}/${normalizedQuizId}`;
+  }
+
+  return mappedPath;
+}
+
+export function resolveGroupRoadmapPathParams(subPath = "") {
+  const normalizedSubPath = normalizeSubPath(subPath);
+  if (!normalizedSubPath) return { roadmapId: null, phaseId: null, knowledgeId: null, quizId: null };
+
+  const parts = normalizedSubPath.split("/").filter(Boolean);
+  if (parts[0] !== WORKSPACE_ROUTE_SEGMENTS.roadmaps) {
+    return { roadmapId: null, phaseId: null, knowledgeId: null, quizId: null };
+  }
+
+  const readPositiveId = (value) => {
+    const normalizedValue = Number(value);
+    return Number.isInteger(normalizedValue) && normalizedValue > 0 ? normalizedValue : null;
+  };
+
+  const roadmapId = readPositiveId(parts[1]);
+  if (!roadmapId) {
+    return { roadmapId: null, phaseId: null, knowledgeId: null, quizId: null };
+  }
+
+  let phaseId = null;
+  let knowledgeId = null;
+  let quizId = null;
+  let cursor = 2;
+
+  while (cursor < parts.length) {
+    const segment = parts[cursor];
+    if (segment === WORKSPACE_ROUTE_SEGMENTS.phases) {
+      phaseId = readPositiveId(parts[cursor + 1]);
+      cursor += 2;
+      continue;
+    }
+    if (segment === WORKSPACE_ROUTE_SEGMENTS.knowledges) {
+      knowledgeId = readPositiveId(parts[cursor + 1]);
+      cursor += 2;
+      continue;
+    }
+    if (segment === WORKSPACE_ROUTE_SEGMENTS.quizzes) {
+      quizId = readPositiveId(parts[cursor + 1]);
+      cursor += 2;
+      continue;
+    }
+    cursor += 1;
+  }
+
+  return {
+    roadmapId,
+    phaseId,
+    knowledgeId,
+    quizId,
+  };
 }
 
 export function buildWorkspaceRoadmapsPath(workspaceId, phaseId = null) {

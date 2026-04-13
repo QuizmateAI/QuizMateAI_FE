@@ -96,7 +96,7 @@ describe('QuizDetailView workspace detail', () => {
     toggleStarQuestion.mockResolvedValue({ data: {} });
   });
 
-  it('shows questions directly and hides overview tabs for non-group quiz detail', async () => {
+  it('shows overview first and keeps tabs visible for non-group quiz detail', async () => {
     renderQuizDetailView({
       isDarkMode: false,
       quiz: {
@@ -109,10 +109,11 @@ describe('QuizDetailView workspace detail', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Workspace detail goes straight to questions')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Tổng quan$/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Câu hỏi$/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Lịch sử làm bài$/i })).toBeInTheDocument();
     });
 
-    expect(screen.queryByRole('button', { name: /^(Tổng quan|Overview)$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^(Lịch sử làm bài|History)$/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Workspace detail goes straight to questions')).not.toBeInTheDocument();
   });
 });

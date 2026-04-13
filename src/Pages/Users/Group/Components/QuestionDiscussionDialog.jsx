@@ -744,7 +744,7 @@ export default function QuestionDiscussionDialog({
                     onChange={(event) => setDiscussionDraft(event.target.value)}
                     onKeyDown={handleDiscussionKeyDown}
                     onInput={handleDiscussionInput}
-                    placeholder={t("questionDiscussion.shared.composerPlaceholder", "Comment as {{name}}", { name: composerDisplayName })}
+                    placeholder={t("questionDiscussion.shared.composerPlaceholder", "Bình luận dưới tên {{name}}", { name: composerDisplayName })}
                     rows={1}
                     className={cn(
                       "min-h-[22px] max-h-24 flex-1 resize-none bg-transparent py-1 text-sm leading-5 outline-none",

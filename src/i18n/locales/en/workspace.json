@@ -1259,6 +1259,8 @@
         "skipPhaseEligibleHint": "You are eligible to skip this phase. Do you want to skip or continue practicing?",
         "skipPhaseAction": "Skip this phase",
         "continuePracticeAction": "Continue practicing",
+        "remedialDecisionTitle": "Choose your roadmap adjustment",
+        "remedialDecisionDescription": "Your current results suggest adjusting the roadmap. Please choose one option.",
         "remedialDecisionHint": "Your post-learning result needs improvement. Choose how to add a remedial phase to your roadmap.",
         "remedialCompressAction": "Create remedial phase and keep current deadline",
         "remedialExtendAction": "Create remedial phase and extend deadline",
