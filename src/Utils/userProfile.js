@@ -37,12 +37,24 @@ export function normalizeUserProfile(rawProfile = {}, fallbackProfile = {}) {
     || fallbackProfile.picture
   );
 
+  const preferredLanguage = normalizeText(
+    rawProfile.preferredLanguage
+    || fallbackProfile.preferredLanguage
+  ).toLowerCase() || null;
+
+  const themeMode = normalizeText(
+    rawProfile.themeMode
+    || fallbackProfile.themeMode
+  ).toLowerCase() || null;
+
   return {
     email,
     username,
     fullName: fullName || username || email,
     avatarUrl,
     birthday: rawProfile.birthday || fallbackProfile.birthday || null,
+    preferredLanguage,
+    themeMode,
   };
 }
 

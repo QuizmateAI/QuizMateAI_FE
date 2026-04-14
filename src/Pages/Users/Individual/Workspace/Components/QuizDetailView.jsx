@@ -433,7 +433,7 @@ function QuizDetailView({
   }, [activeTab, fetchHistoryData, history.length]);
 
   useEffect(() => {
-    if (!quiz?.quizId || _contextType !== "GROUP" || isGroupLeader) {
+    if (!quiz?.quizId || isGroupLeader) {
       setPersonalHistory(null);
       return;
     }
@@ -1176,27 +1176,30 @@ function QuizDetailView({
               </div>
             ) : (
               sections.map((section, sIdx) => {
-            const isExpanded = expandedSections[section.sectionId];
+            const isSingleSection = sections.length === 1;
+            const isExpanded = isSingleSection || expandedSections[section.sectionId];
             const questions = questionsMap[section.sectionId] || [];
 
             return (
               <div key={section.sectionId} className={`rounded-xl border overflow-hidden ${isDarkMode ? "border-slate-800" : "border-slate-200"}`}>
-                {/* Section header */}
-                <button
-                  onClick={() => toggleSection(section.sectionId)}
-                  className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${isDarkMode ? "bg-slate-800/30 hover:bg-slate-800/60" : "bg-slate-100/50 hover:bg-slate-100"}`}
-                >
-                  <div className="flex items-center gap-2">
-                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    <BookOpen className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-500"}`} />
-                    <span className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
-                      {t("workspace.quiz.detail.section", "Section")} {sIdx + 1}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-200 text-gray-500"}`}>
-                      {questions.length} {t("workspace.quiz.detail.questions")}
-                    </span>
-                  </div>
-                </button>
+                {/* Section header — ẩn khi chỉ có 1 section */}
+                {!isSingleSection && (
+                  <button
+                    onClick={() => toggleSection(section.sectionId)}
+                    className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${isDarkMode ? "bg-slate-800/30 hover:bg-slate-800/60" : "bg-slate-100/50 hover:bg-slate-100"}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      <BookOpen className={`w-4 h-4 ${isDarkMode ? "text-blue-400" : "text-blue-500"}`} />
+                      <span className={`text-sm font-medium ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}>
+                        {t("workspace.quiz.detail.section", "Section")} {sIdx + 1}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? "bg-slate-700 text-slate-400" : "bg-gray-200 text-gray-500"}`}>
+                        {questions.length} {t("workspace.quiz.detail.questions")}
+                      </span>
+                    </div>
+                  </button>
+                )}
 
                 {/* Danh sách câu hỏi của section */}
                 {isExpanded && (

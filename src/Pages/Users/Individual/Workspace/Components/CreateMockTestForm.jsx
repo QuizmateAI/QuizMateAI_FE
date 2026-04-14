@@ -1,32 +1,130 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/Components/ui/button";
-import { Plus, Trash2, Loader2, ClipboardList, ArrowLeft, RefreshCw, Rocket, AlertTriangle } from "lucide-react";
+import { Loader2, ClipboardList, ArrowLeft, RefreshCw, Rocket, Sparkles, ChevronLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { createFullQuiz, getQuizzesByScope } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace } from "@/api/RoadmapAPI";
+import { generateMockTest, getQuestionTypes, getBloomSkills } from "@/api/AIAPI";
 import { Checkbox } from "@/Components/ui/checkbox";
 import useWorkspaceMaterialSelection from "./useWorkspaceMaterialSelection";
+import { useMockTestStructureSuggestion } from "@/Pages/Users/MockTest/hooks/useMockTestStructureSuggestion";
+import { MockTestStructureEditor, validateMockTestStructure } from "@/Pages/Users/MockTest/components/MockTestStructureEditor";
 
-// Danh sách dạng câu hỏi và độ khó
-const QUESTION_TYPES = ["multipleChoice", "multipleSelect", "trueFalse", "fillBlank", "shortAnswer"];
 const DIFFICULTY_LEVELS = ["easy", "medium", "hard"];
-const BLOOM_LEVELS = [
-  { id: 1, key: "remember" },
-  { id: 2, key: "understand" },
-  { id: 3, key: "apply" },
-  { id: 4, key: "analyze" },
-  { id: 5, key: "evaluate" },
-];
+
+// Map difficulty client → server (server enum: EASY/MEDIUM/HARD)
+function uppercaseDifficulty(value) {
+  if (!value) return "MEDIUM";
+  return String(value).toUpperCase();
+}
+
+// BE rule (validateMockTestConfig):
+// - Mỗi section QUESTION_GROUP chỉ được 1 questionType.
+// - questionUnit=false: difficulty ratio là PHẦN TRĂM — sum = 100.
+// - bloomUnit=true: bloom ratio là SỐ CÂU — sum = numQuestions.
+// Aggregation: editor structure[{difficulty, questionType, bloomSkill, quantity}] → SectionConfigDTO.
+// - Difficulty %s tính từ tổng quantity theo bucket, làm tròn rồi bù vào bucket lớn nhất cho đủ 100.
+// - questionType: chọn type chiếm nhiều câu nhất (BE chỉ cho 1 type / section).
+// - Bloom: group quantity theo skill.
+
+function aggregateStructure(structure, qtMap, bloomMap) {
+  const items = Array.isArray(structure) ? structure : [];
+  const numQuestions = items.reduce((s, it) => s + (Number(it?.quantity) || 0), 0);
+
+  const diffCounts = { EASY: 0, MEDIUM: 0, HARD: 0 };
+  const qtCounts = {};
+  const bloomCounts = {};
+  items.forEach((it) => {
+    const q = Number(it?.quantity) || 0;
+    if (q <= 0) return;
+    if (it?.difficulty && diffCounts[it.difficulty] != null) diffCounts[it.difficulty] += q;
+    if (it?.questionType) qtCounts[it.questionType] = (qtCounts[it.questionType] || 0) + q;
+    if (it?.bloomSkill) bloomCounts[it.bloomSkill] = (bloomCounts[it.bloomSkill] || 0) + q;
+  });
+
+  // Difficulty → % sum=100
+  let easyRatio = 0, mediumRatio = 0, hardRatio = 0;
+  if (numQuestions > 0) {
+    easyRatio = Math.round((diffCounts.EASY / numQuestions) * 100);
+    mediumRatio = Math.round((diffCounts.MEDIUM / numQuestions) * 100);
+    hardRatio = Math.round((diffCounts.HARD / numQuestions) * 100);
+    const sum = easyRatio + mediumRatio + hardRatio;
+    if (sum !== 100) {
+      const delta = 100 - sum;
+      if (diffCounts.MEDIUM >= diffCounts.EASY && diffCounts.MEDIUM >= diffCounts.HARD) mediumRatio += delta;
+      else if (diffCounts.EASY >= diffCounts.HARD) easyRatio += delta;
+      else hardRatio += delta;
+    }
+  }
+
+  // questionType: dominant
+  const dominantQt = Object.entries(qtCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const qtId = dominantQt ? qtMap?.[dominantQt] : null;
+  const questionTypes = Number.isFinite(qtId) && numQuestions > 0
+    ? [{ questionTypeId: qtId, ratio: numQuestions }]
+    : [];
+
+  // Bloom: per-skill count
+  const bloomSkills = Object.entries(bloomCounts)
+    .map(([skill, count]) => {
+      const id = bloomMap?.[skill];
+      if (!Number.isFinite(id) || count <= 0) return null;
+      return { bloomId: id, ratio: count };
+    })
+    .filter(Boolean);
+
+  return { numQuestions, easyRatio, mediumRatio, hardRatio, questionTypes, bloomSkills };
+}
+
+function sectionsToServerDTOs(sections, qtMap, bloomMap) {
+  if (!Array.isArray(sections)) return [];
+  return sections.map((sec) => {
+    const hasSubs = sec.subConfigs && sec.subConfigs.length > 0;
+    if (hasSubs) {
+      return {
+        name: sec.name,
+        description: sec.description,
+        numQuestions: null,
+        easyRatio: 0,
+        mediumRatio: 0,
+        hardRatio: 0,
+        questionUnit: false,
+        bloomUnit: true,
+        timerMode: true,
+        questionTypes: [],
+        bloomSkills: [],
+        subConfigs: sectionsToServerDTOs(sec.subConfigs, qtMap, bloomMap),
+      };
+    }
+    const agg = aggregateStructure(sec.structure, qtMap, bloomMap);
+    return {
+      name: sec.name,
+      description: sec.description,
+      numQuestions: agg.numQuestions,
+      easyRatio: agg.easyRatio,
+      mediumRatio: agg.mediumRatio,
+      hardRatio: agg.hardRatio,
+      questionUnit: false,
+      bloomUnit: true,
+      timerMode: true,
+      questionTypes: agg.questionTypes,
+      bloomSkills: agg.bloomSkills,
+      subConfigs: [],
+    };
+  });
+}
 
 /**
- * Form tạo Mock Test — tạo quiz với contextType=ROADMAP
- * Mỗi roadmap chỉ được có tối đa 1 mock test
+ * Form tạo Mock Test bằng AI — flow 3-step:
+ * 1. BASIC: nhập exam name, độ khó, số câu, thời lượng, prompt bổ sung, chọn material (optional).
+ * 2. STRUCTURE: AI gợi ý sections, user edit qua MockTestStructureEditor.
+ * 3. GENERATING: BE async sinh câu hỏi, FE chờ MOCKTEST_COMPLETED qua WebSocket.
+ *
+ * Mock test là đề thử độc lập ở workspace level, không gắn roadmap nào.
+ * Chỉ sinh câu trắc nghiệm (single/multiple choice, true/false).
  */
 function CreateMockTestForm({
   isDarkMode = false,
   onCreateMockTest,
   onBack,
-  contextType = "WORKSPACE",
   contextId,
   sources,
   selectedSourceIds,
@@ -34,34 +132,30 @@ function CreateMockTestForm({
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
-  const [tab, setTab] = useState("manual");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Chọn roadmap
-  const [roadmaps, setRoadmaps] = useState([]);
-  const [selectedRoadmapId, setSelectedRoadmapId] = useState("");
-  const [roadmapLoading, setRoadmapLoading] = useState(false);
-
-  // Real-time roadmap check
-  const [roadmapHasMockTest, setRoadmapHasMockTest] = useState(false);
-  const [checkingRoadmap, setCheckingRoadmap] = useState(false);
-
-  // State quiz
-  const [name, setName] = useState("");
+  // State step machine
+  const [step, setStep] = useState("BASIC"); // 'BASIC' | 'STRUCTURE' | 'GENERATING'
+  const [examName, setExamName] = useState("");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [totalQuestions, setTotalQuestions] = useState(30);
   const [duration, setDuration] = useState(60);
-  const [passingScore, setPassingScore] = useState(7.5);
-  const [maxAttempt, setMaxAttempt] = useState(1);
-  const [timerMode, setTimerMode] = useState(true);
-  const [overallDifficulty, setOverallDifficulty] = useState("medium");
-  const [questions, setQuestions] = useState([]);
-
-  // State AI
-  const [aiName, setAiName] = useState("");
-  const [aiDifficulty, setAiDifficulty] = useState("medium");
-  const [aiTotalQuestions, setAiTotalQuestions] = useState(30);
-  const [aiDuration, setAiDuration] = useState(60);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiSections, setAiSections] = useState([]);
+  const [aiTopNotice, setAiTopNotice] = useState("");
+
+  // Maps tên → ID cho question type & bloom (fetch 1 lần khi mở form)
+  const [qtMap, setQtMap] = useState({});
+  const [bloomMap, setBloomMap] = useState({});
+
+  const {
+    suggestion,
+    isLoading: isSuggesting,
+    error: suggestError,
+    requestSuggestion,
+    regenerate,
+  } = useMockTestStructureSuggestion();
 
   const {
     allSelected,
@@ -86,120 +180,122 @@ function CreateMockTestForm({
     [normalizedSources, selectedIdSet],
   );
 
-  // Tải danh sách roadmap
-  const loadRoadmaps = useCallback(async () => {
-    if (!contextId) return;
-    setRoadmapLoading(true);
-    try {
-      const res = await getRoadmapsByWorkspace(contextId, 0, 100);
-      setRoadmaps(res?.data?.data?.content || res?.data?.content || []);
-    } catch (e) {
-      console.error("Lỗi tải roadmaps:", e);
-    } finally {
-      setRoadmapLoading(false);
-    }
-  }, [contextId]);
-
-  useEffect(() => { loadRoadmaps(); }, [loadRoadmaps]);
-
-  // Khi chọn roadmap → kiểm tra real-time đã có mock test chưa
-  const handleRoadmapSelect = useCallback(async (roadmapId) => {
-    setSelectedRoadmapId(roadmapId);
-    setRoadmapHasMockTest(false);
-    if (!roadmapId) return;
-    setCheckingRoadmap(true);
-    try {
-      const res = await getQuizzesByScope("ROADMAP", Number(roadmapId));
-      const existing = res.data || [];
-      setRoadmapHasMockTest(existing.length > 0);
-    } catch (e) {
-      console.error("Lỗi kiểm tra roadmap:", e);
-    } finally {
-      setCheckingRoadmap(false);
-    }
+  // Fetch question types + bloom skills 1 lần để map name → id khi submit
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [qtRes, bloomRes] = await Promise.all([getQuestionTypes(), getBloomSkills()]);
+        if (cancelled) return;
+        const qtList = qtRes?.data || qtRes || [];
+        const bloomList = bloomRes?.data || bloomRes || [];
+        const qm = {};
+        qtList.forEach((it) => {
+          const n = String(it.questionType || it.name || "").toUpperCase();
+          if (n && Number.isFinite(it.questionTypeId || it.id)) {
+            qm[n] = it.questionTypeId || it.id;
+          }
+        });
+        const bm = {};
+        bloomList.forEach((it) => {
+          const n = String(it.bloomSkillName || it.name || "").toUpperCase();
+          if (n && Number.isFinite(it.bloomSkillId || it.id || it.bloomId)) {
+            bm[n] = it.bloomSkillId || it.id || it.bloomId;
+          }
+        });
+        setQtMap(qm);
+        setBloomMap(bm);
+      } catch (e) {
+        console.error("Lỗi tải question types / bloom skills:", e);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  // Quản lý câu hỏi
-  const addQuestion = () => {
-    setQuestions(prev => [...prev, {
-      type: "multipleChoice", text: "", difficulty: "medium", bloomId: 1, duration: 0, explanation: "",
-      answers: [{ text: "", correct: false }, { text: "", correct: false }],
-    }]);
-  };
-  const removeQuestion = (idx) => setQuestions(prev => prev.filter((_, i) => i !== idx));
-  const updateQuestion = (idx, field, value) => setQuestions(prev => prev.map((q, i) => i === idx ? { ...q, [field]: value } : q));
-  const addAnswer = (qIdx) => setQuestions(prev => prev.map((q, i) =>
-    i === qIdx ? { ...q, answers: [...q.answers, { text: "", correct: false }] } : q
-  ));
+  // Khi suggestion mới về → chuyển sang STRUCTURE
+  useEffect(() => {
+    if (suggestion) {
+      setAiSections(suggestion.sections || []);
+      setAiTopNotice(suggestion.description || "");
+      setStep("STRUCTURE");
+    }
+  }, [suggestion]);
 
-  // Submit
-  const handleSubmit = async (quizStatus = "ACTIVE") => {
-    setSubmitting(true);
+  const handleRequestSuggestion = useCallback(async () => {
     setError("");
+    if (!examName.trim()) {
+      setError(t("mockTestForms.common.nameRequired", "Please enter a name."));
+      return;
+    }
     try {
-      if (tab === "manual") {
-        if (!name.trim()) { setError(t("mockTestForms.common.nameRequired", "Please enter a name.")); setSubmitting(false); return; }
-        if (!selectedRoadmapId) { setError(t("mockTestForms.create.roadmapRequired", "Please select a roadmap.")); setSubmitting(false); return; }
+      await requestSuggestion({
+        examName: examName.trim(),
+        description: aiPrompt?.trim() || undefined,
+        totalQuestion: Number(totalQuestions) || 1,
+        durationInMinute: Number(duration) || 60,
+        overallDifficulty: uppercaseDifficulty(difficulty),
+        outputLanguage: i18n.language === "en" ? "en" : "vi",
+        workspaceId: Number(contextId),
+      });
+    } catch (e) {
+      setError(e?.message || t("mockTestForms.common.createFailed", "Failed to suggest structure."));
+    }
+  }, [examName, aiPrompt, totalQuestions, duration, difficulty, contextId, i18n.language, requestSuggestion, t]);
 
-        // Kiểm tra giới hạn: mỗi roadmap chỉ được 1 mock test
-        try {
-          const existingRes = await getQuizzesByScope("ROADMAP", Number(selectedRoadmapId));
-          const existing = existingRes.data || [];
-          if (existing.length > 0) {
-            setError(t("mockTestForms.create.mockTestLimit", "This roadmap already has a mock test. Only one is allowed per roadmap."));
-            setSubmitting(false);
-            return;
-          }
-        } catch (e) {
-          console.error("Lỗi kiểm tra giới hạn mock test:", e);
-        }
+  const handleBackToBasic = useCallback(() => {
+    setStep("BASIC");
+  }, []);
 
-        const result = await createFullQuiz({
-          workspaceId: contextType === 'WORKSPACE' ? contextId : null,
-          roadmapId: Number(selectedRoadmapId),
-          phaseId: null,
-          knowledgeId: null,
-          title: name,
-          duration,
-          quizIntent: "REVIEW",
-          timerMode,
-          passingScore,
-          maxAttempt,
-          overallDifficulty,
-          questions,
-          status: quizStatus,
-        });
-        await onCreateMockTest?.({ quizId: result.quizId, title: result.title, ...result });
-      } else {
-        const data = {
-          mode: "ai",
-          name: aiName,
-          difficulty: aiDifficulty,
-          totalQuestions: aiTotalQuestions,
-          duration: aiDuration,
-          prompt: aiPrompt,
-          materialIds: effectiveSelectedSourceIds,
-        };
-        await onCreateMockTest?.(data);
-      }
-    } catch (err) {
-      console.error("Lỗi khi tạo mock test:", err);
-      setError(err.message || t("mockTestForms.common.createFailed", "Failed to create. Please try again."));
+  const handleSubmit = useCallback(async () => {
+    setError("");
+    const validation = validateMockTestStructure(aiSections, Number(totalQuestions) || undefined, t);
+    if (!validation.isValid) {
+      setError(validation.errors.join(" | "));
+      return;
+    }
+    if (!Object.keys(qtMap).length) {
+      setError(t("mockTestForms.common.questionTypesNotReady", "Question types are still loading. Please try again."));
+      return;
+    }
+
+    setSubmitting(true);
+    setStep("GENERATING");
+    try {
+      const sectionConfigs = sectionsToServerDTOs(aiSections, qtMap, bloomMap);
+      const payload = {
+        title: examName.trim(),
+        overallDifficulty: uppercaseDifficulty(difficulty),
+        totalQuestion: Number(totalQuestions) || 1,
+        durationInMinute: Number(duration) || 60,
+        durationInSecond: 0,
+        prompt: aiPrompt?.trim() || "",
+        outputLanguage: i18n.language === "en" ? "en" : "vi",
+        materialIds: effectiveSelectedSourceIds || [],
+        workspaceId: Number(contextId),
+        sectionConfigs,
+      };
+      const result = await generateMockTest(payload);
+      await onCreateMockTest?.({
+        quizId: result?.quizId,
+        taskId: result?.taskId,
+        websocketTaskId: result?.websocketTaskId,
+        status: result?.status,
+        ...result,
+      });
+    } catch (e) {
+      console.error("Lỗi khi tạo mock test:", e);
+      setError(e?.message || t("mockTestForms.common.createFailed", "Failed to create. Please try again."));
+      setStep("STRUCTURE");
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [aiSections, totalQuestions, qtMap, bloomMap, examName, difficulty, duration, aiPrompt, i18n.language, effectiveSelectedSourceIds, contextId, onCreateMockTest, t]);
 
   const inputCls = `w-full rounded-lg border px-3 py-2 text-sm outline-none transition-all ${
     isDarkMode ? "bg-slate-800 border-slate-700 text-white focus:border-blue-500 placeholder:text-slate-500"
               : "bg-white border-gray-300 text-gray-900 focus:border-blue-500 placeholder:text-gray-400"
   }`;
   const selectCls = `${inputCls} appearance-none cursor-pointer`;
-  const tabCls = (key) => `flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-    tab === key
-      ? isDarkMode ? "bg-slate-800 text-purple-300" : "bg-white text-purple-700 shadow-sm"
-      : isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-500 hover:text-gray-700"
-  }`;
   const labelCls = `block text-xs font-medium mb-1 ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`;
 
   return (
@@ -223,299 +319,162 @@ function CreateMockTestForm({
           {t("mockTestForms.create.desc", "Create a comprehensive test covering an entire roadmap.")}
         </p>
 
-        {/* Tab */}
-        <div className={`flex gap-1 rounded-lg p-1 ${isDarkMode ? "bg-slate-800" : "bg-gray-100"}`}>
-          <button type="button" onClick={() => setTab("manual")} className={tabCls("manual")}>{t("mockTestForms.common.tabManual", "Manual")}</button>
-          <button type="button" onClick={() => setTab("ai")} className={tabCls("ai")}>{t("mockTestForms.common.tabAI", "AI")}</button>
+        {/* Step indicator */}
+        <div className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+          <span className={step === "BASIC" ? "font-semibold text-purple-600" : ""}>{t("mockTestForms.create.stepBasic", "1. Configuration")}</span>
+          <span>›</span>
+          <span className={step === "STRUCTURE" ? "font-semibold text-purple-600" : ""}>{t("mockTestForms.create.stepStructure", "2. Structure")}</span>
+          <span>›</span>
+          <span className={step === "GENERATING" ? "font-semibold text-purple-600" : ""}>{t("mockTestForms.create.stepGenerating", "3. Generate Questions")}</span>
         </div>
 
-        <div className={`rounded-xl border p-3 space-y-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-gray-200 bg-white"}`}>
-          <div className="flex items-start justify-between gap-2">
-            <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
-              {t("mockTestForms.common.selectedMaterials", "Selected materials")}
-            </p>
-            {normalizedSources.length > 0 && (
-              <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-                {t("mockTestForms.common.materialsSelectedSummary", "{{selected}}/{{total}} selected", {
-                  selected: selectedSourceItems.length,
-                  total: normalizedSources.length,
-                })}
-              </span>
-            )}
-          </div>
-
-          {materialsLoading && (
-            <div className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              {t("mockTestForms.common.materialsLoading", "Loading materials...")}
-            </div>
-          )}
-
-          {materialsError && !materialsLoading && (
-            <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/20 text-red-400 border border-red-900/30" : "bg-red-50 text-red-700 border border-red-200"}`}>
-              {materialsError}
-            </div>
-          )}
-
-          {normalizedSources.length > 0 && !materialsLoading && (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
-                  onClick={selectAllSources}
-                  disabled={allSelected}
-                >
-                  {t("mockTestForms.common.selectAll", "Select all")}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
-                  onClick={clearSelectedSources}
-                  disabled={selectedSourceItems.length === 0}
-                >
-                  {t("mockTestForms.common.deselectAll", "Deselect all")}
-                </Button>
-              </div>
-
-              <div className={`max-h-36 overflow-y-auto rounded-lg border ${isDarkMode ? "border-slate-800 divide-y divide-slate-800" : "border-gray-200 divide-y divide-gray-100"}`}>
-                {normalizedSources.map((item) => (
-                  <label key={item.id} className={`flex items-start gap-3 px-3 py-2 text-xs cursor-pointer ${isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50"}`}>
-                    <Checkbox
-                      checked={selectedIdSet.has(item.id)}
-                      onCheckedChange={(checked) => toggleSourceSelection(item.id, checked === true)}
-                      className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" : "border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"}`}
-                    />
-                    <span className={`min-w-0 flex-1 break-words ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
-                      {item.name || t("mockTestForms.common.materialFallback", "Material #{{id}}", { id: item.id })}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </>
-          )}
-
-          {normalizedSources.length === 0 && !materialsLoading && (
-            <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
-              {t("mockTestForms.common.workspaceMaterialsEmpty", "No materials available in this workspace.")}
-            </p>
-          )}
-        </div>
-
-        {tab === "manual" ? (
-          <div className="space-y-4">
-            {/* Tên mock test */}
-            <div>
-              <label className={labelCls}>{t("mockTestForms.create.name", "Mock Test Name")}</label>
-              <input className={inputCls} placeholder={t("mockTestForms.create.namePlaceholder", "Enter mock test name...")} value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-
-            {/* Chọn roadmap */}
-            <div className={`rounded-lg border p-3 space-y-3 ${isDarkMode ? "border-purple-800/50 bg-purple-950/20" : "border-purple-200 bg-purple-50/30"}`}>
-              <div className="flex items-center gap-2 mb-1">
-                <ClipboardList className={`w-4 h-4 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
-                <span className={`text-xs font-semibold ${isDarkMode ? "text-purple-300" : "text-purple-700"} ${fontClass}`}>
-                  {t("mockTestForms.create.selectRoadmapTitle", "Select Roadmap")}
-                </span>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-gray-600"} ${fontClass}`}>
-                    {t("mockTestForms.common.contextSelectRoadmap", "Select a roadmap")}
-                  </span>
-                  <button type="button" onClick={loadRoadmaps} className={`p-1 rounded transition-all active:scale-95 ${isDarkMode ? "hover:bg-slate-700 text-slate-400" : "hover:bg-gray-200 text-gray-500"}`}>
-                    <RefreshCw className={`w-3 h-3 ${roadmapLoading ? "animate-spin" : ""}`} />
-                  </button>
-                </div>
-                <select className={selectCls} value={selectedRoadmapId} onChange={(e) => handleRoadmapSelect(e.target.value)} disabled={roadmapLoading}>
-                  <option value="">{roadmapLoading ? t("mockTestForms.common.contextLoading", "Loading...") : t("mockTestForms.common.contextPlaceholder", "-- Select --")}</option>
-                  {roadmaps.map((rm) => (
-                    <option key={rm.roadmapId || rm.id} value={rm.roadmapId || rm.id}>
-                      {rm.title || rm.name || t("mockTestForms.common.roadmapFallback", "Roadmap #{{id}}", { id: rm.roadmapId || rm.id })}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Real-time warning khi roadmap đã có mock test */}
-              {checkingRoadmap && (
-                <div className="flex items-center gap-2 mt-1">
-                  <Loader2 className="w-3 h-3 animate-spin text-purple-500" />
-                  <span className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>{t("mockTestForms.common.checking", "Checking...")}</span>
-                </div>
-              )}
-              {roadmapHasMockTest && !checkingRoadmap && (
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {t("mockTestForms.create.roadmapAlreadyHas", "This roadmap already has a mock test. Please choose another roadmap.")}
-                </div>
-              )}
-
-              <p className={`text-[10px] ${isDarkMode ? "text-purple-400/60" : "text-purple-500/70"} ${fontClass}`}>
-                {t("mockTestForms.create.onePerRoadmap", "Each roadmap can have at most one mock test.")}
+        {/* Block chọn material - chỉ show ở step BASIC */}
+        {step === "BASIC" && (
+          <div className={`rounded-xl border p-3 space-y-3 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-gray-200 bg-white"}`}>
+            <div className="flex items-start justify-between gap-2">
+              <p className={`text-xs font-semibold ${isDarkMode ? "text-slate-200" : "text-gray-800"} ${fontClass}`}>
+                {t("mockTestForms.common.selectedMaterials", "Selected materials")}
               </p>
-            </div>
-
-            {/* Cấu hình */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>{t("mockTestForms.common.overallDifficulty", "Overall difficulty")}</label>
-                <select className={selectCls} value={overallDifficulty} onChange={(e) => setOverallDifficulty(e.target.value)}>
-                  {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>{t("mockTestForms.common.maxAttempt", "Max attempts")}</label>
-                <input type="number" className={inputCls} value={maxAttempt} onChange={(e) => setMaxAttempt(Number(e.target.value))} min={1} />
-              </div>
-            </div>
-
-            {/* Timer Mode */}
-            <div className="flex items-center gap-3">
-              <label className={`flex items-center gap-2 cursor-pointer ${fontClass}`}>
-                <input type="checkbox" checked={timerMode} onChange={(e) => setTimerMode(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
-                <span className={`text-xs ${isDarkMode ? "text-slate-300" : "text-gray-600"}`}>{t("mockTestForms.common.timerMode", "Timer mode")}</span>
-              </label>
-              <span className={`text-[10px] ${isDarkMode ? "text-slate-500" : "text-gray-400"} ${fontClass}`}>
-                {timerMode ? t("mockTestForms.common.timerModeHintOn", "Enabled: one overall duration for the test") : t("mockTestForms.common.timerModeHintOff", "Disabled: set duration per question")}
-              </span>
-            </div>
-
-            <div className={`grid ${timerMode ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
-              {timerMode && (
-                <div>
-                  <label className={labelCls}>{t("mockTestForms.common.timeDuration", "Duration (minutes)")}</label>
-                  <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
-                </div>
+              {normalizedSources.length > 0 && (
+                <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                  {t("mockTestForms.common.materialsSelectedSummary", "{{selected}}/{{total}} selected", {
+                    selected: selectedSourceItems.length,
+                    total: normalizedSources.length,
+                  })}
+                </span>
               )}
-              <div>
-                <label className={labelCls}>{t("mockTestForms.common.passingScore", "Passing score")}</label>
-                <input type="number" className={inputCls} value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} min={0} max={10} step={0.5} />
-              </div>
             </div>
-
-            {/* Lỗi */}
-            {error && (
-              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
-                {error}
+            {materialsLoading && (
+              <div className={`flex items-center gap-2 text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {t("mockTestForms.common.materialsLoading", "Loading materials...")}
               </div>
             )}
-
-            {/* Danh sách câu hỏi */}
-            <div className="space-y-3">
-              {questions.map((q, qIdx) => (
-                <div key={qIdx} className={`rounded-lg border p-3 space-y-2 ${isDarkMode ? "border-slate-800 bg-slate-900/50" : "border-gray-200 bg-gray-50"}`}>
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>#{qIdx + 1}</span>
-                    <button onClick={() => removeQuestion(qIdx)} className="p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded transition-all active:scale-95">
-                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <select className={selectCls} value={q.type} onChange={(e) => updateQuestion(qIdx, "type", e.target.value)}>
-                      {QUESTION_TYPES.map((qt) => <option key={qt} value={qt}>{t(`mockTestForms.common.type${qt.charAt(0).toUpperCase() + qt.slice(1)}`, qt)}</option>)}
-                    </select>
-                    <select className={selectCls} value={q.difficulty} onChange={(e) => updateQuestion(qIdx, "difficulty", e.target.value)}>
-                      {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
-                    </select>
-                    <select className={selectCls} value={q.bloomId} onChange={(e) => updateQuestion(qIdx, "bloomId", Number(e.target.value))}>
-                      {BLOOM_LEVELS.map((b) => <option key={b.id} value={b.id}>{t(`mockTestForms.common.bloom${b.key.charAt(0).toUpperCase() + b.key.slice(1)}`, b.key)}</option>)}
-                    </select>
-                  </div>
-
-                  <input className={inputCls} placeholder={t("mockTestForms.common.questionText", "Question text")} value={q.text} onChange={(e) => updateQuestion(qIdx, "text", e.target.value)} />
-
-                  <div className={`grid ${!timerMode ? "grid-cols-2" : ""} gap-2`}>
-                    {!timerMode && (
-                      <div>
-                        <label className={labelCls}>{t("mockTestForms.common.questionDuration", "Question duration (s)")}</label>
-                        <input type="number" className={inputCls} value={q.duration} onChange={(e) => updateQuestion(qIdx, "duration", Number(e.target.value))} min={0} placeholder="0" />
-                      </div>
-                    )}
-                    <div>
-                      <label className={labelCls}>{t("mockTestForms.common.explanation", "Explanation")}</label>
-                      <input className={inputCls} placeholder={t("mockTestForms.common.explanationPlaceholder", "Enter an explanation...")} value={q.explanation} onChange={(e) => updateQuestion(qIdx, "explanation", e.target.value)} />
-                    </div>
-                  </div>
-
-                  {/* Đáp án */}
-                  {(q.type === "multipleChoice" || q.type === "multipleSelect") && (
-                    <div className="space-y-1.5 pl-2">
-                      {q.answers.map((a, aIdx) => (
-                        <div key={aIdx} className="flex items-center gap-2">
-                          <input type={q.type === "multipleSelect" ? "checkbox" : "radio"} name={`mt-q-${qIdx}`} checked={a.correct}
-                            onChange={() => {
-                              const newAnswers = q.answers.map((ans, ai) => ({
-                                ...ans,
-                                correct: q.type === "multipleSelect" ? (ai === aIdx ? !ans.correct : ans.correct) : ai === aIdx,
-                              }));
-                              updateQuestion(qIdx, "answers", newAnswers);
-                            }}
-                          />
-                          <input className={`${inputCls} flex-1`} placeholder={`${t("mockTestForms.common.answers", "Answer")} ${aIdx + 1}`} value={a.text}
-                            onChange={(e) => {
-                              const newAnswers = [...q.answers];
-                              newAnswers[aIdx] = { ...newAnswers[aIdx], text: e.target.value };
-                              updateQuestion(qIdx, "answers", newAnswers);
-                            }}
-                          />
-                        </div>
-                      ))}
-                      <button onClick={() => addAnswer(qIdx)} className="text-xs text-purple-500 hover:underline flex items-center gap-1 mt-1">
-                        <Plus className="w-3 h-3" /> {t("mockTestForms.common.addAnswer", "Add answer")}
-                      </button>
-                    </div>
-                  )}
-                  {q.type === "trueFalse" && (
-                    <select className={selectCls} value={q.correctAnswer || "true"}
-                      onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)}>
-                      <option value="true">{t("mockTestForms.common.booleanTrue", "True")}</option>
-                      <option value="false">{t("mockTestForms.common.booleanFalse", "False")}</option>
-                    </select>
-                  )}
-                  {(q.type === "fillBlank" || q.type === "shortAnswer") && (
-                    <input className={inputCls} placeholder={t("mockTestForms.common.correctAnswer", "Correct answer")} value={q.correctAnswer || ""}
-                      onChange={(e) => updateQuestion(qIdx, "correctAnswer", e.target.value)} />
-                  )}
+            {materialsError && !materialsLoading && (
+              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/20 text-red-400 border border-red-900/30" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                {materialsError}
+              </div>
+            )}
+            {normalizedSources.length > 0 && !materialsLoading && (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" size="sm" variant="outline"
+                    className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+                    onClick={selectAllSources} disabled={allSelected}>
+                    {t("mockTestForms.common.selectAll", "Select all")}
+                  </Button>
+                  <Button type="button" size="sm" variant="outline"
+                    className={`h-7 px-3 text-[11px] ${isDarkMode ? "border-slate-700 text-slate-300" : "border-gray-200 text-gray-700"}`}
+                    onClick={clearSelectedSources} disabled={selectedSourceItems.length === 0}>
+                    {t("mockTestForms.common.deselectAll", "Deselect all")}
+                  </Button>
                 </div>
-              ))}
-              <Button variant="outline" onClick={addQuestion} className={`w-full ${isDarkMode ? "border-slate-700 text-slate-300" : ""}`}>
-                <Plus className="w-4 h-4 mr-2" /> {t("mockTestForms.common.addQuestion", "Add question")}
-              </Button>
-            </div>
+                <div className={`max-h-36 overflow-y-auto rounded-lg border ${isDarkMode ? "border-slate-800 divide-y divide-slate-800" : "border-gray-200 divide-y divide-gray-100"}`}>
+                  {normalizedSources.map((item) => (
+                    <label key={item.id} className={`flex items-start gap-3 px-3 py-2 text-xs cursor-pointer ${isDarkMode ? "hover:bg-slate-800/40" : "hover:bg-gray-50"}`}>
+                      <Checkbox checked={selectedIdSet.has(item.id)}
+                        onCheckedChange={(checked) => toggleSourceSelection(item.id, checked === true)}
+                        className={`mt-0.5 ${isDarkMode ? "border-slate-500 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" : "border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"}`} />
+                      <span className={`min-w-0 flex-1 break-words ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+                        {item.name || t("mockTestForms.common.materialFallback", "Material #{{id}}", { id: item.id })}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+            {normalizedSources.length === 0 && !materialsLoading && (
+              <p className={`text-xs ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+                {t("mockTestForms.common.workspaceMaterialsEmpty", "No materials available in this workspace.")}
+              </p>
+            )}
           </div>
-        ) : (
-          <div className="space-y-4">
+        )}
+
+        {step === "BASIC" && (
+          <>
+            {/* Notice scope mock test */}
+            <div className={`rounded-lg border p-3 text-xs ${isDarkMode ? "border-blue-800/50 bg-blue-950/20 text-blue-200" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+              {t(
+                "mockTestForms.create.scopeNotice",
+                "Mock tests only generate objective questions: single choice, multiple choice, and true/false. Listening, Writing, and Speaking are not supported, so AI will skip them and only suggest Reading, Vocabulary, or Grammar sections for exams like IELTS or TOEIC."
+              )}
+            </div>
+
             <div>
               <label className={labelCls}>{t("mockTestForms.create.name", "Mock Test Name")}</label>
-              <input className={inputCls} placeholder={t("mockTestForms.create.namePlaceholder", "Enter mock test name...")} value={aiName} onChange={(e) => setAiName(e.target.value)} />
+              <input
+                className={inputCls}
+                placeholder={t("mockTestForms.create.nameExample", "E.g. IELTS, TOEIC 900, final Math 12 exam...")}
+                value={examName}
+                onChange={(e) => setExamName(e.target.value)}
+              />
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>{t("mockTestForms.common.difficulty", "Difficulty")}</label>
-                <select className={selectCls} value={aiDifficulty} onChange={(e) => setAiDifficulty(e.target.value)}>
+                <select className={selectCls} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
                   {DIFFICULTY_LEVELS.map((d) => <option key={d} value={d}>{t(`mockTestForms.common.difficulty${d.charAt(0).toUpperCase() + d.slice(1)}`, d)}</option>)}
                 </select>
               </div>
               <div>
                 <label className={labelCls}>{t("mockTestForms.common.totalQuestions", "Total questions")}</label>
-                <input type="number" className={inputCls} value={aiTotalQuestions} onChange={(e) => setAiTotalQuestions(Number(e.target.value))} min={1} />
+                <input type="number" className={inputCls} value={totalQuestions} onChange={(e) => setTotalQuestions(Number(e.target.value))} min={1} />
               </div>
             </div>
             <div>
               <label className={labelCls}>{t("mockTestForms.common.timeDuration", "Duration (minutes)")}</label>
-              <input type="number" className={inputCls} value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} min={1} />
+              <input type="number" className={inputCls} value={duration} onChange={(e) => setDuration(Number(e.target.value))} min={1} />
             </div>
             <div>
               <label className={labelCls}>{t("mockTestForms.common.additionalPrompt", "Additional prompt")}</label>
               <textarea className={`${inputCls} min-h-[80px] resize-none`} placeholder={t("mockTestForms.common.promptPlaceholder", "Add extra instructions for the AI...")} value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} />
             </div>
+
+            {(error || suggestError) && (
+              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
+                {error || suggestError?.message || t("mockTestForms.common.genericError", "Something went wrong.")}
+              </div>
+            )}
+          </>
+        )}
+
+        {step === "STRUCTURE" && (
+          <>
+            <div className="flex items-center justify-between">
+              <button type="button" onClick={handleBackToBasic} className={`text-xs flex items-center gap-1 ${isDarkMode ? "text-slate-400 hover:text-slate-200" : "text-gray-500 hover:text-gray-700"}`}>
+                <ChevronLeft className="w-3.5 h-3.5" /> {t("mockTestForms.create.backToConfig", "Back to configuration")}
+              </button>
+              <Button type="button" size="sm" variant="outline" onClick={() => regenerate()} disabled={isSuggesting}>
+                {isSuggesting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RefreshCw className="w-3.5 h-3.5 mr-1" />}
+                {t("mockTestForms.create.regenerate", "Regenerate")}
+              </Button>
+            </div>
+            <MockTestStructureEditor
+              sections={aiSections}
+              onChange={setAiSections}
+              targetTotalQuestions={Number(totalQuestions) || undefined}
+              topNotice={aiTopNotice}
+              readOnly
+            />
+            {error && (
+              <div className={`text-xs px-3 py-2 rounded-lg ${isDarkMode ? "bg-red-950/30 text-red-400" : "bg-red-50 text-red-600"}`}>
+                {error}
+              </div>
+            )}
+          </>
+        )}
+
+        {step === "GENERATING" && (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <Loader2 className="w-10 h-10 animate-spin text-purple-500" />
+            <p className={`text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+              {t("mockTestForms.create.generatingTitle", "Generating questions for your mock test...")}
+            </p>
+            <p className={`text-xs ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+              {t("mockTestForms.create.generatingHint", "This may take from 30 seconds to a few minutes depending on the number of questions.")}
+            </p>
           </div>
         )}
       </div>
@@ -525,13 +484,24 @@ function CreateMockTestForm({
         <Button variant="outline" onClick={onBack} className={isDarkMode ? "border-slate-700 text-slate-300" : ""}>
           {t("mockTestForms.common.cancel", "Cancel")}
         </Button>
-        <Button onClick={() => handleSubmit("ACTIVE")} disabled={submitting || roadmapHasMockTest} className="bg-purple-600 hover:bg-purple-700 text-white">
-          {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
-          {tab === "manual"
-            ? (submitting ? t("mockTestForms.common.creating", "Creating...") : t("mockTestForms.common.createActive", "Create"))
-            : (submitting ? t("mockTestForms.common.generating", "Generating...") : t("mockTestForms.common.generateAI", "Generate with AI"))
-          }
-        </Button>
+
+        {step === "BASIC" && (
+          <Button onClick={handleRequestSuggestion} disabled={isSuggesting} className="bg-purple-600 hover:bg-purple-700 text-white">
+            {isSuggesting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+            {isSuggesting
+              ? t("mockTestForms.create.requestingSuggestion", "Generating suggestion...")
+              : t("mockTestForms.create.requestSuggestion", "Get structure suggestion")}
+          </Button>
+        )}
+
+        {step === "STRUCTURE" && (
+          <Button onClick={handleSubmit} disabled={submitting} className="bg-purple-600 hover:bg-purple-700 text-white">
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Rocket className="w-4 h-4 mr-2" />}
+            {submitting
+              ? t("mockTestForms.create.creatingExam", "Creating mock test...")
+              : t("mockTestForms.create.createExam", "Create mock test")}
+          </Button>
+        )}
       </div>
     </div>
   );

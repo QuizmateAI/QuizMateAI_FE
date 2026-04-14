@@ -377,7 +377,7 @@ function ChatPanel({
             isDarkMode={isDarkMode}
             quiz={selectedMockTest}
             onBack={onBack}
-            onEdit={onEditMockTest}
+            hideEditButton
           />
         ) : null;
       case "editMockTest":

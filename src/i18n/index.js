@@ -255,6 +255,18 @@ export const i18nReady = (async () => {
     }
 
     syncDocumentLanguage(normalizedLanguage);
+
+    // Persist lên BE nếu user đã đăng nhập. Lazy import để tránh vòng phụ thuộc
+    // (ProfileAPI import i18n, i18n không nên import ngược lại ở top-level).
+    if (typeof window !== 'undefined') {
+      const hasToken = !!(window.localStorage.getItem('accessToken')
+        || window.localStorage.getItem('jwt_token'));
+      if (hasToken) {
+        import('@/api/ProfileAPI')
+          .then(({ updateUserPreferredLanguage }) => updateUserPreferredLanguage(normalizedLanguage))
+          .catch(() => {});
+      }
+    }
   });
 })();
 

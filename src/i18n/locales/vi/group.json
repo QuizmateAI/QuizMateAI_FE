@@ -203,7 +203,7 @@
         "roadmap": "Lộ trình",
         "quiz": "Bài kiểm tra",
         "flashcard": "Thẻ ghi nhớ",
-        "mockTest": "Bài thi thử",
+        "mockTest": "Đề thi thử",
         "challenge": "Thử thách",
         "ranking": "Xếp hạng",
         "notifications": "Thông báo",
@@ -342,7 +342,7 @@
       "meta": "Tổng hợp từ {{quizCount}} quiz đang hoạt động · {{memberCount}} thành viên tham gia",
       "metrics": {
         "accuracy": {
-          "title": "Độ chính xác lần đầu",
+          "title": "Độ chính xác",
           "subtitle": "Mỗi quiz lấy kết quả của lần kiểm tra đầu tiên, rồi tính trung bình"
         },
         "completion": {
@@ -1212,7 +1212,8 @@
       "PRE_LEARNING": "Trước khi học",
       "POST_LEARNING": "Sau khi học",
       "PRACTICE": "Luyện tập",
-      "REVIEW": "Ôn tập"
+      "REVIEW": "Ôn tập",
+      "MOCK_TEST": "Mock test"
     },
     "difficultyLevels": {
       "easy": "Dễ",
@@ -1571,12 +1572,21 @@
       "missingCustomPrompt": "Vui lòng nhập yêu cầu tuỳ chỉnh.",
       "generateFailed": "Tạo template thất bại. Vui lòng thử lại.",
       "createMockTestFailed": "Tạo mock test thất bại. Vui lòng thử lại.",
-      "genericGenerate": "Có lỗi xảy ra khi tạo template."
+      "genericGenerate": "Có lỗi xảy ra khi tạo template.",
+      "materialsLoadFailed": "Không tải được danh sách tài liệu.",
+      "workspaceIdMissing": "Không xác định được workspace.",
+      "questionTypesNotReady": "Danh sách loại câu hỏi vẫn đang tải. Vui lòng thử lại."
     },
     "header": {
       "title": "Tạo Mock Test bằng AI"
     },
     "description": "AI sẽ tạo template đề thi phù hợp. Leader có thể xem trước rồi áp dụng để tạo bài mock test (DRAFT) cho nhóm.",
+    "steps": {
+      "basic": "1. Cấu hình",
+      "structure": "2. Cấu trúc",
+      "generating": "3. Sinh câu hỏi"
+    },
+    "scopeNotice": "Mock test chỉ sinh câu hỏi khách quan: một đáp án, nhiều đáp án và đúng/sai. Listening, Writing và Speaking hiện chưa được hỗ trợ nên AI sẽ tự bỏ qua. Đề được tạo ở trạng thái DRAFT để leader publish sau.",
     "tabs": {
       "examName": "Tên kỳ thi",
       "custom": "Yêu cầu tuỳ chỉnh"
@@ -1595,9 +1605,21 @@
       "totalQuestions": "Số câu hỏi",
       "duration": "Thời gian (phút)"
     },
+    "materials": {
+      "title": "Tài liệu tham khảo",
+      "loading": "Đang tải tài liệu...",
+      "selectAll": "Chọn tất cả",
+      "deselectAll": "Bỏ chọn tất cả",
+      "empty": "Workspace chưa có tài liệu. AI sẽ sinh câu hỏi dựa trên tên đề.",
+      "itemFallback": "Tài liệu #{{index}}"
+    },
     "generating": {
-      "title": "AI đang tạo template…",
-      "hint": "Quá trình có thể mất 15–40 giây tuỳ độ phức tạp…"
+      "title": "Đang sinh câu hỏi cho mock test...",
+      "hint": "Quá trình có thể mất từ 30 giây đến vài phút tuỳ số lượng câu hỏi. Đề sẽ được lưu ở trạng thái DRAFT để bạn publish sau."
+    },
+    "structure": {
+      "backToConfig": "Quay lại cấu hình",
+      "regenerate": "Sinh lại"
     },
     "preview": {
       "ready": "Template AI đã sẵn sàng",
@@ -1619,7 +1641,11 @@
       "generating": "Đang tạo…",
       "generate": "Tạo template với AI",
       "applying": "Đang tạo Draft…",
-      "apply": "Áp dụng & Tạo Draft"
+      "apply": "Áp dụng & Tạo Draft",
+      "requestingSuggestion": "Đang gợi ý...",
+      "requestSuggestion": "Lấy gợi ý cấu trúc",
+      "creatingDraft": "Đang tạo...",
+      "createDraft": "Tạo Draft"
     }
   },
   "groupProfileOverviewPanel": {

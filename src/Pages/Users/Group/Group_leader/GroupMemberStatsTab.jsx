@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/Components/ui/dialog';
 import ListSpinner from '@/Components/ui/ListSpinner';
+import UserDisplayName from '@/Components/users/UserDisplayName';
 import { cn } from '@/lib/utils';
 import { useGroup } from '@/hooks/useGroup';
 import { getQuizzesByScope, setGroupQuizAudience } from '@/api/QuizAPI';
@@ -70,7 +71,9 @@ function GroupMemberStatsTab({
     queryKey: ['group-member-stats-tab-quizzes', workspaceId],
     queryFn: async () => {
       const response = await getQuizzesByScope('GROUP', workspaceId);
-      return normalizeQuizzes(unwrapApiData(response));
+      const list = normalizeQuizzes(unwrapApiData(response));
+      // Assign quiz cho member không áp dụng cho mock test (mock test ALL members).
+      return list.filter((q) => String(q?.quizIntent || '').toUpperCase() !== 'MOCK_TEST');
     },
     enabled: Boolean(assignOpen && isLeader && workspaceId),
   });
@@ -80,6 +83,8 @@ function GroupMemberStatsTab({
       userId: Number(member?.userId ?? 0),
       fullName: member?.fullName || member?.username || '—',
       username: member?.username || '',
+      avatar: member?.avatar || '',
+      email: member?.email || '',
       role: member?.role || null,
       quizCompletedCount: 0,
       averageScore: null,
@@ -108,6 +113,8 @@ function GroupMemberStatsTab({
         ...card,
         fullName: card?.fullName || member?.fullName || member?.username || '—',
         username: card?.username || member?.username || '',
+        avatar: card?.avatar || member?.avatar || '',
+        email: card?.email || member?.email || '',
         role: card?.role || member?.role || null,
       };
     });
@@ -237,14 +244,28 @@ function GroupMemberStatsTab({
           <div className="space-y-3">
             {rows.map((member) => {
               const memberName = member?.fullName || member?.username || '—';
-              const username = member?.username ? `@${member.username}` : '';
               return (
                 <article key={`${member.userId || memberName}`} className={cn('rounded-[22px] border p-4', cardClass)}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>{memberName}</p>
-                        {username ? <span className={cn('text-xs', eyebrowClass)}>{username}</span> : null}
+                      <div className="flex items-center gap-3">
+                        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold', isDarkMode ? 'bg-white/[0.07] text-white' : 'bg-slate-100 text-slate-700')}>
+                          {member.avatar ? (
+                            <img src={member.avatar} alt="" className="h-10 w-10 object-cover" />
+                          ) : (
+                            memberName.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className={cn('truncate text-sm font-semibold', isDarkMode ? 'text-white' : 'text-slate-900')}>
+                            <UserDisplayName user={member} fallback={memberName} isDarkMode={isDarkMode} />
+                          </p>
+                          {(member.email || member.username) && (
+                            <p className={cn('truncate text-xs', eyebrowClass)}>
+                              {member.email || `@${member.username}`}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <div className="mt-3 grid gap-2 sm:grid-cols-4">
                         <div className={cn('rounded-xl border px-3 py-2', metricCardClass)}>

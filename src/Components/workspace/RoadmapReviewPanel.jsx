@@ -132,10 +132,8 @@ export default function RoadmapReviewPanel({ roadmapId, isDarkMode = false }) {
 
   const {
     summary,
-    confidenceScore,
     learningJourney,
     masteryReport,
-    phaseInsights,
     nextStep,
   } = reviewData;
 
@@ -242,37 +240,8 @@ export default function RoadmapReviewPanel({ roadmapId, isDarkMode = false }) {
           </div>
         )}
 
-        {/* PHASE INSIGHTS */}
-        {phaseInsights && phaseInsights.length > 0 && (
-          <div className={`pt-6 border-t ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
-            <h5 className={`mb-5 text-base font-semibold ${isDarkMode ? "text-slate-100" : "text-gray-900"} ${fontClass}`}>
-              Chi tiết từng Giai đoạn
-            </h5>
-            <div className="space-y-3">
-              {phaseInsights.map((phase) => {
-                const phaseRating = getRatingMeta(phase.rating, isDarkMode);
-                return (
-                  <div key={phase.phaseId} className={`p-4 rounded-xl border ${isDarkMode ? "bg-slate-900/50 border-slate-800" : "bg-white border-slate-200"} flex flex-col sm:flex-row gap-4 sm:items-start`}>
-                    <div className="flex-1 min-w-0">
-                      <h6 className={`text-sm font-semibold truncate mb-1 ${isDarkMode ? "text-slate-200" : "text-slate-800"} ${fontClass}`}>
-                        {phase.phaseTitle}
-                      </h6>
-                      <p className={`text-xs sm:text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
-                        {phase.remark}
-                      </p>
-                    </div>
-                    <div className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${phaseRating.bg} ${phaseRating.text} ${fontClass}`}>
-                      {phaseRating.label}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* NEXT STEPS */}
-        {(nextStep?.recommendations?.length > 0 || nextStep?.suggestedReviewTopics?.length > 0) && (
+        {nextStep?.recommendations?.length > 0 && (
           <div className={`p-5 sm:p-6 rounded-2xl ${isDarkMode ? "bg-indigo-950/20 border border-indigo-900/50" : "bg-[#f5f7ff] border border-indigo-100"} mt-4`}>
             <div className="flex items-center gap-2 mb-4">
               <Target className={`w-5 h-5 ${isDarkMode ? "text-indigo-400" : "text-indigo-600"}`} />
@@ -281,37 +250,18 @@ export default function RoadmapReviewPanel({ roadmapId, isDarkMode = false }) {
               </h5>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {nextStep?.recommendations?.length > 0 && (
-                <div>
-                  <div className={`flex items-center gap-1.5 mb-3 text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-indigo-400" : "text-indigo-600"} ${fontClass}`}>
-                    <Lightbulb className="w-3.5 h-3.5" /> Lời khuyên
-                  </div>
-                  <ul className="space-y-2">
-                    {nextStep.recommendations.map((rec, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <ArrowRight className={`w-4 h-4 shrink-0 mt-0.5 ${isDarkMode ? "text-indigo-400" : "text-indigo-500"}`} />
-                        <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {nextStep?.suggestedReviewTopics?.length > 0 && (
-                <div>
-                  <div className={`flex items-center gap-1.5 mb-3 text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-indigo-400" : "text-indigo-600"} ${fontClass}`}>
-                    <Target className="w-3.5 h-3.5" /> Chủ đề nên ôn tập
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {nextStep.suggestedReviewTopics.map((topic, i) => (
-                      <span key={i} className={`inline-flex px-3 py-1.5 rounded-lg text-xs font-medium border ${isDarkMode ? "bg-indigo-900/30 text-indigo-300 border-indigo-800" : "bg-white text-indigo-700 border-indigo-200"} ${fontClass}`}>
-                        {topic}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div>
+              <div className={`flex items-center gap-1.5 mb-3 text-xs font-semibold uppercase tracking-wider ${isDarkMode ? "text-indigo-400" : "text-indigo-600"} ${fontClass}`}>
+                <Lightbulb className="w-3.5 h-3.5" /> Lời khuyên
+              </div>
+              <ul className="space-y-2">
+                {nextStep.recommendations.map((rec, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <ArrowRight className={`w-4 h-4 shrink-0 mt-0.5 ${isDarkMode ? "text-indigo-400" : "text-indigo-500"}`} />
+                    <span className={`text-sm ${isDarkMode ? "text-slate-300" : "text-slate-700"} ${fontClass}`}>{rec}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}

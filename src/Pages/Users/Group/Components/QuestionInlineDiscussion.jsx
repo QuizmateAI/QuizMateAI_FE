@@ -373,12 +373,14 @@ export default function QuestionInlineDiscussion({
 
     const authorId = profile?.userId ?? profile?.id ?? 0;
     const authorName = profile?.fullName ?? profile?.name ?? t('questionDiscussion.shared.userFallback', 'User');
+    const authorUserName = profile?.username ?? null;
+    const authorAvatar = profile?.avatarUrl ?? profile?.avatar ?? null;
     const authorRole = isLeader ? 'LEADER' : 'MEMBER';
 
     setPosting(true);
     try {
       const msg = await postMessage(workspaceId, quizId, questionId, {
-        body, authorId, authorName, authorRole,
+        body, authorId, authorName, authorUserName, authorAvatar, authorRole,
       });
       setMessages((prev) => [...prev, msg]);
       setDraft('');

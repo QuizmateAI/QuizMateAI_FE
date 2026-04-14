@@ -54,14 +54,61 @@ async function updateUserProfile(profileData) {
     throw new Error(i18n.t("error.missingAuthToken"));
   }
 
-  const response = await api.put("/user/profile", {
+  const payload = {
     fullName: profileData.fullName,
     birthday: profileData.birthday,
     avatar: profileData.avatar,
-  });
+  };
+  if (profileData.preferredLanguage !== undefined) {
+    payload.preferredLanguage = profileData.preferredLanguage;
+  }
+
+  const response = await api.put("/user/profile", payload);
 
   clearUserCache(); // Invalidate cache sau khi cập nhật
   return response?.data || response;
+}
+
+/**
+ * Cập nhật ngôn ngữ ưa thích của người dùng (best-effort — không throw nếu lỗi).
+ * Gọi sau khi i18n.changeLanguage() đã apply phía client.
+ */
+async function updateUserPreferredLanguage(language) {
+  const token = getStoredToken();
+  if (!token) return null;
+
+  const normalized = typeof language === "string" ? language.trim().toLowerCase() : "";
+  if (!normalized) return null;
+
+  try {
+    await api.put("/user/profile", { preferredLanguage: normalized });
+    clearUserCache();
+    return normalized;
+  } catch (error) {
+    console.warn("[ProfileAPI] Failed to persist preferred language:", error);
+    return null;
+  }
+}
+
+/**
+ * Cập nhật themeMode (light/dark) của người dùng (best-effort — không throw nếu lỗi).
+ * Gọi sau khi dark mode đã toggle phía client.
+ */
+async function updateUserThemeMode(themeMode) {
+  const token = getStoredToken();
+  if (!token) return null;
+
+  const normalized = typeof themeMode === "string" ? themeMode.trim().toLowerCase() : "";
+  if (!normalized) return null;
+
+  try {
+    await api.put("/user/profile", { themeMode: normalized });
+    clearUserCache();
+    return normalized;
+  } catch (error) {
+    console.warn("[ProfileAPI] Failed to persist theme mode:", error);
+    return null;
+  }
 }
 
 /**
@@ -112,4 +159,4 @@ async function uploadAvatar(file) {
   return response?.data || response;
 }
 
-export { getUserProfile, getStoredToken, updateUserProfile, changePassword, uploadAvatar };
+export { getUserProfile, getStoredToken, updateUserProfile, updateUserPreferredLanguage, updateUserThemeMode, changePassword, uploadAvatar };

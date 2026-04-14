@@ -7,6 +7,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { getGroupOverallRanking } from "@/api/GroupAPI";
+import UserDisplayName from "@/Components/users/UserDisplayName";
 import { useTranslation } from "react-i18next";
 
 // ── Formatters ─────────────────────────────────────────────────────────────────
@@ -51,7 +52,12 @@ function MiniTable({ rows, valueKey, valueFormat, isDarkMode, emptyLabel }) {
                   {(row.fullName || "?")[0].toUpperCase()}
                 </div>
               )}
-              <span className={`text-xs font-medium truncate ${textPrimary}`}>{row.fullName}</span>
+              <div className="min-w-0">
+                <UserDisplayName user={row} fallback="?" className={`text-xs font-medium ${textPrimary}`} />
+                {row.username && (
+                  <p className={`truncate text-[10px] ${textMuted}`}>@{row.username}</p>
+                )}
+              </div>
             </div>
 
             {/* Value */}

@@ -28,7 +28,7 @@ export async function getThreadMessages(workspaceId, quizId, questionId = null) 
   return { messages: store[key]?.messages || [] };
 }
 
-export async function postMessage(workspaceId, quizId, questionId = null, { body, authorId, authorName, authorRole }) {
+export async function postMessage(workspaceId, quizId, questionId = null, { body, authorId, authorName, authorUserName, authorAvatar, authorRole }) {
   const store = readStore();
   const key = threadKey(workspaceId, quizId, questionId);
   if (!store[key]) store[key] = { messages: [] };
@@ -37,6 +37,8 @@ export async function postMessage(workspaceId, quizId, questionId = null, { body
     id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     authorId,
     authorName,
+    authorUserName: authorUserName || null,
+    authorAvatar: authorAvatar || null,
     authorRole,
     body: body.trim(),
     createdAt: new Date().toISOString(),

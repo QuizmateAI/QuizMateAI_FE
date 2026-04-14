@@ -368,7 +368,7 @@
       "meta": "Aggregated from {{quizCount}} active quizzes · {{memberCount}} participating members",
       "metrics": {
         "accuracy": {
-          "title": "First-attempt accuracy",
+          "title": "Accuracy",
           "subtitle": "Each quiz uses the first official attempt, then averages the accuracy"
         },
         "completion": {
@@ -1238,7 +1238,8 @@
       "PRE_LEARNING": "Pre-learning",
       "POST_LEARNING": "Post-learning",
       "PRACTICE": "Practice",
-      "REVIEW": "Review"
+      "REVIEW": "Review",
+      "MOCK_TEST": "Mock test"
     },
     "difficultyLevels": {
       "easy": "Easy",
@@ -1597,12 +1598,21 @@
       "missingCustomPrompt": "Please enter your custom request.",
       "generateFailed": "Failed to generate template. Please try again.",
       "createMockTestFailed": "Failed to create mock test. Please try again.",
-      "genericGenerate": "An error occurred while generating the template."
+      "genericGenerate": "An error occurred while generating the template.",
+      "materialsLoadFailed": "Failed to load materials.",
+      "workspaceIdMissing": "Could not determine the workspace.",
+      "questionTypesNotReady": "Question types are still loading. Please try again."
     },
     "header": {
       "title": "Create Mock Test with AI"
     },
     "description": "AI will generate a suitable exam template. The leader can preview and then apply it to create a DRAFT mock test for the group.",
+    "steps": {
+      "basic": "1. Configuration",
+      "structure": "2. Structure",
+      "generating": "3. Generate Questions"
+    },
+    "scopeNotice": "Mock tests only generate objective questions: single choice, multiple choice, and true/false. Listening, Writing, and Speaking are not supported, so the AI will skip them. The generated test is saved as DRAFT so the leader can publish it later.",
     "tabs": {
       "examName": "Exam name",
       "custom": "Custom request"
@@ -1621,9 +1631,21 @@
       "totalQuestions": "Number of questions",
       "duration": "Duration (minutes)"
     },
+    "materials": {
+      "title": "Reference materials",
+      "loading": "Loading materials...",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "empty": "No materials in this workspace yet. AI will generate questions from the exam name.",
+      "itemFallback": "Material #{{index}}"
+    },
     "generating": {
-      "title": "AI is generating the template…",
-      "hint": "This may take 15–40 seconds depending on complexity…"
+      "title": "Generating questions for the mock test...",
+      "hint": "This may take from 30 seconds to a few minutes depending on the number of questions. The test will be saved as DRAFT so you can publish it later."
+    },
+    "structure": {
+      "backToConfig": "Back to configuration",
+      "regenerate": "Regenerate"
     },
     "preview": {
       "ready": "AI template is ready",
@@ -1645,7 +1667,11 @@
       "generating": "Generating…",
       "generate": "Generate template with AI",
       "applying": "Creating Draft…",
-      "apply": "Apply & Create Draft"
+      "apply": "Apply & Create Draft",
+      "requestingSuggestion": "Generating suggestion...",
+      "requestSuggestion": "Get structure suggestion",
+      "creatingDraft": "Creating draft...",
+      "createDraft": "Create draft"
     }
   },
   "groupProfileOverviewPanel": {
