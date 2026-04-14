@@ -10,6 +10,7 @@ import { useToast } from "@/context/ToastContext";
 import { useRoadmapPreLearningDecision } from "../hooks/useRoadmapPreLearningDecision";
 import DirectFeedbackButton from "@/Components/feedback/DirectFeedbackButton";
 import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
+import RoadmapReviewPanel from "@/Components/workspace/RoadmapReviewPanel";
 
 const ROOT_CARD_WIDTH = 240;
 const PHASE_CARD_WIDTH = 208;
@@ -105,6 +106,23 @@ function isFinishedPhaseStatus(status) {
 function isFinishedKnowledgeStatus(status) {
   const normalized = String(status || "").toUpperCase();
   return normalized === "COMPLETED" || normalized === "SKIPPED" || normalized === "DONE";
+}
+
+function formatPhaseDurationLabel(phase, t) {
+  const estimatedDays = Number(phase?.estimatedDays ?? phase?.studyDurationInDay ?? phase?.durationInDay ?? 0);
+  const estimatedMinutesPerDay = Number(phase?.estimatedMinutesPerDay ?? phase?.recommendedMinutesPerDay ?? phase?.minutesPerDay ?? 0);
+
+  if (estimatedDays > 0 && estimatedMinutesPerDay > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")} • ${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+  if (estimatedDays > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")}`;
+  }
+  if (estimatedMinutesPerDay > 0) {
+    return `${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+
+  return phase?.durationLabel || null;
 }
 
 function RoadmapCanvasViewStage({
@@ -1151,9 +1169,11 @@ function RoadmapCanvasViewStage({
               {selectedPhase.title}
             </h3>
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
-                {selectedPhase.durationLabel}
-              </span>
+              {formatPhaseDurationLabel(selectedPhase, t) ? (
+                <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                  {formatPhaseDurationLabel(selectedPhase, t)}
+                </span>
+              ) : null}
               <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
                 {phaseKnowledges.length} {t("workspace.roadmap.canvas.knowledges")}
               </span>
@@ -1510,6 +1530,10 @@ function RoadmapCanvasViewStage({
           </p>
         </div>
 
+        {Number.isInteger(Number(roadmap?.roadmapId ?? roadmap?.id)) && Number(roadmap?.roadmapId ?? roadmap?.id) > 0 && (
+          <RoadmapReviewPanel roadmapId={Number(roadmap?.roadmapId ?? roadmap?.id)} isDarkMode={isDarkMode} />
+        )}
+
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {summaryChips.map((chip) => {
             const Icon = chip.icon;
@@ -1607,7 +1631,7 @@ function RoadmapCanvasViewStage({
                     style={{ width: roadmapCardWidth }}
                     className={`relative z-20 shrink-0 rounded-[24px] border px-4 py-3 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
                       ? isDarkMode
-                        ? "border-emerald-400 bg-emerald-500/10"
+                        ? "border-emerald-400 bg-slate-900"
                         : "border-emerald-500 bg-emerald-50"
                       : isDarkMode
                         ? "border-slate-700 bg-slate-900/95 hover:border-slate-600"
@@ -1640,7 +1664,7 @@ function RoadmapCanvasViewStage({
                             : "cursor-pointer border-gray-200 bg-gray-100 opacity-80"
                           : active
                           ? isDarkMode
-                            ? "border-sky-400 bg-sky-500/10"
+                            ? "border-sky-400 bg-slate-900"
                             : "border-sky-500 bg-sky-50"
                           : isDarkMode
                             ? "border-slate-700 bg-slate-900/95 hover:border-slate-600"
