@@ -580,6 +580,8 @@ export default function GroupDiscussionPanel({
     const encodedBody = encodeDraftTags(rawBody, draftTags);
     const authorId = profile?.userId ?? profile?.id ?? 0;
     const authorName = profile?.fullName ?? profile?.name ?? t('groupDiscussionPanel.defaultUserName', 'User');
+    const authorUserName = profile?.username ?? null;
+    const authorAvatar = profile?.avatarUrl ?? profile?.avatar ?? null;
     const authorRole = isLeader ? 'LEADER' : 'MEMBER';
 
     setPosting(true);
@@ -588,6 +590,8 @@ export default function GroupDiscussionPanel({
         body: encodedBody,
         authorId,
         authorName,
+        authorUserName,
+        authorAvatar,
         authorRole,
       });
       setMessages((prev) => [...prev, msg]);

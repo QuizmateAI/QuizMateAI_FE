@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 // Tạo Context để quản lý trạng thái Dark Mode
 const DarkModeContext = createContext();
@@ -10,13 +10,29 @@ export function DarkModeProvider({ children }) {
     return saved ? JSON.parse(saved) : false;
   });
 
-  // Lưu trạng thái vào localStorage khi thay đổi
+  // Tránh gọi PUT BE cho lần render đầu (chỉ đồng bộ, chưa phải user action)
+  const hasHydrated = useRef(false);
+
+  // Lưu trạng thái vào localStorage + áp class, PUT lên BE khi user toggle
   useEffect(() => {
     localStorage.setItem('quizmate_dark_mode', JSON.stringify(isDarkMode));
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+
+    if (!hasHydrated.current) {
+      hasHydrated.current = true;
+      return;
+    }
+
+    // Persist lên BE nếu đã đăng nhập. Lazy import tránh vòng phụ thuộc.
+    const hasToken = !!(localStorage.getItem('accessToken') || localStorage.getItem('jwt_token'));
+    if (hasToken) {
+      import('@/api/ProfileAPI')
+        .then(({ updateUserThemeMode }) => updateUserThemeMode(isDarkMode ? 'dark' : 'light'))
+        .catch(() => {});
     }
   }, [isDarkMode]);
 

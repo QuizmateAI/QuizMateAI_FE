@@ -2583,7 +2583,8 @@
         "PRE_LEARNING": "Pre-learning",
         "POST_LEARNING": "Post-learning",
         "REVIEW": "Review",
-        "PRACTICE": "Practice"
+        "PRACTICE": "Practice",
+        "MOCK_TEST": "Mock test"
       },
       "statusLabels": {
         "ACTIVE": "Active",
@@ -3031,6 +3032,7 @@
         "title": "Result",
         "notFound": "Result not found",
         "quizCompleted": "Quiz Completed",
+        "mockTestCompleted": "Mock Test Submitted",
         "congratulations": "Congratulations!",
         "keepTrying": "Keep Trying!",
         "gradingTitle": "AI is grading",
@@ -3454,7 +3456,6 @@
         "title": "Please wait while AI generates phases"
       },
       "phaseReviewAssessedAt": "Đánh giá lúc",
-      "phaseReviewConfidence": "Độ tin cậy",
       "phaseReviewSummaryDropdown": "Phase Review Summary Dropdown",
       "phaseReviewTitle": "Đánh giá AI cho phase hiện tại",
       "postLearningHelper": "Post Learning Helper",

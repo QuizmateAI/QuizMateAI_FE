@@ -1,8 +1,17 @@
 import api from './api';
 
-// Tạo Mock Test thông qua AI (endpoint cũ — async, trả về taskId)
+// Tạo Mock Test thông qua AI (async, trả về taskId).
+// Endpoint thật: POST /api/ai/mocktest:generated. baseURL đã là /api → path cần "/ai/...".
 export const generateMockTest = async (data) => {
-  const response = await api.post('/mocktest:generated', data);
+  const response = await api.post('/ai/mocktest:generated', data, { timeout: 0 });
+  return response;
+};
+
+// Bước 1 của flow tạo mock test: gọi AI gợi ý cấu trúc sections + description
+// (đồng bộ ~3-15s tuỳ độ phức tạp đề, KHÔNG sinh câu hỏi). User confirm/edit rồi mới gọi generateMockTest.
+// Override default 10s timeout của axios — AI chat call có thể chạm 30s khi BE/Python bận.
+export const suggestMockTestStructure = async (data) => {
+  const response = await api.post('/ai/mocktest:suggest-structure', data, { timeout: 60000 });
   return response;
 };
 

@@ -19,6 +19,76 @@ function trimToNull(value) {
   return normalized || null;
 }
 
+export function getSectionChildren(section) {
+  if (Array.isArray(section?.children)) {
+    return section.children;
+  }
+  if (Array.isArray(section?.subSections)) {
+    return section.subSections;
+  }
+  return [];
+}
+
+export function getSectionTitle(section, fallbackTitle = '') {
+  return trimToNull(section?.title)
+    || trimToNull(section?.content)
+    || trimToNull(section?.name)
+    || fallbackTitle;
+}
+
+export function getSectionKey(section, fallbackKey = '') {
+  const sectionId = Number(section?.sectionId);
+  if (Number.isInteger(sectionId) && sectionId > 0) {
+    return String(sectionId);
+  }
+  return String(fallbackKey || getSectionTitle(section, 'section'));
+}
+
+export function countSectionQuestions(section) {
+  const directQuestions = Array.isArray(section?.questions) ? section.questions.length : 0;
+  return directQuestions + getSectionChildren(section).reduce(
+    (total, childSection) => total + countSectionQuestions(childSection),
+    0,
+  );
+}
+
+export function collectAllSectionKeys(sections = [], parentPath = 'section') {
+  return (Array.isArray(sections) ? sections : []).reduce((keys, section, index) => {
+    const pathLabel = `${parentPath}-${index + 1}`;
+    const sectionKey = getSectionKey(section, pathLabel);
+    keys.push(sectionKey);
+    keys.push(...collectAllSectionKeys(getSectionChildren(section), pathLabel));
+    return keys;
+  }, []);
+}
+
+export function buildQuestionSectionPathMap(sections = [], parentKeys = [], parentPath = 'section') {
+  const sectionMap = new Map();
+
+  const visitSection = (section, index, pathPrefix, ancestorKeys) => {
+    const pathLabel = `${pathPrefix}-${index + 1}`;
+    const sectionKey = getSectionKey(section, pathLabel);
+    const nextAncestorKeys = [...ancestorKeys, sectionKey];
+
+    for (const question of section?.questions || []) {
+      const questionId = Number(question?.id ?? question?.questionId);
+      if (Number.isInteger(questionId) && questionId > 0) {
+        sectionMap.set(questionId, nextAncestorKeys);
+      }
+    }
+
+    getSectionChildren(section).forEach((childSection, childIndex) => {
+      visitSection(childSection, childIndex, pathLabel, nextAncestorKeys);
+    });
+  };
+
+  (Array.isArray(sections) ? sections : []).forEach((section, index) => {
+    visitSection(section, index, parentPath, parentKeys);
+  });
+
+  return sectionMap;
+}
+
 export function normalizeMatchingPairs(pairs = []) {
   if (!Array.isArray(pairs) || pairs.length === 0) {
     return [];
@@ -136,39 +206,111 @@ export function normalizeQuizData(apiQuiz) {
     : rawDuration * 60;
   const questions = [];
   const sections = apiQuiz.sections || [];
-  for (const section of sections) {
-    for (const q of section.questions || []) {
-      const normalizedAnswers = (q.answers || []).map(a => ({
-        id: a.answerId,
-        content: a.content,
-        isCorrect: a.isCorrect,
-        matchingPairs: normalizeMatchingPairs(a.matchingPairs),
-      }));
-      const correctMatchingPairs = getCorrectMatchingPairs({ answers: normalizedAnswers });
-      const cardType = correctMatchingPairs.length > 0 ? 'MATCHING' : getCardQuestionType(q.questionTypeId);
-      const normalizedTimeLimit = isTotalTimerMode
-        ? 0
-        : Math.max(1, Number(q.duration) || 0);
-      questions.push({
-        id: q.questionId,
-        content: q.content,
-        type: cardType,
-        difficulty: q.difficulty || 'MEDIUM',
-        score: q.score || 0,
-        explanation: q.explanation || '',
-        timeLimit: normalizedTimeLimit,
-        answers: normalizedAnswers,
-        correctMatchingPairs,
-        matchingRightOptions: buildMatchingRightOptions(correctMatchingPairs),
-      });
+
+  function normalizeQuestion(q) {
+    const nextQuestionNumber = questions.length + 1;
+    const normalizedAnswers = (q.answers || []).map(a => ({
+      id: a.answerId,
+      content: a.content,
+      isCorrect: a.isCorrect,
+      matchingPairs: normalizeMatchingPairs(a.matchingPairs),
+    }));
+    const correctMatchingPairs = getCorrectMatchingPairs({ answers: normalizedAnswers });
+    const cardType = correctMatchingPairs.length > 0 ? 'MATCHING' : getCardQuestionType(q.questionTypeId);
+    const normalizedTimeLimit = isTotalTimerMode
+      ? 0
+      : Math.max(1, Number(q.duration) || 0);
+
+    const normalizedQuestion = {
+      id: q.questionId,
+      content: q.content,
+      type: cardType,
+      difficulty: q.difficulty || 'MEDIUM',
+      score: q.score || 0,
+      explanation: q.explanation || '',
+      timeLimit: normalizedTimeLimit,
+      answers: normalizedAnswers,
+      correctMatchingPairs,
+      matchingRightOptions: buildMatchingRightOptions(correctMatchingPairs),
+      number: nextQuestionNumber,
+    };
+
+    questions.push(normalizedQuestion);
+    return normalizedQuestion;
+  }
+
+  function normalizeSectionNode(section) {
+    if (!section) return null;
+
+    const normalizedQuestions = (section.questions || []).map(normalizeQuestion);
+    const normalizedChildren = getSectionChildren(section)
+      .map(normalizeSectionNode)
+      .filter(Boolean);
+
+    return {
+      sectionId: section.sectionId ?? null,
+      parentSectionId: section.parentSectionId ?? null,
+      sectionType: section.sectionType ?? null,
+      title: getSectionTitle(section),
+      content: section.content ?? '',
+      questions: normalizedQuestions,
+      children: normalizedChildren,
+    };
+  }
+
+  let sectionGroups = sections
+    .map(normalizeSectionNode)
+    .filter(Boolean);
+
+  if (
+    sectionGroups.length === 1
+    && String(sectionGroups[0]?.sectionType || '').toUpperCase() === 'ROOT'
+    && sectionGroups[0].questions.length === 0
+    && sectionGroups[0].children.length > 0
+  ) {
+    sectionGroups = sectionGroups[0].children;
+  }
+
+  if (sectionGroups.length === 0) {
+    // Fallback an toàn cho payload cũ thiếu section tree.
+    for (const section of sections) {
+      if (!section) continue;
+      for (const q of section.questions || []) {
+        normalizeQuestion(q);
+      }
     }
   }
+
+  if (questions.length === 0) {
+    // Đệ quy collect questions từ tree section khi payload không có câu hỏi ở root level.
+    function collectQuestionsFrom(section) {
+      if (!section) return;
+      for (const q of section.questions || []) {
+        normalizeQuestion(q);
+      }
+      const children = getSectionChildren(section);
+      for (const child of children) {
+        collectQuestionsFrom(child);
+      }
+    }
+
+    for (const section of sections) {
+      collectQuestionsFrom(section);
+    }
+  }
+
+  questions.forEach((question, index) => {
+    if (!Number.isFinite(question.number)) {
+      question.number = index + 1;
+    }
+  });
 
   return {
     quizId: apiQuiz.quizId,
     workspaceId: apiQuiz.workspaceId || apiQuiz.workSpaceId || apiQuiz.workspace?.workspaceId || null,
     title: apiQuiz.title,
     description: '',
+    quizIntent: apiQuiz.quizIntent || null,
     timerMode: isTotalTimerMode ? 'TOTAL' : 'PER_QUESTION',
     totalTime: totalTimeInSeconds,
     maxAttempt: apiQuiz.maxAttempt,
@@ -176,6 +318,7 @@ export function normalizeQuizData(apiQuiz) {
     maxScore: apiQuiz.maxScore,
     status: apiQuiz.status,
     questions,
+    sectionGroups,
   };
 }
 

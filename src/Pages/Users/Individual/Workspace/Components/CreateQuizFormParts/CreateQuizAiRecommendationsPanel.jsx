@@ -105,30 +105,11 @@ function CreateQuizAiRecommendationsPanel({
                 </p>
               )}
 
-              {activeRecommendation.goal && (
-                <p className={`mt-1.5 text-xs font-medium ${isDarkMode ? "text-slate-300" : "text-gray-600"} ${fontClass}`}>
-                  {t("workspace.quiz.aiRecommendations.goal")}: {activeRecommendation.goal}
-                </p>
-              )}
-
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className={`text-[11px] ${isDarkMode ? "text-slate-400" : "text-gray-500"} ${fontClass}`}>
                   {activeRecommendation.questionCount} {t("workspace.quiz.questions")}
                 </span>
               </div>
-
-              {Array.isArray(activeRecommendation.focusTopics) && activeRecommendation.focusTopics.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {activeRecommendation.focusTopics.map((topic, index) => (
-                    <span
-                      key={`${activeRecommendation.assessmentId}-${index}`}
-                      className={`rounded-full border px-2 py-0.5 text-[11px] ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-gray-200 bg-gray-50 text-gray-600"}`}
-                    >
-                      {topic}
-                    </span>
-                  ))}
-                </div>
-              )}
 
               {/* Structure detail toggle */}
               {Array.isArray(activeRecommendation.structure) && activeRecommendation.structure.length > 0 && (

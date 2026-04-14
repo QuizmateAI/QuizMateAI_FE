@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, Trophy, XCircle, CheckCircle2, BarChart3, Clock3, Sparkles, RefreshCw, WandSparkles, BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import DirectFeedbackButton from '@/Components/feedback/DirectFeedbackButton';
@@ -14,7 +14,8 @@ import {
   getCurrentRoadmapPhaseProgress,
   submitRoadmapPhaseSkipDecision,
 } from '@/api/RoadmapPhaseAPI';
-import { normalizeQuizData } from './utils/quizTransform';
+import { buildQuestionSectionPathMap, collectAllSectionKeys, countSectionQuestions, getSectionChildren, getSectionKey, getSectionTitle, normalizeQuizData } from './utils/quizTransform';
+import { MockTestReviewExtensions } from '@/Pages/Users/MockTest/components/MockTestReviewExtensions';
 import { useToast } from '@/context/ToastContext';
 import {
   buildGroupWorkspaceSectionPath,
@@ -26,6 +27,7 @@ import {
   extractWorkspaceIdFromPath,
   isGroupWorkspacePath,
   isWorkspaceQuizDetailPath,
+  isWorkspaceMockTestDetailPath,
 } from '@/lib/routePaths';
 
 const PRE_LEARNING_PHASE_CONTENT_TRIGGER_KEY = 'prelearning_phasecontent_triggered_attempts';
@@ -214,6 +216,7 @@ export default function QuizResultPage() {
   const [submittingSkipDecision, setSubmittingSkipDecision] = useState(false);
   const [knowledgeGenerationTriggered, setKnowledgeGenerationTriggered] = useState(false);
   const [knowledgeGenerationHydrated, setKnowledgeGenerationHydrated] = useState(false);
+  const [expandedReviewSections, setExpandedReviewSections] = useState({});
   const itemsPerPage = 20;
   const questionRefs = useRef({});
   const retryTimeoutRef = useRef(null);
@@ -303,12 +306,13 @@ export default function QuizResultPage() {
     sourceWorkspaceId,
   ]);
 
-  // When returnToQuizPath is already a group-workspace path, skip constructing an individual
-  // workspace path here — canUseReturnPathAsQuizDetail + returnToQuizPath will handle it below.
+  // When returnToQuizPath is already a group-workspace or mock-test path, skip constructing an
+  // individual workspace path — canUseReturnPathAsQuizDetail + returnToQuizPath will handle it below.
   const directQuizDetailBackPath = Number.isInteger(resolvedWorkspaceIdForBack)
     && resolvedWorkspaceIdForBack > 0
     && hasQuizIdForBack
     && !isGroupWorkspacePath(returnToQuizPath)
+    && !isWorkspaceMockTestDetailPath(returnToQuizPath)
     ? (sourceView === 'roadmap'
       ? buildWorkspaceRoadmapQuizPath(resolvedWorkspaceIdForBack, {
         roadmapId: sourceRoadmapId,
@@ -321,7 +325,7 @@ export default function QuizResultPage() {
 
   const canUseReturnPathAsQuizDetail = useMemo(() => {
     if (!returnToQuizPath) return false;
-    return isWorkspaceQuizDetailPath(returnToQuizPath) || isGroupWorkspacePath(returnToQuizPath);
+    return isWorkspaceQuizDetailPath(returnToQuizPath) || isGroupWorkspacePath(returnToQuizPath) || isWorkspaceMockTestDetailPath(returnToQuizPath);
   }, [returnToQuizPath]);
 
   const resumeAttemptPath = useMemo(() => {
@@ -549,9 +553,40 @@ export default function QuizResultPage() {
         isCorrect: evaluatedCorrect,
         gradingStatus,
         questionScore: attemptQuestion.questionScore || 0,
+        number: Number(detailQuestion?.number) || (index + 1),
       };
     });
   }, [result, quizDetails]);
+  const reviewQuestionMap = useMemo(
+    () => new Map(reviewQuestions.map((question) => [question.id, question])),
+    [reviewQuestions],
+  );
+  const reviewSectionGroups = useMemo(() => {
+    const mapReviewSection = (section) => {
+      if (!section) return null;
+
+      const mappedQuestions = (section.questions || [])
+        .map((question) => reviewQuestionMap.get(question.id))
+        .filter(Boolean);
+      const mappedChildren = getSectionChildren(section)
+        .map(mapReviewSection)
+        .filter(Boolean);
+
+      return {
+        ...section,
+        questions: mappedQuestions,
+        children: mappedChildren,
+      };
+    };
+
+    return (quizDetails?.sectionGroups || [])
+      .map(mapReviewSection)
+      .filter(Boolean);
+  }, [quizDetails?.sectionGroups, reviewQuestionMap]);
+  const reviewQuestionSectionPathMap = useMemo(
+    () => buildQuestionSectionPathMap(reviewSectionGroups),
+    [reviewSectionGroups],
+  );
 
   const pendingGradingCount = useMemo(() => {
     const pendingFromQuestions = reviewQuestions.filter(isPendingQuestionGrading).length;
@@ -587,6 +622,21 @@ export default function QuizResultPage() {
   }, [pendingGradingCount, reviewQuestions]);
   const isGradingPending = pendingGradingCount > 0;
   const shouldShowAssessmentSection = assessmentLoading || assessmentStatus !== 'NOT_AVAILABLE';
+  const isMockTestReviewLayout = String(quizRawDetails?.quizIntent || result?.quizIntent || quizDetails?.quizIntent || '').toUpperCase() === 'MOCK_TEST'
+    && reviewSectionGroups.length > 0;
+
+  useEffect(() => {
+    if (!isMockTestReviewLayout) {
+      setExpandedReviewSections({});
+      return;
+    }
+
+    setExpandedReviewSections(
+      Object.fromEntries(
+        collectAllSectionKeys(reviewSectionGroups).map((sectionKey) => [sectionKey, true]),
+      ),
+    );
+  }, [isMockTestReviewLayout, reviewSectionGroups]);
 
   useEffect(() => {
     setReviewMode(shouldStartInReviewMode);
@@ -598,7 +648,37 @@ export default function QuizResultPage() {
     }
   }, [isGradingPending]);
 
+  const openReviewSectionsForQuestionIndex = useCallback((questionIndex) => {
+    const question = reviewQuestions[questionIndex];
+    if (!question) return;
+
+    const sectionKeys = reviewQuestionSectionPathMap.get(Number(question.id)) || [];
+    if (sectionKeys.length === 0) return;
+
+    setExpandedReviewSections((prev) => {
+      const nextState = { ...prev };
+      let changed = false;
+
+      sectionKeys.forEach((sectionKey) => {
+        if (!nextState[sectionKey]) {
+          nextState[sectionKey] = true;
+          changed = true;
+        }
+      });
+
+      return changed ? nextState : prev;
+    });
+  }, [reviewQuestionSectionPathMap, reviewQuestions]);
+
   const jumpToQuestion = useCallback((questionIndex) => {
+    if (isMockTestReviewLayout) {
+      openReviewSectionsForQuestionIndex(questionIndex);
+      window.setTimeout(() => {
+        questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 20);
+      return;
+    }
+
     const targetPage = Math.floor(questionIndex / itemsPerPage) + 1;
     if (targetPage !== currentPage) {
       setCurrentPage(targetPage);
@@ -609,7 +689,7 @@ export default function QuizResultPage() {
     }
 
     questionRefs.current[questionIndex]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage, isMockTestReviewLayout, itemsPerPage, openReviewSectionsForQuestionIndex]);
 
   const refreshAttemptResult = useCallback(async () => {
     if (!attemptId) return;
@@ -1073,15 +1153,169 @@ handleBack,
     total: totalQuestion,
   });
   const timeTakenSeconds = getTimeTakenSeconds(result.startedAt, result.completedAt, result.timeoutAt);
-  const totalPages = Math.max(1, Math.ceil(reviewQuestions.length / itemsPerPage));
+  const totalPages = isMockTestReviewLayout ? 1 : Math.max(1, Math.ceil(reviewQuestions.length / itemsPerPage));
   const safeNavPage = Math.min(currentPage, totalPages);
   const navStartIndex = (safeNavPage - 1) * itemsPerPage;
-  const navQuestions = reviewQuestions.slice(navStartIndex, navStartIndex + itemsPerPage);
+  const navQuestions = isMockTestReviewLayout
+    ? reviewQuestions
+    : reviewQuestions.slice(navStartIndex, navStartIndex + itemsPerPage);
+  const toggleReviewSection = (sectionKey) => {
+    setExpandedReviewSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
+  const renderReviewQuestionCard = (question) => {
+    const questionNumber = Number(question?.number) || 1;
+    const questionIndex = questionNumber - 1;
+    return (
+      <div key={question.id} className="relative scroll-mt-24" ref={(element) => { if (element) questionRefs.current[questionIndex] = element; }}>
+        <QuestionCard
+          question={question}
+          questionNumber={questionNumber}
+          totalQuestions={reviewQuestions.length}
+          showHeaderMeta={false}
+          answerValue={
+            question.type === 'SHORT_ANSWER' || question.type === 'FILL_IN_BLANK'
+              ? question.textAnswer
+              : question.type === 'MATCHING'
+                ? { matchingPairs: question.matchingPairs }
+                : question.selectedAnswerIds
+          }
+          showResult
+          showExplanation
+          disabled
+        />
+      </div>
+    );
+  };
+
+  const renderReviewSection = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
+    const childSections = getSectionChildren(section);
+    const sectionKey = getSectionKey(section, `review-section-${pathLabel}`);
+    const isExpanded = expandedReviewSections[sectionKey] ?? true;
+    const sectionTitle = getSectionTitle(
+      section,
+      t('workspace.mockTestForms.detail.section', 'Section'),
+    );
+
+    return (
+      <section
+        key={section.sectionId ?? `review-section-${pathLabel}`}
+        className={cn(
+          'space-y-4',
+          depth === 0
+            ? 'rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-blue-950/20'
+            : 'pl-5 border-l-2 border-slate-200 dark:border-slate-700',
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => toggleReviewSection(sectionKey)}
+          className="flex w-full flex-wrap items-center gap-3 rounded-2xl text-left transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-900/40"
+        >
+          <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <div className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              {sectionTitle}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {countSectionQuestions(section)} {t('workspace.mockTestForms.detail.questions', 'questions')}
+            </p>
+          </div>
+        </button>
+
+        {isExpanded && (
+          <>
+            {Array.isArray(section?.questions) && section.questions.length > 0 && (
+              <div className="space-y-4">
+                {section.questions.map((question) => renderReviewQuestionCard(question))}
+              </div>
+            )}
+
+            {childSections.length > 0 && (
+              <div className="space-y-6">
+                {childSections.map((childSection, childIndex) => renderReviewSection(childSection, childIndex, depth + 1, `${pathLabel}.${childIndex + 1}`))}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    );
+  };
+
+  const renderReviewNavButton = (question, fallbackIndex = 0) => {
+    const questionNumber = Number(question?.number) || (fallbackIndex + 1);
+    const isPending = isPendingQuestionGrading(question) || !hasResolvedQuestionResult(question);
+    const isCorrect = question.isCorrect === true;
+
+    return (
+      <button
+        key={question.id}
+        onClick={() => jumpToQuestion(questionNumber - 1)}
+        className={cn(
+          'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+          isPending
+            ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
+            : isCorrect
+              ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
+              : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
+        )}
+      >
+        <span className="relative z-10 leading-none">{questionNumber}</span>
+      </button>
+    );
+  };
+
+  const renderReviewNavSection = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
+    const childSections = getSectionChildren(section);
+    const sectionTitle = getSectionTitle(
+      section,
+      `${t('workspace.mockTestForms.detail.section', 'Section')} ${pathLabel}`,
+    );
+
+    return (
+      <div
+        key={section.sectionId ?? `review-nav-section-${pathLabel}`}
+        className={cn('space-y-2', depth > 0 && 'pl-4 border-l border-slate-200 dark:border-slate-700')}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 truncate text-sm font-semibold text-slate-700 dark:text-slate-100">
+            {sectionTitle}
+          </p>
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800/80 dark:text-slate-300">
+            {countSectionQuestions(section)}
+          </span>
+        </div>
+
+        {Array.isArray(section?.questions) && section.questions.length > 0 && (
+          <div className="grid grid-cols-5 gap-1.5">
+            {section.questions.map((question, questionIndex) => renderReviewNavButton(question, questionIndex))}
+          </div>
+        )}
+
+        {childSections.length > 0 && (
+          <div className="space-y-3">
+            {childSections.map((childSection, childIndex) => renderReviewNavSection(childSection, childIndex, depth + 1, `${pathLabel}.${childIndex + 1}`))}
+          </div>
+        )}
+      </div>
+    );
+  };
   const resolvedPassed = isGradingPending ? null : passed;
+  const isMockTestResult = String(quizRawDetails?.quizIntent || result?.quizIntent || '').toUpperCase() === 'MOCK_TEST';
+  const completedFallback = isMockTestResult
+    ? t('quizResultPage.mockTestCompleted', 'Mock Test Submitted')
+    : t('quizResultPage.quizCompleted', 'Quiz Completed');
   const resultTitle = isGradingPending
     ? t('quizResultPage.gradingTitle', 'AI is grading')
     : resolvedPassed == null
-      ? t('quizResultPage.quizCompleted', 'Quiz Completed')
+      ? completedFallback
       : resolvedPassed
         ? t('quizResultPage.congratulations', 'Congratulations!')
         : t('quizResultPage.keepTrying', 'Keep Trying!');
@@ -1216,10 +1450,6 @@ handleBack,
 
                 {assessmentStatus === 'READY' && assessmentData && (
                   <div className="space-y-4">
-                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                      {aiSummary || t('quizResultPage.assessmentNoSummary', 'No AI assessment summary yet.')}
-                    </p>
-
                     {(strengths.length > 0 || weaknesses.length > 0) && (
                       <div className="grid gap-3 sm:grid-cols-2">
                         {strengths.length > 0 && (
@@ -1255,13 +1485,17 @@ handleBack,
                       </div>
                     )}
 
-                    {(recommendedQuizTitle || recommendedQuizGoal || communitySuggestionText || recommendationFootnote) && (
+                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                      {aiSummary || t('quizResultPage.assessmentNoSummary', 'No AI assessment summary yet.')}
+                    </p>
+
+                    {(((recommendedQuizTitle || recommendedQuizGoal) && canGenerateRecommendedQuiz) || communitySuggestionText || recommendationFootnote) && (
                       <div className="rounded-xl border border-violet-200/80 bg-violet-50/70 p-4 dark:border-violet-800/70 dark:bg-violet-950/20">
                         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-violet-700 dark:text-violet-300">
                           {t('quizResultPage.nextResultSummary', 'Next suggestion')}
                         </p>
                         <div className="mt-3 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
-                          {recommendedQuizTitle && (
+                          {recommendedQuizTitle && canGenerateRecommendedQuiz && (
                             <p>
                               <span className="font-semibold text-violet-700 dark:text-violet-300">
                                 {t('quizResultPage.recommendedQuizTitle', 'Recommended next quiz')}:
@@ -1269,7 +1503,7 @@ handleBack,
                               {recommendedQuizTitle}
                             </p>
                           )}
-                          {recommendedQuizGoal && (
+                          {recommendedQuizGoal && canGenerateRecommendedQuiz && (
                             <p>
                               <span className="font-semibold text-violet-700 dark:text-violet-300">
                                 {t('quizResultPage.recommendedQuizGoal', 'Goal')}:
@@ -1389,6 +1623,18 @@ handleBack,
           </div>
         )}
 
+        {/* Mock test extensions: section + bloom breakdown + cohort stats — chỉ render ở trang tổng quan */}
+        {!reviewMode && String(quizRawDetails?.quizIntent || result?.quizIntent || '').toUpperCase() === 'MOCK_TEST' && (
+          <div className="mb-6">
+            <MockTestReviewExtensions
+              result={result}
+              quizRaw={quizRawDetails}
+              reviewQuestions={reviewQuestions}
+              quizId={result?.quizId}
+            />
+          </div>
+        )}
+
         {/* Review mode */}
         {reviewMode && (
           <>
@@ -1404,31 +1650,33 @@ handleBack,
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_272px] xl:grid-cols-[minmax(0,1fr)_288px]">
               <div className="space-y-4">
-                {reviewQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
-                  const globalIdx = (currentPage - 1) * itemsPerPage + idx;
-                  return (
-                    <div key={q.id} className="relative scroll-mt-24" ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }}>
-                      <QuestionCard
-                        question={q}
-                        questionNumber={globalIdx + 1}
-                        totalQuestions={reviewQuestions.length}
-                        showHeaderMeta={false}
-                        answerValue={
-                          q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK'
-                            ? q.textAnswer
-                            : q.type === 'MATCHING'
-                              ? { matchingPairs: q.matchingPairs }
-                              : q.selectedAnswerIds
-                        }
-                        showResult
-                        showExplanation
-                        disabled
-                      />
-                    </div>
-                  );
-                })}
+                {isMockTestReviewLayout
+                  ? reviewSectionGroups.map((section, sectionIndex) => renderReviewSection(section, sectionIndex))
+                  : reviewQuestions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((q, idx) => {
+                    const globalIdx = (currentPage - 1) * itemsPerPage + idx;
+                    return (
+                      <div key={q.id} className="relative scroll-mt-24" ref={(el) => { if (el) questionRefs.current[globalIdx] = el; }}>
+                        <QuestionCard
+                          question={q}
+                          questionNumber={globalIdx + 1}
+                          totalQuestions={reviewQuestions.length}
+                          showHeaderMeta={false}
+                          answerValue={
+                            q.type === 'SHORT_ANSWER' || q.type === 'FILL_IN_BLANK'
+                              ? q.textAnswer
+                              : q.type === 'MATCHING'
+                                ? { matchingPairs: q.matchingPairs }
+                                : q.selectedAnswerIds
+                          }
+                          showResult
+                          showExplanation
+                          disabled
+                        />
+                      </div>
+                    );
+                  })}
 
-                {reviewQuestions.length > itemsPerPage && (
+                {!isMockTestReviewLayout && reviewQuestions.length > itemsPerPage && (
                   <div className="mt-6 flex items-center justify-between p-4">
                     <Button variant="outline" disabled={currentPage === 1} onClick={() => { setCurrentPage((p) => p - 1); scrollToTop(); }}>
                       {t('quizResultPage.paginationPrev', 'Previous page')}
@@ -1447,6 +1695,7 @@ handleBack,
                     {t('quizResultPage.noReviewData', 'No detailed data available to review this attempt.')}
                   </div>
                 )}
+
               </div>
 
               {/* Right Sticky Nav */}
@@ -1513,43 +1762,49 @@ handleBack,
                         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                           {t('quizResultPage.questionList', 'Question list')}
                         </span>
-                        {totalPages > 1 && (
+                        {!isMockTestReviewLayout && totalPages > 1 && (
                           <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
                             {t('quizResultPage.paginationPage', 'Page')} {safeNavPage}/{totalPages}
                           </span>
                         )}
                       </div>
 
-                      <div className="grid max-h-[48vh] grid-cols-5 gap-1.5 overflow-y-auto pr-0.5">
-                        {navQuestions.map((q, idx) => {
-                          const globalIdx = navStartIndex + idx;
-                          const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
-                          const isCorrect = q.isCorrect === true;
-                          const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
+                      {isMockTestReviewLayout ? (
+                        <div className="max-h-[48vh] space-y-4 overflow-y-auto pr-0.5">
+                          {reviewSectionGroups.map((section, sectionIndex) => renderReviewNavSection(section, sectionIndex))}
+                        </div>
+                      ) : (
+                        <div className="grid max-h-[48vh] grid-cols-5 gap-1.5 overflow-y-auto pr-0.5">
+                          {navQuestions.map((q, idx) => {
+                            const globalIdx = navStartIndex + idx;
+                            const isPending = isPendingQuestionGrading(q) || !hasResolvedQuestionResult(q);
+                            const isCorrect = q.isCorrect === true;
+                            const inCurrentPage = globalIdx >= (currentPage - 1) * itemsPerPage && globalIdx < currentPage * itemsPerPage;
 
-                          return (
-                            <button
-                              key={q.id}
-                              onClick={() => jumpToQuestion(globalIdx)}
-                              className={cn(
-                                'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
-                                isPending
-                                  ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
-                                  : isCorrect
-                                    ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
-                                    : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
-                                inCurrentPage
-                                  ? 'ring-2 ring-sky-500 ring-offset-2 dark:ring-offset-slate-900'
-                                  : ''
-                              )}
-                            >
-                              <span className="relative z-10 leading-none">{globalIdx + 1}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                            return (
+                              <button
+                                key={q.id}
+                                onClick={() => jumpToQuestion(globalIdx)}
+                                className={cn(
+                                  'relative aspect-square w-full rounded-[14px] border text-[12px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900',
+                                  isPending
+                                    ? 'border-amber-300/90 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-300 dark:hover:bg-amber-900/35'
+                                    : isCorrect
+                                      ? 'border-emerald-300/90 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 dark:hover:bg-emerald-900/35'
+                                      : 'border-rose-300/90 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100 dark:border-rose-700 dark:bg-rose-950/25 dark:text-rose-300 dark:hover:bg-rose-900/35',
+                                  inCurrentPage
+                                    ? 'ring-2 ring-sky-500 ring-offset-2 dark:ring-offset-slate-900'
+                                    : ''
+                                )}
+                              >
+                                <span className="relative z-10 leading-none">{globalIdx + 1}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
 
-                      {reviewQuestions.length > itemsPerPage && (
+                      {!isMockTestReviewLayout && reviewQuestions.length > itemsPerPage && (
                         <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
                           <Button
                             variant="outline"
@@ -1600,8 +1855,8 @@ function ScoreStat({ label, value, icon: Icon }) {
           <Icon className="h-4.5 w-4.5" />
         </div>
       )}
-      <span className="text-lg font-bold text-slate-800 dark:text-slate-100">{value}</span>
-      <span className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="mt-1 text-lg font-bold text-slate-800 dark:text-slate-100">{value}</span>
     </div>
   );
 }

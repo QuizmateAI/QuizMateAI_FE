@@ -95,11 +95,18 @@ export default function ChallengeTeamScoreboard({ workspaceId, eventId, isDarkMo
 
               <ul className="mt-3 flex flex-col gap-1.5">
                 {(team.members || []).map((m) => (
-                  <li key={m.participantId} className={`flex items-center justify-between text-xs ${
+                  <li key={m.participantId} className={`flex items-center justify-between gap-2 ${
                     isDarkMode ? 'text-slate-300' : 'text-slate-700'
                   }`}>
-                    <span className="truncate">{m.fullName || m.username || '—'}</span>
-                    <span className="tabular-nums opacity-80">
+                    <div className="min-w-0">
+                      <span className="truncate block text-xs">{m.fullName || '—'}</span>
+                      {m.username && (
+                        <span className={`block truncate text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                          @{m.username}
+                        </span>
+                      )}
+                    </div>
+                    <span className="tabular-nums text-xs opacity-80 shrink-0">
                       {m.score != null ? fmt(m.score) : '—'} · {fmtTime(m.completionTimeSeconds)}
                     </span>
                   </li>
@@ -115,7 +122,7 @@ export default function ChallengeTeamScoreboard({ workspaceId, eventId, isDarkMo
           isDarkMode ? 'border-slate-700 text-slate-400' : 'border-gray-300 text-gray-500'
         }`}>
           {t('challengeTeams.benchHint', 'Bench (số lẻ → không tính điểm):')}{' '}
-          {data.benched.map((b) => b.fullName || b.username).join(', ')}
+          {data.benched.map((b) => b.username ? `${b.fullName || b.username} (@${b.username})` : (b.fullName || '—')).join(', ')}
         </div>
       )}
     </div>

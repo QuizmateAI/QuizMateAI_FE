@@ -132,6 +132,11 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 		return { view: "quizDetail", quizId: Number(quizDetailMatch[1]), backTarget: null };
 	}
 
+	const mockTestDetailMatch = subPath.match(new RegExp(`^${mockTests}/(\\d+)$`));
+	if (mockTestDetailMatch) {
+		return { view: "mockTestDetail", mockTestId: Number(mockTestDetailMatch[1]), quizId: null, backTarget: null };
+	}
+
 	return {
 		view: null,
 		quizId: null,
@@ -141,7 +146,7 @@ export function resolveWorkspaceViewFromSubPath(subPath) {
 	};
 }
 
-export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget) {
+export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget, selectedMockTest) {
 	if (view === "quizDetail" && selectedQuiz?.quizId) {
 		if (quizBackTarget?.view === "roadmap") {
 			const normalizedRoadmapId = Number(quizBackTarget?.roadmapId);
@@ -176,6 +181,10 @@ export function buildWorkspacePathForView(view, selectedQuiz, quizBackTarget) {
 			return `${roadmaps}/${quizzes}/${selectedQuiz.quizId}/edit`;
 		}
 		return `${quizzes}/${selectedQuiz.quizId}/edit`;
+	}
+
+	if (view === "mockTestDetail" && selectedMockTest?.quizId) {
+		return `${mockTests}/${selectedMockTest.quizId}`;
 	}
 
 	if (view === "overview") {

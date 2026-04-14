@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, FileQuestion, Loader2, Star } from 'lucide-react';
+import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, FileQuestion, Loader2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/Components/ui/dialog';
@@ -11,8 +11,8 @@ import QuestionNavPanel from './components/QuestionNavPanel';
 import ExamPerQuestion from './components/ExamPerQuestion';
 import QuizHeader from './components/QuizHeader';
 import { useQuizAutoSave } from './hooks/useQuizAutoSave';
-import { getQuizFullForAttempt, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
-import { buildSubmitPayload, getAttemptRemainingSeconds, hasAnswerValue, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
+import { getQuizFullForAttemptInProgress, startQuizAttempt, submitAttempt, updateQuiz } from '@/api/QuizAPI';
+import { buildQuestionSectionPathMap, buildSubmitPayload, collectAllSectionKeys, countSectionQuestions, getAttemptRemainingSeconds, getSectionChildren, getSectionKey, getSectionTitle, hasAnswerValue, mapSavedAnswersToState, normalizeQuizData } from './utils/quizTransform';
 import { useToast } from '@/context/ToastContext';
 import { markQuizAttempted, markQuizCompleted } from '@/Utils/quizAttemptTracker';
 import { buildQuizResultPath } from '@/lib/routePaths';
@@ -42,6 +42,7 @@ export default function ExamQuizPage() {
   const [confirmStartOpen, setConfirmStartOpen] = useState(() => !shouldAutoStart);
   const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedMockSections, setExpandedMockSections] = useState({});
   const itemsPerPage = 20;
   const questionRefs = useRef({});
   const submittingRef = useRef(false);
@@ -55,13 +56,22 @@ export default function ExamQuizPage() {
   } = useQuery({
     queryKey: ['quiz-full', quizId],
     queryFn: async () => {
-      const res = await getQuizFullForAttempt(quizId);
+      // Khi đang làm bài: dùng variant attempt-in-progress để BE ẩn đáp án
+      // cho MOCK_TEST. Result page vẫn dùng getQuizFullForAttempt thường.
+      const res = await getQuizFullForAttemptInProgress(quizId);
       return normalizeQuizData(res.data);
     },
     enabled: Boolean(quizId),
     retry: (failureCount, error) => Number(error?.statusCode) >= 500 && failureCount < 1,
   });
-  const totalPages = Math.max(1, Math.ceil((quiz?.questions?.length || 0) / itemsPerPage));
+  const isMockTest = quiz?.quizIntent === 'MOCK_TEST';
+  const useMockTestSectionLayout = isMockTest
+    && quiz?.timerMode === 'TOTAL'
+    && Array.isArray(quiz?.sectionGroups)
+    && quiz.sectionGroups.length > 0;
+  const totalPages = useMockTestSectionLayout
+    ? 1
+    : Math.max(1, Math.ceil((quiz?.questions?.length || 0) / itemsPerPage));
 
   const resolveEffectiveTimeoutAt = useCallback((attempt, normalizedQuiz) => {
     const timeoutAt = attempt?.timeoutAt || null;
@@ -157,6 +167,14 @@ export default function ExamQuizPage() {
     () => quiz?.questions?.filter((question) => hasAnswerValue(answers[question.id])).length || 0,
     [answers, quiz?.questions],
   );
+  const questionNumberById = useMemo(
+    () => new Map((quiz?.questions || []).map((question, index) => [question.id, Number(question?.number) || (index + 1)])),
+    [quiz?.questions],
+  );
+  const mockQuestionSectionPathMap = useMemo(
+    () => buildQuestionSectionPathMap(quiz?.sectionGroups || []),
+    [quiz?.sectionGroups],
+  );
 
   const unansweredQuestionNumbers = useMemo(() => {
     if (!quiz?.questions?.length) return [];
@@ -164,6 +182,19 @@ export default function ExamQuizPage() {
       hasAnswerValue(answers[question.id]) ? [] : [index + 1]
     ));
   }, [answers, quiz?.questions]);
+
+  useEffect(() => {
+    if (!useMockTestSectionLayout) {
+      setExpandedMockSections({});
+      return;
+    }
+
+    setExpandedMockSections(
+      Object.fromEntries(
+        collectAllSectionKeys(quiz?.sectionGroups || []).map((sectionKey) => [sectionKey, true]),
+      ),
+    );
+  }, [quiz?.sectionGroups, useMockTestSectionLayout]);
 
   const resolveTemplatedText = useCallback((key, fallback, replacements = {}) => {
     const template = t(key);
@@ -430,7 +461,37 @@ export default function ExamQuizPage() {
     questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, []);
 
+  const openSectionsForQuestionIndex = useCallback((questionIndex) => {
+    const question = quiz?.questions?.[questionIndex];
+    if (!question) return;
+
+    const sectionKeys = mockQuestionSectionPathMap.get(Number(question.id)) || [];
+    if (sectionKeys.length === 0) return;
+
+    setExpandedMockSections((prev) => {
+      const nextState = { ...prev };
+      let changed = false;
+
+      sectionKeys.forEach((sectionKey) => {
+        if (!nextState[sectionKey]) {
+          nextState[sectionKey] = true;
+          changed = true;
+        }
+      });
+
+      return changed ? nextState : prev;
+    });
+  }, [mockQuestionSectionPathMap, quiz?.questions]);
+
   const jumpToQuestion = useCallback((index) => {
+    if (useMockTestSectionLayout) {
+      openSectionsForQuestionIndex(index);
+      window.setTimeout(() => {
+        scrollQuestionIntoView(index);
+      }, 20);
+      return;
+    }
+
     const targetPage = Math.floor(index / itemsPerPage) + 1;
     if (targetPage !== currentPage) {
       setCurrentPage(targetPage);
@@ -441,7 +502,7 @@ export default function ExamQuizPage() {
     }
 
     scrollQuestionIntoView(index);
-  }, [currentPage, itemsPerPage, scrollQuestionIntoView]);
+  }, [currentPage, itemsPerPage, openSectionsForQuestionIndex, scrollQuestionIntoView, useMockTestSectionLayout]);
 
   const paginatedQuestions = useMemo(() => {
     if (!quiz?.questions?.length) return [];
@@ -471,9 +532,38 @@ export default function ExamQuizPage() {
     })
   ), [answers, currentPage, flaggedQuestionIds, itemsPerPage, paginatedQuestions, quiz?.questions.length, selectAnswer, toggleQuestionFlag, updateMatchingAnswer, updateTextAnswer]);
 
+  const renderMockTestQuestionCard = useCallback((question) => {
+    const questionNumber = questionNumberById.get(question.id) || Number(question?.number) || 1;
+    const questionIndex = questionNumber - 1;
+
+    return (
+      <div key={question.id} ref={(element) => { if (element) questionRefs.current[questionIndex] = element; }} className="scroll-mt-24">
+        <QuestionCard
+          question={question}
+          questionNumber={questionNumber}
+          totalQuestions={quiz?.questions?.length || 0}
+          showHeaderMeta={false}
+          isFlagged={flaggedQuestionIds.includes(question.id)}
+          onToggleFlag={() => toggleQuestionFlag(question.id)}
+          answerValue={answers[question.id]}
+          onSelectAnswer={(answerId) => selectAnswer(question.id, answerId, question.type === 'MULTIPLE_CHOICE')}
+          onTextAnswerChange={(value) => updateTextAnswer(question.id, value)}
+          onMatchingAnswerChange={(value) => updateMatchingAnswer(question.id, value)}
+        />
+      </div>
+    );
+  }, [answers, flaggedQuestionIds, questionNumberById, quiz?.questions?.length, selectAnswer, toggleQuestionFlag, updateMatchingAnswer, updateTextAnswer]);
+
   const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const toggleMockSection = useCallback((sectionKey) => {
+    setExpandedMockSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
   }, []);
 
   if (loading) {
@@ -503,6 +593,65 @@ export default function ExamQuizPage() {
       </div>
     );
   }
+
+  const renderMockTestSection = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
+    const childSections = getSectionChildren(section);
+    const sectionKey = getSectionKey(section, `exam-section-${pathLabel}`);
+    const isExpanded = expandedMockSections[sectionKey] ?? true;
+    const sectionTitle = getSectionTitle(
+      section,
+      `${t('workspace.mockTestForms.detail.section', 'Section')} ${pathLabel}`,
+    );
+
+    return (
+      <section
+        key={section.sectionId ?? `mock-section-${pathLabel}`}
+        className={cn(
+          'space-y-4',
+          depth === 0
+            ? 'rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-blue-950/20'
+            : 'pl-5 border-l-2 border-slate-200 dark:border-slate-700',
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => toggleMockSection(sectionKey)}
+          className="flex w-full flex-wrap items-center gap-3 rounded-2xl text-left transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-900/40"
+        >
+          <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
+            <BookOpen className="h-5 w-5" />
+          </div>
+          <div className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              {sectionTitle}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {countSectionQuestions(section)} {t('workspace.mockTestForms.detail.questions', 'questions')}
+            </p>
+          </div>
+        </button>
+
+        {isExpanded && (
+          <>
+            {Array.isArray(section?.questions) && section.questions.length > 0 && (
+              <div className="space-y-4">
+                {section.questions.map((question) => renderMockTestQuestionCard(question))}
+              </div>
+            )}
+
+            {childSections.length > 0 && (
+              <div className="space-y-6">
+                {childSections.map((childSection, childIndex) => renderMockTestSection(childSection, childIndex, depth + 1, `${pathLabel}.${childIndex + 1}`))}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    );
+  };
 
   /* ── Start screen ── */
   if (!isStarted) {
@@ -664,8 +813,10 @@ export default function ExamQuizPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
           {/* Questions list */}
           <div className="space-y-4">
-            {renderedQuestionCards}
-            {quiz.questions.length > itemsPerPage && (
+            {useMockTestSectionLayout
+              ? quiz.sectionGroups.map((section, sectionIndex) => renderMockTestSection(section, sectionIndex))
+              : renderedQuestionCards}
+            {!useMockTestSectionLayout && quiz.questions.length > itemsPerPage && (
               <div className="flex justify-between items-center mt-6 p-4">
                 <Button variant="outline" disabled={currentPage === 1} onClick={() => handlePageChange(Math.max(1, currentPage - 1))}>{t('workspace.quiz.pagination.prev', 'Previous page')}</Button>
                 <span className="text-sm font-medium text-slate-500">{t('workspace.quiz.pagination.page', 'Page')} {currentPage} / {totalPages}</span>
@@ -694,6 +845,8 @@ export default function ExamQuizPage() {
               flaggedQuestionIds={flaggedQuestionIds}
               isSubmitLoading={isSubmitted}
               submitError={submitError}
+              sectionGroups={quiz.sectionGroups}
+              disablePagination={useMockTestSectionLayout}
               t={t}
             />
           </div>

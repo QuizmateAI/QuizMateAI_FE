@@ -404,6 +404,8 @@ function useQuestionDiscussionThread({
 
     const authorId = profile?.userId ?? profile?.id ?? 0;
     const authorName = profile?.fullName ?? profile?.name ?? t("questionDiscussion.shared.userFallback", "User");
+    const authorUserName = profile?.username ?? null;
+    const authorAvatar = profile?.avatarUrl ?? profile?.avatar ?? null;
     const authorRole = isLeader ? "LEADER" : "MEMBER";
 
     setPosting(true);
@@ -412,6 +414,8 @@ function useQuestionDiscussionThread({
         body,
         authorId,
         authorName,
+        authorUserName,
+        authorAvatar,
         authorRole,
       });
       setMessages((prev) => [...prev, nextMessage]);

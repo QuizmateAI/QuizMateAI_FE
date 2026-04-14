@@ -743,7 +743,9 @@
       "intentLabels": {
         "PRE_LEARNING": "Trước khi học",
         "POST_LEARNING": "Sau khi học",
-        "REVIEW": "Ôn tập"
+        "REVIEW": "Ôn tập",
+        "PRACTICE": "Luyện tập",
+        "MOCK_TEST": "Mock test"
       },
       "statusLabels": {
         "ACTIVE": "Đang hoạt động",
@@ -2181,6 +2183,7 @@
     "gradingProgress": "Đang chấm: {{pending}}/{{total}}",
     "gradingTitle": "AI đang chấm điểm",
     "quizCompleted": "Hoàn thành Quiz",
+    "mockTestCompleted": "Đã nộp đề thi thử",
     "congratulations": "Chúc mừng!",
     "keepTrying": "Cố gắng thêm nhé!",
     "profileResultPending": "Hệ thống sẽ gợi ý chính xác hơn sau thêm vài bài quiz nữa.",
@@ -2471,6 +2474,8 @@
       "generateAI": "Tạo bằng AI",
       "nameRequired": "Vui lòng nhập tên.",
       "createFailed": "Tạo thất bại. Vui lòng thử lại.",
+      "questionTypesNotReady": "Danh sách loại câu hỏi vẫn đang tải. Vui lòng thử lại.",
+      "genericError": "Đã có lỗi xảy ra.",
       "booleanTrue": "Đúng",
       "booleanFalse": "Sai",
       "difficultyEasy": "Dễ",
@@ -2481,6 +2486,7 @@
       "bloomApply": "Vận dụng",
       "bloomAnalyze": "Phân tích",
       "bloomEvaluate": "Đánh giá",
+      "bloomCreate": "Sáng tạo",
       "typeMultipleChoice": "Trắc nghiệm",
       "typeMultipleSelect": "Nhiều đáp án",
       "typeTrueFalse": "Đúng / Sai",
@@ -2496,6 +2502,19 @@
       "desc": "Tạo bài kiểm tra tổng hợp cho toàn bộ lộ trình.",
       "name": "Tên Mock Test",
       "namePlaceholder": "Nhập tên mock test...",
+      "nameExample": "Ví dụ: IELTS, TOEIC 900, đề thi Toán 12 cuối kỳ...",
+      "stepBasic": "1. Cấu hình",
+      "stepStructure": "2. Cấu trúc",
+      "stepGenerating": "3. Sinh câu hỏi",
+      "scopeNotice": "Mock test chỉ sinh câu hỏi khách quan: một đáp án, nhiều đáp án và đúng/sai. Listening, Writing và Speaking hiện chưa được hỗ trợ, nên AI sẽ bỏ qua các phần đó và chỉ đề xuất Reading, Vocabulary hoặc Grammar cho các đề như IELTS hay TOEIC.",
+      "backToConfig": "Quay lại cấu hình",
+      "regenerate": "Sinh lại",
+      "requestingSuggestion": "Đang gợi ý...",
+      "requestSuggestion": "Lấy gợi ý cấu trúc",
+      "creatingExam": "Đang tạo mock test...",
+      "createExam": "Tạo mock test",
+      "generatingTitle": "Đang sinh câu hỏi cho mock test...",
+      "generatingHint": "Quá trình này có thể mất từ 30 giây đến vài phút tuỳ số lượng câu hỏi.",
       "selectRoadmapTitle": "Chọn lộ trình",
       "onePerRoadmap": "Mỗi lộ trình chỉ được có tối đa 1 mock test.",
       "roadmapRequired": "Vui lòng chọn lộ trình.",
@@ -2516,6 +2535,37 @@
       "saveSuccess": "Cập nhật mock test thành công!",
       "saveFailed": "Lưu mock test thất bại. Vui lòng thử lại.",
       "loadFailed": "Tải dữ liệu mock test thất bại."
+    },
+    "structure": {
+      "delete": "Xóa",
+      "deleteSection": "Xóa section",
+      "sectionNameLabel": "Tên section",
+      "sectionNamePlaceholder": "Ví dụ: Reading Comprehension, Từ vựng nâng cao...",
+      "aiInstructionLabel": "Hướng dẫn AI sinh câu hỏi",
+      "aiInstructionPlaceholder": "Ví dụ: Câu hỏi đọc hiểu cho đoạn văn khoảng 150 từ về chủ đề công nghệ. Mỗi câu có 4 đáp án A/B/C/D và chỉ 1 đáp án đúng.",
+      "aiInstructionHint": "Mô tả càng rõ chủ đề, kỹ năng và format thì AI càng sinh đúng ý hơn. Tối thiểu {{min}} ký tự.",
+      "questionStructureLabel": "Cấu trúc câu hỏi (độ khó x loại câu x Bloom x số câu)",
+      "totalLabel": "Tổng: {{count}}",
+      "columnDifficulty": "Độ khó",
+      "columnQuestionType": "Loại câu",
+      "columnBloom": "Mức Bloom",
+      "columnQuantity": "Số câu",
+      "emptyStructure": "Chưa có tổ hợp nào. Bấm \"Thêm tổ hợp\" để bắt đầu.",
+      "addCombination": "Thêm tổ hợp",
+      "subSectionCount": "Sub-section ({{count}})",
+      "addSubSection": "Thêm sub-section",
+      "totalLeafLabel": "Tổng số câu (leaf): ",
+      "addSection": "Thêm section",
+      "emptySections": "Chưa có section nào. Bấm \"Thêm section\" hoặc dùng gợi ý AI để bắt đầu.",
+      "validation": {
+        "sectionMissingName": "Section thiếu tên.",
+        "descriptionTooShort": "Mô tả quá ngắn (tối thiểu {{min}} ký tự).",
+        "leafStructureRequired": "Leaf section phải có ít nhất 1 dòng cấu trúc.",
+        "structureQuantityPositive": "Structure #{{index}}: số lượng phải lớn hơn 0.",
+        "numQuestionsMismatch": "numQuestions = {{num}} không khớp với tổng quantity = {{total}}.",
+        "sectionLabel": "Section #{{index}}",
+        "totalLeafMismatch": "Tổng số câu leaf = {{total}}, cần đúng {{target}}."
+      }
     },
     "postLearning": {
       "title": "Tạo Post-learning",
@@ -2540,7 +2590,16 @@
       "questions": "câu hỏi",
       "noQuestions": "Phần này chưa có câu hỏi.",
       "matchingNoData": "Không có dữ liệu ghép đôi",
-      "minutes": "phút"
+      "minutes": "phút",
+      "take": "Làm bài",
+      "tabOverview": "Tổng quan",
+      "tabQuestions": "Câu hỏi",
+      "tabHistory": "Lịch sử làm bài",
+      "historyLoading": "Đang tải lịch sử...",
+      "historyEmpty": "Chưa có lần làm bài nào.",
+      "historyAttempt": "Lần làm",
+      "answersLocked": "Làm bài để xem đáp án và giải thích.",
+      "publish": "Xuất bản"
     }
   }
 }
