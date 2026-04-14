@@ -807,7 +807,8 @@
       "roadmapGenerationStarted": "Roadmap generation has started.",
       "roadmapGenerationFailed": "Failed to generate roadmap.",
       "completeProfileBeforeStudio": "Complete the group profile before using studio tabs.",
-      "featureNotAvailableForRole": "This feature is not available for your role."
+      "featureNotAvailableForRole": "This feature is not available for your role.",
+      "removedFromGroup": "You have been removed from this group."
     },
     "planUpgrade": {
       "workspaceAnalytics": "Workspace analytics",

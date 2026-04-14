@@ -20,7 +20,7 @@ import { formatGroupLearningMode } from './utils/groupDisplay';
 
 const WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
 
-function readCurrentUser() {
+function readStoredUser() {
   try {
     const rawUser = window.localStorage.getItem('user');
     return rawUser ? JSON.parse(rawUser) : null;
@@ -28,6 +28,42 @@ function readCurrentUser() {
     console.error('Unable to read current user from storage:', error);
     return null;
   }
+}
+
+function decodeBase64Url(value) {
+  if (!value) return '';
+
+  const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+  const binary = window.atob(padded);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function readEmailFromAccessToken(token) {
+  if (!token) return '';
+
+  try {
+    const [, payload = ''] = String(token).split('.');
+    const decodedPayload = decodeBase64Url(payload);
+    const parsed = JSON.parse(decodedPayload);
+    return typeof parsed?.sub === 'string' ? parsed.sub.trim() : '';
+  } catch (error) {
+    console.warn('Unable to decode access token subject for invitation page:', error);
+    return '';
+  }
+}
+
+function readCurrentSession() {
+  const accessToken = window.localStorage.getItem('accessToken') || '';
+  const storedUser = readStoredUser();
+  const tokenEmail = readEmailFromAccessToken(accessToken);
+
+  return {
+    accessToken,
+    user: storedUser,
+    email: tokenEmail || storedUser?.email || '',
+  };
 }
 
 function formatDateTime(value, t, locale = 'vi-VN') {
@@ -72,11 +108,9 @@ const AcceptInvitationPage = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const currentUser = useMemo(() => readCurrentUser(), []);
-  const isAuthenticated = useMemo(() => {
-    const accessToken = window.localStorage.getItem('accessToken');
-    return Boolean(accessToken && currentUser);
-  }, [currentUser]);
+  const currentSession = useMemo(() => readCurrentSession(), []);
+  const currentUser = currentSession.user;
+  const isAuthenticated = Boolean(currentSession.accessToken);
 
   useEffect(() => {
     if (!token) {
@@ -113,7 +147,7 @@ const AcceptInvitationPage = () => {
   }, [token, t]);
 
   const invitationStatus = String(preview?.status || '').toUpperCase();
-  const currentEmail = String(currentUser?.email || '').trim().toLowerCase();
+  const currentEmail = String(currentSession.email || '').trim().toLowerCase();
   const invitedEmail = String(preview?.invitedEmail || '').trim().toLowerCase();
   const isEmailMismatch = Boolean(isAuthenticated && currentEmail && invitedEmail && currentEmail !== invitedEmail);
   const isExpired = invitationStatus === 'EXPIRED';
@@ -353,12 +387,12 @@ const AcceptInvitationPage = () => {
                   <p className="text-sm font-semibold text-rose-800">{t('acceptInvitationPage.mismatch.title', 'You are signed in to the wrong account')}</p>
                   <p className="mt-1 text-sm leading-6 text-rose-700">
                     <Trans
-                      i18nKey="acceptInvitationPage.mismatch.description"
-                      t={t}
-                      values={{ currentEmail: currentUser?.email || '', invitedEmail: preview?.invitedEmail || '' }}
-                      defaults="You are currently signed in as <1>{{currentEmail}}</1>, but this invitation is for <3>{{invitedEmail}}</3>."
-                      components={[<strong key="current" />, <span key="sep" />, <strong key="invited" />]}
-                    />
+                       i18nKey="acceptInvitationPage.mismatch.description"
+                       t={t}
+                       values={{ currentEmail: currentSession.email || currentUser?.email || '', invitedEmail: preview?.invitedEmail || '' }}
+                       defaults="You are currently signed in as <1>{{currentEmail}}</1>, but this invitation is for <3>{{invitedEmail}}</3>."
+                       components={[<strong key="current" />, <span key="sep" />, <strong key="invited" />]}
+                     />
                   </p>
                 </div>
                 <button

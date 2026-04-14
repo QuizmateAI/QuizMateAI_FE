@@ -184,6 +184,7 @@ function enrichProgressWithActiveTaskShape(payload) {
  * @param {Function} options.onMaterialUploaded - Callback khi có tài liệu mới được upload
  * @param {Function} options.onMaterialDeleted - Callback khi có tài liệu bị xóa
  * @param {Function} options.onMaterialUpdated - Callback khi có tài liệu được cập nhật
+ * @param {Function} options.onGroupUpdate - Callback khi có cập nhật thành viên/lời mời/cấu hình group
  * @param {Function} options.onProgress - Callback khi có progress update
  * @param {boolean} options.enabled - Bật/tắt WebSocket connection (mặc định: true)
  */
@@ -192,6 +193,7 @@ export function useWebSocket({
   onMaterialUploaded,
   onMaterialDeleted,
   onMaterialUpdated,
+  onGroupUpdate,
   onProgress,
   onQuizAttemptGrading,
   onChallengeUpdate,
@@ -206,6 +208,7 @@ export function useWebSocket({
     onMaterialUploaded,
     onMaterialDeleted,
     onMaterialUpdated,
+    onGroupUpdate,
     onProgress,
     onQuizAttemptGrading,
     onChallengeUpdate,
@@ -216,16 +219,22 @@ export function useWebSocket({
     onProgress || onMaterialUploaded || onMaterialDeleted || onMaterialUpdated,
   );
   const needsQuizAttemptGradingQueue = Boolean(onQuizAttemptGrading);
+  const hasMaterialSubscription = Boolean(
+    workspaceId && (onMaterialUploaded || onMaterialDeleted || onMaterialUpdated),
+  );
   const hasChallengeSubscription = Boolean(workspaceId && onChallengeUpdate);
+  const hasGroupSubscription = Boolean(workspaceId && onGroupUpdate);
   const hasWorkspaceSubscription = Boolean(
-    workspaceId && (onMaterialUploaded || onMaterialDeleted || onMaterialUpdated || onChallengeUpdate),
+    workspaceId && (hasMaterialSubscription || hasChallengeSubscription || hasGroupSubscription),
   );
   const shouldConnect = Boolean(enabled) && (needsProgressQueue || needsQuizAttemptGradingQueue || hasWorkspaceSubscription);
   const connectionKey = [
     hasWorkspaceSubscription ? `workspace:${workspaceId}` : null,
     needsProgressQueue ? "progress" : null,
     needsQuizAttemptGradingQueue ? "quiz-attempt-grading" : null,
+    hasMaterialSubscription ? "material" : null,
     hasChallengeSubscription ? "challenge" : null,
+    hasGroupSubscription ? "group" : null,
   ].filter(Boolean).join("|") || null;
 
   useEffect(() => {
@@ -233,11 +242,12 @@ export function useWebSocket({
       onMaterialUploaded,
       onMaterialDeleted,
       onMaterialUpdated,
+      onGroupUpdate,
       onProgress,
       onQuizAttemptGrading,
       onChallengeUpdate,
     };
-  }, [onMaterialUploaded, onMaterialDeleted, onMaterialUpdated, onProgress, onQuizAttemptGrading, onChallengeUpdate]);
+  }, [onMaterialUploaded, onMaterialDeleted, onMaterialUpdated, onGroupUpdate, onProgress, onQuizAttemptGrading, onChallengeUpdate]);
 
   // Lấy token từ localStorage
   const getAuthToken = useCallback(() => {
@@ -310,20 +320,36 @@ export function useWebSocket({
         if (needsQuizAttemptGradingQueue) {
           console.log("🔔 Subscribed channel: /user/queue/quiz-attempt-grading");
         }
-        if (hasWorkspaceSubscription && workspaceId) {
+        if (hasMaterialSubscription && workspaceId) {
           console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/material`);
+        }
+        if (hasChallengeSubscription && workspaceId) {
+          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/challenge`);
+        }
+        if (hasGroupSubscription && workspaceId) {
+          console.log(`🔔 Subscribed channel: /topic/workspace/${workspaceId}/group`);
         }
         setIsConnected(true);
 
         if (!hasRequestedResyncRef.current) {
           hasRequestedResyncRef.current = true;
-          callbackRefs.current.onMaterialUpdated?.({
-            type: "SOCKET_RESTORED",
-            status: "SYNC_REQUIRED",
-            workspaceId,
-            restoredFromRegistry,
-            timestamp: Date.now(),
-          });
+          if (hasMaterialSubscription) {
+            callbackRefs.current.onMaterialUpdated?.({
+              type: "SOCKET_RESTORED",
+              status: "SYNC_REQUIRED",
+              workspaceId,
+              restoredFromRegistry,
+              timestamp: Date.now(),
+            });
+          }
+          if (hasGroupSubscription) {
+            callbackRefs.current.onGroupUpdate?.({
+              type: "SOCKET_RESTORED",
+              workspaceId,
+              restoredFromRegistry,
+              timestamp: Date.now(),
+            });
+          }
         }
 
         // Subscribe to personal progress updates
@@ -380,7 +406,7 @@ export function useWebSocket({
         }
 
         // Subscribe to workspace material updates
-        if (hasWorkspaceSubscription && workspaceId) {
+        if (hasMaterialSubscription && workspaceId) {
           const workspaceSubscription = stompClient.subscribe(
             `/topic/workspace/${workspaceId}/material`,
             (message) => {
@@ -434,6 +460,23 @@ export function useWebSocket({
           );
           subscriptionsRef.current.push(challengeSubscription);
         }
+
+        if (hasGroupSubscription && workspaceId) {
+          const groupSubscription = stompClient.subscribe(
+            `/topic/workspace/${workspaceId}/group`,
+            (message) => {
+              try {
+                const data = JSON.parse(message.body);
+                console.log("👥 Group workspace update:", data);
+                setLastMessage({ type: "group:update", data, timestamp: Date.now() });
+                callbackRefs.current.onGroupUpdate?.(data);
+              } catch (err) {
+                console.error("Failed to parse group workspace message:", err);
+              }
+            }
+          );
+          subscriptionsRef.current.push(groupSubscription);
+        }
       },
 
       onDisconnect: () => {
@@ -441,6 +484,7 @@ export function useWebSocket({
           console.log("ℹ️ STOMP WebSocket disconnected (cleanup)");
         } else {
           console.log("❌ STOMP WebSocket disconnected");
+          hasRequestedResyncRef.current = false;
         }
         setIsConnected(false);
       },
@@ -448,6 +492,7 @@ export function useWebSocket({
       onStompError: (frame) => {
         console.error("⚠️ STOMP error:", frame.headers["message"]);
         console.error("Details:", frame.body);
+        hasRequestedResyncRef.current = false;
         setIsConnected(false);
       },
 
@@ -456,6 +501,7 @@ export function useWebSocket({
           return;
         }
         console.error("⚠️ WebSocket error:", error);
+        hasRequestedResyncRef.current = false;
         setIsConnected(false);
       },
     });
@@ -492,7 +538,10 @@ export function useWebSocket({
   }, [
     connectionKey,
     getAuthToken,
+    hasGroupSubscription,
+    hasMaterialSubscription,
     hasWorkspaceSubscription,
+    hasChallengeSubscription,
     needsProgressQueue,
     needsQuizAttemptGradingQueue,
     shouldConnect,
