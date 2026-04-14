@@ -169,8 +169,8 @@ function OverallRankingTab({ workspaceId, isDarkMode }) {
 
   if (!aggregated.accuracyRows || aggregated.accuracyRows.length === 0) {
     return (
-      <div className={`text-center py-12 ${textMuted}`}>
-        <Trophy className="w-10 h-10 mx-auto mb-2 opacity-20" />
+      <div className={`flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center ${textMuted}`}>
+        <Trophy className={`mb-3 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
         <p className="text-sm">{t("groupWorkspace.ranking.empty")}</p>
       </div>
     );
