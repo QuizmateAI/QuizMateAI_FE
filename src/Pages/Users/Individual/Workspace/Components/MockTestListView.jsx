@@ -287,8 +287,8 @@ function MockTestListView({
             <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
         ) : mockTests.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-            <ClipboardList className="mb-4 h-12 w-12 text-slate-300" />
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <ClipboardList className={`mb-4 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.mockTest.noItems")}</p>
             {onCreateMockTest && !hideCreateButton ? (
               <Button
@@ -303,8 +303,8 @@ function MockTestListView({
             ) : null}
           </div>
         ) : filteredMockTests.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-            <FolderOpen className="mb-4 h-10 w-10 text-slate-300" />
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <FolderOpen className={`mb-4 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (

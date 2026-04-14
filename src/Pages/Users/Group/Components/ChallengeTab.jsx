@@ -123,6 +123,7 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
           challenges={challenges}
           isDarkMode={isDarkMode}
           onSelectChallenge={handleSelectChallenge}
+          onCreateChallenge={isLeader ? () => setShowCreateWizard(true) : undefined}
         />
       )}
 
