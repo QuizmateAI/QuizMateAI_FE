@@ -41,7 +41,13 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
 
   // State thông tin quiz
   const [name, setName] = useState(quiz?.title || "");
-  const [duration, setDuration] = useState(quiz?.duration || 60);
+  // quiz.duration từ BE là giây → chuyển sang phút cho input
+  const [duration, setDuration] = useState(() => {
+    const raw = Number(quiz?.duration) || 0;
+    if (!raw) return 60;
+    const normalizedSeconds = raw >= 36000 ? Math.floor(raw / 60) : raw;
+    return Math.max(1, Math.round(normalizedSeconds / 60));
+  });
   const [passingScore, setPassingScore] = useState(quiz?.passScore || 7.5);
   const [maxAttempt, setMaxAttempt] = useState(quiz?.maxAttempt || 1);
   const [timerMode, setTimerMode] = useState(quiz?.timerMode ?? true);
@@ -188,8 +194,8 @@ function EditMockTestForm({ isDarkMode = false, quiz, onBack, onSave, contextTyp
         phaseId: null,
         knowledgeId: null,
         title: name,
-        duration,
-        quizIntent: "REVIEW",
+        duration: (Number(duration) || 0) * 60,
+        quizIntent: "MOCK_TEST",
         timerMode,
         status,
         maxAttempt: maxAttempt || null,

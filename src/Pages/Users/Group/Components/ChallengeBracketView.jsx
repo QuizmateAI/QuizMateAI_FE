@@ -44,7 +44,14 @@ function PlayerRow({ player, isWinner, isDarkMode }) {
             #{player.seed}
           </span>
         )}
-        <span className="truncate">{player.fullName || player.username || '—'}</span>
+        <div className="min-w-0">
+          <span className="truncate block">{player.fullName || '—'}</span>
+          {player.username && (
+            <span className={`block truncate text-[10px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              @{player.username}
+            </span>
+          )}
+        </div>
       </div>
       <span className={`shrink-0 tabular-nums text-xs ${isWinner ? 'font-bold' : 'opacity-80'}`}>
         {player.score != null ? Number(player.score).toLocaleString() : '—'}

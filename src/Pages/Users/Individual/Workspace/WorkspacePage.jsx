@@ -98,6 +98,7 @@ const {
   phases: workspacePhasesPath,
   knowledges: workspaceKnowledgesPath,
   quizzes: workspaceQuizzesPath,
+  mockTests: workspaceMockTestsPath,
   postLearnings: workspacePostLearningsPath,
 } = WORKSPACE_ROUTE_SEGMENTS;
 
@@ -217,7 +218,16 @@ function WorkspacePage() {
   // Selected flashcard state for detail flow
   const [selectedFlashcard, setSelectedFlashcard] = useState(null);
   // Selected mock-test state for detail and edit flows
-  const [selectedMockTest, setSelectedMockTest] = useState(null);
+  const [selectedMockTest, setSelectedMockTest] = useState(() => {
+    if (!workspaceId) return null;
+    const prefix = buildWorkspacePath(workspaceId);
+    if (location.pathname.startsWith(prefix)) {
+      const subPath = location.pathname.slice(prefix.length).replace(/^\/+/, "");
+      const { mockTestId } = resolveWorkspaceViewFromSubPath(subPath);
+      if (mockTestId) return { quizId: mockTestId };
+    }
+    return null;
+  });
   const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
   const [selectedRoadmapKnowledgeId, setSelectedRoadmapKnowledgeId] =
     useState(null);
@@ -232,6 +242,7 @@ function WorkspacePage() {
   const [hasExistingWorkspaceFlashcard, setHasExistingWorkspaceFlashcard] =
     useState(false);
   const [totalFlashcardCount, setTotalFlashcardCount] = useState(0);
+  const [totalMockTestCount, setTotalMockTestCount] = useState(0);
   const isOnWorkspaceQuizRoute = useMemo(() => {
     if (!workspaceId || !location.pathname) return false;
     return new RegExp(
@@ -273,6 +284,7 @@ function WorkspacePage() {
       setTotalQuizCount(0);
       setHasExistingWorkspaceFlashcard(false);
       setTotalFlashcardCount(0);
+      setTotalMockTestCount(0);
       return;
     }
 
@@ -289,8 +301,12 @@ function WorkspacePage() {
 
         if (cancelled) return;
 
-        const workspaceQuizzes = (quizResponse?.data || []).filter((quiz) => {
+        const allQuizzes = quizResponse?.data || [];
+
+        const workspaceQuizzes = allQuizzes.filter((quiz) => {
           const qContext = String(quiz?.contextType || "").toUpperCase();
+          const quizIntent = String(quiz?.quizIntent || "").toUpperCase();
+          if (quizIntent === "MOCK_TEST") return false;
           if (["ROADMAP", "PHASE", "KNOWLEDGE"].includes(qContext))
             return false;
           if (
@@ -314,11 +330,16 @@ function WorkspacePage() {
           return Number.isFinite(n) && n > 0;
         }).length;
 
+        const mockTestCount = allQuizzes.filter(
+          (quiz) => String(quiz?.quizIntent || "").toUpperCase() === "MOCK_TEST",
+        ).length;
+
         setHasExistingWorkspaceQuiz(workspaceQuizzes.length > 0);
         setCompletedQuizCount(completedCount);
         setTotalQuizCount(workspaceQuizzes.length);
         setHasExistingWorkspaceFlashcard(workspaceFlashcards.length > 0);
         setTotalFlashcardCount(workspaceFlashcards.length);
+        setTotalMockTestCount(mockTestCount);
       } catch (error) {
         if (!cancelled) {
           console.error(
@@ -445,6 +466,7 @@ function WorkspacePage() {
     const {
       view: mappedView,
       quizId,
+      mockTestId,
       backTarget,
       phaseId: mappedPhaseId,
       knowledgeId: mappedKnowledgeId,
@@ -522,6 +544,13 @@ function WorkspacePage() {
       });
     }
 
+    if (mockTestId) {
+      setSelectedMockTest((prev) => {
+        if (prev?.quizId === mockTestId) return prev;
+        return { quizId: mockTestId };
+      });
+    }
+
     setActiveView((prev) => (prev === mappedView ? prev : mappedView));
   }, [getWorkspaceSubPath, location.search]);
 
@@ -532,6 +561,7 @@ function WorkspacePage() {
       activeView,
       selectedQuiz,
       quizBackTarget,
+      selectedMockTest,
     );
 
     if (activeView === "roadmap") {
@@ -565,6 +595,8 @@ function WorkspacePage() {
       new RegExp(`^${workspaceRoadmapsPath}/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath) ||
       new RegExp(`^${workspaceRoadmapsPath}/\\d+/${workspacePhasesPath}/\\d+(?:/${workspaceKnowledgesPath}/\\d+)?/${workspaceQuizzesPath}/\\d+(?:/edit)?$`).test(currentSubPath);
 
+    const isMockTestDeepLink = new RegExp(`^${workspaceMockTestsPath}/\\d+$`).test(currentSubPath);
+
     const isQuizDetailView =
       activeView === "quizDetail" || activeView === "editQuiz";
 
@@ -587,6 +619,12 @@ function WorkspacePage() {
         return;
     }
 
+    if (isMockTestDeepLink && activeView === "mockTestDetail") {
+      const { mockTestId: routeMockTestId } = resolveWorkspaceViewFromSubPath(currentSubPath);
+      const currentMockTestId = Number(selectedMockTest?.quizId);
+      if (Number.isInteger(routeMockTestId) && routeMockTestId > 0 && currentMockTestId !== routeMockTestId) return;
+    }
+
     if (currentSubPath === mappedPath) return;
 
     navigate(buildWorkspacePath(workspaceId, mappedPath), { replace: true });
@@ -596,6 +634,7 @@ function WorkspacePage() {
     navigate,
     quizBackTarget,
     selectedQuiz,
+    selectedMockTest,
     selectedRoadmapPhaseId,
     selectedRoadmapKnowledgeId,
     roadmapAiRoadmapId,
@@ -1264,6 +1303,8 @@ function WorkspacePage() {
       setHasExistingWorkspaceFlashcard(false);
 
       setTotalFlashcardCount(0);
+
+      setTotalMockTestCount(0);
 
       setRoadmapHasPhases(false);
 
@@ -2204,6 +2245,7 @@ function WorkspacePage() {
             sources: sources.length || undefined,
             quiz: totalQuizCount || undefined,
             flashcard: totalFlashcardCount || undefined,
+            mockTest: totalMockTestCount || undefined,
           }}
           isMobile={isMobileViewport}
           mobileOpen={isMobileSidebarOpen}

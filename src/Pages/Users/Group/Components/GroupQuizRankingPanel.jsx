@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Clock, Medal, RefreshCw, Trophy } from "lucide-react";
+import UserDisplayName from "@/Components/users/UserDisplayName";
 import { getGroupQuizHistory } from "@/api/QuizAPI";
 import { useTranslation } from "react-i18next";
 
@@ -77,11 +78,14 @@ function buildRanking(historyData) {
               attempt?.userFullName
               || attempt?.memberName
               || attempt?.fullName
-              || attempt?.userName
-              || attempt?.username
               || entry?.member?.fullName
-              || entry?.member?.userName
               || "Thành viên",
+            username:
+              attempt?.userName
+              || attempt?.username
+              || entry?.member?.userName
+              || entry?.member?.username
+              || null,
             avatar: attempt?.avatar ?? entry?.member?.avatar ?? null,
           },
           attempts: [],
@@ -103,6 +107,7 @@ function buildRanking(historyData) {
       return {
         userId: member.userId,
         fullName: member.fullName || "Thành viên",
+        username: member.username || null,
         avatar: member.avatar,
         accuracyPercent: firstAttempt.accuracyPercent,
         durationSeconds: resolveAttemptDurationSeconds(firstAttempt),
@@ -236,15 +241,20 @@ export default function GroupQuizRankingPanel({ workspaceId, quizId, isDarkMode 
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
                   {row.avatar ? (
-                    <img src={row.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                    <img src={row.avatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isDarkMode ? "bg-blue-500/20 text-blue-300" : "bg-[#EFF6FF] text-[#0455BF]"}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${isDarkMode ? "bg-blue-500/20 text-blue-300" : "bg-[#EFF6FF] text-[#0455BF]"}`}>
                       {(row.fullName || "?")[0].toUpperCase()}
                     </div>
                   )}
-                  <span className={`font-medium truncate max-w-[140px] ${textPrimary}`}>
-                    {row.fullName}
-                  </span>
+                  <div className="min-w-0">
+                    <UserDisplayName user={row} fallback="—" className={`font-medium ${textPrimary}`} />
+                    {row.username && (
+                      <p className={`truncate text-xs ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>
+                        @{row.username}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </td>
 

@@ -512,7 +512,10 @@ function QuizListView({
     try {
       const res = await getQuizzesByScope(contextType, scopeId);
       let incoming = res.data || [];
-      
+
+      // Quiz list view chỉ hiển thị quiz thường — mock test có view riêng (MockTestListView).
+      incoming = incoming.filter((quiz) => String(quiz?.quizIntent || '').toUpperCase() !== 'MOCK_TEST');
+
       // Studio filter: exclude roadmap-related quizzes when in WORKSPACE context
       if (contextType === 'WORKSPACE') {
         incoming = incoming.filter(quiz => {
@@ -1246,28 +1249,101 @@ function QuizListView({
                     </button>
                   ))}
                   {groupAudienceFilter === "SELECTED_MEMBERS" ? (
-                    <select
-                      value={groupMemberUserId ?? ""}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setGroupMemberUserId(v === "" ? null : Number(v));
-                      }}
-                      disabled={groupMembersLoading}
-                      title={t("quizListView.filters.pickMemberHint", "Choose a name to view only quizzes assigned to that person")}
-                      className={`h-9 max-w-[min(220px,100%)] rounded-full border px-3 text-xs outline-none transition-colors ${
-                        isDarkMode
-                          ? "border-slate-600 bg-slate-950/60 text-slate-100 disabled:opacity-50"
-                          : "border-slate-200 bg-[#f8fafc] text-slate-900 disabled:opacity-50"
-                      }`}
-                    >
-                      <option value="">{t("quizListView.filters.pickMemberPlaceholder", "All assigned quizzes")}</option>
-                      {groupMembers.map((m) => {
-                        const uid = Number(m.userId ?? m.id);
-                        if (!Number.isInteger(uid) || uid <= 0) return null;
-                        const optLabel = m.fullName || m.username || `User ${uid}`;
-                        return <option key={uid} value={uid}>{optLabel}</option>;
-                      })}
-                    </select>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={groupMembersLoading}
+                          className={cn(
+                            "inline-flex h-9 items-center justify-between gap-2 rounded-full border px-3 text-xs outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                            isDarkMode
+                              ? "border-slate-600 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
+                              : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50",
+                          )}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            {selectedGroupAudienceMember ? (
+                              <>
+                                <GroupMemberAvatar
+                                  member={selectedGroupAudienceMember}
+                                  fallback={resolveMemberDisplayName(groupMemberUserId, groupMembers)}
+                                  isDarkMode={isDarkMode}
+                                  sizeClass="h-5 w-5"
+                                  textClass="text-[9px]"
+                                />
+                                <UserDisplayName
+                                  user={selectedGroupAudienceMember}
+                                  fallback={t("quizListView.filters.memberFallback", "User {{id}}", { id: groupMemberUserId })}
+                                  isDarkMode={isDarkMode}
+                                  className="max-w-[140px] truncate"
+                                />
+                              </>
+                            ) : (
+                              <span className={cn("truncate", isDarkMode ? "text-slate-300" : "text-slate-600")}>
+                                {groupMembersLoading
+                                  ? t("quizListView.filters.loadingMembers", "Loading members...")
+                                  : t("quizListView.filters.pickMemberPlaceholder", "All assigned quizzes")}
+                              </span>
+                            )}
+                          </span>
+                          <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
+                        className={cn(
+                          "max-h-72 w-72 overflow-y-auto p-1",
+                          isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900",
+                        )}
+                      >
+                        <DropdownMenuItem
+                          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs"
+                          onSelect={() => setGroupMemberUserId(null)}
+                        >
+                          <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600")}>
+                            <Users className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="min-w-0 flex-1 truncate">
+                            {t("quizListView.filters.pickMemberPlaceholder", "All assigned quizzes")}
+                          </span>
+                          {groupMemberUserId == null ? <Check className="h-3.5 w-3.5 shrink-0 text-violet-500" /> : null}
+                        </DropdownMenuItem>
+                        {groupMembers.map((m) => {
+                          const uid = Number(m.userId ?? m.id);
+                          if (!Number.isInteger(uid) || uid <= 0) return null;
+                          const selected = Number(groupMemberUserId) === uid;
+                          return (
+                            <DropdownMenuItem
+                              key={uid}
+                              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs"
+                              onSelect={() => setGroupMemberUserId(uid)}
+                            >
+                              <GroupMemberAvatar
+                                member={m}
+                                fallback={resolveMemberDisplayName(uid, groupMembers)}
+                                isDarkMode={isDarkMode}
+                                sizeClass="h-7 w-7"
+                                textClass="text-[10px]"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <UserDisplayName
+                                  user={m}
+                                  fallback={t("quizListView.filters.memberFallback", "User {{id}}", { id: uid })}
+                                  isDarkMode={isDarkMode}
+                                  className="block"
+                                />
+                                {(m.email || m.username) && (
+                                  <span className={cn("block truncate text-[10px]", isDarkMode ? "text-slate-500" : "text-slate-400")}>
+                                    {m.email || `@${m.username}`}
+                                  </span>
+                                )}
+                              </div>
+                              {selected ? <Check className="h-3.5 w-3.5 shrink-0 text-violet-500" /> : null}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   ) : null}
                 </div>
               ) : null}
@@ -1304,144 +1380,8 @@ function QuizListView({
               </div>
             </div>
 
-            <div className={`mt-1 flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-3 py-2 ${isDarkMode ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-slate-50/70"}`}>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
-                  onClick={handleToggleSelectAllFiltered}
-                  disabled={filteredQuizIds.length === 0}
-                >
-                  {allFilteredSelected
-                    ? t("quizListView.bulkActions.deselectAll", "Deselect all")
-                    : t("quizListView.bulkActions.selectAll", "Select all")}
-                </Button>
-                <span className={`text-xs font-medium ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
-                  {t("quizListView.bulkActions.selectedCount", "Selected {{count}}", { count: selectedQuizIds.length })}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {isGroupQuizList ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-slate-700 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
-                    onClick={handleOpenBulkAssign}
-                    disabled={!hasSelectedQuiz || bulkAssignSaving}
-                  >
-                    <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-                    {t("quizListView.bulkActions.assign", "Assign")}
-                  </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={`h-8 rounded-full px-3 text-xs ${isDarkMode ? "border-red-800 text-red-300 hover:bg-red-950/40" : "border-red-300 bg-white text-red-600 hover:bg-red-50"}`}
-                  onClick={handleBulkDeleteSelected}
-                  disabled={!hasSelectedQuiz || bulkDeleteLoading}
-                >
-                  {bulkDeleteLoading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
-                  {t("quizListView.bulkActions.delete", "Delete")}
-                </Button>
-              </div>
-            </div>
           </div>
 
-          {isGroupQuizList && hasAppliedSelectedMembersFilter && canFilterGroupAssignees ? (
-            <div className={`mt-2 border-t pt-2 ${isDarkMode ? "border-slate-700/80" : "border-slate-200/90"}`}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    disabled={groupMembersLoading}
-                    title={t("quizListView.filters.pickMemberHint", "Choose a name to view only quizzes assigned to that person")}
-                    className={cn(
-                      "inline-flex min-w-[220px] max-w-full items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-left text-[12px] outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                      isDarkMode
-                        ? "border-slate-600 bg-slate-950/60 text-slate-100 hover:bg-slate-900"
-                        : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50",
-                    )}
-                  >
-                    <span className="flex min-w-0 flex-1 items-center gap-2">
-                      {selectedGroupAudienceMember ? (
-                        <>
-                          <GroupMemberAvatar
-                            member={selectedGroupAudienceMember}
-                            fallback={resolveMemberDisplayName(groupMemberUserId, groupMembers)}
-                            isDarkMode={isDarkMode}
-                            sizeClass="h-6 w-6"
-                            textClass="text-[10px]"
-                          />
-                          <UserDisplayName
-                            user={selectedGroupAudienceMember}
-                            fallback={t("quizListView.filters.memberFallback", "User {{id}}", { id: groupMemberUserId })}
-                            isDarkMode={isDarkMode}
-                            className="min-w-0"
-                          />
-                        </>
-                      ) : (
-                        <span className={cn("truncate", isDarkMode ? "text-slate-300" : "text-slate-600")}>
-                          {groupMembersLoading
-                            ? t("quizListView.filters.loadingMembers", "Loading members...")
-                            : t("quizListView.filters.pickMemberPlaceholder", "All assigned quizzes")}
-                        </span>
-                      )}
-                    </span>
-                    <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", isDarkMode ? "text-slate-500" : "text-slate-400")} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="start"
-                  className={cn(
-                    "max-h-72 w-72 overflow-y-auto p-1",
-                    isDarkMode ? "border-slate-700 bg-slate-950 text-slate-100" : "border-slate-200 bg-white text-slate-900",
-                  )}
-                >
-                  <DropdownMenuItem
-                    className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs"
-                    onSelect={() => setGroupMemberUserId(null)}
-                  >
-                    <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", isDarkMode ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600")}>
-                      <Users className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="min-w-0 flex-1 truncate">
-                      {t("quizListView.filters.pickMemberPlaceholder", "All assigned quizzes")}
-                    </span>
-                    {groupMemberUserId == null ? <Check className="h-3.5 w-3.5 shrink-0 text-violet-500" /> : null}
-                  </DropdownMenuItem>
-                  {groupMembers.map((m) => {
-                    const uid = Number(m.userId ?? m.id);
-                    if (!Number.isInteger(uid) || uid <= 0) return null;
-                    const selected = Number(groupMemberUserId) === uid;
-                    return (
-                      <DropdownMenuItem
-                        key={uid}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-xs"
-                        onSelect={() => setGroupMemberUserId(uid)}
-                      >
-                        <GroupMemberAvatar
-                          member={m}
-                          fallback={resolveMemberDisplayName(uid, groupMembers)}
-                          isDarkMode={isDarkMode}
-                          sizeClass="h-7 w-7"
-                          textClass="text-[10px]"
-                        />
-                        <UserDisplayName
-                          user={m}
-                          fallback={t("quizListView.filters.memberFallback", "User {{id}}", { id: uid })}
-                          isDarkMode={isDarkMode}
-                          className="min-w-0 flex-1"
-                        />
-                        {selected ? <Check className="h-3.5 w-3.5 shrink-0 text-violet-500" /> : null}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : null}
         </div>
       ) : null}
 
@@ -1499,7 +1439,7 @@ function QuizListView({
             ? "space-y-2"
             : embedded
               ? "grid grid-cols-1 gap-3"
-              : "mx-auto grid max-w-[1080px] grid-cols-1 gap-4 md:grid-cols-2"}>
+              : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}>
             {paginatedQuizzes.map((quiz) => {
               if (useLegacyRoadmapCards) {
                 return renderLegacyRoadmapCard(quiz);
@@ -1594,12 +1534,6 @@ function QuizListView({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedQuizIdSet.has(Number(resolvedQuizId))}
-                        onCheckedChange={(checked) => toggleQuizSelection(resolvedQuizId, checked === true)}
-                        className={isDarkMode ? "border-slate-500" : "border-slate-300"}
-                        aria-label={t("quizListView.cards.selectSourceAria", "Select source")}
-                      />
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -1686,7 +1620,6 @@ function QuizListView({
                   <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
                     {shouldShowResultSummary ? (
                       <div className="flex items-center gap-2">
-                        <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.result", "Result")}</span>
                         <span className={`font-semibold ${resultToneClassName}`}>{resultDisplay}</span>
                       </div>
                     ) : null}
