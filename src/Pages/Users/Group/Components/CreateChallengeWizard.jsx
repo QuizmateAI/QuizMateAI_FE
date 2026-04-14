@@ -116,7 +116,9 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     queryKey: ['workspace-quizzes', workspaceId],
     queryFn: async () => {
       const res = await getQuizzesByScope('WORKSPACE', workspaceId);
-      return res.data || [];
+      const list = res.data || [];
+      // Challenge wizard chỉ áp dụng cho quiz thường, không pick mock test.
+      return list.filter((q) => String(q?.quizIntent || '').toUpperCase() !== 'MOCK_TEST');
     },
     enabled: Boolean(workspaceId),
   });

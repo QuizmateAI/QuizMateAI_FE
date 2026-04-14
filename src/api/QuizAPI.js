@@ -2,17 +2,33 @@ import api from './api';
 
 // ==================== QUIZ ====================
 
-// Lấy danh sách quiz theo contextType và scopeId
-export const getQuizzesByScope = async (contextType, scopeId) => {
+// Lấy danh sách quiz theo contextType và scopeId.
+// Optional: truyền quizIntent (vd "MOCK_TEST") để BE filter — hiện chỉ hỗ trợ cho WORKSPACE/GROUP;
+// các scope khác (ROADMAP/PHASE/KNOWLEDGE) FE tự filter client-side.
+export const getQuizzesByScope = async (contextType, scopeId, { quizIntent } = {}) => {
   let url = '';
   // Group workspace dùng cùng endpoint danh sách theo workspaceId
-  if (contextType === 'WORKSPACE' || contextType === 'GROUP') url = `/quiz/getByWorkspace/${scopeId}`;
-  else if (contextType === 'ROADMAP') url = `/quiz/getByRoadmap/${scopeId}`;
+  if (contextType === 'WORKSPACE' || contextType === 'GROUP') {
+    url = quizIntent
+      ? `/quiz/getByWorkspace/${scopeId}/intent/${quizIntent}`
+      : `/quiz/getByWorkspace/${scopeId}`;
+  } else if (contextType === 'ROADMAP') url = `/quiz/getByRoadmap/${scopeId}`;
   else if (contextType === 'PHASE') url = `/quiz/getByPhase/${scopeId}`;
   else if (contextType === 'KNOWLEDGE') url = `/quiz/getByKnowledge/${scopeId}`;
-  
-  if (url) return await api.get(url);
-  throw new Error('Invalid contextType');
+
+  if (!url) throw new Error('Invalid contextType');
+
+  const response = await api.get(url);
+
+  // Client-side filter cho các scope chưa có endpoint theo intent.
+  if (quizIntent && (contextType === 'ROADMAP' || contextType === 'PHASE' || contextType === 'KNOWLEDGE')) {
+    const rawList = response?.data;
+    if (Array.isArray(rawList)) {
+      const filtered = rawList.filter((q) => String(q?.quizIntent || '').toUpperCase() === String(quizIntent).toUpperCase());
+      return { ...response, data: filtered };
+    }
+  }
+  return response;
 };
 
 // Lấy danh sách quiz của user đang đăng nhập
@@ -171,26 +187,46 @@ export const deleteAnswer = async (answerId) => {
 
 // ==================== QUIZ FULL & ATTEMPT ====================
 
-// Lấy đầy đủ quiz kèm section, question và answer
-export const getQuizFull = async (quizId) => {
-  const response = await api.get(`/quiz/${quizId}/full`);
+// Lấy đầy đủ quiz kèm section, question và answer.
+// Truyền options.attemptView=true khi user đang làm bài để BE ẩn isCorrect/explanation
+// đối với mock test (chống leak đáp án qua DevTools).
+export const getQuizFull = async (quizId, options = {}) => {
+  const params = options.attemptView ? { attemptView: true } : undefined;
+  const response = await api.get(`/quiz/${quizId}/full`, params ? { params } : undefined);
   return response;
 };
 
 function buildQuizFullFromParts(quiz, sections = [], questionsBySection = new Map(), answersByQuestion = new Map()) {
+  const buildSectionTree = (parentSectionId = null) => (
+    (sections || [])
+      .filter((section) => (section?.parentSectionId ?? null) === parentSectionId)
+      .sort((left, right) => {
+        const orderDiff = (left?.orderIndex ?? 0) - (right?.orderIndex ?? 0);
+        if (orderDiff !== 0) {
+          return orderDiff;
+        }
+        return (left?.sectionId ?? 0) - (right?.sectionId ?? 0);
+      })
+      .map((section) => ({
+        ...section,
+        questions: (questionsBySection.get(section.sectionId) || []).map((question) => ({
+          ...question,
+          answers: answersByQuestion.get(question.questionId) || [],
+        })),
+        children: buildSectionTree(section.sectionId),
+      }))
+  );
+
   return {
     ...quiz,
     quizId: quiz?.quizId ?? quiz?.id,
-    sections: (sections || []).map((section) => ({
-      ...section,
-      questions: (questionsBySection.get(section.sectionId) || []).map((question) => ({
-        ...question,
-        answers: answersByQuestion.get(question.questionId) || [],
-      })),
-    })),
+    sections: buildSectionTree(null),
   };
 }
 
+// Lấy full quiz cho luồng review/attempt-context. Mặc định KHÔNG ẩn đáp án —
+// dùng cho result page hoặc edit. ExamQuizPage trong khi đang làm bài
+// nên dùng getQuizFullForAttemptInProgress để BE ẩn isCorrect/explanation.
 export const getQuizFullForAttempt = async (quizId) => {
   try {
     return await getQuizFull(quizId);
@@ -259,6 +295,14 @@ export const getQuizFullForAttempt = async (quizId) => {
   }
 };
 
+// Variant cho ExamQuizPage / MockTestExamPage khi user ĐANG làm bài.
+// Truyền attemptView=true để BE ẩn isCorrect/explanation cho mock test
+// (chống leak đáp án qua DevTools). Không có fallback section-by-section
+// vì khi đang làm bài quiz không thể fallback an toàn — trả lỗi để user retry.
+export const getQuizFullForAttemptInProgress = async (quizId) => {
+  return await getQuizFull(quizId, { attemptView: true });
+};
+
 // Tạo attempt mới hoặc trả lại attempt chưa hoàn thành
 export const startQuizAttempt = async (quizId, { isCompanionMode = false, isPracticeMode = true } = {}) => {
   const response = await api.post(`/quiz-attempts/start/${quizId}?isCompanionMode=${isCompanionMode}&isPracticeMode=${isPracticeMode}`);
@@ -280,6 +324,13 @@ export const submitPracticeQuestion = async (attemptId, answer) => {
 // Lấy kết quả chi tiết của attempt
 export const getAttemptResult = async (attemptId) => {
   const response = await api.get(`/quiz-attempts/${attemptId}/result`);
+  return response;
+};
+
+// Lấy thống kê cohort cho mock test trong group workspace.
+// Chỉ trả data có ý nghĩa khi quiz.quizIntent === 'MOCK_TEST' và workspace là GROUP.
+export const getMockTestCohortStats = async (quizId) => {
+  const response = await api.get(`/quiz/${quizId}/cohort-stats`);
   return response;
 };
 

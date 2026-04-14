@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { checkEmail, checkUsername, register, sendOTP, verifyOTP } from '@/api/Authentication';
 import { waitForOtpStatus } from '@/lib/authOtpSocket';
 import { getEmailViolationKey } from '@/Utils/emailValidation';
+import i18n from '@/i18n';
 
 // Regex theo BE: username phải chứa cả chữ và số, cho phép . _ @ -
 const USERNAME_REGEX = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9._@-]{3,50}$/;
@@ -381,12 +382,22 @@ export const useRegister = (setView, t) => {
       const otpResponse = await verifyOTP(formData.email.trim(), trimmedOtp);
       if (otpResponse.statusCode === 200 || otpResponse.statusCode === 0) {
         // OTP hợp lệ -> gọi API đăng ký (trim tất cả dữ liệu)
+        let darkModeAtRegister = false;
+        try {
+          const saved = localStorage.getItem('quizmate_dark_mode');
+          darkModeAtRegister = saved ? JSON.parse(saved) === true : false;
+        } catch {
+          darkModeAtRegister = false;
+        }
+
         const registerResponse = await register({
           fullname: formData.fullname.trim(),
           username: formData.username.trim(),
           email: formData.email.trim(),
           password: formData.password,
-          confirmPassword: formData.confirmPassword
+          confirmPassword: formData.confirmPassword,
+          preferredLanguage: i18n?.language || undefined,
+          themeMode: darkModeAtRegister ? 'dark' : 'light',
         });
         
         if (registerResponse.statusCode === 200 || registerResponse.statusCode === 0) {

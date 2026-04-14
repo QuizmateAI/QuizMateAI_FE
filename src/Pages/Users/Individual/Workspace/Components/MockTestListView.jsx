@@ -8,9 +8,9 @@ import React, {
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
-  AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  CircleAlert,
   ClipboardList,
   Clock,
   FolderOpen,
@@ -18,6 +18,8 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Timer,
+  BarChart3,
   Trash2,
   X,
 } from "lucide-react";
@@ -32,10 +34,27 @@ import {
   DialogTitle,
 } from "@/Components/ui/dialog";
 import { deleteQuiz, getQuizzesByScope } from "@/api/QuizAPI";
-import { getRoadmapsByWorkspace } from "@/api/RoadmapAPI";
 import { useToast } from "@/context/ToastContext";
+import { getDurationInMinutes } from "@/lib/quizDurationDisplay";
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 12;
+
+const STATUS_STYLES = {
+  ACTIVE: { light: "bg-emerald-100 text-emerald-700", dark: "bg-emerald-950/50 text-emerald-400" },
+  DRAFT: { light: "bg-amber-100 text-amber-700", dark: "bg-amber-950/50 text-amber-400" },
+  COMPLETED: { light: "bg-blue-100 text-blue-700", dark: "bg-blue-950/50 text-blue-400" },
+  INACTIVE: { light: "bg-slate-100 text-slate-500", dark: "bg-slate-800 text-slate-400" },
+  PROCESSING: { light: "bg-sky-100 text-sky-700", dark: "bg-sky-950/50 text-sky-300" },
+  ERROR: { light: "bg-rose-100 text-rose-700", dark: "bg-rose-950/50 text-rose-300" },
+};
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Number(value) || 0));
+}
+
+function resolveMockQuestionCount(mockTest) {
+  return Number(mockTest?.questionCount ?? mockTest?.totalQuestion ?? mockTest?.totalQuestions ?? 0) || 0;
+}
 
 function formatShortDate(dateStr) {
   if (!dateStr) return "";
@@ -49,67 +68,15 @@ function formatShortDate(dateStr) {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
-async function loadMockTests({ contextType, contextId, t }) {
+async function loadMockTests({ contextId }) {
   if (!contextId) {
-    return { items: [], roadmapIds: [] };
+    return { items: [] };
   }
-
-  if (String(contextType || "").toUpperCase() === "WORKSPACE") {
-    const response = await getQuizzesByScope("WORKSPACE", contextId);
-    const rawQuizzes = response?.data ?? [];
-    const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : [];
-
-    return {
-      items: quizzes.map((item) => ({
-        ...item,
-        roadmapName:
-          item?.roadmapName
-          || item?.roadmap?.title
-          || item?.roadmap?.name
-          || t("workspace.mockTest.workspaceLabel", "Workspace"),
-      })),
-      roadmapIds: [],
-    };
-  }
-
-  const roadmapResponse = await getRoadmapsByWorkspace(contextId, 0, 100);
-  const rawRoadmaps = roadmapResponse?.data?.content ?? roadmapResponse?.data;
-  const roadmaps = Array.isArray(rawRoadmaps) ? rawRoadmaps : [];
-  const roadmapIds = roadmaps
-    .map((roadmap) => Number(roadmap?.roadmapId ?? roadmap?.id))
-    .filter((roadmapId) => Number.isInteger(roadmapId) && roadmapId > 0);
-
-  const quizResults = await Promise.all(
-    roadmaps.map(async (roadmap) => {
-      const roadmapId = Number(roadmap?.roadmapId ?? roadmap?.id);
-      if (!Number.isInteger(roadmapId) || roadmapId <= 0) return [];
-
-      try {
-        const response = await getQuizzesByScope("ROADMAP", roadmapId);
-        const rawQuizzes = response?.data ?? [];
-        const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : [];
-
-        return quizzes.map((quiz) => ({
-          ...quiz,
-          roadmapId,
-          roadmapName:
-            roadmap?.title
-            || roadmap?.name
-            || t("workspace.roadmap.fallbackName", {
-              id: roadmapId,
-              defaultValue: `Roadmap ${roadmapId}`,
-            }),
-        }));
-      } catch {
-        return [];
-      }
-    }),
-  );
-
-  return {
-    items: quizResults.flat(),
-    roadmapIds,
-  };
+  const response = await getQuizzesByScope("WORKSPACE", contextId, { quizIntent: "MOCK_TEST" });
+  const rawQuizzes = response?.data ?? [];
+  const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : [];
+  // Mock test giờ là đề thử độc lập ở workspace level, không link roadmap.
+  return { items: quizzes };
 }
 
 function MockTestListView({
@@ -133,40 +100,23 @@ function MockTestListView({
   const deferredSearchQuery = useDeferredValue(searchQuery.trim().toLowerCase());
 
   const {
-    data: mockTestPayload = { items: [], roadmapIds: [] },
+    data: mockTestPayload = { items: [] },
     isLoading,
     refetch,
   } = useQuery({
     queryKey: ["workspace-mock-tests", String(contextType || "").toUpperCase(), normalizedContextId],
     enabled: normalizedContextId > 0,
-    queryFn: () =>
-      loadMockTests({
-        contextType,
-        contextId: normalizedContextId,
-        t,
-      }),
+    queryFn: () => loadMockTests({ contextId: normalizedContextId }),
   });
 
   const mockTests = mockTestPayload.items || [];
-  const roadmapIds = mockTestPayload.roadmapIds || [];
-
-  const allRoadmapsCovered = useMemo(() => {
-    if (String(contextType || "").toUpperCase() === "WORKSPACE") return false;
-    if (roadmapIds.length === 0) return false;
-    const coveredIds = new Set(
-      mockTests
-        .map((item) => Number(item?.roadmapId))
-        .filter((roadmapId) => Number.isInteger(roadmapId) && roadmapId > 0),
-    );
-    return roadmapIds.every((roadmapId) => coveredIds.has(roadmapId));
-  }, [contextType, mockTests, roadmapIds]);
 
   const filteredMockTests = useMemo(
     () =>
       mockTests.filter((item) => {
         if (!deferredSearchQuery) return true;
 
-        return [item?.title, item?.roadmapName, item?.description].some((value) =>
+        return [item?.title, item?.description].some((value) =>
           String(value || "").toLowerCase().includes(deferredSearchQuery),
         );
       }),
@@ -182,11 +132,7 @@ function MockTestListView({
   }, [effectivePage, filteredMockTests]);
 
   const showPagination = filteredMockTests.length > ITEMS_PER_PAGE;
-  const cardShellClass = isDarkMode
-    ? "border-slate-700/70 bg-slate-900/55"
-    : "border-slate-200 bg-white";
   const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
-  const titleTextClass = isDarkMode ? "text-slate-100" : "text-slate-900";
 
   const handleConfirmDelete = useCallback(async () => {
     const quizId = Number(deleteTargetQuiz?.quizId ?? deleteTargetQuiz?.id);
@@ -264,7 +210,7 @@ function MockTestListView({
             <Button
               type="button"
               onClick={onCreateMockTest}
-              disabled={allRoadmapsCovered || disableCreate}
+              disabled={disableCreate}
               className="h-11 rounded-full bg-orange-500 px-5 text-white hover:bg-orange-600 disabled:opacity-50"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -273,13 +219,6 @@ function MockTestListView({
           ) : null}
         </div>
       </div>
-
-      {allRoadmapsCovered ? (
-        <div className="mt-3 inline-flex items-center gap-2 text-sm text-amber-700">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>{t("workspace.mockTest.allRoadmapsCovered")}</span>
-        </div>
-      ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto pt-4">
         {isLoading ? (
@@ -294,7 +233,7 @@ function MockTestListView({
               <Button
                 type="button"
                 onClick={onCreateMockTest}
-                disabled={allRoadmapsCovered || disableCreate}
+                disabled={disableCreate}
                 className="mt-4 rounded-full bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -309,82 +248,168 @@ function MockTestListView({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {pagedMockTests.map((mockTest) => {
                 const resolvedQuizId = Number(mockTest?.quizId ?? mockTest?.id);
+                const normalizedStatus = String(mockTest?.status || "").toUpperCase();
+                const isProcessing = normalizedStatus === "PROCESSING";
+                const isErrored = normalizedStatus === "ERROR";
+                const isViewDisabled = isProcessing || isErrored;
+                const statusStyles = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
+                const statusLabel = t(`quizListView.status.${normalizedStatus}`, normalizedStatus || "DRAFT");
+                const difficultyKey = String(mockTest?.overallDifficulty || "").toUpperCase();
+                const difficultyLabel = difficultyKey
+                  ? (
+                    difficultyKey === "CUSTOM"
+                      ? t("quizListView.difficulty.custom", "Custom")
+                      : t(`quizListView.difficulty.${String(mockTest?.overallDifficulty || "medium").toLowerCase()}`)
+                  )
+                  : t("quizListView.cards.notAvailable", "N/A");
+                const difficultyTextClassName = difficultyKey === "HARD"
+                  ? (isDarkMode ? "text-rose-300" : "text-rose-600")
+                  : difficultyKey === "MEDIUM"
+                    ? (isDarkMode ? "text-amber-300" : "text-amber-600")
+                    : difficultyKey === "EASY"
+                      ? (isDarkMode ? "text-emerald-300" : "text-emerald-600")
+                      : (isDarkMode ? "text-slate-300" : "text-slate-600");
+                const questionCount = resolveMockQuestionCount(mockTest);
+                const durationInMinutes = getDurationInMinutes(mockTest);
+                const durationLabel = durationInMinutes > 0
+                  ? `${durationInMinutes} ${t("quizListView.cards.minutesShort", "min")}`
+                  : null;
+                const createdAtLabel = formatShortDate(mockTest?.createdAt || mockTest?.updatedAt);
+                const processingPercent = clampPercent(
+                  mockTest?.percent
+                  ?? mockTest?.progressPercent
+                  ?? mockTest?.processingPercent
+                  ?? mockTest?.generationProgressPercent
+                  ?? mockTest?.progress?.percent
+                  ?? mockTest?.progress?.progressPercent
+                  ?? 0,
+                );
+                const processingBarWidth = processingPercent > 0 ? Math.max(8, processingPercent) : 8;
 
                 return (
                   <article
                     key={resolvedQuizId || mockTest?.title}
-                    onClick={() => onViewMockTest?.(mockTest)}
-                    className={`group flex cursor-pointer flex-col gap-4 rounded-[24px] border p-4 shadow-[0_14px_40px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-0.5 ${cardShellClass}`}
-                    style={{ contentVisibility: "auto" }}
+                    role={isViewDisabled ? undefined : "button"}
+                    tabIndex={isViewDisabled ? -1 : 0}
+                    onClick={() => {
+                      if (isViewDisabled) return;
+                      onViewMockTest?.(mockTest);
+                    }}
+                    onKeyDown={(event) => {
+                      if (isViewDisabled) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onViewMockTest?.(mockTest);
+                      }
+                    }}
+                    aria-disabled={isViewDisabled || undefined}
+                    className={`group h-full rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                      isViewDisabled
+                        ? (
+                          isDarkMode
+                            ? "cursor-not-allowed border-slate-800 bg-slate-900/70 opacity-80"
+                            : "cursor-not-allowed border-slate-200 bg-slate-100/70 opacity-90"
+                        )
+                        : (
+                          isDarkMode
+                            ? "cursor-pointer border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(168,85,247,0.26)]"
+                            : "cursor-pointer border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(168,85,247,0.24)]"
+                        )
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div
-                          className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${
-                            isDarkMode
-                              ? "border-orange-300/20 bg-orange-400/10 text-orange-200"
-                              : "border-orange-200 bg-orange-50 text-orange-600"
-                          }`}
-                        >
-                          <ClipboardList className="h-5 w-5" />
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className={`line-clamp-2 text-sm font-semibold ${fontClass} ${titleTextClass}`}>
-                            {mockTest?.title || "—"}
-                          </p>
-                          {mockTest?.roadmapName ? (
-                            <p className={`mt-1 line-clamp-1 text-xs ${mutedTextClass}`}>{mockTest.roadmapName}</p>
-                          ) : null}
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className={`line-clamp-2 text-[21px] font-semibold leading-snug tracking-[-0.02em] ${isDarkMode ? "text-slate-100" : "text-slate-950"}`}>
+                          {mockTest?.title || t("quizListView.cards.noTitle", "—")}
+                        </h3>
                       </div>
 
-                      {mockTest?.duration > 0 ? (
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                            isDarkMode
-                              ? "bg-slate-800 text-slate-200"
-                              : "bg-slate-100 text-slate-700"
-                          }`}
-                        >
-                          <Clock className="h-3.5 w-3.5" />
-                          {mockTest.duration} {t("workspace.quiz.minutes")}
+                      <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${isDarkMode ? statusStyles.dark : statusStyles.light}`}>
+                          {statusLabel}
                         </span>
-                      ) : null}
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (deletingId) return;
+                            setDeleteTargetQuiz(mockTest);
+                          }}
+                          className={`rounded-full p-2 transition-all ${
+                            isDarkMode
+                              ? "text-slate-400 hover:bg-rose-400/15 hover:text-rose-300"
+                              : "text-slate-400 hover:bg-white hover:text-rose-600"
+                          }`}
+                          title={t("workspace.quiz.deleteQuiz")}
+                        >
+                          {deletingId === resolvedQuizId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
-                    <div
-                      className={`flex items-center justify-between gap-3 border-t pt-3 text-xs ${
-                        isDarkMode ? "border-slate-700" : "border-slate-100"
-                      }`}
-                    >
-                      <span className={mutedTextClass}>
-                        {formatShortDate(mockTest?.createdAt)}
-                      </span>
+                    {isProcessing ? (
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                            {t("quizListView.cards.processing", "Generating quiz")}
+                          </p>
+                          <span className={`text-sm font-semibold ${isDarkMode ? "text-sky-200" : "text-sky-700"}`}>
+                            {processingPercent}%
+                          </span>
+                        </div>
+                        <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`}>
+                          <div className="h-full rounded-full bg-sky-500" style={{ width: `${processingBarWidth}%` }} />
+                        </div>
+                      </div>
+                    ) : null}
 
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (deletingId) return;
-                          setDeleteTargetQuiz(mockTest);
-                        }}
-                        className={`rounded-xl p-2 transition-all sm:opacity-0 sm:group-hover:opacity-100 ${
-                          isDarkMode
-                            ? "text-slate-400 hover:bg-rose-400/15 hover:text-rose-300"
-                            : "text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                        }`}
-                        title={t("workspace.quiz.deleteQuiz")}
-                      >
-                        {deletingId === resolvedQuizId ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </button>
+                    {isErrored ? (
+                      <div className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ${isDarkMode ? "bg-rose-950/40 text-rose-300" : "bg-rose-50 text-rose-700"}`}>
+                        <CircleAlert className="h-4 w-4" />
+                        <span>{statusLabel}</span>
+                      </div>
+                    ) : null}
+
+                    <div className={`mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] ${isDarkMode ? "text-slate-300" : "text-slate-800"}`}>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-400"}`}>{t("quizListView.cards.questions", "Questions")}</span>
+                        <span className="font-semibold">{questionCount > 0 ? questionCount : "-"}</span>
+                      </div>
+                    </div>
+
+                    <div className={`mt-4 flex items-end justify-between gap-3 border-t pt-3 ${isDarkMode ? "border-slate-800" : "border-slate-200/80"}`}>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${difficultyTextClassName}`}>
+                          <BarChart3 className="h-3.5 w-3.5" />
+                          <span>{difficultyLabel}</span>
+                        </div>
+                        {durationLabel ? (
+                          <div className={`inline-flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-slate-700"}`}>
+                            <Timer className="h-3.5 w-3.5" />
+                            <span>{durationLabel}</span>
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className={`flex flex-wrap items-center justify-end gap-2 text-xs font-semibold ${isDarkMode ? "text-slate-400" : "text-slate-600"}`}>
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+                          <ClipboardList className="h-3.5 w-3.5" />
+                          <span>{t("workspace.shell.nav.mockTest", "Mock Test")}</span>
+                        </span>
+                        {createdAtLabel ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>{createdAtLabel}</span>
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </article>
                 );

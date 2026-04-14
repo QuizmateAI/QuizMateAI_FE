@@ -2563,7 +2563,9 @@
       "intentLabels": {
         "PRE_LEARNING": "Trước khi học",
         "POST_LEARNING": "Sau khi học",
-        "REVIEW": "Ôn tập"
+        "REVIEW": "Ôn tập",
+        "PRACTICE": "Luyện tập",
+        "MOCK_TEST": "Mock test"
       },
       "statusLabels": {
         "ACTIVE": "Đang hoạt động",
@@ -2988,6 +2990,7 @@
         "title": "Kết quả",
         "notFound": "Không tìm thấy kết quả",
         "quizCompleted": "Hoàn thành bài quiz",
+        "mockTestCompleted": "Đã nộp đề thi thử",
         "congratulations": "Chúc mừng!",
         "keepTrying": "Hãy cố gắng thêm!",
         "gradingTitle": "AI đang chấm điểm",

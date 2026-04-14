@@ -754,7 +754,8 @@
         "PRE_LEARNING": "Pre-learning",
         "POST_LEARNING": "Post-learning",
         "REVIEW": "Review",
-        "PRACTICE": "Practice"
+        "PRACTICE": "Practice",
+        "MOCK_TEST": "Mock test"
       },
       "statusLabels": {
         "ACTIVE": "Active",
@@ -1670,7 +1671,6 @@
         "title": "Please wait while AI generates phases"
       },
       "phaseReviewAssessedAt": "Đánh giá lúc",
-      "phaseReviewConfidence": "Độ tin cậy",
       "phaseReviewSummaryDropdown": "Phase Review Summary Dropdown",
       "phaseReviewTitle": "Đánh giá AI cho phase hiện tại",
       "postLearningHelper": "Post Learning Helper",
@@ -2286,6 +2286,7 @@
     "gradingProgress": "Grading: {{pending}}/{{total}}",
     "gradingTitle": "AI is grading",
     "quizCompleted": "Quiz Completed",
+    "mockTestCompleted": "Mock Test Submitted",
     "congratulations": "Congratulations!",
     "keepTrying": "Keep Trying!",
     "profileResultPending": "The system will suggest more accurately after a few more quizzes.",
@@ -2576,6 +2577,8 @@
       "generateAI": "Generate with AI",
       "nameRequired": "Please enter a name.",
       "createFailed": "Failed to create. Please try again.",
+      "questionTypesNotReady": "Question types are still loading. Please try again.",
+      "genericError": "Something went wrong.",
       "booleanTrue": "True",
       "booleanFalse": "False",
       "difficultyEasy": "Easy",
@@ -2586,6 +2589,7 @@
       "bloomApply": "Apply",
       "bloomAnalyze": "Analyze",
       "bloomEvaluate": "Evaluate",
+      "bloomCreate": "Create",
       "typeMultipleChoice": "Multiple choice",
       "typeMultipleSelect": "Multiple select",
       "typeTrueFalse": "True / False",
@@ -2601,6 +2605,19 @@
       "desc": "Create a comprehensive test covering an entire roadmap.",
       "name": "Mock Test Name",
       "namePlaceholder": "Enter mock test name...",
+      "nameExample": "E.g. IELTS, TOEIC 900, final Math 12 exam...",
+      "stepBasic": "1. Configuration",
+      "stepStructure": "2. Structure",
+      "stepGenerating": "3. Generate Questions",
+      "scopeNotice": "Mock tests only generate objective questions: single choice, multiple choice, and true/false. Listening, Writing, and Speaking are not supported, so the AI will skip them and only suggest Reading, Vocabulary, or Grammar sections for exams like IELTS or TOEIC.",
+      "backToConfig": "Back to configuration",
+      "regenerate": "Regenerate",
+      "requestingSuggestion": "Generating suggestion...",
+      "requestSuggestion": "Get structure suggestion",
+      "creatingExam": "Creating mock test...",
+      "createExam": "Create mock test",
+      "generatingTitle": "Generating questions for your mock test...",
+      "generatingHint": "This may take from 30 seconds to a few minutes depending on the number of questions.",
       "selectRoadmapTitle": "Select Roadmap",
       "onePerRoadmap": "Each roadmap can have at most one mock test.",
       "roadmapRequired": "Please select a roadmap.",
@@ -2621,6 +2638,37 @@
       "saveSuccess": "Mock test updated successfully!",
       "saveFailed": "Failed to save mock test. Please try again.",
       "loadFailed": "Failed to load mock test data."
+    },
+    "structure": {
+      "delete": "Delete",
+      "deleteSection": "Delete section",
+      "sectionNameLabel": "Section name",
+      "sectionNamePlaceholder": "E.g. Reading Comprehension, Advanced Vocabulary...",
+      "aiInstructionLabel": "AI question generation instructions",
+      "aiInstructionPlaceholder": "E.g. Reading comprehension questions on a ~150-word technology passage. Each question should have 4 answer options A/B/C/D with only 1 correct answer.",
+      "aiInstructionHint": "Describe the topic, skill, and format as specifically as possible so the AI can generate more accurate questions. Minimum {{min}} characters.",
+      "questionStructureLabel": "Question structure (difficulty x type x Bloom x quantity)",
+      "totalLabel": "Total: {{count}}",
+      "columnDifficulty": "Difficulty",
+      "columnQuestionType": "Question type",
+      "columnBloom": "Bloom level",
+      "columnQuantity": "Quantity",
+      "emptyStructure": "No structure rows yet. Click \"Add combination\" to start.",
+      "addCombination": "Add combination",
+      "subSectionCount": "Sub-sections ({{count}})",
+      "addSubSection": "Add sub-section",
+      "totalLeafLabel": "Total leaf questions: ",
+      "addSection": "Add section",
+      "emptySections": "No sections yet. Click \"Add section\" or use AI suggestions to start.",
+      "validation": {
+        "sectionMissingName": "Section name is required.",
+        "descriptionTooShort": "Description is too short (minimum {{min}} characters).",
+        "leafStructureRequired": "Each leaf section needs at least one structure row.",
+        "structureQuantityPositive": "Structure #{{index}}: quantity must be greater than 0.",
+        "numQuestionsMismatch": "numQuestions = {{num}} does not match total quantity = {{total}}.",
+        "sectionLabel": "Section #{{index}}",
+        "totalLeafMismatch": "Total leaf questions = {{total}}, expected {{target}}."
+      }
     },
     "postLearning": {
       "title": "Create Post-learning",
@@ -2645,7 +2693,16 @@
       "questions": "questions",
       "noQuestions": "No questions in this section.",
       "matchingNoData": "No matching data available",
-      "minutes": "min"
+      "minutes": "min",
+      "take": "Take exam",
+      "tabOverview": "Overview",
+      "tabQuestions": "Questions",
+      "tabHistory": "History",
+      "historyLoading": "Loading history...",
+      "historyEmpty": "No attempts yet.",
+      "historyAttempt": "Attempt",
+      "answersLocked": "Complete the quiz to view answers and explanations.",
+      "publish": "Publish"
     }
   }
 }

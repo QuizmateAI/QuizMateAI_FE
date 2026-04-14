@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import { Clock3, Loader2, Star } from 'lucide-react';
-import { hasAnswerValue } from '../utils/quizTransform';
+import { countSectionQuestions, getSectionChildren, getSectionTitle, hasAnswerValue } from '../utils/quizTransform';
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -26,6 +26,8 @@ export default function QuestionNavPanel({
   saveMessage = '',
   isSubmitLoading = false,
   submitError = '',
+  sectionGroups = [],
+  disablePagination = false,
   t,
 }) {
   const answeredCount = useMemo(
@@ -38,11 +40,77 @@ export default function QuestionNavPanel({
   );
   const flaggedCount = flaggedQuestionSet.size;
   const itemsPerPage = 20;
-  const totalPages = Math.max(1, Math.ceil(questions.length / itemsPerPage));
+  const totalPages = disablePagination ? 1 : Math.max(1, Math.ceil(questions.length / itemsPerPage));
   const safeNavPage = Math.min(Math.max(1, currentPage), totalPages);
   const navStartIndex = (safeNavPage - 1) * itemsPerPage;
-  const navQuestions = questions.slice(navStartIndex, navStartIndex + itemsPerPage);
+  const navQuestions = disablePagination
+    ? questions
+    : questions.slice(navStartIndex, navStartIndex + itemsPerPage);
+  const shouldUseSectionNavigation = disablePagination && Array.isArray(sectionGroups) && sectionGroups.length > 0;
   const submitHandler = onRequestSubmit || onSubmit;
+
+  const renderQuestionButton = (question, fallbackIndex = 0) => {
+    const questionNumber = Number(question?.number) || (fallbackIndex + 1);
+    const isAnswered = hasAnswerValue(answers[question.id]);
+    const isFlagged = flaggedQuestionSet.has(question.id);
+
+    return (
+      <button
+        key={question.id}
+        type="button"
+        onClick={() => onJumpToQuestion(questionNumber - 1)}
+        className={cn(
+          'relative flex aspect-square w-full items-center justify-center rounded-[18px] border text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm',
+          isFlagged
+            ? 'border-amber-300 bg-amber-100 text-amber-800 hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/35 dark:text-amber-200 dark:hover:bg-amber-900/50'
+            : isAnswered
+              ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
+              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600',
+        )}
+      >
+        {isFlagged && (
+          <Star className="absolute right-1.5 top-1.5 h-3.5 w-3.5 fill-current text-amber-500 dark:text-amber-300" />
+        )}
+        {questionNumber}
+      </button>
+    );
+  };
+
+  const renderSectionNavigation = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
+    const childSections = getSectionChildren(section);
+    const sectionTitle = getSectionTitle(
+      section,
+      `${t?.('workspace.mockTestForms.detail.section', 'Section') || 'Section'} ${pathLabel}`,
+    );
+
+    return (
+      <div
+        key={section.sectionId ?? `section-${pathLabel}`}
+        className={cn('space-y-2', depth > 0 && 'pl-3 border-l border-slate-200 dark:border-slate-700')}
+      >
+        <div className="flex items-center justify-between gap-2 px-1">
+          <p className="min-w-0 truncate text-sm font-semibold text-slate-700 dark:text-slate-100">
+            {sectionTitle}
+          </p>
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-300">
+            {countSectionQuestions(section)}
+          </span>
+        </div>
+
+        {Array.isArray(section?.questions) && section.questions.length > 0 && (
+          <div className="grid grid-cols-5 gap-2.5 px-1">
+            {section.questions.map((question, questionIndex) => renderQuestionButton(question, questionIndex))}
+          </div>
+        )}
+
+        {childSections.length > 0 && (
+          <div className="space-y-3">
+            {childSections.map((childSection, childIndex) => renderSectionNavigation(childSection, childIndex, depth + 1, `${pathLabel}.${childIndex + 1}`))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-blue-950/20 lg:sticky lg:top-4">
@@ -81,42 +149,24 @@ export default function QuestionNavPanel({
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
           {t?.('workspace.quiz.result.questionList', 'Question list') || 'Question list'}
         </p>
-        {questions.length > itemsPerPage && (
+        {!disablePagination && questions.length > itemsPerPage && (
           <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             {(t?.('workspace.quiz.pagination.page', 'Page') || 'Page')} {safeNavPage}/{totalPages}
           </span>
         )}
       </div>
 
-      <div className="mb-4 grid grid-cols-5 gap-2.5">
-        {navQuestions.map((q, idx) => {
-          const globalIdx = navStartIndex + idx;
-          const isAnswered = hasAnswerValue(answers[q.id]);
-          const isFlagged = flaggedQuestionSet.has(q.id);
-          return (
-            <button
-              key={q.id}
-              type="button"
-              onClick={() => onJumpToQuestion(globalIdx)}
-              className={cn(
-                'relative flex aspect-square w-full items-center justify-center rounded-[18px] border text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm',
-                isFlagged
-                  ? 'border-amber-300 bg-amber-100 text-amber-800 hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/35 dark:text-amber-200 dark:hover:bg-amber-900/50'
-                  : isAnswered
-                  ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600',
-              )}
-            >
-              {isFlagged && (
-                <Star className="absolute right-1.5 top-1.5 h-3.5 w-3.5 fill-current text-amber-500 dark:text-amber-300" />
-              )}
-              {globalIdx + 1}
-            </button>
-          );
-        })}
-      </div>
+      {shouldUseSectionNavigation ? (
+        <div className="mb-4 max-h-[420px] space-y-4 overflow-y-auto pr-1">
+          {sectionGroups.map((section, sectionIndex) => renderSectionNavigation(section, sectionIndex))}
+        </div>
+      ) : (
+        <div className="mb-4 grid grid-cols-5 gap-2.5">
+          {navQuestions.map((question, index) => renderQuestionButton(question, navStartIndex + index))}
+        </div>
+      )}
 
-      {questions.length > itemsPerPage && (
+      {!disablePagination && questions.length > itemsPerPage && (
         <div className="flex items-center justify-between gap-2 mb-4">
           <Button
             variant="outline"

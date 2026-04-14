@@ -250,6 +250,13 @@ export function buildWorkspaceQuizPath(workspaceId, quizId) {
   );
 }
 
+export function buildWorkspaceMockTestPath(workspaceId, mockTestId) {
+  return buildWorkspacePath(
+    workspaceId,
+    `${WORKSPACE_ROUTE_SEGMENTS.mockTests}/${mockTestId}`,
+  );
+}
+
 export function buildWorkspaceRoadmapQuizPath(
   workspaceId,
   {
@@ -324,6 +331,10 @@ export function isWorkspaceRoadmapsPath(path) {
 
 export function isWorkspaceQuizDetailPath(path) {
   return /\/workspaces\/\d+\/(?:quizzes(?:\/\d+)?|roadmaps\/(?:\d+\/phases\/\d+(?:\/knowledges\/\d+)?\/)?quizzes\/\d+)(?:\?|$)/.test(String(path || ""));
+}
+
+export function isWorkspaceMockTestDetailPath(path) {
+  return /\/workspaces\/\d+\/mock-tests\/\d+(?:\?|$)/.test(String(path || ""));
 }
 
 export function isGroupWorkspacePath(path) {
