@@ -299,7 +299,12 @@ function UploadSourceDialogBase({
       }
       onOpenChange(false);
     } catch (error) {
-      if (!error?.toastHandled) {
+      const isTimeout = error?.code === "REQUEST_TIMEOUT" || error?.statusCode === 408;
+      if (isTimeout) {
+        // Server may still finish the upload – close dialog to block duplicate re-uploads
+        showInfo(t("workspace.upload.uploadPending"));
+        handleOpenChange(false);
+      } else if (!error?.toastHandled) {
         showError(error?.message || t("workspace.upload.uploadError"));
       }
     } finally {
@@ -321,7 +326,12 @@ function UploadSourceDialogBase({
       showSuccess(t("workspace.upload.uploadAllSuccess"));
       onOpenChange(false);
     } catch (error) {
-      if (!error?.toastHandled) {
+      const isTimeout = error?.code === "REQUEST_TIMEOUT" || error?.statusCode === 408;
+      if (isTimeout) {
+        // Server may still finish the upload – close dialog to block duplicate re-uploads
+        showInfo(t("workspace.upload.uploadPending"));
+        handleOpenChange(false);
+      } else if (!error?.toastHandled) {
         showError(error?.message || t("workspace.upload.uploadError"));
       }
     } finally {

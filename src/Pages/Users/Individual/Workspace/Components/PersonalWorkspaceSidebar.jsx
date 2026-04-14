@@ -30,7 +30,7 @@ import { getMyWallet } from "@/api/ManagementSystemAPI";
 import { cn } from "@/lib/utils";
 import { workspaceShellTheme, workspaceSurface } from "./workspaceShellTheme";
 import VietnamFlag from "@/assets/Viet_nam.png";
-import EnglishFlag from "@/assets/Anh.png";
+import EnglishFlag from "@/assets/UK_flag.svg";
 
 const NAV_ITEMS = [
   { key: "sources", icon: Files },
@@ -331,14 +331,14 @@ function PersonalWorkspaceSidebar({
         </div>
 
         <div className={cn("border-t px-3.5 pb-3 pt-2.5", isDarkMode ? "border-slate-700/80" : "border-slate-200/80")}>
-          <div className="flex items-center gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
               onClick={() =>
                 navigate("/wallets", { state: { from: location.pathname } })
               }
               className={cn(
-                "flex h-14 min-w-0 flex-1 items-center gap-2.5 rounded-2xl border px-2.5 pr-3 text-left transition-colors duration-200 ease-out",
+                "col-span-2 flex h-auto min-h-[48px] min-w-0 items-center gap-2.5 rounded-2xl border px-2.5 py-2.5 pr-3 text-left transition-colors duration-200 ease-out",
                 isDarkMode
                   ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
                   : workspaceSurface("hover:bg-slate-50"),
@@ -355,53 +355,78 @@ function PersonalWorkspaceSidebar({
               </span>
               <span
                 className={cn(
-                  "block min-w-0 flex-1 truncate text-base font-semibold tabular-nums",
+                  "flex min-w-0 flex-1 items-baseline gap-1 truncate tabular-nums",
                   isDarkMode ? "text-slate-100" : "text-slate-900",
                   fontClass,
                 )}
               >
-                {loadingWallet
-                  ? "-"
-                  : formatNumber(
-                      walletSummary.totalAvailableCredits,
-                      walletLocale,
-                    )}
+                {/* <span className="shrink-0 text-[16px] font-semibold">QMC:</span> */}
+                <span className="truncate text-[18px] font-semibold">
+                  {loadingWallet
+                    ? "-"
+                    : formatNumber(
+                        walletSummary.totalAvailableCredits,
+                        walletLocale,
+                      )}
+                </span>
+                <span className={cn("shrink-0 text-[10px] font-medium", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+                  credit
+                </span>
               </span>
             </button>
 
-            <button
-              type="button"
-              onClick={onToggleLanguage}
+            <div
               className={cn(
-                "flex h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 transition-colors duration-200 ease-out",
-                isDarkMode
-                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                "col-span-2 flex items-center gap-1 rounded-2xl border p-1",
+                isDarkMode ? "border-slate-700 bg-slate-800" : "border-slate-200 bg-slate-50",
               )}
             >
-              <img 
-                src={i18n.language === "vi" ? VietnamFlag : EnglishFlag}
-                alt={i18n.language === "vi" ? "Tiếng Việt" : "English"}
-                className="h-4 w-4 rounded-sm object-cover"
-              />
-              <span className={cn("text-[13px] font-semibold", fontClass)}>
-                {i18n.language === "vi" ? "VI" : "EN"}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={onToggleLanguage}
+                className={cn(
+                  "flex h-auto min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 transition-colors duration-200 ease-out active:scale-95",
+                  isDarkMode
+                    ? "bg-slate-900 text-slate-100 hover:bg-slate-700"
+                    : "bg-white text-slate-700 hover:bg-slate-100",
+                )}
+                aria-label={i18n.language === "vi" ? "Tiếng Việt" : "English"}
+              >
+                {i18n.language === "vi" ? (
+                  <img
+                    src={VietnamFlag}
+                    alt="Tiếng Việt"
+                    className="h-4 w-4 rounded-sm object-cover"
+                  />
+                ) : (
+                  <img
+                    src={EnglishFlag}
+                    alt="English"
+                    className="h-4 w-4 rounded-sm object-cover"
+                  />
+                )}
+                <span className={cn("text-[13px] font-semibold", fontClass)}>
+                  {i18n.language === "vi" ? "VI" : "EN"}
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={onToggleDarkMode}
-              className={cn(
-                "flex h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 transition-colors duration-200 ease-out",
-                isDarkMode
-                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
-              )}
-              aria-label={isDarkMode ? t("common.light", "Light") : t("common.dark", "Dark")}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+              <button
+                type="button"
+                onClick={onToggleDarkMode}
+                className={cn(
+                  "flex h-auto min-h-[40px] flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 transition-colors duration-200 ease-out active:scale-95",
+                  isDarkMode
+                    ? "bg-slate-900 text-slate-100 hover:bg-slate-700"
+                    : "bg-white text-slate-700 hover:bg-slate-100",
+                )}
+                aria-label={isDarkMode ? t("common.light", "Light") : t("common.dark", "Dark")}
+              >
+                {isDarkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                <span className={cn("text-[13px] font-semibold", fontClass)}>
+                  {isDarkMode ? t("common.dark", "Dark") : t("common.light", "Light")}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
