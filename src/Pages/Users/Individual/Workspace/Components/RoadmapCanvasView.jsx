@@ -5,6 +5,7 @@ import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
 import { getRoadmapGraph } from "@/api/RoadmapAPI";
+import { getCurrentRoadmapPhaseProgress } from "@/api/RoadmapPhaseAPI";
 import RoadmapCanvasView2 from "./RoadmapCanvasView2";
 import RoadmapCanvasViewStage from "./RoadmapCanvasViewStage";
 import RoadmapCanvasViewOverview from "./RoadmapCanvasViewOverview";
@@ -239,6 +240,7 @@ function RoadmapCanvasView({
   const [isExpandedClosing, setIsExpandedClosing] = useState(false);
   const [isCreatingRoadmap, setIsCreatingRoadmap] = useState(false);
   const [transform, setTransform] = useState({ x: -CENTER_X + 520, y: -CENTER_Y + 390, scale: 1 });
+  const [currentPhaseProgress, setCurrentPhaseProgress] = useState(null);
   const hasLoadedRoadmapRef = useRef(false);
   const roadmapRef = useRef(null);
   const normalizedEmptyStateMaterialIds = useMemo(
@@ -299,6 +301,18 @@ function RoadmapCanvasView({
       }
       if (mergedRoadmap?.roadmapId) {
         onRoadmapLoad?.(mergedRoadmap.roadmapId);
+      }
+
+      const normalizedRoadmapId = Number(nextRoadmap?.roadmapId);
+      if (Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0) {
+        try {
+          const phaseResponse = await getCurrentRoadmapPhaseProgress(normalizedRoadmapId);
+          setCurrentPhaseProgress(phaseResponse?.data?.data || phaseResponse?.data || null);
+        } catch {
+          setCurrentPhaseProgress(null);
+        }
+      } else {
+        setCurrentPhaseProgress(null);
       }
 
       if (!shouldKeepViewportState) {
@@ -991,6 +1005,7 @@ function RoadmapCanvasView({
         handleKnowledgeDragStart={handleKnowledgeDragStart}
         onShareRoadmap={onShareRoadmap}
         renderRoadmapConfigActionButtons={renderRoadmapConfigActionButtons}
+        currentPhaseProgress={currentPhaseProgress}
         onSelectCenterRoadmap={() => handleSelectCanvasView("view2")}
       />
     );
