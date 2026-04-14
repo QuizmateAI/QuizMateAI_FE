@@ -666,6 +666,7 @@ function GroupWorkspacePage() {
   const [sessionUploadQueue, setSessionUploadQueue] = useState([]);
   const refreshPendingMaterialTimersRef = useRef({});
   const uploadNotificationsRef = useRef(new Set());
+  const groupRealtimeRefreshTimerRef = useRef(null);
 
   // Members state
   const [members, setMembers] = useState([]);
@@ -1281,6 +1282,16 @@ function GroupWorkspacePage() {
     }
   }, [loadMembers, isCreating, workspaceId]);
 
+  // Reload member list when navigating to members/memberStats tab
+  // to catch any WS events that may have arrived while on a different tab
+  useEffect(() => {
+    if (!isCreating && workspaceId && workspaceId !== 'new' &&
+        (activeSection === 'members' || activeSection === 'memberStats')) {
+      void loadMembers();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection]);
+
   const loadGroupProfile = useCallback(async () => {
     if (!resolvedWorkspaceId || isCreating) return;
     setGroupProfileLoading(true);
@@ -1399,6 +1410,10 @@ function GroupWorkspacePage() {
       globalThis.clearTimeout(timerId);
     });
     refreshPendingMaterialTimersRef.current = {};
+    if (groupRealtimeRefreshTimerRef.current) {
+      globalThis.clearTimeout(groupRealtimeRefreshTimerRef.current);
+      groupRealtimeRefreshTimerRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -1827,6 +1842,61 @@ function GroupWorkspacePage() {
     refreshGroupMaterialViews,
   ]);
 
+  const handleGroupRealtime = useCallback((event = null) => {
+    if (isCreating || !resolvedWorkspaceId || !workspaceId || workspaceId === 'new') return;
+
+    // Immediate kick detection — redirect before any debounce
+    if (
+      event?.type === 'MEMBER_REMOVED' &&
+      currentUser?.userID != null &&
+      String(event?.removedUserId) === String(currentUser.userID)
+    ) {
+      if (groupRealtimeRefreshTimerRef.current) {
+        globalThis.clearTimeout(groupRealtimeRefreshTimerRef.current);
+        groupRealtimeRefreshTimerRef.current = null;
+      }
+      showWarning(t('groupWorkspacePage.toast.removedFromGroup', 'You have been removed from this group.'));
+      navigateInstant('/home', { replace: true });
+      return;
+    }
+
+    if (groupRealtimeRefreshTimerRef.current) {
+      globalThis.clearTimeout(groupRealtimeRefreshTimerRef.current);
+    }
+
+    const delayMs = event?.type === 'SOCKET_RESTORED' ? 0 : 250;
+    groupRealtimeRefreshTimerRef.current = globalThis.setTimeout(() => {
+      groupRealtimeRefreshTimerRef.current = null;
+
+      void fetchGroups();
+      void fetchWorkspaceDetail(resolvedWorkspaceId).catch((error) => {
+        console.error('Failed to refresh realtime group workspace detail:', error);
+      });
+      void loadGroupProfile();
+      void loadMembers();
+      void loadGroupLogs();
+      void queryClient.invalidateQueries({ queryKey: ['group-pending-invitations', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-dashboard-summary', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-dashboard-member-cards', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-member-dashboard-detail', resolvedWorkspaceId] });
+    }, delayMs);
+  }, [
+    currentUser,
+    fetchGroups,
+    fetchWorkspaceDetail,
+    isCreating,
+    loadGroupLogs,
+    loadGroupProfile,
+    loadMembers,
+    navigateInstant,
+    queryClient,
+    resolvedWorkspaceId,
+    showWarning,
+    t,
+    workspaceId,
+  ]);
+
   const handleChallengeRealtime = useCallback(() => {
     if (isCreating || !workspaceId || workspaceId === 'new') return;
     void queryClient.invalidateQueries({ queryKey: ['challenges'] });
@@ -1843,6 +1913,7 @@ function GroupWorkspacePage() {
     },
     onMaterialUpdated: handleRealtimeMaterialUpdate,
     onProgress: handleRealtimeProgress,
+    onGroupUpdate: handleGroupRealtime,
     onChallengeUpdate: handleChallengeRealtime,
   });
 
