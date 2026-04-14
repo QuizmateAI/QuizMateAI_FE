@@ -23,6 +23,8 @@ import {
 import { cn } from '@/lib/utils';
 import VietnamFlag from '@/assets/Viet_nam.png';
 import EnglishFlag from '@/assets/UK_flag.svg';
+import LogoLight from '@/assets/LightMode_Logo.webp';
+import LogoDark from '@/assets/DarkMode_Logo.webp';
 
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard },
@@ -116,22 +118,30 @@ function GroupSidebar({
       ) : null}
 
       <aside className={asideClassName}>
-        <div className={cn('border-b px-4 pb-3.5 pt-4', isDarkMode ? 'border-slate-700/80' : 'border-slate-200/80')}>
-          <div className="mb-3 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={handleGoHome}
-              className={cn(
-                'inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors duration-200 ease-out',
-                isDarkMode
-                  ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white'
-                  : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900',
-              )}
-              aria-label={t('common.home', 'Home')}
-              title={t('common.home', 'Home')}
-            >
-              <Home className="h-4 w-4" />
-            </button>
+        <div className={cn('border-b px-4', isDarkMode ? 'border-slate-700/80' : 'border-slate-200/80')}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <button
+                type="button"
+                onClick={handleGoHome}
+                className={cn(
+                  'inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors duration-200 ease-out',
+                  isDarkMode
+                    ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white'
+                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+                )}
+                aria-label={t('common.home', 'Home')}
+                title={t('common.home', 'Home')}
+              >
+                <Home className="h-4 w-4" />
+              </button>
+
+              <img
+                src={isDarkMode ? LogoDark : LogoLight}
+                alt="QuizMate AI"
+                className="h-[90px] w-[100px] object-contain"
+              />
+            </div>
 
             {isMobile ? (
               <button
@@ -150,7 +160,7 @@ function GroupSidebar({
             ) : <span className="h-9 w-9" />}
           </div>
 
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3 pb-3">
             <div className="min-w-0">
               <p className={cn('truncate text-[18px] font-semibold leading-tight', isDarkMode ? 'text-slate-100' : 'text-slate-950', fontClass)}>
                 {groupName || t('groupWorkspace.shell.defaultGroupName')}
@@ -165,7 +175,7 @@ function GroupSidebar({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3 pt-2">
           <div className="space-y-1">
             {filteredItems.map((item) => {
               const Icon = item.icon;
