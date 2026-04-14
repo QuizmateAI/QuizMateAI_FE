@@ -7,10 +7,17 @@ function toArray(value) {
 function formatEstimatedDuration(totalDays, minutesPerDay) {
   const safeDays = Number(totalDays) || 0;
   const safeMinutes = Number(minutesPerDay) || 0;
+  const savedLanguage = typeof window !== 'undefined'
+    ? String(window.localStorage?.getItem('app_language') || 'vi').toLowerCase()
+    : 'vi';
+  const isEnglish = savedLanguage.startsWith('en');
+  const daysUnit = isEnglish ? 'days' : 'ngày';
+  const minutesPerDayUnit = isEnglish ? 'minutes/day' : 'phút/ngày';
+
   if (!safeDays && !safeMinutes) return 'N/A';
-  if (!safeMinutes) return `${safeDays} ngày`;
-  if (!safeDays) return `${safeMinutes} phút/ngày`;
-  return `${safeDays} ngày • ${safeMinutes} phút/ngày`;
+  if (!safeMinutes) return `${safeDays} ${daysUnit}`;
+  if (!safeDays) return `${safeMinutes} ${minutesPerDayUnit}`;
+  return `${safeDays} ${daysUnit} • ${safeMinutes} ${minutesPerDayUnit}`;
 }
 
 function getCanvasPreference(roadmapId) {

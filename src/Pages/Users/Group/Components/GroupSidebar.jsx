@@ -5,9 +5,9 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Brain,
   ClipboardList,
   FolderOpen,
-  Globe,
   LayoutDashboard,
   Map,
   Moon,
@@ -21,6 +21,8 @@ import {
   Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import VietnamFlag from '@/assets/Viet_nam.png';
+import EnglishFlag from '@/assets/UK_flag.svg';
 
 const NAV_ITEMS = [
   { id: 'dashboard', icon: LayoutDashboard },
@@ -34,6 +36,7 @@ const NAV_ITEMS = [
   { id: 'ranking', icon: BarChart3 },
   { id: 'notifications', icon: Bell },
   { id: 'members', icon: Users },
+  { id: 'memberStats', icon: Brain },
   { id: 'wallet', icon: Wallet },
   { id: 'settings', icon: Settings },
 ];
@@ -67,6 +70,7 @@ function GroupSidebar({
   const filteredItems = NAV_ITEMS.filter((item) => {
     if (item.id === 'dashboard') return !isMember;
     if (item.id === 'personalDashboard') return isMember;
+    if (item.id === 'memberStats') return !isMember;
     return true;
   });
 
@@ -234,7 +238,19 @@ function GroupSidebar({
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
               )}
             >
-              <Globe className="h-4 w-4" />
+              {currentLang === 'vi' ? (
+                <img
+                  src={VietnamFlag}
+                  alt="Tiếng Việt"
+                  className="h-4 w-4 rounded-sm object-cover"
+                />
+              ) : (
+                <img
+                  src={EnglishFlag}
+                  alt="English"
+                  className="h-4 w-4 rounded-sm object-cover"
+                />
+              )}
               <span className={cn('text-[13px] font-semibold uppercase', fontClass)}>
                 {currentLang === 'vi' ? 'VI' : 'EN'}
               </span>
@@ -249,10 +265,11 @@ function GroupSidebar({
                   ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
               )}
+              aria-label={isDarkMode ? t('common.dark', 'Dark') : t('common.light', 'Light')}
             >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {isDarkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               <span className={cn('text-[12px] font-semibold', fontClass)}>
-                {isDarkMode ? t('common.dark') : t('common.light')}
+                {isDarkMode ? t('common.dark', 'Dark') : t('common.light', 'Light')}
               </span>
             </button>
           </div>

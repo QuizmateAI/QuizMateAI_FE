@@ -12,7 +12,7 @@ const configuredSupportEmail = (import.meta.env.VITE_LAUNCH_SUPPORT_EMAIL || '')
 const configuredEarlyAccessUrl = (import.meta.env.VITE_EARLY_ACCESS_URL || '').trim();
 
 export const launchConfig = {
-  enabled: parseBoolean(import.meta.env.VITE_LAUNCH_MODE, import.meta.env.PROD),
+  enabled: parseBoolean(import.meta.env.VITE_LAUNCH_MODE, false),
   brandName: (import.meta.env.VITE_LAUNCH_BRAND_NAME || 'QuizMate').trim(),
   launchDate: configuredLaunchDate,
   supportEmail: configuredSupportEmail,

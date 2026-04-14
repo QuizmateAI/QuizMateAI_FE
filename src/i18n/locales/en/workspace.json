@@ -460,7 +460,6 @@
         "prelearning": "Pre-learning",
         "questionStats": "Stats"
       },
-      "outputs": "Generated Outputs",
       "noOutputs": "No outputs yet.",
       "accessHistory": "Access History",
       "noHistory": "No recent activity.",
@@ -609,6 +608,7 @@
       "uploadAllSuccess": "Uploaded both user files and suggested files successfully.",
       "uploadSuccess": "Uploaded successfully!",
       "uploadError": "Upload failed.",
+      "uploadPending": "Your document has been submitted and may still be processing. Please wait a moment then check your sources list.",
       "maxFiles": "Max documents",
       "maxFilesDesc": "Confirm how many documents will be used in this workspace.",
       "confirmCount": "Confirm",
@@ -1609,6 +1609,8 @@
         "view2RoadmapHint": "Choose the roadmap, a phase, or a knowledge item above to inspect the matching details below.",
         "view2PhaseHint": "Click a phase above to inspect its description and post-learning list.",
         "view2KnowledgeHint": "Click a knowledge item to inspect its details, quizzes, and flashcards.",
+        "expandTopSection": "Expand diagram",
+        "collapseTopSection": "Collapse diagram",
         "knowledge": "Knowledge",
         "preLearning": "Pre-learning",
         "learningPath": "Learning path",
@@ -1876,6 +1878,8 @@
       "recenter": "Recenter on this phase",
       "generatingRoadmapPhases": "Generating roadmap phases",
       "unknownView": "This section is not available.",
+      "workspaceWelcomeTitle": "Your Premium Learning Workspace",
+      "workspaceWelcomeDesc": "Unlock smarter learning with AI. Pick a tool from the sidebar to upload materials, build roadmap phases, or practice at full speed.",
       "nav": {
         "overview": "Overview",
         "sources": "Sources",

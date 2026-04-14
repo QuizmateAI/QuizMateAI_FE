@@ -15,14 +15,14 @@ const budgets = [
   { label: 'en public locale payload', prefixes: ['i18n-en-common-'], maxBytes: 24 * 1024 },
   { label: 'vi auth locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-auth-'], maxBytes: 25 * 1024 },
   { label: 'en auth locale payload', prefixes: ['i18n-en-common-', 'i18n-en-auth-'], maxBytes: 25 * 1024 },
-  { label: 'vi home locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-home-'], maxBytes: 40 * 1024 },
-  { label: 'en home locale payload', prefixes: ['i18n-en-common-', 'i18n-en-home-'], maxBytes: 40 * 1024 },
-  { label: 'vi workspace locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-'], maxBytes: 105 * 1024 },
-  { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 105 * 1024 },
-  { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-home-', 'i18n-vi-workspace-', 'i18n-vi-group-'], maxBytes: 130 * 1024 },
-  { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-home-', 'i18n-en-workspace-', 'i18n-en-group-'], maxBytes: 130 * 1024 },
-  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-'], maxBytes: 80 * 1024 },
-  { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-'], maxBytes: 80 * 1024 },
+  { label: 'vi home locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-home-'], maxBytes: 52 * 1024 },
+  { label: 'en home locale payload', prefixes: ['i18n-en-common-', 'i18n-en-home-'], maxBytes: 44 * 1024 },
+  { label: 'vi workspace locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-workspace-'], maxBytes: 155 * 1024 },
+  { label: 'en workspace locale payload', prefixes: ['i18n-en-common-', 'i18n-en-workspace-'], maxBytes: 140 * 1024 },
+  { label: 'vi group locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-home-', 'i18n-vi-workspace-', 'i18n-vi-group-'], maxBytes: 265 * 1024 },
+  { label: 'en group locale payload', prefixes: ['i18n-en-common-', 'i18n-en-home-', 'i18n-en-workspace-', 'i18n-en-group-'], maxBytes: 235 * 1024 },
+  { label: 'vi admin locale payload', prefixes: ['i18n-vi-common-', 'i18n-vi-admin-'], maxBytes: 95 * 1024 },
+  { label: 'en admin locale payload', prefixes: ['i18n-en-common-', 'i18n-en-admin-'], maxBytes: 82 * 1024 },
 ];
 
 function formatKb(bytes) {

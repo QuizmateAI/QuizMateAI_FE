@@ -127,21 +127,7 @@ export default function RoadmapReviewPanel({ roadmapId, isDarkMode = false }) {
   }
 
   if (error || !reviewData) {
-    return (
-      <div className={`mt-8 w-full rounded-[24px] border p-5 sm:p-6 ${isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-indigo-100 bg-white"}`}>
-        <div className="flex items-start gap-3">
-          <AlertCircle className={`mt-0.5 h-5 w-5 ${isDarkMode ? "text-amber-300" : "text-amber-600"}`} />
-          <div>
-            <p className={`text-sm font-semibold ${isDarkMode ? "text-slate-100" : "text-slate-800"} ${fontClass}`}>
-              Chưa có dữ liệu tổng kết roadmap
-            </p>
-            <p className={`mt-1 text-sm ${isDarkMode ? "text-slate-400" : "text-slate-600"} ${fontClass}`}>
-              Hoàn thành thêm phase/quiz và thử tải lại để xem báo cáo tổng kết chi tiết.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const {
