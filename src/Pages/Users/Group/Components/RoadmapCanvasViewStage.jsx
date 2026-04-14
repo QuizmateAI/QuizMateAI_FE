@@ -108,6 +108,23 @@ function isFinishedKnowledgeStatus(status) {
   return normalized === "COMPLETED" || normalized === "SKIPPED" || normalized === "DONE";
 }
 
+function formatPhaseDurationLabel(phase, t) {
+  const estimatedDays = Number(phase?.estimatedDays ?? phase?.studyDurationInDay ?? phase?.durationInDay ?? 0);
+  const estimatedMinutesPerDay = Number(phase?.estimatedMinutesPerDay ?? phase?.recommendedMinutesPerDay ?? phase?.minutesPerDay ?? 0);
+
+  if (estimatedDays > 0 && estimatedMinutesPerDay > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")} • ${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+  if (estimatedDays > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")}`;
+  }
+  if (estimatedMinutesPerDay > 0) {
+    return `${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+
+  return phase?.durationLabel || null;
+}
+
 function RoadmapCanvasViewStage({
   roadmap,
   isDarkMode = false,
@@ -1220,9 +1237,11 @@ function RoadmapCanvasViewStage({
               {selectedPhase.title}
             </h3>
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
-                {selectedPhase.durationLabel}
-              </span>
+              {formatPhaseDurationLabel(selectedPhase, t) ? (
+                <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                  {formatPhaseDurationLabel(selectedPhase, t)}
+                </span>
+              ) : null}
               <span className={`rounded-full px-3 py-1 text-xs ${isDarkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
                 {phaseKnowledges.length} {t("workspace.roadmap.canvas.knowledges")}
               </span>

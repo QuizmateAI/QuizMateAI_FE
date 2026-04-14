@@ -26,6 +26,23 @@ import {
 } from "lucide-react";
 import { buildWorkspaceRoadmapsPath } from "@/lib/routePaths";
 
+function formatPhaseDurationLabel(phase, t) {
+  const estimatedDays = Number(phase?.estimatedDays ?? phase?.studyDurationInDay ?? phase?.durationInDay ?? 0);
+  const estimatedMinutesPerDay = Number(phase?.estimatedMinutesPerDay ?? phase?.recommendedMinutesPerDay ?? phase?.minutesPerDay ?? 0);
+
+  if (estimatedDays > 0 && estimatedMinutesPerDay > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")} • ${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+  if (estimatedDays > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")}`;
+  }
+  if (estimatedMinutesPerDay > 0) {
+    return `${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+
+  return phase?.durationLabel || null;
+}
+
 function RoadmapCanvasView2({
   roadmap,
   isDarkMode = false,
@@ -1077,7 +1094,7 @@ function RoadmapCanvasView2({
                 </div>
                 <div className="w-full flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] ${isDarkMode ? "bg-blue-950/60 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
-                    {phase?.durationLabel || `${Number(phase?.estimatedDays) || 0} ${t("workspace.roadmap.days", "days")} • ${Number(phase?.estimatedMinutesPerDay) || 0} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`}
+                    {formatPhaseDurationLabel(phase, t)}
                   </span>
                   {isCompletedPhase ? (
                     <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${

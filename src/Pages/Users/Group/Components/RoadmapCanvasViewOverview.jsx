@@ -287,6 +287,23 @@ function computeTotalWidth(count, { padLeft, padRight, phaseGap }) {
   return padLeft + Math.max(0, count - 1) * phaseGap + padRight;
 }
 
+function formatPhaseDurationLabel(phase, t) {
+  const estimatedDays = Number(phase?.estimatedDays ?? phase?.studyDurationInDay ?? phase?.durationInDay ?? 0);
+  const estimatedMinutesPerDay = Number(phase?.estimatedMinutesPerDay ?? phase?.recommendedMinutesPerDay ?? phase?.minutesPerDay ?? 0);
+
+  if (estimatedDays > 0 && estimatedMinutesPerDay > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")} • ${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+  if (estimatedDays > 0) {
+    return `${estimatedDays} ${t("workspace.roadmap.days", "days")}`;
+  }
+  if (estimatedMinutesPerDay > 0) {
+    return `${estimatedMinutesPerDay} ${t("workspace.roadmap.minutesPerDayShort", "min/day")}`;
+  }
+
+  return phase?.durationLabel || null;
+}
+
 function RoadmapCanvasViewOverview({
   roadmap,
   currentPhaseProgress = null,
@@ -653,9 +670,9 @@ function RoadmapCanvasViewOverview({
                           </p>
 
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                            {phase?.durationLabel ? (
+                            {formatPhaseDurationLabel(phase, t) ? (
                               <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-white text-slate-600"}`}>
-                                {phase.durationLabel}
+                                {formatPhaseDurationLabel(phase, t)}
                               </span>
                             ) : null}
                             <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-white text-slate-600"}`}>
