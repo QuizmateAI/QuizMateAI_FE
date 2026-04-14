@@ -208,6 +208,7 @@
         "ranking": "Xếp hạng",
         "notifications": "Thông báo",
         "members": "Thành viên",
+        "memberStats": "Thống kê thành viên",
         "wallet": "Ví",
         "settings": "Cài đặt"
       }
@@ -279,6 +280,8 @@
       "title": "Challenge",
       "description": "Thi đấu cùng các thành viên trong nhóm qua các bài quiz theo thời gian thực.",
       "badge": "Challenge",
+      "noItems": "Chưa có challenge nào.",
+      "createChallenge": "Tạo Challenge",
       "cancelDialogTitle": "Huỷ challenge?",
       "cancelDialogDescription": "Bạn có chắc muốn huỷ challenge này? Thành viên sẽ không còn tham gia và lịch challenge sẽ bị gỡ.",
       "cancelDialogBack": "Đóng",

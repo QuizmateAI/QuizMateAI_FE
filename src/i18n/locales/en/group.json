@@ -244,6 +244,7 @@
         "ranking": "Ranking",
         "notifications": "Notifications",
         "members": "Members",
+        "memberStats": "Member intelligence",
         "wallet": "Wallet",
         "settings": "Settings"
       }
@@ -305,6 +306,8 @@
       "title": "Challenge",
       "description": "Compete with your group members in real-time quiz challenges.",
       "badge": "Challenge",
+      "noItems": "No challenges yet.",
+      "createChallenge": "Create Challenge",
       "cancelDialogTitle": "Cancel this challenge?",
       "cancelDialogDescription": "Are you sure you want to cancel this challenge? Members will no longer be able to join and the schedule will be removed.",
       "cancelDialogBack": "Close",
