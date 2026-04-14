@@ -35,21 +35,108 @@ function getStatus(value) {
   return String(value || "").toUpperCase();
 }
 
-function getVisualState(phase, index, currentIndex) {
-  const status = getStatus(phase?.status);
-  if (DONE.has(status) || index < currentIndex) return "done";
-  if (ACTIVE.has(status) || index === currentIndex) return "current";
-  return index === currentIndex + 1 ? "next" : "locked";
+function isDoneStatus(status) {
+  return DONE.has(getStatus(status));
 }
 
-function getCurrentIndex(phases) {
-  if (!Array.isArray(phases) || phases.length === 0) return 0;
-  const activeIndex = phases.findIndex((phase) => ACTIVE.has(getStatus(phase?.status)));
-  if (activeIndex >= 0) return activeIndex;
+function isActiveStatus(status) {
+  return ACTIVE.has(getStatus(status));
+}
 
-  const firstIncomplete = phases.findIndex((phase) => !DONE.has(getStatus(phase?.status)));
-  if (firstIncomplete >= 0) return firstIncomplete;
-  return phases.length - 1;
+function isCompletedQuiz(quiz) {
+  const status = getStatus(quiz?.status);
+  return quiz?.myAttempted === true || quiz?.myPassed === true || DONE.has(status);
+}
+
+function isCompletedKnowledge(knowledge) {
+  return DONE.has(getStatus(knowledge?.status));
+}
+
+function isPhaseEffectivelyDone(phase) {
+  const phaseStatus = getStatus(phase?.status);
+  if (DONE.has(phaseStatus)) return true;
+
+  const preLearningQuizzes = Array.isArray(phase?.preLearningQuizzes) ? phase.preLearningQuizzes : [];
+  const knowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+  const postLearningQuizzes = Array.isArray(phase?.postLearningQuizzes) ? phase.postLearningQuizzes : [];
+
+  const hasAnyChildStage = preLearningQuizzes.length > 0 || knowledges.length > 0 || postLearningQuizzes.length > 0;
+  if (!hasAnyChildStage) return false;
+
+  const preLearningDone = preLearningQuizzes.length === 0 || preLearningQuizzes.every(isCompletedQuiz);
+  const knowledgesDone = knowledges.length === 0 || knowledges.every(isCompletedKnowledge);
+  const postLearningDone = postLearningQuizzes.length === 0 || postLearningQuizzes.some(isCompletedQuiz);
+  return preLearningDone && knowledgesDone && postLearningDone;
+}
+
+function resolvePayloadPhaseIndex(phases, currentPhaseProgress) {
+  const payloadPhaseId = Number(currentPhaseProgress?.phaseId);
+  const payloadPhaseIndexRaw = Number(currentPhaseProgress?.phaseIndex);
+  const payloadPhaseIndex = Number.isInteger(payloadPhaseIndexRaw)
+    ? (payloadPhaseIndexRaw > 0 ? payloadPhaseIndexRaw - 1 : payloadPhaseIndexRaw)
+    : -1;
+
+  const payloadIndexById = Number.isInteger(payloadPhaseId) && payloadPhaseId > 0
+    ? phases.findIndex((phase) => Number(phase?.phaseId) === payloadPhaseId)
+    : -1;
+
+  if (payloadIndexById >= 0) return payloadIndexById;
+
+  if (Number.isInteger(payloadPhaseIndex) && payloadPhaseIndex >= 0 && payloadPhaseIndex < phases.length) {
+    return payloadPhaseIndex;
+  }
+
+  return -1;
+}
+
+function getPayloadDoneThroughIndex(phases, currentPhaseProgress) {
+  const payloadStatus = getStatus(currentPhaseProgress?.status);
+  if (!isDoneStatus(payloadStatus)) return -1;
+
+  const payloadIndex = resolvePayloadPhaseIndex(phases, currentPhaseProgress);
+  return payloadIndex >= 0 ? payloadIndex : -1;
+}
+
+function getVisualState(phase, index, currentIndex, payloadDoneThroughIndex) {
+  const status = getStatus(phase?.status);
+  const isDone = isPhaseEffectivelyDone(phase);
+  if (isDone || index <= payloadDoneThroughIndex || (currentIndex >= 0 && index < currentIndex)) return "done";
+  if (currentIndex >= 0 && (ACTIVE.has(status) || index === currentIndex)) return "current";
+  if (currentIndex >= 0 && index === currentIndex + 1) return "next";
+  return "locked";
+}
+
+function getCurrentIndex(phases, currentPhaseProgress) {
+  if (!Array.isArray(phases) || phases.length === 0) return -1;
+
+  const payloadStatus = getStatus(currentPhaseProgress?.status);
+  const payloadIndex = resolvePayloadPhaseIndex(phases, currentPhaseProgress);
+
+  if (payloadIndex >= 0) {
+    if (isActiveStatus(payloadStatus) && !isPhaseEffectivelyDone(phases[payloadIndex])) {
+      return payloadIndex;
+    }
+
+    if (isDoneStatus(payloadStatus)) {
+      const nextPhaseIndex = payloadIndex + 1;
+      if (nextPhaseIndex >= phases.length) return -1;
+
+      const firstIncompleteAfterPayload = phases.findIndex(
+        (phase, index) => index >= nextPhaseIndex && !isPhaseEffectivelyDone(phase),
+      );
+      if (firstIncompleteAfterPayload >= 0) return firstIncompleteAfterPayload;
+    }
+  }
+
+  const firstIncomplete = phases.findIndex((phase) => !isPhaseEffectivelyDone(phase));
+  if (firstIncomplete < 0) return -1;
+
+  const activeIndex = phases.findIndex((phase) => {
+    const status = getStatus(phase?.status);
+    return ACTIVE.has(status) && !isPhaseEffectivelyDone(phase);
+  });
+  if (activeIndex >= 0) return activeIndex;
+  return firstIncomplete;
 }
 
 function getResponsiveLayout(viewportWidth) {
@@ -202,6 +289,7 @@ function computeTotalWidth(count, { padLeft, padRight, phaseGap }) {
 
 function RoadmapCanvasViewOverview({
   roadmap,
+  currentPhaseProgress = null,
   isDarkMode = false,
   fontClass,
   i18n,
@@ -284,7 +372,14 @@ function RoadmapCanvasViewOverview({
     };
   }, []);
 
-  const currentIndex = useMemo(() => getCurrentIndex(roadmapPhases), [roadmapPhases]);
+  const currentIndex = useMemo(
+    () => getCurrentIndex(roadmapPhases, currentPhaseProgress),
+    [currentPhaseProgress, roadmapPhases],
+  );
+  const payloadDoneThroughIndex = useMemo(
+    () => getPayloadDoneThroughIndex(roadmapPhases, currentPhaseProgress),
+    [currentPhaseProgress, roadmapPhases],
+  );
 
   const FISHBONE_GLOBAL_SCALE = 0.9; // THAY ĐỔI CHỈ SỐ NÀY ĐỂ ZOOM TO/NHỎ TOÀN BỘ XƯƠNG CÁ (VD: 0.8 là nhỏ đi 20%, 1.2 là to lên 20%)
   const FISHBONE_VERTICAL_SCALE = 0.5; // THAY ĐỔI CHỈ SỐ NÀY ĐỂ TĂNG/GIẢM KHÔNG GIAN CHIỀU DỌC TRÊN DƯỚI (VD: 0.8 là lùn đi, 1.2 là cao lên)
@@ -441,7 +536,7 @@ function RoadmapCanvasViewOverview({
                   <path d={wavePath} fill="none" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" opacity="0.32" strokeDasharray="8 12" />
 
                   {roadmapPhases.map((phase, index) => {
-                    const state = getVisualState(phase, index, currentIndex);
+                    const state = getVisualState(phase, index, currentIndex, payloadDoneThroughIndex);
                     const x = getPhaseX(index, layoutConfig.padLeft, layoutConfig.phaseGap);
                     const y = getPhaseY(index, layoutConfig.centerY, layoutConfig.amplitude);
                     const above = isCardAbove(index);
@@ -481,7 +576,7 @@ function RoadmapCanvasViewOverview({
                 </svg>
 
                 {roadmapPhases.map((phase, index) => {
-                  const state = getVisualState(phase, index, currentIndex);
+                  const state = getVisualState(phase, index, currentIndex, payloadDoneThroughIndex);
                   const StatusIcon = STATUS_ICONS[state];
                   const above = isCardAbove(index);
                   const x = getPhaseX(index, layoutConfig.padLeft, layoutConfig.phaseGap);
