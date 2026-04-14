@@ -3,12 +3,37 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AcceptInvitationPage from '@/Pages/Users/Group/AcceptInvitationPage';
 import { acceptInvitation, previewInvitation } from '@/api/GroupAPI';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key, fallback) => (typeof fallback === 'string' ? fallback : key),
+    i18n: { language: 'en' },
+  }),
+  Trans: ({ defaults = '', values = {} }) => {
+    const resolvedText = Object.entries(values).reduce(
+      (text, [name, value]) => text.replaceAll(`{{${name}}}`, String(value ?? '')),
+      defaults,
+    ).replace(/<\/?\d+>/g, '');
+
+    return resolvedText;
+  },
+}));
+
 const mockNavigate = vi.fn();
 const mockShowSuccess = vi.fn();
 const mockShowError = vi.fn();
 const mockShowInfo = vi.fn();
 
 let mockToken = 'invite-token';
+
+function toBase64Url(value) {
+  return window.btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function createMockJwt(email) {
+  const header = toBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = toBase64Url(JSON.stringify({ sub: email }));
+  return `${header}.${payload}.signature`;
+}
 
 vi.mock('@/api/GroupAPI', () => ({
   acceptInvitation: vi.fn(),
@@ -64,8 +89,8 @@ describe('AcceptInvitationPage', () => {
 
     render(<AcceptInvitationPage />);
 
-    expect(await screen.findByText('Không thể mở lời mời')).toBeInTheDocument();
-    expect(screen.getByText('Liên kết mời không hợp lệ. Vui lòng kiểm tra lại email.')).toBeInTheDocument();
+    expect(await screen.findByText('Unable to open the invitation')).toBeInTheDocument();
+    expect(screen.getByText('The invitation link is invalid. Please double-check your email.')).toBeInTheDocument();
     expect(previewInvitation).not.toHaveBeenCalled();
     expect(acceptInvitation).not.toHaveBeenCalled();
   });
@@ -75,15 +100,15 @@ describe('AcceptInvitationPage', () => {
 
     render(<AcceptInvitationPage />);
 
-    expect(await screen.findByRole('button', { name: 'Đăng nhập để xác nhận' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Sign in to confirm' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'IELTS Sprint Team' })).toBeInTheDocument();
-    expect(screen.getByText('Học kiến thức mới')).toBeInTheDocument();
+    expect(screen.getByText('Study new topics')).toBeInTheDocument();
     expect(previewInvitation).toHaveBeenCalledWith('invite-token');
     expect(acceptInvitation).not.toHaveBeenCalled();
   });
 
   it('accepts the invitation for the matching account and redirects to the group workspace', async () => {
-    window.localStorage.setItem('accessToken', 'token');
+    window.localStorage.setItem('accessToken', createMockJwt('member@example.com'));
     window.localStorage.setItem('user', JSON.stringify({
       userID: 5,
       username: 'member',
@@ -103,7 +128,7 @@ describe('AcceptInvitationPage', () => {
 
     render(<AcceptInvitationPage />);
 
-    const confirmButton = await screen.findByRole('button', { name: 'Xác nhận vào nhóm' });
+    const confirmButton = await screen.findByRole('button', { name: 'Confirm and join group' });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
@@ -113,5 +138,23 @@ describe('AcceptInvitationPage', () => {
     expect(window.sessionStorage.getItem('group-invite-welcome:77')).toContain('IELTS Sprint Team');
     expect(mockNavigate).toHaveBeenCalledWith('/group-workspaces/77?welcome=1', { replace: true });
     expect(mockShowSuccess).toHaveBeenCalledWith('Chào mừng bạn đã tham gia nhóm!');
+  });
+
+  it('shows mismatch state when the stored user email differs from the JWT email', async () => {
+    window.localStorage.setItem('accessToken', createMockJwt('ngoctbse183713@fpt.edu.vn'));
+    window.localStorage.setItem('user', JSON.stringify({
+      userID: 5,
+      username: 'member',
+      email: 'member@example.com',
+    }));
+
+    previewInvitation.mockResolvedValue({ data: invitationPreview });
+
+    render(<AcceptInvitationPage />);
+
+    expect(await screen.findByText(/You are signed in to the wrong account/i)).toBeInTheDocument();
+    expect(screen.getByText(/ngoctbse183713@fpt\.edu\.vn/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in with the correct email/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm and join group' })).not.toBeInTheDocument();
   });
 });

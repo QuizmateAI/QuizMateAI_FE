@@ -5,6 +5,10 @@ import { queryClient } from '@/queryClient';
 
 // ======================= AUTH API SERVICES =======================
 
+// Auth requests in production may wait on DB, OAuth, or email providers longer
+// than the generic client timeout used for the rest of the app.
+const AUTH_REQUEST_TIMEOUT_MS = 30000;
+
 /**
  * Đăng ký tài khoản mới
  * @param {Object} userData - Thông tin đăng ký
@@ -16,7 +20,9 @@ import { queryClient } from '@/queryClient';
  * @returns {Promise} Response từ server
  */
 export const register = async (userData) => {
-  const response = await api.post('/auth/register', userData);
+  const response = await api.post('/auth/register', userData, {
+    timeout: AUTH_REQUEST_TIMEOUT_MS,
+  });
   return response;
 };
 
@@ -66,7 +72,9 @@ function clearAuthState() {
  * @returns {Promise} Response chứa token và thông tin user
  */
 export const login = async (credentials) => {
-  const response = await api.post('/auth/login', credentials);
+  const response = await api.post('/auth/login', credentials, {
+    timeout: AUTH_REQUEST_TIMEOUT_MS,
+  });
 
   // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
   if (response.statusCode === 200 || response.statusCode === 0) {
@@ -108,7 +116,9 @@ export const checkEmail = async (email) => {
  * @returns {Promise} Response chứa token và thông tin user
  */
 export const googleLogin = async (idToken) => {
-  const response = await api.post('/auth/google-login', { idToken });
+  const response = await api.post('/auth/google-login', { idToken }, {
+    timeout: AUTH_REQUEST_TIMEOUT_MS,
+  });
 
   // Lưu token và thông tin user vào localStorage nếu đăng nhập thành công
   if (response.statusCode === 200 || response.statusCode === 0) {
@@ -129,7 +139,9 @@ export const googleLogin = async (idToken) => {
  * @returns {Promise} Response xác nhận gửi OTP
  */
 export const sendOTP = async (email) => {
-  const response = await api.post(`/auth/send-otp?email=${encodeURIComponent(email)}`);
+  const response = await api.post(`/auth/send-otp?email=${encodeURIComponent(email)}`, undefined, {
+    timeout: AUTH_REQUEST_TIMEOUT_MS,
+  });
   return response;
 };
 
@@ -184,7 +196,13 @@ const isOtpVerifySuccess = (response) => {
  * @returns {Promise} Response xác nhận OTP hợp lệ
  */
 export const verifyOTP = async (email, otp) => {
-  const response = await api.post(`/auth/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+  const response = await api.post(
+    `/auth/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`,
+    undefined,
+    {
+      timeout: AUTH_REQUEST_TIMEOUT_MS,
+    },
+  );
 
   if (!isOtpVerifySuccess(response)) {
     const fallbackMessage = 'Xác thực OTP thất bại, mã không đúng hoặc đã hết hạn';
@@ -206,7 +224,13 @@ export const verifyOTP = async (email, otp) => {
  * @returns {Promise} Response xác nhận đổi mật khẩu thành công
  */
 export const resetPassword = async (email, newPassword) => {
-  const response = await api.post(`/auth/reset-password?email=${encodeURIComponent(email)}&newPassword=${encodeURIComponent(newPassword)}`);
+  const response = await api.post(
+    `/auth/reset-password?email=${encodeURIComponent(email)}&newPassword=${encodeURIComponent(newPassword)}`,
+    undefined,
+    {
+      timeout: AUTH_REQUEST_TIMEOUT_MS,
+    },
+  );
   return response;
 };
 
