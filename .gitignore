@@ -34,6 +34,7 @@ dist-ssr
 .env.test.local
 .env.production.local
 .env.example
+.env.production
 
 AGENTS.md
 SKILL.md
