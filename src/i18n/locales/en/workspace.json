@@ -460,7 +460,6 @@
         "prelearning": "Pre-learning",
         "questionStats": "Stats"
       },
-      "outputs": "Generated Outputs",
       "noOutputs": "No outputs yet.",
       "accessHistory": "Access History",
       "noHistory": "No recent activity.",
@@ -1609,6 +1608,8 @@
         "view2RoadmapHint": "Choose the roadmap, a phase, or a knowledge item above to inspect the matching details below.",
         "view2PhaseHint": "Click a phase above to inspect its description and post-learning list.",
         "view2KnowledgeHint": "Click a knowledge item to inspect its details, quizzes, and flashcards.",
+        "expandTopSection": "Expand diagram",
+        "collapseTopSection": "Collapse diagram",
         "knowledge": "Knowledge",
         "preLearning": "Pre-learning",
         "learningPath": "Learning path",
@@ -1876,6 +1877,8 @@
       "recenter": "Recenter on this phase",
       "generatingRoadmapPhases": "Generating roadmap phases",
       "unknownView": "This section is not available.",
+      "workspaceWelcomeTitle": "Your Premium Learning Workspace",
+      "workspaceWelcomeDesc": "Unlock smarter learning with AI. Pick a tool from the sidebar to upload materials, build roadmap phases, or practice at full speed.",
       "nav": {
         "overview": "Overview",
         "sources": "Sources",
