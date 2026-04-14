@@ -781,7 +781,8 @@
       "roadmapGenerationStarted": "Đã gửi yêu cầu tạo lộ trình.",
       "roadmapGenerationFailed": "Không thể tạo lộ trình.",
       "completeProfileBeforeStudio": "Hoàn thành profile nhóm trước khi dùng các tab studio.",
-      "featureNotAvailableForRole": "Tính năng này chưa khả dụng cho vai trò của bạn."
+      "featureNotAvailableForRole": "Tính năng này chưa khả dụng cho vai trò của bạn.",
+      "removedFromGroup": "Bạn đã bị xóa khỏi nhóm này."
     },
     "planUpgrade": {
       "workspaceAnalytics": "Thống kê workspace",
