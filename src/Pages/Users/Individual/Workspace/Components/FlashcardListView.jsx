@@ -161,8 +161,8 @@ function FlashcardListView({
             <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
         ) : !flashcards.length ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-            <CreditCard className="mb-4 h-12 w-12 text-slate-300" />
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <CreditCard className={`mb-4 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.flashcard.noFlashcards")}</p>
             {!hideCreateButton ? (
               <Button
@@ -176,8 +176,8 @@ function FlashcardListView({
             ) : null}
           </div>
         ) : !filtered.length ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-            <FolderOpen className="mb-4 h-10 w-10 text-slate-300" />
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <FolderOpen className={`mb-4 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (

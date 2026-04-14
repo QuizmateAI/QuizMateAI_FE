@@ -127,10 +127,12 @@ function PostLearningListView({
   onViewPostLearning,
   contextType = "WORKSPACE",
   contextId,
+  isDarkMode = false,
 }) {
   const { t, i18n } = useTranslation();
   const { showError } = useToast();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
+  const mutedTextClass = isDarkMode ? "text-slate-400" : "text-slate-500";
   const normalizedContextId = Number(contextId) || 0;
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteTargetQuiz, setDeleteTargetQuiz] = useState(null);
@@ -265,9 +267,9 @@ function PostLearningListView({
             <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
         ) : postLearnings.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-            <GraduationCap className="mb-4 h-12 w-12 text-slate-300" />
-            <p className="text-sm text-slate-500">{t("workspace.postLearning.noItems")}</p>
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <GraduationCap className={`mb-4 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
+            <p className={`text-sm ${mutedTextClass}`}>{t("workspace.postLearning.noItems")}</p>
             {onCreatePostLearning ? (
               <Button
                 type="button"
@@ -281,9 +283,9 @@ function PostLearningListView({
             ) : null}
           </div>
         ) : filteredPostLearnings.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-            <FolderOpen className="mb-4 h-10 w-10 text-slate-300" />
-            <p className="text-sm text-slate-500">{t("workspace.listView.noResults")}</p>
+          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
+            <FolderOpen className={`mb-4 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
+            <p className={`text-sm ${mutedTextClass}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-200">
