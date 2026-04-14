@@ -5,6 +5,7 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Brain,
   ClipboardList,
   FolderOpen,
   LayoutDashboard,
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { id: 'ranking', icon: BarChart3 },
   { id: 'notifications', icon: Bell },
   { id: 'members', icon: Users },
+  { id: 'memberStats', icon: Brain },
   { id: 'wallet', icon: Wallet },
   { id: 'settings', icon: Settings },
 ];
@@ -68,6 +70,7 @@ function GroupSidebar({
   const filteredItems = NAV_ITEMS.filter((item) => {
     if (item.id === 'dashboard') return !isMember;
     if (item.id === 'personalDashboard') return isMember;
+    if (item.id === 'memberStats') return !isMember;
     return true;
   });
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Swords, Users, Clock, ChevronRight, Zap, Trophy } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Swords, Users, Clock, ChevronRight, Zap, Trophy, Plus } from 'lucide-react';
+import { Button } from '@/Components/ui/button';
 
 function useCountdown(targetTime) {
   const [remaining, setRemaining] = useState('');
@@ -129,16 +131,26 @@ function ChallengeCard({ challenge, isDarkMode, onSelect }) {
   );
 }
 
-export default function ChallengeListView({ challenges, isDarkMode, onSelectChallenge }) {
+export default function ChallengeListView({ challenges, isDarkMode, onSelectChallenge, onCreateChallenge }) {
+  const { t } = useTranslation();
+
   if (!challenges || challenges.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-center rounded-2xl border py-16 ${
-        isDarkMode ? 'border-slate-700 bg-slate-800/30' : 'border-gray-200 bg-gray-50/50'
-      }`}>
-        <Swords className={`mb-3 h-10 w-10 ${isDarkMode ? 'text-orange-300/40' : 'text-orange-300'}`} />
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Swords className={`mb-4 h-12 w-12 ${isDarkMode ? 'text-slate-600' : 'text-slate-300'}`} />
         <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-          Chưa có challenge nào
+          {t('groupWorkspace.challenge.noItems', 'Chưa có challenge nào.')}
         </p>
+        {onCreateChallenge ? (
+          <Button
+            type="button"
+            onClick={onCreateChallenge}
+            className="mt-4 rounded-full bg-orange-500 text-white hover:bg-orange-600"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {t('groupWorkspace.challenge.createChallenge', 'Tạo Challenge')}
+          </Button>
+        ) : null}
       </div>
     );
   }
