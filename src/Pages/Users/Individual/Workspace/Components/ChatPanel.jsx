@@ -6,6 +6,7 @@ import ListSpinner from "@/Components/ui/ListSpinner";
 import { workspaceSurface } from "./workspaceShellTheme";
 import SourcesPanel from "./SourcesPanel";
 import CreateQuizForm from "./CreateQuizForm";
+import WelcomePanel from "./WelcomePanel";
 
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
 const LazyRoadmapCanvasView = React.lazy(() => import("./RoadmapCanvasView"));
@@ -35,6 +36,7 @@ function DeferredPanel({ children }) {
 function PanelShell({
   fullBleed = false,
   frameless = false,
+  isDarkMode = false,
   children,
 }) {
   if (frameless) {
@@ -50,11 +52,13 @@ function PanelShell({
 
   return (
     <section
-      className={workspaceSurface(
-        `flex h-full min-h-0 flex-col overflow-hidden rounded-[32px] transition-colors duration-300 ${
-          fullBleed ? "" : "p-0"
-        }`,
-      )}
+      className={`workspace-surface flex h-full min-h-0 flex-col overflow-hidden rounded-[32px] transition-colors duration-300 ${
+        fullBleed ? "" : "p-0"
+      } ${
+        isDarkMode
+          ? "bg-slate-900 border-slate-800"
+          : "bg-white border-slate-200"
+      }`}
       style={{ contentVisibility: "auto" }}
     >
       <DeferredPanel>{children}</DeferredPanel>
@@ -386,13 +390,7 @@ function ChatPanel({
           />
         ) : null;
       default:
-        return (
-          <div className="flex h-full items-center justify-center px-6">
-            <p className={`text-sm ${isDarkMode ? "text-slate-400" : "text-slate-500"} ${fontClass}`}>
-              {t("workspace.shell.unknownView", "This section is not available.")}
-            </p>
-          </div>
-        );
+        return <WelcomePanel isDarkMode={isDarkMode} fontClass={fontClass} />;
     }
   };
 
@@ -414,7 +412,11 @@ function ChatPanel({
     return (
       <section
         className={workspaceSurface(
-          "flex h-full min-h-0 flex-col overflow-hidden rounded-[32px] transition-colors duration-300",
+          `flex h-full min-h-0 flex-col overflow-hidden rounded-[32px] transition-colors duration-300 ${
+            isDarkMode
+              ? "bg-slate-900 border-slate-800"
+              : "bg-white border-slate-200"
+          }`
         )}
         style={{ contentVisibility: "auto" }}
       >
@@ -524,7 +526,11 @@ function ChatPanel({
   }
 
   return (
-    <PanelShell fullBleed={isFullBleed} frameless={isFrameless}>
+    <PanelShell
+      fullBleed={isFullBleed}
+      frameless={isFrameless}
+      isDarkMode={isDarkMode}
+    >
       {renderContent()}
     </PanelShell>
   );
