@@ -796,13 +796,6 @@ function RoadmapCanvasView({
   if (!roadmap || !hasPhase) {
     return (
       <div className={`flex h-full w-full flex-col px-8 pb-8 pt-4 ${isDarkMode ? "bg-slate-900 text-slate-400" : "bg-white text-gray-500"}`}>
-        {onViewRoadmapConfig || onEditRoadmapConfig ? (
-          <div className="mb-3 flex w-full items-start justify-end">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {renderRoadmapConfigActionButtons("rounded-full")}
-            </div>
-          </div>
-        ) : null}
         <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center pt-4">
           <div className="max-w-2xl text-center">
             <div className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl ${isDarkMode ? "bg-blue-950/50 text-blue-300" : "bg-blue-100 text-blue-600"}`}>
@@ -820,7 +813,12 @@ function RoadmapCanvasView({
                   type="button"
                   disabled={isCreatingRoadmap || shouldDisableEmptyStateAction}
                   onClick={() => (onEmptyStateAction || onCreateRoadmapPhases)?.()}
-                  className="bg-[#2563EB] hover:bg-blue-700 text-white rounded-full px-6 h-10"
+                  className={`rounded-full px-6 h-10 transition-all ${isCreatingRoadmap || shouldDisableEmptyStateAction
+                    ? (isDarkMode
+                      ? "bg-slate-700 text-slate-300 hover:bg-slate-700"
+                      : "bg-slate-300 text-slate-500 hover:bg-slate-300")
+                    : "bg-[#2563EB] hover:bg-blue-700 text-white active:scale-95"
+                  }`}
                 >
                   {emptyStateActionLabel || t("workspace.roadmap.createPhaseButton", "Create phases")}
                 </Button>
@@ -1015,7 +1013,21 @@ function RoadmapCanvasView({
         onShareRoadmap={onShareRoadmap}
         renderRoadmapConfigActionButtons={renderRoadmapConfigActionButtons}
         currentPhaseProgress={currentPhaseProgress}
-        onSelectCenterRoadmap={() => handleSelectCanvasView("view2")}
+        onSelectCenterRoadmap={(phaseId = null, options = {}) => {
+          const normalizedPhaseId = Number(phaseId);
+          const normalizedKnowledgeId = Number(options?.knowledgeId);
+
+          if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+            onRoadmapPhaseFocus?.(normalizedPhaseId, {
+              knowledgeId: Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
+                ? normalizedKnowledgeId
+                : null,
+              preserveActiveView: true,
+            });
+          }
+
+          handleSelectCanvasView("view2");
+        }}
       />
     );
   }

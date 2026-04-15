@@ -1590,7 +1590,7 @@
       },
       "materialPicker": {
         "title": "Tài liệu dùng để tạo giai đoạn",
-        "description": "Chọn các tài liệu AI sẽ dùng khi soạn các giai đoạn lộ trình cho nhóm này.",
+        "description": "Chọn các tài liệu AI sẽ dùng khi soạn các giai đoạn lộ trình cho workspace này.",
         "selected": "đã chọn",
         "clearAll": "Bỏ chọn hết",
         "selectAll": "Chọn tất cả",
@@ -1708,7 +1708,8 @@
       "shareSource": "Chia sẻ nguồn",
       "selectSource": "Chọn nguồn",
       "unselectSource": "Bỏ chọn nguồn",
-      "previewSource": "Xem trước",
+      "previewSource": "Chi tiết",
+      "warningSource": "Cảnh báo",
       "renameHint": "Đổi tên nguồn hiển thị trong workspace.",
       "renamePlaceholder": "Tên nguồn mới",
       "deleteSourceTitle": "Xóa nguồn",

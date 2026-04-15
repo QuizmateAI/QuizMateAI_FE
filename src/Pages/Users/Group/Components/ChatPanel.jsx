@@ -10,7 +10,7 @@ import CreateQuizForm from "./CreateQuizForm";
 
 const LazyCreateFlashcardForm = React.lazy(() => import("./CreateFlashcardForm"));
 const LazyRoadmapCanvasView = React.lazy(() => import("./RoadmapCanvasView"));
-const LazyQuizListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/QuizListView"));
+const LazyQuizListView = React.lazy(() => import("./QuizListView"));
 const LazyQuizDetailView = React.lazy(() => import("@/Pages/Users/Group/Components/QuizDetailView"));
 const LazyEditQuizForm = React.lazy(() => import("./EditQuizForm"));
 const LazyFlashcardListView = React.lazy(() => import("@/Pages/Users/Individual/Workspace/Components/FlashcardListView"));

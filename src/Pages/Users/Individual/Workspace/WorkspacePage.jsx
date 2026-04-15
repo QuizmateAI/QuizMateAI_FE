@@ -2153,6 +2153,8 @@ function WorkspacePage() {
     onCreateFlashcard: handleCreateFlashcard,
     onCreateRoadmap: handleCreateRoadmap,
     onCreateRoadmapPhases: handleCreateRoadmapPhases,
+    onCreateRoadmapPhasesDirect: (materialIds = []) =>
+      handleSubmitRoadmapPhaseDialog({ materialIds }),
     onNavigateHome: () => navigate("/home"),
     onRoadmapPhaseFocus: handleSelectRoadmapPhase,
     onCreatePhaseKnowledge: handleCreatePhaseKnowledge,

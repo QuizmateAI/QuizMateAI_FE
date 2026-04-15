@@ -134,6 +134,7 @@ function ChatPanel({
   onShareRoadmap,
   onEditRoadmapConfig,
   onCreateRoadmapPhases,
+  onCreateRoadmapPhasesDirect,
   isSubmittingRoadmapPhaseGeneration = false,
   roadmapConfigSummary = null,
   activeSourceCount = 0,
@@ -168,6 +169,52 @@ function ChatPanel({
     if (resolvedView !== "roadmap") return;
     onRoadmapCanvasViewChange?.(roadmapCanvasView);
   }, [resolvedView, onRoadmapCanvasViewChange, roadmapCanvasView]);
+
+  const roadmapSelectableMaterials = React.useMemo(
+    () => sources.filter((source) => String(source?.status || "").toUpperCase() === "ACTIVE"),
+    [sources],
+  );
+  const roadmapSelectableMaterialIdSet = React.useMemo(
+    () => new Set(
+      roadmapSelectableMaterials
+        .map((source) => Number(source?.id ?? source?.materialId))
+        .filter((materialId) => Number.isInteger(materialId) && materialId > 0),
+    ),
+    [roadmapSelectableMaterials],
+  );
+  const selectedRoadmapMaterialIds = React.useMemo(
+    () => selectedSourceIds
+      .map((sourceId) => Number(sourceId))
+      .filter((sourceId) => roadmapSelectableMaterialIdSet.has(sourceId)),
+    [roadmapSelectableMaterialIdSet, selectedSourceIds],
+  );
+
+  const handleToggleRoadmapMaterial = React.useCallback((materialId) => {
+    const normalizedMaterialId = Number(materialId);
+    if (!Number.isInteger(normalizedMaterialId) || normalizedMaterialId <= 0) return;
+    if (!roadmapSelectableMaterialIdSet.has(normalizedMaterialId)) return;
+    if (typeof onSelectedSourceIdsChange !== "function") return;
+
+    const isSelected = selectedRoadmapMaterialIds.includes(normalizedMaterialId);
+    const nextIds = isSelected
+      ? selectedSourceIds.filter((sourceId) => Number(sourceId) !== normalizedMaterialId)
+      : [...selectedSourceIds, normalizedMaterialId];
+    onSelectedSourceIdsChange(nextIds);
+  }, [onSelectedSourceIdsChange, roadmapSelectableMaterialIdSet, selectedRoadmapMaterialIds, selectedSourceIds]);
+
+  const handleToggleAllRoadmapMaterials = React.useCallback((shouldSelectAll) => {
+    if (typeof onSelectedSourceIdsChange !== "function") return;
+
+    const selectableMaterialIds = [...roadmapSelectableMaterialIdSet];
+    const nonSelectableSelectedIds = selectedSourceIds
+      .map((sourceId) => Number(sourceId))
+      .filter((sourceId) => Number.isInteger(sourceId) && sourceId > 0 && !roadmapSelectableMaterialIdSet.has(sourceId));
+
+    const nextIds = shouldSelectAll
+      ? [...new Set([...nonSelectableSelectedIds, ...selectableMaterialIds])]
+      : nonSelectableSelectedIds;
+    onSelectedSourceIdsChange(nextIds);
+  }, [onSelectedSourceIdsChange, roadmapSelectableMaterialIdSet, selectedSourceIds]);
 
   const renderContent = () => {
     switch (resolvedView) {
@@ -218,11 +265,13 @@ function ChatPanel({
             onShareQuiz={onShareQuiz}
             onEditRoadmapConfig={onEditRoadmapConfig}
             onCreateRoadmapPhases={onCreateRoadmapPhases}
+            onEmptyStateAction={() => onCreateRoadmapPhasesDirect?.(selectedRoadmapMaterialIds)}
             isSubmittingRoadmapPhaseGeneration={isSubmittingRoadmapPhaseGeneration}
             roadmapConfigSummary={roadmapConfigSummary}
-            sources={sources}
-            selectedSourceIds={selectedSourceIds}
-            onSelectedSourceIdsChange={onSelectedSourceIdsChange}
+            emptyStateMaterials={roadmapSelectableMaterials}
+            selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds}
+            onToggleEmptyStateMaterial={handleToggleRoadmapMaterial}
+            onToggleAllEmptyStateMaterials={handleToggleAllRoadmapMaterials}
             activeSourceCount={activeSourceCount}
             disableCreate={shouldDisableRoadmap && !roadmapHasPhases}
           />
@@ -406,7 +455,7 @@ function ChatPanel({
     "postLearning",
     "questionStats",
   ].includes(resolvedView);
-  const shouldHideRoadmapJour = roadmapCanvasView === "overview";
+  const shouldHideRoadmapJour = roadmapCanvasView === "overview" || !roadmapHasPhases;
 
   if (resolvedView === "roadmap") {
     return (
