@@ -529,7 +529,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
   if (!currentSource) return null;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Header với nút quay lại */}
       <div className={`px-4 min-h-12 border-b flex items-center gap-3 py-2 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
@@ -547,8 +547,8 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
       </div>
 
       {/* Nội dung chi tiết */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        <div className="flex flex-col gap-4">
+      <div className="flex-1 min-h-0 overflow-hidden px-6 py-4">
+        <div className="flex h-full min-h-0 flex-col gap-4">
           {(moderationLoading || hasModerationContent || reviewMessage || reviewError) && (
             <div
               className={`shrink-0 rounded-xl border px-4 py-3 ${
@@ -780,7 +780,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
           <div className={`shrink-0 border-t ${isDarkMode ? "border-slate-800" : "border-gray-200"}`} />
 
           {/* Nội dung extracted text */}
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pr-1">
             {textLoading ? (
               <div className="flex items-center justify-center gap-2 py-16">
                 <InlineSpinner className={`h-5 w-5 ${isDarkMode ? "text-slate-400" : "text-gray-400"}`} />
