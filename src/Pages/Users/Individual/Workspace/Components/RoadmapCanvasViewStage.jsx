@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BookOpenCheck, CheckCircle2, ChevronDown, ChevronUp, GitBranch, Layers3, Loader2, Lock, Pencil, Sparkles, Unlock } from "lucide-react";
+import { BookOpenCheck, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GitBranch, Layers3, Loader2, Lock, Pencil, Sparkles, Unlock } from "lucide-react";
 import QuizListView from "./QuizListView";
 import { Button } from "@/Components/ui/button";
 import { getCurrentRoadmapKnowledgeProgress } from "@/api/RoadmapAPI";
@@ -20,6 +20,9 @@ const TOP_SECTION_CARD_MAX_WIDTH = 320;
 const TIMELINE_GAP = 20;
 const TIMELINE_PADDING = 20;
 const STAGE_TOP_COMPONENT_SCALE = 1;
+const STAGE_TOP_ROW_GAP = 16;
+const STAGE_TOP_ROW_PADDING_LEFT = 16;
+const STAGE_TOP_ROADMAP_MARGIN_LEFT = 20;
 
 function getCanvasContext() {
   if (typeof document === "undefined") return null;
@@ -645,9 +648,26 @@ function RoadmapCanvasViewStage({
       + TIMELINE_GAP
       + phaseCardWidths.slice(0, selectedPhaseIndex).reduce((sum, width) => sum + width, 0)
       + selectedPhaseIndex * TIMELINE_GAP;
-  const topPhaseLineWidth = phases.length > 0
-    ? phaseCardWidths.reduce((sum, width) => sum + width, 0) + phases.length * TIMELINE_GAP
-    : 0;
+  const topPhaseLineSegments = useMemo(() => {
+    if (!Array.isArray(phases) || phases.length === 0) return [];
+
+    const roadmapLeft = STAGE_TOP_ROW_PADDING_LEFT + STAGE_TOP_ROADMAP_MARGIN_LEFT;
+    const roadmapRight = roadmapLeft + roadmapCardWidth;
+
+    return phases.map((phase, index) => {
+      const previousWidthsTotal = phaseCardWidths.slice(0, index).reduce((sum, width) => sum + width, 0);
+      const currentLeft = roadmapRight + STAGE_TOP_ROW_GAP + previousWidthsTotal + index * STAGE_TOP_ROW_GAP;
+      const previousRight = index === 0
+        ? roadmapRight
+        : roadmapRight + STAGE_TOP_ROW_GAP + previousWidthsTotal + (index - 1) * STAGE_TOP_ROW_GAP;
+
+      return {
+        key: `phase-link-${phase?.phaseId ?? index}`,
+        left: previousRight,
+        width: Math.max(0, currentLeft - previousRight),
+      };
+    });
+  }, [phaseCardWidths, phases, roadmapCardWidth]);
   const knowledgeBranchLineWidth = selectedKnowledges.length > 0
     ? selectedKnowledgeCardWidths.slice(0, -1).reduce((sum, width) => sum + width, 0)
       + Math.max(selectedKnowledges.length - 1, 0) * 12
@@ -704,6 +724,37 @@ function RoadmapCanvasViewStage({
     const rawTop = branchHeight < viewportHeight
       ? branchTop - (viewportHeight - branchHeight) / 2
       : branchTop - 20;
+
+    if (selectedType === "knowledge") {
+      const selectedKnowledgeIndexForViewport = selectedKnowledges.findIndex(
+        (knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizedSelectedKnowledgeId,
+      );
+
+      if (selectedKnowledgeIndexForViewport >= 0) {
+        const knowledgeGap = 12;
+        const knowledgeLeftWithinBranch = selectedKnowledgeCardWidths
+          .slice(0, selectedKnowledgeIndexForViewport)
+          .reduce((sum, width) => sum + width, 0)
+          + selectedKnowledgeIndexForViewport * knowledgeGap;
+        const selectedCardWidth = selectedKnowledgeCardWidths[selectedKnowledgeIndexForViewport] ?? KNOWLEDGE_CARD_WIDTH;
+        const selectedCardLeft = branchLeft + knowledgeLeftWithinBranch;
+        const selectedCardRight = selectedCardLeft + selectedCardWidth;
+        const viewportPadding = 24;
+        const currentViewportLeft = timelineElement.scrollLeft;
+
+        let nextLeft = currentViewportLeft;
+        if (selectedCardLeft < currentViewportLeft + viewportPadding) {
+          nextLeft = Math.max(0, selectedCardLeft - viewportPadding);
+        } else if (selectedCardRight > currentViewportLeft + viewportWidth - viewportPadding) {
+          nextLeft = Math.min(maxLeft, selectedCardRight - viewportWidth + viewportPadding);
+        }
+
+        return {
+          left: nextLeft,
+          top: Math.max(0, Math.min(rawTop, maxTop)),
+        };
+      }
+    }
 
     return {
       left: selectedType === "phase"
@@ -801,7 +852,7 @@ function RoadmapCanvasViewStage({
       top: viewportTarget.top,
       behavior: "smooth",
     });
-  }, [hasSelectedPhaseKnowledges, selectedPhaseId, selectedType]);
+  }, [hasSelectedPhaseKnowledges, normalizedSelectedKnowledgeId, selectedKnowledgeCardWidths, selectedKnowledges, selectedPhaseId, selectedType]);
 
   const handleTimelineScroll = () => {
     const timelineElement = timelineRef.current;
@@ -876,6 +927,79 @@ function RoadmapCanvasViewStage({
       preserveActiveView: true,
       knowledgeId: normalizedKnowledgeId,
     });
+  };
+
+  const maxPhaseIndex = phases.length - 1;
+  const canGoPrevPhase = selectedPhaseIndex >= 0;
+  const canGoNextPhase = selectedPhaseIndex >= 0
+    ? selectedPhaseIndex < maxPhaseIndex
+    : maxPhaseIndex >= 0;
+  const selectedKnowledgeNavIndex = selectedKnowledges.findIndex(
+    (knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizedSelectedKnowledgeId,
+  );
+  const canShowKnowledgeArrows = Boolean(selectedPhase) && hasSelectedPhaseKnowledges;
+  const canGoPrevKnowledge = canShowKnowledgeArrows
+    && selectedType === "knowledge"
+    && selectedKnowledgeNavIndex > 0;
+  const canGoNextKnowledge = canShowKnowledgeArrows
+    && (
+      (selectedType === "phase" && selectedKnowledgeNavIndex < 0)
+      || (selectedType === "knowledge" && selectedKnowledgeNavIndex >= 0 && selectedKnowledgeNavIndex < selectedKnowledges.length - 1)
+    );
+
+  const goToPrevPhase = () => {
+    if (!canGoPrevPhase) return;
+    if (selectedPhaseIndex === 0) {
+      selectRoadmap();
+      return;
+    }
+    const previousPhase = phases[selectedPhaseIndex - 1];
+    const previousPhaseId = normalizePositiveId(previousPhase?.phaseId);
+    if (!previousPhaseId) return;
+    selectPhase(previousPhaseId);
+  };
+
+  const goToNextPhase = () => {
+    if (!canGoNextPhase) return;
+
+    if (selectedPhaseIndex < 0) {
+      const firstPhaseId = normalizePositiveId(phases[0]?.phaseId);
+      if (!firstPhaseId) return;
+      selectPhase(firstPhaseId);
+      return;
+    }
+
+    const nextPhase = phases[selectedPhaseIndex + 1];
+    const nextPhaseId = normalizePositiveId(nextPhase?.phaseId);
+    if (!nextPhaseId) return;
+    selectPhase(nextPhaseId);
+  };
+
+  const goToPrevKnowledge = () => {
+    if (!canGoPrevKnowledge || !selectedPhase) return;
+    const previousKnowledge = selectedKnowledges[selectedKnowledgeNavIndex - 1];
+    const previousKnowledgeId = normalizePositiveId(previousKnowledge?.knowledgeId);
+    const phaseId = normalizePositiveId(selectedPhase?.phaseId);
+    if (!previousKnowledgeId || !phaseId) return;
+    selectKnowledge(phaseId, previousKnowledgeId);
+  };
+
+  const goToNextKnowledge = () => {
+    if (!canGoNextKnowledge || !selectedPhase) return;
+    const phaseId = normalizePositiveId(selectedPhase?.phaseId);
+    if (!phaseId) return;
+
+    if (selectedType === "phase" && selectedKnowledgeNavIndex < 0) {
+      const firstKnowledgeId = normalizePositiveId(selectedKnowledges[0]?.knowledgeId);
+      if (!firstKnowledgeId) return;
+      selectKnowledge(phaseId, firstKnowledgeId);
+      return;
+    }
+
+    const nextKnowledge = selectedKnowledges[selectedKnowledgeNavIndex + 1];
+    const nextKnowledgeId = normalizePositiveId(nextKnowledge?.knowledgeId);
+    if (!nextKnowledgeId) return;
+    selectKnowledge(phaseId, nextKnowledgeId);
   };
 
   const handleUnlockSelectedPhase = async () => {
@@ -1599,15 +1723,68 @@ function RoadmapCanvasViewStage({
                 width: `${100 / topComponentScale}%`,
               }}
             >
-              <div
-                ref={timelineRef}
-                className="relative overflow-x-auto overflow-y-auto [scrollbar-gutter:stable_both-edges]"
-                onScroll={handleTimelineScroll}
-                onPointerDown={startTimelineDrag}
-                onPointerMove={moveTimelineDrag}
-                onPointerUp={stopTimelineDrag}
-                onPointerCancel={stopTimelineDrag}
-              >
+              <div className="relative">
+                <div className="pointer-events-none absolute left-1 right-1 top-10 z-30 flex items-center justify-between">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={goToPrevPhase}
+                    disabled={!canGoPrevPhase}
+                    className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
+                    aria-label={t("workspace.roadmap.canvas.prevPhase", "Phase trước")}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={goToNextPhase}
+                    disabled={!canGoNextPhase}
+                    className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
+                    aria-label={t("workspace.roadmap.canvas.nextPhase", "Phase tiếp theo")}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                {canShowKnowledgeArrows ? (
+                  <div className="pointer-events-none absolute left-1 right-1 top-[160px] z-30 flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={goToPrevKnowledge}
+                      disabled={!canGoPrevKnowledge}
+                      className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
+                      aria-label={t("workspace.roadmap.canvas.prevKnowledge", "Knowledge trước")}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={goToNextKnowledge}
+                      disabled={!canGoNextKnowledge}
+                      className={`pointer-events-auto h-10 w-10 rounded-full shadow-md transition-all active:scale-95 ${isDarkMode ? "border-slate-700 bg-slate-900/95 text-slate-200 hover:bg-slate-800" : "border-slate-300 bg-white/95 text-slate-700 hover:bg-slate-100"}`}
+                      aria-label={t("workspace.roadmap.canvas.nextKnowledge", "Knowledge tiếp theo")}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                ) : null}
+
+                <div
+                  ref={timelineRef}
+                  className="relative overflow-x-auto overflow-y-auto [scrollbar-gutter:stable_both-edges]"
+                  onScroll={handleTimelineScroll}
+                  onPointerDown={startTimelineDrag}
+                  onPointerMove={moveTimelineDrag}
+                  onPointerUp={stopTimelineDrag}
+                  onPointerCancel={stopTimelineDrag}
+                >
               <div
                 className="absolute inset-0 opacity-45"
                 style={{
@@ -1619,17 +1796,20 @@ function RoadmapCanvasViewStage({
               />
 
               <div className="relative min-w-max pb-6 pl-4 pr-4 pt-5">
-                <div
-                  className={`absolute left-[44px] top-[58px] h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
-                  style={{ width: topPhaseLineWidth }}
-                />
+                {topPhaseLineSegments.map((segment) => (
+                  <div
+                    key={segment.key}
+                    className={`absolute top-[58px] h-[2px] ${isDarkMode ? "bg-slate-700" : "bg-blue-200"}`}
+                    style={{ left: segment.left, width: segment.width }}
+                  />
+                ))}
 
                 <div className="relative flex items-start gap-4">
                   <button
                     type="button"
                     onClick={selectRoadmap}
                     style={{ width: roadmapCardWidth }}
-                    className={`relative z-20 shrink-0 rounded-[24px] border px-4 py-3 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
+                    className={`relative z-20 ml-5 shrink-0 rounded-[24px] border px-4 py-3 text-left shadow-[0_18px_48px_rgba(15,23,42,0.14)] transition-all ${selectedType === "roadmap"
                       ? isDarkMode
                         ? "border-emerald-400 bg-slate-900"
                         : "border-emerald-500 bg-emerald-50"
@@ -1658,7 +1838,7 @@ function RoadmapCanvasViewStage({
                         type="button"
                         onClick={() => selectPhase(phase.phaseId)}
                         style={{ width: phaseCardWidths[index] ?? PHASE_CARD_WIDTH }}
-                        className={`relative z-10 shrink-0 rounded-[22px] border px-3.5 py-3 text-left shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all ${isPhaseLocked
+                        className={`relative z-10 shrink-0 rounded-[22px] border px-3.5 py-3 text-left shadow-[0_18px_50px_rgba(15,23,42,0.12)] transition-all ${index === phases.length - 1 ? "mr-10" : ""} ${isPhaseLocked
                           ? isDarkMode
                             ? "cursor-pointer border-slate-700 bg-slate-900/60 opacity-70"
                             : "cursor-pointer border-gray-200 bg-gray-100 opacity-80"
@@ -1770,10 +1950,11 @@ function RoadmapCanvasViewStage({
                           </button>
                         );
                       })}
+                      </div>
                     </div>
-                  </div>
                 ) : null}
               </div>
+            </div>
             </div>
             </div>
           ) : null}

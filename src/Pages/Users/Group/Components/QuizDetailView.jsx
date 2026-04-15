@@ -1817,7 +1817,7 @@ function QuizDetailView({
 
       {/* Leader Participation Dialog — xuất bản quiz: có tham gia ranking không? */}
       <Dialog open={leaderParticipationOpen} onOpenChange={setLeaderParticipationOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="text-xl">🏆</span>
@@ -1877,7 +1877,7 @@ function QuizDetailView({
       </Dialog>
 
       <Dialog open={examStartOpen} onOpenChange={setExamStartOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{t("workspace.quiz.exam", "Exam")}</DialogTitle>
             <DialogDescription className="space-y-2">
