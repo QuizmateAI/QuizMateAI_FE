@@ -401,11 +401,6 @@ function RoadmapCanvasViewOverview({
     [selectedPhaseDetail],
   );
 
-  const selectedPhaseDoneKnowledgeCount = useMemo(
-    () => selectedPhaseKnowledges.filter((knowledge) => DONE.has(getStatus(knowledge?.status))).length,
-    [selectedPhaseKnowledges],
-  );
-
   const selectedPhaseIndex = useMemo(
     () => roadmapPhases.findIndex((phase) => Number(phase?.phaseId) === Number(selectedPhaseDetail?.phaseId)),
     [roadmapPhases, selectedPhaseDetail?.phaseId],
@@ -467,6 +462,15 @@ function RoadmapCanvasViewOverview({
         if (isSelectedPhaseEffectivelyDone) return "done";
         if (isDoneStatus(knowledgeStatus)) return "done";
         if (isLockedStatus(knowledgeStatus)) return "locked";
+        if (
+          Number.isInteger(currentKnowledgePhaseId)
+          && currentKnowledgePhaseId > 0
+          && currentKnowledgePhaseId === Number(selectedPhaseDetail?.phaseId)
+          && currentKnowledgeIndexInSelectedPhase >= 0
+          && knowledgeIndex < currentKnowledgeIndexInSelectedPhase
+        ) {
+          return "done";
+        }
         const isKnowledgeLockedBySequence = !isFinishedPhaseStatus(selectedPhaseDetail?.status)
           && selectedPhaseIndex === currentKnowledgePhaseIndex
           && currentKnowledgeIndexInSelectedPhase >= 0
@@ -499,6 +503,11 @@ function RoadmapCanvasViewOverview({
       selectedPhaseIndex,
       selectedPhaseKnowledges,
     ],
+  );
+
+  const selectedPhaseDoneKnowledgeCount = useMemo(
+    () => selectedPhaseKnowledgeStates.filter((state) => state === "done").length,
+    [selectedPhaseKnowledgeStates],
   );
 
   useEffect(() => {
