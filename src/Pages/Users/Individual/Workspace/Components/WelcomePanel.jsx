@@ -1,23 +1,25 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
 import { Sparkles, BookOpen, BrainCircuit, Lightbulb, GraduationCap, Target, Rocket, Cpu, Atom, Globe } from "lucide-react";
 
 const ICONS = [Sparkles, BookOpen, BrainCircuit, Lightbulb, GraduationCap, Target, Rocket, Cpu, Atom, Globe];
 
+function seededFraction(index, salt) {
+  const seed = Math.sin((index + 1) * (salt + 1) * 12.9898) * 43758.5453;
+  return seed - Math.floor(seed);
+}
+
+const RAIN_DROPS = Array.from({ length: 25 }).map((_, i) => {
+  const Icon = ICONS[i % ICONS.length];
+  const left = 10 + seededFraction(i, 0) * 120; // 10% to 130% so they can drift left across the screen
+  const delay = seededFraction(i, 1) * -20; // negative delay so some are already on screen
+  const duration = 15 + seededFraction(i, 2) * 20; // 15s to 35s
+  const size = 24 + seededFraction(i, 3) * 36; // 24px to 60px
+  return { id: i, Icon, left, delay, duration, size };
+});
+
 function WelcomePanel({ isDarkMode, fontClass }) {
   const { t } = useTranslation();
-
-  // Generate stable random items to prevent re-rendering flicker
-  const rainDrops = useMemo(() => {
-    return Array.from({ length: 25 }).map((_, i) => {
-      const Icon = ICONS[i % ICONS.length];
-      const left = 10 + Math.random() * 120; // 10% to 130% so they can drift left across the screen
-      const delay = Math.random() * -20; // negative delay so some are already on screen
-      const duration = 15 + Math.random() * 20; // 15s to 35s
-      const size = 24 + Math.random() * 36; // 24px to 60px
-      return { id: i, Icon, left, delay, duration, size };
-    });
-  }, []);
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center p-8 bg-white dark:bg-slate-950 overflow-hidden">
@@ -40,7 +42,7 @@ function WelcomePanel({ isDarkMode, fontClass }) {
 
       {/* Background Animated Rain */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        {rainDrops.map((drop) => (
+        {RAIN_DROPS.map((drop) => (
           <drop.Icon
             key={drop.id}
             size={drop.size}

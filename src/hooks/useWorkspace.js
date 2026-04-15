@@ -8,6 +8,7 @@ import {
   updateWorkspace as updateWorkspaceAPI,
   deleteIndividualWorkspace as deleteWorkspaceAPI,
   getWorkspaceById,
+  markWorkspaceAccess as markWorkspaceAccessAPI,
 } from '@/api/WorkspaceAPI';
 
 const WORKSPACE_TITLE_PLACEHOLDERS = ['name null', 'group name null'];
@@ -48,6 +49,7 @@ function normalizeWorkspace(workspace) {
   const normalizedDescription = rawDescription && WORKSPACE_DESCRIPTION_PLACEHOLDERS.includes(rawDescription.toLowerCase())
     ? null
     : rawDescription;
+  const sourceCount = Number(workspace.sourceCount ?? workspace.materialCount ?? workspace.materialsCount ?? 0);
 
   return {
     ...workspace,
@@ -55,6 +57,8 @@ function normalizeWorkspace(workspace) {
     name: normalizedTitle,
     displayTitle: normalizedDisplayTitle,
     description: normalizedDescription,
+    sourceCount: Number.isFinite(sourceCount) && sourceCount > 0 ? sourceCount : 0,
+    lastAccessedAt: workspace.lastAccessedAt ?? null,
   };
 }
 
@@ -109,11 +113,12 @@ export function useWorkspace(options = {}) {
   const [workspaceDetailLoading, setWorkspaceDetailLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
+  const [sortMode, setSortMode] = useState('recent');
 
   const { data, isLoading: loading, error: queryError, refetch } = useQuery({
-    queryKey: [...WORKSPACES_QUERY_KEY, page, size],
+    queryKey: [...WORKSPACES_QUERY_KEY, page, size, sortMode],
     queryFn: async () => {
-      const res = await getWorkspacesByUser(page, size);
+      const res = await getWorkspacesByUser(page, size, sortMode);
       const responseData = unwrapApiData(res) || {};
       if (Array.isArray(responseData)) {
         const normalized = normalizeWorkspaceArray(responseData);
@@ -124,7 +129,7 @@ export function useWorkspace(options = {}) {
         return {
           workspaces: normalized,
           pagination: {
-            page: responseData.number || 0,
+            page: responseData.page ?? responseData.number ?? 0,
             size: responseData.size || size,
             totalPages: responseData.totalPages || 0,
             totalElements: responseData.totalElements || 0,
@@ -157,6 +162,17 @@ export function useWorkspace(options = {}) {
       const res = await getWorkspaceById(workspaceId);
       const workspace = normalizeWorkspace(unwrapApiData(res) || null);
       setCurrentWorkspace(workspace);
+      void markWorkspaceAccessAPI(workspaceId)
+        .then(() => {
+          const accessedAt = new Date().toISOString();
+          setCurrentWorkspace((prev) => (
+            Number(prev?.workspaceId) === Number(workspaceId)
+              ? { ...prev, lastAccessedAt: accessedAt }
+              : prev
+          ));
+          void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
+        })
+        .catch(() => {});
       return workspace;
     } catch (err) {
       console.error('Lỗi khi lấy chi tiết workspace:', err);
@@ -167,7 +183,7 @@ export function useWorkspace(options = {}) {
     } finally {
       setWorkspaceDetailLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   // Thay đổi trang (useQuery tự refetch khi key thay đổi)
   const changePage = useCallback((newPage) => {
@@ -180,6 +196,11 @@ export function useWorkspace(options = {}) {
     setPage(0);
   }, []);
 
+  const changeSortMode = useCallback((newSortMode) => {
+    setSortMode(newSortMode === 'created' ? 'created' : 'recent');
+    setPage(0);
+  }, []);
+
   // Tạo workspace mới
   const createWorkspace = useCallback(async (data) => {
     const res = await createWorkspaceAPI(data);
@@ -187,14 +208,14 @@ export function useWorkspace(options = {}) {
 
     if (page === 0) {
       queryClient.setQueryData(
-        [...WORKSPACES_QUERY_KEY, page, size],
+        [...WORKSPACES_QUERY_KEY, page, size, sortMode],
         (old) => prependWorkspaceToCurrentPage(old, createdWorkspace)
       );
     }
 
     void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
     return createdWorkspace;
-  }, [page, queryClient, size]);
+  }, [page, queryClient, size, sortMode]);
 
   // Tạo group workspace mới
   const createGroupWorkspace = useCallback(async (data) => {
@@ -203,7 +224,7 @@ export function useWorkspace(options = {}) {
 
     if (page === 0) {
       queryClient.setQueryData(
-        [...WORKSPACES_QUERY_KEY, page, size],
+        [...WORKSPACES_QUERY_KEY, page, size, sortMode],
         (old) => prependWorkspaceToCurrentPage(old, createdWorkspace)
       );
     }
@@ -211,13 +232,13 @@ export function useWorkspace(options = {}) {
     void queryClient.invalidateQueries({ queryKey: WORKSPACES_QUERY_KEY });
     void queryClient.invalidateQueries({ queryKey: GROUPS_QUERY_KEY });
     return createdWorkspace;
-  }, [page, queryClient, size]);
+  }, [page, queryClient, size, sortMode]);
 
   // Cập nhật workspace
   const editWorkspace = useCallback(async (workspaceId, data) => {
     const res = await updateWorkspaceAPI(workspaceId, data);
     const updatedWorkspace = normalizeWorkspace(unwrapApiData(res) || {});
-    queryClient.setQueryData([...WORKSPACES_QUERY_KEY, page, size], (old) => {
+    queryClient.setQueryData([...WORKSPACES_QUERY_KEY, page, size, sortMode], (old) => {
       if (!old) return old;
       return {
         ...old,
@@ -230,7 +251,7 @@ export function useWorkspace(options = {}) {
       setCurrentWorkspace(updatedWorkspace);
     }
     return updatedWorkspace;
-  }, [currentWorkspace?.workspaceId, queryClient, page, size]);
+  }, [currentWorkspace?.workspaceId, queryClient, page, size, sortMode]);
 
   // Xóa workspace
   const removeWorkspace = useCallback(async (workspaceId) => {
@@ -245,6 +266,7 @@ export function useWorkspace(options = {}) {
     workspaceDetailLoading,
     error,
     pagination,
+    sortMode,
     fetchWorkspaces,
     fetchWorkspaceDetail,
     createWorkspace,
@@ -253,5 +275,6 @@ export function useWorkspace(options = {}) {
     removeWorkspace,
     changePage,
     changePageSize,
+    changeSortMode,
   };
 }

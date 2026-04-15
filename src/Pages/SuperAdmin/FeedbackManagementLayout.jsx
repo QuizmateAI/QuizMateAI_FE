@@ -36,22 +36,6 @@ function FeedbackManagementLayout() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div
           className={cn(
-            'rounded-[28px] border px-5 py-5 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.2)] sm:px-6',
-            isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900',
-          )}
-        >
-          <h1 className="text-2xl font-bold tracking-tight">
-            {isEnglish ? 'Feedback System Management' : 'Quản trị Feedback System'}
-          </h1>
-          <p className={cn('mt-2 text-sm', isDarkMode ? 'text-slate-400' : 'text-slate-600')}>
-            {isEnglish
-              ? 'Manage survey forms, user tickets, and response activity in separate screens.'
-              : 'Tách riêng màn quản lý form survey, ticket user và activity phản hồi để dễ vận hành hơn.'}
-          </p>
-        </div>
-
-        <div
-          className={cn(
             'rounded-[28px] border p-3 shadow-[0_20px_50px_-36px_rgba(15,23,42,0.18)]',
             isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white',
           )}

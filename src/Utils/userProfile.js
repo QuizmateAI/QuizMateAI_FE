@@ -55,6 +55,7 @@ export function normalizeUserProfile(rawProfile = {}, fallbackProfile = {}) {
     birthday: rawProfile.birthday || fallbackProfile.birthday || null,
     preferredLanguage,
     themeMode,
+    lastLoginAt: rawProfile.lastLoginAt || fallbackProfile.lastLoginAt || null,
   };
 }
 
