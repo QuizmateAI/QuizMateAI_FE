@@ -36,6 +36,11 @@ function RoadmapJourPanel({
   const selectPhaseDebounceRef = useRef(null);
 
   const queueSelectPhase = useCallback((phaseId, options = { preserveActiveView: false }) => {
+    if (options?.focusRoadmapCenter) {
+      onSelectPhase?.(phaseId, options);
+      return;
+    }
+
     if (selectPhaseDebounceRef.current) {
       window.clearTimeout(selectPhaseDebounceRef.current);
     }
@@ -49,6 +54,17 @@ function RoadmapJourPanel({
   useEffect(() => {
     selectedPhaseRef.current = selectedPhaseIdProp ?? selectedPhaseId;
   }, [selectedPhaseId, selectedPhaseIdProp]);
+
+  useEffect(() => {
+    const normalizedPhaseId = Number(selectedPhaseIdProp);
+    if (Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0) {
+      setSelectedPhaseId(normalizedPhaseId);
+      return;
+    }
+    if (selectedPhaseIdProp === null) {
+      setSelectedPhaseId(null);
+    }
+  }, [selectedPhaseIdProp]);
 
   useEffect(() => {
     const normalizedKnowledgeId = Number(selectedKnowledgeIdProp);
@@ -91,10 +107,9 @@ function RoadmapJourPanel({
         }
       }
 
-      const firstPhaseId = nextRoadmap?.phases?.[0]?.phaseId ?? null;
       if (!selectedPhaseRef.current) {
-        setSelectedPhaseId(firstPhaseId);
-        queueSelectPhase(firstPhaseId, { preserveActiveView: true });
+        setSelectedPhaseId(null);
+        setSelectedKnowledgeId(null);
       }
     } catch {
       setRoadmap(null);

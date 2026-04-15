@@ -39,8 +39,17 @@ function isDoneStatus(status) {
   return DONE.has(getStatus(status));
 }
 
+function isFinishedPhaseStatus(status) {
+  const normalized = getStatus(status);
+  return normalized === "COMPLETED" || normalized === "SKIPPED";
+}
+
 function isActiveStatus(status) {
   return ACTIVE.has(getStatus(status));
+}
+
+function isLockedStatus(status) {
+  return getStatus(status) === "LOCKED";
 }
 
 function isCompletedQuiz(quiz) {
@@ -307,6 +316,8 @@ function formatPhaseDurationLabel(phase, t) {
 function RoadmapCanvasViewOverview({
   roadmap,
   currentPhaseProgress = null,
+  currentKnowledgeProgress = null,
+  isStudyNewRoadmap = false,
   isDarkMode = false,
   fontClass,
   i18n,
@@ -348,20 +359,155 @@ function RoadmapCanvasViewOverview({
   const CANVAS_WIDTH = canvasWidth;
   const [viewportWidth, setViewportWidth] = useState(CANVAS_WIDTH || 1280);
   const roadmapPhases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
+  const currentPayloadPhaseId = Number(currentPhaseProgress?.phaseId);
+  const currentPayloadStatus = getStatus(currentPhaseProgress?.status);
+  const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
+  const globalCurrentIndex = Number.isInteger(currentPayloadPhaseId) && currentPayloadPhaseId > 0
+    ? roadmapPhases.findIndex((phase) => Number(phase?.phaseId) === currentPayloadPhaseId)
+    : -1;
+
+  const maxUnlockedPhaseIndex = useMemo(() => {
+    if (!Array.isArray(roadmapPhases) || roadmapPhases.length === 0) return 0;
+
+    let contiguousFinishedCount = 0;
+    for (let index = 0; index < roadmapPhases.length; index += 1) {
+      if (!isFinishedPhaseStatus(roadmapPhases[index]?.status)) break;
+      contiguousFinishedCount += 1;
+    }
+    const unlockedByStatusIndex = Math.min(roadmapPhases.length - 1, contiguousFinishedCount);
+
+    if (isStudyNewRoadmap) {
+      const unlockedByManualProgressIndex = roadmapPhases.reduce((maxIndex, phase, index) => {
+        const hasPreLearning = Array.isArray(phase?.preLearningQuizzes) && phase.preLearningQuizzes.length > 0;
+        const hasKnowledge = Array.isArray(phase?.knowledges) && phase.knowledges.length > 0;
+        const hasPostLearning = Array.isArray(phase?.postLearningQuizzes) && phase.postLearningQuizzes.length > 0;
+        const isFinished = isFinishedPhaseStatus(phase?.status);
+
+        if (hasPreLearning || hasKnowledge || hasPostLearning || isFinished) {
+          return Math.max(maxIndex, index);
+        }
+
+        return maxIndex;
+      }, 0);
+
+      return Math.max(0, unlockedByManualProgressIndex);
+    }
+
+    return Math.max(0, globalCurrentIndex, unlockedByStatusIndex);
+  }, [globalCurrentIndex, isStudyNewRoadmap, roadmapPhases]);
 
   const selectedPhaseKnowledges = useMemo(
     () => (Array.isArray(selectedPhaseDetail?.knowledges) ? selectedPhaseDetail.knowledges : []),
     [selectedPhaseDetail],
   );
 
-  const selectedPhaseDoneKnowledgeCount = useMemo(
-    () => selectedPhaseKnowledges.filter((knowledge) => DONE.has(getStatus(knowledge?.status))).length,
-    [selectedPhaseKnowledges],
+  const selectedPhaseIndex = useMemo(
+    () => roadmapPhases.findIndex((phase) => Number(phase?.phaseId) === Number(selectedPhaseDetail?.phaseId)),
+    [roadmapPhases, selectedPhaseDetail?.phaseId],
   );
 
-  const selectedPhaseFirstIncompleteKnowledgeIndex = useMemo(
-    () => selectedPhaseKnowledges.findIndex((knowledge) => !DONE.has(getStatus(knowledge?.status))),
-    [selectedPhaseKnowledges],
+  const isSelectedPhaseCurrentByPayload = useMemo(() => {
+    const normalizedSelectedPhaseId = Number(selectedPhaseDetail?.phaseId);
+    return isStudyNewRoadmap
+      && isCurrentPayloadActiveStatus
+      && Number.isInteger(currentPayloadPhaseId)
+      && currentPayloadPhaseId > 0
+      && Number.isInteger(normalizedSelectedPhaseId)
+      && normalizedSelectedPhaseId > 0
+      && currentPayloadPhaseId === normalizedSelectedPhaseId;
+  }, [
+    currentPayloadPhaseId,
+    isCurrentPayloadActiveStatus,
+    isStudyNewRoadmap,
+    selectedPhaseDetail?.phaseId,
+  ]);
+
+  const selectedPhaseHasExistingPreLearning = useMemo(
+    () => Array.isArray(selectedPhaseDetail?.preLearningQuizzes) && selectedPhaseDetail.preLearningQuizzes.length > 0,
+    [selectedPhaseDetail?.preLearningQuizzes],
+  );
+
+  const isSelectedPhaseLocked = useMemo(
+    () => selectedPhaseIndex > maxUnlockedPhaseIndex
+      && !selectedPhaseHasExistingPreLearning
+      && !isSelectedPhaseCurrentByPayload,
+    [
+      isSelectedPhaseCurrentByPayload,
+      maxUnlockedPhaseIndex,
+      selectedPhaseHasExistingPreLearning,
+      selectedPhaseIndex,
+    ],
+  );
+
+  const currentKnowledgePhaseId = Number(currentKnowledgeProgress?.phaseId);
+  const currentKnowledgeId = Number(currentKnowledgeProgress?.knowledgeId);
+  const currentKnowledgeStatus = getStatus(currentKnowledgeProgress?.status);
+  const isCurrentKnowledgeDoneStatus = ["DONE", "COMPLETED", "SKIPPED"].includes(currentKnowledgeStatus);
+  const currentKnowledgePhaseIndex = Number.isInteger(currentKnowledgePhaseId) && currentKnowledgePhaseId > 0
+    ? roadmapPhases.findIndex((phase) => Number(phase?.phaseId) === currentKnowledgePhaseId)
+    : -1;
+  const currentKnowledgeIndexInSelectedPhase = Number.isInteger(currentKnowledgeId) && currentKnowledgeId > 0
+    ? selectedPhaseKnowledges.findIndex((knowledge) => Number(knowledge?.knowledgeId) === currentKnowledgeId)
+    : -1;
+
+  const isSelectedPhaseEffectivelyDone = useMemo(
+    () => isPhaseEffectivelyDone(selectedPhaseDetail),
+    [selectedPhaseDetail],
+  );
+
+  const selectedPhaseKnowledgeStates = useMemo(
+    () => {
+      return selectedPhaseKnowledges.map((knowledge, knowledgeIndex) => {
+        const knowledgeStatus = getStatus(knowledge?.status);
+        if (isSelectedPhaseEffectivelyDone) return "done";
+        if (isDoneStatus(knowledgeStatus)) return "done";
+        if (isLockedStatus(knowledgeStatus)) return "locked";
+        if (
+          Number.isInteger(currentKnowledgePhaseId)
+          && currentKnowledgePhaseId > 0
+          && currentKnowledgePhaseId === Number(selectedPhaseDetail?.phaseId)
+          && currentKnowledgeIndexInSelectedPhase >= 0
+          && knowledgeIndex < currentKnowledgeIndexInSelectedPhase
+        ) {
+          return "done";
+        }
+        const isKnowledgeLockedBySequence = !isFinishedPhaseStatus(selectedPhaseDetail?.status)
+          && selectedPhaseIndex === currentKnowledgePhaseIndex
+          && currentKnowledgeIndexInSelectedPhase >= 0
+          && knowledgeIndex > currentKnowledgeIndexInSelectedPhase + (isCurrentKnowledgeDoneStatus ? 1 : 0);
+        if (isSelectedPhaseLocked || isKnowledgeLockedBySequence) return "locked";
+        if (
+          Number.isInteger(currentKnowledgePhaseId)
+          && currentKnowledgePhaseId > 0
+          && currentKnowledgePhaseId === Number(selectedPhaseDetail?.phaseId)
+          && currentKnowledgeIndexInSelectedPhase === knowledgeIndex
+          && !isCurrentKnowledgeDoneStatus
+        ) {
+          return "current";
+        }
+        if (isActiveStatus(knowledgeStatus)) return "current";
+
+        return "current";
+      });
+    },
+    [
+      currentKnowledgeIndexInSelectedPhase,
+      currentKnowledgePhaseId,
+      currentKnowledgePhaseIndex,
+      isCurrentKnowledgeDoneStatus,
+      isSelectedPhaseEffectivelyDone,
+      isSelectedPhaseLocked,
+      maxUnlockedPhaseIndex,
+      selectedPhaseDetail?.phaseId,
+      selectedPhaseDetail?.status,
+      selectedPhaseIndex,
+      selectedPhaseKnowledges,
+    ],
+  );
+
+  const selectedPhaseDoneKnowledgeCount = useMemo(
+    () => selectedPhaseKnowledgeStates.filter((state) => state === "done").length,
+    [selectedPhaseKnowledgeStates],
   );
 
   useEffect(() => {
@@ -803,12 +949,10 @@ function RoadmapCanvasViewOverview({
                     ) : (
                       <div className="space-y-3">
                         {selectedPhaseKnowledges.map((knowledge, knowledgeIndex) => {
-                          const knowledgeStatus = getStatus(knowledge?.status);
-                          const isKnowledgeDone = DONE.has(knowledgeStatus);
-                          const isKnowledgeLocked = !isKnowledgeDone
-                            && selectedPhaseFirstIncompleteKnowledgeIndex >= 0
-                            && knowledgeIndex > selectedPhaseFirstIncompleteKnowledgeIndex;
-                          const isKnowledgeCurrent = !isKnowledgeDone && !isKnowledgeLocked;
+                          const knowledgeState = selectedPhaseKnowledgeStates[knowledgeIndex] || "current";
+                          const isKnowledgeDone = knowledgeState === "done";
+                          const isKnowledgeLocked = knowledgeState === "locked";
+                          const isKnowledgeCurrent = knowledgeState === "current";
                           const knowledgeBadgeClassName = isKnowledgeDone
                             ? "bg-emerald-100 text-emerald-800"
                             : isKnowledgeCurrent
