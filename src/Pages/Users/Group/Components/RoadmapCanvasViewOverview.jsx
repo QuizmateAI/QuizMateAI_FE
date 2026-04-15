@@ -354,11 +354,16 @@ function RoadmapCanvasViewOverview({
 }) {
   const scrollContainerRef = useRef(null);
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [selectedPhaseDetail, setSelectedPhaseDetail] = useState(null);
+  const [selectedPhaseId, setSelectedPhaseId] = useState(null);
 
   const CANVAS_WIDTH = canvasWidth;
   const [viewportWidth, setViewportWidth] = useState(CANVAS_WIDTH || 1280);
   const roadmapPhases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
+  const selectedPhaseDetail = useMemo(() => {
+    const normalizedPhaseId = Number(selectedPhaseId);
+    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return null;
+    return roadmapPhases.find((phase) => Number(phase?.phaseId) === normalizedPhaseId) || null;
+  }, [roadmapPhases, selectedPhaseId]);
   const currentPayloadPhaseId = Number(currentPhaseProgress?.phaseId);
   const currentPayloadStatus = getStatus(currentPhaseProgress?.status);
   const isCurrentPayloadActiveStatus = ["IN_PROGRESS", "ACTIVE", "PROCESSING"].includes(currentPayloadStatus);
@@ -422,10 +427,8 @@ function RoadmapCanvasViewOverview({
     selectedPhaseDetail?.phaseId,
   ]);
 
-  const selectedPhaseHasExistingPreLearning = useMemo(
-    () => Array.isArray(selectedPhaseDetail?.preLearningQuizzes) && selectedPhaseDetail.preLearningQuizzes.length > 0,
-    [selectedPhaseDetail?.preLearningQuizzes],
-  );
+  const selectedPhaseHasExistingPreLearning =
+    Array.isArray(selectedPhaseDetail?.preLearningQuizzes) && selectedPhaseDetail.preLearningQuizzes.length > 0;
 
   const isSelectedPhaseLocked = useMemo(
     () => selectedPhaseIndex > maxUnlockedPhaseIndex
@@ -551,24 +554,6 @@ function RoadmapCanvasViewOverview({
     };
   }, []);
 
-  useEffect(() => {
-    if (!selectedPhaseDetail) return;
-
-    const selectedPhaseId = Number(selectedPhaseDetail?.phaseId);
-    if (!Number.isInteger(selectedPhaseId) || selectedPhaseId <= 0) {
-      setSelectedPhaseDetail(null);
-      return;
-    }
-
-    const syncedPhase = roadmapPhases.find((phase) => Number(phase?.phaseId) === selectedPhaseId);
-    if (!syncedPhase) {
-      setSelectedPhaseDetail(null);
-      return;
-    }
-
-    setSelectedPhaseDetail(syncedPhase);
-  }, [roadmapPhases, selectedPhaseDetail]);
-
   const currentIndex = useMemo(
     () => getCurrentIndex(roadmapPhases, currentPhaseProgress),
     [currentPhaseProgress, roadmapPhases],
@@ -614,7 +599,7 @@ function RoadmapCanvasViewOverview({
     if (!Number.isInteger(normalizedKnowledgeId) || normalizedKnowledgeId <= 0) return;
 
     onSelectCenterRoadmap?.(normalizedPhaseId, { knowledgeId: normalizedKnowledgeId });
-    setSelectedPhaseDetail(null);
+    setSelectedPhaseId(null);
   };
 
   const handlePhaseCardClick = (phase) => {
@@ -627,7 +612,7 @@ function RoadmapCanvasViewOverview({
       return;
     }
 
-    setSelectedPhaseDetail(phase);
+    setSelectedPhaseId(normalizedPhaseId);
   };
 
   const content = (
@@ -900,7 +885,7 @@ function RoadmapCanvasViewOverview({
               <button
                 type="button"
                 aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
-                onClick={() => setSelectedPhaseDetail(null)}
+                onClick={() => setSelectedPhaseId(null)}
                 className="fixed inset-0 z-[170] bg-slate-950/45 backdrop-blur-[1px] animate-[roadmapFadeIn_180ms_ease-out]"
               />
 
@@ -920,7 +905,7 @@ function RoadmapCanvasViewOverview({
                     </div>
                     <button
                       type="button"
-                      onClick={() => setSelectedPhaseDetail(null)}
+                      onClick={() => setSelectedPhaseId(null)}
                       className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                       aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
                     >

@@ -41,6 +41,15 @@ import { getWebSocketUrl } from '@/lib/websocketUrl';
 
 const PROVIDER_OPTIONS = ['', 'OPENAI', 'GEMINI'];
 const STATUS_OPTIONS = ['', 'PROCESSING', 'SUCCESS', 'ERROR'];
+const AUDIT_METRICS_PAGE_SIZE = 200;
+const EMPTY_AUDIT_METRICS = {
+  requestCount: 0,
+  totalTokens: 0,
+  promptTokens: 0,
+  completionTokens: 0,
+  thoughtTokens: 0,
+  errorCount: 0,
+};
 
 const FEATURE_LABEL_KEYS = {
   GENERATE_FLASHCARDS: 'aiAudit.features.GENERATE_FLASHCARDS',
@@ -85,6 +94,66 @@ function formatTokenValue(value, locale) {
 function formatOptionalTokenValue(value, locale) {
   if (value === null || value === undefined || value === '') return '-';
   return Number(value).toLocaleString(locale);
+}
+
+function toMetricNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function buildAuditMetricsFromEntries(entries = []) {
+  return entries.reduce((accumulator, entry) => {
+    accumulator.requestCount += 1;
+    accumulator.totalTokens += toMetricNumber(entry?.totalTokens);
+    accumulator.promptTokens += toMetricNumber(entry?.promptTokens);
+    accumulator.completionTokens += toMetricNumber(entry?.completionTokens);
+    accumulator.thoughtTokens += toMetricNumber(entry?.thoughtTokens);
+
+    if (String(entry?.status || '').toUpperCase() === 'ERROR') {
+      accumulator.errorCount += 1;
+    }
+
+    return accumulator;
+  }, { ...EMPTY_AUDIT_METRICS });
+}
+
+function normalizeAuditMetrics(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const requestCount = payload.requestCount ?? payload.totalRequests ?? payload.totalElements ?? payload.count;
+  const totalTokens = payload.totalTokens ?? payload.totalTokenCount;
+  const promptTokens = payload.promptTokens ?? payload.totalPromptTokens ?? payload.inputTokens;
+  const completionTokens = payload.completionTokens ?? payload.totalCompletionTokens ?? payload.outputTokens;
+  const thoughtTokens = payload.thoughtTokens ?? payload.totalThoughtTokens;
+  const errorCount = payload.errorCount ?? payload.totalErrors ?? payload.failedCount;
+
+  if (
+    totalTokens === undefined
+    && promptTokens === undefined
+    && completionTokens === undefined
+    && thoughtTokens === undefined
+    && errorCount === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    requestCount: toMetricNumber(requestCount),
+    totalTokens: toMetricNumber(totalTokens),
+    promptTokens: toMetricNumber(promptTokens),
+    completionTokens: toMetricNumber(completionTokens),
+    thoughtTokens: toMetricNumber(thoughtTokens),
+    errorCount: toMetricNumber(errorCount),
+  };
+}
+
+function extractAuditMetrics(pageData) {
+  return (
+    normalizeAuditMetrics(pageData?.summary)
+    || normalizeAuditMetrics(pageData?.metrics)
+    || normalizeAuditMetrics(pageData?.totals)
+    || normalizeAuditMetrics(pageData)
+  );
 }
 
 function prettifyPreview(value, emptyText) {
@@ -206,6 +275,7 @@ function AiAuditManagement() {
     page: 0,
     size: 20,
   });
+  const [metrics, setMetrics] = useState(EMPTY_AUDIT_METRICS);
   const [selectedAuditId, setSelectedAuditId] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -215,6 +285,17 @@ function AiAuditManagement() {
   const pageRef = useRef(page);
   const pageSizeRef = useRef(pageSize);
   const filtersRef = useRef(filters);
+  const metricsRequestRef = useRef(0);
+
+  const buildAuditQuery = (activeFilters = filtersRef.current) => ({
+    provider: activeFilters.provider || undefined,
+    featureKey: activeFilters.featureKey || undefined,
+    actorUserId: activeFilters.actorUserId || undefined,
+    taskId: activeFilters.taskId || undefined,
+    status: activeFilters.status || undefined,
+    from: activeFilters.from ? new Date(activeFilters.from).toISOString() : undefined,
+    to: activeFilters.to ? new Date(activeFilters.to).toISOString() : undefined,
+  });
 
   const fetchAuditLogs = async (
     nextPage = pageRef.current,
@@ -225,13 +306,7 @@ function AiAuditManagement() {
     setError('');
     try {
       const response = await getAiAuditLogs({
-        provider: activeFilters.provider || undefined,
-        featureKey: activeFilters.featureKey || undefined,
-        actorUserId: activeFilters.actorUserId || undefined,
-        taskId: activeFilters.taskId || undefined,
-        status: activeFilters.status || undefined,
-        from: activeFilters.from ? new Date(activeFilters.from).toISOString() : undefined,
-        to: activeFilters.to ? new Date(activeFilters.to).toISOString() : undefined,
+        ...buildAuditQuery(activeFilters),
         page: nextPage,
         size: nextPageSize,
       });
@@ -266,6 +341,55 @@ function AiAuditManagement() {
     }
   };
 
+  const fetchAuditMetrics = async (activeFilters = filtersRef.current) => {
+    const requestId = ++metricsRequestRef.current;
+    setMetrics({ ...EMPTY_AUDIT_METRICS });
+
+    try {
+      const firstResponse = await getAiAuditLogs({
+        ...buildAuditQuery(activeFilters),
+        page: 0,
+        size: AUDIT_METRICS_PAGE_SIZE,
+      });
+
+      const firstPage = firstResponse?.data ?? firstResponse ?? {};
+      const directMetrics = extractAuditMetrics(firstPage);
+      if (directMetrics) {
+        if (metricsRequestRef.current === requestId) {
+          setMetrics(directMetrics);
+        }
+        return;
+      }
+
+      const allEntries = Array.isArray(firstPage?.content) ? [...firstPage.content] : [];
+      const totalPages = Number(firstPage?.totalPages || 0);
+
+      if (totalPages > 1) {
+        const remainingResponses = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, index) => getAiAuditLogs({
+            ...buildAuditQuery(activeFilters),
+            page: index + 1,
+            size: AUDIT_METRICS_PAGE_SIZE,
+          })),
+        );
+
+        remainingResponses.forEach((response) => {
+          const pageData = response?.data ?? response ?? {};
+          const content = Array.isArray(pageData?.content) ? pageData.content : [];
+          allEntries.push(...content);
+        });
+      }
+
+      if (metricsRequestRef.current === requestId) {
+        setMetrics(buildAuditMetricsFromEntries(allEntries));
+      }
+    } catch {
+      if (metricsRequestRef.current === requestId) {
+        setMetrics({ ...EMPTY_AUDIT_METRICS });
+      }
+    }
+  };
+
   useEffect(() => {
     pageRef.current = page;
   }, [page]);
@@ -293,11 +417,16 @@ function AiAuditManagement() {
     setFilters(nextFilters);
     setPage(0);
     fetchAuditLogs(0, pageSizeRef.current, nextFilters);
+    fetchAuditMetrics(nextFilters);
   }, [searchParams]);
 
   useEffect(() => {
     fetchAuditLogs(page, pageSize, filters);
   }, [page, pageSize]);
+
+  useEffect(() => {
+    fetchAuditMetrics(filtersRef.current);
+  }, []);
 
   useEffect(() => {
     const websocketUrl = getWebSocketUrl();
@@ -319,6 +448,7 @@ function AiAuditManagement() {
           }
           refreshTimeoutRef.current = window.setTimeout(() => {
             fetchAuditLogs(pageRef.current, pageSizeRef.current, filtersRef.current);
+            fetchAuditMetrics(filtersRef.current);
           }, 350);
         });
       },
@@ -346,27 +476,7 @@ function AiAuditManagement() {
     [auditLogs, selectedAuditId]
   );
 
-  const visibleTokenTotal = useMemo(
-    () => auditLogs.reduce((sum, entry) => sum + Number(entry?.totalTokens || 0), 0),
-    [auditLogs]
-  );
-  const visiblePromptTotal = useMemo(
-    () => auditLogs.reduce((sum, entry) => sum + Number(entry?.promptTokens || 0), 0),
-    [auditLogs]
-  );
-  const visibleCompletionTotal = useMemo(
-    () => auditLogs.reduce((sum, entry) => sum + Number(entry?.completionTokens || 0), 0),
-    [auditLogs]
-  );
-  const visibleThoughtTotal = useMemo(
-    () => auditLogs.reduce((sum, entry) => sum + Number(entry?.thoughtTokens || 0), 0),
-    [auditLogs]
-  );
-  const visibleErrorCount = useMemo(
-    () => auditLogs.filter((entry) => String(entry?.status || '').toUpperCase() === 'ERROR').length,
-    [auditLogs]
-  );
-  const visibleAverageTokens = auditLogs.length > 0 ? Math.round(visibleTokenTotal / auditLogs.length) : 0;
+  const totalAverageTokens = metrics.requestCount > 0 ? Math.round(metrics.totalTokens / metrics.requestCount) : 0;
 
   const handleFilterChange = (field, value) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
@@ -375,6 +485,7 @@ function AiAuditManagement() {
   const handleApplyFilters = () => {
     setPage(0);
     fetchAuditLogs(0, pageSize, filters);
+    fetchAuditMetrics(filters);
   };
 
   const handleResetFilters = () => {
@@ -390,6 +501,7 @@ function AiAuditManagement() {
     setFilters(resetFilters);
     setPage(0);
     fetchAuditLogs(0, pageSize, resetFilters);
+    fetchAuditMetrics(resetFilters);
   };
 
   const openAuditDetail = (auditId) => {
@@ -426,32 +538,32 @@ function AiAuditManagement() {
         />
         <MetricCard
           icon={Sparkles}
-          label={t('aiAudit.metrics.pageTokens', 'Tokens on this page')}
-          value={formatTokenValue(visibleTokenTotal, locale)}
+          label={t('aiAudit.metrics.totalTokens', 'Total tokens')}
+          value={formatTokenValue(metrics.totalTokens, locale)}
           tone="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.pageTokensBreakdown', {
-            prompt: formatTokenValue(visiblePromptTotal, locale),
-            thought: formatTokenValue(visibleThoughtTotal, locale),
-            output: formatTokenValue(visibleCompletionTotal, locale),
+          subtext={t('aiAudit.metrics.totalTokensBreakdown', {
+            prompt: formatTokenValue(metrics.promptTokens, locale),
+            thought: formatTokenValue(metrics.thoughtTokens, locale),
+            output: formatTokenValue(metrics.completionTokens, locale),
             defaultValue: 'Prompt {{prompt}} | Thought {{thought}} | Output {{output}}',
           })}
         />
         <MetricCard
           icon={Bot}
           label={t('aiAudit.metrics.averageTokens', 'Avg tokens / request')}
-          value={formatTokenValue(visibleAverageTokens, locale)}
+          value={formatTokenValue(totalAverageTokens, locale)}
           tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.averageTokensHint', 'Calculated from the visible logs')}
+          subtext={t('aiAudit.metrics.averageTokensHint', 'Calculated from all matching requests')}
         />
         <MetricCard
           icon={ShieldAlert}
           label={t('aiAudit.metrics.errors', 'Errors')}
-          value={formatTokenValue(visibleErrorCount, locale)}
+          value={formatTokenValue(metrics.errorCount, locale)}
           tone="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
           isDarkMode={isDarkMode}
-          subtext={t('aiAudit.metrics.errorsHint', 'Errored requests on the current page')}
+          subtext={t('aiAudit.metrics.errorsHint', 'Errored requests matching the current filters')}
         />
       </div>
 

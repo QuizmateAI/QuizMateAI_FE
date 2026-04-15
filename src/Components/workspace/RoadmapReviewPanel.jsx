@@ -79,43 +79,51 @@ function TopicList({ title, topics, icon: Icon, colorTheme, isDarkMode, fontClas
 export default function RoadmapReviewPanel({ roadmapId, isDarkMode = false }) {
   const { i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
-  const [reviewData, setReviewData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const roadmapKey = roadmapId ? String(roadmapId) : "";
+  const [reviewState, setReviewState] = useState({
+    roadmapKey: "",
+    data: null,
+    error: false,
+  });
 
   useEffect(() => {
-    if (!roadmapId) {
-      setReviewData(null);
-      setError(true);
-      setLoading(false);
-      return;
-    }
+    if (!roadmapKey) return undefined;
 
     let isMounted = true;
-    setLoading(true);
-    setError(false);
 
     getRoadmapReview(roadmapId)
       .then((res) => {
         if (isMounted) {
           const data = res?.data?.data ?? res?.data ?? null;
-          setReviewData(data || null);
-          setLoading(false);
-          if (!data) setError(true);
+          setReviewState({
+            roadmapKey,
+            data: data || null,
+            error: !data,
+          });
         }
       })
       .catch((err) => {
         console.error("Failed to fetch roadmap review", err);
         if (isMounted) {
-          setError(true);
-          setLoading(false);
+          setReviewState({
+            roadmapKey,
+            data: null,
+            error: true,
+          });
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [roadmapId]);
+  }, [roadmapId, roadmapKey]);
+
+  if (!roadmapKey) return null;
+
+  const isCurrentRequestResolved = reviewState.roadmapKey === roadmapKey;
+  const loading = !isCurrentRequestResolved;
+  const error = isCurrentRequestResolved && reviewState.error;
+  const reviewData = isCurrentRequestResolved ? reviewState.data : null;
 
   if (loading) {
     return (

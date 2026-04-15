@@ -67,9 +67,29 @@ const ACTION_META = {
 };
 
 const COST_MODE_OPTIONS = ['FIXED', 'PER_QUESTION', 'PER_ITEM', 'PER_PAGE', 'PER_WORD', 'PER_CELL', 'PER_SECOND'];
+const DIGIT_ONLY_PATTERN = /\D+/g;
 
 function extractData(res) {
   return res?.data?.data ?? res?.data ?? res ?? null;
+}
+
+function sanitizeWholeNumberInput(value) {
+  return String(value ?? '').replace(DIGIT_ONLY_PATTERN, '');
+}
+
+function parseWholeNumberInput(value, fallback = 0) {
+  const sanitized = sanitizeWholeNumberInput(value);
+  if (!sanitized) return fallback;
+  return Number.parseInt(sanitized, 10);
+}
+
+function normalizeCostForm(form) {
+  return {
+    ...form,
+    baseCreditCost: Math.max(0, parseWholeNumberInput(form.baseCreditCost, 0)),
+    unitCreditCost: Math.max(0, parseWholeNumberInput(form.unitCreditCost, 0)),
+    unitSize: Math.max(1, parseWholeNumberInput(form.unitSize, 1)),
+  };
 }
 
 function getActionLabels(actionKey, t) {
@@ -367,9 +387,9 @@ export default function AiActionPolicyManagement() {
     setForm({
       displayName: policy.displayName || '',
       costMode: policy.costMode || 'FIXED',
-      baseCreditCost: policy.baseCreditCost ?? 0,
-      unitCreditCost: policy.unitCreditCost ?? 0,
-      unitSize: policy.unitSize ?? 1,
+      baseCreditCost: String(policy.baseCreditCost ?? 0),
+      unitCreditCost: String(policy.unitCreditCost ?? 0),
+      unitSize: String(policy.unitSize ?? 1),
       isActive: policy.isActive ?? true,
       description: policy.description || '',
     });
@@ -389,12 +409,13 @@ export default function AiActionPolicyManagement() {
 
     setSaving(true);
     try {
-      const res = await updateAiActionPolicy(editPolicy.actionKey, form);
+      const normalizedForm = normalizeCostForm(form);
+      const res = await updateAiActionPolicy(editPolicy.actionKey, normalizedForm);
       const updated = extractData(res);
 
       setPolicies((prev) => prev.map((policy) => (
         policy.actionKey === editPolicy.actionKey
-          ? { ...policy, ...form, ...(updated || {}) }
+          ? { ...policy, ...normalizedForm, ...(updated || {}) }
           : policy
       )));
 
@@ -407,7 +428,12 @@ export default function AiActionPolicyManagement() {
     }
   };
 
-  const previewPolicy = editPolicy ? { ...editPolicy, ...form } : null;
+  const handleWholeNumberChange = (field) => (event) => {
+    const nextValue = sanitizeWholeNumberInput(event.target.value);
+    setForm((prev) => ({ ...prev, [field]: nextValue }));
+  };
+
+  const previewPolicy = editPolicy ? { ...editPolicy, ...normalizeCostForm(form) } : null;
   const editLabels = editPolicy ? getActionLabels(editPolicy.actionKey, t) : null;
 
   return (
@@ -573,21 +599,25 @@ export default function AiActionPolicyManagement() {
                 <div className="space-y-1.5">
                   <Label className={dk ? 'text-slate-300' : ''}>{editLabels?.baseCostLabel || t('aiActionPolicy.baseCost')}</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    value={form.baseCreditCost ?? 0}
-                    onChange={(event) => setForm((prev) => ({ ...prev, baseCreditCost: Math.max(0, Number(event.target.value) || 0) }))}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    value={form.baseCreditCost ?? ''}
+                    onChange={handleWholeNumberChange('baseCreditCost')}
                     className={dk ? 'border-slate-700 bg-slate-800 text-white' : ''}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className={dk ? 'text-slate-300' : ''}>{editLabels?.unitCostLabel || t('aiActionPolicy.unitCost')}</Label>
+                  <Label className={dk ? 'text-slate-300' : ''}>{t('aiActionPolicy.unitField')}</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    value={form.unitCreditCost ?? 0}
-                    onChange={(event) => setForm((prev) => ({ ...prev, unitCreditCost: Math.max(0, Number(event.target.value) || 0) }))}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    value={form.unitCreditCost ?? ''}
+                    onChange={handleWholeNumberChange('unitCreditCost')}
                     disabled={form.costMode === 'FIXED'}
                     className={dk ? 'border-slate-700 bg-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-500' : ''}
                   />
@@ -596,10 +626,12 @@ export default function AiActionPolicyManagement() {
                 <div className="space-y-1.5">
                   <Label className={dk ? 'text-slate-300' : ''}>{editLabels?.unitSizeLabel || t('aiActionPolicy.unitSize')}</Label>
                   <Input
-                    type="number"
-                    min={1}
-                    value={form.unitSize ?? 1}
-                    onChange={(event) => setForm((prev) => ({ ...prev, unitSize: Math.max(1, Number(event.target.value) || 1) }))}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="off"
+                    value={form.unitSize ?? ''}
+                    onChange={handleWholeNumberChange('unitSize')}
                     disabled={form.costMode === 'FIXED'}
                     className={dk ? 'border-slate-700 bg-slate-800 text-white disabled:bg-slate-900 disabled:text-slate-500' : ''}
                   />
