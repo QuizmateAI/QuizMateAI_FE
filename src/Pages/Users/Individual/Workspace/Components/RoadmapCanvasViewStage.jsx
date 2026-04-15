@@ -23,6 +23,7 @@ const STAGE_TOP_COMPONENT_SCALE = 1;
 const STAGE_TOP_ROW_GAP = 16;
 const STAGE_TOP_ROW_PADDING_LEFT = 16;
 const STAGE_TOP_ROADMAP_MARGIN_LEFT = 20;
+const STAGE_TOP_SECTION_STORAGE_KEY_PREFIX = "quizmate:workspace:roadmap:stageTopCollapsed";
 
 function getCanvasContext() {
   if (typeof document === "undefined") return null;
@@ -101,6 +102,13 @@ function normalizePositiveId(value) {
   return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
 }
 
+function getStageTopSectionStorageKey(roadmapId) {
+  const normalizedRoadmapId = normalizePositiveId(roadmapId);
+  return normalizedRoadmapId
+    ? `${STAGE_TOP_SECTION_STORAGE_KEY_PREFIX}:${normalizedRoadmapId}`
+    : `${STAGE_TOP_SECTION_STORAGE_KEY_PREFIX}:global`;
+}
+
 function isFinishedPhaseStatus(status) {
   const normalized = String(status || "").toUpperCase();
   return normalized === "COMPLETED" || normalized === "SKIPPED";
@@ -151,6 +159,7 @@ function RoadmapCanvasViewStage({
   onCreatePhasePreLearning,
   onCreatePhaseKnowledge,
   onEditRoadmapConfig,
+  onTopSectionCollapsedChange,
 }) {
   const { t, i18n } = useTranslation();
   const { showError, showSuccess } = useToast();
@@ -178,7 +187,12 @@ function RoadmapCanvasViewStage({
     data: null,
     phaseId: null,
   });
-  const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
+  const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(true);
+  const [hydratedStageTopSectionStorageKey, setHydratedStageTopSectionStorageKey] = useState(null);
+
+  useEffect(() => {
+    onTopSectionCollapsedChange?.(isTopSectionCollapsed);
+  }, [isTopSectionCollapsed, onTopSectionCollapsedChange]);
 
   const phases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
   const topComponentScale = Math.min(2, Math.max(0.4, STAGE_TOP_COMPONENT_SCALE));
@@ -195,6 +209,41 @@ function RoadmapCanvasViewStage({
   const selectedKnowledge = selectedPhase && selectedKnowledgeId
     ? selectedKnowledges.find((knowledge) => normalizePositiveId(knowledge?.knowledgeId) === normalizedSelectedKnowledgeId) ?? null
     : null;
+  const stageTopSectionStorageKey = useMemo(
+    () => getStageTopSectionStorageKey(roadmap?.roadmapId ?? roadmap?.id),
+    [roadmap?.id, roadmap?.roadmapId],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    setHydratedStageTopSectionStorageKey(null);
+
+    try {
+      const savedCollapsedValue = window.localStorage.getItem(stageTopSectionStorageKey);
+      if (savedCollapsedValue === "1" || savedCollapsedValue === "0") {
+        setIsTopSectionCollapsed(savedCollapsedValue === "1");
+      } else {
+        window.localStorage.setItem(stageTopSectionStorageKey, isTopSectionCollapsed ? "1" : "0");
+      }
+    } catch {
+      // Bo qua loi storage de tranh anh huong luong roadmap.
+    } finally {
+      setHydratedStageTopSectionStorageKey(stageTopSectionStorageKey);
+    }
+  }, [stageTopSectionStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (hydratedStageTopSectionStorageKey !== stageTopSectionStorageKey) return;
+
+    try {
+      window.localStorage.setItem(stageTopSectionStorageKey, isTopSectionCollapsed ? "1" : "0");
+    } catch {
+      // Bo qua loi storage de tranh anh huong luong roadmap.
+    }
+  }, [hydratedStageTopSectionStorageKey, isTopSectionCollapsed, stageTopSectionStorageKey]);
+
   const roadmapCardWidth = useMemo(() => {
     const normalizedTitle = normalizeTitleForWidth(roadmap?.title) || String(roadmap?.title || "");
     return getTitleWidthForTwoLines(normalizedTitle, {
@@ -900,7 +949,13 @@ function RoadmapCanvasViewStage({
 
   const selectRoadmap = () => {
     setSelectedType("roadmap");
+    setSelectedPhaseId(null);
     setSelectedKnowledgeId(null);
+    onPhaseFocus?.(null, {
+      preserveActiveView: true,
+      focusRoadmapCenter: true,
+      knowledgeId: null,
+    });
     timelineRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 

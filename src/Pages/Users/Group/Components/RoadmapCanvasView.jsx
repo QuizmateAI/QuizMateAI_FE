@@ -4,7 +4,7 @@ import { BookOpen, CheckCircle2, Eye, FileText, Loader2, Pencil } from "lucide-r
 import { Button } from "@/Components/ui/button";
 import ListSpinner from "@/Components/ui/ListSpinner";
 import CircularProgressLoader from "@/Components/ui/CircularProgressLoader";
-import { getRoadmapGraph } from "@/api/RoadmapAPI";
+import { getCurrentRoadmapKnowledgeProgress, getRoadmapGraph } from "@/api/RoadmapAPI";
 import { getCurrentRoadmapPhaseProgress } from "@/api/RoadmapPhaseAPI";
 import RoadmapCanvasView2 from "./RoadmapCanvasView2";
 import RoadmapCanvasViewStage from "./RoadmapCanvasViewStage";
@@ -225,6 +225,7 @@ function RoadmapCanvasView({
   onToggleEmptyStateMaterial,
   onToggleAllEmptyStateMaterials,
   onRoadmapLoad,
+  onStageTopSectionCollapsedChange,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -244,6 +245,7 @@ function RoadmapCanvasView({
   const [isCreatingRoadmap, setIsCreatingRoadmap] = useState(false);
   const [transform, setTransform] = useState({ x: -CENTER_X + 520, y: -CENTER_Y + 390, scale: 1 });
   const [currentPhaseProgress, setCurrentPhaseProgress] = useState(null);
+  const [currentKnowledgeProgress, setCurrentKnowledgeProgress] = useState(null);
   const hasLoadedRoadmapRef = useRef(false);
   const roadmapRef = useRef(null);
   const normalizedEmptyStateMaterialIds = useMemo(
@@ -315,8 +317,15 @@ function RoadmapCanvasView({
         } catch {
           setCurrentPhaseProgress(null);
         }
+        try {
+          const knowledgeResponse = await getCurrentRoadmapKnowledgeProgress(normalizedRoadmapId);
+          setCurrentKnowledgeProgress(knowledgeResponse?.data?.data || knowledgeResponse?.data || null);
+        } catch {
+          setCurrentKnowledgeProgress(null);
+        }
       } else {
         setCurrentPhaseProgress(null);
+        setCurrentKnowledgeProgress(null);
       }
 
       if (!shouldKeepViewportState) {
@@ -972,6 +981,7 @@ function RoadmapCanvasView({
         onCreateRoadmapPreLearning={onCreateRoadmapPreLearning}
         isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning}
         onEditRoadmapConfig={onEditRoadmapConfig}
+        onTopSectionCollapsedChange={onStageTopSectionCollapsedChange}
       />
     );
   }
@@ -1013,6 +1023,8 @@ function RoadmapCanvasView({
         onShareRoadmap={onShareRoadmap}
         renderRoadmapConfigActionButtons={renderRoadmapConfigActionButtons}
         currentPhaseProgress={currentPhaseProgress}
+        currentKnowledgeProgress={currentKnowledgeProgress}
+        isStudyNewRoadmap={isStudyNewRoadmap}
         onSelectCenterRoadmap={(phaseId = null, options = {}) => {
           const normalizedPhaseId = Number(phaseId);
           const normalizedKnowledgeId = Number(options?.knowledgeId);
