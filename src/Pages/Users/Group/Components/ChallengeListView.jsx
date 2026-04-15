@@ -136,8 +136,8 @@ export default function ChallengeListView({ challenges, isDarkMode, onSelectChal
 
   if (!challenges || challenges.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Swords className={`mb-4 h-12 w-12 ${isDarkMode ? 'text-slate-600' : 'text-slate-300'}`} />
+      <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
+        <Swords className={`mb-3 h-12 w-12 ${isDarkMode ? 'text-slate-600' : 'text-slate-300'}`} />
         <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
           {t('groupWorkspace.challenge.noItems', 'Chưa có challenge nào.')}
         </p>
@@ -145,10 +145,10 @@ export default function ChallengeListView({ challenges, isDarkMode, onSelectChal
           <Button
             type="button"
             onClick={onCreateChallenge}
-            className="mt-4 rounded-full bg-orange-500 text-white hover:bg-orange-600"
+            className="mt-4 h-10 rounded-full bg-orange-500 px-4 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {t('groupWorkspace.challenge.createChallenge', 'Tạo Challenge')}
+            <span className="text-sm">{t('groupWorkspace.challenge.createChallenge', 'Tạo Challenge')}</span>
           </Button>
         ) : null}
       </div>
