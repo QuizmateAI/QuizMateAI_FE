@@ -388,7 +388,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
   if (!currentSource) return null;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Header với nút quay lại */}
       <div className={`px-4 h-12 border-b flex items-center gap-3 shrink-0 transition-colors duration-300 ${isDarkMode ? "border-slate-800" : "border-gray-200"}`}>
         <button type="button" onClick={onBack} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? "hover:bg-slate-800 text-slate-300" : "hover:bg-gray-100 text-gray-600"}`}>
@@ -401,7 +401,7 @@ function SourceDetailView({ isDarkMode = false, source, onBack, onSourceUpdated 
       </div>
 
       {/* Nội dung chi tiết */}
-      <div className="flex-1 overflow-hidden px-6 py-4">
+      <div className="flex-1 min-h-0 overflow-hidden px-6 py-4">
         <div className="h-full min-h-0 flex flex-col gap-4">
           {(moderationLoading || hasModerationContent || reviewMessage || reviewError || needsLeaderReview) && (
             <div

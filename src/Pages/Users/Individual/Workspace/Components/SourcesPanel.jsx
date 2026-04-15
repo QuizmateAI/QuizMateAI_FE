@@ -566,7 +566,7 @@ function SourcesPanel({
           if (!open) setViewingSource(null);
         }}
       >
-        <DialogContent className="h-[88vh] max-w-5xl overflow-hidden p-0">
+        <DialogContent className="flex h-[88vh] min-h-0 max-w-5xl flex-col overflow-hidden p-0">
           {viewingSource ? (
             <SourceDetailView
               isDarkMode={isDarkMode}
