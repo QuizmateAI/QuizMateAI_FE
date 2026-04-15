@@ -148,6 +148,7 @@ function ChatPanel({
   const roadmapCanvasStorageKey = workspaceId ? `workspace_${workspaceId}_roadmap_canvas_view` : null;
   const [roadmapCanvasView, setRoadmapCanvasView] = React.useState("view2");
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
+  const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
 
   React.useEffect(() => {
     if (!workspaceId) {
@@ -274,6 +275,7 @@ function ChatPanel({
             onToggleAllEmptyStateMaterials={handleToggleAllRoadmapMaterials}
             activeSourceCount={activeSourceCount}
             disableCreate={shouldDisableRoadmap && !roadmapHasPhases}
+            onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed}
           />
         );
       case "quiz":
@@ -455,7 +457,9 @@ function ChatPanel({
     "postLearning",
     "questionStats",
   ].includes(resolvedView);
-  const shouldHideRoadmapJour = roadmapCanvasView === "overview" || !roadmapHasPhases;
+  const shouldHideRoadmapJour = roadmapCanvasView === "overview"
+    || !roadmapHasPhases
+    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
 
   if (resolvedView === "roadmap") {
     return (

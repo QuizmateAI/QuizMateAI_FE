@@ -643,6 +643,7 @@ function GroupWorkspacePage() {
   const [selectedRoadmapPhaseId, setSelectedRoadmapPhaseId] = useState(null);
   const [selectedRoadmapKnowledgeId, setSelectedRoadmapKnowledgeId] = useState(null);
   const [selectedRoadmapQuizId, setSelectedRoadmapQuizId] = useState(null);
+  const [hasHydratedRoadmapSelection, setHasHydratedRoadmapSelection] = useState(false);
   const [runtimeRoadmapId, setRuntimeRoadmapId] = useState(null);
   const [roadmapCenterFocusToken, setRoadmapCenterFocusToken] = useState(0);
   const [hasTriggeredGroupRoadmap, setHasTriggeredGroupRoadmap] = useState(false);
@@ -667,6 +668,7 @@ function GroupWorkspacePage() {
   const refreshPendingMaterialTimersRef = useRef({});
   const uploadNotificationsRef = useRef(new Set());
   const groupRealtimeRefreshTimerRef = useRef(null);
+  const skipRoadmapStoredRestoreRef = useRef(false);
 
   // Members state
   const [members, setMembers] = useState([]);
@@ -675,6 +677,111 @@ function GroupWorkspacePage() {
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const currentUser = readCurrentUser();
+  const roadmapSelectionStorageKey = useMemo(
+    () =>
+      workspaceId
+        ? `quizmate:group:lastRoadmapSelection:${workspaceId}`
+        : null,
+    [workspaceId],
+  );
+
+  const readStoredRoadmapSelection = useCallback(() => {
+    if (!roadmapSelectionStorageKey || typeof window === 'undefined') return null;
+
+    try {
+      const rawValue = window.localStorage.getItem(roadmapSelectionStorageKey);
+      if (!rawValue) return null;
+
+      const parsedValue = JSON.parse(rawValue);
+      const normalizedPhaseId = Number(parsedValue?.phaseId);
+      const normalizedKnowledgeId = Number(parsedValue?.knowledgeId);
+      const normalizedRoadmapId = Number(parsedValue?.roadmapId);
+
+      return {
+        roadmapId:
+          Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+            ? normalizedRoadmapId
+            : null,
+        phaseId:
+          Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0
+            ? normalizedPhaseId
+            : null,
+        knowledgeId:
+          Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0
+            ? normalizedKnowledgeId
+            : null,
+      };
+    } catch {
+      return null;
+    }
+  }, [roadmapSelectionStorageKey]);
+
+  useEffect(() => {
+    if (!roadmapSelectionStorageKey || typeof window === 'undefined') {
+      setHasHydratedRoadmapSelection(true);
+      return;
+    }
+
+    setHasHydratedRoadmapSelection(false);
+    const storedSelection = readStoredRoadmapSelection();
+    if (storedSelection?.roadmapId) {
+      setRuntimeRoadmapId((current) => current || storedSelection.roadmapId);
+    }
+    if (Number.isInteger(storedSelection?.phaseId) && storedSelection.phaseId > 0) {
+      setSelectedRoadmapPhaseId(storedSelection.phaseId);
+      setSelectedRoadmapKnowledgeId(
+        Number.isInteger(storedSelection?.knowledgeId) && storedSelection.knowledgeId > 0
+          ? storedSelection.knowledgeId
+          : null,
+      );
+    }
+
+    setHasHydratedRoadmapSelection(true);
+  }, [readStoredRoadmapSelection, roadmapSelectionStorageKey]);
+
+  useEffect(() => {
+    if (!hasHydratedRoadmapSelection) return;
+    if (!roadmapSelectionStorageKey || typeof window === 'undefined') return;
+
+    const normalizedRoadmapId = Number(resolvedRoadmapRouteId ?? runtimeRoadmapId);
+    const normalizedPhaseId = Number(selectedRoadmapPhaseId);
+    const normalizedKnowledgeId = Number(selectedRoadmapKnowledgeId);
+    const hasSelectedPhase = Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0;
+    const hasSelectedKnowledge = Number.isInteger(normalizedKnowledgeId) && normalizedKnowledgeId > 0;
+
+    if (!hasSelectedPhase && !hasSelectedKnowledge) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        roadmapSelectionStorageKey,
+        JSON.stringify({
+          roadmapId:
+            Number.isInteger(normalizedRoadmapId) && normalizedRoadmapId > 0
+              ? normalizedRoadmapId
+              : null,
+          phaseId:
+            hasSelectedPhase
+              ? normalizedPhaseId
+              : null,
+          knowledgeId:
+            hasSelectedKnowledge
+              ? normalizedKnowledgeId
+              : null,
+        }),
+      );
+    } catch {
+      // Bo qua loi storage de tranh anh huong luong dieu huong.
+    }
+  }, [
+    hasHydratedRoadmapSelection,
+    resolvedRoadmapRouteId,
+    roadmapSelectionStorageKey,
+    runtimeRoadmapId,
+    selectedRoadmapKnowledgeId,
+    selectedRoadmapPhaseId,
+  ]);
 
   useEffect(() => {
     if (activeSection !== 'roadmap') return;
@@ -695,6 +802,32 @@ function GroupWorkspacePage() {
           ? pathKnowledgeId
           : null,
       );
+    } else {
+      const shouldKeepCenterSelection = skipRoadmapStoredRestoreRef.current;
+      if (shouldKeepCenterSelection) {
+        skipRoadmapStoredRestoreRef.current = false;
+      }
+
+      const storedSelection = readStoredRoadmapSelection();
+      const resolvedPhaseId =
+        shouldKeepCenterSelection
+          ? null
+          : Number.isInteger(storedSelection?.phaseId) && storedSelection.phaseId > 0
+          ? storedSelection.phaseId
+          : null;
+      const resolvedKnowledgeId =
+        shouldKeepCenterSelection
+          ? null
+          : Number.isInteger(storedSelection?.knowledgeId) && storedSelection.knowledgeId > 0
+          ? storedSelection.knowledgeId
+          : null;
+
+      setSelectedRoadmapPhaseId(resolvedPhaseId);
+      setSelectedRoadmapKnowledgeId(
+        Number.isInteger(resolvedPhaseId) && resolvedPhaseId > 0
+          ? resolvedKnowledgeId
+          : null,
+      );
     }
 
     setSelectedRoadmapQuizId(
@@ -704,6 +837,7 @@ function GroupWorkspacePage() {
     );
   }, [
     activeSection,
+    readStoredRoadmapSelection,
     roadmapPathParams?.quizId,
     roadmapPathParams?.roadmapId,
     roadmapPathParams?.knowledgeId,
@@ -2919,6 +3053,16 @@ function GroupWorkspacePage() {
     }
 
     if (_options?.focusRoadmapCenter) {
+      skipRoadmapStoredRestoreRef.current = true;
+
+      if (roadmapSelectionStorageKey && typeof window !== 'undefined') {
+        try {
+          window.localStorage.removeItem(roadmapSelectionStorageKey);
+        } catch {
+          // Bo qua loi storage de tranh anh huong luong dieu huong.
+        }
+      }
+
       setSelectedRoadmapPhaseId(null);
       setSelectedRoadmapKnowledgeId(null);
       setSelectedRoadmapQuizId(null);
@@ -2971,7 +3115,7 @@ function GroupWorkspacePage() {
     if (_options?.preserveActiveView) return;
 
     setActiveView('roadmap');
-  }, [navigateInstant, resolvedRoadmapRouteId, workspaceId]);
+  }, [navigateInstant, resolvedRoadmapRouteId, roadmapSelectionStorageKey, workspaceId]);
 
   const handleBackFromForm = useCallback(() => {
     const restore = location.state?.restoreGroupWorkspace;
