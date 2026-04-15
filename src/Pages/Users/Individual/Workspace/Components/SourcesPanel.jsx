@@ -60,6 +60,11 @@ function canDeleteSource(source) {
   return !["PROCESSING", "UPLOADING", "PENDING", "QUEUED"].includes(status);
 }
 
+function isWarnSource(source) {
+  const status = String(source?.status || "").toUpperCase();
+  return ["WARN", "WARNED"].includes(status);
+}
+
 function getSourceStatusTone(status, isDarkMode = false) {
   const normalizedStatus = String(status || "ACTIVE").toUpperCase();
 
@@ -476,14 +481,23 @@ function SourcesPanel({
                   <Button
                     type="button"
                     variant="outline"
-                    className={actionButtonClass}
+                    className={cn(
+                      actionButtonClass,
+                      isWarnSource(source)
+                        ? isDarkMode
+                          ? "border-amber-600/70 bg-amber-950/40 text-amber-200 hover:bg-amber-900/40 hover:text-amber-100"
+                          : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                        : null,
+                    )}
                     onClick={() =>
                       canOpenSourceDetail(source) && setViewingSource(source)
                     }
                     disabled={!canOpenSourceDetail(source)}
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
-                    {t("workspace.shell.previewSource", "Preview")}
+                    {isWarnSource(source)
+                      ? t("workspace.shell.warningSource", "Cảnh báo")
+                      : t("workspace.shell.previewSource", "Preview")}
                   </Button>
 
                   <Button
