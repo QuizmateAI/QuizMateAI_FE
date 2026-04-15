@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { workspaceShellTheme, workspaceSurface } from "./workspaceShellTheme";
 import VietnamFlag from "@/assets/Viet_nam.png";
 import EnglishFlag from "@/assets/UK_flag.svg";
+import LogoLight from "@/assets/LightMode_Logo.webp";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 
 const NAV_ITEMS = [
   { key: "sources", icon: Files },
@@ -253,23 +255,11 @@ function PersonalWorkspaceSidebar({
                 <Home className="h-4 w-4" />
               </button>
 
-              <button
-                type="button"
-                onClick={onOpenProfile}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border px-2.5 transition-colors duration-200 ease-out",
-                  isDarkMode
-                    ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
-                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
-                )}
-                aria-label={t("workspace.settingsMenu.workspaceProfile", "Workspace Profile")}
-                title={t("workspace.settingsMenu.workspaceProfile", "Workspace Profile")}
-              >
-                <UserCircle className="h-4 w-4" />
-                <span className={cn("text-xs font-semibold", fontClass)}>
-                  {i18n.language === "vi" ? "Hồ sơ" : "Profile"}
-                </span>
-              </button>
+              <img
+                src={isDarkMode ? LogoDark : LogoLight}
+                alt="QuizMate AI"
+                className="h-[90px] w-auto object-contain"
+              />
             </div>
 
             {isMobile ? (
@@ -331,14 +321,14 @@ function PersonalWorkspaceSidebar({
         </div>
 
         <div className={cn("border-t px-3.5 pb-3 pt-2.5", isDarkMode ? "border-slate-700/80" : "border-slate-200/80")}>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5">
             <button
               type="button"
               onClick={() =>
                 navigate("/wallets", { state: { from: location.pathname } })
               }
               className={cn(
-                "col-span-2 flex h-auto min-h-[48px] min-w-0 items-center gap-2.5 rounded-2xl border px-2.5 py-2.5 pr-3 text-left transition-colors duration-200 ease-out",
+                "col-span-3 flex h-auto min-h-[48px] min-w-0 items-center gap-2.5 rounded-2xl border px-2.5 py-2.5 pr-3 text-left transition-colors duration-200 ease-out",
                 isDarkMode
                   ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
                   : workspaceSurface("hover:bg-slate-50"),
@@ -361,7 +351,7 @@ function PersonalWorkspaceSidebar({
                 )}
               >
                 {/* <span className="shrink-0 text-[16px] font-semibold">QMC:</span> */}
-                <span className="truncate text-[18px] font-semibold">
+                <span className="truncate text-[16px] font-semibold">
                   {loadingWallet
                     ? "-"
                     : formatNumber(
@@ -369,15 +359,33 @@ function PersonalWorkspaceSidebar({
                         walletLocale,
                       )}
                 </span>
-                <span className={cn("shrink-0 text-[10px] font-medium", isDarkMode ? "text-slate-400" : "text-slate-500")}>
+                <span className={cn("shrink-0 text-[8px] font-medium", isDarkMode ? "text-slate-400" : "text-slate-500")}>
                   credit
                 </span>
               </span>
             </button>
 
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              className={cn(
+                "col-span-1 flex h-auto min-h-[40x] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center transition-colors duration-200 ease-out",
+                isDarkMode
+                  ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+              )}
+              aria-label={t("workspace.settingsMenu.workspaceProfile", "Workspace Profile")}
+              title={t("workspace.settingsMenu.workspaceProfile", "Workspace Profile")}
+            >
+              <UserCircle className="h-4 w-4" />
+              <span className={cn("text-[10px] font-semibold leading-tight", fontClass)}>
+                {i18n.language === "vi" ? "Hồ sơ" : "Profile"}
+              </span>
+            </button>
+
             <div
               className={cn(
-                "col-span-2 flex items-center gap-1 rounded-2xl border p-1",
+                "col-span-4 flex items-center gap-1 rounded-2xl border p-1",
                 isDarkMode ? "border-slate-700 bg-slate-800" : "border-slate-200 bg-slate-50",
               )}
             >
