@@ -96,6 +96,7 @@
     "saving": "Đang lưu...",
     "updateSuccess": "Cập nhật chính sách thành công",
     "descriptionPlaceholder": "Mô tả chính sách...",
+    "unitField": "Đơn vị",
     "baseCost": "Chi phí cơ bản",
     "unitCost": "Chi phí mỗi đơn vị",
     "unitSize": "Kích thước đơn vị",
@@ -465,8 +466,14 @@
     "permissionDenied": "Tài khoản của bạn chưa có quyền xem giao dịch thanh toán.",
     "errors": {
       "loadList": "Không thể tải danh sách thanh toán",
-      "loadDetail": "Không thể tải chi tiết thanh toán"
+      "loadDetail": "Không thể tải chi tiết thanh toán",
+      "expireFailed": "Không thể hủy các giao dịch quá hạn"
     },
+    "expireOverdue": "Hủy giao dịch quá hạn",
+    "expireDescription": "Hủy tất cả giao dịch PENDING đã vượt quá thời gian hết hạn. Hành động này không thể hoàn tác.",
+    "expireConfirm": "Hủy ngay",
+    "expiring": "Đang xử lý...",
+    "expireSuccess": "Đã hủy {{count}} giao dịch quá hạn",
     "validation": {
       "positiveInteger": "{{field}} phải là số nguyên dương"
     },
@@ -4292,12 +4299,14 @@
     "metrics": {
       "totalRequests": "Tổng request",
       "totalRequestsHint": "Theo bộ lọc hiện tại",
+      "totalTokens": "Tổng token",
+      "totalTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "pageTokens": "Token trang hiện tại",
       "pageTokensBreakdown": "Prompt {{prompt}} | Thought {{thought}} | Output {{output}}",
       "averageTokens": "Token trung bình / request",
-      "averageTokensHint": "Tính trên các log đang hiển thị",
+      "averageTokensHint": "Tính trên toàn bộ request khớp bộ lọc",
       "errors": "Lỗi",
-      "errorsHint": "Số request lỗi trong trang hiện tại"
+      "errorsHint": "Số request lỗi theo bộ lọc hiện tại"
     },
     "filters": {
       "title": "Bộ lọc AI audit",

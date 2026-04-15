@@ -11,13 +11,12 @@ import {
 import { Button } from '@/Components/ui/button';
 import { Loader2 } from 'lucide-react';
 
-// Dialog chỉnh sửa workspace - sửa tên và mô tả (title không bắt buộc)
+// Dialog chỉnh sửa workspace - chỉ sửa tên (title không bắt buộc)
 function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === 'en' ? 'font-poppins' : 'font-sans';
 
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -25,7 +24,6 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
   useEffect(() => {
     if (open && workspace) {
       setTitle(workspace.title || workspace.name || '');
-      setDescription(workspace.description || '');
       setErrors({});
       setSubmitting(false);
     }
@@ -45,7 +43,6 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
     try {
       await onEdit(workspace.workspaceId, {
         name: title.trim() || null,
-        description: description.trim() || null,
       });
       onOpenChange(false);
     } catch {
@@ -96,33 +93,19 @@ function EditWorkspaceDialog({ open, onOpenChange, workspace, onEdit, isDarkMode
             />
           </div>
 
-          {/* Mô tả (không bắt buộc) */}
-          <div>
-            <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-slate-300' : 'text-gray-700'}`}>
-              {t('home.workspace.descriptionLabel')} <span className={`text-xs font-normal ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>({t('common.optional')})</span>
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('home.workspace.descriptionPlaceholder')}
-              rows={2}
-              className={`${inputBase} resize-none`}
-            />
-          </div>
-
           <DialogFooter className="pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className={`rounded-full ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-gray-300 hover:bg-gray-50'}`}
+              className={`rounded-lg ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-gray-300 hover:bg-gray-50'}`}
             >
               {t('home.workspace.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={submitting}
-              className="rounded-full bg-[#2563EB] hover:bg-[#1d4ed8] text-white"
+              className="rounded-lg bg-[#2563EB] hover:bg-[#1d4ed8] text-white"
             >
               {submitting ? (
                 <>

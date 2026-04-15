@@ -19,7 +19,8 @@
     "search": {
       "workspacePlaceholder": "Tìm kiếm không gian...",
       "groupPlaceholder": "Tìm kiếm nhóm...",
-      "noResults": "Không tìm thấy kết quả"
+      "noResults": "Không tìm thấy kết quả",
+      "clear": "Xóa tìm kiếm"
     },
     "create": {
       "personalTab": "Không gian học tập cá nhân",
@@ -34,7 +35,10 @@
     "table": {
       "title": "Tiêu đề",
       "sources": "Nguồn",
+      "learningInfo": "Kiến thức / lĩnh vực",
       "created": "Đã tạo",
+      "lastUsed": "Lần dùng gần nhất",
+      "status": "Trạng thái",
       "role": "Vai trò",
       "members": "Thành viên",
       "updates": "Cập nhật"
@@ -101,9 +105,9 @@
     },
     "workspace": {
       "createTitle": "Tạo Không gian Học tập Mới",
-      "createDesc": "Nhập tên và mô tả (có thể để trống).",
+      "createDesc": "Tạo không gian rỗng, tên sẽ được đề xuất sau khi hoàn tất thiết lập.",
       "editTitle": "Chỉnh sửa Không gian Học tập",
-      "editDesc": "Cập nhật thông tin Không gian Học tập.",
+      "editDesc": "Đổi tên Không gian Học tập.",
       "deleteTitle": "Xóa Không gian Học tập",
       "deleteDesc": "Bạn có chắc muốn xóa Không gian Học tập này? Hành động này không thể hoàn tác.",
       "titleLabel": "Tên Không gian",
@@ -135,7 +139,20 @@
       "noDescription": "Không có mô tả",
       "noWorkspaces": "Chưa có Không gian Học tập",
       "noWorkspacesDesc": "Tạo Không gian Học tập đầu tiên để bắt đầu!",
-      "status": "Trạng thái",
+      "actions": "Tùy chọn Không gian Học tập",
+      "lastUsed": "Lần dùng gần nhất",
+      "lastUsedNever": "Chưa dùng",
+      "created": "Ngày tạo",
+      "ready": "Sẵn sàng",
+      "settingUp": "Đang thiết lập",
+      "sortLabel": "Sắp xếp",
+      "sortRecent": "Dùng gần nhất",
+      "sortCreated": "Mới tạo",
+      "recentHint": "Ưu tiên những không gian bạn vừa học gần đây.",
+      "createHint": "Bắt đầu thiết lập để có tên phù hợp.",
+      "knowledge": "Kiến thức",
+      "domain": "Lĩnh vực",
+      "sourceCount": "{{count}} nguồn",
       "topic": "Chủ đề",
       "subject": "Môn học",
       "edit": "Chỉnh sửa",
@@ -177,6 +194,7 @@
       "greeting": "Chào {{name}},",
       "manageAccount": "Quản lý Tài khoản của bạn",
       "logout": "Đăng xuất",
+      "lastLogin": "Lần đăng nhập gần nhất",
       "privacyPolicy": "Chính sách quyền riêng tư",
       "termsOfService": "Điều khoản dịch vụ"
     }
@@ -566,6 +584,7 @@
       "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "Bạn đã phân tích hồ sơ học tập",
       "SUGGEST_STUDY_PROFILE_FIELDS": "Bạn đã gợi ý thông tin hồ sơ học tập",
       "SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES": "Bạn đã gợi ý mẫu đề phù hợp",
+      "SUGGEST_WORKSPACE_NAME": "Bạn đã gợi ý tên không gian học tập",
       "VALIDATE_STUDY_PROFILE_CONSISTENCY": "Bạn đã kiểm tra hồ sơ học tập"
     },
     "uiActivity": {

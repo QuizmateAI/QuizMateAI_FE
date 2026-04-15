@@ -4,8 +4,8 @@ import { Button } from "@/Components/ui/button";
 import { Globe, Grid3x3, List, Moon, Settings, Sun, CreditCard } from 'lucide-react';
 import LogoLight from "@/assets/LightMode_Logo.webp";
 import LogoDark from "@/assets/DarkMode_Logo.webp";
-import UserWorkspace from "@/Pages/Users/Home/Components/UserWorkspace";
-import UserGroup from "@/Pages/Users/Home/Components/UserGroup";
+import UserWorkspace, { WorkspaceFilterControls } from "@/Pages/Users/Home/Components/UserWorkspace";
+import UserGroup, { GroupFilterControls } from "@/Pages/Users/Home/Components/UserGroup";
 import EditWorkspaceDialog from "@/Pages/Users/Home/Components/EditWorkspaceDialog";
 import DeleteWorkspaceDialog from "@/Pages/Users/Home/Components/DeleteWorkspaceDialog";
 import UserProfilePopover from "@/Components/features/Users/UserProfilePopover";
@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useWorkspace } from '@/hooks/useWorkspace';
 import { useGroup } from '@/hooks/useGroup';
+import { useUserProfile } from '@/context/UserProfileContext';
 import { useNavigateWithLoading } from '@/hooks/useNavigateWithLoading';
 import { preloadGroupWorkspacePage, preloadWorkspacePage } from '@/lib/routeLoaders';
 import { useToast } from '@/context/ToastContext';
@@ -20,12 +21,37 @@ import { getMyWallet } from '@/api/ManagementSystemAPI';
 import CreditIconImage from "@/Components/ui/CreditIconImage";
 import { buildGroupWorkspacePath, buildWorkspacePath } from '@/lib/routePaths';
 import { useCurrentSubscription } from '@/hooks/useCurrentSubscription';
+import { createIndividualWorkspaceWithBasicStep } from '@/api/WorkspaceAPI';
+import { unwrapApiData } from '@/Utils/apiResponse';
+
+const LazyIndividualWorkspaceProfileConfigDialog = React.lazy(
+  () => import("@/Pages/Users/Individual/Workspace/Components/IndividualWorkspaceProfileConfigDialog"),
+);
+
+function DeferredHomeDialog({ children }) {
+  return <React.Suspense fallback={null}>{children}</React.Suspense>;
+}
 
 function formatNumber(value, locale) {
   try {
     return new Intl.NumberFormat(locale).format(Number(value) || 0);
   } catch {
     return String(value ?? 0);
+  }
+}
+
+function formatDateTime(value, locale) {
+  if (!value) return '';
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(value));
+  } catch {
+    return '';
   }
 }
 
@@ -109,6 +135,9 @@ function mergeGroupsWithOwnedWorkspaces(groups = [], workspaces = []) {
 
 function HomePage() {
   const [viewMode, setViewMode] = useState('grid');
+  const [workspaceSearchQuery, setWorkspaceSearchQuery] = useState('');
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
+  const [draftProfileConfigOpen, setDraftProfileConfigOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
   const { t, i18n } = useTranslation();
@@ -120,6 +149,7 @@ function HomePage() {
   const activeTab = normalizeHomeTab(searchParams.get('tab'));
   const shouldLoadGroups = activeTab === 'group';
   const { summary: currentPlanSummary } = useCurrentSubscription();
+  const { profile } = useUserProfile();
   const [walletSummary, setWalletSummary] = useState(EMPTY_WALLET_SUMMARY);
   const [loadingWallet, setLoadingWallet] = useState(true);
 
@@ -128,12 +158,13 @@ function HomePage() {
     workspaces,
     loading,
     pagination,
-    createWorkspace,
     createGroupWorkspace,
     editWorkspace,
     removeWorkspace,
     changePage,
     changePageSize,
+    sortMode,
+    changeSortMode,
   } = useWorkspace({ enabled: true });
   const { groups, loading: groupsLoading } = useGroup({ enabled: shouldLoadGroups });
   const mergedGroups = shouldLoadGroups ? mergeGroupsWithOwnedWorkspaces(groups, workspaces) : [];
@@ -148,23 +179,40 @@ function HomePage() {
   const currentLang = i18n.language;
   const fontClass = currentLang === 'en' ? 'font-poppins' : 'font-sans';
   const walletLocale = currentLang === 'vi' ? 'vi-VN' : 'en-US';
+  const lastLoginLabel = formatDateTime(profile?.lastLoginAt, walletLocale);
   const toggleLanguage = () => {
     const newLang = currentLang === 'vi' ? 'en' : 'vi';
     i18n.changeLanguage(newLang);
   };
 
-  // Nhảy thẳng vào trang workspace mới (bỏ qua dialog, tạo trực tiếp)
+  // Tao workspace ca nhan sau khi user hoan tat buoc 1 onboarding.
   const handleOpenCreate = async () => {
+    void preloadWorkspacePage();
+    setDraftProfileConfigOpen(true);
+  };
+
+  const handleDraftProfileSave = async (currentStep, data) => {
+    if (currentStep !== 1) {
+      throw new Error(t('home.workspace.createError') || 'Không thể tạo workspace');
+    }
+
     try {
-      void preloadWorkspacePage();
-      showSuccess(t('home.workspace.creating') || 'Đang tạo workspace...');
-      const newWorkspace = await createWorkspace({ title: null });
-      if (newWorkspace?.workspaceId) {
-        showSuccess(t('home.workspace.createSuccess') || 'Tạo workspace thành công!');
-        navigate(buildWorkspacePath(newWorkspace.workspaceId), { state: { openProfileConfig: true } });
+      const response = await createIndividualWorkspaceWithBasicStep(data);
+      const profileData = unwrapApiData(response);
+      const createdWorkspaceId = profileData?.workspaceId;
+
+      if (!createdWorkspaceId) {
+        throw new Error(t('home.workspace.createError') || 'Không thể tạo workspace');
       }
+
+      setDraftProfileConfigOpen(false);
+      navigate(buildWorkspacePath(createdWorkspaceId), {
+        state: { openProfileConfig: true, continueProfileSetup: true },
+      });
+      return profileData;
     } catch (err) {
       showError(err?.message || t('home.workspace.createError') || 'Không thể tạo workspace');
+      throw err;
     }
   };
 
@@ -213,7 +261,8 @@ function HomePage() {
   // Nếu được gọi từ GroupWorkspace với yêu cầu tạo workspace → nhảy sang trang tạo
   useEffect(() => {
     if (location.state?.openCreateDialog) {
-      navigate(buildWorkspacePath('new'), { replace: true });
+      setDraftProfileConfigOpen(true);
+      navigate('/home', { replace: true });
     }
   }, [location.state, navigate]);
 
@@ -324,6 +373,9 @@ function HomePage() {
           onOpenCreate={handleOpenCreate}
           onOpenEdit={handleOpenEdit}
           onOpenDelete={handleOpenDelete}
+          sortMode={sortMode}
+          onSortModeChange={changeSortMode}
+          searchQuery={workspaceSearchQuery}
         />
       );
     }
@@ -336,6 +388,8 @@ function HomePage() {
           groups={mergedGroups}
           loading={groupTabLoading}
           onOpenCreate={handleOpenCreateGroup}
+          searchQuery={groupSearchQuery}
+          onSearchQueryChange={setGroupSearchQuery}
         />
       );
     }
@@ -356,6 +410,9 @@ function HomePage() {
         onOpenCreate={handleOpenCreate}
         onOpenEdit={handleOpenEdit}
         onOpenDelete={handleOpenDelete}
+        sortMode={sortMode}
+        onSortModeChange={changeSortMode}
+        searchQuery={workspaceSearchQuery}
       />
     );
   };
@@ -372,6 +429,16 @@ function HomePage() {
                  </div>
         
         <div className="flex items-center gap-2">
+          {lastLoginLabel ? (
+            <div className={`hidden max-w-[240px] flex-col items-end leading-tight lg:flex ${
+              isDarkMode ? 'text-slate-400' : 'text-gray-500'
+            }`}>
+              <span className="text-[11px] font-medium uppercase tracking-normal">
+                {t('home.profile.lastLogin')}
+              </span>
+              <span className="truncate text-xs">{lastLoginLabel}</span>
+            </div>
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
@@ -496,8 +563,25 @@ function HomePage() {
             </button>
           </div>
 
-          {/* Right: View Mode, Sort & Create */}
-          <div className="flex items-center gap-2">
+          {/* Right: Search, Sort & View Mode */}
+          <div className="flex flex-1 items-center justify-end gap-2">
+            {activeTab === 'workspace' ? (
+              <WorkspaceFilterControls
+                searchQuery={workspaceSearchQuery}
+                onSearchQueryChange={setWorkspaceSearchQuery}
+                sortMode={sortMode}
+                onSortModeChange={changeSortMode}
+                isDarkMode={isDarkMode}
+              />
+            ) : null}
+            {activeTab === 'group' ? (
+              <GroupFilterControls
+                searchQuery={groupSearchQuery}
+                onSearchQueryChange={setGroupSearchQuery}
+                isDarkMode={isDarkMode}
+              />
+            ) : null}
+
             {/* View Toggle */}
             <div className={`flex items-center rounded-lg overflow-hidden border ${
               isDarkMode ? 'border-slate-700' : 'border-gray-300'
@@ -539,7 +623,7 @@ function HomePage() {
         
       </main>
       </div>
-      <div className="pt-[190px] px-20 py-12">
+      <div className="px-20 pb-12 pt-[215px]">
         {renderTabContent()}
       </div>
 
@@ -558,6 +642,19 @@ function HomePage() {
         onDelete={handleDelete}
         isDarkMode={isDarkMode}
       />
+      {draftProfileConfigOpen ? (
+        <DeferredHomeDialog>
+          <LazyIndividualWorkspaceProfileConfigDialog
+            open={draftProfileConfigOpen}
+            onOpenChange={setDraftProfileConfigOpen}
+            onSave={handleDraftProfileSave}
+            onConfirm={() => {}}
+            isDarkMode={isDarkMode}
+            initialData={null}
+            forceStartAtStepOne
+          />
+        </DeferredHomeDialog>
+      ) : null}
     </div>
   );
 }

@@ -19,7 +19,8 @@
     "search": {
       "workspacePlaceholder": "Search workspaces...",
       "groupPlaceholder": "Search groups...",
-      "noResults": "No results found"
+      "noResults": "No results found",
+      "clear": "Clear search"
     },
     "create": {
       "personalTab": "Personal Workspace",
@@ -34,7 +35,10 @@
     "table": {
       "title": "Title",
       "sources": "Sources",
+      "learningInfo": "Knowledge / domain",
       "created": "Created",
+      "lastUsed": "Last used",
+      "status": "Status",
       "role": "Role",
       "members": "Members",
       "updates": "Updates"
@@ -102,9 +106,9 @@
     },
     "workspace": {
       "createTitle": "Create New Workspace",
-      "createDesc": "Enter name and description (optional).",
+      "createDesc": "Create an empty workspace; AI names it after setup.",
       "editTitle": "Edit Workspace",
-      "editDesc": "Update the workspace information.",
+      "editDesc": "Rename this workspace.",
       "deleteTitle": "Delete Workspace",
       "deleteDesc": "Are you sure you want to delete this workspace? This action cannot be undone.",
       "titleLabel": "Workspace name",
@@ -136,7 +140,20 @@
       "noDescription": "No description",
       "noWorkspaces": "No workspaces yet",
       "noWorkspacesDesc": "Create your first workspace to get started!",
-      "status": "Status",
+      "actions": "Workspace options",
+      "lastUsed": "Last used",
+      "lastUsedNever": "Not used yet",
+      "created": "Created",
+      "ready": "Ready",
+      "settingUp": "Setting up",
+      "sortLabel": "Sort",
+      "sortRecent": "Last used",
+      "sortCreated": "Newest",
+      "recentHint": "Recent study spaces stay within reach.",
+      "createHint": "Start setup to get a fitting name.",
+      "knowledge": "Knowledge",
+      "domain": "Domain",
+      "sourceCount": "{{count}} sources",
       "topic": "Topic",
       "subject": "Subject",
       "edit": "Edit",
@@ -178,6 +195,7 @@
       "greeting": "Hi {{name}},",
       "manageAccount": "Manage your Account",
       "logout": "Log out",
+      "lastLogin": "Last login",
       "materialRequired": "Please select at least one material.",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service"
@@ -571,6 +589,7 @@
       "ANALYZE_STUDY_PROFILE_KNOWLEDGE": "You analyzed a study profile",
       "SUGGEST_STUDY_PROFILE_FIELDS": "You requested study profile suggestions",
       "SUGGEST_STUDY_PROFILE_EXAM_TEMPLATES": "You requested exam template suggestions",
+      "SUGGEST_WORKSPACE_NAME": "You requested a workspace name",
       "VALIDATE_STUDY_PROFILE_CONSISTENCY": "You validated a study profile"
     },
     "uiActivity": {

@@ -1430,7 +1430,6 @@ function GroupWorkspacePage() {
         (activeSection === 'members' || activeSection === 'memberStats')) {
       void loadMembers();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection]);
 
   const loadGroupProfile = useCallback(async () => {
@@ -2215,6 +2214,7 @@ function GroupWorkspacePage() {
       .filter(Boolean);
 
     if (successfulUploads.length > 0) {
+      void queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       showInfo(
         t('groupWorkspacePage.upload.submittedCount', 'Submitted {{count}} file(s) to the group review queue.', { count: successfulUploads.length }),
       );
@@ -2286,6 +2286,7 @@ function GroupWorkspacePage() {
     navigate,
     groupPlanUpgradePath,
     groupPlanUpgradeState,
+    queryClient,
     setUploadDialogOpen,
   ]);
 
