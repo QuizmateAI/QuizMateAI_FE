@@ -25,6 +25,10 @@ export const publishChallenge = async (workspaceId, eventId) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/publish`);
 };
 
+export const startChallenge = async (workspaceId, eventId) => {
+  return await api.post(`/group/${workspaceId}/challenges/${eventId}/start`);
+};
+
 export const inviteToChallenge = async (workspaceId, eventId, userIds) => {
   return await api.post(`/group/${workspaceId}/challenges/${eventId}/invite`, { userIds });
 };
@@ -43,6 +47,22 @@ export const startChallengeAttempt = async (workspaceId, eventId) => {
 
 export const getChallengeLeaderboard = async (workspaceId, eventId) => {
   return await api.get(`/group/${workspaceId}/challenges/${eventId}/leaderboard`);
+};
+
+export const getChallengeDashboard = async (workspaceId, eventId) => {
+  return await api.get(`/group/${workspaceId}/challenges/${eventId}/dashboard`);
+};
+
+export const getChallengeTeams = async (workspaceId, eventId) => {
+  return await api.get(`/group/${workspaceId}/challenges/${eventId}/teams`);
+};
+
+export const getChallengeBracket = async (workspaceId, eventId) => {
+  return await api.get(`/group/${workspaceId}/challenges/${eventId}/bracket`);
+};
+
+export const createChallengeRoundQuiz = async (workspaceId, eventId, roundNumber) => {
+  return await api.post(`/group/${workspaceId}/challenges/${eventId}/rounds/${roundNumber}/quiz`);
 };
 
 /** Leader: người review đề snapshot — không được đăng ký challenge */
