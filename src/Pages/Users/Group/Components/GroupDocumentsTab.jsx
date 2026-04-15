@@ -451,7 +451,7 @@ export default function GroupDocumentsTab({
       </section>
 
       {viewingMaterial ? (
-        <section className={`min-h-[680px] overflow-hidden rounded-[28px] border ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
+        <section className={`h-[calc(100vh-9rem)] min-h-[520px] max-h-[860px] overflow-hidden rounded-[28px] border ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
           <SourceDetailView
             isDarkMode={isDarkMode}
             source={viewingMaterial}
