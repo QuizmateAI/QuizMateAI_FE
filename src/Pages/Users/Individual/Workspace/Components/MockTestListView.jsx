@@ -226,24 +226,24 @@ function MockTestListView({
             <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
           </div>
         ) : mockTests.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
-            <ClipboardList className={`mb-4 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
+          <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
+            <ClipboardList className={`mb-3 h-12 w-12 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.mockTest.noItems")}</p>
             {onCreateMockTest && !hideCreateButton ? (
               <Button
                 type="button"
                 onClick={onCreateMockTest}
-                disabled={disableCreate}
-                className="mt-4 rounded-full bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
+                disabled={allRoadmapsCovered || disableCreate}
+                className="mt-4 h-10 rounded-full bg-orange-500 px-4 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                {t("workspace.listView.create")}
+                <span className="text-sm">{t("workspace.listView.create")}</span>
               </Button>
             ) : null}
           </div>
         ) : filteredMockTests.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center px-6 py-16 text-center">
-            <FolderOpen className={`mb-4 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
+          <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
+            <FolderOpen className={`mb-3 h-10 w-10 ${isDarkMode ? "text-slate-600" : "text-slate-300"}`} />
             <p className={`text-sm ${mutedTextClass}`}>{t("workspace.listView.noResults")}</p>
           </div>
         ) : (
