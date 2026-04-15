@@ -743,7 +743,14 @@ function GroupWorkspacePage() {
     if (!hasHydratedRoadmapSelection) return;
     if (!roadmapSelectionStorageKey || typeof window === 'undefined') return;
 
-    const normalizedRoadmapId = Number(resolvedRoadmapRouteId ?? runtimeRoadmapId);
+    const normalizedRuntimeRoadmapId = Number(runtimeRoadmapId);
+    const normalizedPathRoadmapId = Number(roadmapPathParams?.roadmapId);
+    const normalizedRoadmapId =
+      Number.isInteger(normalizedRuntimeRoadmapId) && normalizedRuntimeRoadmapId > 0
+        ? normalizedRuntimeRoadmapId
+        : Number.isInteger(normalizedPathRoadmapId) && normalizedPathRoadmapId > 0
+        ? normalizedPathRoadmapId
+        : null;
     const normalizedPhaseId = Number(selectedRoadmapPhaseId);
     const normalizedKnowledgeId = Number(selectedRoadmapKnowledgeId);
     const hasSelectedPhase = Number.isInteger(normalizedPhaseId) && normalizedPhaseId > 0;
@@ -776,7 +783,7 @@ function GroupWorkspacePage() {
     }
   }, [
     hasHydratedRoadmapSelection,
-    resolvedRoadmapRouteId,
+    roadmapPathParams?.roadmapId,
     roadmapSelectionStorageKey,
     runtimeRoadmapId,
     selectedRoadmapKnowledgeId,
