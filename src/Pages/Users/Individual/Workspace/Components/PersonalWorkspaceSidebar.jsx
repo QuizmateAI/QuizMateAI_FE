@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { workspaceShellTheme, workspaceSurface } from "./workspaceShellTheme";
 import VietnamFlag from "@/assets/Viet_nam.png";
 import EnglishFlag from "@/assets/UK_flag.svg";
+import LogoLight from "@/assets/LightMode_Logo.webp";
+import LogoDark from "@/assets/DarkMode_Logo.webp";
 
 const NAV_ITEMS = [
   { key: "sources", icon: Files },
@@ -252,6 +254,12 @@ function PersonalWorkspaceSidebar({
               >
                 <Home className="h-4 w-4" />
               </button>
+
+              <img
+                src={isDarkMode ? LogoDark : LogoLight}
+                alt="QuizMate AI"
+                className="h-8 w-auto object-contain"
+              />
 
               <button
                 type="button"
