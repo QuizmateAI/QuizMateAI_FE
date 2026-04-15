@@ -258,7 +258,7 @@ function PersonalWorkspaceSidebar({
               <img
                 src={isDarkMode ? LogoDark : LogoLight}
                 alt="QuizMate AI"
-                className="h-8 w-auto object-contain"
+                className="h-[90px] w-auto object-contain"
               />
             </div>
 
