@@ -18,7 +18,7 @@ export default function ChallengeTeamScoreboard({ workspaceId, eventId, isDarkMo
   const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ['challenge-teams', workspaceId, eventId],
-    queryFn: async () => (await getChallengeTeams(workspaceId, eventId))?.data?.data ?? null,
+    queryFn: async () => (await getChallengeTeams(workspaceId, eventId))?.data ?? null,
     enabled: Boolean(workspaceId && eventId),
     refetchInterval: 5000,
   });
@@ -85,10 +85,10 @@ export default function ChallengeTeamScoreboard({ workspaceId, eventId, isDarkMo
                 </div>
                 <div className="text-right">
                   <div className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {fmt(team.totalScore)}
+                    {fmt(team.averageScore ?? team.totalScore)}
                   </div>
                   <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-                    {fmtTime(team.totalCompletionTimeSeconds)}
+                    TB · {fmtTime(team.averageCompletionTimeSeconds ?? team.totalCompletionTimeSeconds)}
                   </div>
                 </div>
               </div>

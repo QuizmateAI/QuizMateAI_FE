@@ -1138,7 +1138,7 @@
       "leadBefore": "Sau khi tạo challenge, vào chi tiết challenge và bấm ",
       "composeLabel": "Soạn đề",
       "leadAfter": " để mở trình soạn quiz (tab Quiz).",
-      "hint": "Lịch bắt đầu phải cách hiện tại ít nhất 3 ngày; sau khi tạo, vào chi tiết challenge để soạn đề trước khi challenge diễn ra."
+      "hint": "Chọn thời gian trong tương lai; sau khi tạo, vào chi tiết challenge để soạn đề trước khi challenge diễn ra."
     },
     "schedule": {
       "titleLabel": "Tên Challenge *",

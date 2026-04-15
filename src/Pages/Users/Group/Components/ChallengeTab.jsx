@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Swords } from 'lucide-react';
@@ -13,6 +13,13 @@ const SUB_TABS = [
   { key: 'FINISHED', label: 'Đã kết thúc' },
 ];
 
+const MODE_TABS = [
+  { key: 'ALL', label: 'Tất cả' },
+  { key: 'FREE_FOR_ALL', label: 'Đua cá nhân' },
+  { key: 'TEAM_BATTLE', label: 'Đấu đội' },
+  { key: 'SOLO_BRACKET', label: 'Đấu cúp 1v1' },
+];
+
 export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, currentUserId }) {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,6 +30,7 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
   })();
 
   const [activeSubTab, setActiveSubTab] = useState('SCHEDULED');
+  const [activeMode, setActiveMode] = useState('ALL');
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [showCreateWizard, setShowCreateWizard] = useState(false);
   const activeEventId = challengeEventIdFromRoute ?? selectedEventId;
@@ -36,6 +44,13 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
     enabled: Boolean(workspaceId) && !activeEventId,
     refetchInterval: 15000,
   });
+
+  const visibleChallenges = useMemo(
+    () => activeMode === 'ALL'
+      ? challenges
+      : challenges.filter((c) => String(c.matchMode || 'FREE_FOR_ALL') === activeMode),
+    [activeMode, challenges],
+  );
 
   const handleSelectChallenge = useCallback((eventId) => {
     setSelectedEventId(eventId);
@@ -113,6 +128,24 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
         ))}
       </div>
 
+      <div className={`flex flex-wrap gap-1 rounded-xl p-1 ${
+        isDarkMode ? 'bg-slate-800/70' : 'bg-gray-100/80'
+      }`}>
+        {MODE_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveMode(tab.key)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+              activeMode === tab.key
+                ? (isDarkMode ? 'bg-teal-500/20 text-teal-100' : 'bg-white text-teal-700 shadow-sm')
+                : (isDarkMode ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700')
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
@@ -120,7 +153,7 @@ export default function ChallengeTab({ workspaceId, isDarkMode, isLeader, curren
         </div>
       ) : (
         <ChallengeListView
-          challenges={challenges}
+          challenges={visibleChallenges}
           isDarkMode={isDarkMode}
           onSelectChallenge={handleSelectChallenge}
           onCreateChallenge={isLeader ? () => setShowCreateWizard(true) : undefined}
