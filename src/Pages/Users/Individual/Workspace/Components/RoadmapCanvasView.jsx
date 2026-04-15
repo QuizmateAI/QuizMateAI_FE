@@ -222,6 +222,7 @@ function RoadmapCanvasView({
   onToggleEmptyStateMaterial,
   onToggleAllEmptyStateMaterials,
   onRoadmapLoad,
+  onStageTopSectionCollapsedChange,
 }) {
   const { t, i18n } = useTranslation();
   const fontClass = i18n.language === "en" ? "font-poppins" : "font-sans";
@@ -963,6 +964,7 @@ function RoadmapCanvasView({
         onCreatePhasePreLearning={onCreatePhasePreLearning}
         onCreatePhaseKnowledge={onCreatePhaseKnowledge}
         onEditRoadmapConfig={onEditRoadmapConfig}
+        onTopSectionCollapsedChange={onStageTopSectionCollapsedChange}
       />
     );
   }

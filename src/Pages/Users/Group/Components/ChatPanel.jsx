@@ -61,6 +61,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
     return saved === "view1" || saved === "view2" || saved === "overview" ? saved : "view2";
   });
   const [isRoadmapJourCollapsed, setIsRoadmapJourCollapsed] = React.useState(false);
+  const [isStageTopSectionCollapsed, setIsStageTopSectionCollapsed] = React.useState(true);
 
   React.useEffect(() => {
     if (!workspaceId) {
@@ -178,7 +179,7 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
 
     switch (activeView) {
       case "roadmap":
-        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} onCreateRoadmapPreLearning={onCreateRoadmapPreLearning} onViewQuiz={onViewQuiz} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} />;
+        return <LazyRoadmapCanvasView isDarkMode={isDarkMode} onCreateRoadmap={onCreateRoadmap} onCreateRoadmapPhases={onCreateRoadmapPhases} onCreateRoadmapPreLearning={onCreateRoadmapPreLearning} onViewQuiz={onViewQuiz} createdItems={createdRoadmaps} workspaceId={workspaceId} disableCreate={readOnly} hideCreateButton={readOnly} onViewRoadmapConfig={onViewRoadmapConfig} onEditRoadmapConfig={onEditRoadmapConfig} emptyStateTitle={roadmapEmptyStateTitle} emptyStateDescription={roadmapEmptyStateDescription} emptyStateActionLabel={roadmapEmptyStateActionLabel} reloadToken={roadmapReloadToken} isGeneratingRoadmapPhases={isGeneratingRoadmapPhases} isGeneratingRoadmapPreLearning={isGeneratingRoadmapPreLearning} roadmapPhaseGenerationProgress={roadmapPhaseGenerationProgress} selectedPhaseId={selectedRoadmapPhaseId} selectedKnowledgeId={selectedRoadmapKnowledgeId} roadmapCenterFocusToken={roadmapCenterFocusToken} forcedCanvasView={roadmapCanvasView} onCanvasViewChange={setRoadmapCanvasView} onRoadmapPhaseFocus={onRoadmapPhaseFocus} emptyStateMaterials={roadmapSelectableMaterials} selectedEmptyStateMaterialIds={selectedRoadmapMaterialIds} onToggleEmptyStateMaterial={onToggleRoadmapMaterial} onToggleAllEmptyStateMaterials={onToggleAllRoadmapMaterials} onRoadmapLoad={(roadmapId) => { setActiveRoadmapId(roadmapId); if (typeof onRoadmapLoad === "function") onRoadmapLoad(roadmapId); }} onStageTopSectionCollapsedChange={setIsStageTopSectionCollapsed} />;
       case "quiz":
         return (
           <LazyQuizListView
@@ -208,7 +209,8 @@ function ChatPanel({ isDarkMode = false, sources = [], selectedSourceIds = [], o
   };
 
   const listContent = renderListView();
-  const shouldHideRoadmapJour = roadmapCanvasView === "overview";
+  const shouldHideRoadmapJour = roadmapCanvasView === "overview"
+    || (roadmapCanvasView === "view2" && !isStageTopSectionCollapsed);
   const shouldRenderRoadmapJour = !shouldHideRoadmapJour && (Boolean(hasRoadmap) || Boolean(isGeneratingRoadmapPhases));
 
   if (activeView === "roadmap" && listContent) {
