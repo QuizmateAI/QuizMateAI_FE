@@ -1164,7 +1164,7 @@
       "leadBefore": "After creating the challenge, open its detail page and click ",
       "composeLabel": "Compose quiz",
       "leadAfter": " to launch the quiz editor (Quiz tab).",
-      "hint": "The start date must be at least 3 days from now; after creation, open the challenge detail to compose the quiz before the challenge starts."
+      "hint": "Choose a future start time; after creation, open the challenge detail to compose the quiz before the challenge starts."
     },
     "schedule": {
       "titleLabel": "Challenge name *",

@@ -573,6 +573,7 @@ function GroupWorkspacePage() {
   const materialProgress = useSequentialProgressMap({ stepDelayMs: 22 });
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
 
   // Section navigation via URL
   const legacySectionMap = { flashcardQuiz: 'quiz' };
@@ -592,6 +593,10 @@ function GroupWorkspacePage() {
     : pathSection || querySection || 'dashboard';
 
   const setActiveSection = (section) => {
+    if (activeSection === 'roadmap' && section !== 'roadmap') {
+      skipNextRoadmapCanonicalizeRef.current = true;
+    }
+
     const preservedQuery = {};
     for (const [key, value] of searchParams.entries()) {
       if (!key || key === 'section') continue;
@@ -669,6 +674,7 @@ function GroupWorkspacePage() {
   const uploadNotificationsRef = useRef(new Set());
   const groupRealtimeRefreshTimerRef = useRef(null);
   const skipRoadmapStoredRestoreRef = useRef(false);
+  const skipNextRoadmapCanonicalizeRef = useRef(false);
 
   // Members state
   const [members, setMembers] = useState([]);
@@ -965,6 +971,10 @@ function GroupWorkspacePage() {
 
   useEffect(() => {
     if (activeSection !== 'roadmap' || !workspaceId) return;
+    if (skipNextRoadmapCanonicalizeRef.current) {
+      skipNextRoadmapCanonicalizeRef.current = false;
+      return;
+    }
 
     const hasSelectedPhase = Number.isInteger(Number(selectedRoadmapPhaseId)) && Number(selectedRoadmapPhaseId) > 0;
     const hasSelectedKnowledge = Number.isInteger(Number(selectedRoadmapKnowledgeId)) && Number(selectedRoadmapKnowledgeId) > 0;
@@ -2042,6 +2052,9 @@ function GroupWorkspacePage() {
     void queryClient.invalidateQueries({ queryKey: ['challenges'] });
     void queryClient.invalidateQueries({ queryKey: ['challenge-detail'] });
     void queryClient.invalidateQueries({ queryKey: ['challenge-leaderboard'] });
+    void queryClient.invalidateQueries({ queryKey: ['challenge-dashboard'] });
+    void queryClient.invalidateQueries({ queryKey: ['challenge-teams'] });
+    void queryClient.invalidateQueries({ queryKey: ['challenge-bracket'] });
   }, [isCreating, queryClient, workspaceId]);
 
   const { isConnected: wsConnected, lastMessage: wsLastMessage } = useWebSocket({
@@ -3879,6 +3892,8 @@ function GroupWorkspacePage() {
             memberCount={members.length}
             disabledMap={groupSidebarDisabledMap}
             badgeMap={groupSidebarBadgeMap}
+            collapsed={isDesktopSidebarCollapsed}
+            onToggleCollapsed={() => setIsDesktopSidebarCollapsed((current) => !current)}
             onToggleLanguage={toggleLanguage}
             onToggleDarkMode={toggleDarkMode}
             currentLang={currentLang}
