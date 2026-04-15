@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Clock, Lock, Maximize2, Minimize2, ZoomIn, ZoomOut, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Clock, Lock, Maximize2, Minimize2, X, ZoomIn, ZoomOut, CheckCircle2 } from "lucide-react";
 
 const DONE = new Set(["COMPLETED", "DONE", "SKIPPED", "PASSED", "FINISHED", "SUBMITTED"]);
 const ACTIVE = new Set(["CURRENT", "IN_PROGRESS", "PROCESSING", "ACTIVE"]);
@@ -343,10 +343,26 @@ function RoadmapCanvasViewOverview({
 }) {
   const scrollContainerRef = useRef(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [selectedPhaseDetail, setSelectedPhaseDetail] = useState(null);
 
   const CANVAS_WIDTH = canvasWidth;
   const [viewportWidth, setViewportWidth] = useState(CANVAS_WIDTH || 1280);
   const roadmapPhases = Array.isArray(roadmap?.phases) ? roadmap.phases : [];
+
+  const selectedPhaseKnowledges = useMemo(
+    () => (Array.isArray(selectedPhaseDetail?.knowledges) ? selectedPhaseDetail.knowledges : []),
+    [selectedPhaseDetail],
+  );
+
+  const selectedPhaseDoneKnowledgeCount = useMemo(
+    () => selectedPhaseKnowledges.filter((knowledge) => DONE.has(getStatus(knowledge?.status))).length,
+    [selectedPhaseKnowledges],
+  );
+
+  const selectedPhaseFirstIncompleteKnowledgeIndex = useMemo(
+    () => selectedPhaseKnowledges.findIndex((knowledge) => !DONE.has(getStatus(knowledge?.status))),
+    [selectedPhaseKnowledges],
+  );
 
   useEffect(() => {
     const containerElement = viewportRef?.current;
@@ -389,6 +405,24 @@ function RoadmapCanvasViewOverview({
     };
   }, []);
 
+  useEffect(() => {
+    if (!selectedPhaseDetail) return;
+
+    const selectedPhaseId = Number(selectedPhaseDetail?.phaseId);
+    if (!Number.isInteger(selectedPhaseId) || selectedPhaseId <= 0) {
+      setSelectedPhaseDetail(null);
+      return;
+    }
+
+    const syncedPhase = roadmapPhases.find((phase) => Number(phase?.phaseId) === selectedPhaseId);
+    if (!syncedPhase) {
+      setSelectedPhaseDetail(null);
+      return;
+    }
+
+    setSelectedPhaseDetail(syncedPhase);
+  }, [roadmapPhases, selectedPhaseDetail]);
+
   const currentIndex = useMemo(
     () => getCurrentIndex(roadmapPhases, currentPhaseProgress),
     [currentPhaseProgress, roadmapPhases],
@@ -423,6 +457,31 @@ function RoadmapCanvasViewOverview({
   const resetFishboneViewport = () => {
     setZoomLevel(layoutConfig.defaultZoom);
     scrollContainerRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+  };
+
+  const handleSelectKnowledgeFromDrawer = (phaseId, knowledgeId, isLocked) => {
+    if (isLocked) return;
+
+    const normalizedPhaseId = Number(phaseId);
+    const normalizedKnowledgeId = Number(knowledgeId);
+    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+    if (!Number.isInteger(normalizedKnowledgeId) || normalizedKnowledgeId <= 0) return;
+
+    onSelectCenterRoadmap?.(normalizedPhaseId, { knowledgeId: normalizedKnowledgeId });
+    setSelectedPhaseDetail(null);
+  };
+
+  const handlePhaseCardClick = (phase) => {
+    const normalizedPhaseId = Number(phase?.phaseId);
+    if (!Number.isInteger(normalizedPhaseId) || normalizedPhaseId <= 0) return;
+
+    const phaseKnowledges = Array.isArray(phase?.knowledges) ? phase.knowledges : [];
+    if (phaseKnowledges.length === 0) {
+      onSelectCenterRoadmap?.(normalizedPhaseId);
+      return;
+    }
+
+    setSelectedPhaseDetail(phase);
   };
 
   const content = (
@@ -634,8 +693,10 @@ function RoadmapCanvasViewOverview({
                         width: layoutConfig.cardWidth,
                       }}
                     >
-                      <div
-                        className={`relative overflow-hidden rounded-xl border-2 shadow-sm transition-all duration-300 ${borderColor} ${cardSurface} ${isLocked
+                      <button
+                        type="button"
+                        onClick={() => handlePhaseCardClick(phase)}
+                        className={`relative block w-full overflow-hidden rounded-xl border-2 text-left shadow-sm transition-all duration-300 ${borderColor} ${cardSurface} ${isLocked
                           ? "opacity-85 saturate-0"
                           : state === "current"
                             ? "shadow-lg ring-2 ring-sky-300/70"
@@ -680,13 +741,139 @@ function RoadmapCanvasViewOverview({
                             </span>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     </div>
                   );
                 })}
               </div>
             </div>
           </div>
+
+          {selectedPhaseDetail ? (
+            <>
+              <button
+                type="button"
+                aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
+                onClick={() => setSelectedPhaseDetail(null)}
+                className="fixed inset-0 z-[170] bg-slate-950/45 backdrop-blur-[1px] animate-[roadmapFadeIn_180ms_ease-out]"
+              />
+
+              <aside
+                className="fixed inset-y-0 right-0 z-[180] w-full max-w-[520px] border-l border-slate-200 bg-white text-slate-900 shadow-2xl backdrop-blur-sm animate-[roadmapSlideInRight_220ms_ease-out]"
+                onWheelCapture={(event) => event.stopPropagation()}
+              >
+                <div className="flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {labels.phase}
+                      </p>
+                      <h3 className={`mt-1 text-lg font-bold leading-snug ${fontClass}`}>
+                        {selectedPhaseDetail?.title || t("workspace.roadmap.phaseUntitled", "Untitled phase")}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPhaseDetail(null)}
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                      aria-label={t("workspace.roadmap.canvas.closePhaseDetail", "Close phase detail")}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 space-y-4 overflow-y-auto overscroll-y-contain bg-gradient-to-b from-white via-sky-50/50 to-cyan-50/60 px-4 py-4" onWheelCapture={(event) => event.stopPropagation()}>
+                    <p className={`text-sm leading-relaxed text-slate-700 ${fontClass}`}>
+                      {selectedPhaseDetail?.description || t("workspace.shell.phaseDescriptionFallback", "This phase is ready for knowledge and quiz generation.")}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                        {(selectedPhaseDetail?.knowledges ?? []).length} {labels.knowledges}
+                      </span>
+                      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        {selectedPhaseDoneKnowledgeCount}/{selectedPhaseKnowledges.length} {t("workspace.shell.phaseCompleted", "Completed")}
+                      </span>
+                    </div>
+
+                    {selectedPhaseKnowledges.length === 0 ? (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                        {t("workspace.roadmap.canvas.noKnowledgeInPhase", "This phase does not have knowledge items yet.")}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedPhaseKnowledges.map((knowledge, knowledgeIndex) => {
+                          const knowledgeStatus = getStatus(knowledge?.status);
+                          const isKnowledgeDone = DONE.has(knowledgeStatus);
+                          const isKnowledgeLocked = !isKnowledgeDone
+                            && selectedPhaseFirstIncompleteKnowledgeIndex >= 0
+                            && knowledgeIndex > selectedPhaseFirstIncompleteKnowledgeIndex;
+                          const isKnowledgeCurrent = !isKnowledgeDone && !isKnowledgeLocked;
+                          const knowledgeBadgeClassName = isKnowledgeDone
+                            ? "bg-emerald-100 text-emerald-800"
+                            : isKnowledgeCurrent
+                              ? "bg-sky-100 text-sky-800"
+                              : "bg-slate-100 text-slate-700";
+                          const KnowledgeStatusIcon = isKnowledgeLocked ? Lock : CircleDot;
+                          const knowledgeStatusLabel = isKnowledgeDone
+                            ? t("workspace.shell.phaseCompleted", "Completed")
+                            : isKnowledgeCurrent
+                              ? t("workspace.shell.phaseCurrent", "Current")
+                              : t("workspace.shell.phaseLocked", "Locked");
+                          const knowledgeSurfaceClassName = isKnowledgeDone
+                            ? "border-emerald-200 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50"
+                            : isKnowledgeCurrent
+                              ? "border-sky-200 bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50"
+                              : "border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100";
+
+                          return (
+                            <button
+                              type="button"
+                              key={`overview-phase-knowledge-${knowledge?.knowledgeId || knowledgeIndex}`}
+                              onClick={() => handleSelectKnowledgeFromDrawer(selectedPhaseDetail?.phaseId, knowledge?.knowledgeId, isKnowledgeLocked)}
+                              className={`w-full rounded-2xl border p-3 text-left transition-all duration-200 ${knowledgeSurfaceClassName} ${isKnowledgeLocked
+                                ? "cursor-not-allowed opacity-75"
+                                : "active:scale-[0.99] hover:-translate-y-0.5 hover:shadow-md"
+                              }`}
+                              disabled={isKnowledgeLocked}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${isDarkMode ? "text-slate-500" : "text-slate-500"}`}>
+                                    {t("workspace.roadmap.canvas.knowledge", "Knowledge")} {knowledgeIndex + 1}
+                                  </p>
+                                  <p className={`mt-1 text-sm font-semibold text-slate-900 ${fontClass}`}>
+                                    {knowledge?.title || t("workspace.roadmap.knowledgeUntitled", "Untitled knowledge")}
+                                  </p>
+                                </div>
+                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${knowledgeBadgeClassName}`}>
+                                  <KnowledgeStatusIcon className="h-3 w-3" />
+                                  {knowledgeStatusLabel}
+                                </span>
+                              </div>
+
+                              {knowledge?.description ? (
+                                <p className={`mt-2 text-xs leading-relaxed text-slate-600 ${fontClass}`}>
+                                  {knowledge.description}
+                                </p>
+                              ) : null}
+
+                              {/* <div className="mt-3 flex items-center justify-between rounded-xl border border-white/70 bg-white/70 px-2.5 py-2 text-xs text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+                                <span className="font-semibold text-slate-600">
+                                  {t("workspace.roadmap.canvas.openInStage", "Open in stage view")}
+                                </span>
+                                <ChevronRight className="h-4 w-4 text-slate-500" />
+                              </div> */}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </aside>
+            </>
+          ) : null}
 
           <div className="pointer-events-none absolute inset-x-0 bottom-2 sm:bottom-3 z-20 flex justify-center px-2 sm:px-4">
             <div className={`flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-full border px-2 sm:px-2.5 py-1 backdrop-blur-sm ${isDarkMode ? "border-slate-700 bg-slate-900/85" : "border-slate-200/90 bg-white/92"}`}>
@@ -710,7 +897,7 @@ function RoadmapCanvasViewOverview({
 
   return (
     <>
-      <style>{`@keyframes roadmapFadeIn { from { opacity: 0; } to { opacity: 1; } } @keyframes roadmapFadeOut { from { opacity: 1; } to { opacity: 0; } } @keyframes roadmapPopIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } } @keyframes roadmapPopOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.97); } }`}</style>
+      <style>{`@keyframes roadmapFadeIn { from { opacity: 0; } to { opacity: 1; } } @keyframes roadmapFadeOut { from { opacity: 1; } to { opacity: 0; } } @keyframes roadmapPopIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } } @keyframes roadmapPopOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.97); } } @keyframes roadmapSlideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }`}</style>
       {isExpanded ? (
         <div
           className="fixed inset-0 z-[130] bg-slate-950/60 backdrop-blur-[2px] animate-[roadmapFadeIn_180ms_ease-out]"

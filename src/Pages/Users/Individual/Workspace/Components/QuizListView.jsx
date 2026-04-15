@@ -937,6 +937,7 @@ function QuizListView({
     const isCommunityShared = quiz?.communityShared === true;
     const normalizedStatus = String(quiz?.status || "").toUpperCase();
     const isProcessing = normalizedStatus === "PROCESSING";
+    const isInteractionBlocked = isProcessing;
     const ss = STATUS_STYLES[normalizedStatus] || STATUS_STYLES.DRAFT;
     const is = INTENT_STYLES[quiz.quizIntent] || {};
     const myAttempted = quiz?.myAttempted === true;
@@ -1029,8 +1030,13 @@ function QuizListView({
     return (
       <div
         key={resolvedQuizId}
-        onClick={() => onViewQuiz?.(quiz)}
-        className={`overflow-hidden rounded-[26px] border shadow-[0_18px_45px_rgba(15,23,42,0.08)] cursor-pointer ${
+        onClick={() => {
+          if (isInteractionBlocked) return;
+          onViewQuiz?.(quiz);
+        }}
+        className={`overflow-hidden rounded-[26px] border shadow-[0_18px_45px_rgba(15,23,42,0.08)] ${
+          isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
+        } ${
           isCommunityShared
             ? (isDarkMode ? "border-emerald-800/70 bg-slate-900/60" : "border-emerald-200 bg-white")
             : (isDarkMode ? "border-slate-700 bg-slate-900/60" : "border-slate-200 bg-white")
@@ -1452,6 +1458,7 @@ function QuizListView({
               const durationInMinutes = getDurationInMinutes(quiz);
               const normalizedStatus = String(quiz?.status || "").toUpperCase();
               const isProcessing = normalizedStatus === "PROCESSING";
+              const isInteractionBlocked = isProcessing;
               const processingPercent = resolveQuizProcessingPercent(
                 quiz,
                 progressTracking,
@@ -1511,16 +1518,22 @@ function QuizListView({
               return (
                 <article
                   key={resolvedQuizId}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onViewQuiz?.(quiz)}
+                  role={isInteractionBlocked ? undefined : "button"}
+                  tabIndex={isInteractionBlocked ? -1 : 0}
+                  onClick={() => {
+                    if (isInteractionBlocked) return;
+                    onViewQuiz?.(quiz);
+                  }}
                   onKeyDown={(event) => {
+                    if (isInteractionBlocked) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       onViewQuiz?.(quiz);
                     }
                   }}
-                  className={`h-full cursor-pointer rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                  className={`h-full rounded-[24px] border px-5 py-4 transition-all duration-200 ${
+                    isInteractionBlocked ? "pointer-events-none cursor-not-allowed" : "cursor-pointer"
+                  } ${
                     isDarkMode
                       ? "border-slate-800 bg-slate-900/80 shadow-[0_28px_72px_-34px_rgba(2,6,23,0.7)] hover:-translate-y-0.5 hover:border-slate-700 hover:shadow-[0_34px_86px_-34px_rgba(59,130,246,0.28)]"
                       : "border-slate-300/90 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_28px_72px_-34px_rgba(15,23,42,0.3)] hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_36px_90px_-36px_rgba(37,99,235,0.28)]"

@@ -1646,7 +1646,7 @@
       },
       "materialPicker": {
         "title": "Materials for phase generation",
-        "description": "Choose the documents AI should use when drafting roadmap phases for this group.",
+        "description": "Choose the documents AI should use when drafting roadmap phases for this workspace.",
         "selected": "selected",
         "clearAll": "Clear all",
         "selectAll": "Select all",
@@ -1791,7 +1791,8 @@
       "shareSource": "Share source",
       "selectSource": "Select source",
       "unselectSource": "Unselect source",
-      "previewSource": "Preview",
+      "previewSource": "Details",
+      "warningSource": "Warning",
       "renameHint": "Update the source name shown across the workspace.",
       "renamePlaceholder": "New source name",
       "deleteSourceTitle": "Delete source",
