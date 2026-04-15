@@ -1,7 +1,6 @@
 import { Calendar, Clock } from 'lucide-react';
 import {
-  CHALLENGE_MIN_DURATION_HOURS,
-  CHALLENGE_MIN_LEAD_DAYS,
+  CHALLENGE_MIN_DURATION_MINUTES,
   minDateStringPlusDays,
 } from '@/lib/challengeSchedule';
 
@@ -26,12 +25,12 @@ export default function ChallengeScheduleFields({
       : 'border-gray-300 bg-white text-slate-900 focus:border-orange-500'
   }`;
 
-  const minStart = minDateStringPlusDays(CHALLENGE_MIN_LEAD_DAYS);
+  const minStart = minDateStringPlusDays(0);
 
   return (
     <div className="flex flex-col gap-4">
       <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
-        Challenge phải bắt đầu sau ít nhất {CHALLENGE_MIN_LEAD_DAYS} ngày kể từ hiện tại; thời lượng từ lúc bắt đầu đến khi kết thúc ít nhất {CHALLENGE_MIN_DURATION_HOURS} giờ. Chỉ chọn thời gian trong tương lai.
+        Chỉ chọn thời gian trong tương lai. Khoảng từ lúc bắt đầu đến khi kết thúc cần ít nhất {CHALLENGE_MIN_DURATION_MINUTES} phút; đấu cúp sẽ cần window dài hơn theo số vòng.
       </p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -95,12 +94,7 @@ export default function ChallengeScheduleFields({
       )}
       {validationIssues.includes('shortWindow') && (
         <p className="text-xs text-red-500">
-          Khoảng từ bắt đầu đến kết thúc phải ít nhất {CHALLENGE_MIN_DURATION_HOURS} giờ
-        </p>
-      )}
-      {validationIssues.includes('startTooSoon') && (
-        <p className="text-xs text-red-500">
-          Thời điểm bắt đầu phải cách hiện tại ít nhất {CHALLENGE_MIN_LEAD_DAYS} ngày
+          Khoảng từ bắt đầu đến kết thúc phải ít nhất {CHALLENGE_MIN_DURATION_MINUTES} phút
         </p>
       )}
       {(validationIssues.includes('pastStart') || validationIssues.includes('pastEnd')) && (

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   X, ChevronRight, ChevronLeft, Check, Clock, Users,
   FileText, Loader2, Search, Shield,
-  ListChecks,
+  ListChecks, Swords, Trophy,
 } from 'lucide-react';
 import { getQuizzesByScope } from '../../../../api/QuizAPI';
 import { getGroupMembers } from '../../../../api/GroupAPI';
@@ -27,6 +27,8 @@ function getQuizSummaryLine(q) {
 
 /** Challenge chỉ dùng quiz chung — loại quiz giao riêng (SELECTED_MEMBERS / có assignee). */
 function isQuizEligibleForChallengeSource(quiz) {
+  const status = String(quiz?.status || '').toUpperCase();
+  if (status && status !== 'ACTIVE') return false;
   const mode = String(quiz?.groupAudienceMode ?? '').toUpperCase();
   if (mode === 'SELECTED_MEMBERS') return false;
   const assignees = quiz?.assignedUserIds;
@@ -35,10 +37,47 @@ function isQuizEligibleForChallengeSource(quiz) {
 }
 
 const STEPS = [
+  { key: 'mode', labelKey: 'createChallengeWizard.steps.mode', labelFallback: 'Mode' },
   { key: 'quiz', labelKey: 'createChallengeWizard.steps.quiz', labelFallback: 'Select quiz' },
   { key: 'schedule', labelKey: 'createChallengeWizard.steps.schedule', labelFallback: 'Schedule' },
   { key: 'registration', labelKey: 'createChallengeWizard.steps.registration', labelFallback: 'Registration' },
   { key: 'review', labelKey: 'createChallengeWizard.steps.review', labelFallback: 'Review' },
+];
+
+const MATCH_MODE_OPTIONS = [
+  {
+    key: 'FREE_FOR_ALL',
+    label: 'Đua cá nhân',
+    desc: 'Mọi người làm cùng một đề, ranking theo điểm và thời gian.',
+    icon: Swords,
+  },
+  {
+    key: 'TEAM_BATTLE',
+    label: 'Đấu đội',
+    desc: 'Chốt số người mỗi đội hoặc cho hệ thống tự chia đều khi bắt đầu.',
+    icon: Users,
+  },
+  {
+    key: 'SOLO_BRACKET',
+    label: 'Đấu cúp 1v1',
+    desc: 'Chọn bracket 4/8/16/32 slot, số người phải khớp cấu hình.',
+    icon: Trophy,
+  },
+];
+
+const TEAM_COUNT = 2;
+const BRACKET_SIZE_OPTIONS = [4, 8, 16, 32];
+const TEAM_CONFIG_MODES = [
+  {
+    key: 'AUTO_BALANCE',
+    label: 'Enroll trước, tự chia đều',
+    desc: 'Không giới hạn slot. Khi bắt đầu, hệ thống chia người đã đăng ký thành 2 đội cân bằng.',
+  },
+  {
+    key: 'FIXED_TEAM_SIZE',
+    label: 'Chốt số người mỗi đội',
+    desc: 'Giới hạn đăng ký bằng 2 đội nhân với số người mỗi đội.',
+  },
 ];
 
 function StepIndicator({ currentStep, isDarkMode, t }) {
@@ -85,7 +124,14 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  // Step 1: Quiz selection
+  // Step 1: Match mode
+  const [matchMode, setMatchMode] = useState('FREE_FOR_ALL');
+  const [capacityLimit, setCapacityLimit] = useState('');
+  const [teamConfigMode, setTeamConfigMode] = useState('AUTO_BALANCE');
+  const [teamMembersPerTeam, setTeamMembersPerTeam] = useState('4');
+  const [bracketSize, setBracketSize] = useState(8);
+
+  // Step 2: Quiz selection
   const [sourceMode, setSourceMode] = useState('EXISTING_SNAPSHOT');
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [quizSearch, setQuizSearch] = useState('');
@@ -147,6 +193,82 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
     return selectedUserIds.filter((id) => Number(id) !== uid);
   }, [selectedUserIds, currentUserId]);
 
+  const normalizedCapacity = Number(capacityLimit);
+  const hasCapacityLimit = String(capacityLimit).trim() !== '';
+  const hasValidCapacityLimit = !hasCapacityLimit || (
+    Number.isInteger(normalizedCapacity) && normalizedCapacity > 0
+  );
+  const normalizedTeamMembersPerTeam = Number(teamMembersPerTeam);
+  const hasValidTeamMembersPerTeam =
+    Number.isInteger(normalizedTeamMembersPerTeam) && normalizedTeamMembersPerTeam > 0;
+  const fixedTeamCapacity = hasValidTeamMembersPerTeam
+    ? TEAM_COUNT * normalizedTeamMembersPerTeam
+    : null;
+  const selectedBracketSize = Number(bracketSize);
+  const hasValidBracketSize = BRACKET_SIZE_OPTIONS.includes(selectedBracketSize);
+  const inviteParticipantCount = sanitizedSelectedUserIds.length + (leaderParticipates ? 1 : 0);
+
+  const modeConfigIssue = useMemo(() => {
+    if (matchMode === 'FREE_FOR_ALL' && !hasValidCapacityLimit) {
+      return 'Giới hạn người tham gia phải là số nguyên lớn hơn 0 hoặc để trống.';
+    }
+    if (matchMode === 'TEAM_BATTLE' && teamConfigMode === 'FIXED_TEAM_SIZE' && !hasValidTeamMembersPerTeam) {
+      return 'Số người mỗi đội phải là số nguyên lớn hơn 0.';
+    }
+    if (matchMode === 'SOLO_BRACKET' && !hasValidBracketSize) {
+      return 'Chọn bracket hợp lệ trước khi tạo đấu cúp.';
+    }
+    return '';
+  }, [
+    hasValidBracketSize,
+    hasValidCapacityLimit,
+    hasValidTeamMembersPerTeam,
+    matchMode,
+    teamConfigMode,
+  ]);
+
+  const registrationConfigIssue = useMemo(() => {
+    if (registrationMode !== 'INVITE_ONLY') return '';
+    if (matchMode === 'SOLO_BRACKET' && inviteParticipantCount !== selectedBracketSize) {
+      return `Đấu cúp ${selectedBracketSize} slot cần đúng ${selectedBracketSize} người tham gia. Hiện có ${inviteParticipantCount} người đã tính leader nếu tham gia.`;
+    }
+    if (matchMode === 'TEAM_BATTLE' && teamConfigMode === 'FIXED_TEAM_SIZE' && fixedTeamCapacity !== inviteParticipantCount) {
+      return `Đấu đội cố định cần đúng ${fixedTeamCapacity} người (${normalizedTeamMembersPerTeam} người/đội). Hiện có ${inviteParticipantCount} người đã tính leader nếu tham gia.`;
+    }
+    if (matchMode === 'TEAM_BATTLE' && teamConfigMode === 'AUTO_BALANCE' && inviteParticipantCount > 0 && inviteParticipantCount % TEAM_COUNT !== 0) {
+      return `Tự chia đều ${TEAM_COUNT} đội cần số người chẵn. Hiện có ${inviteParticipantCount} người đã tính leader nếu tham gia.`;
+    }
+    return '';
+  }, [
+    fixedTeamCapacity,
+    inviteParticipantCount,
+    matchMode,
+    normalizedTeamMembersPerTeam,
+    registrationMode,
+    selectedBracketSize,
+    teamConfigMode,
+  ]);
+
+  const modeConfigSummary = useMemo(() => {
+    if (matchMode === 'SOLO_BRACKET') {
+      return `Bracket ${selectedBracketSize} slot · tối đa ${selectedBracketSize} người`;
+    }
+    if (matchMode === 'TEAM_BATTLE') {
+      return teamConfigMode === 'FIXED_TEAM_SIZE'
+        ? `${TEAM_COUNT} đội · ${normalizedTeamMembersPerTeam || '-'} người/đội · tối đa ${fixedTeamCapacity || '-'} người`
+        : `${TEAM_COUNT} đội · tự chia đều người đã đăng ký`;
+    }
+    return hasCapacityLimit ? `Tối đa ${normalizedCapacity} người` : 'Không giới hạn người tham gia';
+  }, [
+    fixedTeamCapacity,
+    hasCapacityLimit,
+    matchMode,
+    normalizedCapacity,
+    normalizedTeamMembersPerTeam,
+    selectedBracketSize,
+    teamConfigMode,
+  ]);
+
   const challengeEligibleQuizzes = useMemo(
     () => quizzes.filter((q) => isQuizEligibleForChallengeSource(q)),
     [quizzes],
@@ -178,13 +300,17 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
 
   const canNext = () => {
     switch (step) {
-      case 0: return sourceMode === 'NEW_CHALLENGE_QUIZ' || validSelectedQuizId != null;
-      case 1: {
+      case 0: return Boolean(matchMode) && !modeConfigIssue;
+      case 1: return sourceMode === 'NEW_CHALLENGE_QUIZ' || validSelectedQuizId != null;
+      case 2: {
         if (!title.trim() || !startDate || !startTime || !endDate || !endTime) return false;
         return getScheduleValidationIssues(startDate, startTime, endDate, endTime).length === 0;
       }
-      case 2: return registrationMode === 'PUBLIC_GROUP' || sanitizedSelectedUserIds.length > 0;
-      case 3: return true;
+      case 3: {
+        if (registrationMode === 'INVITE_ONLY' && sanitizedSelectedUserIds.length === 0) return false;
+        return !registrationConfigIssue;
+      }
+      case 4: return true;
       default: return false;
     }
   };
@@ -192,6 +318,12 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
   const handleSubmit = async () => {
     setSubmitting(true);
     setError('');
+    const blockingIssue = modeConfigIssue || registrationConfigIssue;
+    if (blockingIssue) {
+      setError(blockingIssue);
+      setSubmitting(false);
+      return;
+    }
     try {
       await createChallenge(workspaceId, {
         title: title.trim(),
@@ -203,6 +335,16 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
         sourceQuizId: sourceMode === 'EXISTING_SNAPSHOT' ? validSelectedQuizId : null,
         invitedUserIds: registrationMode === 'INVITE_ONLY' ? sanitizedSelectedUserIds : [],
         leaderParticipates,
+        matchMode,
+        teamCount: matchMode === 'TEAM_BATTLE' ? TEAM_COUNT : null,
+        teamSplitStrategy: matchMode === 'TEAM_BATTLE' ? 'RANDOM' : null,
+        capacityLimit: matchMode === 'SOLO_BRACKET'
+          ? selectedBracketSize
+          : matchMode === 'TEAM_BATTLE'
+            ? (teamConfigMode === 'FIXED_TEAM_SIZE' ? fixedTeamCapacity : null)
+            : (hasCapacityLimit ? normalizedCapacity : null),
+        bracketSize: matchMode === 'SOLO_BRACKET' ? selectedBracketSize : null,
+        blitzSource: matchMode === 'SOLO_BRACKET' ? 'QUIZ_SUBSET' : null,
       });
       onCreated();
     } catch (err) {
@@ -218,9 +360,160 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
       : 'border-gray-300 bg-white text-slate-900 placeholder-gray-400 focus:border-orange-500'
   }`;
 
+  const renderModeConfig = () => {
+    if (matchMode === 'TEAM_BATTLE') {
+      return (
+        <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
+          <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            Cấu hình đấu đội
+          </div>
+          <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+            Chọn cách chốt slot trước khi mở đăng ký. Hệ thống luôn chia thành {TEAM_COUNT} đội.
+          </p>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {TEAM_CONFIG_MODES.map((opt) => {
+              const active = teamConfigMode === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setTeamConfigMode(opt.key)}
+                  className={`rounded-xl border p-3 text-left transition-all ${
+                    active
+                      ? (isDarkMode ? 'border-orange-400 bg-orange-500/10 text-orange-100' : 'border-orange-400 bg-white text-orange-700 shadow-sm')
+                      : (isDarkMode ? 'border-slate-700 bg-slate-900/30 text-slate-300 hover:border-slate-600' : 'border-gray-200 bg-white text-slate-700 hover:border-gray-300')
+                  }`}
+                >
+                  <span className="block text-sm font-semibold">{opt.label}</span>
+                  <span className={`mt-1 block text-xs leading-relaxed ${active ? '' : (isDarkMode ? 'text-slate-400' : 'text-gray-500')}`}>
+                    {opt.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {teamConfigMode === 'FIXED_TEAM_SIZE' ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <label className="flex flex-col gap-1">
+                <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Số người mỗi đội</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={teamMembersPerTeam}
+                  onChange={(e) => setTeamMembersPerTeam(e.target.value)}
+                  className={inputCls}
+                />
+              </label>
+              <div className={`rounded-xl border px-4 py-3 text-sm ${isDarkMode ? 'border-slate-700 bg-slate-900/40 text-slate-300' : 'border-gray-200 bg-white text-slate-700'}`}>
+                <span className="block text-xs opacity-70">Số slot đăng ký</span>
+                <span className="mt-1 block font-semibold">
+                  {fixedTeamCapacity || '-'} người
+                </span>
+              </div>
+            </div>
+          ) : null}
+
+          {modeConfigIssue ? (
+            <p className="mt-3 text-xs font-medium text-red-500">{modeConfigIssue}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (matchMode === 'SOLO_BRACKET') {
+      return (
+        <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
+          <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            Cấu hình đấu cúp 1v1
+          </div>
+          <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+            Chọn loại bracket trước. Nếu mời riêng, số người được mời phải đúng bằng số slot.
+          </p>
+          <label className="mt-3 flex flex-col gap-1 md:max-w-xs">
+            <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Kích thước bracket</span>
+            <select
+              value={bracketSize}
+              onChange={(e) => setBracketSize(Number(e.target.value))}
+              className={inputCls}
+            >
+              {BRACKET_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>{size} người</option>
+              ))}
+            </select>
+          </label>
+          <p className={`mt-3 text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+            Khi đăng ký công khai, hệ thống giới hạn tối đa {selectedBracketSize} người.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`rounded-2xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
+        <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+          Cấu hình đua cá nhân
+        </div>
+        <label className="mt-3 flex flex-col gap-1 md:max-w-xs">
+          <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>Giới hạn người tham gia</span>
+          <input
+            type="number"
+            min={1}
+            value={capacityLimit}
+            onChange={(e) => setCapacityLimit(e.target.value)}
+            placeholder="Không giới hạn"
+            className={inputCls}
+          />
+        </label>
+        {modeConfigIssue ? (
+          <p className="mt-3 text-xs font-medium text-red-500">{modeConfigIssue}</p>
+        ) : null}
+      </div>
+    );
+  };
+
   const renderStep = () => {
     switch (step) {
-      case 0: // Quiz Source
+      case 0: // Match mode
+        return (
+          <div className="flex flex-col gap-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              {MATCH_MODE_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const active = matchMode === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setMatchMode(opt.key)}
+                    className={`flex min-h-[150px] flex-col gap-3 rounded-xl border p-4 text-left transition-all ${
+                      active
+                        ? (isDarkMode ? 'border-teal-400 bg-teal-500/10' : 'border-teal-500 bg-teal-50')
+                        : (isDarkMode ? 'border-slate-700 bg-slate-800/60 hover:border-slate-600' : 'border-gray-200 bg-white hover:border-gray-300')
+                    }`}
+                  >
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                      active
+                        ? (isDarkMode ? 'bg-teal-500 text-white' : 'bg-teal-600 text-white')
+                        : (isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-600')
+                    }`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{opt.label}</div>
+                      <div className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>{opt.desc}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {renderModeConfig()}
+          </div>
+        );
+
+      case 1: // Quiz Source
         return (
           <div className="flex flex-col gap-4">
             {/* Source mode selection */}
@@ -405,7 +698,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
           </div>
         );
 
-      case 1: // Schedule
+      case 2: // Schedule
         { const schedIssues = getScheduleValidationIssues(startDate, startTime, endDate, endTime);
         const bumpEndToWindow = (dStr, tStr) => {
           const next = defaultEndPartsFromStart(dStr, tStr);
@@ -484,7 +777,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
           </div>
         ); }
 
-      case 2: // Registration
+      case 3: // Registration
         return (
           <div className="flex flex-col gap-4">
             <div className="grid gap-3 md:grid-cols-2">
@@ -509,6 +802,22 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   </button>
                 );
               })}
+            </div>
+
+            <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
+              <div className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {MATCH_MODE_OPTIONS.find((m) => m.key === matchMode)?.label || 'Đua cá nhân'}
+              </div>
+              <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                {matchMode === 'TEAM_BATTLE'
+                  ? modeConfigSummary
+                  : matchMode === 'SOLO_BRACKET'
+                    ? modeConfigSummary
+                    : modeConfigSummary}
+              </p>
+              {registrationConfigIssue ? (
+                <p className="mt-3 text-xs font-medium text-red-500">{registrationConfigIssue}</p>
+              ) : null}
             </div>
 
             {registrationMode === 'INVITE_ONLY' && (
@@ -581,7 +890,7 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
           </div>
         );
 
-      case 3: // Review
+      case 4: // Review
         return (
           <div className="grid gap-3 xl:grid-cols-2">
             <div className={`rounded-xl border p-4 xl:col-span-2 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
@@ -608,6 +917,18 @@ export default function CreateChallengeWizard({ workspaceId, isDarkMode, onClose
                   <dd className="text-right">{formatDateTime(combineToBackendPayload(endDate, endTime), i18n.language)}</dd>
                 </div>
               </dl>
+            </div>
+
+            <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
+              <h4 className={`mb-2 text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                Chế độ
+              </h4>
+              <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-gray-600'}`}>
+                {MATCH_MODE_OPTIONS.find((m) => m.key === matchMode)?.label || 'Đua cá nhân'}
+              </p>
+              <p className={`mt-2 text-xs ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                {modeConfigSummary}
+              </p>
             </div>
 
             <div className={`rounded-xl border p-4 ${isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-gray-200 bg-gray-50'}`}>
