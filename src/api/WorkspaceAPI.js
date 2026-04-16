@@ -1,6 +1,15 @@
 import api from './api';
 import i18n from '@/i18n';
 
+const buildUrl = (path, params = {}) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    search.set(key, String(value));
+  });
+  const query = search.toString();
+  return query ? `${path}?${query}` : path;
+};
 
 const QUESTION_TYPE_SINGLE_CHOICE_ID = 1;
 const MOCK_TEST_DIFFICULTY = 'MEDIUM';
@@ -339,6 +348,39 @@ export const getWorkspaceQuizRecommendations = async (workspaceId) => {
 
 export const getWorkspacePersonalization = async (workspaceId) => {
   const response = await api.get(`/workspace/${workspaceId}/personalization`);
+  return response;
+};
+
+export const getWorkspaceLearningSnapshotMeLatest = async (workspaceId, { period = 'DAILY' } = {}) => {
+  const response = await api.get(buildUrl(`/workspace/${workspaceId}/learning-snapshots/me/latest`, {
+    period,
+  }));
+  return response;
+};
+
+export const getWorkspaceLearningSnapshotsMe = async (
+  workspaceId,
+  { period = 'DAILY', from, to, page = 0, size = 20 } = {},
+) => {
+  const response = await api.get(buildUrl(`/workspace/${workspaceId}/learning-snapshots/me`, {
+    period,
+    from,
+    to,
+    page,
+    size,
+  }));
+  return response;
+};
+
+export const getWorkspaceLearningSnapshotMeTrend = async (
+  workspaceId,
+  { period = 'DAILY', from, to } = {},
+) => {
+  const response = await api.get(buildUrl(`/workspace/${workspaceId}/learning-snapshots/me/trend`, {
+    period,
+    from,
+    to,
+  }));
   return response;
 };
 

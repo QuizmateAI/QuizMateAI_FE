@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/Components/ui/button';
 import ListSpinner from '@/Components/ui/ListSpinner';
@@ -77,7 +77,12 @@ import {
   reviewGroupMaterial as reviewGroupMaterialAPI,
   uploadGroupPendingMaterial,
 } from '@/api/MaterialAPI';
-import { getGroupWorkspaceProfile, getWorkspaceCurrentPlan, normalizeGroupWorkspaceProfile } from '@/api/WorkspaceAPI';
+import {
+  getGroupWorkspaceProfile,
+  getWorkspaceCurrentPlan,
+  getWorkspaceLearningSnapshotMeLatest,
+  normalizeGroupWorkspaceProfile,
+} from '@/api/WorkspaceAPI';
 import { getQuizzesByScope, deleteQuiz } from '@/api/QuizAPI';
 import { unwrapApiData } from '@/Utils/apiResponse';
 import { getErrorMessage } from '@/Utils/getErrorMessage';
@@ -97,6 +102,7 @@ import { generateRoadmap, generateRoadmapGroupPreLearning } from '@/api/AIAPI';
 import { extractRoadmapConfigValues, hasMeaningfulRoadmapConfig } from '@/Components/workspace/roadmapConfigUtils';
 
 const GROUP_WELCOME_STORAGE_PREFIX = 'group-invite-welcome';
+const LEARNING_SNAPSHOT_PERIOD = 'DAILY';
 const GROUP_UPLOAD_ACCEPTED_EXTENSIONS = new Set([
   '.pdf',
   '.doc',
@@ -122,6 +128,115 @@ function normalizeMaterialStatus(status) {
   if (normalized === 'WARNED') return 'WARN';
   if (normalized === 'REJECTED') return 'REJECT';
   return normalized;
+}
+
+function resolveMemberUserId(member = {}) {
+  return member.userId
+    ?? member.userID
+    ?? member.memberUserId
+    ?? member.user?.userId
+    ?? member.user?.userID
+    ?? null;
+}
+
+function resolveWorkspaceMemberId(member = {}) {
+  return member.groupMemberId
+    ?? member.workspaceMemberId
+    ?? member.memberId
+    ?? member.id
+    ?? null;
+}
+
+function hasMemberIdentity(value) {
+  return Boolean(resolveMemberUserId(value) != null || resolveWorkspaceMemberId(value) != null);
+}
+
+function extractRealtimeMemberPayload(event = {}) {
+  const candidates = [
+    event?.member,
+    event?.workspaceMember,
+    event?.groupMember,
+    event?.payload?.member,
+    event?.payload?.workspaceMember,
+    event?.data?.member,
+    event?.data?.workspaceMember,
+    event?.data?.groupMember,
+    event?.user,
+  ];
+
+  const nested = candidates.find((candidate) => candidate && typeof candidate === 'object' && hasMemberIdentity(candidate));
+  if (nested) return nested;
+
+  const eventLooksLikeMemberPatch = (
+    hasMemberIdentity(event)
+    && (
+      event.onlineStatus != null
+      || event.presenceStatus != null
+      || event.activityStatus != null
+      || event.memberStatus != null
+      || event.status != null
+      || event.lastActiveAt != null
+      || event.lastActivityAt != null
+      || event.lastSeenAt != null
+      || event.lastLoginAt != null
+      || event.role != null
+      || event.canUpload != null
+    )
+  );
+
+  return eventLooksLikeMemberPatch ? event : null;
+}
+
+function mergeRealtimeMember(currentMembers, incomingMember) {
+  if (!incomingMember || typeof incomingMember !== 'object') return currentMembers;
+
+  const incomingUserId = resolveMemberUserId(incomingMember);
+  const incomingMemberId = resolveWorkspaceMemberId(incomingMember);
+  let matched = false;
+
+  const nextMembers = currentMembers.map((member) => {
+    const sameUser = incomingUserId != null && String(resolveMemberUserId(member)) === String(incomingUserId);
+    const sameMember = incomingMemberId != null && String(resolveWorkspaceMemberId(member)) === String(incomingMemberId);
+    if (!sameUser && !sameMember) return member;
+
+    matched = true;
+    return {
+      ...member,
+      ...incomingMember,
+      userId: member.userId ?? incomingUserId,
+      groupMemberId: member.groupMemberId ?? incomingMember.groupMemberId,
+    };
+  });
+
+  if (matched) return nextMembers;
+
+  const hasEnoughMemberShape = incomingMember.fullName
+    || incomingMember.username
+    || incomingMember.email
+    || incomingMember.role;
+  return hasEnoughMemberShape ? [incomingMember, ...nextMembers] : nextMembers;
+}
+
+function removeRealtimeMember(currentMembers, event = {}) {
+  const removedUserId = event.removedUserId
+    ?? event.userId
+    ?? event.userID
+    ?? event.memberUserId
+    ?? event?.member?.userId
+    ?? null;
+  const removedMemberId = event.groupMemberId
+    ?? event.workspaceMemberId
+    ?? event.memberId
+    ?? event?.member?.groupMemberId
+    ?? null;
+
+  if (removedUserId == null && removedMemberId == null) return currentMembers;
+
+  return currentMembers.filter((member) => {
+    const sameUser = removedUserId != null && String(resolveMemberUserId(member)) === String(removedUserId);
+    const sameMember = removedMemberId != null && String(resolveWorkspaceMemberId(member)) === String(removedMemberId);
+    return !sameUser && !sameMember;
+  });
 }
 
 function isProcessingMaterialStatus(status) {
@@ -509,6 +624,18 @@ function formatDateTime(value, lang = 'vi') {
   }).format(date);
 }
 
+function formatLearningScore(value) {
+  if (value == null || Number.isNaN(Number(value))) return '—';
+  return Math.round(Number(value) * 10) / 10;
+}
+
+function formatLearningPassRate(snapshot) {
+  const attempts = Number(snapshot?.totalQuizAttempts ?? 0);
+  const passed = Number(snapshot?.totalQuizPassed ?? 0);
+  if (attempts <= 0) return '—';
+  return `${Math.round((passed / attempts) * 1000) / 10}%`;
+}
+
 function formatRelativeTime(value, lang = 'vi') {
   const t = i18nInstance.t.bind(i18nInstance);
   const lng = lang === 'en' ? 'en' : 'vi';
@@ -883,6 +1010,9 @@ function GroupWorkspacePage() {
     revokeUpload,
     updateMemberRole,
     inviteMember: inviteMemberHook,
+    fetchPendingInvitations,
+    cancelInvitation,
+    resendInvitation,
     fetchGroupLogs,
     removeMember,
   } = useGroup();
@@ -1095,6 +1225,22 @@ function GroupWorkspacePage() {
     [location.pathname, location.search],
   );
   const canManageGroup = Boolean(resolvedWorkspaceId && workspaceId !== 'new');
+  const personalLearningSnapshotQuery = useQuery({
+    queryKey: ['workspace-learning-snapshot-me-latest', resolvedWorkspaceId, LEARNING_SNAPSHOT_PERIOD],
+    queryFn: async () => {
+      const response = await getWorkspaceLearningSnapshotMeLatest(resolvedWorkspaceId, {
+        period: LEARNING_SNAPSHOT_PERIOD,
+      });
+      return unwrapApiData(response);
+    },
+    enabled: Boolean(
+      resolvedWorkspaceId
+      && !isCreating
+      && !isLeader
+      && planEntitlements.hasWorkspaceAnalytics
+    ),
+  });
+  const personalLearningSnapshot = personalLearningSnapshotQuery.data;
   const groupSidebarDisabledMap = useMemo(() => ({
     members: isMember,
     wallet: !isLeader || !canManageGroup,
@@ -1414,16 +1560,21 @@ function GroupWorkspacePage() {
   }, [workspaceId, isCreating, hasCheckedInitialSources, fetchSources]);
 
   // Fetch members
-  const loadMembers = useCallback(async () => {
+  const loadMembers = useCallback(async (options = {}) => {
     if (!workspaceId || isCreating) return;
-    setMembersLoading(true);
+    const silent = Boolean(options?.silent);
+    if (!silent) {
+      setMembersLoading(true);
+    }
     try {
       const data = await fetchMembers(workspaceId);
       setMembers(data);
     } catch (err) {
       console.error('Error loading members:', err);
     } finally {
-      setMembersLoading(false);
+      if (!silent) {
+        setMembersLoading(false);
+      }
     }
   }, [workspaceId, isCreating, fetchMembers]);
 
@@ -1995,9 +2146,20 @@ function GroupWorkspacePage() {
   const handleGroupRealtime = useCallback((event = null) => {
     if (isCreating || !resolvedWorkspaceId || !workspaceId || workspaceId === 'new') return;
 
+    const eventType = String(event?.type || event?.eventType || event?.action || '').toUpperCase();
+    const realtimeMember = extractRealtimeMemberPayload(event);
+    const memberPatchOnlyTypes = new Set([
+      'MEMBER_STATUS_UPDATED',
+      'MEMBER_PRESENCE_UPDATED',
+      'MEMBER_LAST_ACTIVE_UPDATED',
+      'PRESENCE_UPDATED',
+      'USER_PRESENCE_UPDATED',
+      'USER_ACTIVITY_UPDATED',
+    ]);
+
     // Immediate kick detection — redirect before any debounce
     if (
-      event?.type === 'MEMBER_REMOVED' &&
+      eventType === 'MEMBER_REMOVED' &&
       currentUser?.userID != null &&
       String(event?.removedUserId) === String(currentUser.userID)
     ) {
@@ -2010,26 +2172,41 @@ function GroupWorkspacePage() {
       return;
     }
 
+    if (eventType === 'MEMBER_REMOVED') {
+      setMembers((current) => removeRealtimeMember(current, event));
+    } else if (realtimeMember) {
+      setMembers((current) => mergeRealtimeMember(current, realtimeMember));
+    }
+
     if (groupRealtimeRefreshTimerRef.current) {
       globalThis.clearTimeout(groupRealtimeRefreshTimerRef.current);
     }
 
-    const delayMs = event?.type === 'SOCKET_RESTORED' ? 0 : 250;
+    const delayMs = eventType === 'SOCKET_RESTORED' ? 0 : 250;
     groupRealtimeRefreshTimerRef.current = globalThis.setTimeout(() => {
       groupRealtimeRefreshTimerRef.current = null;
+      const canSkipMemberReload = Boolean(realtimeMember) && memberPatchOnlyTypes.has(eventType);
 
       void fetchGroups();
       void fetchWorkspaceDetail(resolvedWorkspaceId).catch((error) => {
         console.error('Failed to refresh realtime group workspace detail:', error);
       });
       void loadGroupProfile();
-      void loadMembers();
+      if (!canSkipMemberReload) {
+        void loadMembers({ silent: true });
+      }
       void loadGroupLogs();
       void queryClient.invalidateQueries({ queryKey: ['group-pending-invitations', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-activity-logs', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-dashboard-summary', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-dashboard-member-cards', resolvedWorkspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['group-member-dashboard-detail', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-learning-snapshot-summary', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-learning-snapshot-latest', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-learning-snapshot-ranking', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-member-learning-snapshot-latest', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['group-member-learning-snapshot-trend', resolvedWorkspaceId] });
+      void queryClient.invalidateQueries({ queryKey: ['workspace-learning-snapshot-me-latest', resolvedWorkspaceId] });
     }, delayMs);
   }, [
     currentUser,
@@ -2069,6 +2246,17 @@ function GroupWorkspacePage() {
     onGroupUpdate: handleGroupRealtime,
     onChallengeUpdate: handleChallengeRealtime,
   });
+
+  useEffect(() => {
+    if (isCreating || !workspaceId || workspaceId === 'new' || activeSection !== 'members') return undefined;
+
+    const intervalMs = wsConnected ? 60000 : 30000;
+    const timerId = globalThis.setInterval(() => {
+      void loadMembers({ silent: true });
+    }, intervalMs);
+
+    return () => globalThis.clearInterval(timerId);
+  }, [activeSection, isCreating, loadMembers, workspaceId, wsConnected]);
 
   const { refreshActiveTaskSnapshot } = useActiveTaskFallback({
     enabled: !isCreating && !!workspaceId && workspaceId !== 'new',
@@ -3416,6 +3604,52 @@ function GroupWorkspacePage() {
           })}
         </div>
 
+        {planEntitlements.hasWorkspaceAnalytics ? (
+          <section className={`rounded-[28px] border p-5 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                  {t('groupWorkspacePage.personalDashboard.learningSnapshotEyebrow', 'Learning snapshot')}
+                </p>
+                <h3 className={`mt-2 text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {t('groupWorkspacePage.personalDashboard.learningSnapshotTitle', 'Your latest daily snapshot')}
+                </h3>
+              </div>
+              {personalLearningSnapshot?.snapshotDate ? (
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isDarkMode ? 'bg-cyan-400/10 text-cyan-100' : 'bg-cyan-50 text-cyan-700'}`}>
+                  {formatDateTime(personalLearningSnapshot.snapshotDate, currentLang)}
+                </span>
+              ) : null}
+            </div>
+
+            {personalLearningSnapshotQuery.isLoading ? (
+              <div className={`mt-4 rounded-[20px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                {t('groupWorkspacePage.personalDashboard.learningSnapshotLoading', 'Loading your learning snapshot...')}
+              </div>
+            ) : personalLearningSnapshot ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                {[
+                  { key: 'attempts', label: t('groupWorkspacePage.personalDashboard.snapshotAttempts', 'Attempts'), value: personalLearningSnapshot.totalQuizAttempts ?? 0 },
+                  { key: 'passed', label: t('groupWorkspacePage.personalDashboard.snapshotPassed', 'Passed'), value: personalLearningSnapshot.totalQuizPassed ?? 0 },
+                  { key: 'score', label: t('groupWorkspacePage.personalDashboard.snapshotScore', 'Avg score'), value: formatLearningScore(personalLearningSnapshot.averageScore) },
+                  { key: 'passRate', label: t('groupWorkspacePage.personalDashboard.snapshotPassRate', 'Pass rate'), value: formatLearningPassRate(personalLearningSnapshot) },
+                  { key: 'minutes', label: t('groupWorkspacePage.personalDashboard.snapshotMinutes', 'Minutes'), value: personalLearningSnapshot.totalMinutesSpent ?? 0 },
+                  { key: 'class', label: t('groupWorkspacePage.personalDashboard.snapshotClass', 'AI class'), value: personalLearningSnapshot.aiClassification || '—' },
+                ].map((metric) => (
+                  <div key={metric.key} className={`rounded-[18px] border px-3 py-3 ${isDarkMode ? 'border-white/10 bg-black/20' : 'border-slate-200 bg-slate-50/70'}`}>
+                    <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>{metric.label}</p>
+                    <p className={`mt-2 text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{metric.value}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={`mt-4 rounded-[20px] border px-4 py-5 text-sm ${isDarkMode ? 'border-white/10 bg-white/[0.03] text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                {t('groupWorkspacePage.personalDashboard.learningSnapshotEmpty', 'No learning snapshot has been generated for you yet.')}
+              </div>
+            )}
+          </section>
+        ) : null}
+
         <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
           <section className={`rounded-[28px] border p-5 ${isDarkMode ? 'border-white/10 bg-white/[0.04]' : 'border-slate-200 bg-white'}`}>
             <div className="flex items-center gap-2">
@@ -3744,6 +3978,10 @@ function GroupWorkspacePage() {
             onUpdateRole={updateMemberRole}
             onRemoveMember={removeMember}
             onOpenInvite={() => setInviteDialogOpen(true)}
+            onInvite={handleInvite}
+            fetchPendingInvitations={fetchPendingInvitations}
+            onCancelInvitation={cancelInvitation}
+            onResendInvitation={resendInvitation}
             />
           </React.Suspense>
         );

@@ -1580,15 +1580,70 @@
     },
     "members": {
       "all": "All",
-      "searchPlaceholder": "Search by name or email...",
+      "searchPlaceholder": "Search members...",
       "name": "Name",
       "email": "Email",
       "role": "Role",
       "upload": "Upload",
       "yes": "Yes",
       "no": "No",
-      "reload": "Reload",
-      "showing": "Showing {{count}} of {{total}} members"
+      "reload": "Refresh",
+      "refresh": "Refresh",
+      "headingTitle": "Team Directory",
+      "headingDescription": "Manage access rights and monitor workspace activity across {{count}} members.",
+      "totalUsers": "Total users",
+      "pendingInvitations": "Pending invitations",
+      "onlineNow": "{{count}} Online",
+      "onlineMetric": "Online now",
+      "uploadReadyMetric": "Upload ready",
+      "memberFallback": "Member",
+      "columns": {
+        "member": "Member",
+        "role": "Role",
+        "status": "Status",
+        "lastActive": "Last active",
+        "actions": "Action"
+      },
+      "status": {
+        "active": "Active",
+        "away": "Away",
+        "offline": "Offline",
+        "unknown": "Unknown"
+      },
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{{count}} mins ago",
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} days ago",
+        "noActivity": "No activity"
+      },
+      "showing": "Showing 1 to {{count}} of {{total}} members",
+      "invitations": {
+        "manage": "Manage",
+        "title": "Manage invitations",
+        "description": "Track invited emails and resend invitations when needed.",
+        "refresh": "Refresh invitations",
+        "loadFailed": "Could not load invitations.",
+        "resendFailed": "Could not resend the invitation.",
+        "cancelFailed": "Could not cancel the invitation.",
+        "empty": "No invitations waiting right now.",
+        "emailFallback": "Unknown email",
+        "invitedBy": "Invited by",
+        "sentAt": "Sent",
+        "expiresAt": "Expires",
+        "noDate": "Not updated",
+        "copy": "Copy",
+        "resend": "Resend",
+        "resending": "Sending...",
+        "cancel": "Cancel",
+        "cancelling": "Cancelling...",
+        "status": {
+          "pending": "Pending",
+          "accepted": "Accepted",
+          "expired": "Expired",
+          "cancelled": "Cancelled"
+        }
+      }
     },
     "settings": {
       "groupInfo": "Group Information",

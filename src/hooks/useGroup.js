@@ -10,14 +10,35 @@ import {
   updateMemberRole as updateMemberRoleAPI,
   inviteMember as inviteMemberAPI,
   getPendingInvitations as getPendingInvitationsAPI,
+  cancelInvitation as cancelInvitationAPI,
+  resendInvitation as resendInvitationAPI,
   getGroupLogs as getGroupLogsAPI,
   removeMember as removeMemberAPI,
   getGroupDashboardSummary as getGroupDashboardSummaryAPI,
   getMemberDashboardCards as getMemberDashboardCardsAPI,
   getMemberDashboardDetail as getMemberDashboardDetailAPI,
+  getGroupLearningSnapshotsLatest as getGroupLearningSnapshotsLatestAPI,
+  getGroupLearningSnapshotsSummary as getGroupLearningSnapshotsSummaryAPI,
+  getGroupLearningSnapshotsRanking as getGroupLearningSnapshotsRankingAPI,
+  generateGroupLearningSnapshots as generateGroupLearningSnapshotsAPI,
+  getGroupMemberLearningSnapshotLatest as getGroupMemberLearningSnapshotLatestAPI,
+  getGroupMemberLearningSnapshots as getGroupMemberLearningSnapshotsAPI,
+  getGroupMemberLearningSnapshotTrend as getGroupMemberLearningSnapshotTrendAPI,
+  compareGroupMemberLearningSnapshots as compareGroupMemberLearningSnapshotsAPI,
+  generateGroupMemberLearningSnapshot as generateGroupMemberLearningSnapshotAPI,
 } from '@/api/GroupAPI';
 
 const GROUPS_QUERY_KEY = ['groups'];
+
+const emptyPage = (size = 20) => ({
+  content: [],
+  totalElements: 0,
+  totalPages: 0,
+  page: 0,
+  size,
+  first: true,
+  last: true,
+});
 
 // Hook quản lý toàn bộ logic group: CRUD + members + invitations
 export function useGroup(options = {}) {
@@ -97,6 +118,16 @@ export function useGroup(options = {}) {
     return unwrapApiData(res) || { count: 0, invitations: [] };
   }, []);
 
+  const cancelInvitation = useCallback(async (workspaceId, invitationId) => {
+    const res = await cancelInvitationAPI(workspaceId, invitationId);
+    return unwrapApiData(res);
+  }, []);
+
+  const resendInvitation = useCallback(async (workspaceId, invitationId, email) => {
+    const res = await resendInvitationAPI(workspaceId, invitationId, email);
+    return unwrapApiData(res);
+  }, []);
+
   // Lấy activity log của nhóm
   const fetchGroupLogs = useCallback(async (workspaceId) => {
     const res = await getGroupLogsAPI(workspaceId);
@@ -131,6 +162,63 @@ export function useGroup(options = {}) {
     return unwrapApiData(res);
   }, []);
 
+  const fetchGroupLearningSnapshotsSummary = useCallback(async (workspaceId, options = {}) => {
+    const res = await getGroupLearningSnapshotsSummaryAPI(workspaceId, options);
+    return unwrapApiData(res);
+  }, []);
+
+  const fetchGroupLearningSnapshotsLatest = useCallback(async (workspaceId, options = {}) => {
+    const res = await getGroupLearningSnapshotsLatestAPI(workspaceId, options);
+    const pageData = unwrapApiData(res);
+    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+      return pageData;
+    }
+    return emptyPage(options?.size);
+  }, []);
+
+  const fetchGroupLearningSnapshotsRanking = useCallback(async (workspaceId, options = {}) => {
+    const res = await getGroupLearningSnapshotsRankingAPI(workspaceId, options);
+    const pageData = unwrapApiData(res);
+    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+      return pageData;
+    }
+    return emptyPage(options?.size);
+  }, []);
+
+  const generateGroupLearningSnapshots = useCallback(async (workspaceId, data = {}) => {
+    const res = await generateGroupLearningSnapshotsAPI(workspaceId, data);
+    return unwrapApiData(res);
+  }, []);
+
+  const fetchGroupMemberLearningSnapshotLatest = useCallback(async (workspaceId, workspaceMemberId, options = {}) => {
+    const res = await getGroupMemberLearningSnapshotLatestAPI(workspaceId, workspaceMemberId, options);
+    return unwrapApiData(res);
+  }, []);
+
+  const fetchGroupMemberLearningSnapshots = useCallback(async (workspaceId, workspaceMemberId, options = {}) => {
+    const res = await getGroupMemberLearningSnapshotsAPI(workspaceId, workspaceMemberId, options);
+    const pageData = unwrapApiData(res);
+    if (pageData && typeof pageData === 'object' && Array.isArray(pageData.content)) {
+      return pageData;
+    }
+    return emptyPage(options?.size);
+  }, []);
+
+  const fetchGroupMemberLearningSnapshotTrend = useCallback(async (workspaceId, workspaceMemberId, options = {}) => {
+    const res = await getGroupMemberLearningSnapshotTrendAPI(workspaceId, workspaceMemberId, options);
+    return unwrapApiData(res);
+  }, []);
+
+  const compareGroupMemberLearningSnapshots = useCallback(async (workspaceId, workspaceMemberId, fromSnapshotId, toSnapshotId) => {
+    const res = await compareGroupMemberLearningSnapshotsAPI(workspaceId, workspaceMemberId, fromSnapshotId, toSnapshotId);
+    return unwrapApiData(res);
+  }, []);
+
+  const generateGroupMemberLearningSnapshot = useCallback(async (workspaceId, workspaceMemberId, data = {}) => {
+    const res = await generateGroupMemberLearningSnapshotAPI(workspaceId, workspaceMemberId, data);
+    return unwrapApiData(res);
+  }, []);
+
   // Xóa thành viên khỏi nhóm
   const removeMember = useCallback(async (workspaceId, memberId) => {
     await removeMemberAPI(workspaceId, memberId);
@@ -148,10 +236,21 @@ export function useGroup(options = {}) {
     updateMemberRole,
     inviteMember,
     fetchPendingInvitations,
+    cancelInvitation,
+    resendInvitation,
     fetchGroupLogs,
     fetchGroupDashboardSummary,
     fetchMemberDashboardCards,
     fetchMemberDashboardDetail,
+    fetchGroupLearningSnapshotsSummary,
+    fetchGroupLearningSnapshotsLatest,
+    fetchGroupLearningSnapshotsRanking,
+    generateGroupLearningSnapshots,
+    fetchGroupMemberLearningSnapshotLatest,
+    fetchGroupMemberLearningSnapshots,
+    fetchGroupMemberLearningSnapshotTrend,
+    compareGroupMemberLearningSnapshots,
+    generateGroupMemberLearningSnapshot,
     removeMember,
   };
 }

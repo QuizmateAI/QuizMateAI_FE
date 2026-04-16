@@ -1611,15 +1611,70 @@
     },
     "members": {
       "all": "Tất cả",
-      "searchPlaceholder": "Tìm theo tên hoặc email...",
-      "name": "Tên",
+      "searchPlaceholder": "Tìm thành viên...",
+      "name": "Name",
       "email": "Email",
-      "role": "Vai trò",
+      "role": "Role",
       "upload": "Upload",
-      "yes": "Có",
-      "no": "Không",
-      "reload": "Tải lại",
-      "showing": "Hiển thị {{count}} / {{total}} thành viên"
+      "yes": "Yes",
+      "no": "No",
+      "reload": "Refresh",
+      "refresh": "Refresh",
+      "headingTitle": "Danh sách thành viên",
+      "headingDescription": "Quản lý quyền truy cập và theo dõi hoạt động workspace của {{count}} thành viên.",
+      "totalUsers": "Tổng thành viên",
+      "pendingInvitations": "Lời mời chờ xử lý",
+      "onlineNow": "{{count}} đang online",
+      "onlineMetric": "Đang online",
+      "uploadReadyMetric": "Được upload",
+      "memberFallback": "Thành viên",
+      "columns": {
+        "member": "Thành viên",
+        "role": "Vai trò",
+        "status": "Trạng thái",
+        "lastActive": "Hoạt động",
+        "actions": "Thao tác"
+      },
+      "status": {
+        "active": "Đang hoạt động",
+        "away": "Tạm rời",
+        "offline": "Offline",
+        "unknown": "Chưa rõ"
+      },
+      "time": {
+        "justNow": "Vừa xong",
+        "minutesAgo": "{{count}} phút trước",
+        "hoursAgo": "{{count}} giờ trước",
+        "daysAgo": "{{count}} ngày trước",
+        "noActivity": "Chưa có hoạt động"
+      },
+      "showing": "Hiển thị 1 đến {{count}} trong {{total}} thành viên",
+      "invitations": {
+        "manage": "Quản lý",
+        "title": "Quản lý lời mời",
+        "description": "Theo dõi các email đã được mời và gửi lại lời mời khi cần.",
+        "refresh": "Làm mới lời mời",
+        "loadFailed": "Không tải được danh sách lời mời.",
+        "resendFailed": "Không gửi lại được lời mời.",
+        "cancelFailed": "Không hủy được lời mời.",
+        "empty": "Chưa có lời mời nào đang chờ.",
+        "emailFallback": "Không rõ email",
+        "invitedBy": "Người mời",
+        "sentAt": "Đã gửi",
+        "expiresAt": "Hết hạn",
+        "noDate": "Chưa cập nhật",
+        "copy": "Copy",
+        "resend": "Gửi lại",
+        "resending": "Đang gửi...",
+        "cancel": "Hủy",
+        "cancelling": "Đang hủy...",
+        "status": {
+          "pending": "Đang chờ",
+          "accepted": "Đã nhận",
+          "expired": "Hết hạn",
+          "cancelled": "Đã huỷ"
+        }
+      }
     },
     "settings": {
       "groupInfo": "Thông tin nhóm",
