@@ -13,6 +13,7 @@ function ToastTrigger() {
       <button onClick={() => showError('Mapped error message')}>Show Error</button>
       <button onClick={() => showWarning('Warning signal')}>Show Warning</button>
       <button onClick={() => showInfo('Information signal')}>Show Info</button>
+      <button onClick={() => showWarning('Custom warning signal', { duration: 7000 })}>Show Custom Duration</button>
       <button
         onClick={() => {
           showSuccess('S1');
@@ -97,6 +98,29 @@ describe('Toast behavior execution', () => {
       vi.advanceTimersByTime(2200);
     });
 
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('TC_TOAST_04B: respects per-toast custom duration override', () => {
+    render(
+      <ToastProvider>
+        <ToastTrigger />
+      </ToastProvider>
+    );
+
+    act(() => {
+      screen.getByRole('button', { name: 'Show Custom Duration' }).click();
+    });
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(6900);
+    });
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
@@ -240,9 +264,41 @@ describe('Toast behavior execution', () => {
     });
 
     const toast = screen.getByRole('alert');
-    expect(toast.className).toContain('w-[min(92vw,420px)]');
+    expect(toast.className).toContain('w-[min(92vw,520px)]');
     expect(toast.className).toContain('min-w-0');
 
     flushToastTimers();
+  });
+
+  it('TC_TOAST_11: renders structured action as underlined CTA and executes it', () => {
+    const onAction = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <ToastNotification
+        id={99}
+        type="warning"
+        message={{
+          title: 'Upgrade required',
+          description: 'Advanced quiz types are locked in the current plan.',
+          action: {
+            label: 'Upgrade now',
+            onClick: onAction,
+          },
+        }}
+        duration={10000}
+        onClose={onClose}
+      />
+    );
+
+    const actionButton = screen.getByRole('button', { name: 'Upgrade now' });
+    expect(actionButton.className).toContain('underline');
+
+    act(() => {
+      actionButton.click();
+    });
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

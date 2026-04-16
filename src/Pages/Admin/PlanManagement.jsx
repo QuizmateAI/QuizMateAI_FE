@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Search, RefreshCw, Plus, Edit2, Trash2, Eye,
   Package, Check, X, Zap, Coins,
   ToggleLeft, ToggleRight, Users, User,
   FileText, FileSpreadsheet, FileType, Image, Film, Headphones,
-  Presentation, Bot, BarChart3, AlignLeft, Map,
+  Presentation, Bot, BarChart3, AlignLeft, Map, Lock,
   BookOpenText, SlidersHorizontal,
 } from 'lucide-react';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -34,6 +36,7 @@ import {
   buildAiModelAssignmentMap,
   buildAiModelAssignmentsPayload,
 } from '@/lib/aiModelCatalog';
+import { getWebSocketUrl } from '@/lib/websocketUrl';
 
 // Form mặc định cho PlanCatalog (khớp với PlanCatalogCreateRequest)
 const EMPTY_FORM = {
@@ -89,6 +92,20 @@ const ENTITLEMENT_TOGGLES = {
 };
 
 const extractApiData = (response) => response?.data?.data ?? response?.data ?? response ?? null;
+const PLAN_LOCKED_EDIT_FALLBACK = 'Goi level 1/2 da co nguoi mua hoac dang mua nen khong the cap nhat.';
+
+function getAuthToken() {
+  try {
+    return (
+      localStorage.getItem('accessToken')
+      || localStorage.getItem('token')
+      || localStorage.getItem('jwt_token')
+    );
+  } catch (error) {
+    console.error('Failed to get auth token for admin plan websocket:', error);
+    return null;
+  }
+}
 
 function formatCurrency(value, t, locale) {
   const amount = Number(value) || 0;
@@ -142,6 +159,12 @@ function PlanManagement() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailPlan, setDetailPlan] = useState(null);
   const [creditUnitPrice, setCreditUnitPrice] = useState(200);
+  const editingPlanRef = useRef(null);
+  const stompClientRef = useRef(null);
+
+  useEffect(() => {
+    editingPlanRef.current = editingPlan;
+  }, [editingPlan]);
 
   useEffect(() => {
     const fetchCatalogs = async () => {
@@ -177,6 +200,86 @@ function PlanManagement() {
     finally { setIsLoading(false); }
   };
 
+  const getPlanEditLockedReason = useCallback(
+    (plan) => plan?.editLockedReason || t(
+      'subscription.planEditLocked',
+      'Goi level 1/2 da co nguoi mua hoac dang mua nen khong the cap nhat.'
+    ),
+    [t]
+  );
+
+  const applyPlanEditabilityPayload = useCallback((payload) => {
+    const planCatalogId = Number(payload?.planCatalogId);
+    if (!Number.isInteger(planCatalogId) || planCatalogId <= 0) {
+      return;
+    }
+
+    const editable = payload?.editable !== false;
+    const editLockedReason = payload?.editLockedReason || PLAN_LOCKED_EDIT_FALLBACK;
+
+    setPlans((prev) => prev.map((plan) => (
+      plan.planCatalogId === planCatalogId
+        ? { ...plan, editable, editLockedReason }
+        : plan
+    )));
+    setDetailPlan((prev) => (
+      prev?.planCatalogId === planCatalogId
+        ? { ...prev, editable, editLockedReason }
+        : prev
+    ));
+
+    const currentEditingPlan = editingPlanRef.current;
+    if (currentEditingPlan?.planCatalogId === planCatalogId) {
+      if (currentEditingPlan.editable !== false && !editable) {
+        showError(editLockedReason);
+      }
+      setEditingPlan((prev) => (
+        prev?.planCatalogId === planCatalogId
+          ? { ...prev, editable, editLockedReason }
+          : prev
+      ));
+    }
+  }, [showError]);
+
+  useEffect(() => {
+    const websocketUrl = getWebSocketUrl();
+    if (!websocketUrl) {
+      return undefined;
+    }
+
+    const token = getAuthToken();
+    const stompClient = new Client({
+      webSocketFactory: () => new SockJS(websocketUrl),
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      onConnect: () => {
+        stompClient.subscribe('/topic/admin/plan-catalog/editability', (message) => {
+          try {
+            const payload = JSON.parse(message.body || '{}');
+            applyPlanEditabilityPayload(payload);
+          } catch (error) {
+            console.error('Failed to parse plan editability websocket payload:', error);
+          }
+        });
+      },
+      onDisconnect: () => {},
+      onStompError: () => {},
+      onWebSocketClose: () => {},
+      onWebSocketError: () => {},
+    });
+
+    stompClientRef.current = stompClient;
+    stompClient.activate();
+
+    return () => {
+      if (stompClientRef.current) {
+        stompClientRef.current.deactivate();
+      }
+    };
+  }, [applyPlanEditabilityPayload]);
+
   const openCreateForm = () => {
     setEditingPlan(null);
     setFormData({ ...EMPTY_FORM });
@@ -205,9 +308,20 @@ function PlanManagement() {
   };
 
   const openEditForm = async (plan) => {
+    if (plan?.editable === false) {
+      showError(getPlanEditLockedReason(plan));
+      return;
+    }
     try {
       const response = await getPlanById(plan.planCatalogId);
       const detail = extractApiData(response);
+      if (detail?.editable === false) {
+        showError(getPlanEditLockedReason(detail));
+        setPlans((prev) => prev.map((item) => (
+          item.planCatalogId === detail.planCatalogId ? { ...item, ...detail } : item
+        )));
+        return;
+      }
       populatePlanForm(detail || plan);
     } catch (err) {
       showError(getFriendlyError(err, 'subscription.fetchError'));
@@ -217,6 +331,11 @@ function PlanManagement() {
 
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
+    const isDefaultPlanLevel = String(formData.planLevel ?? '0') === '0';
+    if (editingPlan?.editable === false) {
+      showError(getPlanEditLockedReason(editingPlan));
+      return;
+    }
     if (!formData.code.trim()) { showError(t('subscription.nameRequired')); return; }
     if (!formData.displayName.trim()) { showError(t('subscription.nameRequired')); return; }
     if (formData.planScope !== 'WORKSPACE') {
@@ -238,21 +357,23 @@ function PlanManagement() {
         return;
       }
 
-      const planIncludedCredits = Number(entitlement.planIncludedCredits);
-      if (!Number.isFinite(planIncludedCredits) || planIncludedCredits <= 0) {
-        showError(t(
-          'subscription.wizard.validation.planIncludedCreditsRequired',
-          'Included credits is required and must be greater than 0.'
-        ));
-        return;
+      if (!isDefaultPlanLevel) {
+        const planIncludedCredits = Number(entitlement.planIncludedCredits);
+        if (!Number.isFinite(planIncludedCredits) || planIncludedCredits <= 0) {
+          showError(t(
+            'subscription.wizard.validation.planIncludedCreditsRequired',
+            'Included credits is required and must be greater than 0.'
+          ));
+          return;
+        }
       }
     }
     setIsSubmitting(true);
     try {
-      const credits = parseInt(entitlement.planIncludedCredits, 10) || 0;
+      const credits = isDefaultPlanLevel ? 0 : (parseInt(entitlement.planIncludedCredits, 10) || 0);
       const minPrice = credits * creditUnitPrice;
       const inputPrice = parseInt(formData.price, 10) || 0;
-      const resolvedPrice = Math.max(inputPrice, minPrice);
+      const resolvedPrice = isDefaultPlanLevel ? 0 : Math.max(inputPrice, minPrice);
 
       const payload = {
         displayName: formData.displayName.trim(),
@@ -262,7 +383,8 @@ function PlanManagement() {
           ...entitlement,
           maxIndividualWorkspace: entitlement.maxIndividualWorkspace != null ? parseInt(entitlement.maxIndividualWorkspace, 10) || 0 : 0,
           maxMaterialInWorkspace: entitlement.maxMaterialInWorkspace != null ? parseInt(entitlement.maxMaterialInWorkspace, 10) || 0 : 0,
-          planIncludedCredits: entitlement.planIncludedCredits != null ? parseInt(entitlement.planIncludedCredits, 10) || 0 : 0,
+          canBuyCredit: isDefaultPlanLevel ? false : entitlement.canBuyCredit,
+          planIncludedCredits: credits,
         },
         aiModelAssignments: buildAiModelAssignmentsPayload(aiModelAssignments),
         aiFunctionAssignments: buildFunctionAssignmentsPayload(functionAssignmentMap),
@@ -493,11 +615,11 @@ function PlanManagement() {
                         { icon: Eye, color: dk ? 'text-blue-400 hover:bg-blue-500/10' : 'text-blue-500 hover:bg-blue-50', action: () => { setDetailPlan(plan); setIsDetailOpen(true); }, tip: t('subscription.viewDetail') },
                         ...(canWrite ? [
                           { icon: isActive(plan.status) ? ToggleRight : ToggleLeft, color: isActive(plan.status) ? (dk ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-500 hover:bg-emerald-50') : (dk ? 'text-slate-500 hover:bg-white/5' : 'text-slate-400 hover:bg-slate-50'), action: () => handleToggleStatus(plan), tip: t('subscription.actions.toggleStatus', 'Toggle status') },
-                          { icon: Edit2, color: dk ? 'text-amber-400 hover:bg-amber-500/10' : 'text-amber-500 hover:bg-amber-50', action: () => openEditForm(plan), tip: t('subscription.edit') },
+                          { icon: plan.editable === false ? Lock : Edit2, color: plan.editable === false ? (dk ? 'text-slate-500 hover:bg-white/5' : 'text-slate-400 hover:bg-slate-50') : (dk ? 'text-amber-400 hover:bg-amber-500/10' : 'text-amber-500 hover:bg-amber-50'), action: () => openEditForm(plan), tip: plan.editable === false ? getPlanEditLockedReason(plan) : t('subscription.edit') },
                           { icon: Trash2, color: dk ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-500 hover:bg-rose-50', action: () => confirmDelete(plan), tip: t('subscription.delete') },
                         ] : []),
                       ].map(({ icon: Icon, color, action, tip }) => (
-                        <button key={tip} onClick={action} title={tip} className={`h-8 w-8 rounded-lg inline-flex items-center justify-center transition-colors cursor-pointer ${color}`}>
+                        <button key={`${plan.planCatalogId}-${tip}`} onClick={action} title={tip} className={`h-8 w-8 rounded-lg inline-flex items-center justify-center transition-colors cursor-pointer ${color}`}>
                           <Icon className="w-4 h-4" />
                         </button>
                       ))}
@@ -534,6 +656,8 @@ function PlanManagement() {
           plans={plans}
           creditUnitPrice={creditUnitPrice}
           highestActiveUserPlanEntitlement={highestActiveUserPlanEntitlement}
+          editLocked={editingPlan?.editable === false}
+          editLockedReason={editingPlan?.editable === false ? getPlanEditLockedReason(editingPlan) : ''}
           onSubmit={handleSubmit}
           onValidationError={showError}
         />

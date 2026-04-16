@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Crown } from "lucide-react";
-import PlanUpgradeModal from "./PlanUpgradeModal";
+import { useToast } from "@/context/ToastContext";
+import { buildPlansPath } from "@/lib/routePaths";
 
 /**
  * Wrapper that locks UI elements behind a plan entitlement.
@@ -25,49 +27,84 @@ export default function PlanGatedFeature({
   featureName,
   isDarkMode = false,
   className = "",
+  toastTitle = "",
+  toastDescription = "",
+  toastMeta = "",
+  upgradePath = buildPlansPath(),
+  upgradeState,
+  upgradeLabel = "Upgrade",
+  badgeLabel = "VIP",
 }) {
-  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const { showWarning } = useToast();
+  const resolvedToastTitle = String(toastTitle || "").trim() || "Feature locked";
+  const resolvedToastDescription = String(toastDescription || "").trim()
+    || (featureName
+      ? `The feature "${featureName}" is not included in the current plan.`
+      : "The current plan does not include this feature.");
+  const resolvedToastMeta = String(toastMeta || "").trim();
+  const resolvedUpgradeLabel = String(upgradeLabel || "").trim() || "Upgrade";
+  const resolvedBadgeLabel = String(badgeLabel || "").trim() || "VIP";
+
+  const handleLockedClick = useCallback(() => {
+    showWarning(
+      {
+        title: resolvedToastTitle,
+        description: resolvedToastDescription,
+        meta: resolvedToastMeta,
+        action: {
+          label: resolvedUpgradeLabel,
+          onClick: () => navigate(upgradePath, upgradeState ? { state: upgradeState } : undefined),
+        },
+      },
+      { duration: 7000 },
+    );
+  }, [
+    navigate,
+    resolvedToastDescription,
+    resolvedToastMeta,
+    resolvedToastTitle,
+    resolvedUpgradeLabel,
+    showWarning,
+    upgradePath,
+    upgradeState,
+  ]);
 
   if (allowed) {
     return <>{children}</>;
   }
 
   return (
-    <>
-      <div
-        className={`relative inline-block ${className}`}
-        onClick={() => setModalOpen(true)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setModalOpen(true);
-        }}
-        aria-label={featureName ? `Tính năng "${featureName}" yêu cầu nâng cấp gói` : "Tính năng yêu cầu nâng cấp gói"}
-      >
-        {/* Locked children — dimmed, not interactive */}
-        <div className="opacity-50 pointer-events-none select-none">
-          {children}
-        </div>
-
-        {/* Crown badge — top-right corner */}
-        <div className="absolute -top-1.5 -right-1.5 z-10 pointer-events-none">
-          <div className={`w-5 h-5 rounded-full flex items-center justify-center shadow-md ${
-            isDarkMode ? "bg-amber-500" : "bg-amber-400"
-          }`}>
-            <Crown className="w-3 h-3 text-white" />
-          </div>
-        </div>
-
-        {/* Invisible full-coverage click target */}
-        <div className="absolute inset-0 z-20 cursor-pointer" />
+    <div
+      className={`relative inline-flex max-w-full ${className}`}
+      onClick={handleLockedClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleLockedClick();
+        }
+      }}
+      aria-label={featureName ? `Feature "${featureName}" requires a higher plan` : "Feature requires a higher plan"}
+    >
+      <div className="pointer-events-none select-none opacity-50 grayscale-[0.35]">
+        {children}
       </div>
 
-      <PlanUpgradeModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        featureName={featureName}
-        isDarkMode={isDarkMode}
-      />
-    </>
+      <div className="absolute -right-2 -top-2 z-10 pointer-events-none">
+        <div
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] shadow-sm ${
+            isDarkMode
+              ? "border-amber-300/50 bg-amber-400 text-slate-950"
+              : "border-amber-300 bg-amber-300 text-slate-950"
+          }`}
+        >
+          <Crown className="h-3 w-3" />
+          <span>{resolvedBadgeLabel}</span>
+        </div>
+      </div>
+      <div className="absolute inset-0 z-20 cursor-pointer rounded-[inherit]" />
+    </div>
   );
 }

@@ -20,6 +20,7 @@ import { usePlanEntitlements } from "@/hooks/usePlanEntitlements";
 import PlanUpgradeModal from "@/Components/plan/PlanUpgradeModal";
 
 import {
+  deleteIndividualWorkspace,
   getIndividualWorkspaceProfile,
   getWorkspacePersonalization,
   normalizeIndividualWorkspaceProfile,
@@ -132,6 +133,38 @@ function getProfilePurpose(profileData) {
   return profileData?.workspacePurpose || profileData?.learningMode || "";
 }
 
+function hasTextValue(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function hasSavedBasicProfileStep(profileData) {
+  if (!profileData || typeof profileData !== "object") {
+    return false;
+  }
+
+  const explicitStep = Number(profileData?.currentStep);
+  const setupStatus = String(profileData?.workspaceSetupStatus || "").toUpperCase();
+  const profileStatus = String(profileData?.profileStatus || "").toUpperCase();
+
+  if (explicitStep >= 2) return true;
+  if (["PROFILE_DONE", "DONE"].includes(setupStatus)) return true;
+  if (["BASIC_DONE", "DONE"].includes(profileStatus)) return true;
+
+  return Boolean(
+    getProfilePurpose(profileData) &&
+      hasTextValue(
+        profileData?.knowledgeInput ??
+          profileData?.knowledge ??
+          profileData?.customKnowledge,
+      ) &&
+      hasTextValue(
+        profileData?.inferredDomain ??
+          profileData?.domain ??
+          profileData?.customDomain,
+      ),
+  );
+}
+
 function normalizeRoadmapEnabledValue(value) {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value === 1;
@@ -166,6 +199,9 @@ function WorkspacePage() {
     useState(undefined);
   const openProfileConfig = location.state?.openProfileConfig || false;
   const continueProfileSetup = Boolean(location.state?.continueProfileSetup);
+  const shouldReturnHomeOnIncompleteProfile = Boolean(
+    location.state?.returnToHomeOnIncompleteProfile,
+  );
   const [profileConfigOpen, setProfileConfigOpen] = useState(false);
   const [profileOverviewOpen, setProfileOverviewOpen] = useState(false);
   const [profileUpdateGuardOpen, setProfileUpdateGuardOpen] = useState(false);
@@ -846,6 +882,38 @@ function WorkspacePage() {
     navigate(buildWorkspacePath(workspaceId), { replace: true });
   }, [navigate, workspaceId]);
 
+  const navigateToWorkspaceHomeTab = useCallback(() => {
+    navigate("/home?tab=workspace", { replace: true });
+  }, [navigate]);
+
+  const handleIncompleteProfileExit = useCallback(async () => {
+    const shouldDeleteDraftWorkspace =
+      shouldReturnHomeOnIncompleteProfile &&
+      !hasSavedBasicProfileStep(workspaceProfile);
+
+    closeProfileDialogs();
+    setIsProfileUpdateMode(false);
+
+    if (shouldDeleteDraftWorkspace && workspaceId) {
+      try {
+        await deleteIndividualWorkspace(workspaceId);
+      } catch (error) {
+        console.error("Failed to delete incomplete draft workspace:", error);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      }
+    }
+
+    navigateToWorkspaceHomeTab();
+  }, [
+    closeProfileDialogs,
+    navigateToWorkspaceHomeTab,
+    queryClient,
+    shouldReturnHomeOnIncompleteProfile,
+    workspaceId,
+    workspaceProfile,
+  ]);
+
   const {
     mockTestGenerationState,
 
@@ -1270,12 +1338,21 @@ function WorkspacePage() {
       } else {
         setIsProfileUpdateMode(false);
 
+        if (
+          shouldReturnHomeOnIncompleteProfile &&
+          !hasSavedBasicProfileStep(workspaceProfile)
+        ) {
+          void handleIncompleteProfileExit();
+          return;
+        }
+
         if (location.state?.openProfileConfig) {
           navigateToWorkspaceRoot();
         }
       }
     },
     [
+      handleIncompleteProfileExit,
       location.state,
 
       loadWorkspaceProfileData,
@@ -1284,7 +1361,9 @@ function WorkspacePage() {
 
       readStoredMockTestGeneration,
 
+      shouldReturnHomeOnIncompleteProfile,
       syncMockTestGenerationFromProfile,
+      workspaceProfile,
     ],
   );
 

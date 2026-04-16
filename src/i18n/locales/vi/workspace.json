@@ -74,13 +74,13 @@
       "steps": {
         "1": {
           "title": "Bước 1",
-          "stepperLabel": "Mục đích học tập",
-          "description": "Chọn mục đích sử dụng không gian Học tập và để Quizmate AI đánh giá kiến thức."
+          "stepperLabel": "Xác định kiến thức",
+          "description": "Chọn cách học và để Quizmate AI xác định phạm vi kiến thức phù hợp."
         },
         "2": {
           "title": "Bước 2",
           "stepperLabel": "Hồ sơ cá nhân",
-          "description": "Bổ sung trình độ cá nhân, mục tiêu và thông tin mock test nếu cần."
+          "description": "Bổ sung trình độ hiện tại, mục tiêu và các điểm cần tập trung để AI gợi ý sát hơn."
         },
         "3": {
           "title": "Bước 3",
@@ -95,11 +95,11 @@
       "purpose": {
         "STUDY_NEW": {
           "title": "Học mới",
-          "description": "Bắt đầu một chủ đề mới và xây dựng lộ trình nền tảng từ đầu."
+          "description": "Bắt đầu một chủ đề mới, xây dựng nền tảng và vẫn có thể tạo mock test khi cần."
         },
         "REVIEW": {
           "title": "Ôn tập",
-          "description": "Củng cố phần đã học, chọn điểm cần cải thiện và có thể thêm lộ trình nếu cần."
+          "description": "Củng cố phần đã học, tập trung vào chỗ cần cải thiện và vẫn có thể tạo mock test khi cần."
         },
         "MOCK_TEST": {
           "title": "Mock test",
@@ -121,8 +121,8 @@
         }
       },
       "stepOne": {
-        "title": "Chọn đúng mục đích sử dụng không gian học tập",
-        "description": "Mục đích bạn chọn sẽ quyết định các trường thông tin, gợi ý và cấu hình ở những bước sau.",
+        "title": "Xác định kiến thức và cách học",
+        "description": "Chọn cách học chính, nhập kiến thức bạn muốn học và để Quizmate AI gợi ý domain phù hợp.",
         "knowledgeTitle": "Nhập kiến thức bạn muốn học",
         "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. Quizmate AI sẽ suy ra lĩnh vực phù hợp với bạn.",
         "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
@@ -240,7 +240,7 @@
         "saveError": "Không thể lưu tiến trình thiết lập Không gian Học tập."
       },
       "fields": {
-        "workspacePurpose": "Mục đích sử dụng",
+        "workspacePurpose": "Cách học chính",
         "knowledgeInput": "Kiến thức bạn muốn học",
         "knowledgeDescription": "Mô tả chi tiết knowledge",
         "primaryDomain": "Lĩnh vực chính",
@@ -912,6 +912,7 @@
         "questionTypeRequired": "Vui lòng thêm ít nhất một loại câu hỏi.",
         "questionTypeTotalByCount": "Tổng loại câu hỏi phải bằng tổng số câu ({{target}}).",
         "questionTypeTotalByPercent": "Tổng loại câu hỏi phải bằng 100%.",
+        "advancedQuestionTypePlanRequired": "Loại câu hỏi nâng cao cần gói hỗ trợ cấu hình quiz nâng cao.",
         "bloomRequired": "Vui lòng thêm ít nhất một bloom skill.",
         "bloomTotalByCount": "Tổng bloom skill phải bằng tổng số câu ({{target}}).",
         "bloomTotalByPercent": "Tổng bloom skill phải bằng 100%.",
@@ -1010,6 +1011,19 @@
         "bloomUnitByCount": "Đơn vị bloom skill theo số lượng",
         "advancedConfig": "Loại quiz nâng cao",
         "questionTypes": "Loại câu hỏi",
+        "planGate": {
+          "title": "Cần nâng cấp gói",
+          "descriptionWithCurrentPlan": "Loại câu hỏi \"{{featureName}}\" không có trong gói {{currentPlanName}}. Cần gói {{requiredPlanName}} hoặc cao hơn để sử dụng.",
+          "descriptionWithRequiredPlan": "Loại câu hỏi \"{{featureName}}\" cần gói {{requiredPlanName}} hoặc cao hơn để sử dụng.",
+          "descriptionFallback": "Loại câu hỏi \"{{featureName}}\" cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng.",
+          "meta": "Bạn vẫn có thể tạo quiz với các loại câu hỏi đang có trong gói hiện tại.",
+          "inlineHintWithPlan": "Các loại bên dưới cần gói {{planName}}.",
+          "inlineHintFallback": "Các loại bên dưới cần gói hỗ trợ cấu hình quiz nâng cao.",
+          "lockedGroupTitleWithPlan": "Cần gói {{planName}}",
+          "lockedGroupTitleFallback": "Cần gói nâng cao",
+          "upgradeAction": "Nâng cấp",
+          "vipBadge": "VIP"
+        },
         "questionTypeLabels": {
           "SINGLE_CHOICE": "Một đáp án",
           "MULTIPLE_CHOICE": "Nhiều đáp án",

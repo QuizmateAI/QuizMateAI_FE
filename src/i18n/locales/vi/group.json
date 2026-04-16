@@ -187,7 +187,7 @@
         "domainTitle": "Chốt domain",
         "domainDescription": "Chọn baseline phù hợp để AI hiểu đúng workspace của nhóm.",
         "modeTitle": "Chọn cách học",
-        "modeDescription": "Xác định nhóm ưu tiên học mới, ôn tập hay thi thử."
+        "modeDescription": "Xác định nhóm ưu tiên học mới hay ôn tập."
       },
       "knowledgeLabel": "Knowledge chung của nhóm",
       "knowledgePlaceholder": "Ví dụ: Cả nhóm đang học JLPT N3 để củng cố ngữ pháp, từ vựng và luyện đọc theo từng chủ điểm.",
@@ -197,7 +197,7 @@
       "learningMode": "Chế độ học tập",
       "modePrompt": "Chọn nhịp học chính của nhóm",
       "studyNewDescription": "Phù hợp khi nhóm đang bắt đầu kiến thức mới và muốn có roadmap rõ ràng.",
-      "reviewDescription": "Phù hợp khi nhóm đã học qua và muốn ôn tập có hệ thống.",
+      "reviewDescription": "Phù hợp khi nhóm đã học qua, muốn ôn tập có hệ thống và vẫn có thể tạo mock test khi cần.",
       "mockTestDescription": "Phù hợp khi nhóm cần luyện đề và theo dõi tiến độ bằng bài test.",
       "examName": "Tên kỳ thi",
       "examNamePlaceholder": "Ví dụ: JLPT N3 tháng 12",
