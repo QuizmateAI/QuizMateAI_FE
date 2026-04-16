@@ -74,13 +74,13 @@
       "steps": {
         "1": {
           "title": "Bước 1",
-          "stepperLabel": "Mục đích học tập",
-          "description": "Chọn mục đích sử dụng không gian Học tập và để Quizmate AI đánh giá kiến thức."
+          "stepperLabel": "Xác định kiến thức",
+          "description": "Chọn cách học và để Quizmate AI xác định phạm vi kiến thức phù hợp."
         },
         "2": {
           "title": "Bước 2",
           "stepperLabel": "Hồ sơ cá nhân",
-          "description": "Bổ sung trình độ cá nhân, mục tiêu và thông tin mock test nếu cần."
+          "description": "Bổ sung trình độ hiện tại, mục tiêu và các điểm cần tập trung để AI gợi ý sát hơn."
         },
         "3": {
           "title": "Bước 3",
@@ -95,11 +95,11 @@
       "purpose": {
         "STUDY_NEW": {
           "title": "Học mới",
-          "description": "Bắt đầu một chủ đề mới và xây dựng lộ trình nền tảng từ đầu."
+          "description": "Bắt đầu một chủ đề mới, xây dựng nền tảng và vẫn có thể tạo mock test khi cần."
         },
         "REVIEW": {
           "title": "Ôn tập",
-          "description": "Củng cố phần đã học, chọn điểm cần cải thiện và có thể thêm lộ trình nếu cần."
+          "description": "Củng cố phần đã học, tập trung vào chỗ cần cải thiện và vẫn có thể tạo mock test khi cần."
         },
         "MOCK_TEST": {
           "title": "Mock test",
@@ -121,8 +121,8 @@
         }
       },
       "stepOne": {
-        "title": "Chọn đúng mục đích sử dụng không gian học tập",
-        "description": "Mục đích bạn chọn sẽ quyết định các trường thông tin, gợi ý và cấu hình ở những bước sau.",
+        "title": "Xác định kiến thức và cách học",
+        "description": "Chọn cách học chính, nhập kiến thức bạn muốn học và để Quizmate AI gợi ý domain phù hợp.",
         "knowledgeTitle": "Nhập kiến thức bạn muốn học",
         "knowledgeDescription": "Nhập kiến thức mà bạn muốn học. Quizmate AI sẽ suy ra lĩnh vực phù hợp với bạn.",
         "knowledgeSuggestionTitle": "Lĩnh vực Quizmate AI đề xuất",
@@ -240,7 +240,7 @@
         "saveError": "Không thể lưu tiến trình thiết lập Không gian Học tập."
       },
       "fields": {
-        "workspacePurpose": "Mục đích sử dụng",
+        "workspacePurpose": "Cách học chính",
         "knowledgeInput": "Kiến thức bạn muốn học",
         "knowledgeDescription": "Mô tả chi tiết knowledge",
         "primaryDomain": "Lĩnh vực chính",
@@ -573,6 +573,7 @@
       "refreshSuggested": "Làm mới",
       "getSuggestedResources": "Lấy gợi ý",
       "importSuggested": "Tải tài liệu gợi ý",
+      "aiSuggestedBadge": "AI gợi ý",
       "suggestMissingWorkspace": "Không tìm thấy workspace. Không thể tải gợi ý.",
       "suggestLoadError": "Không thể tải tài liệu gợi ý.",
       "suggestGenerateSuccess": "Đã tạo danh sách gợi ý thành công.",
@@ -911,6 +912,7 @@
         "questionTypeRequired": "Vui lòng thêm ít nhất một loại câu hỏi.",
         "questionTypeTotalByCount": "Tổng loại câu hỏi phải bằng tổng số câu ({{target}}).",
         "questionTypeTotalByPercent": "Tổng loại câu hỏi phải bằng 100%.",
+        "advancedQuestionTypePlanRequired": "Loại câu hỏi nâng cao cần gói hỗ trợ cấu hình quiz nâng cao.",
         "bloomRequired": "Vui lòng thêm ít nhất một bloom skill.",
         "bloomTotalByCount": "Tổng bloom skill phải bằng tổng số câu ({{target}}).",
         "bloomTotalByPercent": "Tổng bloom skill phải bằng 100%.",
@@ -1009,6 +1011,19 @@
         "bloomUnitByCount": "Đơn vị bloom skill theo số lượng",
         "advancedConfig": "Loại quiz nâng cao",
         "questionTypes": "Loại câu hỏi",
+        "planGate": {
+          "title": "Cần nâng cấp gói",
+          "descriptionWithCurrentPlan": "Loại câu hỏi \"{{featureName}}\" không có trong gói {{currentPlanName}}. Cần gói {{requiredPlanName}} hoặc cao hơn để sử dụng.",
+          "descriptionWithRequiredPlan": "Loại câu hỏi \"{{featureName}}\" cần gói {{requiredPlanName}} hoặc cao hơn để sử dụng.",
+          "descriptionFallback": "Loại câu hỏi \"{{featureName}}\" cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng.",
+          "meta": "Bạn vẫn có thể tạo quiz với các loại câu hỏi đang có trong gói hiện tại.",
+          "inlineHintWithPlan": "Các loại bên dưới cần gói {{planName}}.",
+          "inlineHintFallback": "Các loại bên dưới cần gói hỗ trợ cấu hình quiz nâng cao.",
+          "lockedGroupTitleWithPlan": "Cần gói {{planName}}",
+          "lockedGroupTitleFallback": "Cần gói nâng cao",
+          "upgradeAction": "Nâng cấp",
+          "vipBadge": "VIP"
+        },
         "questionTypeLabels": {
           "SINGLE_CHOICE": "Một đáp án",
           "MULTIPLE_CHOICE": "Nhiều đáp án",
@@ -1138,7 +1153,7 @@
         "quantity": "Số câu"
       },
       "header": {
-        "english": "English",
+        "english": "Tiếng Anh",
         "vietnamese": "Tiếng Việt",
         "fontBeVietnamPro": "Be Vietnam Pro",
         "fontPoppins": "Poppins",
@@ -1146,6 +1161,9 @@
         "fontRobotoSlab": "Roboto Slab",
         "fontMerriweather": "Merriweather",
         "fontTangerine": "Tangerine",
+        "back": "Quay lại",
+        "language": "Đổi ngôn ngữ",
+        "theme": "Đổi giao diện",
         "confirmBackTitle": "Bạn có chắc chắn không?",
         "confirmBackDescription": "Tiến độ chưa lưu có thể bị mất.",
         "cancel": "Hủy",
@@ -1169,8 +1187,19 @@
         "nextQuestion": "Câu tiếp theo",
         "processingAction": "Đang xử lý...",
         "processing": "Đang xử lý bài nộp của bạn...",
+        "headerHint": "Hoàn thành từng câu hỏi và dùng biểu tượng sao để đánh dấu câu muốn xem lại trước khi nộp bài.",
+        "markedCount": "Đã đánh dấu",
+        "answeredProgress": "{{answered}}/{{total}} đã trả lời",
         "confirmSubmitTitle": "Dừng và nộp bài?",
-        "confirmSubmitDescription": "Bài làm của bạn sẽ được nộp ngay lập tức."
+        "confirmSubmitDescription": "Bài làm của bạn sẽ được nộp ngay lập tức.",
+        "confirmSubmitIncompleteTitle": "Bạn còn {{count}} câu chưa trả lời",
+        "confirmSubmitIncompleteDescription": "Những câu này sẽ được nộp dưới dạng chưa trả lời. Bạn vẫn muốn tiếp tục?",
+        "confirmSubmitCompletedTitle": "Sẵn sàng nộp bài?",
+        "confirmSubmitCompletedDescription": "Bạn đã hoàn thành tất cả câu hỏi. Sau khi nộp, bạn sẽ không thể chỉnh sửa câu trả lời.",
+        "unansweredListLabel": "Câu chưa trả lời",
+        "unansweredListMore": "và còn nữa...",
+        "allQuestionsCompleted": "Tất cả câu hỏi đã hoàn thành.",
+        "starting": "Đang bắt đầu"
       },
       "practiceActions": {
         "confirmExitTitle": "Thoát thực hành?",
@@ -1273,6 +1302,7 @@
       },
       "answerLocked": "Hoàn thành bài quiz để xem đáp án và lời giải.",
       "close": "Đóng",
+      "deleteConfirm": "Bạn có chắc muốn xóa quiz này? Hành động này không thể hoàn tác.",
       "confirm": "Xác nhận",
       "continue": "Tiếp tục",
       "distribution": "Phân phối",
@@ -2507,7 +2537,7 @@
       "stepBasic": "1. Cấu hình",
       "stepStructure": "2. Cấu trúc",
       "stepGenerating": "3. Sinh câu hỏi",
-      "scopeNotice": "Mock test chỉ sinh câu hỏi khách quan: một đáp án, nhiều đáp án và đúng/sai. Listening, Writing và Speaking hiện chưa được hỗ trợ, nên AI sẽ bỏ qua các phần đó và chỉ đề xuất Reading, Vocabulary hoặc Grammar cho các đề như IELTS hay TOEIC.",
+      "scopeNotice": "Mock test chỉ sinh câu hỏi trắc nghiệm một đáp án. Listening, Writing và Speaking hiện chưa được hỗ trợ, nên AI sẽ bỏ qua các phần đó và chỉ đề xuất các section dạng văn bản cho các đề như IELTS hay TOEIC.",
       "backToConfig": "Quay lại cấu hình",
       "regenerate": "Sinh lại",
       "requestingSuggestion": "Đang gợi ý...",
@@ -2545,7 +2575,7 @@
       "aiInstructionLabel": "Hướng dẫn AI sinh câu hỏi",
       "aiInstructionPlaceholder": "Ví dụ: Câu hỏi đọc hiểu cho đoạn văn khoảng 150 từ về chủ đề công nghệ. Mỗi câu có 4 đáp án A/B/C/D và chỉ 1 đáp án đúng.",
       "aiInstructionHint": "Mô tả càng rõ chủ đề, kỹ năng và format thì AI càng sinh đúng ý hơn. Tối thiểu {{min}} ký tự.",
-      "questionStructureLabel": "Cấu trúc câu hỏi (độ khó x loại câu x Bloom x số câu)",
+      "questionStructureLabel": "Cấu trúc câu hỏi (độ khó x Bloom x số câu)",
       "totalLabel": "Tổng: {{count}}",
       "columnDifficulty": "Độ khó",
       "columnQuestionType": "Loại câu",
@@ -2555,7 +2585,7 @@
       "addCombination": "Thêm tổ hợp",
       "subSectionCount": "Sub-section ({{count}})",
       "addSubSection": "Thêm sub-section",
-      "totalLeafLabel": "Tổng số câu (leaf): ",
+      "totalLeafLabel": "Tổng số câu: ",
       "addSection": "Thêm section",
       "emptySections": "Chưa có section nào. Bấm \"Thêm section\" hoặc dùng gợi ý AI để bắt đầu.",
       "validation": {
@@ -2600,7 +2630,25 @@
       "historyEmpty": "Chưa có lần làm bài nào.",
       "historyAttempt": "Lần làm",
       "answersLocked": "Làm bài để xem đáp án và giải thích.",
-      "publish": "Xuất bản"
+      "publish": "Xuất bản",
+      "sharedContext": "Ngữ cảnh chung"
+    },
+    "reviewExtensions": {
+      "sectionTitle": "Phân tích theo phần",
+      "bloomTitle": "Phân tích theo kỹ năng Bloom",
+      "unknownSection": "Không rõ phần",
+      "unknownBloom": "Không rõ mức Bloom",
+      "pendingQuestions": "{{count}} câu đang chờ chấm",
+      "failedQuestions": "{{count}} câu chấm lỗi",
+      "cohortTitle": "So với cả lớp",
+      "attemptCount": "{{count}} lượt làm",
+      "classAverage": "Điểm TB lớp",
+      "yourScore": "Của bạn",
+      "rank": "Xếp hạng",
+      "topWrongTitle": "Câu cả lớp sai nhiều",
+      "questionShort": "Câu",
+      "wrongSummary": "{{percent}}% sai ({{wrong}}/{{total}})",
+      "cohortLoadFailed": "Không tải được thống kê lớp"
     }
   }
 }

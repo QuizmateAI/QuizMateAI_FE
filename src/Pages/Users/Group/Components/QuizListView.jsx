@@ -24,7 +24,7 @@ function resolveGroupPhaseReturnPath(pathname, phaseId) {
 }
 
 function QuizListView({
-  contextType = "WORKSPACE",
+  contextType = "GROUP",
   contextId,
   returnToPath = null,
   ...restProps
@@ -45,6 +45,7 @@ function QuizListView({
       {...restProps}
       contextType={contextType}
       contextId={contextId}
+      includeRoadmapLinkedQuizzes={normalizedContextType === "GROUP"}
       returnToPath={resolvedReturnToPath}
     />
   );

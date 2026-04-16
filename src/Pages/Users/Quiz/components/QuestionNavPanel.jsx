@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/Components/ui/button';
 import { Clock3, Loader2, Star } from 'lucide-react';
-import { countSectionQuestions, getSectionChildren, getSectionTitle, hasAnswerValue } from '../utils/quizTransform';
+import { countSectionQuestions, getSectionChildren, getSectionSharedContext, getSectionTitle, hasAnswerValue, isQuestionGroupSection, normalizeVisibleSectionGroups } from '../utils/quizTransform';
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -39,6 +39,13 @@ export default function QuestionNavPanel({
     [flaggedQuestionIds],
   );
   const flaggedCount = flaggedQuestionSet.size;
+  const answeredProgressLabel = typeof t === 'function'
+    ? t('workspace.quiz.examActions.answeredProgress', {
+      answered: answeredCount,
+      total: questions.length,
+      defaultValue: '{{answered}}/{{total}} answered',
+    })
+    : `${answeredCount}/${questions.length} answered`;
   const itemsPerPage = 20;
   const totalPages = disablePagination ? 1 : Math.max(1, Math.ceil(questions.length / itemsPerPage));
   const safeNavPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -46,7 +53,11 @@ export default function QuestionNavPanel({
   const navQuestions = disablePagination
     ? questions
     : questions.slice(navStartIndex, navStartIndex + itemsPerPage);
-  const shouldUseSectionNavigation = disablePagination && Array.isArray(sectionGroups) && sectionGroups.length > 0;
+  const visibleSectionGroups = useMemo(
+    () => normalizeVisibleSectionGroups(sectionGroups),
+    [sectionGroups],
+  );
+  const shouldUseSectionNavigation = disablePagination && visibleSectionGroups.length > 0;
   const submitHandler = onRequestSubmit || onSubmit;
 
   const renderQuestionButton = (question, fallbackIndex = 0) => {
@@ -77,24 +88,33 @@ export default function QuestionNavPanel({
   };
 
   const renderSectionNavigation = (section, sectionIndex, depth = 0, pathLabel = `${sectionIndex + 1}`) => {
-    const childSections = getSectionChildren(section);
+    const childSections = normalizeVisibleSectionGroups(getSectionChildren(section));
+    const isQuestionGroup = isQuestionGroupSection(section);
+    const isSharedContextGroup = isQuestionGroup && Boolean(getSectionSharedContext(section));
     const sectionTitle = getSectionTitle(
       section,
-      `${t?.('workspace.mockTestForms.detail.section', 'Section') || 'Section'} ${pathLabel}`,
+      `${t?.('mockTestForms.detail.section', 'Section') || 'Section'} ${pathLabel}`,
     );
 
     return (
       <div
         key={section.sectionId ?? `section-${pathLabel}`}
-        className={cn('space-y-2', depth > 0 && 'pl-3 border-l border-slate-200 dark:border-slate-700')}
+        className={cn('space-y-2', depth > 0 && !isSharedContextGroup && 'pl-3 border-l border-slate-200 dark:border-slate-700')}
       >
         <div className="flex items-center justify-between gap-2 px-1">
-          <p className="min-w-0 truncate text-sm font-semibold text-slate-700 dark:text-slate-100">
+          <p className={cn(
+            'min-w-0 truncate',
+            isSharedContextGroup
+              ? 'text-xs font-medium text-slate-500 dark:text-slate-400'
+              : 'text-sm font-semibold text-slate-700 dark:text-slate-100',
+          )}>
             {sectionTitle}
           </p>
-          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-300">
-            {countSectionQuestions(section)}
-          </span>
+          {!isSharedContextGroup && (
+            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-900 dark:text-slate-300">
+              {countSectionQuestions(section)}
+            </span>
+          )}
         </div>
 
         {Array.isArray(section?.questions) && section.questions.length > 0 && (
@@ -127,7 +147,7 @@ export default function QuestionNavPanel({
           {formatTime(timeLeft)}
         </div>
         <p className="mt-1 text-center text-sm text-slate-500 dark:text-slate-400">
-          {answeredCount}/{questions.length} answered
+          {answeredProgressLabel}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
@@ -158,7 +178,7 @@ export default function QuestionNavPanel({
 
       {shouldUseSectionNavigation ? (
         <div className="mb-4 max-h-[420px] space-y-4 overflow-y-auto pr-1">
-          {sectionGroups.map((section, sectionIndex) => renderSectionNavigation(section, sectionIndex))}
+          {visibleSectionGroups.map((section, sectionIndex) => renderSectionNavigation(section, sectionIndex))}
         </div>
       ) : (
         <div className="mb-4 grid grid-cols-5 gap-2.5">

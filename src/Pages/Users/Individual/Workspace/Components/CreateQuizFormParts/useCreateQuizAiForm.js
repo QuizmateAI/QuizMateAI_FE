@@ -586,14 +586,17 @@ export const useCreateQuizAiForm = ({
     bloomUnit,
     customDifficulty,
     difficultyDefs,
+    hasAdvanceQuizConfig,
     minimumAiDurationMinutes,
     questionTypeUnit,
+    questionTypeDefinitions: qTypes,
     questionUnit,
     quizTitleMaxLength: QUIZ_TITLE_MAX_LENGTH,
     selectedBloomSkills,
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
+    structureItems: isStructureEditing ? editableStructureItems : structurePreview?.items,
     t,
   }), [
     aiDuration,
@@ -607,14 +610,19 @@ export const useCreateQuizAiForm = ({
     bloomUnit,
     customDifficulty,
     difficultyDefs,
+    editableStructureItems,
+    hasAdvanceQuizConfig,
     minimumAiDurationMinutes,
     questionTypeUnit,
+    qTypes,
     questionUnit,
     selectedBloomSkills,
     selectedDifficultyId,
     selectedMaterialIds,
     selectedQTypes,
+    structurePreview?.items,
     t,
+    isStructureEditing,
   ]);
 
   const canFetchStructurePreview = useMemo(() => {
@@ -1259,6 +1267,14 @@ export const useCreateQuizAiForm = ({
       return;
     }
 
+    if (
+      field === "questionType"
+      && !hasAdvanceQuizConfig
+      && isAdvancedQuizQuestionType(value)
+    ) {
+      return;
+    }
+
     const nextItems = editableStructureItems.map((item, itemIndex) => {
       if (itemIndex !== index) {
         return item;
@@ -1278,7 +1294,7 @@ export const useCreateQuizAiForm = ({
     });
 
     updateStructureFromEditableItems(nextItems);
-  }, [editableStructureItems, updateStructureFromEditableItems]);
+  }, [editableStructureItems, hasAdvanceQuizConfig, updateStructureFromEditableItems]);
 
   const handleAddStructureItem = useCallback(() => {
     const currentTotal = (Array.isArray(editableStructureItems) ? editableStructureItems : [])

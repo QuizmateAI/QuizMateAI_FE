@@ -233,7 +233,7 @@ function MockTestListView({
               <Button
                 type="button"
                 onClick={onCreateMockTest}
-                disabled={allRoadmapsCovered || disableCreate}
+                disabled={disableCreate}
                 className="mt-4 h-10 rounded-full bg-orange-500 px-4 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="mr-2 h-4 w-4" />

@@ -75,13 +75,13 @@
       "steps": {
         "1": {
           "title": "Step 1",
-          "stepperLabel": "Learning intent",
-          "description": "Choose the workspace intent and let AI assess the knowledge area."
+          "stepperLabel": "Knowledge focus",
+          "description": "Choose how you want to learn and let AI identify the right knowledge area."
         },
         "2": {
           "title": "Step 2",
           "stepperLabel": "Current profile",
-          "description": "Add your current level, goals, and mock-test details if needed."
+          "description": "Add your current level, goals, and focus areas so AI can guide the next steps."
         },
         "3": {
           "title": "Step 3",
@@ -96,11 +96,11 @@
       "purpose": {
         "STUDY_NEW": {
           "title": "Study new",
-          "description": "Start a new topic and build a foundational roadmap from scratch."
+          "description": "Start a new topic, build the foundation, and still create mock tests when needed."
         },
         "REVIEW": {
           "title": "Review",
-          "description": "Reinforce what you already studied, choose focus areas, and optionally add a roadmap."
+          "description": "Reinforce what you already studied, focus on gaps, and still create mock tests when needed."
         },
         "MOCK_TEST": {
           "title": "Mock test",
@@ -122,8 +122,8 @@
         }
       },
       "stepOne": {
-        "title": "Choose the right workspace intent",
-        "description": "Your choice here changes the fields, recommendations, and configuration flow in the next steps.",
+        "title": "Define the knowledge focus and learning style",
+        "description": "Choose the main learning mode, enter what you want to learn, and let Quizmate AI suggest the right domain.",
         "knowledgeTitle": "Your knowledge topic and AI-inferred domain",
         "knowledgeDescription": "Describe what you want to learn. AI will infer the most relevant domain and suggest a field for you to confirm.",
         "knowledgeSuggestionTitle": "Suggested domains",
@@ -242,7 +242,7 @@
         "saveError": "Unable to save the workspace setup progress."
       },
       "fields": {
-        "workspacePurpose": "Workspace purpose",
+        "workspacePurpose": "Primary learning mode",
         "knowledgeInput": "Knowledge you want to learn",
         "knowledgeDescription": "Detailed knowledge description",
         "primaryDomain": "Primary domain",
@@ -578,6 +578,7 @@
       "refreshSuggested": "Refresh",
       "getSuggestedResources": "Get suggested materials",
       "importSuggested": "Upload suggested files",
+      "aiSuggestedBadge": "AI Suggested",
       "suggestMissingWorkspace": "Workspace not found. Cannot load suggestions.",
       "suggestLoadError": "Cannot load suggested materials.",
       "suggestGenerateSuccess": "Suggested materials generated successfully.",
@@ -920,6 +921,7 @@
         "questionTypeRequired": "Please add at least one question type.",
         "questionTypeTotalByCount": "Question type total must equal total questions ({{target}}).",
         "questionTypeTotalByPercent": "Question type total must equal 100%.",
+        "advancedQuestionTypePlanRequired": "Advanced question types require a plan with advanced quiz configuration.",
         "bloomRequired": "Please add at least one bloom skill.",
         "bloomTotalByCount": "Bloom skill total must equal total questions ({{target}}).",
         "bloomTotalByPercent": "Bloom skill total must equal 100%.",
@@ -1019,6 +1021,19 @@
         "bloomUnitByCount": "Bloom unit by count",
         "advancedConfig": "Advanced quiz types",
         "questionTypes": "Question Types",
+        "planGate": {
+          "title": "Plan upgrade required",
+          "descriptionWithCurrentPlan": "The question type \"{{featureName}}\" is not included in your {{currentPlanName}} plan. You need {{requiredPlanName}} or higher to use it.",
+          "descriptionWithRequiredPlan": "The question type \"{{featureName}}\" requires {{requiredPlanName}} or higher to use it.",
+          "descriptionFallback": "The question type \"{{featureName}}\" requires a plan with advanced quiz configuration.",
+          "meta": "You can still generate quizzes with the question types available in your current plan.",
+          "inlineHintWithPlan": "The question types below require {{planName}}.",
+          "inlineHintFallback": "The question types below require a plan with advanced quiz configuration.",
+          "lockedGroupTitleWithPlan": "Requires {{planName}}",
+          "lockedGroupTitleFallback": "Requires an advanced plan",
+          "upgradeAction": "Upgrade",
+          "vipBadge": "VIP"
+        },
         "questionTypeLabels": {
           "SINGLE_CHOICE": "Single choice",
           "MULTIPLE_CHOICE": "Multiple choice",
@@ -1188,6 +1203,7 @@
         "processing": "Processing your submission...",
         "headerHint": "Finish each question and use the star to mark anything you want to revisit before submitting.",
         "markedCount": "Marked",
+        "answeredProgress": "{{answered}}/{{total}} answered",
         "confirmSubmitTitle": "Stop and submit your exam?",
         "confirmSubmitDescription": "Your current answers will be submitted immediately.",
         "confirmSubmitIncompleteTitle": "You still have {{count}} unanswered questions",
@@ -1324,7 +1340,7 @@
         "title": "Community Quiz",
         "topMatch": "Top Match"
       },
-      "deleteConfirm": "Delete Confirm",
+      "deleteConfirm": "Are you sure you want to delete this quiz? This action cannot be undone.",
       "history": {
         "attempt": "Attempt",
         "empty": "No attempt history yet.",
@@ -2610,7 +2626,7 @@
       "stepBasic": "1. Configuration",
       "stepStructure": "2. Structure",
       "stepGenerating": "3. Generate Questions",
-      "scopeNotice": "Mock tests only generate objective questions: single choice, multiple choice, and true/false. Listening, Writing, and Speaking are not supported, so the AI will skip them and only suggest Reading, Vocabulary, or Grammar sections for exams like IELTS or TOEIC.",
+      "scopeNotice": "Mock tests only generate single-answer multiple-choice questions. Listening, Writing, and Speaking are not supported, so the AI will skip them and only suggest text-based sections for exams like IELTS or TOEIC.",
       "backToConfig": "Back to configuration",
       "regenerate": "Regenerate",
       "requestingSuggestion": "Generating suggestion...",
@@ -2648,7 +2664,7 @@
       "aiInstructionLabel": "AI question generation instructions",
       "aiInstructionPlaceholder": "E.g. Reading comprehension questions on a ~150-word technology passage. Each question should have 4 answer options A/B/C/D with only 1 correct answer.",
       "aiInstructionHint": "Describe the topic, skill, and format as specifically as possible so the AI can generate more accurate questions. Minimum {{min}} characters.",
-      "questionStructureLabel": "Question structure (difficulty x type x Bloom x quantity)",
+      "questionStructureLabel": "Question structure (difficulty x Bloom x quantity)",
       "totalLabel": "Total: {{count}}",
       "columnDifficulty": "Difficulty",
       "columnQuestionType": "Question type",
@@ -2703,7 +2719,25 @@
       "historyEmpty": "No attempts yet.",
       "historyAttempt": "Attempt",
       "answersLocked": "Complete the quiz to view answers and explanations.",
-      "publish": "Publish"
+      "publish": "Publish",
+      "sharedContext": "Shared context"
+    },
+    "reviewExtensions": {
+      "sectionTitle": "Section analysis",
+      "bloomTitle": "Bloom skill analysis",
+      "unknownSection": "Unknown section",
+      "unknownBloom": "Unknown Bloom level",
+      "pendingQuestions": "{{count}} pending questions",
+      "failedQuestions": "{{count}} questions failed grading",
+      "cohortTitle": "Compared with the class",
+      "attemptCount": "{{count}} attempts",
+      "classAverage": "Class average",
+      "yourScore": "You",
+      "rank": "Rank",
+      "topWrongTitle": "Questions most missed by the class",
+      "questionShort": "Question",
+      "wrongSummary": "{{percent}}% wrong ({{wrong}}/{{total}})",
+      "cohortLoadFailed": "Could not load class statistics"
     }
   }
 }

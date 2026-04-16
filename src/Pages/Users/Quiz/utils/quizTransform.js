@@ -44,12 +44,45 @@ export function getSectionKey(section, fallbackKey = '') {
   return String(fallbackKey || getSectionTitle(section, 'section'));
 }
 
+export function getSectionType(section) {
+  return String(section?.sectionType || '').trim().toUpperCase();
+}
+
+export function isRootSection(section) {
+  return getSectionType(section) === 'ROOT';
+}
+
+export function isQuestionGroupSection(section) {
+  const sectionType = getSectionType(section);
+  return sectionType === 'QUESTION_GROUP' || sectionType === 'GROUP_QUESTION';
+}
+
+export function getSectionSharedContext(section) {
+  return trimToNull(section?.sharedContext) || '';
+}
+
 export function countSectionQuestions(section) {
   const directQuestions = Array.isArray(section?.questions) ? section.questions.length : 0;
   return directQuestions + getSectionChildren(section).reduce(
     (total, childSection) => total + countSectionQuestions(childSection),
     0,
   );
+}
+
+export function normalizeVisibleSectionGroups(sections = []) {
+  return (Array.isArray(sections) ? sections : []).flatMap((section) => {
+    if (!section) return [];
+    if (!isRootSection(section)) return [section];
+
+    const childSections = getSectionChildren(section);
+    if (childSections.length > 0) return childSections;
+
+    if (Array.isArray(section?.questions) && section.questions.length > 0) {
+      return [{ ...section, sectionType: 'SECTION', title: '', content: '' }];
+    }
+
+    return [];
+  });
 }
 
 export function collectAllSectionKeys(sections = [], parentPath = 'section') {
@@ -253,8 +286,9 @@ export function normalizeQuizData(apiQuiz) {
       sectionType: section.sectionType ?? null,
       title: getSectionTitle(section),
       content: section.content ?? '',
+      sharedContext: section.sharedContext ?? '',
       questions: normalizedQuestions,
-      children: normalizedChildren,
+      children: normalizeVisibleSectionGroups(normalizedChildren),
     };
   }
 
@@ -262,14 +296,7 @@ export function normalizeQuizData(apiQuiz) {
     .map(normalizeSectionNode)
     .filter(Boolean);
 
-  if (
-    sectionGroups.length === 1
-    && String(sectionGroups[0]?.sectionType || '').toUpperCase() === 'ROOT'
-    && sectionGroups[0].questions.length === 0
-    && sectionGroups[0].children.length > 0
-  ) {
-    sectionGroups = sectionGroups[0].children;
-  }
+  sectionGroups = normalizeVisibleSectionGroups(sectionGroups);
 
   if (sectionGroups.length === 0) {
     // Fallback an toàn cho payload cũ thiếu section tree.

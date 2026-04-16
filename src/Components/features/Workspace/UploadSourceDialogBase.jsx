@@ -112,6 +112,10 @@ function isSuggestionImportable(item) {
   return Boolean(item?.importable);
 }
 
+function getSuggestionId(item) {
+  return Number(item?.suggestionId ?? item?.suggestId);
+}
+
 function UploadSourceDialogBase({
   open,
   onOpenChange,
@@ -174,8 +178,24 @@ function UploadSourceDialogBase({
   const [importingSuggestions, setImportingSuggestions] = useState(false);
   const selectedSuggestionCount = selectedSuggestionIds.length;
   const hasUserSelectedFiles = selectedFiles.length > 0;
+  const selectedSuggestedResources = useMemo(
+    () => suggestedResources.filter((item) => {
+      const suggestionId = getSuggestionId(item);
+      return Number.isInteger(suggestionId) && selectedSuggestionIds.includes(suggestionId);
+    }),
+    [suggestedResources, selectedSuggestionIds],
+  );
   const hasSelectedSuggestedResources = selectedSuggestionCount > 0;
-  const canUploadAllSources = hasUserSelectedFiles && hasSelectedSuggestedResources;
+  const hasAnySelectedSources = hasUserSelectedFiles || hasSelectedSuggestedResources;
+  const isCombinedUpload = hasUserSelectedFiles && hasSelectedSuggestedResources;
+  const canUploadAllSources = isCombinedUpload;
+  const primaryActionLabel = isCombinedUpload
+    ? t("workspace.upload.uploadAllSources")
+    : hasUserSelectedFiles
+      ? t("workspace.upload.uploadUserFiles")
+      : hasSelectedSuggestedResources
+        ? t("workspace.upload.importSuggested")
+        : t("workspace.upload.uploadAllSources");
 
   const visibleSuggestedResources = useMemo(
     () => suggestedResources.slice(0, SUGGESTED_RESOURCES_LIMIT),
@@ -253,7 +273,7 @@ function UploadSourceDialogBase({
       const response = await getSuggestedResources(normalizedWorkspaceId, 0, SUGGESTED_RESOURCES_LIMIT);
       const list = extractSuggestedList(response).slice(0, SUGGESTED_RESOURCES_LIMIT);
       setSuggestedResources(list);
-      setSelectedSuggestionIds((prev) => prev.filter((id) => list.some((item) => Number(item?.suggestionId) === Number(id) && isSuggestionImportable(item))));
+      setSelectedSuggestionIds((prev) => prev.filter((id) => list.some((item) => getSuggestionId(item) === Number(id) && isSuggestionImportable(item))));
       return list;
     } catch (error) {
       showError(error?.message || t("workspace.upload.suggestLoadError"));
@@ -263,28 +283,70 @@ function UploadSourceDialogBase({
     }
   };
 
-  const handleImportSuggestions = async ({ closeAfterImport = true } = {}) => {
-    if (!normalizedWorkspaceId || selectedSuggestionIds.length === 0) return;
+  const handlePrimarySubmit = async () => {
+    if (!normalizedWorkspaceId && hasSelectedSuggestedResources) {
+      showError(t("workspace.upload.suggestMissingWorkspace"));
+      return;
+    }
+    if (!hasAnySelectedSources || uploadActionLockRef.current) return;
 
-    setImportingSuggestions(true);
+    const shouldUploadFiles = hasUserSelectedFiles;
+    const shouldImportSuggestions = hasSelectedSuggestedResources;
+    const filesToUpload = shouldUploadFiles ? [...selectedFiles] : [];
+    const suggestionIdsToImport = shouldImportSuggestions ? [...selectedSuggestionIds] : [];
+
+    uploadActionLockRef.current = true;
+    if (shouldUploadFiles) {
+      setUploading(true);
+    }
+    if (shouldImportSuggestions) {
+      setImportingSuggestions(true);
+    }
+
+    let failureStage = shouldUploadFiles ? "upload" : "suggestions";
+
     try {
-      await importSuggestedResources({
-        workspaceId: normalizedWorkspaceId,
-        suggestionIds: selectedSuggestionIds,
-      });
-      setSelectedSuggestionIds([]);
-      await onSuggestedImported?.();
-      showInfo(t("workspace.upload.suggestImportSuccess"));
-      if (closeAfterImport) {
-        onOpenChange(false);
+      if (shouldUploadFiles) {
+        await onUploadFiles?.(filesToUpload);
+        setSelectedFiles([]);
       }
+
+      if (shouldImportSuggestions) {
+        failureStage = "suggestions";
+        await importSuggestedResources({
+          workspaceId: normalizedWorkspaceId,
+          suggestionIds: suggestionIdsToImport,
+        });
+        setSelectedSuggestionIds([]);
+        await onSuggestedImported?.();
+      }
+
+      if (shouldUploadFiles && shouldImportSuggestions) {
+        showSuccess(t("workspace.upload.uploadAllSuccess"));
+      } else if (shouldImportSuggestions) {
+        showInfo(t("workspace.upload.suggestImportSuccess"));
+      }
+
+      handleOpenChange(false);
     } catch (error) {
-      showError(error?.message || t("workspace.upload.suggestImportError"));
-      throw error;
+      const isTimeout = shouldUploadFiles && (error?.code === "REQUEST_TIMEOUT" || error?.statusCode === 408);
+      if (isTimeout) {
+        // Server may still finish the upload and close the dialog to block duplicate re-uploads
+        showInfo(t("workspace.upload.uploadPending"));
+        handleOpenChange(false);
+      } else if (!error?.toastHandled) {
+        showError(
+          error?.message || t(failureStage === "suggestions" ? "workspace.upload.suggestImportError" : "workspace.upload.uploadError"),
+        );
+      }
     } finally {
+      uploadActionLockRef.current = false;
+      setUploading(false);
       setImportingSuggestions(false);
     }
   };
+
+  const handleImportSuggestions = async () => handlePrimarySubmit();
 
   const handleUploadUserFiles = async () => {
     if (!hasUserSelectedFiles || importingSuggestions || uploadActionLockRef.current) return;
@@ -544,51 +606,82 @@ function UploadSourceDialogBase({
                 <input ref={fileInputRef} type="file" multiple accept={acceptString} className="hidden" onChange={handleFileSelect} />
               </div>
 
-              {selectedFiles.length > 0 && (
-            <div className={`rounded-xl border ${isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"}`}>
-              <div className={`px-3 py-2 border-b text-xs font-medium ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-500"}`}>
-                {selectedFiles.length} {t("workspace.sources.title")}
-              </div>
-              <div className="max-h-40 overflow-x-hidden overflow-y-auto">
-              {selectedFiles.map((file, i) => (
-                <div key={`${file.name}_${i}`} className={`flex items-start gap-3 px-3 py-2 text-sm ${isDarkMode ? "hover:bg-slate-900" : "hover:bg-slate-50"}`}>
-                  <div className="grid min-w-0 flex-1 grid-cols-[auto,minmax(0,1fr),auto] items-start gap-2 overflow-hidden">
-                    <span className="mt-0.5 shrink-0">
-                      {getFileIcon(file)}
-                    </span>
-                    <span
-                      title={file.name}
-                      className={`block min-w-0 overflow-hidden break-all leading-5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
-                      style={{
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 2,
-                      }}
-                    >
-                      {file.name}
-                    </span>
-                    <span className={`mt-0.5 shrink-0 text-xs ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+              {hasAnySelectedSources && (
+                <div className={`rounded-xl border ${isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"}`}>
+                  <div className={`px-3 py-2 border-b text-xs font-medium ${isDarkMode ? "border-slate-800 text-slate-400" : "border-slate-200 text-slate-500"}`}>
+                    {selectedFiles.length + selectedSuggestedResources.length} {t("workspace.sources.title")}
                   </div>
-                  <button onClick={() => removeFile(i)} className="mt-0.5 shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded">
-                    <X className="w-3.5 h-3.5 text-red-500" />
-                  </button>
-                </div>
-              ))}
-              </div>
-            </div>
-              )}
+                  <div className="max-h-48 overflow-x-hidden overflow-y-auto">
+                    {selectedFiles.map((file, i) => (
+                      <div key={`${file.name}_${i}`} className={`flex items-start gap-3 px-3 py-2 text-sm ${isDarkMode ? "hover:bg-slate-900" : "hover:bg-slate-50"}`}>
+                        <div className="grid min-w-0 flex-1 grid-cols-[auto,minmax(0,1fr)] items-start gap-2 overflow-hidden">
+                          <span className="mt-0.5 shrink-0">
+                            {getFileIcon(file)}
+                          </span>
+                          <span
+                            title={file.name}
+                            className={`block min-w-0 overflow-hidden break-all leading-5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
+                            style={{
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: 2,
+                            }}
+                          >
+                            {file.name}
+                          </span>
+                        </div>
+                        <button onClick={() => removeFile(i)} className="mt-0.5 shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded">
+                          <X className="w-3.5 h-3.5 text-red-500" />
+                        </button>
+                      </div>
+                    ))}
 
-              {hasUserSelectedFiles && (
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    onClick={handleUploadUserFiles}
-                    disabled={uploading || importingSuggestions || !hasUserSelectedFiles}
-                    className="bg-[#2563EB] hover:bg-blue-700 text-white"
-                  >
-                    {uploading ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
-                    {t("workspace.upload.uploadUserFiles")}
-                  </Button>
+                    {selectedSuggestedResources.map((item, index) => {
+                      const suggestionId = getSuggestionId(item);
+                      return (
+                        <div
+                          key={Number.isInteger(suggestionId) && suggestionId > 0 ? `suggested_${suggestionId}` : `suggested_${item?.link || index}`}
+                          className={`flex items-start gap-3 px-3 py-2 text-sm ${isDarkMode ? "hover:bg-slate-900" : "hover:bg-slate-50"}`}
+                        >
+                          <div className="grid min-w-0 flex-1 grid-cols-[auto,minmax(0,1fr)] items-start gap-2 overflow-hidden">
+                            <span className="mt-0.5 shrink-0">
+                              {getSuggestedItemIcon(item)}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  title={item?.title || t("workspace.upload.untitled")}
+                                  className={`block min-w-0 overflow-hidden break-all leading-5 ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
+                                  style={{
+                                    display: "-webkit-box",
+                                    WebkitBoxOrient: "vertical",
+                                    WebkitLineClamp: 2,
+                                  }}
+                                >
+                                  {item?.title || t("workspace.upload.untitled")}
+                                </span>
+                                <span
+                                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                    isDarkMode
+                                      ? "border-blue-800 bg-blue-950/50 text-blue-200"
+                                      : "border-blue-200 bg-blue-50 text-blue-700"
+                                  }`}
+                                >
+                                  {t("workspace.upload.aiSuggestedBadge")}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => toggleSuggestion(suggestionId, true)}
+                            className="mt-0.5 shrink-0 p-1 hover:bg-red-100 dark:hover:bg-red-950/30 rounded"
+                          >
+                            <X className="w-3.5 h-3.5 text-red-500" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -628,7 +721,7 @@ function UploadSourceDialogBase({
               ) : (
                 <div className="max-h-72 overflow-y-auto pr-2 space-y-2">
                   {visibleSuggestedResources.map((item, index) => {
-                    const suggestionId = Number(item?.suggestionId ?? item?.suggestId);
+                    const suggestionId = getSuggestionId(item);
                     const isChecked = selectedSuggestionIds.includes(suggestionId);
                     const isImportable = isSuggestionImportable(item);
                     const relevanceScore = Number(item?.relevanceScore ?? 0);
@@ -697,19 +790,6 @@ function UploadSourceDialogBase({
                 </div>
               )}
 
-              {showSuggestedPanel && selectedSuggestionCount > 0 && (
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    onClick={() => handleImportSuggestions()}
-                    disabled={importingSuggestions || uploading}
-                    className="bg-[#2563EB] hover:bg-blue-700 text-white"
-                  >
-                    {importingSuggestions ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
-                    {t("workspace.upload.importSuggested")}
-                  </Button>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center justify-between gap-2 pt-2">
@@ -729,12 +809,12 @@ function UploadSourceDialogBase({
                 </Button>
                 <Button
                   type="button"
-                  onClick={handleUploadAllSources}
-                  disabled={uploading || importingSuggestions || !canUploadAllSources}
+                  onClick={handlePrimarySubmit}
+                  disabled={uploading || importingSuggestions || !hasAnySelectedSources}
                   className="bg-[#2563EB] hover:bg-blue-700 text-white"
                 >
-                  {uploading ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
-                  {uploading ? t("workspace.upload.uploading") : t("workspace.upload.uploadAllSources")}
+                  {uploading || importingSuggestions ? <InlineSpinner className="mr-2" /> : <UploadCloud className="w-4 h-4 mr-2" />}
+                  {uploading || importingSuggestions ? t("workspace.upload.uploading") : primaryActionLabel}
                 </Button>
               </div>
             </div>

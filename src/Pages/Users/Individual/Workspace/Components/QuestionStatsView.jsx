@@ -60,7 +60,7 @@ const SURFACE_OPTIONS = [
 ];
 
 const DIFFICULTY_KEYS = ["EASY", "MEDIUM", "HARD", "CUSTOM", "UNSPECIFIED"];
-const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "CREATE", "APPLY"];
+const BLOOM_ORDER = ["ANALYZE", "UNDERSTAND", "REMEMBER", "EVALUATE", "APPLY"];
 
 const BLOOM_COLORS = {
   REMEMBER: { main: "#6366f1" },
@@ -68,7 +68,6 @@ const BLOOM_COLORS = {
   APPLY: { main: "#22c55e" },
   ANALYZE: { main: "#f59e0b" },
   EVALUATE: { main: "#ef4444" },
-  CREATE: { main: "#a855f7" },
 };
 
 function pct(value, total) {

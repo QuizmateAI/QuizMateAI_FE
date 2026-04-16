@@ -30,6 +30,7 @@ import { QUIZ_TITLE_MAX_LENGTH } from "../quizTitleConfig";
 import { AI_MINIMUM_SECONDS_PER_QUESTION } from "./createQuizForm.constants";
 import PlanGatedFeature from "@/Components/plan/PlanGatedFeature";
 import { isAdvancedQuizQuestionType } from "@/lib/quizQuestionTypes";
+import { usePlanUpgradeInfo } from "@/hooks/usePlanUpgradeInfo";
 
 function CreateQuizAiFormContent({
   classes,
@@ -174,6 +175,9 @@ function CreateQuizAiFormContent({
   const selectableQuestionTypes = qTypes.filter((questionType) => (
     hasAdvanceQuizConfig || !isAdvancedQuizQuestionType(questionType?.questionType)
   ));
+  const lockedAdvancedQuestionTypes = hasAdvanceQuizConfig
+    ? []
+    : qTypes.filter((questionType) => isAdvancedQuizQuestionType(questionType?.questionType));
   const bulkActionButtonClass = isDarkMode
     ? "h-7 border-slate-700 bg-slate-900/60 px-2.5 text-[11px] text-slate-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
     : "h-7 border-gray-200 bg-white px-2.5 text-[11px] text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50";
@@ -208,6 +212,36 @@ function CreateQuizAiFormContent({
     && selectableBloomIds.every((id) => selectedBloomIdSet.has(id));
 
   const hasSelectedBloomSkills = selectedBloomSkills.length > 0;
+  const {
+    currentPlanName: advancedQuizCurrentPlanName,
+    requiredPlanName: advancedQuizRequiredPlanName,
+    upgradePath: advancedQuizUpgradePath,
+  } = usePlanUpgradeInfo({
+    featureEntitlementKey: "hasAdvanceQuizConfig",
+    enabled: !hasAdvanceQuizConfig && qTypes.some((questionType) => isAdvancedQuizQuestionType(questionType?.questionType)),
+  });
+  const advancedQuizGateTitle = t("workspace.quiz.planGate.title", "Cần nâng cấp gói");
+  const advancedQuizGateMeta = t(
+    "workspace.quiz.planGate.meta",
+    "Bạn vẫn có thể tạo quiz với các loại câu hỏi đang có trong gói hiện tại.",
+  );
+  const advancedQuizInlineHint = !hasAdvanceQuizConfig
+    ? (advancedQuizRequiredPlanName
+      ? t("workspace.quiz.planGate.inlineHintWithPlan", {
+          planName: advancedQuizRequiredPlanName,
+          defaultValue: `Các loại bên dưới cần gói ${advancedQuizRequiredPlanName}.`,
+        })
+      : t(
+          "workspace.quiz.planGate.inlineHintFallback",
+          "Các loại bên dưới cần gói hỗ trợ cấu hình quiz nâng cao.",
+        ))
+    : "";
+  const advancedQuizLockedTitle = advancedQuizRequiredPlanName
+    ? t("workspace.quiz.planGate.lockedGroupTitleWithPlan", {
+        planName: advancedQuizRequiredPlanName,
+        defaultValue: `Cần gói ${advancedQuizRequiredPlanName}`,
+      })
+    : t("workspace.quiz.planGate.lockedGroupTitleFallback", "Cần gói nâng cao");
 
   const handleSelectAllQuestionTypes = () => {
     selectableQuestionTypeIds.forEach((id) => {
@@ -800,10 +834,11 @@ function CreateQuizAiFormContent({
           </div>
 
           <div className="mb-3 flex flex-wrap gap-2">
-            {qTypes.map((questionType) => {
+            {selectableQuestionTypes.map((questionType) => {
               const isSelected = selectedQTypes.some((item) => item.questionTypeId === questionType.questionTypeId);
-              const isAdvancedType = isAdvancedQuizQuestionType(questionType.questionType);
-              const questionTypeChip = (
+              const questionTypeLabel = getQuestionTypeLabel(questionType.questionType);
+
+              return (
                 <button
                   key={questionType.questionTypeId}
                   type="button"
@@ -815,25 +850,71 @@ function CreateQuizAiFormContent({
                   }`}
                 >
                   {isSelected && <CheckCircle2 className="h-3 w-3 shrink-0" />}
-                  {getQuestionTypeLabel(questionType.questionType)}
+                  {questionTypeLabel}
                 </button>
               );
-
-              if (!isAdvancedType || hasAdvanceQuizConfig) {
-                return questionTypeChip;
-              }
-
-              return (
-                <PlanGatedFeature
-                  key={questionType.questionTypeId}
-                  allowed={false}
-                  featureName={t("workspace.quiz.aiConfig.advancedConfig", "Advanced quiz types")}
-                  isDarkMode={isDarkMode}
-                >
-                  {questionTypeChip}
-                </PlanGatedFeature>
-              );
             })}
+
+            {!hasAdvanceQuizConfig && lockedAdvancedQuestionTypes.length > 0 ? (
+              <PlanGatedFeature
+                allowed={false}
+                featureName={advancedQuizLockedTitle}
+                isDarkMode={isDarkMode}
+                className="basis-full"
+                toastTitle={advancedQuizGateTitle}
+                toastDescription={advancedQuizRequiredPlanName
+                  ? (advancedQuizCurrentPlanName
+                    ? t("workspace.quiz.planGate.descriptionWithCurrentPlan", {
+                        featureName: advancedQuizLockedTitle,
+                        currentPlanName: advancedQuizCurrentPlanName,
+                        requiredPlanName: advancedQuizRequiredPlanName,
+                        defaultValue: `Nhóm loại câu hỏi nâng cao không có trong gói ${advancedQuizCurrentPlanName}. Cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.`,
+                      })
+                    : t("workspace.quiz.planGate.descriptionWithRequiredPlan", {
+                        featureName: advancedQuizLockedTitle,
+                        requiredPlanName: advancedQuizRequiredPlanName,
+                        defaultValue: `Nhóm loại câu hỏi nâng cao cần gói ${advancedQuizRequiredPlanName} hoặc cao hơn để sử dụng.`,
+                      }))
+                  : t("workspace.quiz.planGate.descriptionFallback", {
+                      featureName: advancedQuizLockedTitle,
+                      defaultValue: "Nhóm loại câu hỏi nâng cao cần gói hỗ trợ cấu hình quiz nâng cao để sử dụng.",
+                    })}
+                toastMeta={advancedQuizGateMeta}
+                upgradePath={advancedQuizUpgradePath}
+                upgradeLabel={t("workspace.quiz.planGate.upgradeAction", "Nâng cấp")}
+                badgeLabel={t("workspace.quiz.planGate.vipBadge", "VIP")}
+              >
+                <div className={`w-full rounded-2xl border border-dashed px-3 py-3 ${isDarkMode ? "border-amber-400/30 bg-amber-500/5" : "border-amber-300 bg-amber-50/70"}`}>
+                  <div className="flex flex-col gap-2">
+                    <div>
+                      <p className={`text-xs font-semibold ${isDarkMode ? "text-amber-200" : "text-amber-900"}`}>
+                        {advancedQuizLockedTitle}
+                      </p>
+                      {advancedQuizInlineHint ? (
+                        <p className={`mt-1 text-[11px] leading-relaxed ${isDarkMode ? "text-amber-300" : "text-amber-700"}`}>
+                          {advancedQuizInlineHint}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {lockedAdvancedQuestionTypes.map((questionType) => (
+                        <span
+                          key={questionType.questionTypeId}
+                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${
+                            isDarkMode
+                              ? "border-amber-400/30 bg-slate-900/70 text-slate-200"
+                              : "border-amber-200 bg-white text-slate-700"
+                          }`}
+                        >
+                          {getQuestionTypeLabel(questionType.questionType)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </PlanGatedFeature>
+            ) : null}
           </div>
 
           <div className={`rounded-xl border p-2 ${isDarkMode ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"}`}>
@@ -1245,7 +1326,11 @@ function CreateQuizAiFormContent({
                             onChange={(event) => handleStructureItemChange(index, "questionType", event.target.value)}
                           >
                             {qTypes.map((questionType) => (
-                              <option key={questionType.questionTypeId} value={questionType.questionType}>
+                              <option
+                                key={questionType.questionTypeId}
+                                value={questionType.questionType}
+                                disabled={!hasAdvanceQuizConfig && isAdvancedQuizQuestionType(questionType.questionType)}
+                              >
                                 {getQuestionTypeLabel(questionType.questionType)}
                               </option>
                             ))}
