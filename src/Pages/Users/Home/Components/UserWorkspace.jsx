@@ -397,23 +397,23 @@ const WorkspaceCard = memo(function WorkspaceCard({
         </div>
       </div>
 
-      <div className="absolute inset-x-0 bottom-[60px] top-[70px] flex min-w-0 flex-col justify-center px-5 py-4">
+      <div className="absolute inset-x-0 bottom-[60px] top-[70px] flex min-w-0 flex-col justify-start overflow-hidden px-5 py-3">
         {metadataParts.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 overflow-hidden">
             {metadataParts.map((item) => (
               <span
                 key={item.key}
-                className={`max-w-full rounded-md border px-2.5 py-1.5 text-xs ${
+                className={`max-w-full truncate rounded-md border px-2.5 py-1 text-xs ${
                   getMetadataChipClass(item.key, isDarkMode)
                 }`}
               >
-                <span className="break-words">{item.value}</span>
+                {item.value}
               </span>
             ))}
           </div>
         ) : null}
         {sourceLabel ? (
-          <div className={`mt-3 inline-flex self-start rounded-md border px-2.5 py-1 text-xs font-semibold ${accent.source}`}>
+          <div className={`mt-2 inline-flex self-start rounded-md border px-2.5 py-1 text-xs font-semibold ${accent.source}`}>
             {sourceLabel}
           </div>
         ) : null}
